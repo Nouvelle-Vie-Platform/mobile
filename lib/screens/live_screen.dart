@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -15,7 +16,7 @@ class LiveScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Culte en direct')),
+      appBar: AppBar(title: Text(context.l10n.liveAppBarTitle)),
       body: Column(
         children: [
           Expanded(
@@ -37,35 +38,36 @@ class LiveScreen extends StatelessWidget {
                       const IconText(
                           icon: Icons.place_outlined, label: 'Temple Central'),
                       const SizedBox(height: AppSpacing.lg),
-                      const Row(
+                      Row(
                         children: [
                           Expanded(
                             child: _Toggle(
                                 icon: Icons.headphones,
-                                label: 'Audio seul',
+                                label: context.l10n.liveAudioOnly,
                                 selected: false),
                           ),
-                          SizedBox(width: AppSpacing.md),
+                          const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: _Toggle(
                                 icon: Icons.hd_outlined,
-                                label: 'Qualité',
+                                label: context.l10n.liveQuality,
                                 selected: true),
                           ),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xl),
-                      Text('À propos de ce live', style: AppTypography.h5),
+                      Text(context.l10n.liveAboutTitle,
+                          style: AppTypography.h5),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        'Soyez bénis par la Parole de Dieu et restez connectés.',
+                        context.l10n.liveAboutBody,
                         style: AppTypography.bodyLarge
                             .copyWith(color: context.palette.textSecondary),
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      const IconText(
+                      IconText(
                         icon: Icons.people_outline,
-                        label: '1.2K personnes connectées',
+                        label: context.l10n.liveConnectedPeople('1.2K'),
                         color: AppColors.secondary,
                       ),
                     ],
@@ -160,11 +162,11 @@ class _CommentBar extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
-            const Expanded(
+            Expanded(
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: 'Écrire un message...',
-                  contentPadding: EdgeInsets.symmetric(
+                  hintText: context.l10n.liveCommentHint,
+                  contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                 ),
               ),

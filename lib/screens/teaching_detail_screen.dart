@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -17,7 +18,7 @@ class TeachingDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Enseignement')),
+      appBar: AppBar(title: Text(context.l10n.teachingAppBarTitle)),
       body: ListView(
         children: [
           MediaThumbnail(height: 210, borderRadius: 0, seed: teaching.seed),
@@ -42,14 +43,18 @@ class TeachingDetailScreen extends StatelessWidget {
                     style: AppTypography.caption
                         .copyWith(color: context.palette.textSecondary)),
                 const SizedBox(height: AppSpacing.lg),
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _Action(
-                        icon: Icons.download_outlined, label: 'Télécharger'),
+                        icon: Icons.download_outlined,
+                        label: context.l10n.actionDownload),
                     _Action(
-                        icon: Icons.bookmark_add_outlined, label: 'Mes notes'),
-                    _Action(icon: Icons.share_outlined, label: 'Partager'),
+                        icon: Icons.bookmark_add_outlined,
+                        label: context.l10n.actionMyNotes),
+                    _Action(
+                        icon: Icons.share_outlined,
+                        label: context.l10n.actionShare),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -67,7 +72,7 @@ class TeachingDetailScreen extends StatelessWidget {
                         .copyWith(color: context.palette.primary)),
                 const SizedBox(height: AppSpacing.xl),
                 AppButton(
-                  label: 'Télécharger l\'audio',
+                  label: context.l10n.actionDownloadAudio,
                   icon: Icons.headphones,
                   onPressed: () {},
                 ),
@@ -106,11 +111,11 @@ class _Tabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
-        _Tab(label: 'Description', selected: true),
-        SizedBox(width: AppSpacing.xl),
-        _Tab(label: 'Notes (12)', selected: false),
+        _Tab(label: context.l10n.tabDescription, selected: true),
+        const SizedBox(width: AppSpacing.xl),
+        _Tab(label: context.l10n.tabNotesCount(12), selected: false),
       ],
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
 import '../state/repository_providers.dart';
 import '../theme/app_spacing.dart';
@@ -26,7 +27,7 @@ class _PrayerRequestsScreenState extends ConsumerState<PrayerRequestsScreen> {
     final prayers = ref.watch(prayersProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Espace de prière')),
+      appBar: AppBar(title: Text(context.l10n.prayersAppBarTitle)),
       body: SafeArea(
         child: Column(
           children: [
@@ -36,7 +37,10 @@ class _PrayerRequestsScreenState extends ConsumerState<PrayerRequestsScreen> {
                 children: [
                   const SizedBox(height: AppSpacing.md),
                   SegmentedTabs(
-                    tabs: const ['Mes requêtes', 'Communauté'],
+                    tabs: [
+                      context.l10n.prayersTabMine,
+                      context.l10n.prayersTabCommunity,
+                    ],
                     selected: _tab,
                     onSelect: (i) => setState(() => _tab = i),
                   ),
@@ -54,7 +58,7 @@ class _PrayerRequestsScreenState extends ConsumerState<PrayerRequestsScreen> {
                   ],
                   const SizedBox(height: AppSpacing.sm),
                   AppButton(
-                    label: 'Nouvelle requête',
+                    label: context.l10n.prayersNewRequest,
                     icon: Icons.add,
                     onPressed: () => context.pushNamed(AppRoute.newRequest),
                   ),

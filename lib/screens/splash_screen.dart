@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -22,10 +23,10 @@ class SplashScreen extends StatelessWidget {
               const Spacer(flex: 3),
               const BrandLogo(size: 200),
               const SizedBox(height: AppSpacing.xl),
-              Text('Maison du Miracle',
+              Text(context.l10n.appName,
                   style: AppTypography.h2.copyWith(color: Colors.white)),
               const SizedBox(height: AppSpacing.sm),
-              Text('Nous annonçons avec foi.',
+              Text(context.l10n.splashTagline,
                   style: AppTypography.bodyLarge
                       .copyWith(color: Colors.white.withValues(alpha: 0.85))),
               const Spacer(flex: 3),

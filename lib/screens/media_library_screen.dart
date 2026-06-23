@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
 import '../state/repository_providers.dart';
 import '../theme/app_palette.dart';
@@ -20,31 +21,35 @@ class MediaLibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
-  static const _filters = ['Tout', 'Prêches', 'Enseignements', 'Musique'];
-
   int _selectedFilter = 0;
 
   @override
   Widget build(BuildContext context) {
     final teachings = ref.watch(teachingsProvider);
+    final filters = [
+      context.l10n.filterAll,
+      context.l10n.filterSermons,
+      context.l10n.filterTeachings,
+      context.l10n.filterMusic,
+    ];
 
     return SafeArea(
       child: ListView(
         padding: AppSpacing.screenPadding,
         children: [
           const SizedBox(height: AppSpacing.md),
-          Text('Médiathèque', style: AppTypography.h2),
+          Text(context.l10n.mediaTitle, style: AppTypography.h2),
           const SizedBox(height: AppSpacing.lg),
-          const AppSearchField(hint: 'Rechercher un enseignement...'),
+          AppSearchField(hint: context.l10n.mediaSearchHint),
           const SizedBox(height: AppSpacing.lg),
           SizedBox(
             height: 36,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: _filters.length,
+              itemCount: filters.length,
               separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
               itemBuilder: (context, i) => FilterChipButton(
-                label: _filters[i],
+                label: filters[i],
                 selected: i == _selectedFilter,
                 onTap: () => setState(() => _selectedFilter = i),
               ),
@@ -110,14 +115,14 @@ class _SeriesTile extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const AppChip('Série', tone: AppChipTone.info),
+                        AppChip(context.l10n.seriesTag, tone: AppChipTone.info),
                         const SizedBox(width: AppSpacing.sm),
                         Text('Vie Victorieuse',
                             style: AppTypography.bodyStrong),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text('5 messages',
+                    Text(context.l10n.seriesMessagesCount(5),
                         style: AppTypography.caption
                             .copyWith(color: palette.textSecondary)),
                   ],

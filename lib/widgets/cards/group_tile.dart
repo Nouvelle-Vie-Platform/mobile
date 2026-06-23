@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n_extension.dart';
 import '../../models/models.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
@@ -31,8 +32,9 @@ class GroupTile extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   group.role == null
-                      ? '${group.members} membres'
-                      : '${group.members} membres • ${group.role}',
+                      ? context.l10n.groupMembers(group.members)
+                      : context.l10n
+                          .groupMembersWithRole(group.members, group.role!),
                   style: AppTypography.caption,
                 ),
               ],

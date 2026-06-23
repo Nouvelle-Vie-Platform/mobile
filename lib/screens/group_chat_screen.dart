@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
 import '../state/repository_providers.dart';
 import '../theme/app_colors.dart';
@@ -47,11 +48,11 @@ class _MessageBar extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
-            const Expanded(
+            Expanded(
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: 'Votre message...',
-                  contentPadding: EdgeInsets.symmetric(
+                  hintText: context.l10n.chatMessageHint,
+                  contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                 ),
               ),

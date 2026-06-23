@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -25,21 +26,21 @@ class LoginScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Heureux de vous revoir !', style: AppTypography.h2),
+              Text(context.l10n.loginTitle, style: AppTypography.h2),
               const SizedBox(height: AppSpacing.sm),
-              Text('Connectez-vous pour continuer.',
+              Text(context.l10n.loginSubtitle,
                   style: AppTypography.bodyLarge
                       .copyWith(color: palette.textSecondary)),
               const SizedBox(height: AppSpacing.xxl),
-              const AppTextField(
-                label: 'Email ou numéro',
+              AppTextField(
+                label: context.l10n.fieldEmailOrPhone,
                 hint: 'jean.kossi@email.com',
                 initialValue: 'jean.kossi@email.com',
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: AppSpacing.lg),
-              const AppTextField(
-                label: 'Mot de passe',
+              AppTextField(
+                label: context.l10n.fieldPassword,
                 initialValue: '••••••••',
                 obscureText: true,
                 suffixIcon: Icons.visibility_off_outlined,
@@ -49,14 +50,14 @@ class LoginScreen extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {},
-                  child: Text('Mot de passe oublié ?',
+                  child: Text(context.l10n.forgotPassword,
                       style: AppTypography.caption
                           .copyWith(color: palette.primary)),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
               AppButton(
-                label: 'Se connecter',
+                label: context.l10n.actionLogin,
                 onPressed: () => context.goNamed(AppRoute.home),
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -78,12 +79,12 @@ class LoginScreen extends StatelessWidget {
               Center(
                 child: Wrap(
                   children: [
-                    Text('Pas encore de compte ? ',
+                    Text(context.l10n.noAccountYet,
                         style: AppTypography.body
                             .copyWith(color: palette.textSecondary)),
                     GestureDetector(
                       onTap: () => context.pushNamed(AppRoute.register),
-                      child: Text('S\'inscrire',
+                      child: Text(context.l10n.actionRegister,
                           style: AppTypography.bodyStrong
                               .copyWith(color: palette.primary)),
                     ),
@@ -109,7 +110,7 @@ class _OrDivider extends StatelessWidget {
         const Expanded(child: Divider()),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Text('Ou continuer avec',
+          child: Text(context.l10n.orContinueWith,
               style: AppTypography.caption
                   .copyWith(color: context.palette.textSecondary)),
         ),

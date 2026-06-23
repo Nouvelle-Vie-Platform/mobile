@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../state/repository_providers.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -29,7 +30,7 @@ class AgendaScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
           ],
           const SizedBox(height: AppSpacing.sm),
-          AppButton(label: 'Voir tout l\'agenda', onPressed: () {}),
+          AppButton(label: context.l10n.agendaSeeAll, onPressed: () {}),
           const SizedBox(height: AppSpacing.xxl),
         ],
       ),
@@ -49,13 +50,21 @@ class _MonthCalendar extends StatelessWidget {
   final int leadingBlanks;
   final int selected;
 
-  static const _weekdays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = context.l10n;
+    final weekdays = [
+      l10n.weekdayMon,
+      l10n.weekdayTue,
+      l10n.weekdayWed,
+      l10n.weekdayThu,
+      l10n.weekdayFri,
+      l10n.weekdaySat,
+      l10n.weekdaySun,
+    ];
     final cells = <Widget>[
-      for (final d in _weekdays)
+      for (final d in weekdays)
         Center(
           child: Text(d,
               style: AppTypography.caption.copyWith(

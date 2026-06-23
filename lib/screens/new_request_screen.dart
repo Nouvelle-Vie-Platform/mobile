@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_button.dart';
@@ -17,53 +18,59 @@ class NewRequestScreen extends StatefulWidget {
 }
 
 class _NewRequestScreenState extends State<NewRequestScreen> {
-  static const _types = ['Suggestion', 'Plainte', 'Signalement', 'Autre'];
-
   int _selectedType = 0;
   bool _anonymous = true;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final types = [
+      l10n.requestTypeSuggestion,
+      l10n.requestTypeComplaint,
+      l10n.requestTypeReport,
+      l10n.requestTypeOther,
+    ];
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Nouvelle requête')),
+      appBar: AppBar(title: Text(l10n.newRequestAppBarTitle)),
       body: SafeArea(
         child: ListView(
           padding: AppSpacing.screenPadding,
           children: [
             const SizedBox(height: AppSpacing.md),
-            Text('Type de requête', style: AppTypography.h5),
+            Text(l10n.newRequestTypeLabel, style: AppTypography.h5),
             const SizedBox(height: AppSpacing.sm),
             AppCard(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Column(
                 children: [
-                  for (var i = 0; i < _types.length; i++) ...[
+                  for (var i = 0; i < types.length; i++) ...[
                     RadioOptionTile(
-                      label: _types[i],
+                      label: types[i],
                       selected: i == _selectedType,
                       onTap: () => setState(() => _selectedType = i),
                     ),
-                    if (i < _types.length - 1) const Divider(height: 1),
+                    if (i < types.length - 1) const Divider(height: 1),
                   ],
                 ],
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
-            const AppTextField(
-              label: 'Décrivez votre requête',
-              hint: 'Écrivez votre message ici...',
+            AppTextField(
+              label: l10n.newRequestDescribeLabel,
+              hint: l10n.newRequestDescribeHint,
               maxLines: 5,
             ),
             const SizedBox(height: AppSpacing.xl),
             LabeledSwitch(
-              label: 'Anonyme',
-              subtitle: 'Votre identité restera confidentielle.',
+              label: l10n.anonymousLabel,
+              subtitle: l10n.anonymousSubtitle,
               value: _anonymous,
               onChanged: (v) => setState(() => _anonymous = v),
             ),
             const SizedBox(height: AppSpacing.xl),
             AppButton(
-              label: 'Envoyer',
+              label: l10n.actionSend,
               onPressed: () => Navigator.pop(context),
             ),
             const SizedBox(height: AppSpacing.xxl),

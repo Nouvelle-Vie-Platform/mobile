@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -35,9 +36,10 @@ class OnboardingScreen extends StatelessWidget {
                           style: AppTypography.h1
                               .copyWith(color: palette.textPrimary),
                           children: [
-                            const TextSpan(text: 'Bienvenue\n'),
                             TextSpan(
-                                text: 'Dans la Maison\ndu Miracle',
+                                text: '${context.l10n.onboardingWelcome}\n'),
+                            TextSpan(
+                                text: context.l10n.onboardingTitleHighlight,
                                 style: AppTypography.h1
                                     .copyWith(color: palette.primary)),
                             const TextSpan(text: ' !'),
@@ -46,7 +48,7 @@ class OnboardingScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
-                        'Une communauté vivante, connectée et engagée pour la gloire de Dieu.',
+                        context.l10n.onboardingSubtitle,
                         style: AppTypography.bodyLarge
                             .copyWith(color: palette.textSecondary),
                       ),
@@ -63,7 +65,7 @@ class OnboardingScreen extends StatelessWidget {
                         children: [
                           const PageIndicator(count: 3, activeIndex: 0),
                           AppButton(
-                            label: 'Suivant',
+                            label: context.l10n.actionNext,
                             expand: false,
                             trailingIcon: Icons.arrow_forward,
                             onPressed: () => context.goNamed(AppRoute.login),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/app_localizations.dart';
+import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
 import 'state/theme_provider.dart';
 import 'theme/app_theme.dart';
@@ -23,8 +24,8 @@ class MaisonDuMiracleApp extends ConsumerWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: mode,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: appLocalizationsDelegates,
+      supportedLocales: appSupportedLocales,
       routerConfig: router,
     );
   }

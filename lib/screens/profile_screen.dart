@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
 import '../state/theme_provider.dart';
 import '../theme/app_colors.dart';
@@ -27,26 +28,26 @@ class ProfileScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
         MenuTile(
           icon: Icons.account_balance_outlined,
-          label: 'Ma branche',
+          label: context.l10n.profileMyBranch,
           subtitle: 'Église Mère - Lomé',
           onTap: () {},
         ),
         const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
         MenuTile(
           icon: Icons.volunteer_activism_outlined,
-          label: 'Mes contributions',
+          label: context.l10n.profileMyContributions,
           onTap: () => context.pushNamed(AppRoute.donations),
         ),
         const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
         MenuTile(
           icon: Icons.menu_book_outlined,
-          label: 'Mes notes spirituelles',
+          label: context.l10n.profileMyNotes,
           onTap: () => context.pushNamed(AppRoute.notes),
         ),
         const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
         MenuTile(
           icon: Icons.dark_mode_outlined,
-          label: 'Mode sombre',
+          label: context.l10n.darkMode,
           showChevron: false,
           onTap: () =>
               ref.read(themeModeProvider.notifier).toggle(platformIsDark: dark),
@@ -60,14 +61,18 @@ class ProfileScreen extends ConsumerWidget {
         ),
         const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
         MenuTile(
-            icon: Icons.settings_outlined, label: 'Paramètres', onTap: () {}),
+            icon: Icons.settings_outlined,
+            label: context.l10n.settings,
+            onTap: () {}),
         const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
         MenuTile(
-            icon: Icons.help_outline, label: 'Aide & Support', onTap: () {}),
+            icon: Icons.help_outline,
+            label: context.l10n.helpSupport,
+            onTap: () {}),
         const SizedBox(height: AppSpacing.sm),
         MenuTile(
           icon: Icons.logout,
-          label: 'Se déconnecter',
+          label: context.l10n.logout,
           destructive: true,
           onTap: () => context.goNamed(AppRoute.login),
         ),

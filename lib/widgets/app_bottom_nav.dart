@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_typography.dart';
@@ -20,26 +21,30 @@ class AppBottomNav extends StatelessWidget {
     required this.currentIndex,
     required this.onSelect,
     this.onFabTap,
-    this.items = defaultItems,
+    this.items,
   });
 
   final int currentIndex;
   final ValueChanged<int> onSelect;
   final VoidCallback? onFabTap;
-  final List<NavItem> items;
 
-  static const List<NavItem> defaultItems = [
-    NavItem(icon: Icons.home_outlined, label: 'Accueil'),
-    NavItem(icon: Icons.play_circle_outline, label: 'Médias'),
-    NavItem(icon: Icons.groups_outlined, label: 'Groupes'),
-    NavItem(icon: Icons.person_outline, label: 'Profil'),
-  ];
+  /// Onglets affichés. Si `null`, on utilise les onglets par défaut localisés.
+  final List<NavItem>? items;
+
+  /// Onglets par défaut « Accueil · Médias · (+) · Groupes · Profil ».
+  static List<NavItem> defaultItems(BuildContext context) => [
+        NavItem(icon: Icons.home_outlined, label: context.l10n.navHome),
+        NavItem(icon: Icons.play_circle_outline, label: context.l10n.navMedia),
+        NavItem(icon: Icons.groups_outlined, label: context.l10n.navGroups),
+        NavItem(icon: Icons.person_outline, label: context.l10n.navProfile),
+      ];
 
   @override
   Widget build(BuildContext context) {
+    final navItems = items ?? defaultItems(context);
     // Insère le FAB au centre de la liste d'onglets.
-    final left = items.take(2).toList();
-    final right = items.skip(2).toList();
+    final left = navItems.take(2).toList();
+    final right = navItems.skip(2).toList();
     final palette = context.palette;
 
     return Container(

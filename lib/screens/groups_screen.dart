@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
 import '../state/repository_providers.dart';
 import '../theme/app_spacing.dart';
@@ -22,7 +23,7 @@ class GroupsScreen extends ConsumerWidget {
         padding: AppSpacing.screenPadding,
         children: [
           const SizedBox(height: AppSpacing.md),
-          Text('Mes groupes', style: AppTypography.h2),
+          Text(context.l10n.groupsTitle, style: AppTypography.h2),
           const SizedBox(height: AppSpacing.lg),
           for (final g in groups) ...[
             GroupTile(
@@ -32,7 +33,7 @@ class GroupsScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
           ],
           const SizedBox(height: AppSpacing.sm),
-          AppButton(label: 'Découvrir plus de groupes', onPressed: () {}),
+          AppButton(label: context.l10n.groupsDiscoverMore, onPressed: () {}),
           const SizedBox(height: AppSpacing.xxl),
         ],
       ),

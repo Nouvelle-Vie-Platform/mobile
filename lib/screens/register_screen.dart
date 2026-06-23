@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -17,23 +18,24 @@ class RegisterScreen extends StatelessWidget {
     final palette = context.palette;
     return Scaffold(
       backgroundColor: palette.surface,
-      appBar: AppBar(title: const Text('Inscription')),
+      appBar: AppBar(title: Text(context.l10n.registerAppBarTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: AppSpacing.screenPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Créer votre compte', style: AppTypography.h2),
+              Text(context.l10n.registerTitle, style: AppTypography.h2),
               const SizedBox(height: AppSpacing.sm),
-              Text('Rejoignez notre communauté.',
+              Text(context.l10n.registerSubtitle,
                   style: AppTypography.bodyLarge
                       .copyWith(color: palette.textSecondary)),
               const SizedBox(height: AppSpacing.xl),
-              const AppTextField(label: 'Nom complet', hint: 'Jean Kossi'),
+              AppTextField(
+                  label: context.l10n.fieldFullName, hint: 'Jean Kossi'),
               const SizedBox(height: AppSpacing.lg),
-              const AppTextField(
-                label: 'Téléphone',
+              AppTextField(
+                label: context.l10n.fieldPhone,
                 hint: '+228 90 12 34 56',
                 keyboardType: TextInputType.phone,
               ),
@@ -41,7 +43,7 @@ class RegisterScreen extends StatelessWidget {
               const _BranchField(),
               const SizedBox(height: AppSpacing.xxl),
               AppButton(
-                label: 'S\'inscrire',
+                label: context.l10n.actionRegister,
                 onPressed: () => context.goNamed(AppRoute.home),
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -51,10 +53,9 @@ class RegisterScreen extends StatelessWidget {
                     style: AppTypography.caption
                         .copyWith(color: palette.textSecondary),
                     children: [
-                      const TextSpan(
-                          text: 'En créant un compte, vous acceptez nos '),
+                      TextSpan(text: context.l10n.registerTermsPrefix),
                       TextSpan(
-                          text: 'Conditions d\'utilisation.',
+                          text: context.l10n.registerTermsLink,
                           style: AppTypography.caption
                               .copyWith(color: palette.primary)),
                     ],
@@ -81,7 +82,7 @@ class _BranchField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Branche locale', style: AppTypography.bodyStrong),
+        Text(context.l10n.fieldLocalBranch, style: AppTypography.bodyStrong),
         const SizedBox(height: AppSpacing.sm),
         InkWell(
           borderRadius: AppRadius.field,

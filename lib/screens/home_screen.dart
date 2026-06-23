@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
 import '../state/repository_providers.dart';
 import '../theme/app_colors.dart';
@@ -37,14 +38,14 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 SectionHeader(
-                  title: 'À venir',
-                  actionLabel: 'Voir tout',
+                  title: context.l10n.sectionUpcoming,
+                  actionLabel: context.l10n.actionSeeAll,
                   onAction: () => context.pushNamed(AppRoute.agenda),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 EventCard(event: events.first),
                 const SizedBox(height: AppSpacing.xl),
-                const SectionHeader(title: 'Derniers enseignements'),
+                SectionHeader(title: context.l10n.sectionLatestTeachings),
                 const SizedBox(height: AppSpacing.md),
                 for (final t in teachings.take(3)) ...[
                   TeachingTile(
@@ -90,10 +91,10 @@ class _GreetingHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Bonjour $name ! 👋',
+                Text(context.l10n.homeGreeting(name),
                     style: AppTypography.h2.copyWith(color: Colors.white)),
                 const SizedBox(height: 4),
-                Text('Que Dieu vous bénisse aujourd\'hui.',
+                Text(context.l10n.homeBlessing,
                     style: AppTypography.bodyLarge.copyWith(
                         color: Colors.white.withValues(alpha: 0.85),
                         fontSize: 14)),
@@ -155,9 +156,9 @@ class _LiveBanner extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Culte en direct', style: AppTypography.h5),
+                    Text(context.l10n.liveBannerTitle, style: AppTypography.h5),
                     const SizedBox(height: 2),
-                    Text('Rejoindre maintenant',
+                    Text(context.l10n.liveBannerSubtitle,
                         style: AppTypography.body
                             .copyWith(color: AppColors.neutralDark)),
                   ],

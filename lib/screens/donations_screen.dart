@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -25,19 +26,19 @@ class _DonationsScreenState extends State<DonationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Dons & Offrandes')),
+      appBar: AppBar(title: Text(context.l10n.donationsAppBarTitle)),
       body: SafeArea(
         child: ListView(
           padding: AppSpacing.screenPadding,
           children: [
             const SizedBox(height: AppSpacing.md),
-            Text('Soutenez l\'œuvre de Dieu', style: AppTypography.h4),
+            Text(context.l10n.donationsTitle, style: AppTypography.h4),
             const SizedBox(height: AppSpacing.xs),
-            Text('Donnez selon ce que Dieu met dans votre cœur.',
+            Text(context.l10n.donationsSubtitle,
                 style: AppTypography.bodyLarge
                     .copyWith(color: context.palette.textSecondary)),
             const SizedBox(height: AppSpacing.xl),
-            Text('Montant', style: AppTypography.h5),
+            Text(context.l10n.donationsAmountLabel, style: AppTypography.h5),
             const SizedBox(height: AppSpacing.md),
             GridView.count(
               crossAxisCount: 2,
@@ -56,7 +57,8 @@ class _DonationsScreenState extends State<DonationsScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.xl),
-            Text('Méthode de paiement', style: AppTypography.h5),
+            Text(context.l10n.donationsPaymentMethodLabel,
+                style: AppTypography.h5),
             const SizedBox(height: AppSpacing.md),
             Column(
               children: [
@@ -77,7 +79,7 @@ class _DonationsScreenState extends State<DonationsScreen> {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 PaymentOption(
-                  label: 'Carte bancaire',
+                  label: context.l10n.paymentCard,
                   icon: Icons.credit_card,
                   iconColor: AppColors.primary,
                   selected: _method == 2,
@@ -86,12 +88,12 @@ class _DonationsScreenState extends State<DonationsScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.xl),
-            AppButton(label: 'Continuer', onPressed: () {}),
+            AppButton(label: context.l10n.actionContinue, onPressed: () {}),
             const SizedBox(height: AppSpacing.md),
-            const Center(
+            Center(
               child: IconText(
                 icon: Icons.lock_outline,
-                label: 'Vos dons sont sécurisés',
+                label: context.l10n.donationsSecure,
               ),
             ),
             const SizedBox(height: AppSpacing.xxl),

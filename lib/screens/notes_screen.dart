@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../state/repository_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -16,7 +17,7 @@ class NotesScreen extends ConsumerWidget {
     final notes = ref.watch(notesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mes notes')),
+      appBar: AppBar(title: Text(context.l10n.notesAppBarTitle)),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () {},
@@ -27,7 +28,7 @@ class NotesScreen extends ConsumerWidget {
           padding: AppSpacing.screenPadding,
           children: [
             const SizedBox(height: AppSpacing.md),
-            const AppSearchField(hint: 'Rechercher une note...'),
+            AppSearchField(hint: context.l10n.notesSearchHint),
             const SizedBox(height: AppSpacing.lg),
             for (final n in notes) ...[
               NoteCard(note: n, onTap: () {}),
