@@ -1,0 +1,34 @@
+{
+  "@@locale": "ee",
+
+  "splashTagline": "Míeɖe gbeƒã kple xɔse.",
+
+  "navHome": "Aƒe",
+  "navGroups": "Hawo",
+
+  "onboardingWelcome": "Woezɔ",
+  "actionNext": "Yi ŋgɔ",
+
+  "loginSubtitle": "Ge ɖe eme be nàyi edzi.",
+  "actionLogin": "Ge ɖe eme",
+
+  "registerSubtitle": "Va míaƒe habɔbɔ la me.",
+
+  "homeGreeting": "Ŋdi {name}! 👋",
+  "homeBlessing": "Mawu nayra wò egbe.",
+  "actionSeeAll": "Kpɔ wo katã",
+
+  "groupsTitle": "Nye hawo",
+
+  "prayersTabCommunity": "Habɔbɔ",
+
+  "anonymousLabel": "Ŋkɔ maɖemaɖe",
+
+  "logout": "Do go",
+  "settings": "Ɖoɖowo",
+  "helpSupport": "Kpekpeɖeŋu",
+
+  "donationsTitle": "Do alɔ Mawu ƒe dɔ la",
+  "actionContinue": "Yi edzi",
+  "actionSend": "Ɖo ɖa"
+}

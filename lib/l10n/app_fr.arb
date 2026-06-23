@@ -1,0 +1,144 @@
+{
+  "@@locale": "fr",
+
+  "appName": "Maison du Miracle",
+  "@appName": { "description": "Nom de l'application" },
+  "splashTagline": "Nous annonçons avec foi.",
+
+  "navHome": "Accueil",
+  "navMedia": "Médias",
+  "navGroups": "Groupes",
+  "navProfile": "Profil",
+
+  "onboardingWelcome": "Bienvenue",
+  "onboardingTitleHighlight": "Dans la Maison\ndu Miracle",
+  "onboardingSubtitle": "Une communauté vivante, connectée et engagée pour la gloire de Dieu.",
+  "actionNext": "Suivant",
+
+  "loginTitle": "Heureux de vous revoir !",
+  "loginSubtitle": "Connectez-vous pour continuer.",
+  "fieldEmailOrPhone": "Email ou numéro",
+  "fieldPassword": "Mot de passe",
+  "forgotPassword": "Mot de passe oublié ?",
+  "actionLogin": "Se connecter",
+  "orContinueWith": "Ou continuer avec",
+  "noAccountYet": "Pas encore de compte ? ",
+  "actionRegister": "S'inscrire",
+
+  "registerAppBarTitle": "Inscription",
+  "registerTitle": "Créer votre compte",
+  "registerSubtitle": "Rejoignez notre communauté.",
+  "fieldFullName": "Nom complet",
+  "fieldPhone": "Téléphone",
+  "fieldLocalBranch": "Branche locale",
+  "registerTermsPrefix": "En créant un compte, vous acceptez nos ",
+  "registerTermsLink": "Conditions d'utilisation.",
+
+  "homeGreeting": "Bonjour {name} ! 👋",
+  "@homeGreeting": {
+    "description": "Salutation d'accueil",
+    "placeholders": { "name": { "type": "String", "example": "Jean" } }
+  },
+  "homeBlessing": "Que Dieu vous bénisse aujourd'hui.",
+  "liveBannerTitle": "Culte en direct",
+  "liveBannerSubtitle": "Rejoindre maintenant",
+  "sectionUpcoming": "À venir",
+  "actionSeeAll": "Voir tout",
+  "sectionLatestTeachings": "Derniers enseignements",
+
+  "mediaTitle": "Médiathèque",
+  "mediaSearchHint": "Rechercher un enseignement...",
+  "filterAll": "Tout",
+  "filterSermons": "Prêches",
+  "filterTeachings": "Enseignements",
+  "filterMusic": "Musique",
+  "seriesTag": "Série",
+  "seriesMessagesCount": "{count} messages",
+  "@seriesMessagesCount": {
+    "placeholders": { "count": { "type": "int", "example": "5" } }
+  },
+
+  "groupsTitle": "Mes groupes",
+  "groupsDiscoverMore": "Découvrir plus de groupes",
+  "groupMembers": "{count} membres",
+  "@groupMembers": {
+    "placeholders": { "count": { "type": "int", "example": "80" } }
+  },
+  "groupMembersWithRole": "{count} membres • {role}",
+  "@groupMembersWithRole": {
+    "placeholders": {
+      "count": { "type": "int", "example": "125" },
+      "role": { "type": "String", "example": "Responsable" }
+    }
+  },
+
+  "chatMessageHint": "Votre message...",
+
+  "teachingAppBarTitle": "Enseignement",
+  "actionDownload": "Télécharger",
+  "actionMyNotes": "Mes notes",
+  "actionShare": "Partager",
+  "tabDescription": "Description",
+  "tabNotesCount": "Notes ({count})",
+  "@tabNotesCount": {
+    "placeholders": { "count": { "type": "int", "example": "12" } }
+  },
+  "actionDownloadAudio": "Télécharger l'audio",
+
+  "agendaSeeAll": "Voir tout l'agenda",
+  "weekdayMon": "Lun",
+  "weekdayTue": "Mar",
+  "weekdayWed": "Mer",
+  "weekdayThu": "Jeu",
+  "weekdayFri": "Ven",
+  "weekdaySat": "Sam",
+  "weekdaySun": "Dim",
+
+  "liveAppBarTitle": "Culte en direct",
+  "liveAudioOnly": "Audio seul",
+  "liveQuality": "Qualité",
+  "liveAboutTitle": "À propos de ce live",
+  "liveAboutBody": "Soyez bénis par la Parole de Dieu et restez connectés.",
+  "liveConnectedPeople": "{count} personnes connectées",
+  "@liveConnectedPeople": {
+    "placeholders": { "count": { "type": "String", "example": "1.2K" } }
+  },
+  "liveCommentHint": "Écrire un message...",
+
+  "prayersAppBarTitle": "Espace de prière",
+  "prayersTabMine": "Mes requêtes",
+  "prayersTabCommunity": "Communauté",
+  "prayersNewRequest": "Nouvelle requête",
+
+  "newRequestAppBarTitle": "Nouvelle requête",
+  "newRequestTypeLabel": "Type de requête",
+  "requestTypeSuggestion": "Suggestion",
+  "requestTypeComplaint": "Plainte",
+  "requestTypeReport": "Signalement",
+  "requestTypeOther": "Autre",
+  "newRequestDescribeLabel": "Décrivez votre requête",
+  "newRequestDescribeHint": "Écrivez votre message ici...",
+  "anonymousLabel": "Anonyme",
+  "anonymousSubtitle": "Votre identité restera confidentielle.",
+  "actionSend": "Envoyer",
+
+  "notesAppBarTitle": "Mes notes",
+  "notesSearchHint": "Rechercher une note...",
+
+  "profileMyBranch": "Ma branche",
+  "profileMyContributions": "Mes contributions",
+  "profileMyNotes": "Mes notes spirituelles",
+  "darkMode": "Mode sombre",
+  "settings": "Paramètres",
+  "helpSupport": "Aide & Support",
+  "logout": "Se déconnecter",
+
+  "donationsAppBarTitle": "Dons & Offrandes",
+  "donationsTitle": "Soutenez l'œuvre de Dieu",
+  "donationsSubtitle": "Donnez selon ce que Dieu met dans votre cœur.",
+  "donationsAmountLabel": "Montant",
+  "donationsPaymentMethodLabel": "Méthode de paiement",
+  "paymentCard": "Carte bancaire",
+  "actionContinue": "Continuer",
+  "donationsSecure": "Vos dons sont sécurisés"
+}
