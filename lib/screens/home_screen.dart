@@ -34,7 +34,8 @@ class HomeScreen extends StatelessWidget {
                 SectionHeader(
                   title: 'À venir',
                   actionLabel: 'Voir tout',
-                  onAction: () => Navigator.pushNamed(context, AppRoutes.agenda),
+                  onAction: () =>
+                      Navigator.pushNamed(context, AppRoutes.agenda),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 EventCard(event: SampleData.events.first),
@@ -44,8 +45,8 @@ class HomeScreen extends StatelessWidget {
                 for (final t in SampleData.teachings.take(3)) ...[
                   TeachingTile(
                     teaching: t,
-                    onTap: () => Navigator.pushNamed(
-                        context, AppRoutes.teachingDetail),
+                    onTap: () =>
+                        Navigator.pushNamed(context, AppRoutes.teachingDetail),
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],
@@ -73,7 +74,8 @@ class _GreetingHeader extends StatelessWidget {
       ),
       decoration: const BoxDecoration(
         gradient: AppColors.gradientPrimary,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppRadius.xl)),
+        borderRadius:
+            BorderRadius.vertical(bottom: Radius.circular(AppRadius.xl)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

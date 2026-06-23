@@ -33,8 +33,8 @@ class ChatBubble extends StatelessWidget {
           ),
           child: Text(message.text,
               textAlign: TextAlign.center,
-              style: AppTypography.caption
-                  .copyWith(color: palette.textSecondary)),
+              style:
+                  AppTypography.caption.copyWith(color: palette.textSecondary)),
         ),
       );
     }

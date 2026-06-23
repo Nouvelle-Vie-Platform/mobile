@@ -88,7 +88,8 @@ class _Player extends StatelessWidget {
       children: [
         const MediaThumbnail(
             height: 220, borderRadius: 0, showPlay: false, seed: 0),
-        const Positioned(top: AppSpacing.md, left: AppSpacing.md, child: LiveBadge()),
+        const Positioned(
+            top: AppSpacing.md, left: AppSpacing.md, child: LiveBadge()),
         Positioned(
           top: AppSpacing.md,
           right: AppSpacing.md,
@@ -130,8 +131,7 @@ class _Toggle extends StatelessWidget {
       decoration: BoxDecoration(
         color: selected ? palette.infoBg : palette.surface,
         borderRadius: AppRadius.field,
-        border: Border.all(
-            color: selected ? palette.primary : palette.border),
+        border: Border.all(color: selected ? palette.primary : palette.border),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

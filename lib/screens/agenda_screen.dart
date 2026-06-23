@@ -56,11 +56,11 @@ class _MonthCalendar extends StatelessWidget {
         Center(
           child: Text(d,
               style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: palette.textSecondary)),
+                  fontWeight: FontWeight.w700, color: palette.textSecondary)),
         ),
       for (var i = 0; i < leadingBlanks; i++) const SizedBox.shrink(),
-      for (var day = 1; day <= daysInMonth; day++) _DayCell(day: day, selected: day == selected),
+      for (var day = 1; day <= daysInMonth; day++)
+        _DayCell(day: day, selected: day == selected),
     ];
 
     return Container(

@@ -59,7 +59,8 @@ class AppAlert extends StatelessWidget {
     final p = context.palette;
     switch (type) {
       case AppAlertType.success:
-        return _AlertPalette(p.successBg, AppColors.success, Icons.check_circle);
+        return _AlertPalette(
+            p.successBg, AppColors.success, Icons.check_circle);
       case AppAlertType.info:
         return _AlertPalette(p.infoBg, p.primary, Icons.info);
       case AppAlertType.warning:

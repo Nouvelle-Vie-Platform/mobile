@@ -55,8 +55,7 @@ class MediaLibraryScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
           ],
           _SeriesTile(
-            onTap: () =>
-                Navigator.pushNamed(context, AppRoutes.teachingDetail),
+            onTap: () => Navigator.pushNamed(context, AppRoutes.teachingDetail),
           ),
           const SizedBox(height: AppSpacing.xxl),
         ],
@@ -94,8 +93,8 @@ class _SeriesTile extends StatelessWidget {
                   color: palette.infoBg,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
-                child: Icon(Icons.playlist_play,
-                    color: palette.primary, size: 30),
+                child:
+                    Icon(Icons.playlist_play, color: palette.primary, size: 30),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -106,7 +105,8 @@ class _SeriesTile extends StatelessWidget {
                       children: [
                         const AppChip('Série', tone: AppChipTone.info),
                         const SizedBox(width: AppSpacing.sm),
-                        Text('Vie Victorieuse', style: AppTypography.bodyStrong),
+                        Text('Vie Victorieuse',
+                            style: AppTypography.bodyStrong),
                       ],
                     ),
                     const SizedBox(height: 4),

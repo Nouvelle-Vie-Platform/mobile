@@ -44,9 +44,7 @@ class BrandLogo extends StatelessWidget {
             child: Text(
               'MAISON DU MIRACLE',
               style: AppTypography.caption.copyWith(
-                color: color == Colors.white
-                    ? AppColors.primary
-                    : Colors.white,
+                color: color == Colors.white ? AppColors.primary : Colors.white,
                 fontWeight: FontWeight.w700,
                 fontSize: size * 0.055,
                 letterSpacing: 0.5,

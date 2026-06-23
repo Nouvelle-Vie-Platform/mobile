@@ -103,9 +103,6 @@ abstract final class SampleData {
     ChatMessage(
         author: 'David', text: 'Alléluia 🙏', time: '10:36', mine: false),
     ChatMessage(
-        author: 'Sarah',
-        text: 'À samedi alors !',
-        time: '10:38',
-        mine: false),
+        author: 'Sarah', text: 'À samedi alors !', time: '10:38', mine: false),
   ];
 }

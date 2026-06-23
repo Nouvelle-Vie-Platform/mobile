@@ -21,17 +21,18 @@ class SplashScreen extends StatelessWidget {
               const Spacer(flex: 3),
               const BrandLogo(size: 200),
               const SizedBox(height: AppSpacing.xl),
-              Text('Maison du Miracle', style: AppTypography.h2.copyWith(color: Colors.white)),
+              Text('Maison du Miracle',
+                  style: AppTypography.h2.copyWith(color: Colors.white)),
               const SizedBox(height: AppSpacing.sm),
               Text('Nous annonçons avec foi.',
-                  style: AppTypography.bodyLarge.copyWith(
-                      color: Colors.white.withValues(alpha: 0.85))),
+                  style: AppTypography.bodyLarge
+                      .copyWith(color: Colors.white.withValues(alpha: 0.85))),
               const Spacer(flex: 3),
               // Bouton invisible déclenchant l'entrée (remplace l'auto-timer
               // pour rester sans état tout en restant navigable).
               TextButton(
-                onPressed: () =>
-                    Navigator.pushReplacementNamed(context, AppRoutes.onboarding),
+                onPressed: () => Navigator.pushReplacementNamed(
+                    context, AppRoutes.onboarding),
                 child: const SizedBox(
                   width: 28,
                   height: 28,

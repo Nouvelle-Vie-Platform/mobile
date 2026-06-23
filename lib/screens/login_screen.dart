@@ -65,7 +65,8 @@ class LoginScreen extends StatelessWidget {
               const Row(
                 children: [
                   Expanded(
-                    child: SocialButton(label: 'Google', icon: Icons.g_mobiledata),
+                    child:
+                        SocialButton(label: 'Google', icon: Icons.g_mobiledata),
                   ),
                   SizedBox(width: AppSpacing.md),
                   Expanded(

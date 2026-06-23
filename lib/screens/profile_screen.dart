@@ -17,7 +17,8 @@ class ProfileScreen extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        const _ProfileHeader(name: 'Jean Kossi', since: 'Membre depuis Mai 2023'),
+        const _ProfileHeader(
+            name: 'Jean Kossi', since: 'Membre depuis Mai 2023'),
         const SizedBox(height: AppSpacing.sm),
         MenuTile(
           icon: Icons.account_balance_outlined,
@@ -108,8 +109,8 @@ class _ProfileHeader extends StatelessWidget {
                 Text(since,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body.copyWith(
-                        color: Colors.white.withValues(alpha: 0.85))),
+                    style: AppTypography.body
+                        .copyWith(color: Colors.white.withValues(alpha: 0.85))),
               ],
             ),
           ),

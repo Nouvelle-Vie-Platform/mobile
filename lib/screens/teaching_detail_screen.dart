@@ -43,8 +43,10 @@ class TeachingDetailScreen extends StatelessWidget {
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _Action(icon: Icons.download_outlined, label: 'Télécharger'),
-                    _Action(icon: Icons.bookmark_add_outlined, label: 'Mes notes'),
+                    _Action(
+                        icon: Icons.download_outlined, label: 'Télécharger'),
+                    _Action(
+                        icon: Icons.bookmark_add_outlined, label: 'Mes notes'),
                     _Action(icon: Icons.share_outlined, label: 'Partager'),
                   ],
                 ),
@@ -90,7 +92,8 @@ class _Action extends StatelessWidget {
         Icon(icon, color: palette.primary),
         const SizedBox(height: 4),
         Text(label,
-            style: AppTypography.caption.copyWith(color: palette.textSecondary)),
+            style:
+                AppTypography.caption.copyWith(color: palette.textSecondary)),
       ],
     );
   }
@@ -123,8 +126,7 @@ class _Tab extends StatelessWidget {
       children: [
         Text(label,
             style: AppTypography.bodyStrong.copyWith(
-                color:
-                    selected ? palette.primary : palette.textSecondary)),
+                color: selected ? palette.primary : palette.textSecondary)),
         const SizedBox(height: 6),
         Container(
           height: 2,
