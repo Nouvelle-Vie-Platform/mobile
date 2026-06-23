@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../data/sample_data.dart';
-import '../routes.dart';
+import '../router/app_router.dart';
+import '../state/repository_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -10,11 +12,14 @@ import '../widgets/cards/teaching_tile.dart';
 import '../widgets/section_header.dart';
 
 /// Onglet « Accueil » : salutation, live, prochains événements et enseignements.
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final events = ref.watch(eventsProvider);
+    final teachings = ref.watch(teachingsProvider);
+
     return SafeArea(
       bottom: false,
       child: ListView(
@@ -28,25 +33,26 @@ class HomeScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: AppSpacing.lg),
                 _LiveBanner(
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.live),
+                  onTap: () => context.pushNamed(AppRoute.live),
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 SectionHeader(
                   title: 'À venir',
                   actionLabel: 'Voir tout',
-                  onAction: () =>
-                      Navigator.pushNamed(context, AppRoutes.agenda),
+                  onAction: () => context.pushNamed(AppRoute.agenda),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                EventCard(event: SampleData.events.first),
+                EventCard(event: events.first),
                 const SizedBox(height: AppSpacing.xl),
                 const SectionHeader(title: 'Derniers enseignements'),
                 const SizedBox(height: AppSpacing.md),
-                for (final t in SampleData.teachings.take(3)) ...[
+                for (final t in teachings.take(3)) ...[
                   TeachingTile(
                     teaching: t,
-                    onTap: () =>
-                        Navigator.pushNamed(context, AppRoutes.teachingDetail),
+                    onTap: () => context.pushNamed(
+                      AppRoute.teachingDetail,
+                      extra: t,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],

@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/sample_data.dart';
+import '../models/models.dart';
+import '../state/repository_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/chat_bubble.dart';
 
 /// Écran de discussion de groupe (messagerie).
-class GroupChatScreen extends StatelessWidget {
-  const GroupChatScreen({super.key});
+class GroupChatScreen extends ConsumerWidget {
+  const GroupChatScreen({super.key, required this.group});
+
+  final CommunityGroup group;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messages = ref.watch(chatProvider(group));
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Jeunesse Nouvelle Vie')),
+      appBar: AppBar(title: Text(group.name)),
       body: Column(
         children: [
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
-                for (final m in SampleData.chat) ChatBubble(message: m),
+                for (final m in messages) ChatBubble(message: m),
               ],
             ),
           ),

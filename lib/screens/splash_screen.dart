@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../routes.dart';
+import '../router/app_router.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -31,8 +32,7 @@ class SplashScreen extends StatelessWidget {
               // Bouton invisible déclenchant l'entrée (remplace l'auto-timer
               // pour rester sans état tout en restant navigable).
               TextButton(
-                onPressed: () => Navigator.pushReplacementNamed(
-                    context, AppRoutes.onboarding),
+                onPressed: () => context.goNamed(AppRoute.onboarding),
                 child: const SizedBox(
                   width: 28,
                   height: 28,

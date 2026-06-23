@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../routes.dart';
+import '../router/app_router.dart';
+import '../state/theme_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
-import '../theme/theme_controller.dart';
 import '../widgets/app_avatar.dart';
 import '../widgets/menu_tile.dart';
 
 /// Onglet « Profil » : en-tête membre et menu de réglages.
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(themeModeProvider);
+    final dark = isDarkModeActive(mode, context);
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
@@ -30,27 +35,27 @@ class ProfileScreen extends StatelessWidget {
         MenuTile(
           icon: Icons.volunteer_activism_outlined,
           label: 'Mes contributions',
-          onTap: () => Navigator.pushNamed(context, AppRoutes.donations),
+          onTap: () => context.pushNamed(AppRoute.donations),
         ),
         const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
         MenuTile(
           icon: Icons.menu_book_outlined,
           label: 'Mes notes spirituelles',
-          onTap: () => Navigator.pushNamed(context, AppRoutes.notes),
+          onTap: () => context.pushNamed(AppRoute.notes),
         ),
         const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-        ValueListenableBuilder<ThemeMode>(
-          valueListenable: themeModeNotifier,
-          builder: (context, _, __) => MenuTile(
-            icon: Icons.dark_mode_outlined,
-            label: 'Mode sombre',
-            showChevron: false,
-            onTap: () => toggleTheme(context),
-            trailing: Switch.adaptive(
-              value: isDarkMode(context),
-              onChanged: (_) => toggleTheme(context),
-              activeTrackColor: AppColors.secondary,
-            ),
+        MenuTile(
+          icon: Icons.dark_mode_outlined,
+          label: 'Mode sombre',
+          showChevron: false,
+          onTap: () =>
+              ref.read(themeModeProvider.notifier).toggle(platformIsDark: dark),
+          trailing: Switch.adaptive(
+            value: dark,
+            onChanged: (_) => ref
+                .read(themeModeProvider.notifier)
+                .toggle(platformIsDark: dark),
+            activeTrackColor: AppColors.secondary,
           ),
         ),
         const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
@@ -64,8 +69,7 @@ class ProfileScreen extends StatelessWidget {
           icon: Icons.logout,
           label: 'Se déconnecter',
           destructive: true,
-          onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context, AppRoutes.login, (_) => false),
+          onTap: () => context.goNamed(AppRoute.login),
         ),
         const SizedBox(height: AppSpacing.xxl),
       ],

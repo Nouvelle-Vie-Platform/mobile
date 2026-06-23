@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/sample_data.dart';
+import '../state/repository_providers.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -8,11 +9,13 @@ import '../widgets/app_button.dart';
 import '../widgets/cards/event_card.dart';
 
 /// Écran « Agenda » : calendrier mensuel et liste d'événements.
-class AgendaScreen extends StatelessWidget {
+class AgendaScreen extends ConsumerWidget {
   const AgendaScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final events = ref.watch(eventsProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Mai 2024')),
       body: ListView(
@@ -21,7 +24,7 @@ class AgendaScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           const _MonthCalendar(daysInMonth: 31, leadingBlanks: 2, selected: 24),
           const SizedBox(height: AppSpacing.xl),
-          for (final e in SampleData.events) ...[
+          for (final e in events) ...[
             EventCard(event: e),
             const SizedBox(height: AppSpacing.md),
           ],

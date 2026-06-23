@@ -1,19 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../data/sample_data.dart';
-import '../routes.dart';
+import '../router/app_router.dart';
+import '../state/repository_providers.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/app_button.dart';
 import '../widgets/cards/prayer_request_card.dart';
 import '../widgets/segmented_tabs.dart';
 
 /// Écran « Espace de prière » : onglets Mes requêtes / Communauté.
-class PrayerRequestsScreen extends StatelessWidget {
+class PrayerRequestsScreen extends ConsumerStatefulWidget {
   const PrayerRequestsScreen({super.key});
 
   @override
+  ConsumerState<PrayerRequestsScreen> createState() =>
+      _PrayerRequestsScreenState();
+}
+
+class _PrayerRequestsScreenState extends ConsumerState<PrayerRequestsScreen> {
+  int _tab = 0;
+
+  @override
   Widget build(BuildContext context) {
-    final tab = ValueNotifier<int>(0);
+    final prayers = ref.watch(prayersProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Espace de prière')),
@@ -25,13 +35,10 @@ class PrayerRequestsScreen extends StatelessWidget {
               child: Column(
                 children: [
                   const SizedBox(height: AppSpacing.md),
-                  ValueListenableBuilder<int>(
-                    valueListenable: tab,
-                    builder: (context, value, _) => SegmentedTabs(
-                      tabs: const ['Mes requêtes', 'Communauté'],
-                      selected: value,
-                      onSelect: (i) => tab.value = i,
-                    ),
+                  SegmentedTabs(
+                    tabs: const ['Mes requêtes', 'Communauté'],
+                    selected: _tab,
+                    onSelect: (i) => setState(() => _tab = i),
                   ),
                 ],
               ),
@@ -41,7 +48,7 @@ class PrayerRequestsScreen extends StatelessWidget {
                 padding: AppSpacing.screenPadding,
                 children: [
                   const SizedBox(height: AppSpacing.lg),
-                  for (final p in SampleData.prayers) ...[
+                  for (final p in prayers) ...[
                     PrayerRequestCard(request: p),
                     const SizedBox(height: AppSpacing.md),
                   ],
@@ -49,8 +56,7 @@ class PrayerRequestsScreen extends StatelessWidget {
                   AppButton(
                     label: 'Nouvelle requête',
                     icon: Icons.add,
-                    onPressed: () =>
-                        Navigator.pushNamed(context, AppRoutes.newRequest),
+                    onPressed: () => context.pushNamed(AppRoute.newRequest),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                 ],

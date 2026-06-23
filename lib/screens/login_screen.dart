@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../routes.dart';
+import '../router/app_router.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -56,8 +57,7 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               AppButton(
                 label: 'Se connecter',
-                onPressed: () =>
-                    Navigator.pushReplacementNamed(context, AppRoutes.home),
+                onPressed: () => context.goNamed(AppRoute.home),
               ),
               const SizedBox(height: AppSpacing.xl),
               const _OrDivider(),
@@ -82,8 +82,7 @@ class LoginScreen extends StatelessWidget {
                         style: AppTypography.body
                             .copyWith(color: palette.textSecondary)),
                     GestureDetector(
-                      onTap: () =>
-                          Navigator.pushNamed(context, AppRoutes.register),
+                      onTap: () => context.pushNamed(AppRoute.register),
                       child: Text('S\'inscrire',
                           style: AppTypography.bodyStrong
                               .copyWith(color: palette.primary)),

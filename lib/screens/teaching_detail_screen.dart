@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/models.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -9,7 +10,9 @@ import '../widgets/media_thumbnail.dart';
 
 /// Écran de détail d'un enseignement (vidéo, actions, description).
 class TeachingDetailScreen extends StatelessWidget {
-  const TeachingDetailScreen({super.key});
+  const TeachingDetailScreen({super.key, required this.teaching});
+
+  final Teaching teaching;
 
   @override
   Widget build(BuildContext context) {
@@ -17,22 +20,21 @@ class TeachingDetailScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Enseignement')),
       body: ListView(
         children: [
-          const MediaThumbnail(height: 210, borderRadius: 0, seed: 1),
+          MediaThumbnail(height: 210, borderRadius: 0, seed: teaching.seed),
           Padding(
             padding: AppSpacing.screenPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: AppSpacing.lg),
-                Text('La foi qui déplace les montagnes',
-                    style: AppTypography.h3),
+                Text(teaching.title, style: AppTypography.h3),
                 const SizedBox(height: AppSpacing.sm),
-                const Row(
+                Row(
                   children: [
                     IconText(
-                        icon: Icons.person_outline, label: 'Pasteur Samuel'),
-                    SizedBox(width: AppSpacing.lg),
-                    IconText(icon: Icons.schedule, label: '36:10'),
+                        icon: Icons.person_outline, label: teaching.author),
+                    const SizedBox(width: AppSpacing.lg),
+                    IconText(icon: Icons.schedule, label: teaching.duration),
                   ],
                 ),
                 const SizedBox(height: 4),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../routes.dart';
+import '../router/app_router.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -41,8 +42,7 @@ class RegisterScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.xxl),
               AppButton(
                 label: 'S\'inscrire',
-                onPressed: () =>
-                    Navigator.pushReplacementNamed(context, AppRoutes.home),
+                onPressed: () => context.goNamed(AppRoute.home),
               ),
               const SizedBox(height: AppSpacing.lg),
               Center(

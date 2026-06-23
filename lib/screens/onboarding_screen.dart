@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../routes.dart';
+import '../router/app_router.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -65,8 +66,7 @@ class OnboardingScreen extends StatelessWidget {
                             label: 'Suivant',
                             expand: false,
                             trailingIcon: Icons.arrow_forward,
-                            onPressed: () => Navigator.pushReplacementNamed(
-                                context, AppRoutes.login),
+                            onPressed: () => context.goNamed(AppRoute.login),
                           ),
                         ],
                       ),

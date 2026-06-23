@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../data/sample_data.dart';
-import '../routes.dart';
+import '../router/app_router.dart';
+import '../state/repository_providers.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -10,14 +12,21 @@ import '../widgets/app_text_field.dart';
 import '../widgets/cards/teaching_tile.dart';
 
 /// Onglet « Médiathèque » : recherche, filtres et liste d'enseignements.
-class MediaLibraryScreen extends StatelessWidget {
+class MediaLibraryScreen extends ConsumerStatefulWidget {
   const MediaLibraryScreen({super.key});
 
+  @override
+  ConsumerState<MediaLibraryScreen> createState() => _MediaLibraryScreenState();
+}
+
+class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
   static const _filters = ['Tout', 'Prêches', 'Enseignements', 'Musique'];
+
+  int _selectedFilter = 0;
 
   @override
   Widget build(BuildContext context) {
-    final selectedFilter = ValueNotifier<int>(0);
+    final teachings = ref.watch(teachingsProvider);
 
     return SafeArea(
       child: ListView(
@@ -30,32 +39,30 @@ class MediaLibraryScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           SizedBox(
             height: 36,
-            child: ValueListenableBuilder<int>(
-              valueListenable: selectedFilter,
-              builder: (context, selected, _) => ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _filters.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: AppSpacing.sm),
-                itemBuilder: (context, i) => FilterChipButton(
-                  label: _filters[i],
-                  selected: i == selected,
-                  onTap: () => selectedFilter.value = i,
-                ),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _filters.length,
+              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+              itemBuilder: (context, i) => FilterChipButton(
+                label: _filters[i],
+                selected: i == _selectedFilter,
+                onTap: () => setState(() => _selectedFilter = i),
               ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          for (final t in SampleData.teachings) ...[
+          for (final t in teachings) ...[
             TeachingTile(
               teaching: t,
-              onTap: () =>
-                  Navigator.pushNamed(context, AppRoutes.teachingDetail),
+              onTap: () => context.pushNamed(AppRoute.teachingDetail, extra: t),
             ),
             const SizedBox(height: AppSpacing.md),
           ],
           _SeriesTile(
-            onTap: () => Navigator.pushNamed(context, AppRoutes.teachingDetail),
+            onTap: () => context.pushNamed(
+              AppRoute.teachingDetail,
+              extra: teachings.first,
+            ),
           ),
           const SizedBox(height: AppSpacing.xxl),
         ],
