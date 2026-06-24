@@ -1,102 +1,123 @@
-# Maison du Miracle — App mobile Flutter
+# Maison du Miracle 📱
 
-Implémentation Flutter des maquettes de l'**Église Évangélique Nouvelle Vie –
-Maison du Miracle**, fidèle au système de design fourni (couleurs, typographie
-Montserrat, composants, écrans).
+Application mobile de l'**Église Évangélique Nouvelle Vie – Maison du Miracle**.
+Construite avec **Flutter**, elle rassemble la vie de l'église : cultes à venir,
+enseignements, médiathèque, communauté, espace de prière, dons et annonces.
 
-## Principes d'architecture
+> ⚠️ État actuel : **maquette fonctionnelle**. L'interface et la navigation sont
+> complètes, mais les données sont fictives et l'authentification est simulée
+> (voir la feuille de route en bas de page).
 
-- **Thème centralisé** : toute la charte vit dans [`lib/theme/`](lib/theme/)
-  (couleurs, typographie, espacements, rayons, ombres, `ThemeData`).
-- **Composants réutilisables** : chaque élément du design system est un widget
-  dédié dans [`lib/widgets/`](lib/widgets/) ; les écrans ne font que les
-  composer.
-- **Aucun `StatefulWidget`** : tout est `StatelessWidget`. L'état local
-  (onglet courant, sélection de filtres/montants, switch) est porté par des
-  `ValueNotifier` lus via `ValueListenableBuilder`.
-- **Mode clair / sombre** : les couleurs de marque restent fixes ; les
-  couleurs de surface/texte/bordure s'adaptent via un `ThemeExtension`
-  ([`AppPalette`](lib/theme/app_palette.dart)), accédé par `context.palette`.
-  Le basculement se fait via [`themeModeNotifier`](lib/theme/theme_controller.dart)
-  (réglage dans l'onglet **Profil → Mode sombre**, suit le système par défaut).
-- **Responsive** : marges fluides, contenus scrollables (`ListView` /
-  `SingleChildScrollView`), `Expanded`/`Flexible` pour éviter les débordements,
-  `SafeArea`, et l'onboarding bascule en défilement sur les petits écrans
-  (`LayoutBuilder` + `ConstrainedBox`).
+## ✨ Fonctionnalités
 
-## Structure
+- **Accueil** — en-tête ondulé, évènements « à venir » et derniers enseignements.
+- **Médiathèque** — façon « Découverte » : carrousel phare, sections, recherche.
+- **Lecteur d'enseignement** — immersif, habillé par la couleur/image de chaque
+  message, avec demi-feuille de détails (description, versets).
+- **Communauté** — onglets Groupes · Inbox · Requêtes de prière.
+- **Discussion de groupe** — messagerie (bulles, accusés de lecture, annonces).
+- **Annonces** de l'église.
+- **Profil** — en-tête de marque, raccourcis, réglages (dont mode sombre).
+- **Multilingue** — français, anglais, éwé (partiel).
+- **Thème clair/sombre** + **glassmorphisme** (fond dégradé, cartes en verre dépoli).
 
-```
-lib/
-├── main.dart                 # Point d'entrée + MaterialApp
-├── routes.dart               # Table de routage
-├── theme/                    # Charte graphique (thème dédié)
-│   ├── app_colors.dart
-│   ├── app_typography.dart   # Atkinson Hyperlegible (police embarquée)
-│   ├── app_spacing.dart      # Espacements, rayons, ombres
-│   └── app_theme.dart
-├── models/models.dart        # Modèles de données immuables
-├── data/sample_data.dart     # Contenu de démonstration
-├── widgets/                  # Bibliothèque de composants
-│   ├── app_button.dart       # Boutons (primaire/secondaire/accent/outline)
-│   ├── app_text_field.dart   # Champs + barre de recherche
-│   ├── app_chip.dart         # Chips, badges, LIVE, filtres
-│   ├── app_card.dart         # Carte de base
-│   ├── app_alert.dart        # Alertes (succès/info/attention/erreur)
-│   ├── app_avatar.dart       # Avatar à initiales
-│   ├── app_bottom_nav.dart   # Barre de navigation + FAB central
-│   ├── segmented_tabs.dart   # Onglets segmentés
-│   ├── selectable_option.dart# Radio / montant / paiement
-│   ├── menu_tile.dart        # Lignes de menu + switch
-│   ├── chat_bubble.dart      # Bulles de discussion
-│   ├── media_thumbnail.dart  # Vignette média
-│   └── cards/                # Cartes métier (événement, enseignement, …)
-└── screens/                  # 16 écrans (composent les widgets ci-dessus)
-    ├── splash_screen.dart        ├── groups_screen.dart
-    ├── onboarding_screen.dart    ├── group_chat_screen.dart
-    ├── login_screen.dart         ├── agenda_screen.dart
-    ├── register_screen.dart      ├── prayer_requests_screen.dart
-    ├── home_shell.dart           ├── new_request_screen.dart
-    ├── home_screen.dart          ├── donations_screen.dart
-    ├── media_library_screen.dart ├── profile_screen.dart
-    ├── teaching_detail_screen.dart── notes_screen.dart
-    └── live_screen.dart
-```
+## 🚀 Démarrage
 
-## Charte (rappel)
-
-| Rôle | Couleur |
-|------|---------|
-| Primaire | `#223B8C` |
-| Secondaire | `#00A693` |
-| Accent | `#F8D05E` |
-| Neutre foncé | `#1A1A1A` |
-
-Typographie : **Atkinson Hyperlegible** (embarquée, « highly legible
-sans-serif ») — H1 32/40, H2 24/32, H3 20/28, H4 18/24, H5 16/24.
-La famille fournit Regular (400) et Bold (700) ; les graisses intermédiaires
-sont résolues vers la plus proche par Flutter.
-
-## Compatibilité (portée maximale)
-
-Versions minimales avec Flutter 3.44 :
-
-| Plateforme | Minimum | Couverture parc |
-|---|---|---|
-| **Android** | **6.0 (API 23)** — `minSdk = 23` dans `android/app/build.gradle.kts` | ~98 % |
-| **iOS** | **13.0** — `IPHONEOS_DEPLOYMENT_TARGET` dans le projet Xcode | ~98 % |
-
-> Flutter 3.44 impose ces planchers (en dessous d'API 23, le build échoue ;
-> iOS < 13 n'est plus supporté par le moteur). `minSdk 23` déclenche un simple
-> avertissement Gradle — passer à `24` (Android 7.0) pour un build sans warning.
-
-## Lancer le projet
+Prérequis : [Flutter](https://docs.flutter.dev/get-started/install) **3.44+**
+(Dart 3.6+).
 
 ```bash
 flutter pub get
-flutter run
+
+# Lancer l'app
+flutter run -d chrome     # navigateur (le plus simple)
+flutter run -d <id>       # simulateur iOS / émulateur Android / appareil
+
+# Qualité
+flutter analyze
+flutter test
+dart format .
 ```
 
-> La police est déclarée dans `pubspec.yaml` (section `fonts`) et chargée
-> depuis `assets/fonts/Atkinson_Hyperlegible/` — aucun téléchargement réseau,
-> fonctionne hors-ligne.
+> Émulateur Android : nécessite un **JDK 17 ou 21** (le JDK 26 fait échouer le
+> build Gradle). Configurer avec `flutter config --jdk-dir <chemin>`.
+
+## 🏗️ Architecture
+
+Architecture en couches, pensée pour brancher un vrai backend sans toucher l'UI.
+
+| Couche | Rôle |
+|---|---|
+| `models/` | Modèles de données immuables |
+| `data/` | `SampleData` + `ChurchRepository` (abstraction + impl. en mémoire) |
+| `state/` | Providers **Riverpod** (repository, données, thème) |
+| `router/` | **go_router** (`routerProvider`, routes nommées, arguments typés) |
+| `theme/` | Couleurs, palette adaptative, typographie, espacements |
+| `screens/` | Écrans (un par fichier) |
+| `widgets/` | Composants partagés (`cards/`, `chat/`) |
+| `l10n/` | Traductions (ARB + génération) |
+
+**Gestion d'état** : [Riverpod](https://riverpod.dev) pour l'état partagé
+(thème, données, routeur) ; `StatefulWidget` pour l'état local éphémère.
+
+**Brancher un backend** : fournir une nouvelle implémentation de
+`ChurchRepository` et surcharger `churchRepositoryProvider`. Aucun écran ne
+change.
+
+```text
+lib/
+├── main.dart            # ProviderScope + MaisonDuMiracleApp
+├── app.dart             # MaterialApp.router
+├── data/                # modèles via repository
+├── state/               # providers Riverpod
+├── router/app_router.dart
+├── theme/               # design system (couleurs, palette, typo, spacing)
+├── screens/             # écrans
+├── widgets/             # composants réutilisables (cards/, chat/)
+└── l10n/                # internationalisation
+```
+
+## 🌍 Internationalisation
+
+Basée sur `flutter_localizations` + `gen-l10n`. Le **français** (`app_fr.arb`)
+est la langue modèle ; l'anglais est complet, l'éwé partiel (repli français).
+
+```bash
+# Après toute modification d'un fichier .arb :
+flutter gen-l10n
+```
+
+Dans le code : `context.l10n.maCle`.
+
+## 🎨 Design system
+
+- Police **Atkinson Hyperlegible** (lisibilité).
+- Couleurs et dégradés de marque dans `theme/app_colors.dart`.
+- Palette adaptative clair/sombre via `context.palette`.
+- Composants signature : `BrandAppBar` (en-têtes), `AppCard` (verre dépoli),
+  `AppBackground` (fond dégradé global), `TeachingCover`.
+
+## ✅ Tests & CI
+
+Tests « smoke » sous `test/` (montage des écrans, navigation, i18n). Une
+**GitHub Action** (`.github/workflows/flutter-ci.yml`) vérifie le formatage,
+l'analyse statique et les tests à chaque push/PR.
+
+## 🗺️ Feuille de route
+
+- [ ] Backend & authentification réels (derrière `ChurchRepository`)
+- [ ] Dons / paiement (mobile money, carte)
+- [ ] Notifications push
+- [ ] Finaliser l'habillage des écrans restants (onboarding, connexion, live…)
+- [ ] Couverture de tests étendue
+- [ ] Icône et écran de lancement natifs
+
+## 🤝 Contribution
+
+- Commits **canoniques** : un par fonctionnalité, préfixes conventionnels
+  (`feat`, `fix`, `chore`, `refactor`).
+- `flutter analyze` à 0 problème et `flutter test` au vert avant de pousser.
+
+---
+
+Conventions détaillées pour le développement assisté : voir [CLAUDE.md](CLAUDE.md).
