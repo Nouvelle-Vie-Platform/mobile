@@ -142,6 +142,18 @@ abstract class AppLocalizations {
   /// **'Profil'**
   String get navProfile;
 
+  /// No description provided for @navAgenda.
+  ///
+  /// In fr, this message translates to:
+  /// **'Agenda'**
+  String get navAgenda;
+
+  /// No description provided for @navDonations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dons'**
+  String get navDonations;
+
   /// No description provided for @announcementsTitle.
   ///
   /// In fr, this message translates to:
@@ -663,6 +675,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Rechercher une note...'**
   String get notesSearchHint;
+
+  /// No description provided for @profileRole.
+  ///
+  /// In fr, this message translates to:
+  /// **'Membre Nouvelle Vie'**
+  String get profileRole;
+
+  /// No description provided for @profileEdit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get profileEdit;
+
+  /// No description provided for @profileStatServices.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cultes'**
+  String get profileStatServices;
+
+  /// No description provided for @profileStatNotes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notes'**
+  String get profileStatNotes;
 
   /// No description provided for @profileMyBranch.
   ///

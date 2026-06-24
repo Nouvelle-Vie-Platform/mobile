@@ -9,6 +9,8 @@
   "navAnnouncements": "Announcements",
   "navGroups": "Groups",
   "navProfile": "Profile",
+  "navAgenda": "Agenda",
+  "navDonations": "Giving",
 
   "announcementsTitle": "Announcements",
 
@@ -111,6 +113,10 @@
   "notesAppBarTitle": "My notes",
   "notesSearchHint": "Search for a note...",
 
+  "profileRole": "New Life member",
+  "profileEdit": "Edit",
+  "profileStatServices": "Services",
+  "profileStatNotes": "Notes",
   "profileMyBranch": "My branch",
   "profileMyContributions": "My contributions",
   "profileMyNotes": "My spiritual notes",

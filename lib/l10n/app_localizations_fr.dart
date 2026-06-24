@@ -30,6 +30,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navProfile => 'Profil';
 
   @override
+  String get navAgenda => 'Agenda';
+
+  @override
+  String get navDonations => 'Dons';
+
+  @override
   String get announcementsTitle => 'Annonces';
 
   @override
@@ -303,6 +309,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get notesSearchHint => 'Rechercher une note...';
+
+  @override
+  String get profileRole => 'Membre Nouvelle Vie';
+
+  @override
+  String get profileEdit => 'Modifier';
+
+  @override
+  String get profileStatServices => 'Cultes';
+
+  @override
+  String get profileStatNotes => 'Notes';
 
   @override
   String get profileMyBranch => 'Ma branche';
