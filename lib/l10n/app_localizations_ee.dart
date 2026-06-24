@@ -92,7 +92,7 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String homeGreeting(String name) {
-    return 'Ŋdi $name! 👋';
+    return 'Ŋdi $name!';
   }
 
   @override
@@ -106,6 +106,12 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get sectionUpcoming => 'À venir';
+
+  @override
+  String get sectionUpcomingServices => 'Cultes à venir';
+
+  @override
+  String get homeWatchLive => 'Regarder le direct';
 
   @override
   String get actionSeeAll => 'Kpɔ wo katã';
@@ -144,6 +150,15 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get groupsDiscoverMore => 'Découvrir plus de groupes';
+
+  @override
+  String get communityTitle => 'Communauté';
+
+  @override
+  String get communityTabInbox => 'Inbox';
+
+  @override
+  String get communityTabRequests => 'Requêtes';
 
   @override
   String groupMembers(int count) {

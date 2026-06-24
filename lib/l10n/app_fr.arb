@@ -34,7 +34,7 @@
   "registerTermsPrefix": "En créant un compte, vous acceptez nos ",
   "registerTermsLink": "Conditions d'utilisation.",
 
-  "homeGreeting": "Bonjour {name} ! 👋",
+  "homeGreeting": "Bonjour {name} !",
   "@homeGreeting": {
     "description": "Salutation d'accueil",
     "placeholders": { "name": { "type": "String", "example": "Jean" } }
@@ -43,6 +43,8 @@
   "liveBannerTitle": "Culte en direct",
   "liveBannerSubtitle": "Rejoindre maintenant",
   "sectionUpcoming": "À venir",
+  "sectionUpcomingServices": "Cultes à venir",
+  "homeWatchLive": "Regarder le direct",
   "actionSeeAll": "Voir tout",
   "sectionLatestTeachings": "Derniers enseignements",
 
@@ -60,6 +62,9 @@
 
   "groupsTitle": "Mes groupes",
   "groupsDiscoverMore": "Découvrir plus de groupes",
+  "communityTitle": "Communauté",
+  "communityTabInbox": "Inbox",
+  "communityTabRequests": "Requêtes",
   "groupMembers": "{count} membres",
   "@groupMembers": {
     "placeholders": { "count": { "type": "int", "example": "80" } }

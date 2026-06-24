@@ -21,7 +21,7 @@ class ProfileScreen extends ConsumerWidget {
     final dark = isDarkModeActive(mode, context);
 
     return ListView(
-      padding: EdgeInsets.zero,
+      padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
       children: [
         const _ProfileHeader(
             name: 'Jean Kossi', since: 'Membre depuis Mai 2023'),

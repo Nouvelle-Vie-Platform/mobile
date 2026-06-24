@@ -265,7 +265,7 @@ abstract class AppLocalizations {
   /// Salutation d'accueil
   ///
   /// In fr, this message translates to:
-  /// **'Bonjour {name} ! 👋'**
+  /// **'Bonjour {name} !'**
   String homeGreeting(String name);
 
   /// No description provided for @homeBlessing.
@@ -291,6 +291,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'À venir'**
   String get sectionUpcoming;
+
+  /// No description provided for @sectionUpcomingServices.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cultes à venir'**
+  String get sectionUpcomingServices;
+
+  /// No description provided for @homeWatchLive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Regarder le direct'**
+  String get homeWatchLive;
 
   /// No description provided for @actionSeeAll.
   ///
@@ -363,6 +375,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Découvrir plus de groupes'**
   String get groupsDiscoverMore;
+
+  /// No description provided for @communityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Communauté'**
+  String get communityTitle;
+
+  /// No description provided for @communityTabInbox.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inbox'**
+  String get communityTabInbox;
+
+  /// No description provided for @communityTabRequests.
+  ///
+  /// In fr, this message translates to:
+  /// **'Requêtes'**
+  String get communityTabRequests;
 
   /// No description provided for @groupMembers.
   ///

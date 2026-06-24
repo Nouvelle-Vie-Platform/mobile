@@ -33,11 +33,13 @@
   "registerTermsPrefix": "By creating an account, you accept our ",
   "registerTermsLink": "Terms of use.",
 
-  "homeGreeting": "Hello {name}! 👋",
+  "homeGreeting": "Hello {name}!",
   "homeBlessing": "May God bless you today.",
   "liveBannerTitle": "Live service",
   "liveBannerSubtitle": "Join now",
   "sectionUpcoming": "Upcoming",
+  "sectionUpcomingServices": "Upcoming services",
+  "homeWatchLive": "Watch live",
   "actionSeeAll": "See all",
   "sectionLatestTeachings": "Latest teachings",
 
@@ -52,6 +54,9 @@
 
   "groupsTitle": "My groups",
   "groupsDiscoverMore": "Discover more groups",
+  "communityTitle": "Community",
+  "communityTabInbox": "Inbox",
+  "communityTabRequests": "Requests",
   "groupMembers": "{count} members",
   "groupMembersWithRole": "{count} members • {role}",
 

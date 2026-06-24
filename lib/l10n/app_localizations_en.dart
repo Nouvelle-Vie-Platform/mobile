@@ -92,7 +92,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String homeGreeting(String name) {
-    return 'Hello $name! 👋';
+    return 'Hello $name!';
   }
 
   @override
@@ -106,6 +106,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sectionUpcoming => 'Upcoming';
+
+  @override
+  String get sectionUpcomingServices => 'Upcoming services';
+
+  @override
+  String get homeWatchLive => 'Watch live';
 
   @override
   String get actionSeeAll => 'See all';
@@ -144,6 +150,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupsDiscoverMore => 'Discover more groups';
+
+  @override
+  String get communityTitle => 'Community';
+
+  @override
+  String get communityTabInbox => 'Inbox';
+
+  @override
+  String get communityTabRequests => 'Requests';
 
   @override
   String groupMembers(int count) {

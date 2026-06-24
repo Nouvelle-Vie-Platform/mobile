@@ -55,4 +55,26 @@ abstract final class AppColors {
     end: Alignment.bottomRight,
     colors: [Color(0xFF12BCA6), Color(0xFF008C7C)],
   );
+
+  /// Dégradé de l'en-tête d'accueil : variations douces autour du bleu primaire
+  /// (du bleu un peu plus clair vers un bleu plus profond), sans teal.
+  static const LinearGradient gradientHeader = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF2A4AA8), primary, Color(0xFF1B2E6E)],
+  );
+
+  // --- Fonds « glass » : dégradés très doux derrière toute l'application, ----
+  // pour que les surfaces translucides (cartes, barre de nav) « lisent ».
+  static const LinearGradient gradientAppLight = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFEAF4F6), Color(0xFFF1F0FB), Color(0xFFFCFDFE)],
+  );
+
+  static const LinearGradient gradientAppDark = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF0C1422), Color(0xFF0F1322), Color(0xFF0B0F1A)],
+  );
 }

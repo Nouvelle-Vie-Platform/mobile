@@ -34,8 +34,13 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
     ];
 
     return SafeArea(
+      bottom: false,
       child: ListView(
-        padding: AppSpacing.screenPadding,
+        padding: EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
+        ),
         children: [
           const SizedBox(height: AppSpacing.md),
           Text(context.l10n.mediaTitle, style: AppTypography.h2),
