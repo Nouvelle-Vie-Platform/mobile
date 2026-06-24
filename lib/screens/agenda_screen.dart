@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/brand_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/l10n_extension.dart';
@@ -18,7 +19,7 @@ class AgendaScreen extends ConsumerWidget {
     final events = ref.watch(eventsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mai 2024')),
+      appBar: const BrandAppBar(title: 'Mai 2024'),
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [

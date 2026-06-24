@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/brand_app_bar.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/l10n_extension.dart';
@@ -18,7 +19,7 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Scaffold(
-      appBar: AppBar(),
+      appBar: const BrandAppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: AppSpacing.screenPadding,

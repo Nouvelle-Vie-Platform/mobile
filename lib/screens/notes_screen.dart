@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/brand_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/l10n_extension.dart';
@@ -17,7 +18,7 @@ class NotesScreen extends ConsumerWidget {
     final notes = ref.watch(notesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.notesAppBarTitle)),
+      appBar: BrandAppBar(title: context.l10n.notesAppBarTitle),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () {},

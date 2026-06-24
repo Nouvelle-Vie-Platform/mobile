@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/brand_app_bar.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/l10n_extension.dart';
@@ -17,7 +18,7 @@ class RegisterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.registerAppBarTitle)),
+      appBar: BrandAppBar(title: context.l10n.registerAppBarTitle),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: AppSpacing.screenPadding,

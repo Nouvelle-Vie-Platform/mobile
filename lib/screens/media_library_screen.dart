@@ -10,9 +10,10 @@ import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_chip.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/brand_app_bar.dart';
 import '../widgets/cards/teaching_tile.dart';
 
-/// Onglet « Médiathèque » : recherche, filtres et liste d'enseignements.
+/// Écran « Médiathèque » : recherche, filtres et liste d'enseignements.
 class MediaLibraryScreen extends ConsumerStatefulWidget {
   const MediaLibraryScreen({super.key});
 
@@ -33,49 +34,52 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
       context.l10n.filterMusic,
     ];
 
-    return SafeArea(
-      bottom: false,
-      child: ListView(
-        padding: EdgeInsets.only(
-          left: AppSpacing.lg,
-          right: AppSpacing.lg,
-          bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
-        ),
-        children: [
-          const SizedBox(height: AppSpacing.md),
-          Text(context.l10n.mediaTitle, style: AppTypography.h2),
-          const SizedBox(height: AppSpacing.lg),
-          AppSearchField(hint: context.l10n.mediaSearchHint),
-          const SizedBox(height: AppSpacing.lg),
-          SizedBox(
-            height: 36,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: filters.length,
-              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (context, i) => FilterChipButton(
-                label: filters[i],
-                selected: i == _selectedFilter,
-                onTap: () => setState(() => _selectedFilter = i),
+    return Scaffold(
+      appBar: BrandAppBar(title: context.l10n.mediaTitle),
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: EdgeInsets.only(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
+          ),
+          children: [
+            const SizedBox(height: AppSpacing.lg),
+            AppSearchField(hint: context.l10n.mediaSearchHint),
+            const SizedBox(height: AppSpacing.lg),
+            SizedBox(
+              height: 36,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: filters.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: AppSpacing.sm),
+                itemBuilder: (context, i) => FilterChipButton(
+                  label: filters[i],
+                  selected: i == _selectedFilter,
+                  onTap: () => setState(() => _selectedFilter = i),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          for (final t in teachings) ...[
-            TeachingTile(
-              teaching: t,
-              onTap: () => context.pushNamed(AppRoute.teachingDetail, extra: t),
+            const SizedBox(height: AppSpacing.lg),
+            for (final t in teachings) ...[
+              TeachingTile(
+                teaching: t,
+                onTap: () =>
+                    context.pushNamed(AppRoute.teachingDetail, extra: t),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
+            _SeriesTile(
+              onTap: () => context.pushNamed(
+                AppRoute.teachingDetail,
+                extra: teachings.first,
+              ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.xxl),
           ],
-          _SeriesTile(
-            onTap: () => context.pushNamed(
-              AppRoute.teachingDetail,
-              extra: teachings.first,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-        ],
+        ),
       ),
     );
   }

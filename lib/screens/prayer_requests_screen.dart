@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/brand_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -27,7 +28,7 @@ class _PrayerRequestsScreenState extends ConsumerState<PrayerRequestsScreen> {
     final prayers = ref.watch(prayersProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.prayersAppBarTitle)),
+      appBar: BrandAppBar(title: context.l10n.prayersAppBarTitle),
       body: SafeArea(
         child: Column(
           children: [

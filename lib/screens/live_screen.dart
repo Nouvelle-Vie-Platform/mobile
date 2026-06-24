@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/brand_app_bar.dart';
 
 import '../l10n/l10n_extension.dart';
 import '../theme/app_colors.dart';
@@ -16,7 +17,7 @@ class LiveScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.liveAppBarTitle)),
+      appBar: BrandAppBar(title: context.l10n.liveAppBarTitle),
       body: Column(
         children: [
           Expanded(

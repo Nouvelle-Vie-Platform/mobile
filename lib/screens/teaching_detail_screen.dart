@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/brand_app_bar.dart';
 
 import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
@@ -18,7 +19,7 @@ class TeachingDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.teachingAppBarTitle)),
+      appBar: BrandAppBar(title: context.l10n.teachingAppBarTitle),
       body: ListView(
         children: [
           MediaThumbnail(height: 210, borderRadius: 0, seed: teaching.seed),

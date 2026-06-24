@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/brand_app_bar.dart';
 
 import '../l10n/l10n_extension.dart';
 import '../theme/app_spacing.dart';
@@ -32,7 +33,7 @@ class _NewRequestScreenState extends State<NewRequestScreen> {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.newRequestAppBarTitle)),
+      appBar: BrandAppBar(title: l10n.newRequestAppBarTitle),
       body: SafeArea(
         child: ListView(
           padding: AppSpacing.screenPadding,
