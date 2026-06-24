@@ -21,10 +21,16 @@ class AppLocalizationsEe extends AppLocalizations {
   String get navMedia => 'Médias';
 
   @override
+  String get navAnnouncements => 'Annonces';
+
+  @override
   String get navGroups => 'Hawo';
 
   @override
   String get navProfile => 'Profil';
+
+  @override
+  String get announcementsTitle => 'Annonces';
 
   @override
   String get onboardingWelcome => 'Woezɔ';
@@ -172,6 +178,9 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get chatMessageHint => 'Votre message...';
+
+  @override
+  String get chatToday => 'Aujourd\'hui';
 
   @override
   String get teachingAppBarTitle => 'Enseignement';

@@ -124,6 +124,12 @@ abstract class AppLocalizations {
   /// **'Médias'**
   String get navMedia;
 
+  /// No description provided for @navAnnouncements.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonces'**
+  String get navAnnouncements;
+
   /// No description provided for @navGroups.
   ///
   /// In fr, this message translates to:
@@ -135,6 +141,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Profil'**
   String get navProfile;
+
+  /// No description provided for @announcementsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonces'**
+  String get announcementsTitle;
 
   /// No description provided for @onboardingWelcome.
   ///
@@ -411,6 +423,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Votre message...'**
   String get chatMessageHint;
+
+  /// No description provided for @chatToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui'**
+  String get chatToday;
 
   /// No description provided for @teachingAppBarTitle.
   ///

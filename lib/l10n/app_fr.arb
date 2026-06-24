@@ -7,8 +7,11 @@
 
   "navHome": "Accueil",
   "navMedia": "Médias",
+  "navAnnouncements": "Annonces",
   "navGroups": "Groupes",
   "navProfile": "Profil",
+
+  "announcementsTitle": "Annonces",
 
   "onboardingWelcome": "Bienvenue",
   "onboardingTitleHighlight": "Dans la Maison\ndu Miracle",
@@ -78,6 +81,7 @@
   },
 
   "chatMessageHint": "Votre message...",
+  "chatToday": "Aujourd'hui",
 
   "teachingAppBarTitle": "Enseignement",
   "actionDownload": "Télécharger",

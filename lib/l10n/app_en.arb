@@ -6,8 +6,11 @@
 
   "navHome": "Home",
   "navMedia": "Media",
+  "navAnnouncements": "Announcements",
   "navGroups": "Groups",
   "navProfile": "Profile",
+
+  "announcementsTitle": "Announcements",
 
   "onboardingWelcome": "Welcome",
   "onboardingTitleHighlight": "To the Miracle\nHouse",
@@ -61,6 +64,7 @@
   "groupMembersWithRole": "{count} members • {role}",
 
   "chatMessageHint": "Your message...",
+  "chatToday": "Today",
 
   "teachingAppBarTitle": "Teaching",
   "actionDownload": "Download",
