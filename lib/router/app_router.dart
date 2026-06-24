@@ -8,6 +8,7 @@ import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
 import '../screens/live_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/media_library_screen.dart';
 import '../screens/new_request_screen.dart';
 import '../screens/notes_screen.dart';
 import '../screens/onboarding_screen.dart';
@@ -24,6 +25,7 @@ abstract final class AppRoute {
   static const login = 'login';
   static const register = 'register';
   static const home = 'home';
+  static const media = 'media';
   static const live = 'live';
   static const teachingDetail = 'teaching';
   static const groupChat = 'group-chat';
@@ -66,6 +68,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.home,
         path: '/home',
         builder: (_, __) => const HomeShell(),
+      ),
+      GoRoute(
+        name: AppRoute.media,
+        path: '/media',
+        builder: (_, __) => const MediaLibraryScreen(),
       ),
       GoRoute(
         name: AppRoute.live,

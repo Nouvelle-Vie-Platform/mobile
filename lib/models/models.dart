@@ -19,6 +19,21 @@ class ChurchEvent {
   final String? tag;
 }
 
+/// Annonce de l'église (communications, événements importants).
+class Announcement {
+  const Announcement({
+    required this.title,
+    required this.body,
+    required this.date,
+    this.tag,
+  });
+
+  final String title;
+  final String body;
+  final String date;
+  final String? tag;
+}
+
 class Teaching {
   const Teaching({
     required this.title,

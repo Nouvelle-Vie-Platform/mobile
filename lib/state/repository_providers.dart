@@ -11,6 +11,11 @@ final churchRepositoryProvider = Provider<ChurchRepository>(
   (ref) => const InMemoryChurchRepository(),
 );
 
+/// Annonces de l'église.
+final announcementsProvider = Provider<List<Announcement>>(
+  (ref) => ref.watch(churchRepositoryProvider).announcements(),
+);
+
 /// Évènements de l'agenda.
 final eventsProvider = Provider<List<ChurchEvent>>(
   (ref) => ref.watch(churchRepositoryProvider).events(),

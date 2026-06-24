@@ -7,6 +7,7 @@ import '../sample_data.dart';
 /// backend (Firebase, API REST…), il suffira de fournir une autre
 /// implémentation de [ChurchRepository] via le provider, sans toucher l'UI.
 abstract interface class ChurchRepository {
+  List<Announcement> announcements();
   List<ChurchEvent> events();
   List<Teaching> teachings();
   List<CommunityGroup> groups();
@@ -23,6 +24,9 @@ abstract interface class ChurchRepository {
 /// n'est branché.
 class InMemoryChurchRepository implements ChurchRepository {
   const InMemoryChurchRepository();
+
+  @override
+  List<Announcement> announcements() => SampleData.announcements;
 
   @override
   List<ChurchEvent> events() => SampleData.events;

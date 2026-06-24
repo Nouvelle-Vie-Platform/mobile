@@ -45,9 +45,9 @@ class AppBottomNav extends StatelessWidget {
           label: context.l10n.navHome,
         ),
         NavItem(
-          icon: Icons.play_circle_outline,
-          activeIcon: Icons.play_circle,
-          label: context.l10n.navMedia,
+          icon: Icons.campaign_outlined,
+          activeIcon: Icons.campaign,
+          label: context.l10n.navAnnouncements,
         ),
         NavItem(
           icon: Icons.groups_outlined,

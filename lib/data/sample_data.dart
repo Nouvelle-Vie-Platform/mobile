@@ -2,6 +2,29 @@ import '../models/models.dart';
 
 /// Données fictives reproduisant le contenu des maquettes.
 abstract final class SampleData {
+  static const List<Announcement> announcements = [
+    Announcement(
+      title: 'Convention annuelle 2024',
+      body: 'Trois jours de communion et de prière du 14 au 16 juin au Temple '
+          'Central. Inscriptions ouvertes à l\'accueil.',
+      date: 'Il y a 2 heures',
+      tag: 'Important',
+    ),
+    Announcement(
+      title: 'Nouvelle chorale jeunesse',
+      body: 'Les répétitions débutent ce samedi à 16h. Rejoignez-nous !',
+      date: 'Hier',
+      tag: 'Jeunesse',
+    ),
+    Announcement(
+      title: 'Collecte de dons solidaires',
+      body: 'Apportez vivres et vêtements pour les familles dans le besoin '
+          'jusqu\'à la fin du mois.',
+      date: 'Il y a 3 jours',
+      tag: 'Solidarité',
+    ),
+  ];
+
   static const List<ChurchEvent> events = [
     ChurchEvent(
       title: 'Culte de Gloire',
