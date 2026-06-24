@@ -18,7 +18,6 @@ class OnboardingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Scaffold(
-      backgroundColor: palette.surface,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(

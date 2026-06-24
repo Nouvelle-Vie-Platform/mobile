@@ -18,8 +18,7 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Scaffold(
-      backgroundColor: palette.surface,
-      appBar: AppBar(backgroundColor: palette.surface),
+      appBar: AppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: AppSpacing.screenPadding,

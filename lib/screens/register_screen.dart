@@ -17,7 +17,6 @@ class RegisterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Scaffold(
-      backgroundColor: palette.surface,
       appBar: AppBar(title: Text(context.l10n.registerAppBarTitle)),
       body: SafeArea(
         child: SingleChildScrollView(

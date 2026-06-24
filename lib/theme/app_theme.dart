@@ -34,16 +34,19 @@ abstract final class AppTheme {
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: palette.background,
+      // Transparent : le dégradé « glass » global (posé dans app.dart) reste
+      // visible derrière les écrans et les surfaces translucides.
+      scaffoldBackgroundColor: Colors.transparent,
       canvasColor: palette.surface,
       textTheme: AppTypography.textTheme(palette.textPrimary),
       dividerColor: palette.divider,
       splashFactory: InkRipple.splashFactory,
       extensions: [palette],
       appBarTheme: AppBarTheme(
-        backgroundColor: palette.surface,
+        backgroundColor: Colors.transparent,
         foregroundColor: palette.textPrimary,
         surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: palette.textPrimary),

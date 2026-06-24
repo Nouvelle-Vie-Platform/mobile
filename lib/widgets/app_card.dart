@@ -1,9 +1,12 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 
-/// Conteneur « carte » de base (fond surface, arrondi, ombre légère).
+/// Conteneur « carte » de base, au rendu **verre dépoli** (glassmorphisme) :
+/// fond translucide, fin liseré clair et léger flou d'arrière-plan.
 /// Sert de socle aux cartes métier (événement, enseignement, etc.).
 class AppCard extends StatelessWidget {
   const AppCard({
@@ -26,15 +29,37 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final content = Container(
-      padding: padding,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final fill =
+        color ?? palette.surface.withValues(alpha: isDark ? 0.55 : 0.62);
+    final glassBorder = border ??
+        Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.60),
+        );
+
+    final content = DecoratedBox(
       decoration: BoxDecoration(
-        color: color ?? palette.surface,
         borderRadius: AppRadius.card,
-        border: border ?? Border.all(color: palette.divider),
         boxShadow: shadow ? AppShadows.elevation1 : null,
       ),
-      child: child,
+      child: ClipRRect(
+        borderRadius: AppRadius.card,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: AppRadius.card,
+              border: glassBorder,
+            ),
+            child: child,
+          ),
+        ),
+      ),
     );
 
     if (onTap == null) return content;

@@ -5,6 +5,7 @@ import 'l10n/app_localizations.dart';
 import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
 import 'state/theme_provider.dart';
+import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 
 /// Widget racine de l'application « Maison du Miracle ».
@@ -27,6 +28,18 @@ class MaisonDuMiracleApp extends ConsumerWidget {
       localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: appSupportedLocales,
       routerConfig: router,
+      // Dégradé « glass » global : posé derrière tous les écrans (les Scaffold
+      // sont transparents), il fait « lire » les surfaces translucides.
+      builder: (context, child) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            gradient:
+                isDark ? AppColors.gradientAppDark : AppColors.gradientAppLight,
+          ),
+          child: child,
+        );
+      },
     );
   }
 }
