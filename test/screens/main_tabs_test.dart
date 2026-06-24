@@ -21,10 +21,12 @@ void main() {
       expect(find.text('Médiathèque'), findsOneWidget);
     });
 
-    testWidgets('GroupsScreen se monte avec les groupes', (tester) async {
+    testWidgets('GroupsScreen (Communauté) se monte avec ses onglets',
+        (tester) async {
       await pumpScreen(tester, const Scaffold(body: GroupsScreen()));
       expect(find.byType(GroupsScreen), findsOneWidget);
-      expect(find.text('Mes groupes'), findsOneWidget);
+      expect(find.text('Communauté'), findsOneWidget);
+      expect(find.text('Inbox'), findsOneWidget);
     });
 
     testWidgets('ProfileScreen se monte', (tester) async {
