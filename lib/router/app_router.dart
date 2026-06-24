@@ -17,6 +17,7 @@ import '../screens/register_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/teaching_detail_screen.dart';
 import '../state/repository_providers.dart';
+import '../widgets/app_background.dart';
 
 /// Noms des routes nommées (à utiliser avec `context.goNamed` / `pushNamed`).
 abstract final class AppRoute {
@@ -47,37 +48,37 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: AppRoute.splash,
         path: '/',
-        builder: (_, __) => const SplashScreen(),
+        builder: (_, __) => const AppBackground(child: SplashScreen()),
       ),
       GoRoute(
         name: AppRoute.onboarding,
         path: '/onboarding',
-        builder: (_, __) => const OnboardingScreen(),
+        builder: (_, __) => const AppBackground(child: OnboardingScreen()),
       ),
       GoRoute(
         name: AppRoute.login,
         path: '/login',
-        builder: (_, __) => const LoginScreen(),
+        builder: (_, __) => const AppBackground(child: LoginScreen()),
       ),
       GoRoute(
         name: AppRoute.register,
         path: '/register',
-        builder: (_, __) => const RegisterScreen(),
+        builder: (_, __) => const AppBackground(child: RegisterScreen()),
       ),
       GoRoute(
         name: AppRoute.home,
         path: '/home',
-        builder: (_, __) => const HomeShell(),
+        builder: (_, __) => const AppBackground(child: HomeShell()),
       ),
       GoRoute(
         name: AppRoute.media,
         path: '/media',
-        builder: (_, __) => const MediaLibraryScreen(),
+        builder: (_, __) => const AppBackground(child: MediaLibraryScreen()),
       ),
       GoRoute(
         name: AppRoute.live,
         path: '/live',
-        builder: (_, __) => const LiveScreen(),
+        builder: (_, __) => const AppBackground(child: LiveScreen()),
       ),
       GoRoute(
         name: AppRoute.teachingDetail,
@@ -87,7 +88,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           // enseignement disponible en cas d'accès direct.
           final teaching =
               state.extra as Teaching? ?? ref.read(teachingsProvider).first;
-          return TeachingDetailScreen(teaching: teaching);
+          return AppBackground(
+            child: TeachingDetailScreen(teaching: teaching),
+          );
         },
       ),
       GoRoute(
@@ -96,33 +99,33 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final group =
               state.extra as CommunityGroup? ?? ref.read(groupsProvider).first;
-          return GroupChatScreen(group: group);
+          return AppBackground(child: GroupChatScreen(group: group));
         },
       ),
       GoRoute(
         name: AppRoute.agenda,
         path: '/agenda',
-        builder: (_, __) => const AgendaScreen(),
+        builder: (_, __) => const AppBackground(child: AgendaScreen()),
       ),
       GoRoute(
         name: AppRoute.prayers,
         path: '/prayers',
-        builder: (_, __) => const PrayerRequestsScreen(),
+        builder: (_, __) => const AppBackground(child: PrayerRequestsScreen()),
       ),
       GoRoute(
         name: AppRoute.newRequest,
         path: '/new-request',
-        builder: (_, __) => const NewRequestScreen(),
+        builder: (_, __) => const AppBackground(child: NewRequestScreen()),
       ),
       GoRoute(
         name: AppRoute.donations,
         path: '/donations',
-        builder: (_, __) => const DonationsScreen(),
+        builder: (_, __) => const AppBackground(child: DonationsScreen()),
       ),
       GoRoute(
         name: AppRoute.notes,
         path: '/notes',
-        builder: (_, __) => const NotesScreen(),
+        builder: (_, __) => const AppBackground(child: NotesScreen()),
       ),
     ],
   );
