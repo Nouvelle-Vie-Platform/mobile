@@ -10,7 +10,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
-import '../widgets/media_thumbnail.dart';
+import '../widgets/app_card.dart';
+import '../widgets/cards/teaching_cover.dart';
 import '../widgets/section_header.dart';
 
 /// Onglet « Accueil » : en-tête ondulé, cultes à venir et derniers enseignements.
@@ -40,7 +41,7 @@ class HomeScreen extends ConsumerWidget {
               Padding(
                 padding: AppSpacing.screenPadding,
                 child: SectionHeader(
-                  title: context.l10n.sectionUpcomingServices,
+                  title: context.l10n.sectionUpcoming,
                   actionLabel: context.l10n.actionSeeAll,
                   onAction: () => context.pushNamed(AppRoute.agenda),
                 ),
@@ -173,7 +174,7 @@ class _LiveCtaPill extends StatelessWidget {
   }
 }
 
-/// Carrousel horizontal des cultes à venir (cartes-date compactes).
+/// Carrousel horizontal des évènements à venir.
 class _ServicesList extends StatelessWidget {
   const _ServicesList({required this.events});
   final List<ChurchEvent> events;
@@ -181,15 +182,15 @@ class _ServicesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 132,
+      height: 104,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: AppSpacing.screenPadding,
         itemCount: events.length,
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (context, i) => _ServiceDateCard(
+        itemBuilder: (context, i) => _UpcomingCard(
           event: events[i],
-          active: i == 0,
+          current: i == 0,
           onTap: () => context.pushNamed(AppRoute.agenda),
         ),
       ),
@@ -197,54 +198,103 @@ class _ServicesList extends StatelessWidget {
   }
 }
 
-class _ServiceDateCard extends StatelessWidget {
-  const _ServiceDateCard({
+/// Étiquette « à venir » : bloc date/heure (bleu) + détails (jour, intitulé,
+/// temple). Largeur fixe pour laisser dépasser les étiquettes suivantes.
+class _UpcomingCard extends StatelessWidget {
+  const _UpcomingCard({
     required this.event,
-    required this.active,
+    this.current = false,
     this.onTap,
   });
 
   final ChurchEvent event;
-  final bool active;
+
+  /// Évènement courant (du jour) : bloc date mis en avant en bleu.
+  final bool current;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final fg = active ? Colors.white : palette.textPrimary;
-    final fgMuted = active ? Colors.white70 : palette.textSecondary;
-    // « 15:00 - 17:00 » → « 15:00 » pour une carte compacte.
+    // « 15:00 - 17:00 » → « 15:00 ».
     final startTime = event.time.split('-').first.trim();
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 96,
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: active ? palette.primary : palette.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: active ? null : Border.all(color: palette.divider),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+    final boxColor = current ? palette.primary : palette.surfaceAlt;
+    final fg = current ? Colors.white : palette.textPrimary;
+    final fgMuted =
+        current ? Colors.white.withValues(alpha: 0.8) : palette.textSecondary;
+
+    return SizedBox(
+      width: 270,
+      child: AppCard(
+        padding: EdgeInsets.zero,
+        onTap: onTap,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(event.month,
-                style: AppTypography.caption.copyWith(color: fgMuted)),
-            const SizedBox(height: 2),
-            Text(event.day, style: AppTypography.h1.copyWith(color: fg)),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.schedule, size: 13, color: fgMuted),
-                const SizedBox(width: 4),
-                Text(
-                  startTime,
-                  style: AppTypography.caption
-                      .copyWith(color: fg, fontWeight: FontWeight.w700),
+            // Bloc date/heure.
+            Container(
+              width: 78,
+              color: boxColor,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(event.month,
+                      style: AppTypography.caption.copyWith(color: fgMuted)),
+                  Text(event.day, style: AppTypography.h2.copyWith(color: fg)),
+                  const SizedBox(height: AppSpacing.xs),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.schedule, size: 12, color: fgMuted),
+                      const SizedBox(width: 3),
+                      Text(startTime,
+                          style: AppTypography.caption.copyWith(
+                              color: fg, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Détails : jour, intitulé, temple.
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(event.weekday,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.caption.copyWith(
+                            color: palette.primary,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 3),
+                    Text(event.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.bodyStrong
+                            .copyWith(color: palette.textPrimary)),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Icon(Icons.place_outlined,
+                            size: 13, color: palette.textSecondary),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(event.place,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption
+                                  .copyWith(color: palette.textSecondary)),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ],
         ),
@@ -299,11 +349,9 @@ class _TeachingCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Row(
           children: [
-            MediaThumbnail(
+            SizedBox(
               width: 104,
-              height: double.infinity,
-              borderRadius: 0,
-              seed: teaching.seed,
+              child: TeachingCover(teaching: teaching, radius: 0),
             ),
             Expanded(
               child: Padding(

@@ -40,7 +40,7 @@ class _HomeShellState extends State<HomeShell> {
       // Bouton central : accès à la médiathèque.
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.pushNamed(AppRoute.media),
-        backgroundColor: AppColors.secondary,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 2,
         shape: const CircleBorder(),
