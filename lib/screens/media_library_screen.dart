@@ -3,17 +3,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/l10n_extension.dart';
+import '../models/models.dart';
 import '../router/app_router.dart';
 import '../state/repository_providers.dart';
-import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
-import '../widgets/app_chip.dart';
-import '../widgets/app_text_field.dart';
-import '../widgets/brand_app_bar.dart';
-import '../widgets/cards/teaching_tile.dart';
+import '../widgets/cards/teaching_cover.dart';
 
-/// Écran « Médiathèque » : recherche, filtres et liste d'enseignements.
+/// Accent chaud (pêche) propre à l'écran « Découverte ».
+const Color _peach = Color(0xFFF1A895);
+
+/// Dégradé d'arrière-plan « Découverte » : bleu des en-têtes → mauve.
+///
+/// Le bleu du haut reprend le départ de [AppColors.gradientPrimary] utilisé
+/// par les en-têtes de toutes les pages.
+const LinearGradient _discoverGradient = LinearGradient(
+  begin: Alignment.topCenter,
+  end: Alignment.bottomCenter,
+  colors: [Color(0xFF2A4AA8), Color(0xFF7E6A8E)],
+  stops: [0.1, 0.9],
+);
+
+/// Écran « Médiathèque » façon Découverte : carrousel phare, cartes
+/// horizontales et liste de recommandations, habillés par les données.
 class MediaLibraryScreen extends ConsumerStatefulWidget {
   const MediaLibraryScreen({super.key});
 
@@ -22,62 +34,306 @@ class MediaLibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
-  int _selectedFilter = 0;
+  int _tab = 0;
+
+  void _openTeaching(Teaching t) =>
+      context.pushNamed(AppRoute.teachingDetail, extra: t);
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final teachings = ref.watch(teachingsProvider);
-    final filters = [
-      context.l10n.filterAll,
-      context.l10n.filterSermons,
-      context.l10n.filterTeachings,
-      context.l10n.filterMusic,
+    final tabs = [
+      l.filterAll,
+      l.filterSermons,
+      l.filterTeachings,
+      l.filterMusic,
     ];
 
     return Scaffold(
-      appBar: BrandAppBar(title: context.l10n.mediaTitle),
-      body: SafeArea(
-        bottom: false,
-        child: ListView(
-          padding: EdgeInsets.only(
-            left: AppSpacing.lg,
-            right: AppSpacing.lg,
-            bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
+      body: Container(
+        decoration: const BoxDecoration(gradient: _discoverGradient),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              // En-tête fixe (ne défile pas avec le contenu).
+              _Header(title: l.mediaTitle),
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _CategoryTabs(
+                        tabs: tabs,
+                        selected: _tab,
+                        onSelect: (i) => setState(() => _tab = i),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(
+                        child: SizedBox(height: AppSpacing.xl)),
+                    // Carrousel phare.
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 210,
+                        child: PageView.builder(
+                          controller: PageController(viewportFraction: 0.86),
+                          itemCount: teachings.length,
+                          itemBuilder: (_, i) => _HeroCard(
+                            teaching: teachings[i],
+                            onTap: () => _openTeaching(teachings[i]),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(
+                        child: SizedBox(height: AppSpacing.xxl)),
+                    // Derniers enseignements (cartes horizontales).
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: AppSpacing.screenPadding,
+                        child: _SectionHeader(title: l.sectionLatestTeachings),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(
+                        child: SizedBox(height: AppSpacing.md)),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 176,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: AppSpacing.screenPadding,
+                          itemCount: teachings.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: AppSpacing.md),
+                          itemBuilder: (_, i) => _AlbumCard(
+                            teaching: teachings[i],
+                            onTap: () => _openTeaching(teachings[i]),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(
+                        child: SizedBox(height: AppSpacing.xl)),
+                    // Recommandés (liste verticale).
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: AppSpacing.screenPadding,
+                        child: _SectionHeader(title: l.mediaRecommended),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(
+                        child: SizedBox(height: AppSpacing.sm)),
+                    SliverList.builder(
+                      itemCount: teachings.length,
+                      itemBuilder: (_, i) => _PlaylistItem(
+                        teaching: teachings[i],
+                        onTap: () => _openTeaching(teachings[i]),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: MediaQuery.paddingOf(context).bottom +
+                            AppSpacing.xl,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// En-tête : retour, titre et recherche.
+class _Header extends StatelessWidget {
+  const _Header({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new,
+                color: Colors.white, size: 20),
+            onPressed: () => context.pop(),
+          ),
+          Expanded(
+            child: Text(
+              title,
+              style: AppTypography.h2.copyWith(color: Colors.white),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white, size: 26),
+            onPressed: () {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Onglets horizontaux avec soulignement pêche.
+class _CategoryTabs extends StatelessWidget {
+  const _CategoryTabs({
+    required this.tabs,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final List<String> tabs;
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 38,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        itemCount: tabs.length,
+        itemBuilder: (_, i) {
+          final isSel = i == selected;
+          return GestureDetector(
+            onTap: () => onSelect(i),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: Column(
+                children: [
+                  Text(
+                    tabs[i],
+                    style: AppTypography.bodyLarge.copyWith(
+                      color: isSel
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.55),
+                      fontWeight: isSel ? FontWeight.w700 : FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if (isSel)
+                    Container(
+                      height: 3,
+                      width: 36,
+                      decoration: BoxDecoration(
+                        color: _peach,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// En-tête de section : barre pêche + titre + chevron.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 18,
+          decoration: BoxDecoration(
+            color: _peach,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Text(title, style: AppTypography.h4.copyWith(color: Colors.white)),
+        const Spacer(),
+        Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.6)),
+      ],
+    );
+  }
+}
+
+/// Grande carte du carrousel phare.
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({required this.teaching, this.onTap});
+  final Teaching teaching;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            const SizedBox(height: AppSpacing.lg),
-            AppSearchField(hint: context.l10n.mediaSearchHint),
-            const SizedBox(height: AppSpacing.lg),
-            SizedBox(
-              height: 36,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: filters.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: AppSpacing.sm),
-                itemBuilder: (context, i) => FilterChipButton(
-                  label: filters[i],
-                  selected: i == _selectedFilter,
-                  onTap: () => setState(() => _selectedFilter = i),
+            TeachingCover(teaching: teaching),
+            // Voile dégradé pour la lisibilité du texte.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.55),
+                    Colors.transparent,
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            for (final t in teachings) ...[
-              TeachingTile(
-                teaching: t,
-                onTap: () =>
-                    context.pushNamed(AppRoute.teachingDetail, extra: t),
-              ),
-              const SizedBox(height: AppSpacing.md),
-            ],
-            _SeriesTile(
-              onTap: () => context.pushNamed(
-                AppRoute.teachingDetail,
-                extra: teachings.first,
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    teaching.author.toUpperCase(),
+                    style: AppTypography.caption.copyWith(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    teaching.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.h3.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.xxl),
           ],
         ),
       ),
@@ -85,61 +341,97 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
   }
 }
 
-/// Carte « Série » regroupant plusieurs messages.
-class _SeriesTile extends StatelessWidget {
-  const _SeriesTile({this.onTap});
+/// Carte carrée (enseignement récent).
+class _AlbumCard extends StatelessWidget {
+  const _AlbumCard({required this.teaching, this.onTap});
+  final Teaching teaching;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Material(
-      color: palette.surface,
-      borderRadius: AppRadius.card,
-      child: InkWell(
-        borderRadius: AppRadius.card,
-        onTap: onTap,
-        child: Ink(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.card,
-            border: Border.all(color: palette.divider),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: palette.infoBg,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child:
-                    Icon(Icons.playlist_play, color: palette.primary, size: 30),
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 124,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 124,
+              height: 120,
+              child: TeachingCover(teaching: teaching, radius: AppRadius.lg),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              teaching.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.bodyStrong.copyWith(color: Colors.white),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              teaching.author,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.caption
+                  .copyWith(color: Colors.white.withValues(alpha: 0.6)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Ligne verticale (recommandation).
+class _PlaylistItem extends StatelessWidget {
+  const _PlaylistItem({required this.teaching, this.onTap});
+  final Teaching teaching;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 56,
+              height: 56,
+              child: TeachingCover(teaching: teaching, radius: AppRadius.md),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    teaching.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        AppTypography.bodyStrong.copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    teaching.author,
+                    style: AppTypography.caption
+                        .copyWith(color: Colors.white.withValues(alpha: 0.6)),
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        AppChip(context.l10n.seriesTag, tone: AppChipTone.info),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text('Vie Victorieuse',
-                            style: AppTypography.bodyStrong),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(context.l10n.seriesMessagesCount(5),
-                        style: AppTypography.caption
-                            .copyWith(color: palette.textSecondary)),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right, color: palette.textSecondary),
-            ],
-          ),
+            ),
+            Text(
+              teaching.duration,
+              style: AppTypography.caption
+                  .copyWith(color: Colors.white.withValues(alpha: 0.6)),
+            ),
+          ],
         ),
       ),
     );
