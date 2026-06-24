@@ -28,6 +28,7 @@ abstract final class SampleData {
   static const List<ChurchEvent> events = [
     ChurchEvent(
       title: 'Culte de Gloire',
+      weekday: 'Dimanche',
       day: '26',
       month: 'Mai',
       time: '15:00 - 17:00',
@@ -36,6 +37,7 @@ abstract final class SampleData {
     ),
     ChurchEvent(
       title: 'Veillée de Prière',
+      weekday: 'Vendredi',
       day: '31',
       month: 'Mai',
       time: '20:00 - 00:00',
@@ -49,22 +51,46 @@ abstract final class SampleData {
         title: 'La puissance de la prière',
         author: 'Pasteur Samuel',
         duration: '23:45',
-        seed: 0),
+        seed: 0,
+        color: 0xFF3B5BD0,
+        image: 'https://picsum.photos/seed/priere/600/800',
+        description:
+            'La prière n\'est pas une formalité religieuse : c\'est un dialogue '
+            'vivant avec Dieu qui transforme nos vies et nos circonstances.',
+        verse: 'Jacques 5:16'),
     Teaching(
         title: 'La foi qui déplace les montagnes',
         author: 'Pasteur Samuel',
         duration: '36:10',
-        seed: 1),
+        seed: 1,
+        color: 0xFFE53935,
+        image: 'https://picsum.photos/seed/foi/600/800',
+        description:
+            'La véritable foi nous connecte aux promesses de Dieu et permet de '
+            'voir des résultats extraordinaires dans l\'impossible.',
+        verse: 'Matthieu 17:20'),
     Teaching(
         title: 'Marcher par l\'Esprit',
         author: 'Pasteur Mike',
         duration: '31:45',
-        seed: 2),
+        seed: 2,
+        color: 0xFF1FA971,
+        image: 'https://picsum.photos/seed/esprit/600/800',
+        description:
+            'Apprendre à être conduit par l\'Esprit de Dieu au quotidien, dans '
+            'nos décisions comme dans notre caractère.',
+        verse: 'Galates 5:25'),
     Teaching(
         title: 'Le tour du père',
         author: 'Pasteur Jonas',
         duration: '28:12',
-        seed: 3),
+        seed: 3,
+        color: 0xFF7A5AF8,
+        image: 'https://picsum.photos/seed/pere/600/800',
+        description:
+            'Le cœur du Père céleste pour ses enfants : un amour qui restaure, '
+            'relève et accueille sans condition.',
+        verse: 'Luc 15:20'),
   ];
 
   static const List<CommunityGroup> groups = [

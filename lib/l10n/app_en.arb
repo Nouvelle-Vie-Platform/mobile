@@ -50,6 +50,7 @@
 
   "mediaTitle": "Media library",
   "mediaSearchHint": "Search for a teaching...",
+  "mediaRecommended": "Recommended for you",
   "filterAll": "All",
   "filterSermons": "Sermons",
   "filterTeachings": "Teachings",
@@ -73,6 +74,7 @@
   "actionMyNotes": "My notes",
   "actionShare": "Share",
   "tabDescription": "Description",
+  "teachingVerses": "Verses",
   "tabNotesCount": "Notes ({count})",
   "actionDownloadAudio": "Download audio",
 

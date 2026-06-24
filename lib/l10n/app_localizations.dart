@@ -352,6 +352,12 @@ abstract class AppLocalizations {
   /// **'Rechercher un enseignement...'**
   String get mediaSearchHint;
 
+  /// No description provided for @mediaRecommended.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recommandés pour vous'**
+  String get mediaRecommended;
+
   /// No description provided for @filterAll.
   ///
   /// In fr, this message translates to:
@@ -471,6 +477,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Description'**
   String get tabDescription;
+
+  /// No description provided for @teachingVerses.
+  ///
+  /// In fr, this message translates to:
+  /// **'Versets'**
+  String get teachingVerses;
 
   /// No description provided for @tabNotesCount.
   ///

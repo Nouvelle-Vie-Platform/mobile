@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/sample_data.dart';
+import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/screens/agenda_screen.dart';
 import 'package:maison_du_miracle/screens/donations_screen.dart';
 import 'package:maison_du_miracle/screens/group_chat_screen.dart';
@@ -46,8 +47,14 @@ void main() {
 
     testWidgets('TeachingDetailScreen affiche l\'enseignement reçu',
         (tester) async {
-      final teaching = SampleData.teachings.first;
-      await pumpScreen(tester, TeachingDetailScreen(teaching: teaching));
+      // Enseignement sans image : évite tout chargement réseau en test.
+      const teaching = Teaching(
+        title: 'Enseignement de test',
+        author: 'Pasteur Test',
+        duration: '10:00',
+        color: 0xFF223B8C,
+      );
+      await pumpScreen(tester, const TeachingDetailScreen(teaching: teaching));
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
       expect(find.text(teaching.title), findsOneWidget);
     });

@@ -55,6 +55,7 @@
 
   "mediaTitle": "Médiathèque",
   "mediaSearchHint": "Rechercher un enseignement...",
+  "mediaRecommended": "Recommandés pour vous",
   "filterAll": "Tout",
   "filterSermons": "Prêches",
   "filterTeachings": "Enseignements",
@@ -90,6 +91,7 @@
   "actionMyNotes": "Mes notes",
   "actionShare": "Partager",
   "tabDescription": "Description",
+  "teachingVerses": "Versets",
   "tabNotesCount": "Notes ({count})",
   "@tabNotesCount": {
     "placeholders": { "count": { "type": "int", "example": "12" } }

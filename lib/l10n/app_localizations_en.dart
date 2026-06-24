@@ -138,6 +138,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mediaSearchHint => 'Search for a teaching...';
 
   @override
+  String get mediaRecommended => 'Recommended for you';
+
+  @override
   String get filterAll => 'All';
 
   @override
@@ -202,6 +205,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tabDescription => 'Description';
+
+  @override
+  String get teachingVerses => 'Verses';
 
   @override
   String tabNotesCount(int count) {

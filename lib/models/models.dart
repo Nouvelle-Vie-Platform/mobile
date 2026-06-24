@@ -4,6 +4,7 @@ library;
 class ChurchEvent {
   const ChurchEvent({
     required this.title,
+    required this.weekday,
     required this.day,
     required this.month,
     required this.time,
@@ -12,6 +13,9 @@ class ChurchEvent {
   });
 
   final String title;
+
+  /// Nom du jour de la semaine (ex. « Dimanche »).
+  final String weekday;
   final String day;
   final String month;
   final String time;
@@ -40,12 +44,28 @@ class Teaching {
     required this.author,
     required this.duration,
     this.seed = 0,
+    this.color = 0xFF223B8C,
+    this.image,
+    this.description = '',
+    this.verse,
   });
 
   final String title;
   final String author;
   final String duration;
   final int seed;
+
+  /// Couleur d'habillage (ARGB hexadécimal) pilotant l'écran de détail.
+  final int color;
+
+  /// Image d'habillage optionnelle (chemin d'asset ou URL `http`).
+  final String? image;
+
+  /// Description longue (affichée dans la feuille de détail).
+  final String description;
+
+  /// Référence biblique associée (ex. « Matthieu 17:20 »), optionnelle.
+  final String? verse;
 }
 
 class CommunityGroup {
