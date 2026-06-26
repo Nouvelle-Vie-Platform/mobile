@@ -92,11 +92,13 @@ poussée). Le FAB n'est PAS un onglet.
 - **Ne pas pousser à la place de l'utilisateur** : il fait `git push` lui-même
   (souvent `git push --force-with-lease`, la branche distante ayant divergé).
 
-## Pièges d'environnement (cette machine)
-- **Émulateur Android bloqué** : seul **JDK 26** installé, trop récent pour le
-  toolchain Gradle. Besoin d'un **JDK 17 ou 21** (`flutter config --jdk-dir …`).
-- **Web (`flutter run -d chrome`)** et **simulateur iOS** fonctionnent.
-- Le premier build iOS est long (pods + Xcode) ; relances suivantes rapides.
+## Environnement (cette machine)
+- **Android** : **OpenJDK 21** installé (`brew install openjdk@21`) et configuré
+  via `flutter config --jdk-dir /usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home`.
+  Le JDK 26 (système) faisait échouer Gradle ; ne pas y revenir. Build OK.
+- **Web (`flutter run -d chrome`)**, **simulateur iOS** et **émulateur Android**
+  fonctionnent. Raccourcis dans le `Makefile` (`make ios` / `make android` / `make web`).
+- Le premier build iOS/Android est long ; relances suivantes rapides.
 
 ## Statut
 Maquette UI riche et cohérente, **données fictives** + **auth factice**.
