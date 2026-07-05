@@ -184,6 +184,78 @@ abstract class AppLocalizations {
   /// **'Suivant'**
   String get actionNext;
 
+  /// No description provided for @onboardingVerse.
+  ///
+  /// In fr, this message translates to:
+  /// **'« Venez à moi, vous tous qui êtes fatigués, et je vous donnerai du repos. »\n— Matthieu 11:28'**
+  String get onboardingVerse;
+
+  /// No description provided for @onboardingStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencer'**
+  String get onboardingStart;
+
+  /// No description provided for @onboardingJoinTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous rejoindre'**
+  String get onboardingJoinTitle;
+
+  /// No description provided for @onboardingJoinSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez comment continuer.'**
+  String get onboardingJoinSubtitle;
+
+  /// No description provided for @authPhone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléphone'**
+  String get authPhone;
+
+  /// No description provided for @authEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email'**
+  String get authEmail;
+
+  /// No description provided for @actionJoin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoindre'**
+  String get actionJoin;
+
+  /// No description provided for @onboardingCodeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérification'**
+  String get onboardingCodeTitle;
+
+  /// No description provided for @onboardingCodeSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez le code que vous avez reçu.'**
+  String get onboardingCodeSubtitle;
+
+  /// No description provided for @onboardingCodeHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code de vérification'**
+  String get onboardingCodeHint;
+
+  /// No description provided for @actionValidate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valider'**
+  String get actionValidate;
+
+  /// No description provided for @onboardingAlreadyMember.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déjà membre ? '**
+  String get onboardingAlreadyMember;
+
   /// No description provided for @loginTitle.
   ///
   /// In fr, this message translates to:

@@ -52,6 +52,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get actionNext => 'Suivant';
 
   @override
+  String get onboardingVerse =>
+      '« Venez à moi, vous tous qui êtes fatigués, et je vous donnerai du repos. »\n— Matthieu 11:28';
+
+  @override
+  String get onboardingStart => 'Commencer';
+
+  @override
+  String get onboardingJoinTitle => 'Nous rejoindre';
+
+  @override
+  String get onboardingJoinSubtitle => 'Choisissez comment continuer.';
+
+  @override
+  String get authPhone => 'Téléphone';
+
+  @override
+  String get authEmail => 'Email';
+
+  @override
+  String get actionJoin => 'Rejoindre';
+
+  @override
+  String get onboardingCodeTitle => 'Vérification';
+
+  @override
+  String get onboardingCodeSubtitle => 'Saisissez le code que vous avez reçu.';
+
+  @override
+  String get onboardingCodeHint => 'Code de vérification';
+
+  @override
+  String get actionValidate => 'Valider';
+
+  @override
+  String get onboardingAlreadyMember => 'Déjà membre ? ';
+
+  @override
   String get loginTitle => 'Heureux de vous revoir !';
 
   @override

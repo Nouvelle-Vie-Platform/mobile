@@ -52,6 +52,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionNext => 'Next';
 
   @override
+  String get onboardingVerse =>
+      '« Come to me, all who are weary, and I will give you rest. »\n— Matthew 11:28';
+
+  @override
+  String get onboardingStart => 'Get started';
+
+  @override
+  String get onboardingJoinTitle => 'Join us';
+
+  @override
+  String get onboardingJoinSubtitle => 'Choose how to continue.';
+
+  @override
+  String get authPhone => 'Phone';
+
+  @override
+  String get authEmail => 'Email';
+
+  @override
+  String get actionJoin => 'Join';
+
+  @override
+  String get onboardingCodeTitle => 'Verification';
+
+  @override
+  String get onboardingCodeSubtitle => 'Enter the code you received.';
+
+  @override
+  String get onboardingCodeHint => 'Verification code';
+
+  @override
+  String get actionValidate => 'Confirm';
+
+  @override
+  String get onboardingAlreadyMember => 'Already a member? ';
+
+  @override
   String get loginTitle => 'Glad to see you again!';
 
   @override

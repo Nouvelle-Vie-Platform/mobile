@@ -17,7 +17,7 @@ void main() {
     testWidgets('OnboardingScreen se monte', (tester) async {
       await pumpScreen(tester, const OnboardingScreen());
       expect(find.byType(OnboardingScreen), findsOneWidget);
-      expect(find.text('Suivant'), findsOneWidget);
+      expect(find.text('Commencer'), findsOneWidget);
     });
 
     testWidgets('LoginScreen se monte', (tester) async {
