@@ -28,6 +28,7 @@ flutter:
 
   assets:
     - assets/animations/colombe.webp
+    - assets/images/welcome_bg.webp
 
   fonts:
     - family: Atkinson Hyperlegible

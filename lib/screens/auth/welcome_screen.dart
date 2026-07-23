@@ -10,10 +10,9 @@ import '../../theme/app_typography.dart';
 
 /// Première page de `/auth` : accueil / point d'entrée du parcours unifié.
 ///
-/// Écran immersif sur fond dégradé bleu de marque ([AppColors.gradientPrimary]),
-/// texte blanc : une colombe animée (WebP animé, boucle infinie) survolant le
-/// dégradé, le message de bienvenue et un verset, puis le bouton « Commencer »
-/// et le lien discret « Déjà membre ? » — tous deux menant à la saisie de
+/// Écran immersif : une scène nocturne (image de fond, église + rayon de
+/// lumière), une colombe animée (WebP animé, boucle infinie) nimbée d'un halo,
+/// le message de bienvenue, puis le bouton « Commencer » menant à la saisie de
 /// l'identifiant (flow login/inscription unifié).
 ///
 /// Écran sans état : un simple [ConsumerWidget] suffit.
@@ -23,65 +22,98 @@ class WelcomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    // Le Scaffold reste transparent : c'est le DecoratedBox ci-dessous qui
-    // pose le dégradé de marque en plein écran (écran immersif, comme l'accueil).
+    // Le Scaffold reste transparent : l'image de fond ci-dessous couvre l'écran.
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppColors.gradientPrimary),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: AppSpacing.screenPadding,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const _DoveAnimation(),
-                        const SizedBox(height: AppSpacing.xl),
-                        Text(
-                          l.onboardingWelcome,
-                          textAlign: TextAlign.center,
-                          style: AppTypography.h1.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Fond immersif plein écran (repli sur le dégradé de marque).
+          Image.asset(
+            'assets/images/welcome_bg.webp',
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const DecoratedBox(
+              decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
+            ),
+          ),
+          // Léger voile bas pour la lisibilité du texte et du bouton.
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.center,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Color(0x66020A1E)],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: AppSpacing.screenPadding,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const _DoveAnimation(),
+                          const SizedBox(height: AppSpacing.xl),
+                          Text(
+                            l.onboardingWelcome,
+                            textAlign: TextAlign.center,
+                            style: AppTypography.h1.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          l.onboardingTitleHighlight,
-                          textAlign: TextAlign.center,
-                          style: AppTypography.body.copyWith(
-                            color: Colors.white.withValues(alpha: 0.85),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            letterSpacing: 0.3,
+                          const SizedBox(height: AppSpacing.sm),
+                          // Fin trait lumineux (centre plus clair), façon maquette.
+                          Container(
+                            width: 160,
+                            height: 1.5,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.white.withValues(alpha: 0.6),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            l.onboardingTitleHighlight,
+                            textAlign: TextAlign.center,
+                            style: AppTypography.body.copyWith(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              _BottomActions(
-                startLabel: l.authStart,
-                onStart: () => context.goNamed(AppRoute.authIdentifier),
-              ),
-            ],
+                _StartButton(
+                  label: l.authStart,
+                  onTap: () => context.goNamed(AppRoute.authIdentifier),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-/// Colombe de la paix animée (WebP animé, alpha) posée sur le dégradé de marque.
+/// Colombe de la paix animée (WebP animé, alpha) nimbée d'un halo lumineux.
 ///
 /// Le WebP boucle nativement (`Loop Count : 0`) : aucun plugin, compatible web.
-/// L'animation est détourée (fond transparent), donc la colombe survole
-/// directement le dégradé — la couleur concorde par construction.
+/// L'animation est détourée (fond transparent) et survole la scène de fond.
 class _DoveAnimation extends StatelessWidget {
   const _DoveAnimation();
 
@@ -90,23 +122,42 @@ class _DoveAnimation extends StatelessWidget {
     return SizedBox(
       height: 340,
       width: double.infinity,
-      child: Image.asset(
-        'assets/animations/colombe.webp',
-        fit: BoxFit.contain,
-        gaplessPlayback: true,
-        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Halo radial derrière la colombe.
+          IgnorePointer(
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [Color(0x33FFFFFF), Colors.transparent],
+                  stops: [0.15, 1.0],
+                ),
+              ),
+            ),
+          ),
+          Image.asset(
+            'assets/animations/colombe.webp',
+            fit: BoxFit.contain,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Zone d'actions épinglée en bas : bouton principal « Commencer » (blanc,
-/// texte bleu).
-class _BottomActions extends StatelessWidget {
-  const _BottomActions({required this.startLabel, required this.onStart});
+/// Bouton principal « Commencer » épinglé en bas : pilule blanche, texte bleu,
+/// et pastille circulaire bleue avec flèche à gauche (façon maquette).
+class _StartButton extends StatelessWidget {
+  const _StartButton({required this.label, required this.onTap});
 
-  final String startLabel;
-  final VoidCallback onStart;
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -117,31 +168,47 @@ class _BottomActions extends StatelessWidget {
         AppSpacing.lg,
         AppSpacing.lg,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                onTap: onStart,
-                child: Center(
+      child: SizedBox(
+        width: double.infinity,
+        height: 60,
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            onTap: onTap,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Center(
                   child: Text(
-                    startLabel,
+                    label,
                     style: AppTypography.button.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-              ),
+                Positioned(
+                  left: 8,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
