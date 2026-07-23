@@ -67,9 +67,7 @@ class WelcomeScreen extends ConsumerWidget {
               ),
               _BottomActions(
                 startLabel: l.authStart,
-                alreadyMemberLabel: l.authAlreadyMember,
                 onStart: () => context.goNamed(AppRoute.authIdentifier),
-                onAlreadyMember: () => context.goNamed(AppRoute.authIdentifier),
               ),
             ],
           ),
@@ -103,19 +101,12 @@ class _DoveAnimation extends StatelessWidget {
 }
 
 /// Zone d'actions épinglée en bas : bouton principal « Commencer » (blanc,
-/// texte bleu) + lien discret « Déjà membre ? ».
+/// texte bleu).
 class _BottomActions extends StatelessWidget {
-  const _BottomActions({
-    required this.startLabel,
-    required this.alreadyMemberLabel,
-    required this.onStart,
-    required this.onAlreadyMember,
-  });
+  const _BottomActions({required this.startLabel, required this.onStart});
 
   final String startLabel;
-  final String alreadyMemberLabel;
   final VoidCallback onStart;
-  final VoidCallback onAlreadyMember;
 
   @override
   Widget build(BuildContext context) {
@@ -147,20 +138,6 @@ class _BottomActions extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          TextButton(
-            onPressed: onAlreadyMember,
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white.withValues(alpha: 0.9),
-            ),
-            child: Text(
-              alreadyMemberLabel,
-              style: AppTypography.body.copyWith(
-                color: Colors.white.withValues(alpha: 0.9),
-                fontWeight: FontWeight.w600,
               ),
             ),
           ),
