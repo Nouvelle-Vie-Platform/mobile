@@ -509,4 +509,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusNewLabel => 'New — not attached yet';
+
+  @override
+  String get errorGeneric => 'Something went wrong. Please try again.';
+
+  @override
+  String get profileTitleLabel => 'Title';
+
+  @override
+  String get profileTitleRequired => 'Please select Brother or Sister';
+
+  @override
+  String get authCodeTooManyAttempts =>
+      'Too many attempts. Please try again later.';
+
+  @override
+  String get authCodeResent => 'Code resent.';
 }

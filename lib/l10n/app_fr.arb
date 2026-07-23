@@ -238,5 +238,15 @@
   "actionCancel": "Annuler",
   "@actionCancel": { "description": "Bouton d'annulation générique" },
   "statusNewLabel": "Nouveau — pas encore rattaché",
-  "@statusNewLabel": { "description": "Libellé du statut « nouveau » (non rattaché à une branche)" }
+  "@statusNewLabel": { "description": "Libellé du statut « nouveau » (non rattaché à une branche)" },
+  "errorGeneric": "Une erreur est survenue. Réessayez.",
+  "@errorGeneric": { "description": "Message d'erreur générique (échec inattendu d'une action)" },
+  "profileTitleLabel": "Civilité",
+  "@profileTitleLabel": { "description": "Libellé du champ civilité (Frère / Sœur) sur l'écran profil" },
+  "profileTitleRequired": "Sélectionnez Frère ou Sœur",
+  "@profileTitleRequired": { "description": "Erreur de validation : civilité non sélectionnée" },
+  "authCodeTooManyAttempts": "Trop de tentatives. Réessayez plus tard.",
+  "@authCodeTooManyAttempts": { "description": "Erreur : trop de tentatives de saisie du code" },
+  "authCodeResent": "Code renvoyé.",
+  "@authCodeResent": { "description": "Confirmation : un nouveau code de vérification a été envoyé" }
 }

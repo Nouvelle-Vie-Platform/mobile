@@ -1059,6 +1059,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Nouveau — pas encore rattaché'**
   String get statusNewLabel;
+
+  /// Message d'erreur générique (échec inattendu d'une action)
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue. Réessayez.'**
+  String get errorGeneric;
+
+  /// Libellé du champ civilité (Frère / Sœur) sur l'écran profil
+  ///
+  /// In fr, this message translates to:
+  /// **'Civilité'**
+  String get profileTitleLabel;
+
+  /// Erreur de validation : civilité non sélectionnée
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez Frère ou Sœur'**
+  String get profileTitleRequired;
+
+  /// Erreur : trop de tentatives de saisie du code
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop de tentatives. Réessayez plus tard.'**
+  String get authCodeTooManyAttempts;
+
+  /// Confirmation : un nouveau code de vérification a été envoyé
+  ///
+  /// In fr, this message translates to:
+  /// **'Code renvoyé.'**
+  String get authCodeResent;
 }
 
 class _AppLocalizationsDelegate

@@ -184,5 +184,10 @@
   "logoutConfirmTitle": "Log out?",
   "logoutConfirmMessage": "You'll need a new code to log back in.",
   "actionCancel": "Cancel",
-  "statusNewLabel": "New — not attached yet"
+  "statusNewLabel": "New — not attached yet",
+  "errorGeneric": "Something went wrong. Please try again.",
+  "profileTitleLabel": "Title",
+  "profileTitleRequired": "Please select Brother or Sister",
+  "authCodeTooManyAttempts": "Too many attempts. Please try again later.",
+  "authCodeResent": "Code resent."
 }

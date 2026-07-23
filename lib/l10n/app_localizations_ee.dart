@@ -510,4 +510,20 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get statusNewLabel => 'Nouveau — pas encore rattaché';
+
+  @override
+  String get errorGeneric => 'Une erreur est survenue. Réessayez.';
+
+  @override
+  String get profileTitleLabel => 'Civilité';
+
+  @override
+  String get profileTitleRequired => 'Sélectionnez Frère ou Sœur';
+
+  @override
+  String get authCodeTooManyAttempts =>
+      'Trop de tentatives. Réessayez plus tard.';
+
+  @override
+  String get authCodeResent => 'Code renvoyé.';
 }
