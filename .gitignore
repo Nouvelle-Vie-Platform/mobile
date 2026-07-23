@@ -88,3 +88,6 @@ app.*.map.json
 
 # Coverage
 coverage/
+
+# Éditeur
+.vscode/
