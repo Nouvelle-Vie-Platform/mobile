@@ -30,4 +30,8 @@ Future<void> pumpScreen(
     ),
   );
   await tester.pump();
+  // Laisse expirer les minuteries de résolution de session (mock ~300 ms, via
+  // `authProvider`) pour éviter les « pending timer » au teardown. On avance
+  // l'horloge plutôt que `pumpAndSettle` (certains écrans animent à l'infini).
+  await tester.pump(const Duration(seconds: 1));
 }
