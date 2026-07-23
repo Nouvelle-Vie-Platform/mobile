@@ -90,7 +90,7 @@ class _DoveAnimation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 300,
+      height: 340,
       width: double.infinity,
       child: Image.asset(
         'assets/animations/colombe.webp',
