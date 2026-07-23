@@ -17,17 +17,6 @@ class DialCountry {
 
   /// Nom du pays (français).
   final String name;
-
-  /// Drapeau emoji dérivé du code pays (paire de symboles régionaux).
-  String get flag {
-    if (countryCode.length != 2) return '';
-    const base = 0x1F1E6; // Indicateur régional « A ».
-    final cc = countryCode.toUpperCase();
-    return String.fromCharCodes([
-      base + (cc.codeUnitAt(0) - 0x41),
-      base + (cc.codeUnitAt(1) - 0x41),
-    ]);
-  }
 }
 
 /// Indicatif de repli quand le pays est inconnu (Togo, **+228**).
