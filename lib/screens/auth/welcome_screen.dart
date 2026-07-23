@@ -147,22 +147,6 @@ class _DoveAnimation extends StatelessWidget {
             gaplessPlayback: true,
             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
-          // Voile de brume lumineuse à la base de la colombe : la queue s'y
-          // fond (esprit « nuées » + rayon de lumière de la scène nocturne),
-          // ce qui masque la troncature de la queue présente dans la vidéo
-          // source, sans que cela se remarque.
-          const IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment(0, 0.72),
-                  radius: 0.7,
-                  colors: [Color(0x8CBBD6FF), Color(0x00BBD6FF)],
-                  stops: [0.0, 1.0],
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
