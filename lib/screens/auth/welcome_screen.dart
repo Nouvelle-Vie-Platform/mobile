@@ -33,42 +33,35 @@ class WelcomeScreen extends ConsumerWidget {
           child: Column(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  padding: AppSpacing.screenPadding,
-                  child: Column(
-                    children: [
-                      const SizedBox(height: AppSpacing.lg),
-                      const _DoveAnimation(),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        l.onboardingWelcome,
-                        textAlign: TextAlign.center,
-                        style: AppTypography.h1.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: AppSpacing.screenPadding,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const _DoveAnimation(),
+                        const SizedBox(height: AppSpacing.xl),
+                        Text(
+                          l.onboardingWelcome,
+                          textAlign: TextAlign.center,
+                          style: AppTypography.h1.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        l.onboardingTitleHighlight,
-                        textAlign: TextAlign.center,
-                        style: AppTypography.h2.copyWith(
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.w700,
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          l.onboardingTitleHighlight,
+                          textAlign: TextAlign.center,
+                          style: AppTypography.body.copyWith(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            letterSpacing: 0.3,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      Text(
-                        l.onboardingVerse,
-                        textAlign: TextAlign.center,
-                        style: AppTypography.body.copyWith(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontStyle: FontStyle.italic,
-                          height: 1.6,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -97,7 +90,7 @@ class _DoveAnimation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 280,
+      height: 300,
       width: double.infinity,
       child: Image.asset(
         'assets/animations/colombe.webp',
