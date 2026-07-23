@@ -50,7 +50,8 @@ class WelcomeScreen extends ConsumerWidget {
             child: Column(
               children: [
                 Expanded(
-                  child: Center(
+                  child: Align(
+                    alignment: const Alignment(0, -0.32),
                     child: SingleChildScrollView(
                       padding: AppSpacing.screenPadding,
                       child: Column(
@@ -64,6 +65,7 @@ class WelcomeScreen extends ConsumerWidget {
                             style: AppTypography.h1.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
+                              fontSize: 42,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
@@ -88,7 +90,7 @@ class WelcomeScreen extends ConsumerWidget {
                             style: AppTypography.body.copyWith(
                               color: Colors.white.withValues(alpha: 0.85),
                               fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                              fontSize: 17,
                               letterSpacing: 0.3,
                             ),
                           ),
