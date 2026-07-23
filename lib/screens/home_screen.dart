@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
 import '../router/app_router.dart';
+import '../state/auth_providers.dart';
 import '../state/repository_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
@@ -12,6 +13,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_card.dart';
 import '../widgets/cards/teaching_cover.dart';
+import '../widgets/profile_completion_banner.dart';
 import '../widgets/section_header.dart';
 
 /// Onglet « Accueil » : en-tête ondulé, cultes à venir et derniers enseignements.
@@ -22,6 +24,12 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final events = ref.watch(eventsProvider);
     final teachings = ref.watch(teachingsProvider);
+    // Affiche la bannière « compléter le profil » seulement si pertinente
+    // (utilisateur présent, profil incomplet, bannière non fermée).
+    final user = ref.watch(authProvider).user;
+    final bannerDismissed = ref.watch(profileBannerDismissedProvider);
+    final showBanner =
+        user != null && !user.profileComplete && !bannerDismissed;
     // Dégagement pour la barre de nav givrée (sous laquelle le contenu défile).
     final bottomInset = MediaQuery.paddingOf(context).bottom + AppSpacing.lg;
 
@@ -38,6 +46,15 @@ class HomeScreen extends ConsumerWidget {
               bottom: bottomInset,
             ),
             children: [
+              // Bannière douce d'invitation à compléter le profil (masquée si
+              // profil complet, absent ou fermée).
+              if (showBanner) ...[
+                Padding(
+                  padding: AppSpacing.screenPadding,
+                  child: const ProfileCompletionBanner(),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
               Padding(
                 padding: AppSpacing.screenPadding,
                 child: SectionHeader(

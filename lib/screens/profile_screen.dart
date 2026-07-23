@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/l10n_extension.dart';
+import '../models/models.dart';
 import '../router/app_router.dart';
 import '../state/auth_providers.dart';
 import '../state/theme_provider.dart';
@@ -12,14 +13,12 @@ import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_avatar.dart';
 import '../widgets/menu_tile.dart';
+import '../widgets/profile_completion_banner.dart';
 
 /// Onglet « Profil » : en-tête de marque (avatar, rôle, branche, statistiques,
 /// badges) surmontant une feuille de réglages.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
-
-  static const _name = 'Jean Kossi';
-  static const _branch = 'Église Mère - Lomé';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,12 +27,32 @@ class ProfileScreen extends ConsumerWidget {
     final mode = ref.watch(themeModeProvider);
     final dark = isDarkModeActive(mode, context);
 
+    final user = ref.watch(authProvider).user;
+    final branches = ref.watch(branchesProvider);
+
+    // Nom affiché : recomposition Frère/Sœur + nom, repli sur le rôle générique.
+    final displayName = user?.displayName ?? '';
+    final name = displayName.isEmpty ? l.profileRole : displayName;
+
+    // Branche : « nouveau » ou pas de rattachement → libellé de statut dédié.
+    String branchLabel = l.statusNewLabel;
+    if (user != null &&
+        user.status != UserStatus.nouveau &&
+        user.branchId != null) {
+      for (final b in branches) {
+        if (b.id == user.branchId) {
+          branchLabel = b.name;
+          break;
+        }
+      }
+    }
+
     return Column(
       children: [
         _ProfileHeader(
-          name: _name,
+          name: name,
           role: l.profileRole,
-          branch: _branch,
+          branch: branchLabel,
         ),
         // Feuille de réglages remontant sur l'en-tête.
         Expanded(
@@ -51,6 +70,20 @@ class ProfileScreen extends ConsumerWidget {
                 bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
               ),
               children: [
+                // Bannière douce d'invitation à compléter le profil.
+                if (user != null && !user.profileComplete) ...[
+                  Padding(
+                    padding: AppSpacing.screenPadding,
+                    child: const ProfileCompletionBanner(),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+                MenuTile(
+                  icon: Icons.edit_outlined,
+                  label: l.profileEditAction,
+                  onTap: () => context.goNamed(AppRoute.profileEdit),
+                ),
+                _divider,
                 MenuTile(
                   icon: Icons.dark_mode_outlined,
                   label: l.darkMode,
@@ -77,9 +110,9 @@ class ProfileScreen extends ConsumerWidget {
                   icon: Icons.logout,
                   label: l.logout,
                   destructive: true,
-                  // Déconnexion : le `redirect` du routeur renvoie ensuite
-                  // vers `/auth`. La confirmation viendra avec l'écran complet.
-                  onTap: () => ref.read(authProvider.notifier).signOut(),
+                  // Confirmation puis déconnexion : le `redirect` du routeur
+                  // renvoie ensuite vers `/auth` (pas de navigation manuelle).
+                  onTap: () => _confirmSignOut(context, ref),
                 ),
               ],
             ),
@@ -87,6 +120,33 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// Demande confirmation avant de déconnecter. À confirmation, appelle
+  /// `signOut()` ; la garde de route (`redirect`) renvoie ensuite vers `/auth`.
+  Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
+    final l = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.logoutConfirmTitle),
+        content: Text(l.logoutConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: Text(l.logout),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(authProvider.notifier).signOut();
+    }
   }
 
   static const _divider =
@@ -253,7 +313,7 @@ class _EditButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () => context.goNamed(AppRoute.profileEdit),
       child: Container(
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
