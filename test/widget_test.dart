@@ -15,7 +15,12 @@ void main() {
     );
     await tester.pump();
 
-    // Le splash affiche le nom et la baseline de l'église.
+    // Au démarrage l'état d'auth est `unknown` → le splash reste affiché et
+    // montre le nom de l'église (le `redirect` aiguille ensuite selon l'auth).
     expect(find.text('Maison du Miracle'), findsWidgets);
+
+    // Laisse la résolution de session (currentUser) se terminer pour ne pas
+    // laisser de timer en attente ; sans session, l'app file vers /auth.
+    await tester.pump(const Duration(milliseconds: 400));
   });
 }

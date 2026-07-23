@@ -873,6 +873,192 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Vos dons sont sécurisés'**
   String get donationsSecure;
+
+  /// Bouton d'entrée dans le parcours d'authentification
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencer'**
+  String get authStart;
+
+  /// Lien vers le même écran identifiant (parcours unifié)
+  ///
+  /// In fr, this message translates to:
+  /// **'Déjà membre ?'**
+  String get authAlreadyMember;
+
+  /// Titre de l'écran de saisie de l'identifiant
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoignez-nous'**
+  String get authIdentifierTitle;
+
+  /// Sous-titre de l'écran identifiant
+  ///
+  /// In fr, this message translates to:
+  /// **'Entrez votre numéro ou votre email pour continuer.'**
+  String get authIdentifierSubtitle;
+
+  /// Indication du champ téléphone (sans indicatif)
+  ///
+  /// In fr, this message translates to:
+  /// **'90 12 34 56'**
+  String get authPhoneHint;
+
+  /// Indication du champ email
+  ///
+  /// In fr, this message translates to:
+  /// **'jean.kossi@email.com'**
+  String get authEmailHint;
+
+  /// Bouton pour valider l'identifiant et demander le code
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer'**
+  String get authContinue;
+
+  /// Séparateur au-dessus des boutons Google/Apple
+  ///
+  /// In fr, this message translates to:
+  /// **'Ou continuer avec'**
+  String get authOrContinueWith;
+
+  /// Libellé du sélecteur d'indicatif téléphonique
+  ///
+  /// In fr, this message translates to:
+  /// **'Indicatif'**
+  String get authDialCode;
+
+  /// Titre de l'écran de saisie du code
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérification'**
+  String get authCodeTitle;
+
+  /// Sous-titre de l'écran code, avec la cible (téléphone/email)
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez le code à 4 chiffres envoyé à {target}.'**
+  String authCodeSubtitle(String target);
+
+  /// Bouton pour renvoyer le code de vérification
+  ///
+  /// In fr, this message translates to:
+  /// **'Renvoyer le code'**
+  String get authResend;
+
+  /// Compte à rebours avant de pouvoir renvoyer le code
+  ///
+  /// In fr, this message translates to:
+  /// **'Renvoyer dans {seconds} s'**
+  String authResendIn(int seconds);
+
+  /// Erreur : le code saisi est incorrect
+  ///
+  /// In fr, this message translates to:
+  /// **'Code incorrect'**
+  String get authCodeInvalid;
+
+  /// Erreur : le code a expiré
+  ///
+  /// In fr, this message translates to:
+  /// **'Code expiré, demandez-en un nouveau'**
+  String get authCodeExpired;
+
+  /// Titre de l'écran de complétion / édition du profil
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous aimerions en savoir plus sur vous'**
+  String get profileFormTitle;
+
+  /// Sous-titre de l'écran profil (profil skippable)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces informations restent facultatives et modifiables.'**
+  String get profileFormSubtitle;
+
+  /// Civilité : frère
+  ///
+  /// In fr, this message translates to:
+  /// **'Frère'**
+  String get titleBrother;
+
+  /// Civilité : sœur
+  ///
+  /// In fr, this message translates to:
+  /// **'Sœur'**
+  String get titleSister;
+
+  /// Libellé du champ nom (sans préfixe Frère/Sœur)
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre nom'**
+  String get fieldYourName;
+
+  /// Libellé du sélecteur de branche
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre branche'**
+  String get fieldYourBranch;
+
+  /// Option : pas encore rattaché à une branche
+  ///
+  /// In fr, this message translates to:
+  /// **'Je suis nouveau'**
+  String get branchImNew;
+
+  /// Bouton pour sauter l'étape de complétion du profil
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get actionLater;
+
+  /// Bouton d'enregistrement du profil
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get actionSave;
+
+  /// Action ouvrant l'écran d'édition du profil
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier mon profil'**
+  String get profileEditAction;
+
+  /// Bannière douce invitant à compléter le profil
+  ///
+  /// In fr, this message translates to:
+  /// **'Complétez votre profil'**
+  String get profileIncompleteBanner;
+
+  /// Bouton de la bannière de profil incomplet
+  ///
+  /// In fr, this message translates to:
+  /// **'Compléter'**
+  String get profileIncompleteBannerCta;
+
+  /// Titre de la boîte de confirmation de déconnexion
+  ///
+  /// In fr, this message translates to:
+  /// **'Se déconnecter ?'**
+  String get logoutConfirmTitle;
+
+  /// Message de confirmation de déconnexion
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous devrez saisir un nouveau code pour vous reconnecter.'**
+  String get logoutConfirmMessage;
+
+  /// Bouton d'annulation générique
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get actionCancel;
+
+  /// Libellé du statut « nouveau » (non rattaché à une branche)
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau — pas encore rattaché'**
+  String get statusNewLabel;
 }
 
 class _AppLocalizationsDelegate

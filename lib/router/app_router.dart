@@ -1,30 +1,35 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/models.dart';
 import '../screens/agenda_screen.dart';
+import '../screens/auth/code_screen.dart';
+import '../screens/auth/identifier_screen.dart';
+import '../screens/auth/profile_form_screen.dart';
+import '../screens/auth/welcome_screen.dart';
 import '../screens/donations_screen.dart';
 import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
 import '../screens/live_screen.dart';
-import '../screens/login_screen.dart';
 import '../screens/media_library_screen.dart';
 import '../screens/new_request_screen.dart';
 import '../screens/notes_screen.dart';
-import '../screens/onboarding_screen.dart';
 import '../screens/prayer_requests_screen.dart';
-import '../screens/register_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/teaching_detail_screen.dart';
+import '../state/auth_providers.dart';
 import '../state/repository_providers.dart';
 import '../widgets/app_background.dart';
 
 /// Noms des routes nommées (à utiliser avec `context.goNamed` / `pushNamed`).
 abstract final class AppRoute {
   static const splash = 'splash';
-  static const onboarding = 'onboarding';
-  static const login = 'login';
-  static const register = 'register';
+  // Parcours d'authentification unifié (login + inscription).
+  static const authWelcome = 'auth-welcome';
+  static const authIdentifier = 'auth-identifier';
+  static const authCode = 'auth-code';
+  static const profileEdit = 'profile-edit';
   static const home = 'home';
   static const media = 'media';
   static const live = 'live';
@@ -37,13 +42,57 @@ abstract final class AppRoute {
   static const notes = 'notes';
 }
 
+/// Arguments passés à [CodeScreen] via `extra`.
+///
+/// Pour les agents parallèles : naviguer avec
+/// `context.goNamed(AppRoute.authCode, extra: CodeArgs(identifier: ..., channel: ...))`.
+/// [CodeScreen] les relit via `GoRouterState.of(context).extra as CodeArgs?`.
+@immutable
+class CodeArgs {
+  const CodeArgs({required this.identifier, required this.channel});
+
+  /// Téléphone E.164 ou email déjà normalisé (celui envoyé à `requestCode`).
+  final String identifier;
+  final IdentifierChannel channel;
+}
+
+/// Emplacements autorisés tant que l'utilisateur n'est pas authentifié.
+const _authLocations = {'/auth', '/auth/identifier', '/auth/code'};
+
 /// Routeur de l'application (go_router).
 ///
-/// Exposé via Riverpod pour pouvoir résoudre des dépendances (repository) lors
-/// d'un accès direct à une route de détail sans argument (deep link).
+/// Exposé via Riverpod pour résoudre des dépendances (repository) lors d'un
+/// accès direct à une route de détail, et pour brancher les gardes `redirect`
+/// sur [authProvider].
 final routerProvider = Provider<GoRouter>((ref) {
+  // Pont entre Riverpod et go_router : un ValueNotifier alimenté par
+  // l'AuthState relance l'évaluation des `redirect` à chaque changement.
+  final authListenable = ValueNotifier<AuthState>(ref.read(authProvider));
+  ref.onDispose(authListenable.dispose);
+  ref.listen<AuthState>(
+    authProvider,
+    (_, next) => authListenable.value = next,
+  );
+
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: authListenable,
+    redirect: (context, state) {
+      final auth = authListenable.value;
+      final loc = state.matchedLocation;
+      switch (auth.status) {
+        case AuthStatus.unknown:
+          // Session pas encore résolue : rester sur le splash.
+          return loc == '/' ? null : '/';
+        case AuthStatus.unauthenticated:
+          return _authLocations.contains(loc) ? null : '/auth';
+        case AuthStatus.authenticated:
+          // Depuis splash ou parcours d'auth → accueil. `/profile/edit` et le
+          // reste de l'app restent accessibles.
+          if (loc == '/' || _authLocations.contains(loc)) return '/home';
+          return null;
+      }
+    },
     routes: [
       GoRoute(
         name: AppRoute.splash,
@@ -51,19 +100,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const AppBackground(child: SplashScreen()),
       ),
       GoRoute(
-        name: AppRoute.onboarding,
-        path: '/onboarding',
-        builder: (_, __) => const AppBackground(child: OnboardingScreen()),
+        name: AppRoute.authWelcome,
+        path: '/auth',
+        builder: (_, __) => const AppBackground(child: WelcomeScreen()),
       ),
       GoRoute(
-        name: AppRoute.login,
-        path: '/login',
-        builder: (_, __) => const AppBackground(child: LoginScreen()),
+        name: AppRoute.authIdentifier,
+        path: '/auth/identifier',
+        builder: (_, __) => const AppBackground(child: IdentifierScreen()),
       ),
       GoRoute(
-        name: AppRoute.register,
-        path: '/register',
-        builder: (_, __) => const AppBackground(child: RegisterScreen()),
+        name: AppRoute.authCode,
+        path: '/auth/code',
+        builder: (_, __) => const AppBackground(child: CodeScreen()),
+      ),
+      GoRoute(
+        name: AppRoute.profileEdit,
+        path: '/profile/edit',
+        builder: (_, __) => const AppBackground(child: ProfileFormScreen()),
       ),
       GoRoute(
         name: AppRoute.home,

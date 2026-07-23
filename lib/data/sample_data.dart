@@ -132,6 +132,22 @@ abstract final class SampleData {
         preview: 'Notes personnelles sur le message.'),
   ];
 
+  /// Branches locales de l'église (liste statique en phase mock ; remplacée
+  /// par `GET /branches` en phase backend).
+  static const List<Branch> branches = [
+    Branch(id: 'lome', name: 'Église Mère – Lomé', city: 'Lomé'),
+    Branch(id: 'agoe', name: 'Bethel – Agoè', city: 'Agoè'),
+    Branch(id: 'kara', name: 'Béthesda – Kara', city: 'Kara'),
+    Branch(id: 'paris', name: 'Diaspora – Paris', city: 'Paris'),
+  ];
+
+  /// Identifiants « déjà connus » : le mock renvoie `isNewUser: false` pour
+  /// ceux-ci (→ accueil direct). Emails en minuscules.
+  static const List<String> knownIdentifiers = [
+    '+22890123456',
+    'jean.kossi@email.com',
+  ];
+
   static const List<ChatMessage> chat = [
     ChatMessage(
         author: 'Système',

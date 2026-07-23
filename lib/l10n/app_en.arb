@@ -146,5 +146,43 @@
   "donationsPaymentMethodLabel": "Payment method",
   "paymentCard": "Bank card",
   "actionContinue": "Continue",
-  "donationsSecure": "Your donations are secure"
+  "donationsSecure": "Your donations are secure",
+
+  "authStart": "Get started",
+  "authAlreadyMember": "Already a member?",
+  "authIdentifierTitle": "Join us",
+  "authIdentifierSubtitle": "Enter your phone number or email to continue.",
+  "authPhoneHint": "90 12 34 56",
+  "authEmailHint": "jean.kossi@email.com",
+  "authContinue": "Continue",
+  "authOrContinueWith": "Or continue with",
+  "authDialCode": "Dial code",
+  "authCodeTitle": "Verification",
+  "authCodeSubtitle": "Enter the 4-digit code sent to {target}.",
+  "@authCodeSubtitle": {
+    "placeholders": { "target": { "type": "String", "example": "+228 90 12 34 56" } }
+  },
+  "authResend": "Resend code",
+  "authResendIn": "Resend in {seconds}s",
+  "@authResendIn": {
+    "placeholders": { "seconds": { "type": "int", "example": "45" } }
+  },
+  "authCodeInvalid": "Incorrect code",
+  "authCodeExpired": "Code expired, request a new one",
+  "profileFormTitle": "We'd love to know more about you",
+  "profileFormSubtitle": "This information stays optional and can be changed anytime.",
+  "titleBrother": "Brother",
+  "titleSister": "Sister",
+  "fieldYourName": "Your name",
+  "fieldYourBranch": "Your branch",
+  "branchImNew": "I'm new",
+  "actionLater": "Later",
+  "actionSave": "Save",
+  "profileEditAction": "Edit my profile",
+  "profileIncompleteBanner": "Complete your profile",
+  "profileIncompleteBannerCta": "Complete",
+  "logoutConfirmTitle": "Log out?",
+  "logoutConfirmMessage": "You'll need a new code to log back in.",
+  "actionCancel": "Cancel",
+  "statusNewLabel": "New — not attached yet"
 }

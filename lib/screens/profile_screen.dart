@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
+import '../state/auth_providers.dart';
 import '../state/theme_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
@@ -76,7 +77,9 @@ class ProfileScreen extends ConsumerWidget {
                   icon: Icons.logout,
                   label: l.logout,
                   destructive: true,
-                  onTap: () => context.goNamed(AppRoute.login),
+                  // Déconnexion : le `redirect` du routeur renvoie ensuite
+                  // vers `/auth`. La confirmation viendra avec l'écran complet.
+                  onTap: () => ref.read(authProvider.notifier).signOut(),
                 ),
               ],
             ),

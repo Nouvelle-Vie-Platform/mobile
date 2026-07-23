@@ -1,8 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/l10n/l10n_extension.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
-import 'package:maison_du_miracle/screens/login_screen.dart';
+
+/// Sonde minimale affichant deux clés : une traduite en éwé (`actionLogin`) et
+/// une non traduite (`loginTitle`, → repli français) pour valider le repli.
+class _L10nProbe extends StatelessWidget {
+  const _L10nProbe();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(context.l10n.actionLogin),
+        Text(context.l10n.loginTitle),
+      ],
+    );
+  }
+}
 
 Future<void> _pumpInLocale(WidgetTester tester, Locale locale) async {
   await tester.pumpWidget(
@@ -11,7 +27,7 @@ Future<void> _pumpInLocale(WidgetTester tester, Locale locale) async {
         locale: locale,
         localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: appSupportedLocales,
-        home: const LoginScreen(),
+        home: const _L10nProbe(),
       ),
     ),
   );

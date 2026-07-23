@@ -410,4 +410,103 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get donationsSecure => 'Your donations are secure';
+
+  @override
+  String get authStart => 'Get started';
+
+  @override
+  String get authAlreadyMember => 'Already a member?';
+
+  @override
+  String get authIdentifierTitle => 'Join us';
+
+  @override
+  String get authIdentifierSubtitle =>
+      'Enter your phone number or email to continue.';
+
+  @override
+  String get authPhoneHint => '90 12 34 56';
+
+  @override
+  String get authEmailHint => 'jean.kossi@email.com';
+
+  @override
+  String get authContinue => 'Continue';
+
+  @override
+  String get authOrContinueWith => 'Or continue with';
+
+  @override
+  String get authDialCode => 'Dial code';
+
+  @override
+  String get authCodeTitle => 'Verification';
+
+  @override
+  String authCodeSubtitle(String target) {
+    return 'Enter the 4-digit code sent to $target.';
+  }
+
+  @override
+  String get authResend => 'Resend code';
+
+  @override
+  String authResendIn(int seconds) {
+    return 'Resend in ${seconds}s';
+  }
+
+  @override
+  String get authCodeInvalid => 'Incorrect code';
+
+  @override
+  String get authCodeExpired => 'Code expired, request a new one';
+
+  @override
+  String get profileFormTitle => 'We\'d love to know more about you';
+
+  @override
+  String get profileFormSubtitle =>
+      'This information stays optional and can be changed anytime.';
+
+  @override
+  String get titleBrother => 'Brother';
+
+  @override
+  String get titleSister => 'Sister';
+
+  @override
+  String get fieldYourName => 'Your name';
+
+  @override
+  String get fieldYourBranch => 'Your branch';
+
+  @override
+  String get branchImNew => 'I\'m new';
+
+  @override
+  String get actionLater => 'Later';
+
+  @override
+  String get actionSave => 'Save';
+
+  @override
+  String get profileEditAction => 'Edit my profile';
+
+  @override
+  String get profileIncompleteBanner => 'Complete your profile';
+
+  @override
+  String get profileIncompleteBannerCta => 'Complete';
+
+  @override
+  String get logoutConfirmTitle => 'Log out?';
+
+  @override
+  String get logoutConfirmMessage => 'You\'ll need a new code to log back in.';
+
+  @override
+  String get actionCancel => 'Cancel';
+
+  @override
+  String get statusNewLabel => 'New — not attached yet';
 }

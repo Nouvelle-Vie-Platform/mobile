@@ -410,4 +410,104 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get donationsSecure => 'Vos dons sont sécurisés';
+
+  @override
+  String get authStart => 'Commencer';
+
+  @override
+  String get authAlreadyMember => 'Déjà membre ?';
+
+  @override
+  String get authIdentifierTitle => 'Rejoignez-nous';
+
+  @override
+  String get authIdentifierSubtitle =>
+      'Entrez votre numéro ou votre email pour continuer.';
+
+  @override
+  String get authPhoneHint => '90 12 34 56';
+
+  @override
+  String get authEmailHint => 'jean.kossi@email.com';
+
+  @override
+  String get authContinue => 'Continuer';
+
+  @override
+  String get authOrContinueWith => 'Ou continuer avec';
+
+  @override
+  String get authDialCode => 'Indicatif';
+
+  @override
+  String get authCodeTitle => 'Vérification';
+
+  @override
+  String authCodeSubtitle(String target) {
+    return 'Saisissez le code à 4 chiffres envoyé à $target.';
+  }
+
+  @override
+  String get authResend => 'Renvoyer le code';
+
+  @override
+  String authResendIn(int seconds) {
+    return 'Renvoyer dans $seconds s';
+  }
+
+  @override
+  String get authCodeInvalid => 'Code incorrect';
+
+  @override
+  String get authCodeExpired => 'Code expiré, demandez-en un nouveau';
+
+  @override
+  String get profileFormTitle => 'Nous aimerions en savoir plus sur vous';
+
+  @override
+  String get profileFormSubtitle =>
+      'Ces informations restent facultatives et modifiables.';
+
+  @override
+  String get titleBrother => 'Frère';
+
+  @override
+  String get titleSister => 'Sœur';
+
+  @override
+  String get fieldYourName => 'Votre nom';
+
+  @override
+  String get fieldYourBranch => 'Votre branche';
+
+  @override
+  String get branchImNew => 'Je suis nouveau';
+
+  @override
+  String get actionLater => 'Plus tard';
+
+  @override
+  String get actionSave => 'Enregistrer';
+
+  @override
+  String get profileEditAction => 'Modifier mon profil';
+
+  @override
+  String get profileIncompleteBanner => 'Complétez votre profil';
+
+  @override
+  String get profileIncompleteBannerCta => 'Compléter';
+
+  @override
+  String get logoutConfirmTitle => 'Se déconnecter ?';
+
+  @override
+  String get logoutConfirmMessage =>
+      'Vous devrez saisir un nouveau code pour vous reconnecter.';
+
+  @override
+  String get actionCancel => 'Annuler';
+
+  @override
+  String get statusNewLabel => 'Nouveau — pas encore rattaché';
 }

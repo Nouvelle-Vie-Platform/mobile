@@ -32,9 +32,10 @@ class SplashScreen extends StatelessWidget {
                         .copyWith(color: Colors.white.withValues(alpha: 0.85))),
                 const Spacer(flex: 3),
                 // Bouton invisible déclenchant l'entrée (remplace l'auto-timer
-                // pour rester sans état tout en restant navigable).
+                // pour rester sans état tout en restant navigable). Le
+                // `redirect` du routeur aiguille ensuite selon l'état d'auth.
                 TextButton(
-                  onPressed: () => context.goNamed(AppRoute.onboarding),
+                  onPressed: () => context.goNamed(AppRoute.authWelcome),
                   child: const SizedBox(
                     width: 28,
                     height: 28,

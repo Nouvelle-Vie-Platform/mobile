@@ -30,5 +30,12 @@
 
   "donationsTitle": "Do alɔ Mawu ƒe dɔ la",
   "actionContinue": "Yi edzi",
-  "actionSend": "Ɖo ɖa"
+  "actionSend": "Ɖo ɖa",
+
+  "authStart": "Dze egɔme",
+  "authContinue": "Yi edzi",
+  "titleBrother": "Nɔviŋutsu",
+  "titleSister": "Nɔvinyɔnu",
+  "actionCancel": "Gbugbɔ",
+  "actionSave": "Dzra ɖo"
 }
