@@ -272,15 +272,6 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
                     final isSelected =
                         country.countryCode == _dialCountry.countryCode;
                     return ListTile(
-                      leading: SizedBox(
-                        width: 36,
-                        child: Text(
-                          country.countryCode,
-                          style: AppTypography.bodyStrong.copyWith(
-                            color: palette.textSecondary,
-                          ),
-                        ),
-                      ),
                       title: Text(country.name, style: AppTypography.body),
                       trailing: Text(
                         country.dialCode,
@@ -393,13 +384,6 @@ class _DialCodeButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                country.countryCode,
-                style: AppTypography.bodyStrong.copyWith(
-                  color: palette.textSecondary,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
               Text(country.dialCode, style: AppTypography.bodyStrong),
               Icon(Icons.arrow_drop_down, color: palette.textSecondary),
             ],
