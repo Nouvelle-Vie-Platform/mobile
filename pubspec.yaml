@@ -26,6 +26,9 @@ flutter:
   uses-material-design: true
   generate: true
 
+  assets:
+    - assets/animations/colombe.webp
+
   fonts:
     - family: Atkinson Hyperlegible
       fonts:
