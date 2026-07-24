@@ -213,9 +213,16 @@ Chaque commit compile, `flutter analyze` à 0 problème, `flutter test` vert.
    factice. Aucun rendu.
 3. `feat(announcements)` — visionneuse plein écran : pager, gestes, barre de
    segments, fonds, waveform, texte adaptatif.
-4. `feat(announcements)` — feuille modale liste + cycle de vie (pause hors
-   onglet, `AppLifecycleState`, FAB translucide, bouton muet).
-5. `test` — les trois tests.
+4. `feat(announcements)` — feuille modale liste + FAB translucide + bouton muet.
+
+Deux écarts assumés à l'exécution :
+
+- le **cycle de vie** (pause hors onglet, `AppLifecycleState`) est passé du
+  commit 4 au commit 3 : livrer une visionneuse qui joue du son en tâche de
+  fond n'est pas un état intermédiaire acceptable ;
+- les **tests accompagnent chaque commit** au lieu d'être regroupés dans un
+  cinquième. Un commit qui livre un pager piloté par une minuterie sans test
+  qui le monte est exactement ce qui casse en CI trois jours plus tard.
 
 `AnnouncementCard` est **réutilisé en le compactant** pour les vignettes de la
 feuille modale, pas supprimé : il porte déjà tag, date et titre.

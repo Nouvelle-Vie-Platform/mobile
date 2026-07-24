@@ -48,6 +48,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusVideoBadge => 'Video';
 
   @override
+  String get statusListTitle => 'All announcements';
+
+  @override
+  String get statusOpenList => 'See all announcements';
+
+  @override
+  String get statusMute => 'Mute';
+
+  @override
+  String get statusUnmute => 'Unmute';
+
+  @override
   String get timeJustNow => 'Just now';
 
   @override

@@ -178,6 +178,30 @@ abstract class AppLocalizations {
   /// **'Vidéo'**
   String get statusVideoBadge;
 
+  /// Titre de la feuille listant les statuts
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les annonces'**
+  String get statusListTitle;
+
+  /// Bouton ouvrant la liste des statuts
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir toutes les annonces'**
+  String get statusOpenList;
+
+  /// Bouton coupant le son des statuts
+  ///
+  /// In fr, this message translates to:
+  /// **'Couper le son'**
+  String get statusMute;
+
+  /// Bouton réactivant le son des statuts
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer le son'**
+  String get statusUnmute;
+
   /// Horodatage relatif : moins d'une minute
   ///
   /// In fr, this message translates to:

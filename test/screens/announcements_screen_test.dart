@@ -144,6 +144,45 @@ void main() {
     );
 
     testWidgets(
+      'le bouton liste ouvre la feuille et permet de sauter à un statut',
+      (tester) async {
+        await pumpViewer(tester, [
+          _status(id: 'recent', title: 'Convention annuelle'),
+          _status(
+            id: 'ancien',
+            title: 'Collecte solidaire',
+            age: const Duration(days: 3),
+          ),
+        ]);
+
+        await tester.tap(find.byIcon(Icons.format_list_bulleted_rounded));
+        await tester.pumpAndSettle();
+
+        // La feuille liste bien tout l'historique, pas seulement le statut vu.
+        expect(find.text('Toutes les annonces'), findsOneWidget);
+        expect(find.text('Collecte solidaire'), findsOneWidget);
+
+        await tester.tap(find.text('Collecte solidaire'));
+        await tester.pumpAndSettle();
+
+        // Retour à la visionneuse, positionnée sur le statut choisi.
+        expect(find.text('Toutes les annonces'), findsNothing);
+        expect(find.text('Collecte solidaire'), findsOneWidget);
+      },
+    );
+
+    testWidgets('le bouton muet bascule l’état du son', (tester) async {
+      await pumpViewer(tester, [_status(id: 'texte', body: 'Paix sur vous.')]);
+
+      expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.volume_up_rounded));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
+    });
+
+    testWidgets(
       'une image de fond en échec réseau retombe sans lever',
       (tester) async {
         // Sous `flutter test`, toute requête réseau renvoie 400 : c'est donc le

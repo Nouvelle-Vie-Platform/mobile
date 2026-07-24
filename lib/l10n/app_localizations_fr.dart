@@ -49,6 +49,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get statusVideoBadge => 'Vidéo';
 
   @override
+  String get statusListTitle => 'Toutes les annonces';
+
+  @override
+  String get statusOpenList => 'Voir toutes les annonces';
+
+  @override
+  String get statusMute => 'Couper le son';
+
+  @override
+  String get statusUnmute => 'Activer le son';
+
+  @override
   String get timeJustNow => 'À l\'instant';
 
   @override

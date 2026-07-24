@@ -16,6 +16,10 @@
   "announcementsEmptyTitle": "No announcements",
   "announcementsEmptyBody": "Church announcements will appear here.",
   "statusVideoBadge": "Video",
+  "statusListTitle": "All announcements",
+  "statusOpenList": "See all announcements",
+  "statusMute": "Mute",
+  "statusUnmute": "Unmute",
 
   "timeJustNow": "Just now",
   "@timeJustNow": { "description": "Relative timestamp: less than a minute" },

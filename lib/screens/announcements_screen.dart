@@ -10,6 +10,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/status/status_background.dart';
 import '../widgets/status/status_content.dart';
+import '../widgets/status/status_list_sheet.dart';
 import '../widgets/status/status_segmented_progress.dart';
 import '../widgets/status/status_waveform.dart';
 
@@ -25,7 +26,11 @@ import '../widgets/status/status_waveform.dart';
 /// gestes attribue naturellement les taps au détecteur et les glissements au
 /// pager ou au texte.
 class AnnouncementsScreen extends ConsumerStatefulWidget {
-  const AnnouncementsScreen({super.key, this.isActive = true});
+  const AnnouncementsScreen({
+    super.key,
+    this.isActive = true,
+    this.onVideoChanged,
+  });
 
   /// Vrai lorsque cet onglet est celui affiché par la coquille.
   ///
@@ -33,6 +38,13 @@ class AnnouncementsScreen extends ConsumerStatefulWidget {
   /// `IndexedStack`, donc cet écran vit en permanence. Sans cette garde, les
   /// statuts défileraient en tâche de fond et le son démarrerait au lancement.
   final bool isActive;
+
+  /// Notifie la coquille que le statut courant est (ou n'est plus) une vidéo,
+  /// afin qu'elle rende son FAB translucide au-dessus.
+  ///
+  /// Remontée par rappel plutôt que par un provider global : l'information ne
+  /// concerne que la coquille, et l'onglet actif descend déjà par paramètre.
+  final ValueChanged<bool>? onVideoChanged;
 
   @override
   ConsumerState<AnnouncementsScreen> createState() =>
@@ -55,6 +67,9 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
 
   /// Application au premier plan.
   bool _foreground = true;
+
+  /// Feuille listant les statuts ouverte par-dessus la visionneuse.
+  bool _sheetOpen = false;
 
   @override
   void initState() {
@@ -97,7 +112,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
   /// La lecture n'a lieu que si l'onglet est visible, l'application au premier
   /// plan, et qu'aucun geste de lecture ne la suspend.
   bool get _shouldPlay =>
-      widget.isActive && _foreground && !_held && !_scrolling;
+      widget.isActive && _foreground && !_held && !_scrolling && !_sheetOpen;
 
   /// Chaîne de résolution de la durée (§4) : durée du média annoncée par le
   /// back → durée d'affichage du statut → défaut par type. La durée réelle du
@@ -120,7 +135,31 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
       mediaUrl: status.audio?.url ?? status.video?.url,
       fallbackDuration: _durationFor(status),
     );
+    widget.onVideoChanged?.call(status.video != null);
     _syncPlayback();
+  }
+
+  /// Ouvre la liste par-dessus la visionneuse : lecture suspendue le temps du
+  /// choix, puis saut direct au statut retenu.
+  Future<void> _openList() async {
+    final statuses = _statuses;
+    if (statuses.isEmpty) return;
+    _sheetOpen = true;
+    _syncPlayback();
+    final chosen = await showStatusListSheet(
+      context,
+      statuses: statuses,
+      currentIndex: _index,
+    );
+    if (!mounted) return;
+    _sheetOpen = false;
+    if (chosen != null && chosen != _index) {
+      // Saut direct plutôt qu'animation : d'un bout à l'autre de l'historique,
+      // faire défiler toutes les pages intermédiaires n'a aucun sens.
+      _pageController.jumpToPage(chosen);
+    } else {
+      _syncPlayback();
+    }
   }
 
   void _syncPlayback() {
@@ -172,6 +211,12 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
 
   @override
   Widget build(BuildContext context) {
+    // L'état « muet » vit dans un provider (partagé, mémorisé pour la session) ;
+    // le lecteur en est seulement informé — il ne le rediffuse pas, pour ne pas
+    // faire repeindre toute la visionneuse à chaque bascule.
+    ref.listen<bool>(
+        statusMutedProvider, (_, muted) => _player.setMuted(muted));
+
     final statuses = ref.watch(announcementsProvider);
     if (statuses.isEmpty) return const _EmptyState();
 
@@ -220,8 +265,66 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
               },
             ),
           ),
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + AppSpacing.lg,
+            right: AppSpacing.sm,
+            child: _Actions(
+              foreground: StatusBackground.foregroundFor(
+                statuses[_index].id,
+                backgroundColor: statuses[_index].backgroundColor,
+                imageUrl: statuses[_index].video?.poster ??
+                    statuses[_index].backgroundImage,
+              ),
+              muted: ref.watch(statusMutedProvider),
+              onToggleMute: () =>
+                  ref.read(statusMutedProvider.notifier).toggle(),
+              onOpenList: _openList,
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// Actions de la visionneuse : coupure du son et accès à la liste.
+///
+/// Elles sont posées **au-dessus** du détecteur de gestes de l'écran : un tap
+/// sur un bouton est capté par le bouton (l'arène de gestes privilégie le
+/// widget le plus profond) et ne fait donc pas avancer le statut.
+class _Actions extends StatelessWidget {
+  const _Actions({
+    required this.foreground,
+    required this.muted,
+    required this.onToggleMute,
+    required this.onOpenList,
+  });
+
+  final Color foreground;
+  final bool muted;
+  final VoidCallback onToggleMute;
+  final VoidCallback onOpenList;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          onPressed: onToggleMute,
+          color: foreground,
+          tooltip: muted ? context.l10n.statusUnmute : context.l10n.statusMute,
+          icon: Icon(
+            muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+          ),
+        ),
+        IconButton(
+          onPressed: onOpenList,
+          color: foreground,
+          tooltip: context.l10n.statusOpenList,
+          icon: const Icon(Icons.format_list_bulleted_rounded),
+        ),
+      ],
     );
   }
 }

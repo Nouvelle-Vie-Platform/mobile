@@ -33,27 +33,45 @@ class _HomeShellState extends State<HomeShell> {
   /// il reste de l'état local de la coquille.
   static const int _announcementsTab = 1;
 
+  /// Le statut affiché est une vidéo : le FAB s'efface pour ne pas trouer
+  /// l'image. Remonté par rappel depuis l'onglet — la coquille est seule
+  /// concernée, inutile d'en faire un état global.
+  bool _videoStatus = false;
+
   @override
   Widget build(BuildContext context) {
     final tabs = <Widget>[
       const HomeScreen(),
-      AnnouncementsScreen(isActive: _index == _announcementsTab),
+      AnnouncementsScreen(
+        isActive: _index == _announcementsTab,
+        onVideoChanged: (isVideo) {
+          if (_videoStatus == isVideo) return;
+          setState(() => _videoStatus = isVideo);
+        },
+      ),
       const GroupsScreen(),
       const ProfileScreen(),
     ];
+
+    final dimFab = _index == _announcementsTab && _videoStatus;
 
     return Scaffold(
       // Le contenu s'étend derrière la barre givrée (effet verre dépoli).
       extendBody: true,
       body: IndexedStack(index: _index, children: tabs),
-      // Bouton central : accès à la médiathèque.
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.pushNamed(AppRoute.media),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.play_arrow_rounded, size: 32),
+      // Bouton central : accès à la médiathèque. Il s'estompe au-dessus d'un
+      // statut vidéo, sans jamais disparaître : il reste utilisable.
+      floatingActionButton: AnimatedOpacity(
+        opacity: dimFab ? 0.4 : 1,
+        duration: const Duration(milliseconds: 200),
+        child: FloatingActionButton(
+          onPressed: () => context.pushNamed(AppRoute.media),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          shape: const CircleBorder(),
+          child: const Icon(Icons.play_arrow_rounded, size: 32),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: AppBottomNav(
