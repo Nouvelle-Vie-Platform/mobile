@@ -35,57 +35,69 @@ class HomeScreen extends ConsumerWidget {
     // remontée entièrement au-dessus d'elle.
     final bottomInset =
         MediaQuery.paddingOf(context).bottom + AppSpacing.xxxl + AppSpacing.xl;
+    // Hauteur de l'en-tête : il est posé PAR-DESSUS la liste (Stack) pour que
+    // le contenu glisse dessous au défilement au lieu d'être coupé avant lui.
+    final headerHeight = MediaQuery.paddingOf(context).top + _headerBodyHeight;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Stack(
+      // `expand` : sans cela le Stack se dimensionnerait sur l'en-tête et la
+      // liste serait réduite à sa hauteur.
+      fit: StackFit.expand,
       children: [
-        // En-tête fixe : ne défile pas avec le contenu.
-        _WavyHeader(name: _firstName(user)),
-        // Contenu défilant sous l'en-tête.
-        Expanded(
-          child: ListView(
-            padding: EdgeInsets.only(
-              top: AppSpacing.xl,
-              bottom: bottomInset,
-            ),
-            children: [
-              // Bannière douce d'invitation à compléter le profil (masquée si
-              // profil complet, absent ou fermée).
-              if (showBanner) ...[
-                Padding(
-                  padding: AppSpacing.screenPadding,
-                  child: const ProfileCompletionBanner(),
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-              Padding(
-                padding: AppSpacing.screenPadding,
-                child: SectionHeader(
-                  title: context.l10n.sectionUpcoming,
-                  icon: Icons.calendar_month_outlined,
-                  actionLabel: context.l10n.actionSeeAll,
-                  onAction: () => context.pushNamed(AppRoute.agenda),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _ServicesList(events: events),
-              const SizedBox(height: AppSpacing.xl),
-              Padding(
-                padding: AppSpacing.screenPadding,
-                child: SectionHeader(
-                  title: context.l10n.sectionLatestTeachings,
-                  icon: Icons.menu_book_outlined,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _TeachingsCarousel(teachings: teachings),
-            ],
+        // Contenu défilant : démarre sous l'en-tête et passe derrière lui.
+        ListView(
+          padding: EdgeInsets.only(
+            top: headerHeight + AppSpacing.md,
+            bottom: bottomInset,
           ),
+          children: [
+            // Bannière douce d'invitation à compléter le profil (masquée si
+            // profil complet, absent ou fermée).
+            if (showBanner) ...[
+              Padding(
+                padding: AppSpacing.screenPadding,
+                child: const ProfileCompletionBanner(),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
+            Padding(
+              padding: AppSpacing.screenPadding,
+              child: SectionHeader(
+                title: context.l10n.sectionUpcoming,
+                icon: Icons.calendar_month_outlined,
+                actionLabel: context.l10n.actionSeeAll,
+                onAction: () => context.pushNamed(AppRoute.agenda),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _ServicesList(events: events),
+            const SizedBox(height: AppSpacing.xl),
+            Padding(
+              padding: AppSpacing.screenPadding,
+              child: SectionHeader(
+                title: context.l10n.sectionLatestTeachings,
+                icon: Icons.menu_book_outlined,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _TeachingsCarousel(teachings: teachings),
+          ],
+        ),
+        // En-tête opaque posé par-dessus : le contenu disparaît derrière lui.
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: _WavyHeader(name: _firstName(user), height: headerHeight),
         ),
       ],
     );
   }
 }
+
+/// Hauteur du corps de l'en-tête (sous l'encoche). Fixe, car l'en-tête est
+/// superposé à la liste : le décalage haut du contenu doit être connu.
+const double _headerBodyHeight = 274;
 
 /// En-tête « plein écran » au dégradé bleu→teal, découpé en vague à sa base.
 /// Prénom d'usage pour la salutation : premier mot du nom saisi au profil.
@@ -98,86 +110,128 @@ String? _firstName(User? user) {
 }
 
 class _WavyHeader extends StatelessWidget {
-  const _WavyHeader({required this.name});
+  const _WavyHeader({required this.name, required this.height});
   final String? name;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: _HeaderWaveClipper(),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppColors.gradientHomeHeader),
-        child: Stack(
-          children: [
-            // Église + rayons, calés à droite. L'image est déjà fondue à
-            // gauche (alpha) : elle se marie au dégradé sans raccord visible.
-            Positioned.fill(
-              child: Align(
-                alignment: Alignment.bottomRight,
-                child: Image.asset(
-                  'assets/images/home_header_church.webp',
-                  // Hauteur de l'en-tête, ratio conservé : l'église occupe la
-                  // moitié droite comme sur la maquette (pas de zoom).
-                  fit: BoxFit.fitHeight,
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: ClipPath(
+        clipper: _HeaderWaveClipper(),
+        child: DecoratedBox(
+          decoration:
+              const BoxDecoration(gradient: AppColors.gradientHomeHeader),
+          child: Stack(
+            children: [
+              // Église + rayons, calés à droite. L'image est déjà fondue à
+              // gauche (alpha) : elle se marie au dégradé sans raccord visible.
+              Positioned.fill(
+                child: Align(
                   alignment: Alignment.bottomRight,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  child: Image.asset(
+                    'assets/images/home_header_church.webp',
+                    // Hauteur de l'en-tête, ratio conservé : l'église occupe la
+                    // moitié droite comme sur la maquette (pas de zoom).
+                    fit: BoxFit.fitHeight,
+                    alignment: Alignment.bottomRight,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(
-                top: MediaQuery.paddingOf(context).top + AppSpacing.md,
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
-                // Dégagement pour la vague découpée à la base.
-                bottom: AppSpacing.xxxl + AppSpacing.lg,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Icon(Icons.menu, color: Colors.white, size: 28),
-                      _NotificationBell(),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  Text(
-                    name == null
-                        ? context.l10n.homeGreetingNoName
-                        : context.l10n.homeGreeting(name!),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Georgia',
-                      fontFamilyFallback: ['Times New Roman', 'serif'],
-                      fontSize: 34,
-                      fontWeight: FontWeight.w700,
-                      height: 1.15,
+              // Voile bleu : tamise la photo (trop lumineuse brute) et adoucit
+              // son bord droit pour éviter la coupe nette.
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Color(0xCC022163),
+                        Color(0x73022163),
+                        Color(0x8C012A72),
+                      ],
+                      stops: [0.30, 0.68, 1.0],
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  // Barre jaune sous la salutation (accent de la maquette).
-                  Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Fondu vaporeux à la base : l'église se dissout dans le fond
+              // du contenu au lieu d'être tranchée par la vague.
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0x00ECF1FB),
+                        Color(0x2EECF1FB),
+                        Color(0x8CECF1FB),
+                      ],
+                      stops: [0.62, 0.86, 1.0],
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    context.l10n.homeBlessing,
-                    style: AppTypography.bodyLarge
-                        .copyWith(color: Colors.white.withValues(alpha: 0.88)),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  const _LiveCtaPill(),
-                ],
+                ),
               ),
-            ),
-          ],
+              Padding(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.paddingOf(context).top + AppSpacing.md,
+                  left: AppSpacing.lg,
+                  right: AppSpacing.lg,
+                  // Dégagement pour la vague découpée à la base.
+                  bottom: AppSpacing.xxxl + AppSpacing.lg,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Icon(Icons.menu, color: Colors.white, size: 28),
+                        _NotificationBell(),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    Text(
+                      name == null
+                          ? context.l10n.homeGreetingNoName
+                          : context.l10n.homeGreeting(name!),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Georgia',
+                        fontFamilyFallback: ['Times New Roman', 'serif'],
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        height: 1.15,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    // Barre jaune sous la salutation (accent de la maquette).
+                    Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      context.l10n.homeBlessing,
+                      style: AppTypography.bodyLarge.copyWith(
+                          color: Colors.white.withValues(alpha: 0.88)),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    const _LiveCtaPill(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
