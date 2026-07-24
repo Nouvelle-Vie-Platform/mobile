@@ -496,6 +496,24 @@ abstract class AppLocalizations {
   /// **'Derniers enseignements'**
   String get sectionLatestTeachings;
 
+  /// Rubrique d'accueil : les messages portés au culte dominical
+  ///
+  /// In fr, this message translates to:
+  /// **'Messages du dimanche'**
+  String get sectionSundayMessage;
+
+  /// No description provided for @sectionBibleStudy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Études bibliques'**
+  String get sectionBibleStudy;
+
+  /// Rubrique d'accueil : enregistrements centrés sur la prière (veillées, intercession)
+  ///
+  /// In fr, this message translates to:
+  /// **'Moments de prière'**
+  String get sectionPrayerTimes;
+
   /// No description provided for @mediaTitle.
   ///
   /// In fr, this message translates to:

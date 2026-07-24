@@ -179,7 +179,125 @@ abstract final class SampleData {
     ),
   ];
 
+  /// Enseignements, du plus récent au plus ancien.
+  ///
+  /// La [Teaching.rubric] décide de la rubrique d'accueil : les messages du
+  /// dimanche et les études bibliques ont leur propre section, les autres
+  /// alimentent « Derniers enseignements ». La médiathèque, elle, les affiche
+  /// tous.
   static const List<Teaching> teachings = [
+    // ── Messages du dimanche ────────────────────────────────────────────────
+    Teaching(
+        title: 'Dieu a le dernier mot',
+        author: 'Pasteur Samuel',
+        duration: '48:20',
+        seed: 4,
+        color: 0xFF223B8C,
+        image: 'https://picsum.photos/seed/dimanche/600/800',
+        description:
+            'Là où les circonstances semblent avoir tranché, Dieu garde la '
+            'parole finale sur nos vies, nos familles et nos projets.',
+        verse: 'Romains 8:31',
+        rubric: TeachingRubric.dimanche),
+    Teaching(
+        title: 'Une maison bâtie sur le roc',
+        author: 'Pasteur Mike',
+        duration: '52:05',
+        seed: 5,
+        color: 0xFF3B5BD0,
+        image: 'https://picsum.photos/seed/roc/600/800',
+        description:
+            'Ce qui tient debout dans la tempête n\'est pas ce qui brille, '
+            'mais ce qui est fondé sur la Parole mise en pratique.',
+        verse: 'Matthieu 7:24',
+        rubric: TeachingRubric.dimanche),
+    Teaching(
+        title: 'Le temps de la faveur',
+        author: 'Pasteur Samuel',
+        duration: '45:30',
+        seed: 6,
+        color: 0xFF1FA971,
+        image: 'https://picsum.photos/seed/faveur/600/800',
+        description:
+            'Il y a des saisons que Dieu fixe lui-même : reconnaître le temps '
+            'de sa faveur, c\'est cesser de courir après ce qu\'Il donne.',
+        verse: 'Psaume 102:13',
+        rubric: TeachingRubric.dimanche),
+    // ── Études bibliques ────────────────────────────────────────────────────
+    Teaching(
+        title: 'Romains : vivre par la grâce',
+        author: 'Pasteur Jonas',
+        duration: '1:04:30',
+        seed: 7,
+        color: 0xFF7A5AF8,
+        image: 'https://picsum.photos/seed/romains/600/800',
+        description:
+            'Première étape d\'un parcours dans l\'épître aux Romains : la '
+            'justification par la foi, verset après verset.',
+        verse: 'Romains 5:1',
+        rubric: TeachingRubric.etude),
+    Teaching(
+        title: 'Les alliances de Dieu, pas à pas',
+        author: 'Pasteur Mike',
+        duration: '58:15',
+        seed: 8,
+        color: 0xFFE53935,
+        image: 'https://picsum.photos/seed/alliance/600/800',
+        description:
+            'D\'Abraham à la nouvelle alliance : comprendre le fil que Dieu '
+            'tire d\'un bout à l\'autre de l\'Écriture.',
+        verse: 'Genèse 9:13',
+        rubric: TeachingRubric.etude),
+    Teaching(
+        title: 'Prier avec les Psaumes',
+        author: 'Sœur Estelle',
+        duration: '47:05',
+        seed: 9,
+        color: 0xFF2A9D8F,
+        image: 'https://picsum.photos/seed/psaumes/600/800',
+        description:
+            'Les Psaumes mettent des mots sur ce que nous n\'osons pas dire : '
+            'apprendre à en faire notre langue de prière.',
+        verse: 'Psaume 63:2',
+        rubric: TeachingRubric.etude),
+    // ── Temps de prière ─────────────────────────────────────────────────────
+    Teaching(
+        title: 'Veillée : le cri du matin',
+        author: 'Pasteur Samuel',
+        duration: '1:18:40',
+        seed: 10,
+        color: 0xFF1B2A6B,
+        image: 'https://picsum.photos/seed/veillee/600/800',
+        description:
+            'Une nuit entière portée devant Dieu : quelques mots d\'exhortation, '
+            'puis la prière de l\'assemblée jusqu\'au lever du jour.',
+        verse: 'Psaume 5:4',
+        rubric: TeachingRubric.priere),
+    Teaching(
+        title: 'Intercession pour la nation',
+        author: 'Pasteur Jonas',
+        duration: '54:25',
+        seed: 11,
+        color: 0xFF0F766E,
+        image: 'https://picsum.photos/seed/intercession/600/800',
+        description:
+            'Nous nous tenons sur la brèche pour le pays, les autorités et la '
+            'paix de nos villes.',
+        verse: 'Ézéchiel 22:30',
+        rubric: TeachingRubric.priere),
+    Teaching(
+        title: 'Prière pour les familles',
+        author: 'Sœur Estelle',
+        duration: '41:10',
+        seed: 12,
+        color: 0xFF9333EA,
+        image: 'https://picsum.photos/seed/familles/600/800',
+        description:
+            'Un temps de prière pour les foyers : les couples, les enfants et '
+            'ceux qui portent seuls leur maison.',
+        verse: 'Josué 24:15',
+        rubric: TeachingRubric.priere),
+    // ── Hors rubrique ───────────────────────────────────────────────────────
     Teaching(
         title: 'La puissance de la prière',
         author: 'Pasteur Samuel',

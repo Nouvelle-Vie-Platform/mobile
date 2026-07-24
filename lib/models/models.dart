@@ -159,6 +159,26 @@ class Announcement {
   }
 }
 
+/// Rubrique éditoriale d'un enseignement — pilote son classement sur l'accueil.
+///
+/// JSON : `"dimanche"` | `"etude"` | `"priere"` | `"libre"`.
+/// `libre` = hors rubrique (série, invité, rediffusion…) : ces enseignements
+/// alimentent « Derniers enseignements ».
+enum TeachingRubric {
+  /// Message porté au culte dominical.
+  dimanche,
+
+  /// Étude biblique de la semaine.
+  etude,
+
+  /// Enregistrement centré sur la prière (veillée, intercession) : peu
+  /// d'enseignement, beaucoup de prière.
+  priere,
+
+  /// Aucune rubrique dédiée.
+  libre,
+}
+
 class Teaching {
   const Teaching({
     required this.title,
@@ -169,12 +189,16 @@ class Teaching {
     this.image,
     this.description = '',
     this.verse,
+    this.rubric = TeachingRubric.libre,
   });
 
   final String title;
   final String author;
   final String duration;
   final int seed;
+
+  /// Rubrique d'accueil à laquelle l'enseignement appartient.
+  final TeachingRubric rubric;
 
   /// Couleur d'habillage (ARGB hexadécimal) pilotant l'écran de détail.
   final int color;

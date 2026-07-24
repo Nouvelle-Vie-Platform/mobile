@@ -45,6 +45,39 @@ final teachingsProvider = Provider<List<Teaching>>(
   (ref) => ref.watch(churchRepositoryProvider).teachings(),
 );
 
+/// Enseignements d'une rubrique donnée, dans l'ordre du repository.
+///
+/// Les rubriques de l'accueil se découpent ici (et non dans le repository) :
+/// le contrat de données reste une simple liste, la mise en rayon est une
+/// affaire de présentation — même principe que [announcementsProvider].
+List<Teaching> _byRubric(Ref ref, TeachingRubric rubric) =>
+    List<Teaching>.unmodifiable(
+      ref.watch(teachingsProvider).where((t) => t.rubric == rubric),
+    );
+
+/// Messages du dimanche (rubrique « Message du dimanche »).
+final sundayTeachingsProvider = Provider<List<Teaching>>(
+  (ref) => _byRubric(ref, TeachingRubric.dimanche),
+);
+
+/// Études bibliques (rubrique « Étude biblique »).
+final bibleStudiesProvider = Provider<List<Teaching>>(
+  (ref) => _byRubric(ref, TeachingRubric.etude),
+);
+
+/// Enregistrements centrés sur la prière (rubrique « Temps de prière »).
+final prayerTeachingsProvider = Provider<List<Teaching>>(
+  (ref) => _byRubric(ref, TeachingRubric.priere),
+);
+
+/// Enseignements hors rubrique dédiée — section « Derniers enseignements ».
+///
+/// Les évite en double sur l'accueil : ce qui est déjà mis en avant plus haut
+/// n'y réapparaît pas.
+final latestTeachingsProvider = Provider<List<Teaching>>(
+  (ref) => _byRubric(ref, TeachingRubric.libre),
+);
+
 /// Groupes communautaires.
 final groupsProvider = Provider<List<CommunityGroup>>(
   (ref) => ref.watch(churchRepositoryProvider).groups(),

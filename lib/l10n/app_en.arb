@@ -88,6 +88,9 @@
   "actionSeeAll": "See all",
   "actionListen": "Listen",
   "sectionLatestTeachings": "Latest teachings",
+  "sectionSundayMessage": "Sunday messages",
+  "sectionBibleStudy": "Bible studies",
+  "sectionPrayerTimes": "Prayer moments",
 
   "mediaTitle": "Media library",
   "mediaSearchHint": "Search for a teaching...",
