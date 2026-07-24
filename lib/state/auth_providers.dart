@@ -2,17 +2,24 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/config/app_env.dart';
 import '../data/repositories/auth_repository.dart';
+import '../data/repositories/http_auth_repository.dart';
 import '../data/sample_data.dart';
 import '../models/models.dart';
 
 /// Fournit l'implémentation courante de [AuthRepository].
 ///
+/// - [AppEnv.useBackend] == true  → [HttpAuthRepository] (backend local)
+/// - [AppEnv.useBackend] == false → [InMemoryAuthRepository] (mock)
+///
 /// Pour brancher un vrai backend (phase B), on surchargera ce provider avec une
 /// autre implémentation — aucun écran ne change (même pattern que
 /// `churchRepositoryProvider`).
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => InMemoryAuthRepository(),
+  (ref) => AppEnv.useBackend
+      ? HttpAuthRepository()
+      : InMemoryAuthRepository(),
 );
 
 /// Branches locales sélectionnables (liste statique en phase mock).
