@@ -71,6 +71,15 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
   /// Feuille listant les statuts ouverte par-dessus la visionneuse.
   bool _sheetOpen = false;
 
+  /// Géométrie de la barre de segments — une seule source de vérité, partagée
+  /// entre la barre posée en surimpression et l'espace que le contenu doit lui
+  /// réserver. Les deux partaient sinon de la même hauteur, et le trait de
+  /// progression coupait le haut de l'avatar.
+  static const double _progressTop = AppSpacing.sm;
+  static const double _progressHeight = 3;
+  static const double _contentTopInset =
+      _progressTop + _progressHeight + AppSpacing.sm;
+
   @override
   void initState() {
     super.initState();
@@ -245,12 +254,13 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
               status: statuses[index],
               isCurrent: index == _index,
               player: _player,
+              topInset: _contentTopInset,
               bottomInset: bottomInset,
               onBodyScroll: _setScrolling,
             ),
           ),
           Positioned(
-            top: MediaQuery.paddingOf(context).top + AppSpacing.sm,
+            top: MediaQuery.paddingOf(context).top + _progressTop,
             left: AppSpacing.lg,
             right: AppSpacing.lg,
             child: ValueListenableBuilder<StatusPlayback>(
@@ -261,6 +271,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
                   count: statuses.length,
                   index: _index,
                   progress: onCurrent ? playback.progress : 0,
+                  height: _progressHeight,
                 );
               },
             ),
@@ -335,6 +346,7 @@ class _StatusPage extends StatelessWidget {
     required this.status,
     required this.isCurrent,
     required this.player,
+    required this.topInset,
     required this.bottomInset,
     required this.onBodyScroll,
   });
@@ -342,6 +354,7 @@ class _StatusPage extends StatelessWidget {
   final Announcement status;
   final bool isCurrent;
   final StatusPlayer player;
+  final double topInset;
   final double bottomInset;
   final ValueChanged<bool> onBodyScroll;
 
@@ -363,6 +376,7 @@ class _StatusPage extends StatelessWidget {
       child: StatusContent(
         announcement: status,
         foreground: foreground,
+        topInset: topInset,
         bottomInset: bottomInset,
         onBodyScroll: onBodyScroll,
         waveform: status.audio == null ? null : _waveform(foreground),

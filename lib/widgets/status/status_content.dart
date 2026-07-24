@@ -21,6 +21,7 @@ class StatusContent extends StatelessWidget {
     required this.announcement,
     required this.foreground,
     this.waveform,
+    this.topInset = 0,
     this.bottomInset = 0,
     this.onBodyScroll,
   });
@@ -32,6 +33,11 @@ class StatusContent extends StatelessWidget {
 
   /// Waveform à poser **sous le texte** quand le statut porte de l'audio.
   final Widget? waveform;
+
+  /// Hauteur réservée en haut pour la barre de segments, posée en
+  /// surimpression par l'écran : sans elle, le trait de progression mordrait
+  /// sur l'avatar de l'en-tête.
+  final double topInset;
 
   /// Hauteur réservée en bas pour la barre de navigation et son encoche.
   final double bottomInset;
@@ -69,7 +75,7 @@ class StatusContent extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.sm,
+          topInset + AppSpacing.sm,
           AppSpacing.lg,
           bottomInset + AppSpacing.lg,
         ),
