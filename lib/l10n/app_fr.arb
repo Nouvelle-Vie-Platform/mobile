@@ -67,6 +67,8 @@
   "sectionUpcomingServices": "Cultes à venir",
   "homeWatchLive": "Regarder le direct",
   "actionSeeAll": "Voir tout",
+  "actionListen": "Écouter",
+  "@actionListen": { "description": "Bouton d'écoute d'un enseignement" },
   "sectionLatestTeachings": "Derniers enseignements",
 
   "mediaTitle": "Médiathèque",

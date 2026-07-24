@@ -169,6 +169,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get actionSeeAll => 'Voir tout';
 
   @override
+  String get actionListen => 'Écouter';
+
+  @override
   String get sectionLatestTeachings => 'Derniers enseignements';
 
   @override

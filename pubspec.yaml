@@ -30,6 +30,7 @@ flutter:
     - assets/animations/colombe.webp
     - assets/images/welcome_bg.webp
     - assets/images/rameau_or.webp
+    - assets/images/home_header_church.webp
 
   fonts:
     - family: Atkinson Hyperlegible

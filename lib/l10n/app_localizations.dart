@@ -412,6 +412,12 @@ abstract class AppLocalizations {
   /// **'Voir tout'**
   String get actionSeeAll;
 
+  /// Bouton d'écoute d'un enseignement
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter'**
+  String get actionListen;
+
   /// No description provided for @sectionLatestTeachings.
   ///
   /// In fr, this message translates to:

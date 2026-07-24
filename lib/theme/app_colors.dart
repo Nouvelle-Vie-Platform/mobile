@@ -64,6 +64,17 @@ abstract final class AppColors {
     colors: [Color(0xFF2A4AA8), primary, Color(0xFF1B2E6E)],
   );
 
+  /// Dégradé de l'en-tête d'accueil (relevé sur la maquette de référence) :
+  /// bleu profond, légèrement plus lumineux vers le bas.
+  static const LinearGradient gradientHomeHeader = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF022163), Color(0xFF012B79), Color(0xFF013187)],
+  );
+
+  /// Fond du contenu de l'accueil (bleu très clair de la maquette).
+  static const Color homeSurface = Color(0xFFECF1FB);
+
   // --- Fonds « glass » : dégradés très doux derrière toute l'application, ----
   // pour que les surfaces translucides (cartes, barre de nav) « lisent ».
   static const LinearGradient gradientAppLight = LinearGradient(

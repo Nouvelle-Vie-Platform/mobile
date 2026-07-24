@@ -169,6 +169,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionSeeAll => 'See all';
 
   @override
+  String get actionListen => 'Listen';
+
+  @override
   String get sectionLatestTeachings => 'Latest teachings';
 
   @override

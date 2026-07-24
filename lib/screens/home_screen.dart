@@ -30,8 +30,11 @@ class HomeScreen extends ConsumerWidget {
     final bannerDismissed = ref.watch(profileBannerDismissedProvider);
     final showBanner =
         user != null && !user.profileComplete && !bannerDismissed;
-    // Dégagement pour la barre de nav givrée (sous laquelle le contenu défile).
-    final bottomInset = MediaQuery.paddingOf(context).bottom + AppSpacing.lg;
+    // Dégagement pour la barre de nav givrée (sous laquelle le contenu défile) :
+    // hauteur de la barre + encoche, pour que la dernière carte puisse être
+    // remontée entièrement au-dessus d'elle.
+    final bottomInset =
+        MediaQuery.paddingOf(context).bottom + AppSpacing.xxxl + AppSpacing.xl;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -59,6 +62,7 @@ class HomeScreen extends ConsumerWidget {
                 padding: AppSpacing.screenPadding,
                 child: SectionHeader(
                   title: context.l10n.sectionUpcoming,
+                  icon: Icons.calendar_month_outlined,
                   actionLabel: context.l10n.actionSeeAll,
                   onAction: () => context.pushNamed(AppRoute.agenda),
                 ),
@@ -68,8 +72,10 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xl),
               Padding(
                 padding: AppSpacing.screenPadding,
-                child:
-                    SectionHeader(title: context.l10n.sectionLatestTeachings),
+                child: SectionHeader(
+                  title: context.l10n.sectionLatestTeachings,
+                  icon: Icons.menu_book_outlined,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               _TeachingsCarousel(teachings: teachings),
@@ -99,41 +105,78 @@ class _WavyHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipPath(
       clipper: _HeaderWaveClipper(),
-      child: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(gradient: AppColors.gradientHeader),
-        padding: EdgeInsets.only(
-          top: MediaQuery.paddingOf(context).top + AppSpacing.lg,
-          left: AppSpacing.lg,
-          right: AppSpacing.lg,
-          // Dégagement pour la vague découpée à la base.
-          bottom: AppSpacing.xxxl + AppSpacing.md,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(gradient: AppColors.gradientHomeHeader),
+        child: Stack(
           children: [
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(Icons.menu, color: Colors.white, size: 28),
-                _NotificationBell(),
-              ],
+            // Église + rayons, calés à droite. L'image est déjà fondue à
+            // gauche (alpha) : elle se marie au dégradé sans raccord visible.
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.bottomRight,
+                child: Image.asset(
+                  'assets/images/home_header_church.webp',
+                  // Hauteur de l'en-tête, ratio conservé : l'église occupe la
+                  // moitié droite comme sur la maquette (pas de zoom).
+                  fit: BoxFit.fitHeight,
+                  alignment: Alignment.bottomRight,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
             ),
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              name == null
-                  ? context.l10n.homeGreetingNoName
-                  : context.l10n.homeGreeting(name!),
-              style: AppTypography.h1.copyWith(color: Colors.white),
+            Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.paddingOf(context).top + AppSpacing.md,
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                // Dégagement pour la vague découpée à la base.
+                bottom: AppSpacing.xxxl + AppSpacing.lg,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Icon(Icons.menu, color: Colors.white, size: 28),
+                      _NotificationBell(),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text(
+                    name == null
+                        ? context.l10n.homeGreetingNoName
+                        : context.l10n.homeGreeting(name!),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Georgia',
+                      fontFamilyFallback: ['Times New Roman', 'serif'],
+                      fontSize: 34,
+                      fontWeight: FontWeight.w700,
+                      height: 1.15,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  // Barre jaune sous la salutation (accent de la maquette).
+                  Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.accent,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    context.l10n.homeBlessing,
+                    style: AppTypography.bodyLarge
+                        .copyWith(color: Colors.white.withValues(alpha: 0.88)),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  const _LiveCtaPill(),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              context.l10n.homeBlessing,
-              style: AppTypography.bodyLarge
-                  .copyWith(color: Colors.white.withValues(alpha: 0.85)),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            const _LiveCtaPill(),
           ],
         ),
       ),
@@ -210,7 +253,7 @@ class _ServicesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 104,
+      height: 122,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: AppSpacing.screenPadding,
@@ -293,13 +336,24 @@ class _UpcomingCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(event.weekday,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.caption.copyWith(
-                            color: palette.primary,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 3),
+                    // Puce du jour (fond bleu très clair), façon maquette.
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: palette.primary.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                      child: Text(event.weekday,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.caption.copyWith(
+                              color: palette.primary,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(event.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -339,7 +393,7 @@ class _TeachingsCarousel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 116,
+      height: 172,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: AppSpacing.screenPadding,
@@ -395,7 +449,7 @@ class _TeachingCard extends StatelessWidget {
                       style: AppTypography.bodyStrong
                           .copyWith(color: palette.textPrimary),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: AppSpacing.sm),
                     Row(
                       children: [
                         Icon(Icons.schedule,
@@ -407,6 +461,35 @@ class _TeachingCard extends StatelessWidget {
                               .copyWith(color: palette.textSecondary),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    // Bouton « Écouter » en pilule contournée (façon maquette).
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(
+                          color: palette.primary.withValues(alpha: 0.45),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.play_arrow_rounded,
+                              size: 16, color: palette.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            context.l10n.actionListen,
+                            style: AppTypography.caption.copyWith(
+                              color: palette.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

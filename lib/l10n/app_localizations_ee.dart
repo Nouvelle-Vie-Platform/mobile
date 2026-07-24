@@ -169,6 +169,9 @@ class AppLocalizationsEe extends AppLocalizations {
   String get actionSeeAll => 'Kpɔ wo katã';
 
   @override
+  String get actionListen => 'Écouter';
+
+  @override
   String get sectionLatestTeachings => 'Derniers enseignements';
 
   @override
