@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -168,138 +166,91 @@ class _DoveAnimation extends StatelessWidget {
 /// Élément de marque (nom de l'église) qui habille l'écran et recouvre la
 /// partie basse de l'animation : la queue de la colombe, tronquée dans la
 /// vidéo source, disparaît derrière la plaque.
+///
+/// Couleurs et dégradés relevés sur la maquette de référence : liseré doré en
+/// dégradé, fond navy dégradé, et texte serif à dégradé métallique.
 class _NouvelleViePlaque extends StatelessWidget {
   const _NouvelleViePlaque();
 
-  static const _gold = Color(0xFFD8C09C);
-  static const _goldBright = Color(0xFFF0D8B4);
-  static const _fill = Color(0xF7141B30);
+  /// Dégradé métallique du texte (clair en haut, ambre en bas).
+  static const _textGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFFFF7E4), Color(0xFFEFD8AC), Color(0xFFC79E5C)],
+    stops: [0.0, 0.55, 1.0],
+  );
+
+  /// Dégradé du liseré (plus soutenu en haut, lumineux en bas).
+  static const _borderGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFB08F57), Color(0xFFE7D2A4), Color(0xFFF6E9C9)],
+    stops: [0.0, 0.6, 1.0],
+  );
+
+  /// Fond de la plaque : navy dégradé (opaque, c'est lui qui masque la queue).
+  static const _fillGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF0B2560), Color(0xFF03153F), Color(0xFF010E30)],
+    stops: [0.0, 0.55, 1.0],
+  );
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 286,
-      height: 68,
+      width: 228,
+      height: 52,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Cadre doré + fond sombre (opaque : c'est lui qui masque la queue).
+          // Liseré dégradé : un conteneur en dégradé + un fond légèrement
+          // plus petit par-dessus (Flutter ne borde pas en dégradé nativement).
           Container(
             decoration: BoxDecoration(
-              color: _fill,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: _gold, width: 1.4),
+              gradient: _borderGradient,
+              borderRadius: BorderRadius.circular(5),
             ),
+            padding: const EdgeInsets.all(1.1),
             child: Container(
-              margin: const EdgeInsets.all(4),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3),
-                border: Border.all(
-                  color: _gold.withValues(alpha: 0.5),
-                  width: 0.8,
-                ),
+                gradient: _fillGradient,
+                borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
-                // Nom de marque : non localisé.
-                'NOUVELLE VIE',
-                style: TextStyle(
-                  color: _goldBright,
-                  fontFamily: 'Georgia',
-                  fontFamilyFallback: ['Times New Roman', 'serif'],
-                  fontSize: 23,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 4,
+              child: ShaderMask(
+                shaderCallback: (bounds) => _textGradient.createShader(bounds),
+                blendMode: BlendMode.srcIn,
+                child: const Text(
+                  // Nom de marque : non localisé.
+                  'NOUVELLE VIE',
+                  style: TextStyle(
+                    color: Colors.white, // remplacé par le dégradé
+                    fontFamily: 'Georgia',
+                    fontFamilyFallback: ['Times New Roman', 'serif'],
+                    fontSize: 18,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 3.4,
+                  ),
                 ),
               ),
             ),
           ),
-          // Rameau d'olivier doré débordant du coin haut-gauche.
-          const Positioned(
-            left: -16,
-            top: -22,
-            child: CustomPaint(
-              size: Size(76, 46),
-              painter: _OliveBranchPainter(_goldBright),
+          // Rameau d'olivier doré (extrait de la maquette) en débord du coin.
+          Positioned(
+            left: -13,
+            top: -19,
+            child: Image.asset(
+              'assets/images/rameau_or.webp',
+              width: 66,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
           ),
         ],
       ),
     );
   }
-}
-
-/// Petit rameau d'olivier doré : tige courbe + feuilles alternées.
-class _OliveBranchPainter extends CustomPainter {
-  const _OliveBranchPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final leaf = Paint()..color = color;
-    final stem = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = h * 0.05
-      ..strokeCap = StrokeCap.round;
-
-    final p0 = Offset(w * 0.03, h * 0.92);
-    final p1 = Offset(w * 0.50, h * 0.86);
-    final p2 = Offset(w * 0.99, h * 0.34);
-
-    canvas.drawPath(
-      Path()
-        ..moveTo(p0.dx, p0.dy)
-        ..quadraticBezierTo(p1.dx, p1.dy, p2.dx, p2.dy),
-      stem,
-    );
-
-    const stops = <double>[0.16, 0.32, 0.48, 0.64, 0.80, 0.94];
-    for (var i = 0; i < stops.length; i++) {
-      final t = stops[i];
-      final pos = _point(p0, p1, p2, t);
-      final tangent = _tangent(p0, p1, p2, t);
-      final angle =
-          math.atan2(tangent.dy, tangent.dx) + (i.isEven ? -0.9 : 0.9);
-      final length = h * (0.42 - i * 0.02);
-      canvas
-        ..save()
-        ..translate(pos.dx, pos.dy)
-        ..rotate(angle)
-        ..drawOval(
-          Rect.fromCenter(
-            center: Offset(length * 0.5, 0),
-            width: length,
-            height: length * 0.4,
-          ),
-          leaf,
-        )
-        ..restore();
-    }
-  }
-
-  static Offset _point(Offset a, Offset b, Offset c, double t) {
-    final u = 1 - t;
-    return Offset(
-      u * u * a.dx + 2 * u * t * b.dx + t * t * c.dx,
-      u * u * a.dy + 2 * u * t * b.dy + t * t * c.dy,
-    );
-  }
-
-  static Offset _tangent(Offset a, Offset b, Offset c, double t) {
-    final u = 1 - t;
-    return Offset(
-      2 * u * (b.dx - a.dx) + 2 * t * (c.dx - b.dx),
-      2 * u * (b.dy - a.dy) + 2 * t * (c.dy - b.dy),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_OliveBranchPainter oldDelegate) =>
-      oldDelegate.color != color;
 }
 
 /// Bouton principal « Commencer » épinglé en bas : pilule blanche, texte bleu,
