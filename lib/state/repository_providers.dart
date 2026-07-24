@@ -11,10 +11,25 @@ final churchRepositoryProvider = Provider<ChurchRepository>(
   (ref) => const InMemoryChurchRepository(),
 );
 
-/// Annonces de l'église.
-final announcementsProvider = Provider<List<Announcement>>(
-  (ref) => ref.watch(churchRepositoryProvider).announcements(),
-);
+/// Annonces (statuts) de l'église, prêtes à l'affichage.
+///
+/// Le repository renvoie la liste brute ; c'est ici qu'on applique le cycle de
+/// vie du feed :
+/// - les statuts dont `expiresAt` est passé **disparaissent** (pas de grisé) ;
+/// - tri : épinglés d'abord, puis `publishedAt` décroissant.
+final announcementsProvider = Provider<List<Announcement>>((ref) {
+  final now = DateTime.now().toUtc();
+  final visible = ref
+      .watch(churchRepositoryProvider)
+      .announcements()
+      .where((a) => a.expiresAt == null || a.expiresAt!.isAfter(now))
+      .toList()
+    ..sort((a, b) {
+      if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+      return b.publishedAt.compareTo(a.publishedAt);
+    });
+  return List<Announcement>.unmodifiable(visible);
+});
 
 /// Évènements de l'agenda.
 final eventsProvider = Provider<List<ChurchEvent>>(

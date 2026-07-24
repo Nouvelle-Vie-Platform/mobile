@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n_extension.dart';
 import '../../models/models.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
+import '../../utils/relative_time.dart';
 import '../app_card.dart';
 import '../app_chip.dart';
 
@@ -17,6 +19,8 @@ class AnnouncementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final title = announcement.title;
+    final body = announcement.body;
     return AppCard(
       onTap: onTap,
       child: Column(
@@ -28,19 +32,23 @@ class AnnouncementCard extends StatelessWidget {
                 AppChip(announcement.tag!, tone: AppChipTone.info),
               const Spacer(),
               Text(
-                announcement.date,
+                relativeTime(context.l10n, announcement.publishedAt),
                 style: AppTypography.caption
                     .copyWith(color: palette.textSecondary),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(announcement.title, style: AppTypography.h5),
-          const SizedBox(height: 4),
-          Text(
-            announcement.body,
-            style: AppTypography.body.copyWith(color: palette.textSecondary),
-          ),
+          if (title != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(title, style: AppTypography.h5),
+          ],
+          if (body != null) ...[
+            SizedBox(height: title == null ? AppSpacing.sm : 4),
+            Text(
+              body,
+              style: AppTypography.body.copyWith(color: palette.textSecondary),
+            ),
+          ],
         ],
       ),
     );

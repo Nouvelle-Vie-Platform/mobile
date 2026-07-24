@@ -14,6 +14,26 @@
 
   "announcementsTitle": "Announcements",
 
+  "timeJustNow": "Just now",
+  "@timeJustNow": { "description": "Relative timestamp: less than a minute" },
+  "timeMinutesAgo": "{count, plural, one{{count} minute ago} other{{count} minutes ago}}",
+  "@timeMinutesAgo": {
+    "description": "Relative timestamp expressed in minutes",
+    "placeholders": { "count": { "type": "int", "example": "5" } }
+  },
+  "timeHoursAgo": "{count, plural, one{{count} hour ago} other{{count} hours ago}}",
+  "@timeHoursAgo": {
+    "description": "Relative timestamp expressed in hours",
+    "placeholders": { "count": { "type": "int", "example": "3" } }
+  },
+  "timeYesterday": "Yesterday",
+  "@timeYesterday": { "description": "Relative timestamp: the previous day" },
+  "timeDaysAgo": "{count, plural, one{{count} day ago} other{{count} days ago}}",
+  "@timeDaysAgo": {
+    "description": "Relative timestamp expressed in days (less than a week)",
+    "placeholders": { "count": { "type": "int", "example": "3" } }
+  },
+
   "onboardingWelcome": "Welcome",
   "onboardingTitleHighlight": "To the Miracle\nHouse",
   "onboardingSubtitle": "A living community, connected and committed for the glory of God.",

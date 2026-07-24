@@ -39,6 +39,45 @@ class AppLocalizationsEe extends AppLocalizations {
   String get announcementsTitle => 'Annonces';
 
   @override
+  String get timeJustNow => 'À l\'instant';
+
+  @override
+  String timeMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Il y a $count minutes',
+      one: 'Il y a $count minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Il y a $count heures',
+      one: 'Il y a $count heure',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get timeYesterday => 'Hier';
+
+  @override
+  String timeDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Il y a $count jours',
+      one: 'Il y a $count jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get onboardingWelcome => 'Woezɔ';
 
   @override

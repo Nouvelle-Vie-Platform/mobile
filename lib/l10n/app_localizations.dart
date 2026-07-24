@@ -160,6 +160,36 @@ abstract class AppLocalizations {
   /// **'Annonces'**
   String get announcementsTitle;
 
+  /// Horodatage relatif : moins d'une minute
+  ///
+  /// In fr, this message translates to:
+  /// **'À l\'instant'**
+  String get timeJustNow;
+
+  /// Horodatage relatif exprimé en minutes
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{Il y a {count} minute} other{Il y a {count} minutes}}'**
+  String timeMinutesAgo(int count);
+
+  /// Horodatage relatif exprimé en heures
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{Il y a {count} heure} other{Il y a {count} heures}}'**
+  String timeHoursAgo(int count);
+
+  /// Horodatage relatif : la veille
+  ///
+  /// In fr, this message translates to:
+  /// **'Hier'**
+  String get timeYesterday;
+
+  /// Horodatage relatif exprimé en jours (moins d'une semaine)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{Il y a {count} jour} other{Il y a {count} jours}}'**
+  String timeDaysAgo(int count);
+
   /// No description provided for @onboardingWelcome.
   ///
   /// In fr, this message translates to:

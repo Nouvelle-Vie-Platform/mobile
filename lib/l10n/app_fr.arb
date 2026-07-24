@@ -15,6 +15,26 @@
 
   "announcementsTitle": "Annonces",
 
+  "timeJustNow": "À l'instant",
+  "@timeJustNow": { "description": "Horodatage relatif : moins d'une minute" },
+  "timeMinutesAgo": "{count, plural, one{Il y a {count} minute} other{Il y a {count} minutes}}",
+  "@timeMinutesAgo": {
+    "description": "Horodatage relatif exprimé en minutes",
+    "placeholders": { "count": { "type": "int", "example": "5" } }
+  },
+  "timeHoursAgo": "{count, plural, one{Il y a {count} heure} other{Il y a {count} heures}}",
+  "@timeHoursAgo": {
+    "description": "Horodatage relatif exprimé en heures",
+    "placeholders": { "count": { "type": "int", "example": "3" } }
+  },
+  "timeYesterday": "Hier",
+  "@timeYesterday": { "description": "Horodatage relatif : la veille" },
+  "timeDaysAgo": "{count, plural, one{Il y a {count} jour} other{Il y a {count} jours}}",
+  "@timeDaysAgo": {
+    "description": "Horodatage relatif exprimé en jours (moins d'une semaine)",
+    "placeholders": { "count": { "type": "int", "example": "3" } }
+  },
+
   "onboardingWelcome": "Bienvenue",
   "onboardingTitleHighlight": "Dans la Maison\ndu Miracle",
   "onboardingSubtitle": "Une communauté vivante, connectée et engagée pour la gloire de Dieu.",
