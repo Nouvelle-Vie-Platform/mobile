@@ -56,6 +56,10 @@
     "description": "Salutation d'accueil",
     "placeholders": { "name": { "type": "String", "example": "Jean" } }
   },
+  "homeGreetingNoName": "Bonjour !",
+  "@homeGreetingNoName": {
+    "description": "Salutation d'accueil quand l'utilisateur n'a pas renseigné son nom"
+  },
   "homeBlessing": "Que Dieu vous bénisse aujourd'hui.",
   "liveBannerTitle": "Culte en direct",
   "liveBannerSubtitle": "Rejoindre maintenant",

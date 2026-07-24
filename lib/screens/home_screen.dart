@@ -37,7 +37,7 @@ class HomeScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // En-tête fixe : ne défile pas avec le contenu.
-        const _WavyHeader(name: 'Jean'),
+        _WavyHeader(name: _firstName(user)),
         // Contenu défilant sous l'en-tête.
         Expanded(
           child: ListView(
@@ -82,9 +82,18 @@ class HomeScreen extends ConsumerWidget {
 }
 
 /// En-tête « plein écran » au dégradé bleu→teal, découpé en vague à sa base.
+/// Prénom d'usage pour la salutation : premier mot du nom saisi au profil.
+/// `null` si l'utilisateur n'a pas (encore) renseigné son nom — le profil
+/// étant facultatif, ce cas est normal.
+String? _firstName(User? user) {
+  final full = user?.fullName?.trim();
+  if (full == null || full.isEmpty) return null;
+  return full.split(RegExp(r'\s+')).first;
+}
+
 class _WavyHeader extends StatelessWidget {
   const _WavyHeader({required this.name});
-  final String name;
+  final String? name;
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +121,9 @@ class _WavyHeader extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
-              context.l10n.homeGreeting(name),
+              name == null
+                  ? context.l10n.homeGreetingNoName
+                  : context.l10n.homeGreeting(name!),
               style: AppTypography.h1.copyWith(color: Colors.white),
             ),
             const SizedBox(height: AppSpacing.xs),

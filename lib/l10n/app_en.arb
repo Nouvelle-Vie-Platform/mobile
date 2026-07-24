@@ -51,6 +51,7 @@
   "registerTermsLink": "Terms of use.",
 
   "homeGreeting": "Hello {name}!",
+  "homeGreetingNoName": "Hello!",
   "homeBlessing": "May God bless you today.",
   "liveBannerTitle": "Live service",
   "liveBannerSubtitle": "Join now",

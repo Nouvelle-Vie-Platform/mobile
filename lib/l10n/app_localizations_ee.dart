@@ -145,6 +145,9 @@ class AppLocalizationsEe extends AppLocalizations {
   }
 
   @override
+  String get homeGreetingNoName => 'Bonjour !';
+
+  @override
   String get homeBlessing => 'Mawu nayra wò egbe.';
 
   @override

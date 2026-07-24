@@ -364,6 +364,12 @@ abstract class AppLocalizations {
   /// **'Bonjour {name} !'**
   String homeGreeting(String name);
 
+  /// Salutation d'accueil quand l'utilisateur n'a pas renseigné son nom
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonjour !'**
+  String get homeGreetingNoName;
+
   /// No description provided for @homeBlessing.
   ///
   /// In fr, this message translates to:

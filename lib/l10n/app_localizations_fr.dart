@@ -145,6 +145,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get homeGreetingNoName => 'Bonjour !';
+
+  @override
   String get homeBlessing => 'Que Dieu vous bénisse aujourd\'hui.';
 
   @override
