@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../theme/app_palette.dart';
+import '../../utils/stable_hash.dart';
 
 /// Nombre de barres par défaut de la waveform (§5 : 28 à 40, grossières).
 const int kStatusWaveformBarCount = 32;
@@ -17,13 +18,7 @@ const int kStatusWaveformBarCount = 32;
 List<int> waveformFromSeed(String seed, {int count = kStatusWaveformBarCount}) {
   if (count <= 0) return const <int>[];
 
-  // Hash FNV-1a 32 bits sur les unités de code : stable d'une plateforme et
-  // d'une exécution à l'autre, contrairement à `String.hashCode`.
-  var hash = 0x811c9dc5;
-  for (final unit in seed.codeUnits) {
-    hash ^= unit;
-    hash = (hash * 0x01000193) & 0xffffffff;
-  }
+  var hash = stableHash(seed);
   // Un seed vide ne doit pas dégénérer en état nul du générateur.
   if (hash == 0) hash = 0x9e3779b9;
 

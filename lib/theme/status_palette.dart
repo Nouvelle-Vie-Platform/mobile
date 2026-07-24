@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../utils/stable_hash.dart';
 import 'app_colors.dart';
 
 /// Habillage des statuts (onglet Annonces) : couleur de base, dégradé de fond
@@ -36,7 +37,7 @@ final List<Color> statusPalette = List<Color>.unmodifiable(<Color>[
 /// [statusPalette] choisie déterministement d'après [id].
 Color statusBaseColor(String id, {int? backgroundColor}) {
   if (backgroundColor != null) return Color(backgroundColor);
-  return statusPalette[_stableHash(id) % statusPalette.length];
+  return statusPalette[stableHash(id) % statusPalette.length];
 }
 
 /// Dégradé de fond dérivé de [base] : légèrement éclairci en haut à gauche,
@@ -86,18 +87,6 @@ double _contrastRatio(double a, double b) {
   final lighter = math.max(a, b);
   final darker = math.min(a, b);
   return (lighter + 0.05) / (darker + 0.05);
-}
-
-/// Hash FNV-1a 32 bits : stable dans le temps, entre sessions et entre
-/// plateformes — contrairement à `String.hashCode`, dont la valeur n'est
-/// garantie qu'à l'intérieur d'une même exécution.
-int _stableHash(String value) {
-  var hash = 0x811c9dc5;
-  for (final unit in value.codeUnits) {
-    hash ^= unit;
-    hash = (hash * 0x01000193) & 0xFFFFFFFF;
-  }
-  return hash;
 }
 
 double _clamp01(double value) => value.clamp(0.0, 1.0);
