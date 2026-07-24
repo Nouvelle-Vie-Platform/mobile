@@ -17,7 +17,10 @@ void main() {
     testWidgets('WelcomeScreen se monte', (tester) async {
       await pumpScreen(tester, const WelcomeScreen());
       expect(find.byType(WelcomeScreen), findsOneWidget);
-      expect(find.text('Commencer'), findsOneWidget);
+      // Le bouton est composé de deux couches superposées (état normal +
+      // état rempli) pour l'animation de remplissage : le libellé apparaît
+      // donc deux fois dans l'arbre.
+      expect(find.text('Commencer'), findsWidgets);
     });
 
     testWidgets('IdentifierScreen se monte', (tester) async {
