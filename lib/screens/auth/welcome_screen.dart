@@ -161,6 +161,26 @@ class _DoveAnimation extends StatelessWidget {
   }
 }
 
+/// Typo de la plaque : serif classique, majuscules très espacées.
+const TextStyle _plaqueTextStyle = TextStyle(
+  color: Colors.white, // remplacé par le dégradé doré (ShaderMask)
+  fontFamily: 'Georgia',
+  fontFamilyFallback: ['Times New Roman', 'serif'],
+  fontSize: 18,
+  fontWeight: FontWeight.w400,
+  letterSpacing: 3.4,
+);
+
+/// Même typo, en sombre : sert d'ombre portée sous le texte doré.
+const TextStyle _plaqueShadowStyle = TextStyle(
+  color: Color(0x8A03091F),
+  fontFamily: 'Georgia',
+  fontFamilyFallback: ['Times New Roman', 'serif'],
+  fontSize: 18,
+  fontWeight: FontWeight.w400,
+  letterSpacing: 3.4,
+);
+
 /// Plaque dorée « Nouvelle Vie » posée sur le bas de la colombe.
 ///
 /// Élément de marque (nom de l'église) qui habille l'écran et recouvre la
@@ -176,24 +196,33 @@ class _NouvelleViePlaque extends StatelessWidget {
   static const _textGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFFFFF7E4), Color(0xFFEFD8AC), Color(0xFFC79E5C)],
+    colors: [Color(0xFFFFF8E8), Color(0xFFF2DFB8), Color(0xFFD2AE74)],
     stops: [0.0, 0.55, 1.0],
   );
 
-  /// Dégradé du liseré (plus soutenu en haut, lumineux en bas).
+  /// Dégradé du liseré : or vif en haut ET en bas, terni au milieu — ce qui
+  /// éclaire les bords horizontaux et assombrit les montants latéraux, comme
+  /// un vrai métal éclairé par le haut (relevé sur la maquette).
   static const _borderGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFFB08F57), Color(0xFFE7D2A4), Color(0xFFF6E9C9)],
-    stops: [0.0, 0.6, 1.0],
+    colors: [
+      Color(0xFFFFEFC2),
+      Color(0xFFE3CB9E),
+      Color(0xFF9A8877),
+      Color(0xFFE7CFA1),
+      Color(0xFFF4DFB4),
+    ],
+    stops: [0.0, 0.16, 0.5, 0.84, 1.0],
   );
 
-  /// Fond de la plaque : navy dégradé (opaque, c'est lui qui masque la queue).
+  /// Fond de la plaque : bleu dégradé, clair en haut et profond en bas
+  /// (opaque : c'est lui qui masque la queue de la colombe).
   static const _fillGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF0B2560), Color(0xFF03153F), Color(0xFF010E30)],
-    stops: [0.0, 0.55, 1.0],
+    colors: [Color(0xFF173A81), Color(0xFF0B2456), Color(0xFF061A4B)],
+    stops: [0.0, 0.5, 1.0],
   );
 
   @override
@@ -211,28 +240,34 @@ class _NouvelleViePlaque extends StatelessWidget {
               gradient: _borderGradient,
               borderRadius: BorderRadius.circular(5),
             ),
-            padding: const EdgeInsets.all(1.1),
+            padding: const EdgeInsets.all(1.6),
             child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 gradient: _fillGradient,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(3.5),
+                // Fine ombre intérieure : c'est elle qui « biseaute » le liseré.
+                border: Border.all(color: const Color(0x9E0B1738), width: 0.9),
               ),
-              child: ShaderMask(
-                shaderCallback: (bounds) => _textGradient.createShader(bounds),
-                blendMode: BlendMode.srcIn,
-                child: const Text(
-                  // Nom de marque : non localisé.
-                  'NOUVELLE VIE',
-                  style: TextStyle(
-                    color: Colors.white, // remplacé par le dégradé
-                    fontFamily: 'Georgia',
-                    fontFamilyFallback: ['Times New Roman', 'serif'],
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 3.4,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Ombre portée discrète : détache l'or du fond.
+                  const Padding(
+                    padding: EdgeInsets.only(top: 1.6),
+                    child: Text('NOUVELLE VIE', style: _plaqueShadowStyle),
                   ),
-                ),
+                  ShaderMask(
+                    shaderCallback: (bounds) =>
+                        _textGradient.createShader(bounds),
+                    blendMode: BlendMode.srcIn,
+                    child: const Text(
+                      // Nom de marque : non localisé.
+                      'NOUVELLE VIE',
+                      style: _plaqueTextStyle,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
