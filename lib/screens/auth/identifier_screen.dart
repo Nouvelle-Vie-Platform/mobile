@@ -13,6 +13,7 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../utils/dial_codes.dart';
 import '../../widgets/social_button.dart';
+import '../../widgets/profile_setup_sheet.dart';
 
 /// `/auth/identifier` : saisie du téléphone ou de l'email, envoi du code.
 ///
@@ -338,9 +339,12 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
         _SocialProvider.apple => await notifier.signInWithApple(),
       };
       if (!mounted) return;
-      context.goNamed(
-        session.isNewUser ? AppRoute.profileEdit : AppRoute.home,
-      );
+      // Comme pour le code : on va sur l'accueil, la feuille de mise en route
+      // du profil s'y ouvre par-dessus si l'utilisateur est nouveau.
+      if (session.isNewUser) {
+        ref.read(profileSetupPendingProvider.notifier).request();
+      }
+      context.goNamed(AppRoute.home);
     } catch (_) {
       if (!mounted) return;
       _showError();

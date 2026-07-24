@@ -14,6 +14,7 @@ import '../theme/app_typography.dart';
 import '../widgets/app_card.dart';
 import '../widgets/cards/teaching_cover.dart';
 import '../widgets/profile_completion_banner.dart';
+import '../widgets/profile_setup_sheet.dart';
 import '../widgets/section_header.dart';
 
 /// Onglet « Accueil » : en-tête ondulé, cultes à venir et derniers enseignements.
@@ -38,6 +39,16 @@ class HomeScreen extends ConsumerWidget {
     // Hauteur de l'en-tête : il est posé PAR-DESSUS la liste (Stack) pour que
     // le contenu glisse dessous au défilement au lieu d'être coupé avant lui.
     final headerHeight = MediaQuery.paddingOf(context).top + _headerBodyHeight;
+
+    // Nouvel utilisateur : la feuille de mise en route du profil s'ouvre
+    // par-dessus l'accueil, une seule fois (le drapeau est consommé ici).
+    if (ref.watch(profileSetupPendingProvider)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ref.read(profileSetupPendingProvider.notifier).clear();
+        showProfileSetupSheet(context);
+      });
+    }
 
     return Stack(
       // `expand` : sans cela le Stack se dimensionnerait sur l'en-tête et la

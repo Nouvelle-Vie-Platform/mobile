@@ -15,6 +15,7 @@ import '../../theme/app_typography.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/brand_app_bar.dart';
 import '../../widgets/auth/otp_field.dart';
+import '../../widgets/profile_setup_sheet.dart';
 
 /// `/auth/code` : saisie du code à 4 chiffres.
 ///
@@ -80,10 +81,12 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
             code: code,
           );
       if (!mounted) return;
-      // Nouveau → complétion de profil (skippable) ; sinon → accueil direct.
-      context.goNamed(
-        session.isNewUser ? AppRoute.profileEdit : AppRoute.home,
-      );
+      // On atterrit toujours sur l'accueil. Pour un nouvel utilisateur, la
+      // feuille de mise en route du profil s'y ouvre par-dessus (fermable).
+      if (session.isNewUser) {
+        ref.read(profileSetupPendingProvider.notifier).request();
+      }
+      context.goNamed(AppRoute.home);
     } on AuthException catch (error) {
       if (!mounted) return;
       final l = context.l10n;
