@@ -152,7 +152,7 @@ class _DoveAnimation extends StatelessWidget {
           const Positioned(
             left: 0,
             right: 0,
-            bottom: 24,
+            bottom: 40,
             child: Center(child: _NouvelleViePlaque()),
           ),
         ],
