@@ -38,6 +38,7 @@ class StatusSegmentedProgress extends StatelessWidget {
     this.maxVisible = 10,
     this.height = 3,
     this.spacing = 3,
+    this.color,
   });
 
   /// Nombre total de statuts.
@@ -58,6 +59,13 @@ class StatusSegmentedProgress extends StatelessWidget {
   /// Écart horizontal entre deux segments.
   final double spacing;
 
+  /// Couleur des segments joués (la piste en dérive, en translucide).
+  ///
+  /// À renseigner par l'appelant avec la couleur de texte résolue du statut :
+  /// le repli sur `DefaultTextStyle` prend celle du **thème de l'application**,
+  /// donc un texte sombre, invisible sur un fond de statut foncé.
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     if (count <= 0) return SizedBox(height: height);
@@ -69,10 +77,11 @@ class StatusSegmentedProgress extends StatelessWidget {
     );
     if (window.length <= 0) return SizedBox(height: height);
 
-    // Posée sur un fond coloré ou une image : on suit la couleur de texte du
-    // contexte (choisie selon la luminance du fond), palette en dernier recours.
-    final filled =
-        DefaultTextStyle.of(context).style.color ?? context.palette.textPrimary;
+    // Posée sur un fond coloré ou une image : la couleur vient de l'appelant,
+    // qui seul connaît la teinte de texte résolue pour ce fond.
+    final filled = color ??
+        DefaultTextStyle.of(context).style.color ??
+        context.palette.textPrimary;
     final track = filled.withValues(alpha: 0.30);
 
     final safeIndex = index.clamp(0, count - 1);

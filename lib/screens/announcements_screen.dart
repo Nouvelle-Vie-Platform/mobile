@@ -235,6 +235,16 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
         MediaQuery.paddingOf(context).bottom + kBottomNavigationBarHeight;
     final width = MediaQuery.sizeOf(context).width;
 
+    // Tout ce qui est posé en surimpression (barre de segments, actions) doit
+    // adopter la couleur de texte résolue du statut affiché dessous, sinon il
+    // hérite de celle du thème de l'application et disparaît sur le fond.
+    final current = statuses[_index];
+    final overlayColor = StatusBackground.foregroundFor(
+      current.id,
+      backgroundColor: current.backgroundColor,
+      imageUrl: current.video?.poster ?? current.backgroundImage,
+    );
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapUp: (details) => _onTapUp(details, width),
@@ -272,6 +282,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
                   index: _index,
                   progress: onCurrent ? playback.progress : 0,
                   height: _progressHeight,
+                  color: overlayColor,
                 );
               },
             ),
@@ -280,12 +291,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
             top: MediaQuery.paddingOf(context).top + AppSpacing.lg,
             right: AppSpacing.sm,
             child: _Actions(
-              foreground: StatusBackground.foregroundFor(
-                statuses[_index].id,
-                backgroundColor: statuses[_index].backgroundColor,
-                imageUrl: statuses[_index].video?.poster ??
-                    statuses[_index].backgroundImage,
-              ),
+              foreground: overlayColor,
               muted: ref.watch(statusMutedProvider),
               onToggleMute: () =>
                   ref.read(statusMutedProvider.notifier).toggle(),
