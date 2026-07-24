@@ -14,6 +14,12 @@
   "navDonations": "Dons",
 
   "announcementsTitle": "Annonces",
+  "announcementsEmptyTitle": "Aucune annonce",
+  "@announcementsEmptyTitle": { "description": "Titre affiché quand aucun statut n'est publié" },
+  "announcementsEmptyBody": "Les annonces de l'église apparaîtront ici.",
+  "@announcementsEmptyBody": { "description": "Explication de l'état vide des annonces" },
+  "statusVideoBadge": "Vidéo",
+  "@statusVideoBadge": { "description": "Badge signalant un statut vidéo" },
 
   "timeJustNow": "À l'instant",
   "@timeJustNow": { "description": "Horodatage relatif : moins d'une minute" },

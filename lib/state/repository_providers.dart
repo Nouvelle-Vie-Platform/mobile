@@ -26,7 +26,11 @@ final announcementsProvider = Provider<List<Announcement>>((ref) {
       .toList()
     ..sort((a, b) {
       if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
-      return b.publishedAt.compareTo(a.publishedAt);
+      final byDate = b.publishedAt.compareTo(a.publishedAt);
+      if (byDate != 0) return byDate;
+      // `List.sort` n'est pas stable en Dart : sans départage, deux statuts
+      // publiés à la même seconde changeraient d'ordre d'un tri à l'autre.
+      return a.id.compareTo(b.id);
     });
   return List<Announcement>.unmodifiable(visible);
 });

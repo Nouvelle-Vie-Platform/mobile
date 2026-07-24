@@ -13,6 +13,9 @@
   "navDonations": "Giving",
 
   "announcementsTitle": "Announcements",
+  "announcementsEmptyTitle": "No announcements",
+  "announcementsEmptyBody": "Church announcements will appear here.",
+  "statusVideoBadge": "Video",
 
   "timeJustNow": "Just now",
   "@timeJustNow": { "description": "Relative timestamp: less than a minute" },

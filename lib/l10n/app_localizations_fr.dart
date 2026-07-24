@@ -39,6 +39,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get announcementsTitle => 'Annonces';
 
   @override
+  String get announcementsEmptyTitle => 'Aucune annonce';
+
+  @override
+  String get announcementsEmptyBody =>
+      'Les annonces de l\'église apparaîtront ici.';
+
+  @override
+  String get statusVideoBadge => 'Vidéo';
+
+  @override
   String get timeJustNow => 'À l\'instant';
 
   @override

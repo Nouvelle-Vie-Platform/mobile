@@ -160,6 +160,24 @@ abstract class AppLocalizations {
   /// **'Annonces'**
   String get announcementsTitle;
 
+  /// Titre affiché quand aucun statut n'est publié
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune annonce'**
+  String get announcementsEmptyTitle;
+
+  /// Explication de l'état vide des annonces
+  ///
+  /// In fr, this message translates to:
+  /// **'Les annonces de l\'église apparaîtront ici.'**
+  String get announcementsEmptyBody;
+
+  /// Badge signalant un statut vidéo
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo'**
+  String get statusVideoBadge;
+
   /// Horodatage relatif : moins d'une minute
   ///
   /// In fr, this message translates to:

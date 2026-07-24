@@ -39,6 +39,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get announcementsTitle => 'Announcements';
 
   @override
+  String get announcementsEmptyTitle => 'No announcements';
+
+  @override
+  String get announcementsEmptyBody => 'Church announcements will appear here.';
+
+  @override
+  String get statusVideoBadge => 'Video';
+
+  @override
   String get timeJustNow => 'Just now';
 
   @override

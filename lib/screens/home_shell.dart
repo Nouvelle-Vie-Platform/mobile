@@ -24,19 +24,28 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
-  static const List<Widget> _tabs = [
-    HomeScreen(),
-    AnnouncementsScreen(),
-    GroupsScreen(),
-    ProfileScreen(),
-  ];
+  /// Index de l'onglet « Annonces ».
+  ///
+  /// La visionneuse de statuts a besoin de savoir si elle est visible :
+  /// l'[IndexedStack] la garde montée en permanence, donc sans cette
+  /// information la lecture démarrerait en tâche de fond. On passe le drapeau
+  /// explicitement plutôt que de remonter l'état d'onglet dans un provider —
+  /// il reste de l'état local de la coquille.
+  static const int _announcementsTab = 1;
 
   @override
   Widget build(BuildContext context) {
+    final tabs = <Widget>[
+      const HomeScreen(),
+      AnnouncementsScreen(isActive: _index == _announcementsTab),
+      const GroupsScreen(),
+      const ProfileScreen(),
+    ];
+
     return Scaffold(
       // Le contenu s'étend derrière la barre givrée (effet verre dépoli).
       extendBody: true,
-      body: IndexedStack(index: _index, children: _tabs),
+      body: IndexedStack(index: _index, children: tabs),
       // Bouton central : accès à la médiathèque.
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.pushNamed(AppRoute.media),
