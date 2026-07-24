@@ -179,6 +179,24 @@ void main() {
         AppColors.textOnPrimary,
       );
     });
+
+    group('teinte du voile', () {
+      // Le voile suit le texte : posé en noir sous un texte sombre (fond
+      // clair), il détruirait le contraste qu'il est censé garantir.
+      test('texte clair ⇒ voile sombre', () {
+        final gradient = StatusBackground.scrimGradient(Colors.white);
+        expect(gradient.colors.last.r, lessThan(0.1));
+        expect(gradient.colors.last.g, lessThan(0.1));
+        expect(gradient.colors.last.b, lessThan(0.1));
+      });
+
+      test('texte sombre ⇒ voile clair', () {
+        final gradient = StatusBackground.scrimGradient(Colors.black);
+        expect(gradient.colors.last.r, greaterThan(0.9));
+        expect(gradient.colors.last.g, greaterThan(0.9));
+        expect(gradient.colors.last.b, greaterThan(0.9));
+      });
+    });
   });
 }
 

@@ -50,6 +50,11 @@ class StatusContent extends StatelessWidget {
     return 17;
   }
 
+  bool get _hasText {
+    final body = announcement.body;
+    return announcement.title != null || (body != null && body.isNotEmpty);
+  }
+
   bool get _isCompact {
     final length = (announcement.body ?? '').characters.length;
     return announcement.title == null && length <= 140;
@@ -76,9 +81,20 @@ class StatusContent extends StatelessWidget {
               foreground: foreground,
               muted: muted,
             ),
+            if (announcement.tag != null || announcement.video != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              _Badges(announcement: announcement, foreground: foreground),
+            ],
             const SizedBox(height: AppSpacing.md),
-            Expanded(child: _body(context)),
-            if (waveform != null) ...[
+            // Sans texte, la waveform occupe le centre : la reléguer en bas
+            // d'un écran vide donnerait une page inachevée. Avec du texte, elle
+            // se range dessous, comme demandé.
+            Expanded(
+              child: _hasText
+                  ? _body(context)
+                  : Center(child: waveform ?? const SizedBox.expand()),
+            ),
+            if (_hasText && waveform != null) ...[
               const SizedBox(height: AppSpacing.lg),
               waveform!,
             ],
@@ -161,6 +177,9 @@ class _Header extends StatelessWidget {
   final Color foreground;
   final Color muted;
 
+  /// Largeur occupée par les deux boutons d'action posés en surimpression.
+  static const double actionsWidth = 96;
+
   @override
   Widget build(BuildContext context) {
     final author = announcement.author;
@@ -190,16 +209,36 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
+        // Place réservée aux actions (son, liste) posées en surimpression par
+        // l'écran : sans ça, l'en-tête passerait dessous.
+        const SizedBox(width: _Header.actionsWidth),
+      ],
+    );
+  }
+}
+
+/// Pastilles du statut, sur leur propre ligne **sous** l'en-tête — jamais dans
+/// la ligne de l'auteur, dont la droite appartient aux boutons d'action.
+class _Badges extends StatelessWidget {
+  const _Badges({required this.announcement, required this.foreground});
+
+  final Announcement announcement;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.xs,
+      children: [
         if (announcement.video != null)
           _Badge(
             icon: Icons.videocam_rounded,
             label: context.l10n.statusVideoBadge,
             foreground: foreground,
           ),
-        if (announcement.tag != null) ...[
-          const SizedBox(width: AppSpacing.sm),
+        if (announcement.tag != null)
           _Badge(label: announcement.tag!, foreground: foreground),
-        ],
       ],
     );
   }

@@ -66,17 +66,28 @@ class StatusBackground extends StatelessWidget {
 
   /// Voile dégradé : discret en haut (l'en-tête auteur y vit), transparent au
   /// milieu, franchement dense en bas.
-  static LinearGradient get _scrimGradient => LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: <Color>[
-          Colors.black.withValues(alpha: 0.28),
-          Colors.black.withValues(alpha: 0.0),
-          Colors.black.withValues(alpha: 0.45),
-          Colors.black.withValues(alpha: 0.72),
-        ],
-        stops: const <double>[0.0, 0.32, 0.74, 1.0],
-      );
+  ///
+  /// Sa teinte suit le texte, pas l'inverse : un voile noir sous un texte
+  /// **sombre** (fond clair) détruirait le contraste au lieu de le renforcer —
+  /// on assombrit derrière un texte clair, on éclaircit derrière un texte
+  /// sombre.
+  static LinearGradient scrimGradient(Color foreground) {
+    final tint =
+        ThemeData.estimateBrightnessForColor(foreground) == Brightness.light
+            ? Colors.black
+            : Colors.white;
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: <Color>[
+        tint.withValues(alpha: 0.28),
+        tint.withValues(alpha: 0.0),
+        tint.withValues(alpha: 0.45),
+        tint.withValues(alpha: 0.72),
+      ],
+      stops: const <double>[0.0, 0.32, 0.74, 1.0],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +100,17 @@ class StatusBackground extends StatelessWidget {
         DecoratedBox(decoration: BoxDecoration(gradient: statusGradient(base))),
         if (url != null) _buildImage(url),
         if (scrim)
-          DecoratedBox(decoration: BoxDecoration(gradient: _scrimGradient)),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: scrimGradient(
+                foregroundFor(
+                  id,
+                  backgroundColor: backgroundColor,
+                  imageUrl: imageUrl,
+                ),
+              ),
+            ),
+          ),
         child,
       ],
     );
