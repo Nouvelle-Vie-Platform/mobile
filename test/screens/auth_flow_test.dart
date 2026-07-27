@@ -23,16 +23,47 @@ void main() {
       expect(find.text('Commencer'), findsWidgets);
     });
 
-    testWidgets('IdentifierScreen se monte', (tester) async {
+    testWidgets('IdentifierScreen se monte sur le canal email', (tester) async {
       await pumpScreen(tester, const IdentifierScreen());
       expect(find.byType(IdentifierScreen), findsOneWidget);
       expect(find.text('Continuer'), findsOneWidget);
+      // Email par défaut : c'est le champ email (et non le sélecteur
+      // d'indicatif du champ téléphone) qui est affiché.
+      expect(find.text('jean.kossi@email.com'), findsOneWidget);
+      expect(find.text('90 12 34 56'), findsNothing);
+    });
+
+    testWidgets('IdentifierScreen n\'expose plus Google ni Apple',
+        (tester) async {
+      await pumpScreen(tester, const IdentifierScreen());
+      // Ces boutons appelaient `signInWithGoogle` / `signInWithApple`, qui
+      // lèvent `UnimplementedError` : non rattrapée (ce n'est pas une
+      // `AuthException`), elle ferait planter l'app au tap.
+      expect(find.text('Google'), findsNothing);
+      expect(find.text('Apple'), findsNothing);
+      expect(find.text('Ou continuer avec'), findsNothing);
     });
 
     testWidgets('ProfileFormScreen se monte', (tester) async {
       await pumpScreen(tester, const ProfileFormScreen());
       expect(find.byType(ProfileFormScreen), findsOneWidget);
       expect(find.text('Enregistrer'), findsOneWidget);
+    });
+
+    testWidgets('ProfileFormScreen : prénom, civilité localisée, branche',
+        (tester) async {
+      await pumpScreen(tester, const ProfileFormScreen());
+
+      // Le champ alimente `User.firstName`, pas un nom complet.
+      expect(find.text('Votre prénom'), findsOneWidget);
+      // Civilité rendue par l10n (jamais de chaîne en dur dans le modèle).
+      expect(find.text('Frère'), findsOneWidget);
+      expect(find.text('Sœur'), findsOneWidget);
+      // Puce de branche : le nom seul. `Branch.city` n'existe pas côté
+      // serveur, et le nom réel porte déjà la ville.
+      expect(find.text('Église Mère – Lomé'), findsOneWidget);
+      expect(find.textContaining('Église Mère – Lomé ·'), findsNothing);
+      expect(find.text('Je suis nouveau'), findsOneWidget);
     });
   });
 }

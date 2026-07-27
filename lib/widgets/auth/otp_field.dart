@@ -33,6 +33,10 @@ class OtpFieldController {
 /// - [hasError] passe les bordures en rouge (message géré par le parent) ;
 /// - le collage d'un code complet est réparti sur les cases.
 ///
+/// Les cases se **redimensionnent selon la largeur disponible** : six cases
+/// tiennent sur un écran étroit (320 pt) sans débordement, tout en gardant le
+/// confort d'appui sur grand écran.
+///
 /// Le parent garde la main via un [OtpFieldController] (vider / refocaliser).
 class OtpField extends StatefulWidget {
   const OtpField({
@@ -72,6 +76,13 @@ class OtpField extends StatefulWidget {
 }
 
 class _OtpFieldState extends State<OtpField> {
+  /// Largeur d'une case sur grand écran (confort d'appui).
+  static const double _maxBoxWidth = 56;
+
+  /// Plancher de largeur : en deçà, un chiffre en H3 n'est plus confortable.
+  /// 6 × 32 + 5 × 8 = 232 pt, largement sous les 288 pt utiles d'un écran 320.
+  static const double _minBoxWidth = 32;
+
   late final List<TextEditingController> _controllers;
   late final List<FocusNode> _focusNodes;
 
@@ -154,7 +165,10 @@ class _OtpFieldState extends State<OtpField> {
         _focusNodes[index].unfocus();
       }
     } else {
-      _distribute(index, digits);
+      // Collage d'un code complet : il remplit toujours depuis la première
+      // case, quelle que soit celle qui avait le focus. En deçà, on répartit
+      // à partir de la case courante (saisie multiple, autofill partiel).
+      _distribute(digits.length >= widget.length ? 0 : index, digits);
     }
     _emit();
   }
@@ -187,18 +201,37 @@ class _OtpFieldState extends State<OtpField> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (var i = 0; i < widget.length; i++) ...[
-          if (i > 0) const SizedBox(width: AppSpacing.md),
-          _box(i),
-        ],
-      ],
+    // Au-delà de quatre cases, l'écart passe à `sm` : c'est ce qui permet à six
+    // cases lisibles de tenir sur un écran étroit.
+    final gap = widget.length > 4 ? AppSpacing.sm : AppSpacing.md;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final gaps = gap * (widget.length - 1);
+        // Hauteur infinie possible (colonne défilante) mais pas la largeur ;
+        // repli défensif sur la largeur idéale si la contrainte est libre.
+        final available = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : _maxBoxWidth * widget.length + gaps;
+        final width = ((available - gaps) / widget.length)
+            .clamp(_minBoxWidth, _maxBoxWidth);
+        // Rapport hérité des cases 56 × 64 du design.
+        final height = width + 8;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < widget.length; i++) ...[
+              if (i > 0) SizedBox(width: gap),
+              _box(i, width, height),
+            ],
+          ],
+        );
+      },
     );
   }
 
-  Widget _box(int index) {
+  Widget _box(int index, double width, double height) {
     final palette = context.palette;
     final focused = _focusNodes[index].hasFocus;
     final Color borderColor;
@@ -213,8 +246,8 @@ class _OtpFieldState extends State<OtpField> {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      width: 56,
-      height: 64,
+      width: width,
+      height: height,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: palette.surface,

@@ -12,16 +12,16 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../utils/dial_codes.dart';
-import '../../widgets/social_button.dart';
-import '../../widgets/profile_setup_sheet.dart';
 
 /// `/auth/identifier` : saisie du téléphone ou de l'email, envoi du code.
 ///
-/// Toggle **Téléphone / Email** (téléphone en premier). En mode téléphone, un
-/// sélecteur d'indicatif (déduit du locale, repli +228) précède le champ et
-/// l'identifiant est normalisé en **E.164** ; en mode email, l'adresse est mise
-/// en minuscules. « Continuer » demande un code puis pousse [CodeScreen] ;
-/// Google/Apple sautent l'étape code et routent selon `isNewUser`.
+/// Toggle **Téléphone / Email**, **email sélectionné par défaut** (le canal
+/// téléphone n'est pas encore actif). En mode téléphone, un sélecteur
+/// d'indicatif (déduit du locale, repli +228) précède le champ et l'identifiant
+/// est normalisé en **E.164** ; en mode email, l'adresse est mise en
+/// minuscules. Cette normalisation est un confort d'ergonomie : le serveur
+/// re-normalise de son côté et ne s'y fie pas. « Continuer » demande un code
+/// puis pousse [CodeScreen].
 class IdentifierScreen extends ConsumerStatefulWidget {
   const IdentifierScreen({super.key});
 
@@ -32,17 +32,19 @@ class IdentifierScreen extends ConsumerStatefulWidget {
 class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
   final _controller = TextEditingController();
 
-  /// Onglet courant : téléphone (défaut) ou email.
-  bool _isPhone = true;
+  /// Onglet courant : téléphone ou email.
+  ///
+  /// **Email par défaut** : le canal téléphone n'est pas actif au lancement
+  /// (aucun fournisseur SMS/WhatsApp retenu), seul l'email envoie réellement un
+  /// code. Pour remettre le téléphone en premier, passer cette seule valeur à
+  /// `true` (cf. docs/auth-contract.md, décision figée n°2).
+  bool _isPhone = false;
 
   /// Indicatif sélectionné (initialisé depuis le locale appareil).
   late DialCountry _dialCountry;
 
-  /// Envoi du code en cours (spinner sur « Continuer »).
-  bool _submitting = false;
-
-  /// Connexion sociale en cours (désactive les actions).
-  bool _socialBusy = false;
+  /// Envoi du code en cours : désactive les actions, spinner sur « Continuer ».
+  bool _busy = false;
 
   @override
   void initState() {
@@ -56,8 +58,6 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
     _controller.dispose();
     super.dispose();
   }
-
-  bool get _busy => _submitting || _socialBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -89,26 +89,11 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              _buildToggle(l, palette),
+              _buildToggle(l),
               const SizedBox(height: AppSpacing.lg),
-              _isPhone ? _buildPhoneField(l, palette) : _buildEmailField(l),
+              _isPhone ? _buildPhoneField(l) : _buildEmailField(l),
               const SizedBox(height: AppSpacing.xl),
               _buildContinueButton(l),
-              const SizedBox(height: AppSpacing.xl),
-              _buildSeparator(l, palette),
-              const SizedBox(height: AppSpacing.lg),
-              // Libellés de marque (proper nouns) — non traduits.
-              SocialButton(
-                label: 'Google',
-                icon: Icons.g_mobiledata,
-                onPressed: _busy ? null : () => _social(_SocialProvider.google),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              SocialButton(
-                label: 'Apple',
-                icon: Icons.apple,
-                onPressed: _busy ? null : () => _social(_SocialProvider.apple),
-              ),
             ],
           ),
         ),
@@ -116,7 +101,7 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
     );
   }
 
-  Widget _buildToggle(AppLocalizations l, AppPalette palette) {
+  Widget _buildToggle(AppLocalizations l) {
     return SegmentedButton<bool>(
       segments: [
         ButtonSegment(
@@ -143,7 +128,7 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
     );
   }
 
-  Widget _buildPhoneField(AppLocalizations l, AppPalette palette) {
+  Widget _buildPhoneField(AppLocalizations l) {
     // `IntrinsicHeight` borne la hauteur de la Row : sans elle, le `stretch`
     // (indicatif à la hauteur du champ) échoue dans un contexte de hauteur
     // infinie (`SingleChildScrollView`).
@@ -188,7 +173,7 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
     return FilledButton(
       onPressed: _busy ? null : _submit,
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-      child: _submitting
+      child: _busy
           ? const SizedBox(
               height: 22,
               width: 22,
@@ -198,22 +183,6 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
               ),
             )
           : Text(l.authContinue),
-    );
-  }
-
-  Widget _buildSeparator(AppLocalizations l, AppPalette palette) {
-    return Row(
-      children: [
-        Expanded(child: Divider(color: palette.divider)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Text(
-            l.authOrContinueWith,
-            style: AppTypography.caption.copyWith(color: palette.textSecondary),
-          ),
-        ),
-        Expanded(child: Divider(color: palette.divider)),
-      ],
     );
   }
 
@@ -311,7 +280,7 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
       channel = IdentifierChannel.email;
     }
 
-    setState(() => _submitting = true);
+    setState(() => _busy = true);
     try {
       await ref
           .read(authProvider.notifier)
@@ -325,31 +294,7 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
       if (!mounted) return;
       _showError();
     } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
-  }
-
-  Future<void> _social(_SocialProvider provider) async {
-    if (_busy) return;
-    setState(() => _socialBusy = true);
-    try {
-      final notifier = ref.read(authProvider.notifier);
-      final session = switch (provider) {
-        _SocialProvider.google => await notifier.signInWithGoogle(),
-        _SocialProvider.apple => await notifier.signInWithApple(),
-      };
-      if (!mounted) return;
-      // Comme pour le code : on va sur l'accueil, la feuille de mise en route
-      // du profil s'y ouvre par-dessus si l'utilisateur est nouveau.
-      if (session.isNewUser) {
-        ref.read(profileSetupPendingProvider.notifier).request();
-      }
-      context.goNamed(AppRoute.home);
-    } catch (_) {
-      if (!mounted) return;
-      _showError();
-    } finally {
-      if (mounted) setState(() => _socialBusy = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -359,9 +304,6 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
     );
   }
 }
-
-/// Fournisseurs de connexion sociale gérés par l'écran.
-enum _SocialProvider { google, apple }
 
 /// Bouton compact affichant l'indicatif sélectionné, ouvre le sélecteur de pays.
 class _DialCodeButton extends StatelessWidget {

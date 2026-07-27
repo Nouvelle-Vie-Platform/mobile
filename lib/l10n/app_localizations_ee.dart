@@ -186,9 +186,6 @@ class AppLocalizationsEe extends AppLocalizations {
   String get registerSubtitle => 'Va míaƒe habɔbɔ la me.';
 
   @override
-  String get fieldFullName => 'Nom complet';
-
-  @override
   String get fieldPhone => 'Téléphone';
 
   @override
@@ -520,7 +517,7 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String authCodeSubtitle(String target) {
-    return 'Saisissez le code à 4 chiffres envoyé à $target.';
+    return 'Saisissez le code à 6 chiffres envoyé à $target.';
   }
 
   @override
@@ -532,10 +529,7 @@ class AppLocalizationsEe extends AppLocalizations {
   }
 
   @override
-  String get authCodeInvalid => 'Code incorrect';
-
-  @override
-  String get authCodeExpired => 'Code expiré, demandez-en un nouveau';
+  String get authCodeInvalid => 'Code invalide ou expiré';
 
   @override
   String get profileFormTitle => 'Nous aimerions en savoir plus sur vous';

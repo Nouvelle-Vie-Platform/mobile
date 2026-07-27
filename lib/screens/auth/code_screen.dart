@@ -17,12 +17,24 @@ import '../../widgets/brand_app_bar.dart';
 import '../../widgets/auth/otp_field.dart';
 import '../../widgets/profile_setup_sheet.dart';
 
-/// `/auth/code` : saisie du code à 4 chiffres.
+/// Repli tant que la slice #11 n'expose pas `retryAfter` sur [AuthException].
+///
+/// Le serveur accompagne ses 429 d'un en-tête `Retry-After` (secondes). Dès que
+/// le champ existe sur [AuthException], l'appelant le résout sur l'instance (un
+/// membre d'instance l'emporte sur un membre d'extension) : **il suffit alors
+/// de supprimer cette extension**, que l'analyseur signalera comme inutilisée.
+extension _RetryAfterFallback on AuthException {
+  /// Toujours `null` : sans la valeur du serveur, on retombe sur le contrat.
+  int? get retryAfter => null;
+}
+
+/// `/auth/code` : saisie du code à 6 chiffres.
 ///
 /// Reçoit ses arguments via `state.extra` typé [CodeArgs] (voir app_router.dart).
-/// Validation automatique dès la 4e case remplie ; renvoi du code avec cooldown ;
-/// erreurs (incorrect / expiré) affichées sous les cases. Succès → route selon
-/// `session.isNewUser` (nouveau → complétion de profil, sinon → accueil).
+/// Validation automatique dès la 6e case remplie ; renvoi du code avec cooldown ;
+/// un message unique couvre « invalide ou expiré » (le serveur ne distingue pas
+/// les deux cas). Succès → route selon `session.isNewUser` (nouveau →
+/// complétion de profil, sinon → accueil).
 class CodeScreen extends ConsumerStatefulWidget {
   const CodeScreen({super.key});
 
@@ -31,13 +43,22 @@ class CodeScreen extends ConsumerStatefulWidget {
 }
 
 class _CodeScreenState extends ConsumerState<CodeScreen> {
-  /// Durée du cooldown avant de pouvoir renvoyer le code (~45 s, cf. contrat).
-  static const int _cooldownSeconds = 45;
+  /// Nombre de chiffres du code (`otpConfig.codeLength` côté serveur).
+  static const int _codeLength = 6;
+
+  /// Cooldown de renvoi par défaut, aligné sur le serveur (cf. contrat) :
+  /// en deçà, `POST /auth/request-code` répond `429 E_OTP_RATE_LIMITED`.
+  /// N'est utilisé que si le serveur n'a pas fourni de `Retry-After`.
+  static const int _cooldownSeconds = 60;
 
   final OtpFieldController _otp = OtpFieldController();
 
   Timer? _cooldownTimer;
   int _secondsLeft = 0;
+
+  /// Chiffres saisis, suivis pour n'activer « Valider » qu'à code complet :
+  /// envoyer un code trop court ne rapporterait qu'un 422 inutile.
+  String _code = '';
   bool _loading = false;
   bool _hasError = false;
   String? _errorText;
@@ -55,9 +76,17 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
     super.dispose();
   }
 
-  void _startCooldown() {
+  /// (Re)démarre le décompte avant de pouvoir renvoyer un code.
+  ///
+  /// [seconds] : valeur du serveur (`Retry-After`) quand elle est disponible,
+  /// sinon [_cooldownSeconds]. Le décompte en cours n'est **jamais raccourci** :
+  /// aucun chemin ne peut ainsi rouvrir le bouton « Renvoyer » avant l'heure,
+  /// ce qui garantit qu'un appui ne prend pas un 429.
+  void _startCooldown([int? seconds]) {
+    final target = seconds ?? _cooldownSeconds;
     _cooldownTimer?.cancel();
-    setState(() => _secondsLeft = _cooldownSeconds);
+    setState(
+        () => _secondsLeft = target > _secondsLeft ? target : _secondsLeft);
     _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -93,26 +122,41 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
       setState(() {
         _loading = false;
         _hasError = true;
+        // Un seul message pour « invalide » et « expiré » : le serveur fusionne
+        // les deux cas dans un 422 générique pour ne pas renseigner un attaquant
+        // sur l'état d'un code.
         _errorText = switch (error.code) {
           AuthErrorCode.tooManyAttempts => l.authCodeTooManyAttempts,
           _ => l.authCodeInvalid,
         };
       });
+      // Le serveur peut avoir posé un délai (trop d'essais) : le décompte de
+      // renvoi s'y aligne pour ne pas proposer une action qui échouerait.
+      final retryAfter = error.retryAfter;
+      if (retryAfter != null) _startCooldown(retryAfter);
       // Vide les cases et refocalise la première pour une nouvelle saisie.
       _otp.clear();
     }
   }
 
   Future<void> _resend(CodeArgs args) async {
-    if (_secondsLeft > 0) return;
+    if (_secondsLeft > 0 || _loading) return;
     try {
       await ref.read(authProvider.notifier).requestCode(
             identifier: args.identifier,
             channel: args.channel,
           );
-    } on AuthException {
-      // Mock : requestCode n'échoue pas ; en phase B on pourrait afficher un
-      // message réseau. On relance quand même le cooldown pour éviter le spam.
+    } on AuthException catch (error) {
+      if (!mounted) return;
+      // Renvoi refusé (429) : on repart sur le délai annoncé par le serveur
+      // plutôt que de reproposer immédiatement un bouton qui échouera.
+      _startCooldown(error.retryAfter);
+      _showMessage(
+        error.code == AuthErrorCode.tooManyAttempts
+            ? context.l10n.authCodeTooManyAttempts
+            : context.l10n.errorGeneric,
+      );
+      return;
     }
     if (!mounted) return;
     _startCooldown();
@@ -121,8 +165,12 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
       _hasError = false;
       _errorText = null;
     });
+    _showMessage(context.l10n.authCodeResent);
+  }
+
+  void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.authCodeResent)),
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -160,9 +208,11 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
               ),
               const SizedBox(height: AppSpacing.xxl),
               OtpField(
+                length: _codeLength,
                 controller: _otp,
                 hasError: _hasError,
                 enabled: !_loading,
+                onChanged: (code) => setState(() => _code = code),
                 onCompleted: (code) => _verify(code, args),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -182,7 +232,9 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
               AppButton(
                 label: l.actionValidate,
                 loading: _loading,
-                onPressed: _loading ? null : () => _verify(_otp.value, args),
+                onPressed: _loading || _code.length < _codeLength
+                    ? null
+                    : () => _verify(_code, args),
               ),
               const SizedBox(height: AppSpacing.lg),
               Center(
