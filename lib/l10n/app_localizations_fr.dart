@@ -186,9 +186,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get registerSubtitle => 'Rejoignez notre communauté.';
 
   @override
-  String get fieldFullName => 'Nom complet';
-
-  @override
   String get fieldPhone => 'Téléphone';
 
   @override

@@ -186,9 +186,6 @@ class AppLocalizationsEe extends AppLocalizations {
   String get registerSubtitle => 'Va míaƒe habɔbɔ la me.';
 
   @override
-  String get fieldFullName => 'Nom complet';
-
-  @override
   String get fieldPhone => 'Téléphone';
 
   @override

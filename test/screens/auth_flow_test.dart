@@ -49,5 +49,21 @@ void main() {
       expect(find.byType(ProfileFormScreen), findsOneWidget);
       expect(find.text('Enregistrer'), findsOneWidget);
     });
+
+    testWidgets('ProfileFormScreen : prénom, civilité localisée, branche',
+        (tester) async {
+      await pumpScreen(tester, const ProfileFormScreen());
+
+      // Le champ alimente `User.firstName`, pas un nom complet.
+      expect(find.text('Votre prénom'), findsOneWidget);
+      // Civilité rendue par l10n (jamais de chaîne en dur dans le modèle).
+      expect(find.text('Frère'), findsOneWidget);
+      expect(find.text('Sœur'), findsOneWidget);
+      // Puce de branche : le nom seul. `Branch.city` n'existe pas côté
+      // serveur, et le nom réel porte déjà la ville.
+      expect(find.text('Église Mère – Lomé'), findsOneWidget);
+      expect(find.textContaining('Église Mère – Lomé ·'), findsNothing);
+      expect(find.text('Je suis nouveau'), findsOneWidget);
+    });
   });
 }

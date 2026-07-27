@@ -400,12 +400,6 @@ abstract class AppLocalizations {
   /// **'Rejoignez notre communauté.'**
   String get registerSubtitle;
 
-  /// No description provided for @fieldFullName.
-  ///
-  /// In fr, this message translates to:
-  /// **'Nom complet'**
-  String get fieldFullName;
-
   /// No description provided for @fieldPhone.
   ///
   /// In fr, this message translates to:

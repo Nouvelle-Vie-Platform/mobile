@@ -71,7 +71,6 @@
   "registerAppBarTitle": "Registration",
   "registerTitle": "Create your account",
   "registerSubtitle": "Join our community.",
-  "fieldFullName": "Full name",
   "fieldPhone": "Phone",
   "fieldLocalBranch": "Local branch",
   "registerTermsPrefix": "By creating an account, you accept our ",

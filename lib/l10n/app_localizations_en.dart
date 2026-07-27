@@ -185,9 +185,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerSubtitle => 'Join our community.';
 
   @override
-  String get fieldFullName => 'Full name';
-
-  @override
   String get fieldPhone => 'Phone';
 
   @override
