@@ -10,14 +10,27 @@ enum AuthErrorCode { invalidCode, tooManyAttempts, network, unknown }
 
 /// Exception levée par [AuthRepository] en cas d'échec métier.
 class AuthException implements Exception {
-  AuthException(this.code, [this.message]);
+  AuthException(this.code, [this.message, this.retryAfter]);
 
   final AuthErrorCode code;
+
+  /// Message **déjà localisé par le serveur** (fr / en selon l'en-tête de
+  /// langue). À n'afficher que pour les codes sans libellé propre côté app
+  /// ([AuthErrorCode.unknown]) : les autres passent par `context.l10n`.
   final String? message;
 
+  /// Délai avant de pouvoir réessayer, tel qu'annoncé par le serveur sur un
+  /// **429** (corps `retryAfter`, en secondes, ou en-tête `Retry-After`).
+  ///
+  /// `null` quand le serveur ne l'a pas dit — l'UI retombe alors sur son
+  /// cooldown par défaut. Le serveur connaît la seconde exacte ; l'app ne doit
+  /// jamais la deviner quand elle est disponible.
+  final Duration? retryAfter;
+
   @override
-  String toString() =>
-      'AuthException(${code.name}${message == null ? '' : ': $message'})';
+  String toString() => 'AuthException(${code.name}'
+      '${message == null ? '' : ': $message'}'
+      '${retryAfter == null ? '' : ' [retryAfter: ${retryAfter!.inSeconds}s]'})';
 }
 
 /// Contrat d'authentification — **source de vérité définie par le front**.
@@ -25,7 +38,7 @@ class AuthException implements Exception {
 /// Pour brancher un vrai backend (phase B), il suffira de fournir une autre
 /// implémentation via `authRepositoryProvider` — aucun écran ne change.
 abstract interface class AuthRepository {
-  /// Envoie un code à 4 chiffres sur le canal choisi.
+  /// Envoie un code à **6 chiffres** sur le canal choisi.
   /// [identifier] : téléphone E.164 (ex. « +22890123456 ») ou email.
   Future<void> requestCode({
     required String identifier,
@@ -61,9 +74,15 @@ abstract interface class AuthRepository {
 /// Implémentation factice (phase C) : **aucun réseau, aucun plugin**.
 ///
 /// Session en mémoire seule (pas de persistance) : redémarrer l'app déconnecte.
-/// Code magique **`0000`** = succès ; tout autre = [AuthErrorCode.invalidCode].
+/// Code magique [magicCode] = succès ; tout autre = [AuthErrorCode.invalidCode].
 class InMemoryAuthRepository implements AuthRepository {
   User? _user;
+
+  /// Code magique de la démo, à **6 chiffres** comme celui du serveur
+  /// (contrat v2, décision 8). Le mock doit se tromper de la même façon que la
+  /// production : accepter 4 chiffres ferait passer pour valide une saisie que
+  /// le backend rejetterait.
+  static const String magicCode = '000000';
 
   static const _delay = Duration(milliseconds: 600);
   static const _lookup = Duration(milliseconds: 300);
@@ -89,7 +108,7 @@ class InMemoryAuthRepository implements AuthRepository {
     required String code,
   }) async {
     await Future<void>.delayed(_delay);
-    if (code != '0000') {
+    if (code != magicCode) {
       throw AuthException(AuthErrorCode.invalidCode);
     }
     final trimmed = identifier.trim();
