@@ -33,6 +33,17 @@ void main() {
       expect(find.text('90 12 34 56'), findsNothing);
     });
 
+    testWidgets('IdentifierScreen n\'expose plus Google ni Apple',
+        (tester) async {
+      await pumpScreen(tester, const IdentifierScreen());
+      // Ces boutons appelaient `signInWithGoogle` / `signInWithApple`, qui
+      // lèvent `UnimplementedError` : non rattrapée (ce n'est pas une
+      // `AuthException`), elle ferait planter l'app au tap.
+      expect(find.text('Google'), findsNothing);
+      expect(find.text('Apple'), findsNothing);
+      expect(find.text('Ou continuer avec'), findsNothing);
+    });
+
     testWidgets('ProfileFormScreen se monte', (tester) async {
       await pumpScreen(tester, const ProfileFormScreen());
       expect(find.byType(ProfileFormScreen), findsOneWidget);
