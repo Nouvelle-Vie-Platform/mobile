@@ -92,11 +92,10 @@ class HttpAuthRepository implements AuthRepository {
       final res = await _client.get<Map<String, dynamic>>('/auth/me');
       return User.fromJson(res.data!);
     } on DioException catch (e) {
-      // Token invalide ou expiré : on nettoie et on déconnecte.
-      if (e.response?.statusCode == 401) {
-        await _api.deleteToken();
-        return null;
-      }
+      // Token invalide ou expiré : la purge et le retour à `/auth` sont pris
+      // en charge globalement par l'intercepteur 401 d'ApiClient. Ici on se
+      // contente de dire « personne n'est connecté ».
+      if (e.response?.statusCode == 401) return null;
       throw _mapError(e);
     }
   }

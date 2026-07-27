@@ -17,6 +17,7 @@ const String _kTokenKey = 'auth_token';
 /// - Headers JSON par défaut
 /// - Intercepteur JWT : injecte automatiquement le token Bearer si présent
 /// - Déballage de l'enveloppe `data` posée par le serveur
+/// - Traitement global du 401 (purge du token + [onUnauthorized])
 /// - Logs en mode debug
 class ApiClient {
   ApiClient._() {
@@ -35,6 +36,7 @@ class ApiClient {
     _dio.interceptors.addAll([
       _AuthInterceptor(_storage),
       unwrapEnvelopeInterceptor,
+      UnauthorizedInterceptor(_handleUnauthorized),
       LogInterceptor(
         requestBody: true,
         responseBody: true,
@@ -49,6 +51,23 @@ class ApiClient {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   Dio get dio => _dio;
+
+  /// Appelé quand le serveur répond **401** sur n'importe quelle requête. Le
+  /// token vient d'être purgé ; il reste à ramener l'utilisateur à `/auth`.
+  ///
+  /// Ce point d'accroche existe pour que la couche réseau **ignore** Riverpod
+  /// et go_router : c'est la couche application qui le câble au démarrage
+  /// (`MaisonDuMiracleApp`), là où le routeur et les providers existent. Les
+  /// couches basses ne connaissent pas les couches hautes.
+  void Function()? onUnauthorized;
+
+  /// Réaction au 401, dans l'ordre : purger le token (personne d'autre ne le
+  /// fera — l'appel en cours, lui, échoue), puis prévenir la couche
+  /// application.
+  Future<void> _handleUnauthorized() async {
+    await deleteToken();
+    onUnauthorized?.call();
+  }
 
   // ── Token helpers ────────────────────────────────────────────────────────
 
@@ -107,3 +126,33 @@ final Interceptor unwrapEnvelopeInterceptor = InterceptorsWrapper(
     handler.next(res);
   },
 );
+
+/// Intercepteur Dio : traite le **401** une fois pour toutes.
+///
+/// Un 401 n'est pas une erreur métier : il dit que le token n'est plus valide
+/// (révoqué, ou 90 jours d'inactivité). On le purge et on prévient la couche
+/// application via [ApiClient.onUnauthorized], au lieu de laisser chaque
+/// repository — auth, feed, médiathèque, synchro — remonter une `DioException`
+/// brute jusqu'à l'UI.
+///
+/// L'erreur poursuit malgré tout sa route (`handler.next`) : l'appel en cours
+/// doit échouer, il n'a simplement plus à décider du sort du token.
+///
+/// [_onUnauthorized] est injecté (et non lu sur [ApiClient]) pour rendre
+/// l'intercepteur testable sans réseau ni stockage sécurisé.
+class UnauthorizedInterceptor extends Interceptor {
+  UnauthorizedInterceptor(this._onUnauthorized);
+
+  final Future<void> Function() _onUnauthorized;
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    if (err.response?.statusCode == 401) {
+      await _onUnauthorized();
+    }
+    handler.next(err);
+  }
+}
