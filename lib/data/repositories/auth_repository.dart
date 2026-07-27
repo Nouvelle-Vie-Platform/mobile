@@ -38,7 +38,7 @@ class AuthException implements Exception {
 /// Pour brancher un vrai backend (phase B), il suffira de fournir une autre
 /// implémentation via `authRepositoryProvider` — aucun écran ne change.
 abstract interface class AuthRepository {
-  /// Envoie un code à 4 chiffres sur le canal choisi.
+  /// Envoie un code à **6 chiffres** sur le canal choisi.
   /// [identifier] : téléphone E.164 (ex. « +22890123456 ») ou email.
   Future<void> requestCode({
     required String identifier,
@@ -74,9 +74,15 @@ abstract interface class AuthRepository {
 /// Implémentation factice (phase C) : **aucun réseau, aucun plugin**.
 ///
 /// Session en mémoire seule (pas de persistance) : redémarrer l'app déconnecte.
-/// Code magique **`0000`** = succès ; tout autre = [AuthErrorCode.invalidCode].
+/// Code magique [magicCode] = succès ; tout autre = [AuthErrorCode.invalidCode].
 class InMemoryAuthRepository implements AuthRepository {
   User? _user;
+
+  /// Code magique de la démo, à **6 chiffres** comme celui du serveur
+  /// (contrat v2, décision 8). Le mock doit se tromper de la même façon que la
+  /// production : accepter 4 chiffres ferait passer pour valide une saisie que
+  /// le backend rejetterait.
+  static const String magicCode = '000000';
 
   static const _delay = Duration(milliseconds: 600);
   static const _lookup = Duration(milliseconds: 300);
@@ -102,7 +108,7 @@ class InMemoryAuthRepository implements AuthRepository {
     required String code,
   }) async {
     await Future<void>.delayed(_delay);
-    if (code != '0000') {
+    if (code != magicCode) {
       throw AuthException(AuthErrorCode.invalidCode);
     }
     final trimmed = identifier.trim();
