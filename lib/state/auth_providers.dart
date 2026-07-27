@@ -17,9 +17,7 @@ import '../models/models.dart';
 /// autre implémentation — aucun écran ne change (même pattern que
 /// `churchRepositoryProvider`).
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AppEnv.useBackend
-      ? HttpAuthRepository()
-      : InMemoryAuthRepository(),
+  (ref) => AppEnv.useBackend ? HttpAuthRepository() : InMemoryAuthRepository(),
 );
 
 /// Branches locales sélectionnables (liste statique en phase mock).
@@ -115,6 +113,18 @@ class AuthController extends Notifier<AuthState> {
       status: status,
     );
     state = AuthState(status: AuthStatus.authenticated, user: user);
+  }
+
+  /// Session invalidée par le serveur (**401** sur n'importe quel appel).
+  ///
+  /// Branché sur `ApiClient.onUnauthorized` au démarrage de l'app. Le token a
+  /// déjà été purgé par [ApiClient] : il suffit de repasser l'état à
+  /// « déconnecté », dont la garde `redirect` du routeur déduit le retour à
+  /// `/auth`. Pas d'appel réseau — le token étant refusé, `signOut()` le serait
+  /// aussi.
+  void handleUnauthorized() {
+    if (state.status == AuthStatus.unauthenticated) return;
+    state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
   /// Déconnecte l'utilisateur.

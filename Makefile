@@ -5,6 +5,23 @@
 IOS_EMULATOR     ?= apple_ios_simulator
 ANDROID_EMULATOR ?= emulateur_flutter
 
+# URL du backend, passée à l'app par --dart-define (jamais codée en dur dans
+# les sources). Sur un appareil physique, viser l'IP locale du Mac :
+#   make ios API_BASE_URL=http://192.168.1.20:3333
+API_BASE_URL ?= http://localhost:3333
+
+# Depuis l'émulateur Android, la machine hôte s'appelle 10.0.2.2 — `localhost`
+# y désigne l'émulateur lui-même. Une valeur donnée en ligne de commande reste
+# prioritaire.
+ifeq ($(origin API_BASE_URL),command line)
+ANDROID_API_BASE_URL := $(API_BASE_URL)
+else
+ANDROID_API_BASE_URL ?= http://10.0.2.2:3333
+endif
+
+DART_DEFINES         := --dart-define=API_BASE_URL=$(API_BASE_URL)
+ANDROID_DART_DEFINES := --dart-define=API_BASE_URL=$(ANDROID_API_BASE_URL)
+
 .DEFAULT_GOAL := help
 .PHONY: help ios android web devices test analyze format l10n clean
 
@@ -19,6 +36,11 @@ help: ## Affiche cette aide
 	@echo "  make format    dart format lib test"
 	@echo "  make l10n      flutter gen-l10n"
 	@echo "  make clean     flutter clean"
+	@echo ""
+	@echo "URL du backend (--dart-define=API_BASE_URL) :"
+	@echo "  iOS / web  $(API_BASE_URL)"
+	@echo "  Android    $(ANDROID_API_BASE_URL)"
+	@echo "  Surcharge  make ios API_BASE_URL=http://192.168.1.20:3333"
 
 ios: ## Simulateur iOS + app
 	@echo "▶ Démarrage du simulateur iOS ($(IOS_EMULATOR))…"
@@ -26,7 +48,7 @@ ios: ## Simulateur iOS + app
 	@echo "⏳ Attente du simulateur…"
 	@until xcrun simctl list devices booted | grep -q "Booted"; do sleep 2; done
 	@echo "🚀 Lancement de l'app sur iOS…"
-	@flutter run -d $$(xcrun simctl list devices booted | grep -oE "[0-9A-Fa-f-]{36}" | head -1)
+	@flutter run $(DART_DEFINES) -d $$(xcrun simctl list devices booted | grep -oE "[0-9A-Fa-f-]{36}" | head -1)
 
 android: ## Émulateur Android + app (nécessite un JDK 17/21)
 	@echo "▶ Démarrage de l'émulateur Android ($(ANDROID_EMULATOR))…"
@@ -34,10 +56,10 @@ android: ## Émulateur Android + app (nécessite un JDK 17/21)
 	@echo "⏳ Attente de l'émulateur…"
 	@until adb devices | grep -qw device; do sleep 2; done
 	@echo "🚀 Lancement de l'app sur Android…"
-	@flutter run -d $$(adb devices | awk '$$2=="device"{print $$1; exit}')
+	@flutter run $(ANDROID_DART_DEFINES) -d $$(adb devices | awk '$$2=="device"{print $$1; exit}')
 
 web: ## Lance l'app dans Chrome
-	flutter run -d chrome
+	flutter run $(DART_DEFINES) -d chrome
 
 devices: ## Liste les émulateurs et appareils
 	@flutter emulators

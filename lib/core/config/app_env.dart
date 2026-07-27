@@ -16,7 +16,8 @@ class AppEnv {
   /// `false` → utilise [InMemoryAuthRepository] (données factices).
   static bool useBackend = true;
 
-  /// URL de base du backend (redéfinie via `--dart-define=BASE_URL=...`).
-  static const String baseUrl =
-      String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:3333');
+  // L'URL du backend vit dans `kBaseUrl` (lib/core/network/api_client.dart),
+  // alimentée par `--dart-define=API_BASE_URL=…`. L'ancien `AppEnv.baseUrl`
+  // (define `BASE_URL`) n'était lu nulle part : deux conventions concurrentes
+  // pour un seul réglage, c'est une erreur de configuration en attente.
 }

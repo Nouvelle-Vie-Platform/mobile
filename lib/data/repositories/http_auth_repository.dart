@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 
+import '../../core/network/api_client.dart';
 import '../../models/models.dart';
-import '../network/api_client.dart';
-import '../../data/repositories/auth_repository.dart';
+import 'auth_repository.dart';
 
 /// Implémentation HTTP de [AuthRepository] branchée sur le backend local.
 ///
@@ -71,13 +71,15 @@ class HttpAuthRepository implements AuthRepository {
   @override
   Future<Session> signInWithGoogle() async {
     // TODO: implémenter quand le backend supporte OAuth Google.
-    throw UnimplementedError('Google sign-in non encore implémenté côté backend');
+    throw UnimplementedError(
+        'Google sign-in non encore implémenté côté backend');
   }
 
   @override
   Future<Session> signInWithApple() async {
     // TODO: implémenter quand le backend supporte OAuth Apple.
-    throw UnimplementedError('Apple sign-in non encore implémenté côté backend');
+    throw UnimplementedError(
+        'Apple sign-in non encore implémenté côté backend');
   }
 
   // ── currentUser ──────────────────────────────────────────────────────────
@@ -90,11 +92,10 @@ class HttpAuthRepository implements AuthRepository {
       final res = await _client.get<Map<String, dynamic>>('/auth/me');
       return User.fromJson(res.data!);
     } on DioException catch (e) {
-      // Token invalide ou expiré : on nettoie et on déconnecte.
-      if (e.response?.statusCode == 401) {
-        await _api.deleteToken();
-        return null;
-      }
+      // Token invalide ou expiré : la purge et le retour à `/auth` sont pris
+      // en charge globalement par l'intercepteur 401 d'ApiClient. Ici on se
+      // contente de dire « personne n'est connecté ».
+      if (e.response?.statusCode == 401) return null;
       throw _mapError(e);
     }
   }
