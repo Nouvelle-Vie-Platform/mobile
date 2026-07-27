@@ -17,11 +17,13 @@ import '../../widgets/profile_setup_sheet.dart';
 
 /// `/auth/identifier` : saisie du téléphone ou de l'email, envoi du code.
 ///
-/// Toggle **Téléphone / Email** (téléphone en premier). En mode téléphone, un
-/// sélecteur d'indicatif (déduit du locale, repli +228) précède le champ et
-/// l'identifiant est normalisé en **E.164** ; en mode email, l'adresse est mise
-/// en minuscules. « Continuer » demande un code puis pousse [CodeScreen] ;
-/// Google/Apple sautent l'étape code et routent selon `isNewUser`.
+/// Toggle **Téléphone / Email**, **email sélectionné par défaut** (le canal
+/// téléphone n'est pas encore actif). En mode téléphone, un sélecteur
+/// d'indicatif (déduit du locale, repli +228) précède le champ et l'identifiant
+/// est normalisé en **E.164** ; en mode email, l'adresse est mise en
+/// minuscules. Cette normalisation est un confort d'ergonomie : le serveur
+/// re-normalise de son côté et ne s'y fie pas. « Continuer » demande un code
+/// puis pousse [CodeScreen].
 class IdentifierScreen extends ConsumerStatefulWidget {
   const IdentifierScreen({super.key});
 
@@ -32,8 +34,13 @@ class IdentifierScreen extends ConsumerStatefulWidget {
 class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
   final _controller = TextEditingController();
 
-  /// Onglet courant : téléphone (défaut) ou email.
-  bool _isPhone = true;
+  /// Onglet courant : téléphone ou email.
+  ///
+  /// **Email par défaut** : le canal téléphone n'est pas actif au lancement
+  /// (aucun fournisseur SMS/WhatsApp retenu), seul l'email envoie réellement un
+  /// code. Pour remettre le téléphone en premier, passer cette seule valeur à
+  /// `true` (cf. docs/auth-contract.md, décision figée n°2).
+  bool _isPhone = false;
 
   /// Indicatif sélectionné (initialisé depuis le locale appareil).
   late DialCountry _dialCountry;

@@ -23,10 +23,14 @@ void main() {
       expect(find.text('Commencer'), findsWidgets);
     });
 
-    testWidgets('IdentifierScreen se monte', (tester) async {
+    testWidgets('IdentifierScreen se monte sur le canal email', (tester) async {
       await pumpScreen(tester, const IdentifierScreen());
       expect(find.byType(IdentifierScreen), findsOneWidget);
       expect(find.text('Continuer'), findsOneWidget);
+      // Email par défaut : c'est le champ email (et non le sélecteur
+      // d'indicatif du champ téléphone) qui est affiché.
+      expect(find.text('jean.kossi@email.com'), findsOneWidget);
+      expect(find.text('90 12 34 56'), findsNothing);
     });
 
     testWidgets('ProfileFormScreen se monte', (tester) async {
