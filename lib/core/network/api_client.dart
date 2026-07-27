@@ -2,25 +2,37 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// URL du backend local.
+/// URL du backend, injectée au build.
 ///
-/// Sur le simulateur iOS, `localhost` pointe directement sur la machine hôte.
-/// Pour un appareil physique sur le même réseau Wi-Fi, remplacer par
-/// l'adresse IP locale du Mac (ex. `http://192.168.1.X:3333`).
-const String kBaseUrl = 'http://localhost:3333';
+/// ```sh
+/// flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3333
+/// flutter build ipa --dart-define=API_BASE_URL=https://api.example.org
+/// ```
+///
+/// La valeur par défaut ne vaut **que pour le développement** : `localhost`
+/// désigne la machine hôte depuis le simulateur iOS, mais l'appareil lui-même
+/// depuis un téléphone physique. Tester sur un vrai appareil se fait donc en
+/// passant `--dart-define`, jamais en éditant ce fichier — une URL de dev codée
+/// en dur finit par partir en production.
+const String kBaseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: 'http://localhost:3333',
+);
 
-/// Clé de stockage sécurisé du token JWT.
+/// Clé de stockage sécurisé du token d'authentification.
 const String _kTokenKey = 'auth_token';
 
 /// Client HTTP global, pré-configuré avec :
-/// - URL de base du backend local
+/// - l'URL de base du backend ([kBaseUrl], injectée par `--dart-define`)
 /// - Headers JSON par défaut
-/// - Intercepteur JWT : injecte automatiquement le token Bearer si présent
+/// - Intercepteur d'auth : injecte automatiquement le token Bearer si présent
 /// - Déballage de l'enveloppe `data` posée par le serveur
 /// - Traitement global du 401 (purge du token + [onUnauthorized])
 /// - Logs en mode debug
 class ApiClient {
   ApiClient._() {
+    ensureSecureBaseUrl();
+
     _dio = Dio(
       BaseOptions(
         baseUrl: kBaseUrl,
@@ -37,11 +49,15 @@ class ApiClient {
       _AuthInterceptor(_storage),
       unwrapEnvelopeInterceptor,
       UnauthorizedInterceptor(_handleUnauthorized),
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        logPrint: (o) => print('[API] $o'), // ignore: avoid_print
-      ),
+      // Uniquement en debug : ces logs contiennent les corps de requête et le
+      // header `Authorization`, qui n'ont rien à faire dans les journaux d'un
+      // appareil de production.
+      if (kDebugMode)
+        LogInterceptor(
+          requestBody: true,
+          responseBody: true,
+          logPrint: (o) => debugPrint('[API] $o'),
+        ),
     ]);
   }
 
@@ -61,6 +77,31 @@ class ApiClient {
   /// couches basses ne connaissent pas les couches hautes.
   void Function()? onUnauthorized;
 
+  /// Refuse une URL de base en HTTP clair dans un build **release**.
+  ///
+  /// Un `assert` ne suffirait pas : il est retiré à la compilation en release,
+  /// c'est-à-dire exactement dans le build qu'il faut protéger. D'où un vrai
+  /// contrôle, qui lève. Le token Bearer ouvre le compte pendant 90 jours
+  /// glissants : il ne doit jamais transiter en clair.
+  ///
+  /// Appelé au démarrage (`main`) pour échouer tout de suite, et à la création
+  /// du client pour qu'aucun chemin ne puisse le contourner.
+  ///
+  /// [url] et [releaseMode] ne sont paramétrables que pour les tests : en
+  /// production les deux valeurs par défaut sont les bonnes.
+  static void ensureSecureBaseUrl({
+    String url = kBaseUrl,
+    bool releaseMode = kReleaseMode,
+  }) {
+    if (!releaseMode || url.startsWith('https://')) return;
+    throw StateError(
+      'API_BASE_URL doit être en HTTPS dans un build release (reçu : "$url"). '
+      'Le token Bearer y transiterait en clair, or il ouvre le compte pendant '
+      '90 jours. Relancer le build avec '
+      '--dart-define=API_BASE_URL=https://mon-domaine.example',
+    );
+  }
+
   /// Réaction au 401, dans l'ordre : purger le token (personne d'autre ne le
   /// fera — l'appel en cours, lui, échoue), puis prévenir la couche
   /// application.
@@ -71,14 +112,14 @@ class ApiClient {
 
   // ── Token helpers ────────────────────────────────────────────────────────
 
-  /// Persiste le JWT après une connexion réussie.
+  /// Persiste le token après une connexion réussie.
   Future<void> saveToken(String token) =>
       _storage.write(key: _kTokenKey, value: token);
 
-  /// Supprime le JWT à la déconnexion.
+  /// Supprime le token à la déconnexion.
   Future<void> deleteToken() => _storage.delete(key: _kTokenKey);
 
-  /// Lit le JWT courant (null si absent).
+  /// Lit le token courant (null si absent).
   Future<String?> readToken() => _storage.read(key: _kTokenKey);
 }
 
