@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// URL du backend local.
@@ -15,6 +16,7 @@ const String _kTokenKey = 'auth_token';
 /// - URL de base du backend local
 /// - Headers JSON par défaut
 /// - Intercepteur JWT : injecte automatiquement le token Bearer si présent
+/// - Déballage de l'enveloppe `data` posée par le serveur
 /// - Logs en mode debug
 class ApiClient {
   ApiClient._() {
@@ -32,6 +34,7 @@ class ApiClient {
 
     _dio.interceptors.addAll([
       _AuthInterceptor(_storage),
+      unwrapEnvelopeInterceptor,
       LogInterceptor(
         requestBody: true,
         responseBody: true,
@@ -79,3 +82,28 @@ class _AuthInterceptor extends Interceptor {
     handler.next(options);
   }
 }
+
+/// Déballe l'enveloppe `data` que le serveur pose sur **toutes** ses réponses
+/// (sérialiseur global monté sur `HttpContext`, partagé par ses modules).
+///
+/// Le déballage a lieu **une seule fois, ici** : les repositories — auth
+/// aujourd'hui, feed / médiathèque / synchro demain — reçoivent le contenu à
+/// plat et n'ont rien à savoir de l'enveloppe.
+///
+/// La condition est volontairement étroite — **une seule clé, nommée `data`** :
+/// - `{data: {...}}` → déballé ;
+/// - `{data: [...], meta: {...}}` (réponse paginée) → **intact** : `meta` porte
+///   une information qu'on perdrait en déballant ;
+/// - `{id: ..., name: ...}` (corps déjà à plat) → **intact**.
+///
+/// Exposé (plutôt que privé) pour être testable sans réseau.
+@visibleForTesting
+final Interceptor unwrapEnvelopeInterceptor = InterceptorsWrapper(
+  onResponse: (res, handler) {
+    final body = res.data;
+    if (body is Map && body.length == 1 && body.containsKey('data')) {
+      res.data = body['data'];
+    }
+    handler.next(res);
+  },
+);
