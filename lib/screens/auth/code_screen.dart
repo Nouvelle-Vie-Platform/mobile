@@ -17,17 +17,6 @@ import '../../widgets/brand_app_bar.dart';
 import '../../widgets/auth/otp_field.dart';
 import '../../widgets/profile_setup_sheet.dart';
 
-/// Repli tant que la slice #11 n'expose pas `retryAfter` sur [AuthException].
-///
-/// Le serveur accompagne ses 429 d'un en-tête `Retry-After` (secondes). Dès que
-/// le champ existe sur [AuthException], l'appelant le résout sur l'instance (un
-/// membre d'instance l'emporte sur un membre d'extension) : **il suffit alors
-/// de supprimer cette extension**, que l'analyseur signalera comme inutilisée.
-extension _RetryAfterFallback on AuthException {
-  /// Toujours `null` : sans la valeur du serveur, on retombe sur le contrat.
-  int? get retryAfter => null;
-}
-
 /// `/auth/code` : saisie du code à 6 chiffres.
 ///
 /// Reçoit ses arguments via `state.extra` typé [CodeArgs] (voir app_router.dart).
@@ -133,7 +122,7 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
       // Le serveur peut avoir posé un délai (trop d'essais) : le décompte de
       // renvoi s'y aligne pour ne pas proposer une action qui échouerait.
       final retryAfter = error.retryAfter;
-      if (retryAfter != null) _startCooldown(retryAfter);
+      if (retryAfter != null) _startCooldown(retryAfter.inSeconds);
       // Vide les cases et refocalise la première pour une nouvelle saisie.
       _otp.clear();
     }
@@ -150,7 +139,7 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
       if (!mounted) return;
       // Renvoi refusé (429) : on repart sur le délai annoncé par le serveur
       // plutôt que de reproposer immédiatement un bouton qui échouera.
-      _startCooldown(error.retryAfter);
+      _startCooldown(error.retryAfter?.inSeconds);
       _showMessage(
         error.code == AuthErrorCode.tooManyAttempts
             ? context.l10n.authCodeTooManyAttempts
