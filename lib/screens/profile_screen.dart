@@ -30,14 +30,16 @@ class ProfileScreen extends ConsumerWidget {
     final user = ref.watch(authProvider).user;
     final branches = ref.watch(branchesProvider);
 
-    // Nom affiché : recomposition Frère/Sœur + nom, repli sur le rôle générique.
-    final displayName = user?.displayName ?? '';
+    // Nom affiché : civilité localisée + prénom (+ nom), repli sur le rôle
+    // générique. Le libellé de civilité vient de l10n, jamais du modèle.
+    final displayName =
+        user == null ? '' : user.displayName(l.userTitleLabel(user.title));
     final name = displayName.isEmpty ? l.profileRole : displayName;
 
     // Branche : « nouveau » ou pas de rattachement → libellé de statut dédié.
     String branchLabel = l.statusNewLabel;
     if (user != null &&
-        user.status != UserStatus.nouveau &&
+        user.status != UserStatus.newcomer &&
         user.branchId != null) {
       for (final b in branches) {
         if (b.id == user.branchId) {

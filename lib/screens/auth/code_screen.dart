@@ -94,7 +94,6 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
         _loading = false;
         _hasError = true;
         _errorText = switch (error.code) {
-          AuthErrorCode.expiredCode => l.authCodeExpired,
           AuthErrorCode.tooManyAttempts => l.authCodeTooManyAttempts,
           _ => l.authCodeInvalid,
         };

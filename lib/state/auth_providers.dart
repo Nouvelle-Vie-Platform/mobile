@@ -17,9 +17,7 @@ import '../models/models.dart';
 /// autre implémentation — aucun écran ne change (même pattern que
 /// `churchRepositoryProvider`).
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AppEnv.useBackend
-      ? HttpAuthRepository()
-      : InMemoryAuthRepository(),
+  (ref) => AppEnv.useBackend ? HttpAuthRepository() : InMemoryAuthRepository(),
 );
 
 /// Branches locales sélectionnables (liste statique en phase mock).
@@ -104,13 +102,15 @@ class AuthController extends Notifier<AuthState> {
   /// Met à jour le profil de l'utilisateur courant.
   Future<void> updateProfile({
     UserTitle? title,
-    String? fullName,
-    String? branchId,
+    String? firstName,
+    String? lastName,
+    int? branchId,
     UserStatus? status,
   }) async {
     final user = await _repo.updateProfile(
       title: title,
-      fullName: fullName,
+      firstName: firstName,
+      lastName: lastName,
       branchId: branchId,
       status: status,
     );

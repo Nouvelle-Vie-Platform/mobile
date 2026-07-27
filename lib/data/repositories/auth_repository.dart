@@ -2,13 +2,11 @@ import '../../models/models.dart';
 import '../sample_data.dart';
 
 /// Codes d'erreur d'authentification (voir docs/auth-contract.md).
-enum AuthErrorCode {
-  invalidCode,
-  expiredCode,
-  tooManyAttempts,
-  network,
-  unknown
-}
+///
+/// Il n'y a **pas** de `expiredCode` : le serveur fusionne délibérément
+/// « invalide » et « expiré » dans une réponse générique, pour ne pas
+/// renseigner un attaquant sur l'état d'un code.
+enum AuthErrorCode { invalidCode, tooManyAttempts, network, unknown }
 
 /// Exception levée par [AuthRepository] en cas d'échec métier.
 class AuthException implements Exception {
@@ -35,7 +33,7 @@ abstract interface class AuthRepository {
   });
 
   /// Vérifie le code. Réussite → session (token + user + isNewUser).
-  /// Échec → [AuthException] (invalidCode | expiredCode | tooManyAttempts).
+  /// Échec → [AuthException] (invalidCode | tooManyAttempts).
   Future<Session> verifyCode({
     required String identifier,
     required String code,
@@ -48,8 +46,9 @@ abstract interface class AuthRepository {
   /// Complète / met à jour le profil (nécessite un token). Facultatif.
   Future<User> updateProfile({
     UserTitle? title,
-    String? fullName,
-    String? branchId, // null = « Je suis nouveau »
+    String? firstName,
+    String? lastName,
+    int? branchId, // null + status newcomer = « Je suis nouveau »
     UserStatus? status,
   });
 
@@ -101,7 +100,7 @@ class InMemoryAuthRepository implements AuthRepository {
       id: _idFor(trimmed),
       phone: isEmail ? null : trimmed,
       email: isEmail ? trimmed.toLowerCase() : null,
-      status: UserStatus.nouveau,
+      status: UserStatus.newcomer,
       // Un utilisateur déjà connu est considéré comme profil complet
       // (pas de bannière) ; un nouveau doit compléter son profil.
       profileComplete: isKnown,
@@ -124,7 +123,7 @@ class InMemoryAuthRepository implements AuthRepository {
     await Future<void>.delayed(_delay);
     final user = User(
       id: id,
-      status: UserStatus.nouveau,
+      status: UserStatus.newcomer,
       profileComplete: false,
     );
     _user = user;
@@ -134,8 +133,9 @@ class InMemoryAuthRepository implements AuthRepository {
   @override
   Future<User> updateProfile({
     UserTitle? title,
-    String? fullName,
-    String? branchId,
+    String? firstName,
+    String? lastName,
+    int? branchId,
     UserStatus? status,
   }) async {
     await Future<void>.delayed(_lookup);
@@ -144,17 +144,19 @@ class InMemoryAuthRepository implements AuthRepository {
       throw AuthException(AuthErrorCode.unknown, 'Aucun utilisateur connecté');
     }
     final resolvedTitle = title ?? current.title;
-    final resolvedName = fullName ?? current.fullName;
+    final resolvedFirstName = firstName ?? current.firstName;
+    final resolvedLastName = lastName ?? current.lastName;
     final resolvedStatus = status ?? current.status;
     final complete = resolvedTitle != null &&
-        (resolvedName != null && resolvedName.trim().isNotEmpty) &&
-        (branchId != null || resolvedStatus == UserStatus.nouveau);
+        (resolvedFirstName != null && resolvedFirstName.trim().isNotEmpty) &&
+        (branchId != null || resolvedStatus == UserStatus.newcomer);
     final updated = User(
       id: current.id,
       phone: current.phone,
       email: current.email,
       title: resolvedTitle,
-      fullName: resolvedName,
+      firstName: resolvedFirstName,
+      lastName: resolvedLastName,
       branchId: branchId, // null = « Je suis nouveau »
       status: resolvedStatus,
       avatarUrl: current.avatarUrl,

@@ -1,160 +1,229 @@
 # Contrat d'authentification — Maison du Miracle
 
-> Source de vérité du parcours **login/inscription unifié** (téléphone/email + code
-> OTP, avec Google/Apple sans code). Le **front définit ce contrat**, le **backend
-> s'aligne dessus** (décision : approche « A »). Phase actuelle : **C (mock)** —
-> `AuthRepository` factice ; phase suivante : **B (vrai backend)** = une autre
-> implémentation de la même interface, **aucun écran ne change**.
+> **v2 — contrat négocié avec le backend** (`new-life-server`, AdonisJS 7).
+> La v1 était définie unilatéralement par le front contre un backend imaginaire ; elle divergeait de
+> l'implémentation réelle sur une dizaine de points (JWT, code à 4 chiffres, `PATCH /auth/me`,
+> `GET /branches`, `fullName`, `channel: sms`, `expiredCode`…). Cette version fait foi.
+> Côté serveur : [ADR-0020](../../new-life-server/docs/adr/0020-otp-facteur-authentification-primaire.md).
 
 ## Principes
 
-- **Login et inscription sont un seul parcours.** L'utilisateur saisit un
-  identifiant (téléphone **ou** email) → reçoit un code à **4 chiffres** → le
-  saisit → entre dans l'app. S'il est **nouveau**, on lui propose (facultatif) de
-  compléter son profil. Google/Apple = même chose **sans l'étape code**.
-- **Une seule abstraction : `AuthRepository`.** Surcharger le provider suffit à
-  brancher le vrai backend (même pattern que `churchRepositoryProvider`).
-- **Token : JWT Bearer** dans l'en-tête `Authorization: Bearer <token>`.
-- **`profileComplete` n'est jamais bloquant** (profil skippable). Il pilote
-  seulement une **bannière douce** d'invitation.
-- Le back est la **seule source de vérité** pour « nouvel utilisateur »
-  (`isNewUser`) : un numéro peut être nouveau sur ce téléphone mais déjà connu.
+- **Login et inscription sont un seul parcours.** On saisit un identifiant (téléphone **ou** email),
+  on reçoit un code à **6 chiffres**, on entre. Si l'identité est nouvelle, on propose (facultatif) de
+  compléter le profil. Le **serveur crée le compte** lors de la vérification du code — il n'y a pas
+  d'inscription séparée.
+- **Une seule abstraction : `AuthRepository`.** Surcharger `authRepositoryProvider` suffit à changer
+  d'implémentation — aucun écran ne change.
+- **Token opaque, pas JWT.** Chaîne `oat_…` émise et stockée en base par le serveur, transmise en
+  `Authorization: Bearer <token>`. Elle ne contient **aucune information** : ne jamais tenter de la
+  décoder.
+- **`profileComplete` n'est jamais bloquant.** Il pilote une bannière d'invitation, rien d'autre.
+- Le serveur est **seule source de vérité** pour `isNewUser` et `profileComplete`.
+- Le serveur **normalise et valide** les identifiants. Le front normalise aussi, pour l'ergonomie —
+  jamais parce que le serveur en dépend.
 
 ## Modèles (Dart / JSON)
 
 ```dart
-enum IdentifierChannel { sms, email }   // JSON: "sms" | "email"
-enum UserTitle { frere, soeur }         // JSON: "frere" | "soeur"
-enum UserStatus { membre, nouveau }     // JSON: "membre" | "nouveau"
+enum IdentifierChannel { phone, email }   // JSON: "phone" | "email"
+enum UserTitle { brother, sister }        // JSON: "brother" | "sister"
+enum UserStatus { affiliated, newcomer }  // JSON: "affiliated" | "newcomer"
 
 class User {
-  final String id;
-  final String? phone;         // format E.164, ex. "+22890123456"
-  final String? email;
-  final UserTitle? title;      // null tant que profil non complété
-  final String? fullName;      // nom seul, SANS préfixe Frère/Sœur
-  final String? branchId;      // null si "Je suis nouveau" / non rattaché
-  final UserStatus status;     // "nouveau" par défaut, "membre" si branche choisie
+  final String id;             // uuid
+  final String? phone;         // E.164, ex. "+22890123456"
+  final String? email;         // minuscules
+  final UserTitle? title;      // null tant que le profil n'est pas complété
+  final String? firstName;     // prénom — le champ saisi au profil
+  final String? lastName;      // nom de famille — renseigné plus tard, souvent null
+  final int? branchId;         // null = « je suis nouveau » ou pas encore répondu
+  final UserStatus status;     // dérivé côté serveur de branchId
   final String? avatarUrl;
-  final bool profileComplete;  // calculé côté back (title + fullName + (branchId|status nouveau))
+  final bool profileComplete;  // calculé côté serveur
 }
 
 class Session {
-  final String token;          // JWT
+  final String token;          // token opaque, PAS un JWT
   final User user;
-  final bool isNewUser;        // true = première connexion de cette identité
+  final bool isNewUser;
+}
+
+class Branch {
+  final int id;                // SERIAL côté serveur
+  final String name;
+  final String? address;
+  final bool isMotherChurch;
 }
 ```
 
-### Affichage du nom
-`title` + `fullName` sont stockés **séparément** et recomposés à l'affichage :
-`Frère Jean Kossi`. Ne jamais concaténer en base.
+**Affichage du nom** : `title` et le nom sont stockés **séparément** et recomposés à l'affichage —
+`Frère Jean`, `Frère Jean Kossi` quand `lastName` existe. Ne jamais concaténer en base.
+
+**Localisation de `title`** : `brother`/`sister` sont des **clés**, pas des libellés. Le rendu passe
+par `context.l10n` (fr / en / ee) — jamais de chaîne en dur dans le modèle.
+
+**`status` est dérivé** côté serveur : `branchId != null → affiliated`, sinon `newcomer`. L'envoyer
+dans `updateProfile` ne fait qu'exprimer une intention (« je suis nouveau ») ; `branchId` fait foi.
 
 ## Interface `AuthRepository` (Dart)
 
 ```dart
 abstract interface class AuthRepository {
-  /// Envoie un code à 4 chiffres sur le canal choisi.
-  /// [identifier] : téléphone E.164 (ex. "+22890123456") ou email.
+  /// Envoie un code à 6 chiffres sur le canal choisi.
   Future<void> requestCode({
     required String identifier,
     required IdentifierChannel channel,
   });
 
   /// Vérifie le code. Réussite → session (token + user + isNewUser).
-  /// Échec → AuthException(code: invalidCode | expiredCode | tooManyAttempts).
+  /// Crée le compte côté serveur si l'identifiant est inconnu.
   Future<Session> verifyCode({
     required String identifier,
     required String code,
   });
 
-  /// Connexion sociale : saute l'étape code. isNewUser possible = true.
+  /// Connexion sociale — **non exposée dans l'UI** pour l'instant (voir « Hors périmètre »).
   Future<Session> signInWithGoogle();
   Future<Session> signInWithApple();
 
   /// Complète / met à jour le profil (nécessite un token). Facultatif.
   Future<User> updateProfile({
     UserTitle? title,
-    String? fullName,
-    String? branchId,          // null = "Je suis nouveau"
+    String? firstName,
+    String? lastName,
+    int? branchId,             // null + status newcomer = « je suis nouveau »
     UserStatus? status,
   });
 
-  /// Utilisateur courant depuis le token stocké (null si déconnecté).
+  /// Utilisateur courant : cache local d'abord, puis revalidation réseau.
   Future<User?> currentUser();
 
   Future<void> signOut();
 }
 ```
 
-### Erreurs
+## Erreurs
 
 ```dart
-enum AuthErrorCode { invalidCode, expiredCode, tooManyAttempts, network, unknown }
-class AuthException implements Exception { final AuthErrorCode code; final String? message; }
+enum AuthErrorCode { invalidCode, tooManyAttempts, network, unknown }
 ```
 
-## Endpoints HTTP (phase B — vrai backend)
+`expiredCode` **n'existe plus** : le serveur fusionne délibérément « invalide » et « expiré » dans une
+seule réponse générique, pour ne pas renseigner un attaquant sur l'état d'un code. Un seul message
+utilisateur couvre les deux cas.
 
-Base : `https://<api>/`. Toutes les réponses en JSON. Token JWT en `Bearer`.
+Le mapping se fait sur le champ **`code`** du corps, **jamais sur le statut HTTP seul** — deux erreurs
+distinctes partagent le 429 :
+
+| `code` serveur | HTTP | `AuthErrorCode` | message utilisateur |
+| --- | --- | --- | --- |
+| `E_INVALID_OTP_CODE` | 422 | `invalidCode` | « Code invalide ou expiré » |
+| `E_OTP_TOO_MANY_ATTEMPTS` | 429 | `tooManyAttempts` | « Trop d'essais — demande un nouveau code » |
+| `E_OTP_RATE_LIMITED` | 429 | `tooManyAttempts` | « Patiente avant de redemander un code » |
+| `E_VALIDATION_ERROR` | 422 | `unknown` | message du validateur (déjà localisé) |
+| `E_UNAUTHORIZED_ACCESS` | 401 | — | purge du token + retour à `/auth` |
+
+Le 401 n'est **pas** une erreur d'authentification métier : il est intercepté globalement dans
+`ApiClient` (purge du token, retour à `/auth`), pour que chaque repository n'ait pas à le refaire.
+
+Les 429 portent un en-tête **`Retry-After`** et un `retryAfter` (secondes) : afficher **ce** décompte
+plutôt qu'une valeur codée en dur.
+
+## Endpoints HTTP
+
+Base : `String.fromEnvironment('API_BASE_URL')`. **HTTPS obligatoire en release** — l'app refuse de
+démarrer sur une URL en clair (le token Bearer y transiterait lisible).
 
 | Méthode & chemin | Body | Réponse 2xx | Erreurs |
-|---|---|---|---|
-| `POST /auth/request-code` | `{ "identifier": "+22890123456", "channel": "sms" }` | `204 No Content` | `429` (trop de demandes), `400` (identifiant invalide) |
-| `POST /auth/verify-code` | `{ "identifier": "...", "code": "1234" }` | `200 { "token", "user", "isNewUser" }` | `401` invalidCode, `410` expiredCode, `429` tooManyAttempts |
-| `POST /auth/google` | `{ "idToken": "<google id token>" }` | `200 { "token", "user", "isNewUser" }` | `401` |
-| `POST /auth/apple` | `{ "identityToken": "...", "authorizationCode": "..." }` | `200 { "token", "user", "isNewUser" }` | `401` |
-| `GET /auth/me` | — (Bearer) | `200 { "user" }` | `401` |
-| `PATCH /auth/me` | `{ "title": "frere", "fullName": "Jean Kossi", "branchId": null, "status": "nouveau" }` (Bearer) | `200 { "user" }` | `401`, `400` |
-| `GET /branches` | — | `200 { "branches": [ { "id", "name", "city" } ] }` | — |
-| `DELETE /auth/me` | — (Bearer) | `204` (suppression de compte — phase B) | `401` |
+| --- | --- | --- | --- |
+| `POST /auth/request-code` | `{ "identifier": "+22890123456", "channel": "phone" }` | `202 { "status": "sent" }` | `422` identifiant invalide, `429` |
+| `POST /auth/verify-code` | `{ "identifier": "…", "code": "123456" }` | `200 { "token", "user", "isNewUser" }` | `422` code invalide, `429` |
+| `GET /auth/me` | — (Bearer) | `200 User` | `401` |
+| `PUT /auth/profile` | `{ "title"?, "firstName"?, "lastName"?, "branchId"?, "status"? }` (Bearer) | `200 User` | `401`, `422` |
+| `POST /auth/sign-out` | — (Bearer) | `200` | — |
+| `GET /sync/branches` | — (Bearer) | `200 { "items": Branch[], "next_cursor", "has_more", "full_resync" }` | `401` |
+
+**Il n'y a pas de `GET /branches`** : les branches sont un référentiel servi par le module de
+synchronisation. Pour ce jalon on appelle `/sync/branches` **sans `since`** et on ignore le curseur ;
+le vrai protocole delta viendra avec la synchro complète. L'écran profil étant post-token, le guard
+`api` ne pose aucun problème d'ordre.
+
+### Enveloppe `data`
+
+**Toutes** les réponses du serveur sont enveloppées : `{ "data": … }`. Le déballage se fait **une seule
+fois**, dans un intercepteur de `ApiClient` — les repositories reçoivent le contenu à plat et n'ont
+rien à savoir de l'enveloppe. Le tableau ci-dessus décrit ce que voit le **code Dart**, après
+déballage.
 
 ### Notes de contrat
-- **`identifier`** : le front envoie le **téléphone déjà normalisé E.164** (indicatif
-  déduit du locale, repli `+228`, modifiable) ou l'**email en minuscules**.
-- **`channel`** est déterminé par le front selon le type saisi (`sms` pour un
-  numéro, `email` pour un email).
-- **`isNewUser`** : renvoyé à chaque `verify-code` / social. `true` → le front
-  propose l'écran profil (skippable) ; `false` → home direct.
-- **`profileComplete`** est calculé et renvoyé **par le back** dans `user` ; le
-  front s'en sert uniquement pour la bannière.
-- **`branchId: null` + `status: "nouveau"`** = « Je suis nouveau » (pas encore
-  rattaché). Choisir une branche → `status: "membre"`.
 
-## Comportement du mock (phase C, sans réseau)
+- **`identifier`** : téléphone normalisé **E.164** (indicatif déduit du locale, repli `+228`,
+  modifiable) ou email en **minuscules**. Le serveur re-normalise et rejette en `422` un numéro
+  invalide.
+- **`channel`** : `phone` (et non `sms`) — il désigne un **type d'identifiant**, pas un transport. Le
+  code peut partir par SMS, WhatsApp ou autre sans que le contrat change.
+- **`isNewUser`** : `true` → écran profil (skippable) ; `false` → accueil.
+- **Cooldown de renvoi : 60 s**, aligné sur le serveur (`E_OTP_RATE_LIMITED` en deçà).
+- **`branchId` est un entier**, comme `Branch.id` — les deux se comparent directement.
 
-- `requestCode` : ne fait rien (log), réussit toujours après un court délai simulé.
-- `verifyCode` : code **`0000`** = succès ; tout autre = `AuthException(invalidCode)`.
-  Une petite liste d'identifiants « déjà connus » dans `SampleData` renvoie
-  `isNewUser: false` (→ home) ; sinon `isNewUser: true` (→ profil).
-- `signInWithGoogle/Apple` : succès immédiat, `isNewUser: true` (→ profil).
-- `updateProfile` : met à jour le `User` en mémoire, passe `profileComplete: true`.
-- `currentUser` : session **en mémoire seule** (pas de persistance en phase C ;
-  `flutter_secure_storage` ajouté en phase B). Redémarrage = déconnecté.
-- Liste des **branches** : statique dans `SampleData` → `branchesProvider`
-  (remplacée par `GET /branches` en phase B).
+## Stockage local
 
-## Décisions figées (grilling)
+| donnée | où | pourquoi |
+| --- | --- | --- |
+| **token** | `flutter_secure_storage` | secret — Keychain / Keystore, adossé au matériel, hors sauvegardes |
+| `User` en cache | `flutter_secure_storage` (JSON) | démarrage hors-ligne ; migrera vers ObjectBox au jalon synchro |
+| référentiels, contenus | _(à venir)_ ObjectBox | ce qu'on peut re-télécharger |
 
-1. **C** (mock) maintenant → **B** (vrai back) ensuite, sans toucher l'UI.
-2. Toggle **Téléphone/Email**, téléphone en premier.
+Règle : **le coffre contient ce qu'on ne peut pas re-télécharger ; la base locale contient le reste.**
+Le token ne va **jamais** en base locale — ObjectBox écrit un fichier non chiffré, susceptible de
+remonter dans une sauvegarde iCloud/Android et d'être restauré sur un autre appareil.
+
+**Démarrage** : le splash lit le `User` en cache et route **immédiatement**, pendant que `/auth/me`
+revalide en arrière-plan. Pas d'aller-retour réseau bloquant avant d'afficher quoi que ce soit — et
+l'app reste utilisable hors connexion.
+
+## Cycle de vie du token
+
+Émis pour **90 jours**, **repoussés automatiquement** tant que l'utilisateur est actif (plafond absolu :
+un an). Le serveur fait glisser la date sans changer la chaîne — **le mobile n'a rien à implémenter,
+ni rafraîchissement, ni rotation.** En pratique : 90 jours d'inactivité → déconnexion.
+
+`signOut()` appelle le serveur (révocation du token courant, les autres appareils restent connectés)
+puis supprime le token local **quoi qu'il arrive** — une erreur réseau ne doit jamais laisser
+l'utilisateur connecté sur son appareil.
+
+## Hors périmètre de ce jalon
+
+- **Google / Apple** : les boutons sont **retirés** de l'écran identifiant (ils lèvent
+  `UnimplementedError`). Les méthodes restent dans `AuthRepository`. Réactivation = plugins natifs +
+  comptes développeur + `isNewUser` à ajouter côté serveur. À noter : ajouter Google **crée**
+  l'obligation « Sign in with Apple » (règle App Store 4.8) ; ne rien proposer ne la crée pas.
+- **Suppression de compte** (`DELETE /auth/me`) : **prérequis de première soumission App Store**
+  (règle 5.1.1(v)) et exigence Google Play équivalente. À traiter juste après ce jalon.
+- **Rattachement d'un second identifiant** : **prérequis bloquant avant l'ouverture du canal
+  téléphone.** Un identifiant = une identité ; sans ce flux, les membres inscrits par email se
+  recréeraient tous un compte le jour où le téléphone redeviendra le canal par défaut.
+- **ObjectBox** : introduit au jalon synchro (où il porte une douzaine d'entités), pas ici pour un seul
+  objet. Il ne supporte pas Flutter Web — l'abandon de cette cible se décidera à ce moment-là.
+- **`Branch.city`** : n'existe pas encore côté serveur. La puce affiche `name` seul en attendant.
+
+## Décisions figées
+
+1. Parcours unifié login/inscription ; le compte est créé à la **vérification du code**.
+2. Toggle Téléphone/Email. **Email par défaut** tant que le canal téléphone n'est pas actif — le
+   téléphone repassera en premier ensuite.
 3. Indicatif déduit du **locale**, repli **`+228`**, modifiable.
-4. Écran profil **skippable** (« Nous aimerions en savoir plus sur vous »).
+4. Écran profil **skippable**.
 5. Profil incomplet → **bannière douce** fermable (Accueil + onglet Profil).
-6. Branche = liste **statique** pour l'instant ; « Je suis nouveau » = `branchId
-   null` + `status nouveau`.
-7. **Frère/Sœur requis** dès qu'on saisit le nom ; `title` + `fullName` séparés.
-8. Code **4 chiffres**, cases séparées, validation auto, renvoi (cooldown ~45 s),
-   erreurs incorrect/expiré.
-9. Google/Apple **sautent l'OTP mais pas le profil** ; tout derrière
-   `AuthRepository` ; boutons conditionnés à la plateforme le moment venu.
-10. Session **en mémoire** (mock) ; persistance sécurisée en phase B.
-11. **Routes séparées** (`screens/auth/`), suppression de `login_screen` +
-    `register_screen`, gardes `redirect` pilotées par `authProvider`.
-12. Contrat défini par le **front** (ce fichier) ; token **JWT Bearer**.
-13. **Splash = aiguillage automatique** (connecté → `/home`, sinon → `/auth`),
-    plus de tap.
-14. Onglet **Profil** câblé au `User` réel, **édition** réutilisant l'écran profil,
-    **déconnexion confirmée** ; suppression de compte = phase B (`DELETE /auth/me`).
-15. **Écran de bienvenue** (verset + visuels) conservé en première page de `/auth`,
-    avec « Déjà membre ? » menant au même écran identifiant (flow unifié).
+6. « Je suis nouveau » = `branchId: null` + `status: newcomer`. Les branches viennent de
+   `/sync/branches`.
+7. **Frère/Sœur requis** dès qu'un nom est saisi ; `title` et nom stockés séparément.
+8. Code **6 chiffres**, cases séparées, validation auto, renvoi après **60 s**.
+9. Google/Apple hors périmètre, boutons retirés.
+10. Token dans le **coffre sécurisé** ; `User` en cache pour le démarrage hors-ligne.
+11. Routes séparées (`screens/auth/`), gardes `redirect` pilotées par `authProvider`.
+12. Contrat **négocié** avec le backend (ce fichier) ; token **opaque**, jamais JWT.
+13. **Splash = aiguillage automatique**, servi par le cache local.
+14. Onglet Profil câblé au `User` réel, édition réutilisant l'écran profil, déconnexion confirmée.
+15. **Écran de bienvenue** conservé en première page de `/auth`.
+16. URL du backend par `--dart-define=API_BASE_URL` ; **HTTP clair refusé en release**.

@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 
 import '../../models/models.dart';
-import '../network/api_client.dart';
-import '../../data/repositories/auth_repository.dart';
+import '../../core/network/api_client.dart';
+import 'auth_repository.dart';
 
 /// Implémentation HTTP de [AuthRepository] branchée sur le backend local.
 ///
@@ -37,7 +37,7 @@ class HttpAuthRepository implements AuthRepository {
         '/auth/request-code',
         data: {
           'identifier': identifier,
-          'channel': channel.name, // 'sms' ou 'email'
+          'channel': channel.name, // 'phone' ou 'email'
         },
       );
     } on DioException catch (e) {
@@ -58,7 +58,7 @@ class HttpAuthRepository implements AuthRepository {
         data: {'identifier': identifier, 'code': code},
       );
       final session = Session.fromJson(res.data!);
-      // Persiste le token JWT pour les requêtes suivantes.
+      // Persiste le token pour les requêtes suivantes.
       await _api.saveToken(session.token);
       return session;
     } on DioException catch (e) {
@@ -71,13 +71,15 @@ class HttpAuthRepository implements AuthRepository {
   @override
   Future<Session> signInWithGoogle() async {
     // TODO: implémenter quand le backend supporte OAuth Google.
-    throw UnimplementedError('Google sign-in non encore implémenté côté backend');
+    throw UnimplementedError(
+        'Google sign-in non encore implémenté côté backend');
   }
 
   @override
   Future<Session> signInWithApple() async {
     // TODO: implémenter quand le backend supporte OAuth Apple.
-    throw UnimplementedError('Apple sign-in non encore implémenté côté backend');
+    throw UnimplementedError(
+        'Apple sign-in non encore implémenté côté backend');
   }
 
   // ── currentUser ──────────────────────────────────────────────────────────
@@ -104,8 +106,9 @@ class HttpAuthRepository implements AuthRepository {
   @override
   Future<User> updateProfile({
     UserTitle? title,
-    String? fullName,
-    String? branchId,
+    String? firstName,
+    String? lastName,
+    int? branchId,
     UserStatus? status,
   }) async {
     try {
@@ -113,7 +116,8 @@ class HttpAuthRepository implements AuthRepository {
         '/auth/profile',
         data: {
           if (title != null) 'title': title.name,
-          if (fullName != null) 'fullName': fullName,
+          if (firstName != null) 'firstName': firstName,
+          if (lastName != null) 'lastName': lastName,
           if (branchId != null) 'branchId': branchId,
           if (status != null) 'status': status.name,
         },
@@ -144,6 +148,7 @@ class HttpAuthRepository implements AuthRepository {
   ///
   /// Convention backend attendue :
   /// - 400 + body `{ "error": "invalid_code" | "expired_code" | "too_many_attempts" }`
+  ///   (« expiré » et « invalide » sont fusionnés : voir docs/auth-contract.md)
   /// - 401 → invalide / expiré
   /// - Timeout / pas de réseau → `network`
   AuthException _mapError(DioException e) {
@@ -168,7 +173,7 @@ class HttpAuthRepository implements AuthRepository {
       final code = body['error'] as String?;
       return switch (code) {
         'invalid_code' => AuthException(AuthErrorCode.invalidCode),
-        'expired_code' => AuthException(AuthErrorCode.expiredCode),
+        'expired_code' => AuthException(AuthErrorCode.invalidCode),
         'too_many_attempts' => AuthException(AuthErrorCode.tooManyAttempts),
         _ => AuthException(AuthErrorCode.unknown, body.toString()),
       };

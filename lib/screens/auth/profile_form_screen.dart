@@ -22,7 +22,7 @@ import '../../widgets/selectable_option.dart';
 ///
 /// Le mode est déduit de `user.profileComplete`. L'écran est **skippable**
 /// (« Plus tard » n'enregistre rien). Civilité **requise dès qu'un nom est
-/// saisi** ; branche choisie → `membre`, « Je suis nouveau » → `nouveau`.
+/// saisi** ; branche choisie → `affiliated`, « Je suis nouveau » → `newcomer`.
 class ProfileFormScreen extends ConsumerStatefulWidget {
   const ProfileFormScreen({super.key});
 
@@ -36,7 +36,7 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
   UserTitle? _title;
 
   /// Branche sélectionnée (`null` si aucune ou si « Je suis nouveau »).
-  String? _branchId;
+  int? _branchId;
 
   /// « Je suis nouveau » choisi (mutuellement exclusif avec [_branchId]).
   bool _isNewSelected = false;
@@ -55,7 +55,7 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
     _editMode = user?.profileComplete ?? false;
     if (_editMode && user != null) {
       _title = user.title;
-      _nameController.text = user.fullName ?? '';
+      _nameController.text = user.firstName ?? '';
       if (user.branchId != null) {
         _branchId = user.branchId;
       } else {
@@ -93,9 +93,9 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
     setState(() => _saving = true);
     await ref.read(authProvider.notifier).updateProfile(
           title: _title,
-          fullName: name.isEmpty ? null : name,
+          firstName: name.isEmpty ? null : name,
           branchId: branchChosen ? _branchId : null,
-          status: branchChosen ? UserStatus.membre : UserStatus.nouveau,
+          status: branchChosen ? UserStatus.affiliated : UserStatus.newcomer,
         );
     if (!mounted) return;
     _navigateAfter();
@@ -108,7 +108,7 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
     });
   }
 
-  void _selectBranch(String id) {
+  void _selectBranch(int id) {
     setState(() {
       _branchId = id;
       _isNewSelected = false;
@@ -163,16 +163,16 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                         Expanded(
                           child: _TitleChoice(
                             label: l.titleBrother,
-                            selected: _title == UserTitle.frere,
-                            onTap: () => _selectTitle(UserTitle.frere),
+                            selected: _title == UserTitle.brother,
+                            onTap: () => _selectTitle(UserTitle.brother),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: _TitleChoice(
                             label: l.titleSister,
-                            selected: _title == UserTitle.soeur,
-                            onTap: () => _selectTitle(UserTitle.soeur),
+                            selected: _title == UserTitle.sister,
+                            onTap: () => _selectTitle(UserTitle.sister),
                           ),
                         ),
                       ],
@@ -199,9 +199,9 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                     Text(l.fieldYourBranch, style: AppTypography.bodyStrong),
                     for (final branch in branches)
                       RadioOptionTile(
-                        label: branch.city == null
-                            ? branch.name
-                            : '${branch.name} · ${branch.city}',
+                        // `Branch.city` n'existe pas côté serveur : on
+                        // affiche le nom seul (voir docs/auth-contract.md).
+                        label: branch.name,
                         selected: !_isNewSelected && _branchId == branch.id,
                         onTap: () => _selectBranch(branch.id),
                       ),

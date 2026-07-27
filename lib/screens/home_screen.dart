@@ -144,11 +144,11 @@ class HomeScreen extends ConsumerWidget {
 const double _headerBodyHeight = 274;
 
 /// En-tête « plein écran » au dégradé bleu→teal, découpé en vague à sa base.
-/// Prénom d'usage pour la salutation : premier mot du nom saisi au profil.
-/// `null` si l'utilisateur n'a pas (encore) renseigné son nom — le profil
+/// Prénom d'usage pour la salutation : premier mot du prénom saisi au profil.
+/// `null` si l'utilisateur n'a pas (encore) renseigné son prénom — le profil
 /// étant facultatif, ce cas est normal.
 String? _firstName(User? user) {
-  final full = user?.fullName?.trim();
+  final full = user?.firstName?.trim();
   if (full == null || full.isEmpty) return null;
   return full.split(RegExp(r'\s+')).first;
 }

@@ -269,28 +269,37 @@ class ChatMessage {
 // Authentification (voir docs/auth-contract.md)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Canal d'envoi du code de vérification. JSON : `"sms"` | `"email"`.
-enum IdentifierChannel { sms, email }
-
-/// Civilité de l'utilisateur. JSON : `"frere"` | `"soeur"`.
-enum UserTitle { frere, soeur }
-
-/// Statut d'appartenance. JSON : `"membre"` | `"nouveau"`.
+/// Type d'identifiant saisi à la connexion. JSON : `"phone"` | `"email"`.
 ///
-/// `nouveau` = pas encore rattaché à une branche.
-enum UserStatus { membre, nouveau }
+/// Désigne un **type d'identifiant**, pas un transport : le code peut partir
+/// par SMS, WhatsApp ou autre sans que le contrat change.
+enum IdentifierChannel { phone, email }
 
-/// Utilisateur connecté (immuable). `title` + `fullName` sont stockés
-/// **séparément** et recomposés à l'affichage (voir [displayName]).
+/// Civilité de l'utilisateur. JSON : `"brother"` | `"sister"`.
+///
+/// Ce sont des **clés de donnée**, pas des libellés : le rendu passe par
+/// `context.l10n` (voir `l10n/l10n_extension.dart`).
+enum UserTitle { brother, sister }
+
+/// Statut d'appartenance. JSON : `"affiliated"` | `"newcomer"`.
+///
+/// `newcomer` = pas encore rattaché à une branche. On ne dit pas « member » :
+/// côté serveur c'est déjà le rôle RBAC implicite de **tout** utilisateur —
+/// un `newcomer` **est** un membre.
+enum UserStatus { affiliated, newcomer }
+
+/// Utilisateur connecté (immuable). `title`, `firstName` et `lastName` sont
+/// stockés **séparément** et recomposés à l'affichage (voir [displayName]).
 class User {
   const User({
     required this.id,
     this.phone,
     this.email,
     this.title,
-    this.fullName,
+    this.firstName,
+    this.lastName,
     this.branchId,
-    this.status = UserStatus.nouveau,
+    this.status = UserStatus.newcomer,
     this.avatarUrl,
     this.profileComplete = false,
   });
@@ -304,31 +313,35 @@ class User {
   /// Civilité, `null` tant que le profil n'est pas complété.
   final UserTitle? title;
 
-  /// Nom seul, **sans** préfixe Frère/Sœur.
-  final String? fullName;
+  /// Prénom — le champ saisi à la complétion du profil.
+  final String? firstName;
+
+  /// Nom de famille — renseigné plus tard depuis le profil, souvent `null`.
+  final String? lastName;
 
   /// Branche rattachée, `null` si « Je suis nouveau » / non rattaché.
-  final String? branchId;
+  final int? branchId;
   final UserStatus status;
   final String? avatarUrl;
 
-  /// Calculé côté back (title + fullName + (branchId | status nouveau)).
-  /// Ne bloque jamais : pilote seulement une bannière douce.
+  /// Calculé côté serveur. Ne bloque jamais : pilote seulement une bannière
+  /// douce d'invitation à compléter le profil.
   final bool profileComplete;
 
-  /// Nom d'affichage recomposé : « Frère/Sœur + nom ».
+  /// Nom d'affichage recomposé : « civilité + prénom + nom ».
   ///
-  /// Repli sur le nom seul si [title] est `null`, chaîne vide si aucun nom.
-  String get displayName {
-    final name = fullName?.trim() ?? '';
-    if (name.isEmpty) return '';
-    final prefix = switch (title) {
-      UserTitle.frere => 'Frère',
-      UserTitle.soeur => 'Sœur',
-      null => null,
-    };
-    return prefix == null ? name : '$prefix $name';
-  }
+  /// [titleLabel] est le libellé **déjà localisé** de [title] — le modèle ne
+  /// produit aucun texte utilisateur (voir CLAUDE.md, « toujours via l10n »).
+  /// Les parties vides sont ignorées : « Frère Jean » avec un prénom seul,
+  /// « Frère Jean Kossi » quand le nom existe, chaîne vide si aucun nom.
+  String displayName([String? titleLabel]) => [
+        titleLabel,
+        firstName,
+        lastName,
+      ]
+          .map((part) => part?.trim() ?? '')
+          .where((part) => part.isNotEmpty)
+          .join(' ');
 
   factory User.fromJson(Map<String, dynamic> json) => User(
         id: json['id'] as String,
@@ -337,10 +350,11 @@ class User {
         title: json['title'] == null
             ? null
             : UserTitle.values.byName(json['title'] as String),
-        fullName: json['fullName'] as String?,
-        branchId: json['branchId'] as String?,
+        firstName: json['firstName'] as String?,
+        lastName: json['lastName'] as String?,
+        branchId: (json['branchId'] as num?)?.toInt(),
         status: json['status'] == null
-            ? UserStatus.nouveau
+            ? UserStatus.newcomer
             : UserStatus.values.byName(json['status'] as String),
         avatarUrl: json['avatarUrl'] as String?,
         profileComplete: json['profileComplete'] as bool? ?? false,
@@ -351,7 +365,8 @@ class User {
         'phone': phone,
         'email': email,
         'title': title?.name,
-        'fullName': fullName,
+        'firstName': firstName,
+        'lastName': lastName,
         'branchId': branchId,
         'status': status.name,
         'avatarUrl': avatarUrl,
@@ -359,29 +374,40 @@ class User {
       };
 }
 
-/// Branche locale de l'église (liste statique en phase mock, `GET /branches`
-/// en phase backend).
+/// Branche locale de l'église (liste statique en phase mock, référentiel servi
+/// par `GET /sync/branches` en phase backend).
 class Branch {
-  const Branch({required this.id, required this.name, this.city});
+  const Branch({
+    required this.id,
+    required this.name,
+    this.address,
+    this.isMotherChurch = false,
+  });
 
-  final String id;
+  /// SERIAL côté serveur : se compare directement à `User.branchId`.
+  final int id;
   final String name;
-  final String? city;
+  final String? address;
+
+  /// Église mère (une seule dans le référentiel).
+  final bool isMotherChurch;
 
   factory Branch.fromJson(Map<String, dynamic> json) => Branch(
-        id: json['id'] as String,
+        id: (json['id'] as num).toInt(),
         name: json['name'] as String,
-        city: json['city'] as String?,
+        address: json['address'] as String?,
+        isMotherChurch: json['isMotherChurch'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'city': city,
+        'address': address,
+        'isMotherChurch': isMotherChurch,
       };
 }
 
-/// Session authentifiée : jeton JWT, utilisateur et indicateur « nouveau ».
+/// Session authentifiée : jeton opaque, utilisateur et indicateur « nouveau ».
 class Session {
   const Session({
     required this.token,
@@ -389,7 +415,8 @@ class Session {
     required this.isNewUser,
   });
 
-  /// Jeton JWT (en-tête `Authorization: Bearer <token>`).
+  /// Jeton **opaque** `oat_…` (en-tête `Authorization: Bearer <token>`).
+  /// Il ne contient aucune information : ne jamais tenter de le décoder.
   final String token;
   final User user;
 
