@@ -1078,22 +1078,22 @@ abstract class AppLocalizations {
   /// **'Ces informations restent facultatives et modifiables.'**
   String get profileFormSubtitle;
 
-  /// Civilité : frère
+  /// Civilité : rendu de la clé UserTitle.brother
   ///
   /// In fr, this message translates to:
   /// **'Frère'**
   String get titleBrother;
 
-  /// Civilité : sœur
+  /// Civilité : rendu de la clé UserTitle.sister
   ///
   /// In fr, this message translates to:
   /// **'Sœur'**
   String get titleSister;
 
-  /// Libellé du champ nom (sans préfixe Frère/Sœur)
+  /// Libellé du champ prénom (User.firstName, sans préfixe Frère/Sœur)
   ///
   /// In fr, this message translates to:
-  /// **'Votre nom'**
+  /// **'Votre prénom'**
   String get fieldYourName;
 
   /// Libellé du sélecteur de branche

@@ -132,7 +132,7 @@ class HomeScreen extends ConsumerWidget {
           top: 0,
           left: 0,
           right: 0,
-          child: _WavyHeader(name: _firstName(user), height: headerHeight),
+          child: _WavyHeader(name: user?.firstName, height: headerHeight),
         ),
       ],
     );
@@ -144,15 +144,6 @@ class HomeScreen extends ConsumerWidget {
 const double _headerBodyHeight = 274;
 
 /// En-tête « plein écran » au dégradé bleu→teal, découpé en vague à sa base.
-/// Prénom d'usage pour la salutation : premier mot du nom saisi au profil.
-/// `null` si l'utilisateur n'a pas (encore) renseigné son nom — le profil
-/// étant facultatif, ce cas est normal.
-String? _firstName(User? user) {
-  final full = user?.fullName?.trim();
-  if (full == null || full.isEmpty) return null;
-  return full.split(RegExp(r'\s+')).first;
-}
-
 class _WavyHeader extends StatelessWidget {
   const _WavyHeader({required this.name, required this.height});
   final String? name;

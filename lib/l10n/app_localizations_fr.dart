@@ -551,7 +551,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get titleSister => 'Sœur';
 
   @override
-  String get fieldYourName => 'Votre nom';
+  String get fieldYourName => 'Votre prénom';
 
   @override
   String get fieldYourBranch => 'Votre branche';

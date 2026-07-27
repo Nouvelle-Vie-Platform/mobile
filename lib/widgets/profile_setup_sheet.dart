@@ -55,7 +55,7 @@ class _ProfileSetupSheetState extends ConsumerState<_ProfileSetupSheet> {
 
   int _step = 0;
   UserTitle? _title;
-  String? _branchId;
+  int? _branchId;
   bool _isNewMember = false;
   bool _titleMissing = false;
   bool _saving = false;
@@ -81,7 +81,7 @@ class _ProfileSetupSheetState extends ConsumerState<_ProfileSetupSheet> {
     if (name.isNotEmpty) {
       await ref.read(authProvider.notifier).updateProfile(
             title: _title,
-            fullName: name,
+            firstName: name,
           );
     }
     if (!mounted) return;
@@ -96,8 +96,8 @@ class _ProfileSetupSheetState extends ConsumerState<_ProfileSetupSheet> {
     await ref.read(authProvider.notifier).updateProfile(
           branchId: _isNewMember ? null : _branchId,
           status: _isNewMember || _branchId == null
-              ? UserStatus.nouveau
-              : UserStatus.membre,
+              ? UserStatus.newcomer
+              : UserStatus.affiliated,
         );
     if (!mounted) return;
     Navigator.of(context).pop();
@@ -180,9 +180,9 @@ class _ProfileSetupSheetState extends ConsumerState<_ProfileSetupSheet> {
             Expanded(
               child: _ChoiceChip(
                 label: l.titleBrother,
-                selected: _title == UserTitle.frere,
+                selected: _title == UserTitle.brother,
                 onTap: () => setState(() {
-                  _title = UserTitle.frere;
+                  _title = UserTitle.brother;
                   _titleMissing = false;
                 }),
               ),
@@ -191,9 +191,9 @@ class _ProfileSetupSheetState extends ConsumerState<_ProfileSetupSheet> {
             Expanded(
               child: _ChoiceChip(
                 label: l.titleSister,
-                selected: _title == UserTitle.soeur,
+                selected: _title == UserTitle.sister,
                 onTap: () => setState(() {
-                  _title = UserTitle.soeur;
+                  _title = UserTitle.sister;
                   _titleMissing = false;
                 }),
               ),

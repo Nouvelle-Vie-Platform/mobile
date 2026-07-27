@@ -384,12 +384,19 @@ abstract final class SampleData {
   ];
 
   /// Branches locales de l'église (liste statique en phase mock ; remplacée
-  /// par `GET /branches` en phase backend).
+  /// par `GET /sync/branches` en phase backend).
+  ///
+  /// Les ids imitent les SERIAL du serveur : entiers, à partir de 1.
   static const List<Branch> branches = [
-    Branch(id: 'lome', name: 'Église Mère – Lomé', city: 'Lomé'),
-    Branch(id: 'agoe', name: 'Bethel – Agoè', city: 'Agoè'),
-    Branch(id: 'kara', name: 'Béthesda – Kara', city: 'Kara'),
-    Branch(id: 'paris', name: 'Diaspora – Paris', city: 'Paris'),
+    Branch(
+      id: 1,
+      name: 'Église Mère – Lomé',
+      address: 'Lomé',
+      isMotherChurch: true,
+    ),
+    Branch(id: 2, name: 'Bethel – Agoè', address: 'Agoè'),
+    Branch(id: 3, name: 'Béthesda – Kara', address: 'Kara'),
+    Branch(id: 4, name: 'Diaspora – Paris', address: 'Paris'),
   ];
 
   /// Identifiants « déjà connus » : le mock renvoie `isNewUser: false` pour

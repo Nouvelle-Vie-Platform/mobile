@@ -305,7 +305,7 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
     final IdentifierChannel channel;
     if (_isPhone) {
       identifier = toE164(_dialCountry.dialCode, raw);
-      channel = IdentifierChannel.sms;
+      channel = IdentifierChannel.phone;
     } else {
       identifier = raw.toLowerCase();
       channel = IdentifierChannel.email;

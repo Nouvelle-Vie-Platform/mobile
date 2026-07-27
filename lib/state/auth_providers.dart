@@ -102,13 +102,15 @@ class AuthController extends Notifier<AuthState> {
   /// Met à jour le profil de l'utilisateur courant.
   Future<void> updateProfile({
     UserTitle? title,
-    String? fullName,
-    String? branchId,
+    String? firstName,
+    String? lastName,
+    int? branchId,
     UserStatus? status,
   }) async {
     final user = await _repo.updateProfile(
       title: title,
-      fullName: fullName,
+      firstName: firstName,
+      lastName: lastName,
       branchId: branchId,
       status: status,
     );
