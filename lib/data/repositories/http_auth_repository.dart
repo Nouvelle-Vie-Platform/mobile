@@ -5,19 +5,24 @@ import '../../core/network/api_client.dart';
 import '../../models/models.dart';
 import 'auth_repository.dart';
 
-/// Implémentation HTTP de [AuthRepository] branchée sur le backend local.
+/// Implémentation HTTP de [AuthRepository], branchée sur le backend réel.
 ///
-/// Correspond au contrat défini dans `AuthRepository`.
-/// Les endpoints sont à adapter selon les routes définies dans ton backend.
+/// Endpoints — voir `docs/auth-contract.md` (v2), qui fait foi :
+/// ```
+/// POST /auth/request-code   → 202 { status: "sent" }
+/// POST /auth/verify-code    → 200 { token, user, isNewUser }
+/// GET  /auth/me             → 200 User            (Bearer)
+/// PUT  /auth/profile        → 200 User            (Bearer)
+/// POST /auth/sign-out       → 200                 (Bearer)
+/// ```
 ///
-/// Structure attendue du backend :
-/// ```
-/// POST /auth/request-code   → 200 OK
-/// POST /auth/verify-code    → { token, user, isNewUser }
-/// GET  /auth/me             → User (requiert Bearer token)
-/// PUT  /auth/profile        → User (requiert Bearer token)
-/// POST /auth/sign-out       → 200 OK (requiert Bearer token)
-/// ```
+/// Deux choses dont cette classe **n'a pas** à s'occuper, traitées une seule
+/// fois dans `ApiClient` : l'enveloppe `data` posée sur toutes les réponses
+/// (déballée par un intercepteur — les corps arrivent ici à plat) et le **401**
+/// (purge du token + retour à `/auth`).
+///
+/// Rien non plus côté **rafraîchissement de token** : le serveur fait glisser
+/// l'expiration sans changer la chaîne. Ni rotation, ni refresh token.
 class HttpAuthRepository implements AuthRepository {
   HttpAuthRepository({ApiClient? client})
       : _client = (client ?? ApiClient.instance).dio,
@@ -59,7 +64,9 @@ class HttpAuthRepository implements AuthRepository {
         data: {'identifier': identifier, 'code': code},
       );
       final session = Session.fromJson(res.data!);
-      // Persiste le token pour les requêtes suivantes.
+      // Le token est **opaque** (`oat_…`) : on le stocke tel quel pour les
+      // requêtes suivantes. Il ne contient aucune information — ne jamais
+      // tenter de le décoder pour y lire une expiration ou un identifiant.
       await _api.saveToken(session.token);
       return session;
     } on DioException catch (e) {
@@ -103,6 +110,12 @@ class HttpAuthRepository implements AuthRepository {
 
   // ── updateProfile ────────────────────────────────────────────────────────
 
+  /// Mise à jour **partielle** : seuls les champs fournis partent sur le
+  /// réseau. `branchId` est un **entier**, comme `Branch.id` — les deux se
+  /// comparent directement.
+  ///
+  /// `status` n'exprime qu'une intention (« je suis nouveau ») : côté serveur
+  /// c'est `branchId` qui fait foi et qui dérive le statut.
   @override
   Future<User> updateProfile({
     UserTitle? title,
@@ -130,13 +143,19 @@ class HttpAuthRepository implements AuthRepository {
 
   // ── signOut ──────────────────────────────────────────────────────────────
 
+  /// Révoque le token courant côté serveur (les autres appareils restent
+  /// connectés), puis supprime le token local **quoi qu'il arrive**.
+  ///
+  /// L'échec serveur est volontairement avalé — 500, timeout, avion en vol :
+  /// une erreur réseau ne doit jamais laisser l'utilisateur connecté sur son
+  /// appareil alors qu'il vient de demander à se déconnecter. Le `finally`
+  /// couvre aussi ce qui n'est pas une `DioException`.
   @override
   Future<void> signOut() async {
     try {
       await _client.post<void>('/auth/sign-out');
-    } on DioException catch (_) {
-      // On ignore les erreurs réseau à la déconnexion : le token local
-      // est supprimé dans tous les cas.
+    } on Object catch (_) {
+      // Rien à remonter : la déconnexion locale ne dépend pas du serveur.
     } finally {
       await _api.deleteToken();
     }
