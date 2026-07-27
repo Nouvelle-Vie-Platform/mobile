@@ -240,7 +240,7 @@
   "@authDialCode": { "description": "Libellé du sélecteur d'indicatif téléphonique" },
   "authCodeTitle": "Vérification",
   "@authCodeTitle": { "description": "Titre de l'écran de saisie du code" },
-  "authCodeSubtitle": "Saisissez le code à 4 chiffres envoyé à {target}.",
+  "authCodeSubtitle": "Saisissez le code à 6 chiffres envoyé à {target}.",
   "@authCodeSubtitle": {
     "description": "Sous-titre de l'écran code, avec la cible (téléphone/email)",
     "placeholders": { "target": { "type": "String", "example": "+228 90 12 34 56" } }
@@ -250,12 +250,10 @@
   "authResendIn": "Renvoyer dans {seconds} s",
   "@authResendIn": {
     "description": "Compte à rebours avant de pouvoir renvoyer le code",
-    "placeholders": { "seconds": { "type": "int", "example": "45" } }
+    "placeholders": { "seconds": { "type": "int", "example": "60" } }
   },
-  "authCodeInvalid": "Code incorrect",
-  "@authCodeInvalid": { "description": "Erreur : le code saisi est incorrect" },
-  "authCodeExpired": "Code expiré, demandez-en un nouveau",
-  "@authCodeExpired": { "description": "Erreur : le code a expiré" },
+  "authCodeInvalid": "Code invalide ou expiré",
+  "@authCodeInvalid": { "description": "Erreur unique couvrant le code incorrect ET le code expiré : le serveur fusionne les deux cas dans un 422 générique, pour ne pas renseigner un attaquant sur l'état d'un code" },
   "profileFormTitle": "Nous aimerions en savoir plus sur vous",
   "@profileFormTitle": { "description": "Titre de l'écran de complétion / édition du profil" },
   "profileFormSubtitle": "Ces informations restent facultatives et modifiables.",

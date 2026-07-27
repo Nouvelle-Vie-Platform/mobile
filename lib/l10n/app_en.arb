@@ -190,17 +190,16 @@
   "authOrContinueWith": "Or continue with",
   "authDialCode": "Dial code",
   "authCodeTitle": "Verification",
-  "authCodeSubtitle": "Enter the 4-digit code sent to {target}.",
+  "authCodeSubtitle": "Enter the 6-digit code sent to {target}.",
   "@authCodeSubtitle": {
     "placeholders": { "target": { "type": "String", "example": "+228 90 12 34 56" } }
   },
   "authResend": "Resend code",
   "authResendIn": "Resend in {seconds}s",
   "@authResendIn": {
-    "placeholders": { "seconds": { "type": "int", "example": "45" } }
+    "placeholders": { "seconds": { "type": "int", "example": "60" } }
   },
-  "authCodeInvalid": "Incorrect code",
-  "authCodeExpired": "Code expired, request a new one",
+  "authCodeInvalid": "Invalid or expired code",
   "profileFormTitle": "We'd love to know more about you",
   "profileFormSubtitle": "This information stays optional and can be changed anytime.",
   "titleBrother": "Brother",

@@ -519,7 +519,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String authCodeSubtitle(String target) {
-    return 'Enter the 4-digit code sent to $target.';
+    return 'Enter the 6-digit code sent to $target.';
   }
 
   @override
@@ -531,10 +531,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get authCodeInvalid => 'Incorrect code';
-
-  @override
-  String get authCodeExpired => 'Code expired, request a new one';
+  String get authCodeInvalid => 'Invalid or expired code';
 
   @override
   String get profileFormTitle => 'We\'d love to know more about you';

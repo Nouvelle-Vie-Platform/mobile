@@ -1039,7 +1039,7 @@ abstract class AppLocalizations {
   /// Sous-titre de l'écran code, avec la cible (téléphone/email)
   ///
   /// In fr, this message translates to:
-  /// **'Saisissez le code à 4 chiffres envoyé à {target}.'**
+  /// **'Saisissez le code à 6 chiffres envoyé à {target}.'**
   String authCodeSubtitle(String target);
 
   /// Bouton pour renvoyer le code de vérification
@@ -1054,17 +1054,11 @@ abstract class AppLocalizations {
   /// **'Renvoyer dans {seconds} s'**
   String authResendIn(int seconds);
 
-  /// Erreur : le code saisi est incorrect
+  /// Erreur unique couvrant le code incorrect ET le code expiré : le serveur fusionne les deux cas dans un 422 générique, pour ne pas renseigner un attaquant sur l'état d'un code
   ///
   /// In fr, this message translates to:
-  /// **'Code incorrect'**
+  /// **'Code invalide ou expiré'**
   String get authCodeInvalid;
-
-  /// Erreur : le code a expiré
-  ///
-  /// In fr, this message translates to:
-  /// **'Code expiré, demandez-en un nouveau'**
-  String get authCodeExpired;
 
   /// Titre de l'écran de complétion / édition du profil
   ///
