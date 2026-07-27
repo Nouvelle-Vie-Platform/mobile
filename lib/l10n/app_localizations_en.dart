@@ -550,7 +550,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get titleSister => 'Sister';
 
   @override
-  String get fieldYourName => 'Your name';
+  String get fieldYourName => 'Your first name';
 
   @override
   String get fieldYourBranch => 'Your branch';

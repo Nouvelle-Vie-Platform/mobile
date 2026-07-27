@@ -551,7 +551,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get titleSister => 'Nɔvinyɔnu';
 
   @override
-  String get fieldYourName => 'Votre nom';
+  String get fieldYourName => 'Wò ŋkɔ';
 
   @override
   String get fieldYourBranch => 'Votre branche';
