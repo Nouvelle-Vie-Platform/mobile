@@ -10,14 +10,27 @@ enum AuthErrorCode { invalidCode, tooManyAttempts, network, unknown }
 
 /// Exception levée par [AuthRepository] en cas d'échec métier.
 class AuthException implements Exception {
-  AuthException(this.code, [this.message]);
+  AuthException(this.code, [this.message, this.retryAfter]);
 
   final AuthErrorCode code;
+
+  /// Message **déjà localisé par le serveur** (fr / en selon l'en-tête de
+  /// langue). À n'afficher que pour les codes sans libellé propre côté app
+  /// ([AuthErrorCode.unknown]) : les autres passent par `context.l10n`.
   final String? message;
 
+  /// Délai avant de pouvoir réessayer, tel qu'annoncé par le serveur sur un
+  /// **429** (corps `retryAfter`, en secondes, ou en-tête `Retry-After`).
+  ///
+  /// `null` quand le serveur ne l'a pas dit — l'UI retombe alors sur son
+  /// cooldown par défaut. Le serveur connaît la seconde exacte ; l'app ne doit
+  /// jamais la deviner quand elle est disponible.
+  final Duration? retryAfter;
+
   @override
-  String toString() =>
-      'AuthException(${code.name}${message == null ? '' : ': $message'})';
+  String toString() => 'AuthException(${code.name}'
+      '${message == null ? '' : ': $message'}'
+      '${retryAfter == null ? '' : ' [retryAfter: ${retryAfter!.inSeconds}s]'})';
 }
 
 /// Contrat d'authentification — **source de vérité définie par le front**.

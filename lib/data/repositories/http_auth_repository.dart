@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../core/network/api_client.dart';
 import '../../models/models.dart';
@@ -41,7 +42,7 @@ class HttpAuthRepository implements AuthRepository {
         },
       );
     } on DioException catch (e) {
-      throw _mapError(e);
+      throw mapAuthError(e);
     }
   }
 
@@ -62,7 +63,7 @@ class HttpAuthRepository implements AuthRepository {
       await _api.saveToken(session.token);
       return session;
     } on DioException catch (e) {
-      throw _mapError(e);
+      throw mapAuthError(e);
     }
   }
 
@@ -96,7 +97,7 @@ class HttpAuthRepository implements AuthRepository {
       // en charge globalement par l'intercepteur 401 d'ApiClient. Ici on se
       // contente de dire « personne n'est connecté ».
       if (e.response?.statusCode == 401) return null;
-      throw _mapError(e);
+      throw mapAuthError(e);
     }
   }
 
@@ -123,7 +124,7 @@ class HttpAuthRepository implements AuthRepository {
       );
       return User.fromJson(res.data!);
     } on DioException catch (e) {
-      throw _mapError(e);
+      throw mapAuthError(e);
     }
   }
 
@@ -140,48 +141,90 @@ class HttpAuthRepository implements AuthRepository {
       await _api.deleteToken();
     }
   }
+}
 
-  // ── error mapping ────────────────────────────────────────────────────────
+// ── Mapping des erreurs ────────────────────────────────────────────────────
 
-  /// Mappe les réponses d'erreur du backend vers les [AuthErrorCode] connus.
-  ///
-  /// Convention backend attendue :
-  /// - 400 + body `{ "error": "invalid_code" | "expired_code" | "too_many_attempts" }`
-  ///   (« expiré » et « invalide » sont fusionnés : voir docs/auth-contract.md)
-  /// - 401 → invalide / expiré
-  /// - Timeout / pas de réseau → `network`
-  AuthException _mapError(DioException e) {
-    if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.sendTimeout ||
-        e.type == DioExceptionType.connectionError) {
-      return AuthException(
-        AuthErrorCode.network,
-        'Impossible de joindre le serveur (${e.message})',
-      );
-    }
-
-    final status = e.response?.statusCode;
-    final body = e.response?.data;
-
-    if (status == 401) {
-      return AuthException(AuthErrorCode.invalidCode, 'Session expirée');
-    }
-
-    if (status == 400 && body is Map) {
-      final code = body['error'] as String?;
-      return switch (code) {
-        'invalid_code' => AuthException(AuthErrorCode.invalidCode),
-        'expired_code' => AuthException(AuthErrorCode.invalidCode),
-        'too_many_attempts' => AuthException(AuthErrorCode.tooManyAttempts),
-        _ => AuthException(AuthErrorCode.unknown, body.toString()),
-      };
-    }
-
-    if (status == 429) {
-      return AuthException(AuthErrorCode.tooManyAttempts);
-    }
-
+/// Traduit une [DioException] en [AuthException], en se fondant sur le champ
+/// **`code`** du corps d'erreur — **jamais sur le statut HTTP seul**.
+///
+/// Le serveur (`I18nException`, AdonisJS) répond
+/// `{ "code": "E_…", "message": "…" }` à plat, hors de l'enveloppe `data` :
+///
+/// | `code` serveur | HTTP | [AuthErrorCode] |
+/// | --- | --- | --- |
+/// | `E_INVALID_OTP_CODE` | 422 | `invalidCode` (invalide **et** expiré) |
+/// | `E_OTP_TOO_MANY_ATTEMPTS` | 429 | `tooManyAttempts` |
+/// | `E_OTP_RATE_LIMITED` | 429 | `tooManyAttempts` |
+/// | `E_INVALID_PHONE_NUMBER` | 422 | `unknown` + message serveur |
+/// | `E_VALIDATION_ERROR` | 422 | `unknown` + message du validateur |
+///
+/// Deux codes distincts partagent le **429** : mapper sur le statut seul
+/// suffirait ici par chance, mais confondrait n'importe quel futur 429. Et le
+/// **422** couvre aussi bien « code invalide » qu'une erreur de validation.
+///
+/// Le **401** n'est pas traité ici : `UnauthorizedInterceptor` l'a déjà pris en
+/// charge globalement (purge du token, retour à `/auth`). Il retombe donc sur
+/// `unknown` — l'appel en cours doit échouer, sans prétendre que le *code* de
+/// l'utilisateur était mauvais.
+///
+/// Les messages sont **déjà localisés** par le serveur (fr / en) : on les
+/// remonte tels quels pour les cas `unknown`, qui n'ont pas de libellé propre.
+///
+/// Fonction de niveau bibliothèque (et non méthode privée) pour rester
+/// testable sans réseau — `flutter test` répond 400 à tout accès réel.
+@visibleForTesting
+AuthException mapAuthError(DioException e) {
+  // Le serveur n'a pas répondu (timeout, DNS, coupure, TLS) : c'est le réseau,
+  // pas une erreur métier. `cancel` mis à part, toute absence de réponse vaut
+  // « injoignable » — sans importer `dart:io`, qui casserait la cible web.
+  if (e.type == DioExceptionType.cancel) {
     return AuthException(AuthErrorCode.unknown, e.message);
   }
+  final response = e.response;
+  if (response == null) {
+    return AuthException(
+      AuthErrorCode.network,
+      'Impossible de joindre le serveur (${e.message})',
+    );
+  }
+
+  final body = response.data;
+  final code = body is Map ? body['code'] as String? : null;
+  final message = body is Map ? body['message'] as String? : null;
+  final retryAfter = _retryAfterOf(response);
+
+  return switch (code) {
+    'E_INVALID_OTP_CODE' => AuthException(AuthErrorCode.invalidCode, message),
+    'E_OTP_TOO_MANY_ATTEMPTS' || 'E_OTP_RATE_LIMITED' => AuthException(
+        AuthErrorCode.tooManyAttempts,
+        message,
+        retryAfter,
+      ),
+    _ => AuthException(AuthErrorCode.unknown, message ?? e.message, retryAfter),
+  };
+}
+
+/// Délai de réessai annoncé par le serveur : corps `retryAfter` (secondes)
+/// d'abord — c'est le champ du contrat — puis l'en-tête HTTP `Retry-After`.
+///
+/// `Retry-After` peut aussi porter une **date** HTTP : non parsable en entier,
+/// elle rend `null`, et l'UI retombe sur son cooldown par défaut. Le serveur
+/// n'émet aujourd'hui ni l'un ni l'autre : tout est donc facultatif.
+Duration? _retryAfterOf(Response<dynamic> response) {
+  final body = response.data;
+  final seconds = _asSeconds(body is Map ? body['retryAfter'] : null) ??
+      _asSeconds(response.headers.value('retry-after'));
+  return seconds == null ? null : Duration(seconds: seconds);
+}
+
+/// Lit un nombre de secondes positif depuis un entier, un décimal ou une
+/// chaîne. Toute autre forme (ou une valeur négative) rend `null`.
+int? _asSeconds(Object? raw) {
+  final value = switch (raw) {
+    final num n => n.round(),
+    final String s => int.tryParse(s.trim()),
+    _ => null,
+  };
+  return (value == null || value < 0) ? null : value;
 }
