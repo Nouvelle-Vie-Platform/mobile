@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/data/sample_data.dart';
 import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/screens/agenda_screen.dart';
@@ -9,13 +10,24 @@ import 'package:maison_du_miracle/screens/new_request_screen.dart';
 import 'package:maison_du_miracle/screens/notes_screen.dart';
 import 'package:maison_du_miracle/screens/prayer_requests_screen.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
+import 'package:maison_du_miracle/state/calendar_providers.dart';
 
 import '../helpers/pump_screen.dart';
 
 void main() {
   group('Écrans secondaires (smoke)', () {
     testWidgets('AgendaScreen se monte', (tester) async {
-      await pumpScreen(tester, const AgendaScreen());
+      // L'agenda lit `calendarRepositoryProvider`, qui part sur HTTP quand
+      // `AppEnv.useBackend` est vrai : sans ce repli en mémoire, un simple
+      // montage ouvrirait une socket (400 en test).
+      await pumpScreen(
+        tester,
+        const AgendaScreen(),
+        overrides: [
+          calendarRepositoryProvider
+              .overrideWithValue(InMemoryCalendarRepository()),
+        ],
+      );
       expect(find.byType(AgendaScreen), findsOneWidget);
     });
 

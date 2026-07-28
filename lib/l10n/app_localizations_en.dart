@@ -654,6 +654,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Events further ahead haven\'t been announced yet.';
 
   @override
+  String get agendaPreviousMonth => 'Previous month';
+
+  @override
+  String get agendaNextMonth => 'Next month';
+
+  @override
+  String agendaDaySummary(int day, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events',
+      one: '$count event',
+      zero: 'no events',
+    );
+    return '$day — $_temp0';
+  }
+
+  @override
   String get eventDetailTitle => 'Event';
 
   @override
