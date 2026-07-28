@@ -122,6 +122,20 @@ String formatEventDay(ChurchEvent event, String locale) =>
 String formatEventMonth(ChurchEvent event, String locale) =>
     DateFormat.LLL(locale).format(wallClockAt(event.startsAt, event.timezone));
 
+/// Date complète en toutes lettres, capitalisée (« Dimanche 26 mai 2024 »),
+/// dans le fuseau de la branche.
+///
+/// L'ordre des composants et la ponctuation sont ceux de la locale (« Sunday,
+/// May 26, 2024 » en anglais) : c'est `intl` qui décide, jamais une
+/// concaténation maison. L'année est présente parce que l'écran de détail se
+/// consulte aussi pour un rassemblement lointain, où « 26 mai » ne suffit plus.
+String formatEventFullDate(ChurchEvent event, String locale) {
+  final text = DateFormat.yMMMMEEEEd(locale)
+      .format(wallClockAt(event.startsAt, event.timezone));
+  if (text.isEmpty) return text;
+  return text[0].toUpperCase() + text.substring(1);
+}
+
 /// Jour de la semaine en toutes lettres, capitalisé (« Dimanche »).
 String formatEventWeekday(ChurchEvent event, String locale) {
   final day = DateFormat.EEEE(locale)

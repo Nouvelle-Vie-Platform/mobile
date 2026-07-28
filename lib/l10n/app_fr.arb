@@ -324,5 +324,10 @@
   "agendaHorizonTitle": "Fin du calendrier",
   "@agendaHorizonTitle": { "description": "Agenda : borne d'horizon exposée par l'API atteinte — au-delà, le serveur n'affirme rien. C'est une fin de parcours, pas une absence" },
   "agendaHorizonMessage": "Les événements plus lointains ne sont pas encore annoncés.",
-  "@agendaHorizonMessage": { "description": "Agenda : explication de la borne d'horizon" }
+  "@agendaHorizonMessage": { "description": "Agenda : explication de la borne d'horizon" },
+
+  "eventDetailTitle": "Événement",
+  "@eventDetailTitle": { "description": "Détail d'un évènement : titre de la BrandAppBar. Générique — l'intitulé de l'évènement est déjà dans le corps de l'écran" },
+  "eventDetailAbout": "À propos",
+  "@eventDetailAbout": { "description": "Détail d'un évènement : en-tête de la section description. La section entière disparaît quand `body` est absent (une prière hebdomadaire n'a rien à ajouter à son titre)" }
 }

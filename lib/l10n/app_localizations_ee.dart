@@ -642,4 +642,10 @@ class AppLocalizationsEe extends AppLocalizations {
   @override
   String get agendaHorizonMessage =>
       'Les événements plus lointains ne sont pas encore annoncés.';
+
+  @override
+  String get eventDetailTitle => 'Événement';
+
+  @override
+  String get eventDetailAbout => 'À propos';
 }

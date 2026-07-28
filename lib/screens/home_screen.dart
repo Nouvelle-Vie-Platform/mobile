@@ -353,7 +353,12 @@ class _ServicesList extends StatelessWidget {
         itemBuilder: (context, i) => _UpcomingCard(
           event: events[i],
           current: i == 0,
-          onTap: () => context.pushNamed(AppRoute.agenda),
+          // La carte tapée ouvre **son** évènement, pas l'agenda : le lecteur
+          // a déjà choisi ce qu'il veut lire.
+          onTap: () => context.pushNamed(
+            AppRoute.eventDetail,
+            extra: events[i],
+          ),
         ),
       ),
     );
