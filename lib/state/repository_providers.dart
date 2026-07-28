@@ -38,11 +38,16 @@ final announcementsProvider = Provider<List<Announcement>>((ref) {
 
 /// Évènements de l'agenda.
 ///
-/// **Hors [ChurchRepository]** : l'agenda est le premier domaine servi par le
-/// backend, et un calendrier HTTP est asynchrone. Il aura son
-/// `CalendarRepository` dédié (#16) ; en attendant, ce provider s'adosse
-/// directement aux [SampleData] plutôt que de retenir l'agenda dans un contrat
-/// synchrone qu'il quitte.
+/// **Provider de transition, à supprimer.** Remplacé par
+/// `upcomingEventsProvider` et `monthEventsProvider`
+/// (`state/calendar_providers.dart`), adossés au `CalendarRepository` dédié et
+/// asynchrone livré par #16.
+///
+/// Il ne survit ici que parce que `home_screen.dart` et `agenda_screen.dart` le
+/// lisent encore de façon **synchrone** : leur bascule vers l'`AsyncValue` est
+/// le travail des issues #17 et #19, et le retirer maintenant casserait deux
+/// écrans pour rien. Rien de neuf ne doit s'y brancher ; il disparaît avec le
+/// dernier de ses deux lecteurs.
 final eventsProvider = Provider<List<ChurchEvent>>((ref) => SampleData.events);
 
 /// Enseignements / médiathèque.
