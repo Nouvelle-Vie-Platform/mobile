@@ -65,8 +65,32 @@ abstract interface class AuthRepository {
     UserStatus? status,
   });
 
-  /// Utilisateur courant depuis le token stocké (`null` si déconnecté).
+  /// Utilisateur en **cache local**, sans le moindre accès réseau.
+  ///
+  /// C'est ce que lit le splash pour router **immédiatement** : `null` = on n'a
+  /// rien à afficher, sinon on entre dans l'app avec ces données (mode avion
+  /// compris) pendant que [currentUser] revalide en arrière-plan.
+  ///
+  /// Le *où* de cette persistance est un détail d'implémentation du
+  /// repository — coffre sécurisé aujourd'hui, ObjectBox au jalon synchro.
+  /// Aucun écran ne doit le savoir.
+  Future<User?> cachedUser();
+
+  /// Utilisateur courant **revalidé auprès du serveur** (`GET /auth/me`), et
+  /// cache local rafraîchi au passage. `null` = plus de session (pas de token,
+  /// ou token refusé).
+  ///
+  /// Peut lever si le serveur est injoignable : l'appelant garde alors ce que
+  /// [cachedUser] lui avait donné.
   Future<User?> currentUser();
+
+  /// Oublie la session **localement** — token et cache — sans appeler le
+  /// serveur.
+  ///
+  /// Sert quand le serveur a déjà invalidé le token (**401**) : le rappeler
+  /// serait refusé de la même façon. À ne pas confondre avec [signOut], qui
+  /// révoque côté serveur.
+  Future<void> forgetSession();
 
   Future<void> signOut();
 }
@@ -185,11 +209,21 @@ class InMemoryAuthRepository implements AuthRepository {
     return updated;
   }
 
+  /// Le mock n'a pas de persistance : sa « session en cache » est la session
+  /// en mémoire. Redémarrer l'app déconnecte, comme avant.
+  @override
+  Future<User?> cachedUser() async => _user;
+
   @override
   Future<User?> currentUser() async {
     // Léger délai : simule la vérification du token stocké.
     await Future<void>.delayed(_lookup);
     return _user;
+  }
+
+  @override
+  Future<void> forgetSession() async {
+    _user = null;
   }
 
   @override

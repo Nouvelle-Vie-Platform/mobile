@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/network/api_client.dart';
 import '../../models/models.dart';
+import '../local/user_cache.dart';
 import 'auth_repository.dart';
 
 /// Implémentation HTTP de [AuthRepository], branchée sur le backend réel.
@@ -23,13 +24,21 @@ import 'auth_repository.dart';
 ///
 /// Rien non plus côté **rafraîchissement de token** : le serveur fait glisser
 /// l'expiration sans changer la chaîne. Ni rotation, ni refresh token.
+///
+/// **La persistance locale du `User` vit ici**, derrière l'interface : le
+/// repository écrit le cache à chaque réponse fraîche (`verifyCode`,
+/// `updateProfile`, `me`) et l'efface dès qu'il n'y a plus de session. Les
+/// écrans ne voient que `AuthRepository` — remplacer [UserCache] par ObjectBox
+/// au jalon synchro ne touchera aucun widget.
 class HttpAuthRepository implements AuthRepository {
-  HttpAuthRepository({ApiClient? client})
+  HttpAuthRepository({ApiClient? client, UserCache? cache})
       : _client = (client ?? ApiClient.instance).dio,
-        _api = client ?? ApiClient.instance;
+        _api = client ?? ApiClient.instance,
+        _cache = cache ?? UserCache();
 
   final Dio _client;
   final ApiClient _api;
+  final UserCache _cache;
 
   // ── requestCode ─────────────────────────────────────────────────────────
 
@@ -68,6 +77,9 @@ class HttpAuthRepository implements AuthRepository {
       // requêtes suivantes. Il ne contient aucune information — ne jamais
       // tenter de le décoder pour y lire une expiration ou un identifiant.
       await _api.saveToken(session.token);
+      // Le cache prend le relais dès le prochain démarrage : sans lui, une
+      // session valide repasserait par le réseau avant d'ouvrir l'app.
+      await _cache.write(session.user);
       return session;
     } on DioException catch (e) {
       throw mapAuthError(e);
@@ -90,20 +102,48 @@ class HttpAuthRepository implements AuthRepository {
         'Apple sign-in non encore implémenté côté backend');
   }
 
+  // ── Session locale ───────────────────────────────────────────────────────
+
+  /// Lecture **purement locale** : aucun octet ne part sur le réseau, donc
+  /// aucune latence togolaise ni panne de connexion ne peut retarder le
+  /// démarrage. C'est ce que consomme le splash.
+  @override
+  Future<User?> cachedUser() => _cache.read();
+
+  @override
+  Future<void> forgetSession() async {
+    // Le token a en général déjà été purgé par l'intercepteur 401 ; l'appel
+    // reste idempotent, et couvre le cas où on arrive ici autrement.
+    await _api.deleteToken();
+    await _cache.clear();
+  }
+
   // ── currentUser ──────────────────────────────────────────────────────────
 
   @override
   Future<User?> currentUser() async {
     final token = await _api.readToken();
-    if (token == null) return null;
+    if (token == null) {
+      // Plus de token = plus de session : le cache ne décrit plus personne.
+      await _cache.clear();
+      return null;
+    }
     try {
       final res = await _client.get<Map<String, dynamic>>('/auth/me');
-      return User.fromJson(res.data!);
+      final user = User.fromJson(res.data!);
+      // Revalidation réussie : le cache reflète désormais le serveur.
+      await _cache.write(user);
+      return user;
     } on DioException catch (e) {
-      // Token invalide ou expiré : la purge et le retour à `/auth` sont pris
-      // en charge globalement par l'intercepteur 401 d'ApiClient. Ici on se
-      // contente de dire « personne n'est connecté ».
-      if (e.response?.statusCode == 401) return null;
+      // Token invalide ou expiré : la purge du token et le retour à `/auth`
+      // sont pris en charge globalement par l'intercepteur 401 d'ApiClient.
+      // Le cache, lui, est notre affaire — le laisser survivrait à la session.
+      if (e.response?.statusCode == 401) {
+        await _cache.clear();
+        return null;
+      }
+      // Toute autre erreur (réseau coupé, 500) laisse le cache **intact** :
+      // l'utilisateur reste dans l'app avec ses données locales.
       throw mapAuthError(e);
     }
   }
@@ -135,7 +175,9 @@ class HttpAuthRepository implements AuthRepository {
           if (status != null) 'status': status.name,
         },
       );
-      return User.fromJson(res.data!);
+      final user = User.fromJson(res.data!);
+      await _cache.write(user);
+      return user;
     } on DioException catch (e) {
       throw mapAuthError(e);
     }
@@ -150,6 +192,10 @@ class HttpAuthRepository implements AuthRepository {
   /// une erreur réseau ne doit jamais laisser l'utilisateur connecté sur son
   /// appareil alors qu'il vient de demander à se déconnecter. Le `finally`
   /// couvre aussi ce qui n'est pas une `DioException`.
+  ///
+  /// **Token et cache partent ensemble** : effacer le seul token laisserait le
+  /// prochain démarrage router vers l'accueil avec le nom de l'utilisateur qui
+  /// vient de partir.
   @override
   Future<void> signOut() async {
     try {
@@ -157,7 +203,7 @@ class HttpAuthRepository implements AuthRepository {
     } on Object catch (_) {
       // Rien à remonter : la déconnexion locale ne dépend pas du serveur.
     } finally {
-      await _api.deleteToken();
+      await forgetSession();
     }
   }
 }

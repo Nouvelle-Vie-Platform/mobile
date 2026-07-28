@@ -1,11 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
 import '../data/repositories/auth_repository.dart';
+import '../data/repositories/branch_repository.dart';
 import '../data/repositories/http_auth_repository.dart';
-import '../data/sample_data.dart';
 import '../models/models.dart';
 
 /// Fournit l'implémentation courante de [AuthRepository].
@@ -20,9 +21,22 @@ final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => AppEnv.useBackend ? HttpAuthRepository() : InMemoryAuthRepository(),
 );
 
-/// Branches locales sélectionnables (liste statique en phase mock).
-final branchesProvider = Provider<List<Branch>>(
-  (ref) => SampleData.branches,
+/// Fournit l'implémentation courante de [BranchRepository] — mêmes règles que
+/// [authRepositoryProvider] : HTTP avec backend, mock sinon.
+final branchRepositoryProvider = Provider<BranchRepository>(
+  (ref) => AppEnv.useBackend
+      ? HttpBranchRepository()
+      : const InMemoryBranchRepository(),
+);
+
+/// Référentiel des branches, **servi par le serveur** (`GET /sync/branches`).
+///
+/// Asynchrone à dessein : l'appel est authentifié et peut échouer. Les écrans
+/// consomment l'[AsyncValue] et **dégradent** — chargement, erreur ou liste
+/// vide laissent le formulaire de profil utilisable, l'option « Je suis
+/// nouveau » ne dépendant d'aucun référentiel.
+final branchesProvider = FutureProvider<List<Branch>>(
+  (ref) => ref.watch(branchRepositoryProvider).branches(),
 );
 
 /// État global d'authentification.
@@ -59,11 +73,46 @@ class AuthController extends Notifier<AuthState> {
     return const AuthState(status: AuthStatus.unknown);
   }
 
+  /// Démarrage **non bloquant** : le cache local décide de la route, le réseau
+  /// ne fait que corriger ensuite.
+  ///
+  /// L'ordre compte. Lire le cache d'abord, c'est afficher l'accueil en
+  /// quelques millisecondes plutôt qu'après un aller-retour HTTP — sensible sur
+  /// une connexion lente, et seule façon d'ouvrir l'app hors ligne.
   Future<void> _load() async {
-    final user = await _repo.currentUser();
-    state = user == null
-        ? const AuthState(status: AuthStatus.unauthenticated)
-        : AuthState(status: AuthStatus.authenticated, user: user);
+    final cached = await _repo.cachedUser();
+    if (cached != null) {
+      state = AuthState(status: AuthStatus.authenticated, user: cached);
+    }
+    await _revalidate(settleOnFailure: cached == null);
+  }
+
+  /// Revalidation `GET /auth/me`, en arrière-plan quand le cache a déjà routé.
+  ///
+  /// [settleOnFailure] : sans cache, l'état est encore `unknown` et le splash
+  /// tourne indéfiniment si le réseau échoue — il faut alors trancher pour
+  /// « déconnecté » (l'écran d'auth, lui, s'ouvre sans réseau). Avec un cache,
+  /// au contraire, une panne réseau ne doit rien changer.
+  Future<void> _revalidate({required bool settleOnFailure}) async {
+    try {
+      final fresh = await _repo.currentUser();
+      if (fresh == null) {
+        // Plus de token, ou token refusé (401) : `ApiClient` a déjà purgé le
+        // token et prévenu [handleUnauthorized] ; on converge ici de toute
+        // façon, y compris quand le 401 tombe sur un démarrage à froid.
+        state = const AuthState(status: AuthStatus.unauthenticated);
+        return;
+      }
+      if (!_sameUser(state.user, fresh)) {
+        state = AuthState(status: AuthStatus.authenticated, user: fresh);
+      }
+    } on Exception catch (_) {
+      // Serveur injoignable : on garde les données locales. Une coupure réseau
+      // n'est pas une déconnexion — le token reste valide 90 jours glissants.
+      if (settleOnFailure) {
+        state = const AuthState(status: AuthStatus.unauthenticated);
+      }
+    }
   }
 
   /// Demande l'envoi d'un code sur le canal choisi.
@@ -120,11 +169,17 @@ class AuthController extends Notifier<AuthState> {
   /// Session invalidée par le serveur (**401** sur n'importe quel appel).
   ///
   /// Branché sur `ApiClient.onUnauthorized` au démarrage de l'app. Le token a
-  /// déjà été purgé par [ApiClient] : il suffit de repasser l'état à
-  /// « déconnecté », dont la garde `redirect` du routeur déduit le retour à
-  /// `/auth`. Pas d'appel réseau — le token étant refusé, `signOut()` le serait
-  /// aussi.
+  /// déjà été purgé par [ApiClient] ; reste le **cache local**, qui vit
+  /// derrière le repository et que la couche réseau ne connaît pas : le
+  /// laisser en place ferait rentrer l'utilisateur suivant dans l'app avec le
+  /// profil de l'ancien. Pas d'appel réseau — le token étant refusé,
+  /// `signOut()` le serait aussi.
+  ///
+  /// L'état repasse ensuite à « déconnecté », dont la garde `redirect` du
+  /// routeur déduit le retour à `/auth`, y compris depuis un démarrage à froid
+  /// où c'est la revalidation de fond qui a pris le 401.
   void handleUnauthorized() {
+    unawaited(_repo.forgetSession());
     if (state.status == AuthStatus.unauthenticated) return;
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
@@ -140,3 +195,14 @@ class AuthController extends Notifier<AuthState> {
 final authProvider = NotifierProvider<AuthController, AuthState>(
   AuthController.new,
 );
+
+/// Deux `User` décrivent-ils la même chose ?
+///
+/// [User] n'a pas d'`==` de valeur : sans cette comparaison, la revalidation de
+/// fond republierait un état identique à chaque démarrage et ferait rebâtir
+/// tous les écrans qui l'observent pour rien. La comparaison passe par le JSON,
+/// qui est déjà la forme canonique du modèle (et celle du cache).
+bool _sameUser(User? a, User? b) {
+  if (a == null || b == null) return a == b;
+  return mapEquals(a.toJson(), b.toJson());
+}
