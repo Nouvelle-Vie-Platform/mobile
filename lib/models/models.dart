@@ -25,7 +25,46 @@ class EventCategory {
 
   /// Clé d'habillage résolue par l'UI (repli si inconnue).
   final String tone;
+
+  /// `{ "id": 2, "label": {"fr": "Prière"}, "tone": "culte" }`
+  factory EventCategory.fromJson(Map<String, dynamic> json) => EventCategory(
+        id: (json['id'] as num).toInt(),
+        label: parseI18nMap(json['label']) ?? const {},
+        tone: json['tone'] as String? ?? '',
+      );
 }
+
+/// Lit un champ **multilingue** servi par le back (`{fr: '…', en: '…'}`).
+///
+/// Trois tolérances délibérées, parce qu'un champ de contenu ne doit jamais
+/// faire échouer le chargement d'un agenda entier :
+/// - une **langue inconnue** de l'app (`ee`, `yo`, n'importe quoi) est
+///   conservée telle quelle : c'est `pick` (voir `utils/i18n_text.dart`) qui
+///   choisit et qui se replie, pas le parsing ;
+/// - une valeur non textuelle est **ignorée** plutôt que castée de force ;
+/// - un champ absent ou d'une autre forme rend `null`.
+///
+/// La map rendue est **non modifiable** : les modèles sont immuables, et rien
+/// ne doit pouvoir réécrire un intitulé après coup.
+Map<String, String>? parseI18nMap(Object? raw) {
+  if (raw is! Map) return null;
+  final values = <String, String>{};
+  for (final entry in raw.entries) {
+    final value = entry.value;
+    if (value is String) values[entry.key.toString()] = value;
+  }
+  return Map<String, String>.unmodifiable(values);
+}
+
+/// Lit un instant servi par le back et le rend **toujours en UTC**.
+///
+/// `DateTime.parse` d'une chaîne suffixée `Z` rend déjà de l'UTC ; le
+/// `.toUtc()` couvre les deux autres formes possibles — un décalage explicite
+/// (`+01:00`) et, en dernier recours, une chaîne sans fuseau, que Dart lit en
+/// heure **locale de l'appareil**. Sans lui, l'agenda glisserait de plusieurs
+/// heures selon le téléphone du lecteur, et `wallClockAt` recalculerait l'heure
+/// de la branche à partir d'une base fausse.
+DateTime parseInstant(Object? raw) => DateTime.parse(raw as String).toUtc();
 
 /// Évènement de l'agenda — **un rassemblement physique, à un lieu**.
 ///
@@ -79,6 +118,33 @@ class ChurchEvent {
   final String? place;
 
   final EventCategory? category;
+
+  /// Item de `GET /events` — **clés en `snake_case`**, comme le sérialiseur du
+  /// module agenda (à la différence de `/auth`, qui sert du `camelCase`).
+  ///
+  /// Seuls `id`, `starts_at`, `timezone` et `title` sont exigés : le contrat
+  /// annonce tout le reste comme nullable, et un item **minimal** (un intitulé
+  /// français, aucune description, aucun lieu, aucune catégorie, portée
+  /// nationale) est un item parfaitement valide qui doit s'afficher.
+  ///
+  /// Ne cherche **pas** `occurrence_date`, `series_id`, `is_overridden` ni
+  /// `audience_id` : le serveur ne les sert pas. La matérialisation des séries
+  /// est son affaire ; l'app ne voit que des occurrences déjà à plat.
+  factory ChurchEvent.fromJson(Map<String, dynamic> json) => ChurchEvent(
+        id: json['id'] as String,
+        startsAt: parseInstant(json['starts_at']),
+        endsAt: json['ends_at'] == null ? null : parseInstant(json['ends_at']),
+        timezone: json['timezone'] as String,
+        branchId: (json['branch_id'] as num?)?.toInt(),
+        title: parseI18nMap(json['title']) ?? const {},
+        body: parseI18nMap(json['body']),
+        place: json['place'] as String?,
+        category: json['category'] == null
+            ? null
+            : EventCategory.fromJson(
+                (json['category'] as Map).cast<String, dynamic>(),
+              ),
+      );
 }
 
 /// Forme dominante d'un statut.
