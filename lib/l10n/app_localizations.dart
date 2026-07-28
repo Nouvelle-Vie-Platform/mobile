@@ -1191,6 +1191,78 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Code renvoyé.'**
   String get authCodeResent;
+
+  /// Étiquette d'accessibilité du squelette de chargement (AppListSkeleton) : le squelette est purement visuel, c'est ce libellé que lit le lecteur d'écran
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargement en cours…'**
+  String get stateLoading;
+
+  /// Titre générique de l'état vide (AppEmptyState) quand l'écran n'a pas de libellé plus précis
+  ///
+  /// In fr, this message translates to:
+  /// **'Rien à afficher'**
+  String get stateEmptyTitle;
+
+  /// Explication générique de l'état vide : la source a répondu et affirme qu'il n'y a rien
+  ///
+  /// In fr, this message translates to:
+  /// **'Il n\'y a aucun contenu ici pour le moment.'**
+  String get stateEmptyMessage;
+
+  /// Marqueur générique de fin de parcours (variante endOfRange de AppEmptyState) : au-delà, la source n'affirme plus rien
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin de la liste'**
+  String get stateEndOfList;
+
+  /// Titre de l'état d'erreur (AppErrorState). Volontairement écrit comme une panne, jamais comme une absence de contenu : un écran vide faute de réseau ne doit pas se lire « il n'y a rien de prévu »
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion perdue'**
+  String get stateErrorTitle;
+
+  /// Cause par défaut de l'état d'erreur, en langage humain — jamais un code HTTP ni un toString() d'exception
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger le contenu. Vérifiez votre connexion internet, puis réessayez.'**
+  String get stateErrorMessage;
+
+  /// Cause de l'état d'erreur quand le serveur est joignable mais échoue (5xx), en langage humain
+  ///
+  /// In fr, this message translates to:
+  /// **'Le serveur ne répond pas pour l\'instant. Réessayez dans un instant.'**
+  String get stateErrorServerMessage;
+
+  /// Action de l'état d'erreur : relance le chargement via le callback fourni par l'écran
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get stateRetry;
+
+  /// Agenda : le mois consulté est réellement vide (le serveur a répondu). À ne surtout pas confondre avec stateErrorTitle
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun événement ce mois-ci'**
+  String get agendaEmptyMonthTitle;
+
+  /// Agenda : explication du mois sans événement
+  ///
+  /// In fr, this message translates to:
+  /// **'Rien n\'est prévu pour cette période.'**
+  String get agendaEmptyMonthMessage;
+
+  /// Agenda : borne d'horizon exposée par l'API atteinte — au-delà, le serveur n'affirme rien. C'est une fin de parcours, pas une absence
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin du calendrier'**
+  String get agendaHorizonTitle;
+
+  /// Agenda : explication de la borne d'horizon
+  ///
+  /// In fr, this message translates to:
+  /// **'Les événements plus lointains ne sont pas encore annoncés.'**
+  String get agendaHorizonMessage;
 }
 
 class _AppLocalizationsDelegate

@@ -603,4 +603,43 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get authCodeResent => 'Code renvoyé.';
+
+  @override
+  String get stateLoading => 'Chargement en cours…';
+
+  @override
+  String get stateEmptyTitle => 'Rien à afficher';
+
+  @override
+  String get stateEmptyMessage => 'Il n\'y a aucun contenu ici pour le moment.';
+
+  @override
+  String get stateEndOfList => 'Fin de la liste';
+
+  @override
+  String get stateErrorTitle => 'Connexion perdue';
+
+  @override
+  String get stateErrorMessage =>
+      'Impossible de charger le contenu. Vérifiez votre connexion internet, puis réessayez.';
+
+  @override
+  String get stateErrorServerMessage =>
+      'Le serveur ne répond pas pour l\'instant. Réessayez dans un instant.';
+
+  @override
+  String get stateRetry => 'Réessayer';
+
+  @override
+  String get agendaEmptyMonthTitle => 'Aucun événement ce mois-ci';
+
+  @override
+  String get agendaEmptyMonthMessage => 'Rien n\'est prévu pour cette période.';
+
+  @override
+  String get agendaHorizonTitle => 'Fin du calendrier';
+
+  @override
+  String get agendaHorizonMessage =>
+      'Les événements plus lointains ne sont pas encore annoncés.';
 }

@@ -221,5 +221,19 @@
   "profileTitleLabel": "Title",
   "profileTitleRequired": "Please select Brother or Sister",
   "authCodeTooManyAttempts": "Too many attempts. Please try again later.",
-  "authCodeResent": "Code resent."
+  "authCodeResent": "Code resent.",
+
+  "stateLoading": "Loading…",
+  "stateEmptyTitle": "Nothing to show",
+  "stateEmptyMessage": "There is no content here yet.",
+  "stateEndOfList": "End of list",
+  "stateErrorTitle": "Connection lost",
+  "stateErrorMessage": "We couldn't load this content. Check your internet connection, then try again.",
+  "stateErrorServerMessage": "The server isn't responding right now. Please try again in a moment.",
+  "stateRetry": "Try again",
+
+  "agendaEmptyMonthTitle": "No events this month",
+  "agendaEmptyMonthMessage": "Nothing is scheduled for this period.",
+  "agendaHorizonTitle": "End of the calendar",
+  "agendaHorizonMessage": "Events further ahead haven't been announced yet."
 }
