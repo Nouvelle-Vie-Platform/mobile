@@ -70,6 +70,27 @@ final _agendaEvents = [
   ),
 ];
 
+/// Occurrences **à venir**, pour la section « À venir » de l'accueil.
+///
+/// Ancrées relativement à maintenant, et non à un quantième fixe : l'accueil
+/// filtre sur `from = maintenant`, si bien qu'une fixture datée du 5 du mois
+/// serait vide vingt-cinq jours sur trente. Le décalage horaire les garde à
+/// venir quelle que soit l'heure d'exécution.
+final _upcomingEvents = [
+  ChurchEvent(
+    id: 'evt-upcoming-1',
+    startsAt: DateTime.now().toUtc().add(const Duration(days: 2)),
+    timezone: 'Africa/Lome',
+    title: const {'fr': 'Culte à venir'},
+  ),
+  ChurchEvent(
+    id: 'evt-upcoming-2',
+    startsAt: DateTime.now().toUtc().add(const Duration(days: 5)),
+    timezone: 'Africa/Lome',
+    title: const {'fr': 'Veillée à venir'},
+  ),
+];
+
 /// Repository d'auth déjà connecté : le routeur n'ouvre les routes internes
 /// qu'une fois la session résolue (garde `redirect`).
 class _SignedInAuthRepository extends InMemoryAuthRepository {
@@ -211,11 +232,16 @@ void main() {
 
     testWidgets('depuis « À venir », la carte ouvre son propre évènement',
         (tester) async {
-      final router = await _pumpApp(tester);
+      // Fixture propre à ce test : l'accueil lit `upcomingEventsProvider`
+      // (`from = maintenant`), alors que `_agendaEvents` est ancré aux 5 et 12
+      // du mois courant — donc dans le passé la plupart du mois. Une fixture
+      // relative à maintenant est la seule qui ne dépende pas du jour où la
+      // suite tourne.
+      final router = await _pumpApp(tester, events: _upcomingEvents);
       router.go('/home');
       await _settle(tester);
 
-      final second = SampleData.events[1];
+      final second = _upcomingEvents[1];
       final title = pick(second.title, 'fr');
       await tester.ensureVisible(find.text(title));
       await tester.pump();
@@ -237,7 +263,8 @@ void main() {
 ///
 /// Indispensable pour ces tests : c'est le `builder` de la route — et sa garde
 /// `redirect` — qu'on vérifie, pas un routeur reconstruit pour l'occasion.
-Future<GoRouter> _pumpApp(WidgetTester tester) async {
+Future<GoRouter> _pumpApp(WidgetTester tester,
+    {List<ChurchEvent>? events}) async {
   // Écran haut : les listes de l'app sont paresseuses, et une carte jamais
   // construite ne peut pas être tapée. On agrandit plutôt que de simuler des
   // défilements, qui déplaceraient la cible sous la barre de titre.
@@ -250,12 +277,13 @@ Future<GoRouter> _pumpApp(WidgetTester tester) async {
       authRepositoryProvider.overrideWithValue(_SignedInAuthRepository()),
       branchRepositoryProvider
           .overrideWithValue(const InMemoryBranchRepository()),
-      // L'agenda passe par `CalendarRepository`, dont l'implémentation par
-      // défaut est HTTP (`AppEnv.useBackend`) : sans ce double, la route
-      // `/agenda` ouvrirait une socket (400 en test) et n'afficherait qu'un
-      // état d'erreur.
-      calendarRepositoryProvider
-          .overrideWithValue(InMemoryCalendarRepository(events: _agendaEvents)),
+      // L'agenda **et** la section « À venir » de l'accueil passent par
+      // `CalendarRepository`, dont l'implémentation par défaut est HTTP
+      // (`AppEnv.useBackend`) : sans ce double, ces routes ouvriraient une
+      // socket (400 en test) et n'afficheraient qu'un état d'erreur.
+      calendarRepositoryProvider.overrideWithValue(
+        InMemoryCalendarRepository(events: events ?? _agendaEvents),
+      ),
     ],
   );
   final router = container.read(routerProvider);

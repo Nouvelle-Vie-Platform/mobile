@@ -136,6 +136,17 @@ String formatEventFullDate(ChurchEvent event, String locale) {
   return text[0].toUpperCase() + text.substring(1);
 }
 
+/// Date en toutes lettres de la **borne d'horizon** annoncée par le serveur
+/// (« 31 décembre 2026 »).
+///
+/// Le seul instant de l'agenda qui n'appartient à aucun évènement : il n'a
+/// donc ni fuseau de branche, ni heure, ni jour de la semaine — l'horizon borne
+/// des mois, pas des rendez-vous. Il est rendu **tel que le serveur l'a posé**
+/// (UTC) : le convertir dans le fuseau du lecteur ferait reculer d'un jour une
+/// date qui n'a pas d'heure.
+String formatHorizonDate(DateTime instant, String locale) =>
+    DateFormat.yMMMMd(locale).format(instant.toUtc());
+
 /// Jour de la semaine en toutes lettres, capitalisé (« Dimanche »).
 String formatEventWeekday(ChurchEvent event, String locale) {
   final day = DateFormat.EEEE(locale)

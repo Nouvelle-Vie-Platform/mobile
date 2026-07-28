@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/repositories/calendar_repository.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
 import '../router/app_router.dart';
 import '../state/auth_providers.dart';
+import '../state/calendar_providers.dart';
 import '../state/repository_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
@@ -14,6 +16,9 @@ import '../theme/app_typography.dart';
 import '../utils/event_time.dart';
 import '../utils/i18n_text.dart';
 import '../widgets/app_card.dart';
+import '../widgets/app_empty_state.dart';
+import '../widgets/app_error_state.dart';
+import '../widgets/app_list_skeleton.dart';
 import '../widgets/cards/teaching_cover.dart';
 import '../widgets/profile_completion_banner.dart';
 import '../widgets/profile_setup_sheet.dart';
@@ -32,7 +37,6 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final events = ref.watch(eventsProvider);
     final sundayMessages = ref.watch(sundayTeachingsProvider);
     final bibleStudies = ref.watch(bibleStudiesProvider);
     final prayerTimes = ref.watch(prayerTeachingsProvider);
@@ -93,7 +97,7 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            _ServicesList(events: events),
+            const _UpcomingSection(),
             _TeachingSection(
               title: context.l10n.sectionLatestTeachings,
               icon: Icons.menu_book_outlined,
@@ -331,6 +335,159 @@ class _LiveCtaPill extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Section « À venir » de l'accueil, branchée sur [upcomingEventsProvider].
+///
+/// L'accueil est le **premier** écran de l'app : ses trois états asynchrones y
+/// sont visibles avant tout le reste. Un échec de chargement doit donc se voir
+/// comme une panne (`AppErrorState`, teinté, avec « Réessayer ») et jamais se
+/// confondre avec un calendrier réellement vide (`AppEmptyState`, neutre et
+/// sans action) — une section silencieusement vide ferait croire au lecteur
+/// qu'aucun culte n'est prévu.
+///
+/// ## Le filtre « à venir » est côté serveur, l'app reste ouverte des heures
+///
+/// [upcomingEventsProvider] demande les occurrences à partir de
+/// `DateTime.now()` **au moment de sa création**. Ce « maintenant » vieillit :
+/// une app laissée ouverte, ou réveillée après une longue mise en veille,
+/// afficherait des occurrences déjà commencées. Deux mécanismes, chacun avec
+/// son rôle :
+///
+/// 1. **Rechargement au retour au premier plan** ([didChangeAppLifecycleState],
+///    `resumed`) — c'est le mécanisme principal, et le seul qui puisse
+///    *reconstituer* la liste : le serveur reste l'autorité sur ce qui est à
+///    venir, lui seul peut annoncer la 4e occurrence qui remplace celle qui
+///    vient de commencer. La mise en veille de l'écran suffit à le déclencher.
+/// 2. **Borne côté client** ([_isUpcoming]) — filet de sécurité qui ne fait
+///    jamais qu'*ôter* : il masque ce qui a démonstrablement commencé, sans
+///    rien inventer. Il couvre l'intervalle entre la réponse et l'affichage,
+///    une reconstruction sans rechargement (thème, bannière de profil…), et un
+///    serveur qui rendrait une occurrence déjà entamée.
+///
+/// La borne seule ne suffirait pas : la section se viderait d'elle-même sans
+/// jamais se remplir, et afficherait un « aucun rassemblement » **faux**. D'où
+/// le garde-fou [_staleRefreshRequested] — si la borne vide entièrement une
+/// fenêtre qui ne l'était pas, la donnée est périmée, pas absente : on
+/// recharge une fois plutôt que de mentir. Une seule fois par session de
+/// premier plan, pour qu'un serveur fautif ne fasse pas boucler l'accueil.
+class _UpcomingSection extends ConsumerStatefulWidget {
+  const _UpcomingSection();
+
+  @override
+  ConsumerState<_UpcomingSection> createState() => _UpcomingSectionState();
+}
+
+class _UpcomingSectionState extends ConsumerState<_UpcomingSection>
+    with WidgetsBindingObserver {
+  /// Un rechargement a déjà été déclenché par une donnée périmée depuis le
+  /// dernier retour au premier plan. Empêche la boucle infinie que provoquerait
+  /// un serveur rendant encore et toujours des occurrences passées.
+  bool _staleRefreshRequested = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    _reload();
+  }
+
+  /// Recrée [upcomingEventsProvider] : la fenêtre repart de `maintenant`.
+  void _reload() {
+    _staleRefreshRequested = false;
+    ref.invalidate(upcomingEventsProvider);
+  }
+
+  /// L'occurrence n'a pas encore commencé.
+  ///
+  /// Sélection sur `startsAt` seul, comme le repository : une occurrence
+  /// commencée mais encore en cours n'est plus « à venir ».
+  bool _isUpcoming(ChurchEvent event, DateTime now) =>
+      !event.startsAt.toUtc().isBefore(now);
+
+  @override
+  Widget build(BuildContext context) {
+    return ref.watch(upcomingEventsProvider).when(
+          loading: _buildSkeleton,
+          error: (error, _) => _buildError(error),
+          data: _buildWindow,
+        );
+  }
+
+  Widget _buildSkeleton() => const AppListSkeleton(
+        // Une seule carte fantôme : c'est la silhouette de la première
+        // étiquette du carrousel, la seule entièrement visible.
+        itemCount: 1,
+        padding: AppSpacing.screenPadding,
+      );
+
+  Widget _buildError(Object error) {
+    final l10n = context.l10n;
+    // La cause est dite en langage humain, choisie sur le code du domaine —
+    // jamais un `toString()` d'exception. `unauthorized` n'a pas de message
+    // propre : `UnauthorizedInterceptor` a déjà purgé le token et renvoyé vers
+    // `/auth`, l'accueil est démonté avant d'avoir pu s'expliquer.
+    final message =
+        error is CalendarException && error.code == CalendarErrorCode.server
+            ? l10n.stateErrorServerMessage
+            : l10n.stateErrorMessage;
+
+    return Padding(
+      padding: AppSpacing.screenPadding,
+      child: AppErrorState(message: message, onRetry: _reload),
+    );
+  }
+
+  Widget _buildWindow(EventWindow window) {
+    final now = DateTime.now().toUtc();
+    final upcoming = window.items
+        .where((event) => _isUpcoming(event, now))
+        .toList(growable: false);
+
+    if (upcoming.isNotEmpty) return _ServicesList(events: upcoming);
+
+    // Fenêtre non vide entièrement filtrée : la donnée a vieilli sous nos
+    // yeux. Ce n'est pas un calendrier vide — on recharge et on montre le
+    // squelette, l'annonce « aucun rassemblement » serait mensongère.
+    if (window.items.isNotEmpty && !_staleRefreshRequested) {
+      _staleRefreshRequested = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.invalidate(upcomingEventsProvider);
+      });
+      return _buildSkeleton();
+    }
+
+    return _buildEmpty(window.horizon);
+  }
+
+  Widget _buildEmpty(DateTime? horizon) {
+    final l10n = context.l10n;
+    return Padding(
+      padding: AppSpacing.screenPadding,
+      child: AppEmptyState(
+        icon: Icons.event_busy_outlined,
+        title: l10n.homeUpcomingEmptyTitle,
+        // Avec un horizon, le vide est **borné** : le serveur n'affirme rien
+        // au-delà de cette date, ce n'est pas « il n'y aura plus jamais rien ».
+        message: horizon == null
+            ? l10n.homeUpcomingEmptyMessage
+            : l10n.homeUpcomingHorizonMessage(
+                formatHorizonDate(horizon, l10n.localeName),
+              ),
       ),
     );
   }

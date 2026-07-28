@@ -631,6 +631,18 @@ class AppLocalizationsEe extends AppLocalizations {
   String get stateRetry => 'Réessayer';
 
   @override
+  String get homeUpcomingEmptyTitle => 'Aucun rassemblement à venir';
+
+  @override
+  String get homeUpcomingEmptyMessage =>
+      'Le calendrier n\'annonce rien pour le moment. Revenez bientôt.';
+
+  @override
+  String homeUpcomingHorizonMessage(String date) {
+    return 'Le calendrier n\'annonce rien jusqu\'au $date.';
+  }
+
+  @override
   String get agendaEmptyMonthTitle => 'Aucun événement ce mois-ci';
 
   @override

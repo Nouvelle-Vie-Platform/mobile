@@ -232,6 +232,10 @@
   "stateErrorServerMessage": "The server isn't responding right now. Please try again in a moment.",
   "stateRetry": "Try again",
 
+  "homeUpcomingEmptyTitle": "No upcoming gatherings",
+  "homeUpcomingEmptyMessage": "Nothing is on the calendar right now. Check back soon.",
+  "homeUpcomingHorizonMessage": "Nothing is on the calendar through {date}.",
+
   "agendaEmptyMonthTitle": "No events this month",
   "agendaEmptyMonthMessage": "Nothing is scheduled for this period.",
   "agendaHorizonTitle": "End of the calendar",
