@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/brand_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../l10n/l10n_extension.dart';
 import '../state/repository_providers.dart';
@@ -18,13 +19,28 @@ class AgendaScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final events = ref.watch(eventsProvider);
 
+    // Le mois affiché suit l'horloge : un en-tête figé (« Mai 2024 ») aurait
+    // menti dès le lendemain, et davantage encore maintenant que l'agenda sert
+    // des dates réelles.
+    final now = DateTime.now();
+    final monthTitle = DateFormat.yMMMM(context.l10n.localeName).format(now);
+    // Grille lundi→dimanche : `DateTime.weekday` vaut 1 pour lundi.
+    final firstOfMonth = DateTime(now.year, now.month);
+
     return Scaffold(
-      appBar: const BrandAppBar(title: 'Mai 2024'),
+      appBar: BrandAppBar(
+        title: monthTitle[0].toUpperCase() + monthTitle.substring(1),
+      ),
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [
           const SizedBox(height: AppSpacing.md),
-          const _MonthCalendar(daysInMonth: 31, leadingBlanks: 2, selected: 24),
+          _MonthCalendar(
+            // Jour 0 du mois suivant = dernier jour de celui-ci.
+            daysInMonth: DateTime(now.year, now.month + 1, 0).day,
+            leadingBlanks: firstOfMonth.weekday - 1,
+            selected: now.day,
+          ),
           const SizedBox(height: AppSpacing.xl),
           for (final e in events) ...[
             EventCard(event: e),

@@ -25,15 +25,41 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
 
 - `lib/models/` — modèles immuables (`ChurchEvent`, `Teaching`, `CommunityGroup`,
   `PrayerRequest`, `SpiritualNote`, `ChatMessage`, `Announcement`).
-- `lib/data/` — `sample_data.dart` (données fictives) + `repositories/church_repository.dart`
-  (`ChurchRepository` abstrait + `InMemoryChurchRepository`).
+- `lib/data/` — `sample_data.dart` (données fictives) + `repositories/` :
+  - `church_repository.dart` (`ChurchRepository` abstrait + `InMemoryChurchRepository`)
+    — **synchrone**, et il ne couvre que les domaines **encore fictifs**.
+  - `auth_repository.dart` / `http_auth_repository.dart`, `branch_repository.dart` —
+    repositories **dédiés et asynchrones**, chacun hors de `ChurchRepository`.
 - `lib/state/` — providers Riverpod :
   - `repository_providers.dart` : `churchRepositoryProvider` + providers de données
-    (`eventsProvider`, `teachingsProvider`, `groupsProvider`, `prayersProvider`,
-    `notesProvider`, `announcementsProvider`, `chatProvider.family`).
+    (`teachingsProvider`, `groupsProvider`, `prayersProvider`, `notesProvider`,
+    `announcementsProvider`, `chatProvider.family`) et `eventsProvider` (hors
+    `ChurchRepository`, cf. ci-dessous).
   - `theme_provider.dart` : `themeModeProvider` (Notifier) + `isDarkModeActive`.
-  - **Brancher un vrai backend = surcharger `churchRepositoryProvider`** avec une
-    autre implémentation. Aucun écran ne change.
+
+### Brancher un vrai backend : **un repository dédié asynchrone par domaine**
+Surcharger `churchRepositoryProvider` **ne suffit pas** et n'est pas le motif :
+son contrat est synchrone, alors qu'un appel HTTP est asynchrone. Passer toute
+l'interface en `Future` pour le premier domaine branché casserait d'un coup les
+cinq autres et tous leurs écrans.
+
+Le motif réel, déjà suivi par `AuthRepository`/`HttpAuthRepository` et
+`BranchRepository` : quand un domaine est servi par le back, il **sort** de
+`ChurchRepository` vers sa propre abstraction `Future`-based, avec une
+implémentation HTTP et une implémentation en mémoire (servie quand
+`AppEnv.useBackend` est faux), et son propre provider. `ChurchRepository`
+rétrécit à mesure — c'est voulu ; il finira par disparaître.
+
+Les écrans du domaine migré changent, eux : ils passent d'une lecture
+synchrone à un `AsyncValue` (chargement / vide / erreur). C'est le coût réel de
+la bascule, à ne pas sous-estimer dans les estimations.
+
+**Modèles** : ce que sert le back est une **donnée**, jamais du texte
+pré-formaté — un instant UTC (`ChurchEvent.startsAt`) et non « Dimanche 26 Mai »,
+une `Map<String,String>` multilingue et non un libellé. Le formatage vit dans la
+vue : `utils/i18n_text.dart` (`pick`, repli de langue) et `utils/event_time.dart`
+(dates et heures). Ces helpers sont l'**unique** endroit où ces règles sont
+écrites — ne pas disséminer de `?? title['fr']` dans les widgets.
 - `lib/router/app_router.dart` — `routerProvider` (GoRouter), noms dans `AppRoute`.
   Les écrans de détail reçoivent leur objet via `extra` (ex. `Teaching`,
   `CommunityGroup`), avec repli sur le 1er élément si accès direct.
