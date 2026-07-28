@@ -298,5 +298,31 @@
   "authCodeTooManyAttempts": "Trop de tentatives. Réessayez plus tard.",
   "@authCodeTooManyAttempts": { "description": "Erreur : trop de tentatives de saisie du code" },
   "authCodeResent": "Code renvoyé.",
-  "@authCodeResent": { "description": "Confirmation : un nouveau code de vérification a été envoyé" }
+  "@authCodeResent": { "description": "Confirmation : un nouveau code de vérification a été envoyé" },
+
+  "stateLoading": "Chargement en cours…",
+  "@stateLoading": { "description": "Étiquette d'accessibilité du squelette de chargement (AppListSkeleton) : le squelette est purement visuel, c'est ce libellé que lit le lecteur d'écran" },
+  "stateEmptyTitle": "Rien à afficher",
+  "@stateEmptyTitle": { "description": "Titre générique de l'état vide (AppEmptyState) quand l'écran n'a pas de libellé plus précis" },
+  "stateEmptyMessage": "Il n'y a aucun contenu ici pour le moment.",
+  "@stateEmptyMessage": { "description": "Explication générique de l'état vide : la source a répondu et affirme qu'il n'y a rien" },
+  "stateEndOfList": "Fin de la liste",
+  "@stateEndOfList": { "description": "Marqueur générique de fin de parcours (variante endOfRange de AppEmptyState) : au-delà, la source n'affirme plus rien" },
+  "stateErrorTitle": "Connexion perdue",
+  "@stateErrorTitle": { "description": "Titre de l'état d'erreur (AppErrorState). Volontairement écrit comme une panne, jamais comme une absence de contenu : un écran vide faute de réseau ne doit pas se lire « il n'y a rien de prévu »" },
+  "stateErrorMessage": "Impossible de charger le contenu. Vérifiez votre connexion internet, puis réessayez.",
+  "@stateErrorMessage": { "description": "Cause par défaut de l'état d'erreur, en langage humain — jamais un code HTTP ni un toString() d'exception" },
+  "stateErrorServerMessage": "Le serveur ne répond pas pour l'instant. Réessayez dans un instant.",
+  "@stateErrorServerMessage": { "description": "Cause de l'état d'erreur quand le serveur est joignable mais échoue (5xx), en langage humain" },
+  "stateRetry": "Réessayer",
+  "@stateRetry": { "description": "Action de l'état d'erreur : relance le chargement via le callback fourni par l'écran" },
+
+  "agendaEmptyMonthTitle": "Aucun événement ce mois-ci",
+  "@agendaEmptyMonthTitle": { "description": "Agenda : le mois consulté est réellement vide (le serveur a répondu). À ne surtout pas confondre avec stateErrorTitle" },
+  "agendaEmptyMonthMessage": "Rien n'est prévu pour cette période.",
+  "@agendaEmptyMonthMessage": { "description": "Agenda : explication du mois sans événement" },
+  "agendaHorizonTitle": "Fin du calendrier",
+  "@agendaHorizonTitle": { "description": "Agenda : borne d'horizon exposée par l'API atteinte — au-delà, le serveur n'affirme rien. C'est une fin de parcours, pas une absence" },
+  "agendaHorizonMessage": "Les événements plus lointains ne sont pas encore annoncés.",
+  "@agendaHorizonMessage": { "description": "Agenda : explication de la borne d'horizon" }
 }

@@ -601,4 +601,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authCodeResent => 'Code resent.';
+
+  @override
+  String get stateLoading => 'Loading…';
+
+  @override
+  String get stateEmptyTitle => 'Nothing to show';
+
+  @override
+  String get stateEmptyMessage => 'There is no content here yet.';
+
+  @override
+  String get stateEndOfList => 'End of list';
+
+  @override
+  String get stateErrorTitle => 'Connection lost';
+
+  @override
+  String get stateErrorMessage =>
+      'We couldn\'t load this content. Check your internet connection, then try again.';
+
+  @override
+  String get stateErrorServerMessage =>
+      'The server isn\'t responding right now. Please try again in a moment.';
+
+  @override
+  String get stateRetry => 'Try again';
+
+  @override
+  String get agendaEmptyMonthTitle => 'No events this month';
+
+  @override
+  String get agendaEmptyMonthMessage => 'Nothing is scheduled for this period.';
+
+  @override
+  String get agendaHorizonTitle => 'End of the calendar';
+
+  @override
+  String get agendaHorizonMessage =>
+      'Events further ahead haven\'t been announced yet.';
 }
