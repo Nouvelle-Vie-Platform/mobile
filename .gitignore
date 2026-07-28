@@ -44,6 +44,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Sortie de Gradle au niveau du projet Android (rapports de build).
+# `/build/` plus haut ne couvre que la racine du dépôt.
+/android/build/
+
 # Android related
 **/android/**/gradle-wrapper.jar
 **/android/.gradle
