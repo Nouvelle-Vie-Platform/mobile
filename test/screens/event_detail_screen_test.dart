@@ -4,12 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
+import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/data/sample_data.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/event_detail_screen.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
+import 'package:maison_du_miracle/state/calendar_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 import 'package:maison_du_miracle/utils/i18n_text.dart';
 import 'package:maison_du_miracle/widgets/app_card.dart';
@@ -46,6 +48,27 @@ final _bareEvent = ChurchEvent(
   timezone: 'Africa/Lome',
   title: const {'fr': 'Prière de zone'},
 );
+
+/// Occurrences servies à l'agenda, **posées dans le mois courant**.
+///
+/// L'agenda ne charge que le mois affiché : des dates figées (mai 2024) n'y
+/// apparaîtraient jamais, et les dates relatives de `SampleData` (« dimanche
+/// prochain ») basculent dans le mois suivant une semaine par mois. Les 5 et 12
+/// existent dans tous les mois, y compris février.
+final _agendaEvents = [
+  ChurchEvent(
+    id: 'evt-agenda-1',
+    startsAt: DateTime.utc(DateTime.now().year, DateTime.now().month, 5, 9),
+    timezone: 'Africa/Lome',
+    title: const {'fr': 'Culte du mois'},
+  ),
+  ChurchEvent(
+    id: 'evt-agenda-2',
+    startsAt: DateTime.utc(DateTime.now().year, DateTime.now().month, 12, 18),
+    timezone: 'Africa/Lome',
+    title: const {'fr': 'Veillée du mois'},
+  ),
+];
 
 /// Repository d'auth déjà connecté : le routeur n'ouvre les routes internes
 /// qu'une fois la session résolue (garde `redirect`).
@@ -171,8 +194,7 @@ void main() {
 
       // Deuxième carte : c'est ce qui distingue « le bon évènement » de
       // « le premier de la liste ».
-      final second = SampleData.events[1];
-      final title = pick(second.title, 'fr');
+      final title = pick(_agendaEvents[1].title, 'fr');
       await tester.ensureVisible(find.byType(EventCard).at(1));
       await tester.pump();
       await tester.tap(find.byType(EventCard).at(1));
@@ -228,6 +250,12 @@ Future<GoRouter> _pumpApp(WidgetTester tester) async {
       authRepositoryProvider.overrideWithValue(_SignedInAuthRepository()),
       branchRepositoryProvider
           .overrideWithValue(const InMemoryBranchRepository()),
+      // L'agenda passe par `CalendarRepository`, dont l'implémentation par
+      // défaut est HTTP (`AppEnv.useBackend`) : sans ce double, la route
+      // `/agenda` ouvrirait une socket (400 en test) et n'afficherait qu'un
+      // état d'erreur.
+      calendarRepositoryProvider
+          .overrideWithValue(InMemoryCalendarRepository(events: _agendaEvents)),
     ],
   );
   final router = container.read(routerProvider);
