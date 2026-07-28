@@ -1240,6 +1240,24 @@ abstract class AppLocalizations {
   /// **'Réessayer'**
   String get stateRetry;
 
+  /// Accueil, section « À venir » : le serveur a répondu et n'annonce aucune occurrence à partir de maintenant. À ne surtout pas confondre avec stateErrorTitle — un accueil vide faute de réseau doit se lire comme une panne, jamais comme un calendrier vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun rassemblement à venir'**
+  String get homeUpcomingEmptyTitle;
+
+  /// Accueil, section « À venir » : explication du vide quand le serveur n'a annoncé aucune borne d'horizon
+  ///
+  /// In fr, this message translates to:
+  /// **'Le calendrier n\'annonce rien pour le moment. Revenez bientôt.'**
+  String get homeUpcomingEmptyMessage;
+
+  /// Accueil, section « À venir » : le vide est borné par l'horizon annoncé par le serveur — au-delà de cette date il n'affirme rien, ce n'est donc pas « il n'y aura plus rien »
+  ///
+  /// In fr, this message translates to:
+  /// **'Le calendrier n\'annonce rien jusqu\'au {date}.'**
+  String homeUpcomingHorizonMessage(String date);
+
   /// Agenda : le mois consulté est réellement vide (le serveur a répondu). À ne surtout pas confondre avec stateErrorTitle
   ///
   /// In fr, this message translates to:

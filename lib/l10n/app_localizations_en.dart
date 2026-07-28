@@ -629,6 +629,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stateRetry => 'Try again';
 
   @override
+  String get homeUpcomingEmptyTitle => 'No upcoming gatherings';
+
+  @override
+  String get homeUpcomingEmptyMessage =>
+      'Nothing is on the calendar right now. Check back soon.';
+
+  @override
+  String homeUpcomingHorizonMessage(String date) {
+    return 'Nothing is on the calendar through $date.';
+  }
+
+  @override
   String get agendaEmptyMonthTitle => 'No events this month';
 
   @override

@@ -1,16 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/screens/groups_screen.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/screens/media_library_screen.dart';
 import 'package:maison_du_miracle/screens/profile_screen.dart';
+import 'package:maison_du_miracle/state/calendar_providers.dart';
 
 import '../helpers/pump_screen.dart';
 
 void main() {
   group('Onglets principaux (smoke)', () {
     testWidgets('HomeScreen se monte avec les données', (tester) async {
-      await pumpScreen(tester, const Scaffold(body: HomeScreen()));
+      // Agenda forcé sur le double en mémoire : sans cet override, la section
+      // « À venir » partirait sur `HttpCalendarRepository` et ouvrirait une
+      // socket, à laquelle `flutter test` répond 400.
+      await pumpScreen(
+        tester,
+        const Scaffold(body: HomeScreen()),
+        overrides: [
+          calendarRepositoryProvider
+              .overrideWithValue(InMemoryCalendarRepository()),
+        ],
+      );
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(find.textContaining('Bonjour'), findsOneWidget);
     });

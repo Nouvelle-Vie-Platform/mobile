@@ -4,12 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
+import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/data/sample_data.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/event_detail_screen.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
+import 'package:maison_du_miracle/state/calendar_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 import 'package:maison_du_miracle/utils/i18n_text.dart';
 import 'package:maison_du_miracle/widgets/app_card.dart';
@@ -228,6 +230,11 @@ Future<GoRouter> _pumpApp(WidgetTester tester) async {
       authRepositoryProvider.overrideWithValue(_SignedInAuthRepository()),
       branchRepositoryProvider
           .overrideWithValue(const InMemoryBranchRepository()),
+      // Agenda sur le double en mémoire : la section « À venir » de l'accueil
+      // partirait sinon sur `HttpCalendarRepository`, et `flutter test` répond
+      // 400 à tout accès réseau — la carte à taper n'existerait pas.
+      calendarRepositoryProvider
+          .overrideWithValue(InMemoryCalendarRepository()),
     ],
   );
   final router = container.read(routerProvider);

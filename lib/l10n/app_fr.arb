@@ -317,6 +317,16 @@
   "stateRetry": "Réessayer",
   "@stateRetry": { "description": "Action de l'état d'erreur : relance le chargement via le callback fourni par l'écran" },
 
+  "homeUpcomingEmptyTitle": "Aucun rassemblement à venir",
+  "@homeUpcomingEmptyTitle": { "description": "Accueil, section « À venir » : le serveur a répondu et n'annonce aucune occurrence à partir de maintenant. À ne surtout pas confondre avec stateErrorTitle — un accueil vide faute de réseau doit se lire comme une panne, jamais comme un calendrier vide" },
+  "homeUpcomingEmptyMessage": "Le calendrier n'annonce rien pour le moment. Revenez bientôt.",
+  "@homeUpcomingEmptyMessage": { "description": "Accueil, section « À venir » : explication du vide quand le serveur n'a annoncé aucune borne d'horizon" },
+  "homeUpcomingHorizonMessage": "Le calendrier n'annonce rien jusqu'au {date}.",
+  "@homeUpcomingHorizonMessage": {
+    "description": "Accueil, section « À venir » : le vide est borné par l'horizon annoncé par le serveur — au-delà de cette date il n'affirme rien, ce n'est donc pas « il n'y aura plus rien »",
+    "placeholders": { "date": { "type": "String", "example": "31 décembre 2026" } }
+  },
+
   "agendaEmptyMonthTitle": "Aucun événement ce mois-ci",
   "@agendaEmptyMonthTitle": { "description": "Agenda : le mois consulté est réellement vide (le serveur a répondu). À ne surtout pas confondre avec stateErrorTitle" },
   "agendaEmptyMonthMessage": "Rien n'est prévu pour cette période.",
