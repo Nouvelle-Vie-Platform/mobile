@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -9,74 +8,7 @@ import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/http_auth_repository.dart';
 import 'package:maison_du_miracle/models/models.dart';
 
-/// Adaptateur Dio factice : note ce qui part sur le fil et rend la réponse
-/// décidée par le test.
-///
-/// Indispensable ici — `flutter test` répond **400 à tout accès réseau réel**.
-/// Aucune socket n'est ouverte : la requête traverse bien tous les
-/// intercepteurs d'`ApiClient` (Bearer, enveloppe `data`, 401), mais s'arrête
-/// à cet adaptateur.
-class FakeAdapter implements HttpClientAdapter {
-  FakeAdapter(this.reply);
-
-  /// Réponse à rendre, ou exception à lever pour simuler une panne.
-  final ResponseBody Function(RequestOptions options) reply;
-
-  /// Requêtes vues, dans l'ordre — pour vérifier chemin, verbe et corps.
-  final List<RequestOptions> requests = [];
-
-  RequestOptions get lastRequest => requests.last;
-
-  Map<String, dynamic> get lastBody =>
-      (lastRequest.data as Map).cast<String, dynamic>();
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    return reply(options);
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
-
-/// Réponse JSON du serveur, enveloppe `data` comprise (elle est déballée par
-/// l'intercepteur d'`ApiClient`, comme en production).
-ResponseBody jsonReply(int status, Object? data) => ResponseBody.fromString(
-      jsonEncode({'data': data}),
-      status,
-      headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-
-/// Réponse d'erreur du serveur : `{ code, message }`, **hors** enveloppe.
-ResponseBody errorReply(int status, String code, [String? message]) =>
-    ResponseBody.fromString(
-      jsonEncode({'code': code, if (message != null) 'message': message}),
-      status,
-      headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-
-/// Charge utile d'un `User` telle que la sérialise le serveur.
-const Map<String, dynamic> userPayload = {
-  'id': 'b6f0a1c2-0000-4000-8000-000000000001',
-  'phone': '+22890123456',
-  'email': null,
-  'title': 'brother',
-  'firstName': 'Jean',
-  'lastName': 'Kossi',
-  'branchId': 3,
-  'status': 'affiliated',
-  'avatarUrl': null,
-  'profileComplete': true,
-};
+import '../helpers/fake_api.dart';
 
 void main() {
   late FakeAdapter adapter;
@@ -330,6 +262,161 @@ void main() {
       // La purge du token et le retour à /auth appartiennent à
       // l'intercepteur global : ici, pas d'AuthException.
       expect(await repository.currentUser(), isNull);
+    });
+  });
+
+  // ── Cache local du User ──────────────────────────────────────────────────
+  //
+  // Tout ce groupe vérifie la même promesse : le prochain démarrage doit
+  // pouvoir router **sans réseau**, et ne jamais router avec les données de
+  // quelqu'un qui est parti.
+  group('cache local', () {
+    test('verifyCode remplit le cache, lisible sans le moindre appel',
+        () async {
+      serve(
+        (_) => jsonReply(200, {
+          'token': 'oat_1.valide',
+          'user': userPayload,
+          'isNewUser': false,
+        }),
+      );
+      await repository.verifyCode(identifier: '+22890123456', code: '123456');
+      final callsAfterLogin = adapter.requests.length;
+
+      final cached = await repository.cachedUser();
+
+      expect(cached?.id, userPayload['id']);
+      expect(cached?.firstName, 'Jean');
+      // Le point entier de ce cache : aucune requête supplémentaire.
+      expect(adapter.requests.length, callsAfterLogin);
+    });
+
+    test('le cache ne contient jamais le token', () async {
+      serve(
+        (_) => jsonReply(200, {
+          'token': 'oat_1.ce-token-ne-doit-pas-fuiter',
+          'user': userPayload,
+          'isNewUser': false,
+        }),
+      );
+      await repository.verifyCode(identifier: '+22890123456', code: '123456');
+
+      // Le coffre porte deux entrées distinctes : le token, et le User. Aucune
+      // valeur du cache ne doit contenir la chaîne du token — sinon il se
+      // retrouverait dupliqué là où on ne le purge pas forcément.
+      const storage = FlutterSecureStorage();
+      final all = await storage.readAll();
+      final cacheEntries = Map.of(all)..remove('auth_token');
+      expect(cacheEntries, isNotEmpty);
+      for (final value in cacheEntries.values) {
+        expect(value, isNot(contains('oat_1.ce-token-ne-doit-pas-fuiter')));
+      }
+    });
+
+    test('une revalidation réussie rafraîchit le cache', () async {
+      await api.saveToken('oat_1.valide');
+      serve((_) => jsonReply(200, {...userPayload, 'firstName': 'Ama'}));
+
+      await repository.currentUser();
+
+      expect((await repository.cachedUser())?.firstName, 'Ama');
+    });
+
+    test('serveur injoignable : le cache survit et la session reste ouverte',
+        () async {
+      serve(
+        (_) => jsonReply(200, {
+          'token': 'oat_1.valide',
+          'user': userPayload,
+          'isNewUser': false,
+        }),
+      );
+      await repository.verifyCode(identifier: '+22890123456', code: '123456');
+
+      // Mode avion.
+      serve((options) => throw DioException.connectionError(
+            requestOptions: options,
+            reason: 'réseau coupé',
+          ));
+
+      await expectLater(
+        repository.currentUser(),
+        throwsA(isA<AuthException>()
+            .having((e) => e.code, 'code', AuthErrorCode.network)),
+      );
+      // C'est ce qui permet d'entrer dans l'app hors ligne.
+      expect((await repository.cachedUser())?.id, userPayload['id']);
+    });
+
+    test('un 401 efface le cache', () async {
+      serve(
+        (_) => jsonReply(200, {
+          'token': 'oat_1.perime',
+          'user': userPayload,
+          'isNewUser': false,
+        }),
+      );
+      await repository.verifyCode(identifier: '+22890123456', code: '123456');
+
+      serve((_) => errorReply(401, 'E_UNAUTHORIZED_ACCESS'));
+      expect(await repository.currentUser(), isNull);
+
+      expect(await repository.cachedUser(), isNull);
+      expect(await api.readToken(), isNull);
+    });
+
+    test('signOut efface le token ET le cache', () async {
+      serve(
+        (_) => jsonReply(200, {
+          'token': 'oat_1.valide',
+          'user': userPayload,
+          'isNewUser': false,
+        }),
+      );
+      await repository.verifyCode(identifier: '+22890123456', code: '123456');
+
+      await repository.signOut();
+
+      expect(await api.readToken(), isNull);
+      // Sans ça, le démarrage suivant ouvrirait l'accueil au nom de celui qui
+      // vient de se déconnecter.
+      expect(await repository.cachedUser(), isNull);
+    });
+
+    test('forgetSession oublie tout sans appeler le serveur', () async {
+      serve(
+        (_) => jsonReply(200, {
+          'token': 'oat_1.valide',
+          'user': userPayload,
+          'isNewUser': false,
+        }),
+      );
+      await repository.verifyCode(identifier: '+22890123456', code: '123456');
+      final callsBefore = adapter.requests.length;
+
+      await repository.forgetSession();
+
+      expect(adapter.requests.length, callsBefore);
+      expect(await api.readToken(), isNull);
+      expect(await repository.cachedUser(), isNull);
+    });
+
+    test('un cache sans token ne fait entrer personne', () async {
+      serve(
+        (_) => jsonReply(200, {
+          'token': 'oat_1.valide',
+          'user': userPayload,
+          'isNewUser': false,
+        }),
+      );
+      await repository.verifyCode(identifier: '+22890123456', code: '123456');
+
+      // Token perdu (restauration de sauvegarde, purge du Keychain) : le cache
+      // décrit alors une session qui n'existe plus.
+      await api.deleteToken();
+
+      expect(await repository.currentUser(), isNull);
+      expect(await repository.cachedUser(), isNull);
     });
   });
 }
