@@ -3,26 +3,82 @@ library;
 
 import 'package:flutter/foundation.dart';
 
-class ChurchEvent {
-  const ChurchEvent({
-    required this.title,
-    required this.weekday,
-    required this.day,
-    required this.month,
-    required this.time,
-    required this.place,
-    this.tag,
+/// Catégorie d'un évènement d'agenda (« Culte », « Prière »…).
+///
+/// [label] est **multilingue** : le back sert toutes les langues disponibles,
+/// l'app choisit la sienne via `pick` (voir `utils/i18n_text.dart`). [tone]
+/// est une **clé d'habillage** (ex. `culte`, `info`), pas une couleur : la
+/// palette reste côté thème.
+@immutable
+class EventCategory {
+  const EventCategory({
+    required this.id,
+    required this.label,
+    required this.tone,
   });
 
-  final String title;
+  /// SERIAL côté serveur.
+  final int id;
 
-  /// Nom du jour de la semaine (ex. « Dimanche »).
-  final String weekday;
-  final String day;
-  final String month;
-  final String time;
-  final String place;
-  final String? tag;
+  /// Libellé par code de langue : `{fr: 'Culte', en: 'Service'}`.
+  final Map<String, String> label;
+
+  /// Clé d'habillage résolue par l'UI (repli si inconnue).
+  final String tone;
+}
+
+/// Évènement de l'agenda — **un rassemblement physique, à un lieu**.
+///
+/// Aucun champ n'est pré-formaté : le back sert un **instant** (UTC) et le
+/// fuseau de la branche, jamais « Dimanche 26 Mai ». Tout le formatage vit
+/// dans la vue (voir `utils/event_time.dart`).
+///
+/// L'heure se lit **dans le fuseau de la branche** et n'est jamais convertie
+/// dans celui du lecteur : « prière de zone lundi 17h30 » veut dire « sois là
+/// à 17h30 », ce qui n'est vrai que sur place. Un membre en transit serait
+/// induit en erreur par une conversion ; le suffixe de décalage lève
+/// l'ambiguïté sans déplacer l'heure.
+@immutable
+class ChurchEvent {
+  /// Constructeur déclaré `const` (tous les champs sont finaux) mais **non
+  /// invocable** en `const` : [DateTime] n'est pas constructible en constante.
+  const ChurchEvent({
+    required this.id,
+    required this.startsAt,
+    required this.timezone,
+    required this.title,
+    this.endsAt,
+    this.branchId,
+    this.body,
+    this.place,
+    this.category,
+  });
+
+  /// Identifiant stable (clés de liste, navigation, cache).
+  final String id;
+
+  /// Début de l'évènement, **en UTC**.
+  final DateTime startsAt;
+
+  /// Fin de l'évènement, `null` = durée non annoncée.
+  final DateTime? endsAt;
+
+  /// Fuseau **IANA de la branche** (ex. `Africa/Lome`), pas celui du lecteur.
+  final String timezone;
+
+  /// Branche organisatrice ; `null` = portée **nationale**.
+  final int? branchId;
+
+  /// Intitulé par code de langue : `{fr: '…', en?: '…', ee?: '…'}`.
+  final Map<String, String> title;
+
+  /// Description longue, multilingue elle aussi.
+  final Map<String, String>? body;
+
+  /// Lieu du rassemblement, tel qu'écrit par l'organisateur.
+  final String? place;
+
+  final EventCategory? category;
 }
 
 /// Forme dominante d'un statut.

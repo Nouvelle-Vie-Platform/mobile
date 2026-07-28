@@ -11,6 +11,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../utils/event_time.dart';
+import '../utils/i18n_text.dart';
 import '../widgets/app_card.dart';
 import '../widgets/cards/teaching_cover.dart';
 import '../widgets/profile_completion_banner.dart';
@@ -376,8 +378,10 @@ class _UpcomingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    // « 15:00 - 17:00 » → « 15:00 ».
-    final startTime = event.time.split('-').first.trim();
+    final locale = context.l10n.localeName;
+    // L'étiquette est étroite : seule l'heure de début y tient. Le suffixe de
+    // fuseau, lui, doit rester s'il est là — c'est ce qui la désambiguïse.
+    final startTime = formatEventTime(event, locale, startOnly: true);
 
     final boxColor = current ? palette.primary : palette.surfaceAlt;
     final fg = current ? Colors.white : palette.textPrimary;
@@ -400,9 +404,10 @@ class _UpcomingCard extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(event.month,
+                  Text(formatEventMonth(event, locale),
                       style: AppTypography.caption.copyWith(color: fgMuted)),
-                  Text(event.day, style: AppTypography.h2.copyWith(color: fg)),
+                  Text(formatEventDay(event, locale),
+                      style: AppTypography.h2.copyWith(color: fg)),
                   const SizedBox(height: AppSpacing.xs),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -435,7 +440,7 @@ class _UpcomingCard extends StatelessWidget {
                         color: palette.primary.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
-                      child: Text(event.weekday,
+                      child: Text(formatEventWeekday(event, locale),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.caption.copyWith(
@@ -443,7 +448,7 @@ class _UpcomingCard extends StatelessWidget {
                               fontWeight: FontWeight.w700)),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    Text(event.title,
+                    Text(pick(event.title, locale),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.bodyStrong
@@ -455,7 +460,7 @@ class _UpcomingCard extends StatelessWidget {
                             size: 13, color: palette.textSecondary),
                         const SizedBox(width: 3),
                         Expanded(
-                          child: Text(event.place,
+                          child: Text(event.place ?? '',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: AppTypography.caption

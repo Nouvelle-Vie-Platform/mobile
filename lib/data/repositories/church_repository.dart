@@ -1,14 +1,18 @@
 import '../../models/models.dart';
 import '../sample_data.dart';
 
-/// Contrat d'accès aux données de l'église.
+/// Contrat d'accès aux données **encore fictives** de l'église.
 ///
-/// Les écrans ne dépendent que de cette abstraction : pour brancher un vrai
-/// backend (Firebase, API REST…), il suffira de fournir une autre
-/// implémentation de [ChurchRepository] via le provider, sans toucher l'UI.
+/// Volontairement **synchrone** : ce qu'il sert n'existe qu'en mémoire. Les
+/// domaines branchés sur le backend en **sortent** un par un, chacun dans son
+/// repository dédié et asynchrone (`AuthRepository`, `BranchRepository`, et
+/// bientôt `CalendarRepository`). Passer toute cette interface en `Future`
+/// pour le premier domaine servi par HTTP casserait d'un coup les cinq autres
+/// et tous leurs écrans, pour aucun gain.
+///
+/// L'agenda est déjà parti : [ChurchEvent] ne se lit plus ici (cf. #16).
 abstract interface class ChurchRepository {
   List<Announcement> announcements();
-  List<ChurchEvent> events();
   List<Teaching> teachings();
   List<CommunityGroup> groups();
   List<PrayerRequest> prayers();
@@ -27,9 +31,6 @@ class InMemoryChurchRepository implements ChurchRepository {
 
   @override
   List<Announcement> announcements() => SampleData.announcements;
-
-  @override
-  List<ChurchEvent> events() => SampleData.events;
 
   @override
   List<Teaching> teachings() => SampleData.teachings;

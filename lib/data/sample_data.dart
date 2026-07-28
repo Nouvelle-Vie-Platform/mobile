@@ -6,6 +6,28 @@ DateTime _ago(Duration since) => DateTime.now().toUtc().subtract(since);
 /// Instant futur, exprimé en UTC comme le ferait le backend.
 DateTime _inFuture(Duration until) => DateTime.now().toUtc().add(until);
 
+/// Fuseau de la branche de Lomé — UTC+0 toute l'année, sans heure d'été.
+const String _lome = 'Africa/Lome';
+
+/// Prochaine occurrence d'un jour de semaine à [hour], **en UTC**.
+///
+/// Lomé étant à UTC+0, l'heure murale togolaise *est* l'heure UTC : un
+/// évènement à 15 h au temple se sert bien `15:00Z`.
+DateTime _nextWeekdayAt(int weekday, int hour) {
+  final now = DateTime.now().toUtc();
+  final today = DateTime.utc(now.year, now.month, now.day, hour);
+  final candidate = today.add(Duration(days: (weekday - today.weekday) % 7));
+  return candidate.isAfter(now)
+      ? candidate
+      : candidate.add(const Duration(days: 7));
+}
+
+/// Prochain culte dominical (15 h à Lomé).
+final DateTime _culte = _nextWeekdayAt(DateTime.sunday, 15);
+
+/// Prochaine veillée de prière (vendredi 20 h à Lomé).
+final DateTime _veillee = _nextWeekdayAt(DateTime.friday, 20);
+
 /// Forme d'onde fictive « précalculée par le back » (valeurs 0–100).
 const List<int> _waveformExhortation = [
   12, 20, 34, 48, 61, 55, 40, 33, 47, 66, //
@@ -158,24 +180,42 @@ abstract final class SampleData {
     ),
   ];
 
-  static const List<ChurchEvent> events = [
+  /// Agenda fictif — dates **relatives à maintenant** (une maquette figée en
+  /// « Mai 2024 » afficherait un agenda périmé). `static final` : [DateTime]
+  /// n'est pas constructible en constante.
+  ///
+  /// La fin se déduit du début (`+ durée`) et n'est **jamais** recalculée à
+  /// part : un dimanche à 16 h, « prochain dimanche 15 h » bascule à la semaine
+  /// suivante alors que « prochain dimanche 17 h » est encore aujourd'hui — la
+  /// fin précéderait le début.
+  static final List<ChurchEvent> events = [
     ChurchEvent(
-      title: 'Culte de Gloire',
-      weekday: 'Dimanche',
-      day: '26',
-      month: 'Mai',
-      time: '15:00 - 17:00',
+      id: 'evt-culte-gloire',
+      startsAt: _culte,
+      endsAt: _culte.add(const Duration(hours: 2)),
+      timezone: _lome,
+      branchId: 1,
+      title: const {'fr': 'Culte de Gloire', 'en': 'Glory Service'},
       place: 'Temple Central',
-      tag: 'Culte',
+      category: const EventCategory(
+        id: 1,
+        label: {'fr': 'Culte', 'en': 'Service'},
+        tone: 'culte',
+      ),
     ),
     ChurchEvent(
-      title: 'Veillée de Prière',
-      weekday: 'Vendredi',
-      day: '31',
-      month: 'Mai',
-      time: '20:00 - 00:00',
+      id: 'evt-veillee-priere',
+      startsAt: _veillee,
+      endsAt: _veillee.add(const Duration(hours: 4)),
+      timezone: _lome,
+      branchId: 1,
+      title: const {'fr': 'Veillée de Prière', 'en': 'Prayer Vigil'},
       place: 'Temple Central',
-      tag: 'Prière',
+      category: const EventCategory(
+        id: 2,
+        label: {'fr': 'Prière', 'en': 'Prayer'},
+        tone: 'info',
+      ),
     ),
   ];
 

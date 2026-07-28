@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/church_repository.dart';
+import '../data/sample_data.dart';
 import '../models/models.dart';
 
 /// Fournit l'implémentation courante du [ChurchRepository].
@@ -36,9 +37,13 @@ final announcementsProvider = Provider<List<Announcement>>((ref) {
 });
 
 /// Évènements de l'agenda.
-final eventsProvider = Provider<List<ChurchEvent>>(
-  (ref) => ref.watch(churchRepositoryProvider).events(),
-);
+///
+/// **Hors [ChurchRepository]** : l'agenda est le premier domaine servi par le
+/// backend, et un calendrier HTTP est asynchrone. Il aura son
+/// `CalendarRepository` dédié (#16) ; en attendant, ce provider s'adosse
+/// directement aux [SampleData] plutôt que de retenir l'agenda dans un contrat
+/// synchrone qu'il quitte.
+final eventsProvider = Provider<List<ChurchEvent>>((ref) => SampleData.events);
 
 /// Enseignements / médiathèque.
 final teachingsProvider = Provider<List<Teaching>>(
