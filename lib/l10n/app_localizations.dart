@@ -1264,6 +1264,24 @@ abstract class AppLocalizations {
   /// **'Les événements plus lointains ne sont pas encore annoncés.'**
   String get agendaHorizonMessage;
 
+  /// Agenda : infobulle et libellé d'accessibilité de la flèche de navigation vers le mois précédent
+  ///
+  /// In fr, this message translates to:
+  /// **'Mois précédent'**
+  String get agendaPreviousMonth;
+
+  /// Agenda : infobulle et libellé d'accessibilité de la flèche vers le mois suivant. La flèche est grisée à la borne d'horizon
+  ///
+  /// In fr, this message translates to:
+  /// **'Mois suivant'**
+  String get agendaNextMonth;
+
+  /// Agenda : libellé d'accessibilité d'une case de la grille. Les pastilles distinguent visuellement un événement de plusieurs ; ce libellé porte la même information au lecteur d'écran
+  ///
+  /// In fr, this message translates to:
+  /// **'{day} — {count, plural, =0{aucun événement} one{{count} événement} other{{count} événements}}'**
+  String agendaDaySummary(int day, int count);
+
   /// Détail d'un évènement : titre de la BrandAppBar. Générique — l'intitulé de l'évènement est déjà dans le corps de l'écran
   ///
   /// In fr, this message translates to:
