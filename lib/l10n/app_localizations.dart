@@ -1263,6 +1263,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Les événements plus lointains ne sont pas encore annoncés.'**
   String get agendaHorizonMessage;
+
+  /// Détail d'un évènement : titre de la BrandAppBar. Générique — l'intitulé de l'évènement est déjà dans le corps de l'écran
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement'**
+  String get eventDetailTitle;
+
+  /// Détail d'un évènement : en-tête de la section description. La section entière disparaît quand `body` est absent (une prière hebdomadaire n'a rien à ajouter à son titre)
+  ///
+  /// In fr, this message translates to:
+  /// **'À propos'**
+  String get eventDetailAbout;
 }
 
 class _AppLocalizationsDelegate

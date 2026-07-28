@@ -640,4 +640,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get agendaHorizonMessage =>
       'Events further ahead haven\'t been announced yet.';
+
+  @override
+  String get eventDetailTitle => 'Event';
+
+  @override
+  String get eventDetailAbout => 'About';
 }

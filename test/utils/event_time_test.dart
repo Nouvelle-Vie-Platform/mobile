@@ -136,5 +136,15 @@ void main() {
       expect(formatEventDay(event, 'fr'), '27');
       expect(formatEventWeekday(event, 'fr'), 'Lundi');
     });
+
+    test('date complète capitalisée, avec l\'année', () {
+      expect(formatEventFullDate(_event(), 'fr'), 'Dimanche 26 juillet 2026');
+    });
+
+    test('l\'ordre des composants est celui de la locale', () {
+      // L'anglais ne dit pas « Sunday 26 July 2026 » : c'est `intl` qui range
+      // les composants, jamais une concaténation maison.
+      expect(formatEventFullDate(_event(), 'en'), 'Sunday, July 26, 2026');
+    });
   });
 }

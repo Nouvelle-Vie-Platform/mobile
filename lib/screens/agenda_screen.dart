@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../widgets/brand_app_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../l10n/l10n_extension.dart';
+import '../router/app_router.dart';
 import '../state/repository_providers.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -43,7 +45,10 @@ class AgendaScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           for (final e in events) ...[
-            EventCard(event: e),
+            EventCard(
+              event: e,
+              onTap: () => context.pushNamed(AppRoute.eventDetail, extra: e),
+            ),
             const SizedBox(height: AppSpacing.md),
           ],
           const SizedBox(height: AppSpacing.sm),

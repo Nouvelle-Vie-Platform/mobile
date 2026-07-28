@@ -235,5 +235,8 @@
   "agendaEmptyMonthTitle": "No events this month",
   "agendaEmptyMonthMessage": "Nothing is scheduled for this period.",
   "agendaHorizonTitle": "End of the calendar",
-  "agendaHorizonMessage": "Events further ahead haven't been announced yet."
+  "agendaHorizonMessage": "Events further ahead haven't been announced yet.",
+
+  "eventDetailTitle": "Event",
+  "eventDetailAbout": "About"
 }

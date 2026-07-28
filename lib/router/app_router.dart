@@ -9,6 +9,7 @@ import '../screens/auth/identifier_screen.dart';
 import '../screens/auth/profile_form_screen.dart';
 import '../screens/auth/welcome_screen.dart';
 import '../screens/donations_screen.dart';
+import '../screens/event_detail_screen.dart';
 import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
 import '../screens/live_screen.dart';
@@ -36,6 +37,7 @@ abstract final class AppRoute {
   static const teachingDetail = 'teaching';
   static const groupChat = 'group-chat';
   static const agenda = 'agenda';
+  static const eventDetail = 'event';
   static const prayers = 'prayers';
   static const newRequest = 'new-request';
   static const donations = 'donations';
@@ -160,6 +162,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.agenda,
         path: '/agenda',
         builder: (_, __) => const AppBackground(child: AgendaScreen()),
+      ),
+      GoRoute(
+        name: AppRoute.eventDetail,
+        path: '/event',
+        builder: (_, state) {
+          // L'évènement ciblé est passé via `extra` ; repli sur le premier
+          // évènement disponible en cas d'accès direct (lien, restauration
+          // d'état) — la route ne doit jamais planter faute d'argument.
+          final event =
+              state.extra as ChurchEvent? ?? ref.read(eventsProvider).first;
+          return AppBackground(child: EventDetailScreen(event: event));
+        },
       ),
       GoRoute(
         name: AppRoute.prayers,
