@@ -1096,6 +1096,18 @@ abstract class AppLocalizations {
   /// **'Je suis nouveau'**
   String get branchImNew;
 
+  /// Le référentiel /sync/branches ne renvoie aucune branche
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune branche à sélectionner pour le moment.'**
+  String get branchesEmpty;
+
+  /// Échec du chargement de /sync/branches : l'écran reste utilisable
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste des branches indisponible. Tu pourras la choisir plus tard.'**
+  String get branchesUnavailable;
+
   /// Bouton pour sauter l'étape de complétion du profil
   ///
   /// In fr, this message translates to:

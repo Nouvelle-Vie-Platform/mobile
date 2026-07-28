@@ -28,7 +28,10 @@ class ProfileScreen extends ConsumerWidget {
     final dark = isDarkModeActive(mode, context);
 
     final user = ref.watch(authProvider).user;
-    final branches = ref.watch(branchesProvider);
+    // Le référentiel sert seulement à mettre un nom sur `user.branchId` : tant
+    // qu'il n'est pas là (chargement, hors ligne), on affiche un libellé
+    // neutre plutôt que de bloquer l'onglet sur un état de chargement.
+    final branches = ref.watch(branchesProvider).value ?? const <Branch>[];
 
     // Nom affiché : civilité localisée + prénom (+ nom), repli sur le rôle
     // générique. Le libellé de civilité vient de l10n, jamais du modèle.
@@ -41,6 +44,10 @@ class ProfileScreen extends ConsumerWidget {
     if (user != null &&
         user.status != UserStatus.newcomer &&
         user.branchId != null) {
+      // Rattaché, mais le nom de la branche n'est pas (encore) connu : repli
+      // sur un libellé générique. Surtout pas `statusNewLabel`, qui dirait le
+      // contraire de la vérité pendant le chargement du référentiel.
+      branchLabel = l.profileMyBranch;
       for (final b in branches) {
         if (b.id == user.branchId) {
           branchLabel = b.name;

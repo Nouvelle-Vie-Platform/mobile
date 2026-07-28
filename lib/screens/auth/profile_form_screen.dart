@@ -12,6 +12,7 @@ import '../../theme/app_typography.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_text_field.dart';
+import '../../widgets/branch_list_status.dart';
 import '../../widgets/brand_app_bar.dart';
 import '../../widgets/selectable_option.dart';
 
@@ -126,7 +127,11 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final palette = context.palette;
-    final branches = ref.watch(branchesProvider);
+    // Référentiel serveur : il peut être en cours de chargement, vide, ou
+    // avoir échoué. Aucun de ces cas ne doit empêcher d'enregistrer un profil —
+    // d'où la liste repliée sur « vide » et le message d'état sous la liste.
+    final branchesAsync = ref.watch(branchesProvider);
+    final branches = branchesAsync.value ?? const <Branch>[];
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -205,6 +210,7 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                         selected: !_isNewSelected && _branchId == branch.id,
                         onTap: () => _selectBranch(branch.id),
                       ),
+                    BranchListStatus(branchesAsync),
                     Divider(color: palette.divider, height: 1),
                     RadioOptionTile(
                       label: l.branchImNew,

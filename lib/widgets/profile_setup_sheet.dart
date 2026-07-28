@@ -9,6 +9,7 @@ import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import 'app_button.dart';
+import 'branch_list_status.dart';
 
 /// Demande d'ouverture de la feuille de mise en route du profil.
 ///
@@ -226,7 +227,10 @@ class _ProfileSetupSheetState extends ConsumerState<_ProfileSetupSheet> {
   /// Étape 2 : branche, ou « Je suis nouveau ».
   Widget _buildBranchStep(BuildContext context, AppPalette palette) {
     final l = context.l10n;
-    final branches = ref.watch(branchesProvider);
+    // Référentiel serveur : chargement, liste vide ou échec réseau laissent
+    // l'étape utilisable — « Je suis nouveau » ne dépend d'aucune branche.
+    final branchesAsync = ref.watch(branchesProvider);
+    final branches = branchesAsync.value ?? const <Branch>[];
     return Column(
       key: const ValueKey('branch'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,6 +254,7 @@ class _ProfileSetupSheetState extends ConsumerState<_ProfileSetupSheet> {
           ),
           const SizedBox(height: AppSpacing.sm),
         ],
+        BranchListStatus(branchesAsync),
         _BranchTile(
           label: l.branchImNew,
           selected: _isNewMember,

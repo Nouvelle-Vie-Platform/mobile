@@ -553,6 +553,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branchImNew => 'I\'m new';
 
   @override
+  String get branchesEmpty => 'No branch to select yet.';
+
+  @override
+  String get branchesUnavailable =>
+      'Branch list unavailable. You can pick one later.';
+
+  @override
   String get actionLater => 'Later';
 
   @override

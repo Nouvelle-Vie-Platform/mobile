@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
+import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
@@ -16,9 +17,10 @@ import 'package:maison_du_miracle/theme/app_theme.dart';
 /// repository) pour vérifier le câblage des données. Ils sont appliqués
 /// **après** les repli ci-dessous, et peuvent donc les remplacer.
 ///
-/// Le repository d'auth est forcé sur son implémentation **en mémoire** : la
-/// version HTTP irait lire le coffre sécurisé puis `GET /auth/me` dès le
-/// montage, et `flutter test` répond **400 à tout accès réseau**.
+/// Les repositories d'auth et de branches sont forcés sur leurs
+/// implémentations **en mémoire** : les versions HTTP ouvriraient une socket
+/// dès le montage (`GET /auth/me`, `GET /sync/branches`) et `flutter test`
+/// répond **400 à tout accès réseau**.
 Future<void> pumpScreen(
   WidgetTester tester,
   Widget screen, {
@@ -28,6 +30,8 @@ Future<void> pumpScreen(
     ProviderScope(
       overrides: [
         authRepositoryProvider.overrideWithValue(InMemoryAuthRepository()),
+        branchRepositoryProvider
+            .overrideWithValue(const InMemoryBranchRepository()),
         ...overrides,
       ],
       child: MaterialApp(

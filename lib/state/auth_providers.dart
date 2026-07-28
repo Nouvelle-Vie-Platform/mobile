@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
 import '../data/repositories/auth_repository.dart';
+import '../data/repositories/branch_repository.dart';
 import '../data/repositories/http_auth_repository.dart';
-import '../data/sample_data.dart';
 import '../models/models.dart';
 
 /// Fournit l'implémentation courante de [AuthRepository].
@@ -21,9 +21,22 @@ final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => AppEnv.useBackend ? HttpAuthRepository() : InMemoryAuthRepository(),
 );
 
-/// Branches locales sélectionnables (liste statique en phase mock).
-final branchesProvider = Provider<List<Branch>>(
-  (ref) => SampleData.branches,
+/// Fournit l'implémentation courante de [BranchRepository] — mêmes règles que
+/// [authRepositoryProvider] : HTTP avec backend, mock sinon.
+final branchRepositoryProvider = Provider<BranchRepository>(
+  (ref) => AppEnv.useBackend
+      ? HttpBranchRepository()
+      : const InMemoryBranchRepository(),
+);
+
+/// Référentiel des branches, **servi par le serveur** (`GET /sync/branches`).
+///
+/// Asynchrone à dessein : l'appel est authentifié et peut échouer. Les écrans
+/// consomment l'[AsyncValue] et **dégradent** — chargement, erreur ou liste
+/// vide laissent le formulaire de profil utilisable, l'option « Je suis
+/// nouveau » ne dépendant d'aucun référentiel.
+final branchesProvider = FutureProvider<List<Branch>>(
+  (ref) => ref.watch(branchRepositoryProvider).branches(),
 );
 
 /// État global d'authentification.

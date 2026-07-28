@@ -554,6 +554,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get branchImNew => 'Je suis nouveau';
 
   @override
+  String get branchesEmpty => 'Aucune branche à sélectionner pour le moment.';
+
+  @override
+  String get branchesUnavailable =>
+      'Liste des branches indisponible. Tu pourras la choisir plus tard.';
+
+  @override
   String get actionLater => 'Plus tard';
 
   @override
