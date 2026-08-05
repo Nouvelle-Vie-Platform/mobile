@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../data/repositories/calendar_repository.dart';
 import '../l10n/l10n_extension.dart';
+import '../models/mediatheque_view.dart';
 import '../models/models.dart';
 import '../router/app_router.dart';
 import '../state/auth_providers.dart';
 import '../state/calendar_providers.dart';
-import '../state/repository_providers.dart';
+import '../state/mediatheque_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -24,23 +25,25 @@ import '../widgets/profile_completion_banner.dart';
 import '../widgets/profile_setup_sheet.dart';
 import '../widgets/section_header.dart';
 
-/// Onglet « Accueil » : en-tête ondulé, cultes à venir, puis les rubriques
-/// d'enseignements — derniers enseignements, messages du dimanche, études
-/// bibliques et moments de prière.
+/// Onglet « Accueil » : en-tête ondulé, cultes à venir, puis les derniers
+/// enseignements.
 ///
-/// Les rubriques sont des enseignements filtrés sur leur [Teaching.rubric] :
-/// carrousel de cartes partout, sauf « Messages du dimanche » qui met le
-/// dernier culte en avant sur une grande carte. Une rubrique sans contenu ne
-/// s'affiche pas.
+/// **Les trois rubriques en dur ont disparu** (#30). Elles filtraient sur un
+/// enum à trois valeurs (`dimanche`, `etude`, `priere`) alors que la rubrique
+/// est, côté serveur, une table éditable depuis le portail : la première
+/// rubrique créée par un administrateur n'avait aucune valeur d'enum où aller,
+/// et rien de ce qui est figé à l'écriture ne peut suivre un référentiel
+/// administrable.
+///
+/// Ce qui les remplace est déjà là — `homeSectionsProvider` rend les rubriques
+/// du serveur, dans son ordre, avec leur `layout` et leur `visibleOnHome`. Les
+/// composer est le travail du **ticket #32** ; jusque-là l'accueil ne montre
+/// que « Derniers enseignements », et la médiathèque reste le chemin complet.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sundayMessages = ref.watch(sundayTeachingsProvider);
-    final bibleStudies = ref.watch(bibleStudiesProvider);
-    final prayerTimes = ref.watch(prayerTeachingsProvider);
-    final teachings = ref.watch(latestTeachingsProvider);
     // Affiche la bannière « compléter le profil » seulement si pertinente
     // (utilisateur présent, profil incomplet, bannière non fermée).
     final user = ref.watch(authProvider).user;
@@ -98,39 +101,7 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             const _UpcomingSection(),
-            _TeachingSection(
-              title: context.l10n.sectionLatestTeachings,
-              icon: Icons.menu_book_outlined,
-              teachings: teachings,
-              // Rubrique fourre-tout : pas de « Voir tout » dédié.
-              showSeeAll: false,
-            ),
-            // Messages du dimanche : seule rubrique mise en avant en grand —
-            // une carte par culte, qui défilent horizontalement.
-            if (sundayMessages.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.xl),
-              Padding(
-                padding: AppSpacing.screenPadding,
-                child: SectionHeader(
-                  title: context.l10n.sectionSundayMessage,
-                  icon: Icons.record_voice_over_outlined,
-                  actionLabel: context.l10n.actionSeeAll,
-                  onAction: () => context.pushNamed(AppRoute.media),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _SundayMessagesCarousel(messages: sundayMessages),
-            ],
-            _TeachingSection(
-              title: context.l10n.sectionBibleStudy,
-              icon: Icons.auto_stories_outlined,
-              teachings: bibleStudies,
-            ),
-            _TeachingSection(
-              title: context.l10n.sectionPrayerTimes,
-              icon: Icons.volunteer_activism_outlined,
-              teachings: prayerTimes,
-            ),
+            const _LatestTeachingsSection(),
           ],
         ),
         // En-tête opaque posé par-dessus : le contenu disparaît derrière lui.
@@ -641,237 +612,57 @@ class _UpcomingCard extends StatelessWidget {
   }
 }
 
-/// Carrousel horizontal des messages du dimanche (cartes grand format).
-class _SundayMessagesCarousel extends StatelessWidget {
-  const _SundayMessagesCarousel({required this.messages});
-  final List<Teaching> messages;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 188,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: AppSpacing.screenPadding,
-        itemCount: messages.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (context, i) => SizedBox(
-          width: 320,
-          child: _SundayMessageCard(
-            teaching: messages[i],
-            onTap: () => context.pushNamed(
-              AppRoute.teachingDetail,
-              pathParameters: {'id': messages[i].id},
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Carte pleine largeur d'un message du dimanche : visuel du culte en
-/// fond, voile dégradé pour la lisibilité, puis prédicateur, titre, référence
-/// biblique, durée et bouton d'écoute.
-class _SundayMessageCard extends StatelessWidget {
-  const _SundayMessageCard({required this.teaching, this.onTap});
-
-  final Teaching teaching;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final verse = teaching.verse;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 188,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          boxShadow: AppShadows.elevation2,
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            TeachingCover(teaching: teaching, radius: 0),
-            // Voile du bas : le texte reste lisible quelle que soit l'image.
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.82),
-                    Colors.black.withValues(alpha: 0.35),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    teaching.author.toUpperCase(),
-                    style: AppTypography.caption.copyWith(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    teaching.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.h3.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      // Référence + durée regroupées : sans ce `Expanded`, la
-                      // pastille et un `Spacer` se partageraient l'espace libre
-                      // à parts égales et la référence serait tronquée.
-                      Expanded(
-                        child: Row(
-                          children: [
-                            if (verse != null) ...[
-                              Flexible(child: _GlassPill(label: verse)),
-                              const SizedBox(width: AppSpacing.sm),
-                            ],
-                            Icon(Icons.schedule,
-                                size: 13,
-                                color: Colors.white.withValues(alpha: 0.8)),
-                            const SizedBox(width: 4),
-                            Text(
-                              teaching.duration,
-                              style: AppTypography.caption.copyWith(
-                                color: Colors.white.withValues(alpha: 0.8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      _ListenPill(label: context.l10n.actionListen),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Pastille translucide posée sur un visuel (référence biblique).
-class _GlassPill extends StatelessWidget {
-  const _GlassPill({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: AppTypography.caption.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-/// Pastille blanche « Écouter » posée sur le visuel du message du dimanche.
-class _ListenPill extends StatelessWidget {
-  const _ListenPill({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.play_arrow_rounded,
-              size: 16, color: AppColors.primary),
-          const SizedBox(width: 3),
-          Text(
-            label,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Rubrique d'enseignements de l'accueil : en-tête + carrousel de cartes.
+/// Section « Derniers enseignements » de l'accueil, branchée sur
+/// [latestTeachingsProvider].
 ///
-/// Toutes les rubriques (dimanche, étude, prière, derniers) partagent cette
-/// forme ; seul le jeu d'enseignements change. Vide, la rubrique disparaît
-/// entièrement (pas d'en-tête orphelin).
-class _TeachingSection extends StatelessWidget {
-  const _TeachingSection({
-    required this.title,
-    required this.icon,
-    required this.teachings,
-    this.showSeeAll = true,
-  });
-
-  final String title;
-  final IconData icon;
-  final List<Teaching> teachings;
-
-  /// Affiche le lien « Voir tout » (vers la médiathèque).
-  final bool showSeeAll;
+/// Les trois états sont **distincts**, et pour la même raison que la section
+/// « À venir » juste au-dessus : une section silencieusement vide ferait croire
+/// que l'église n'a rien publié, alors qu'un magasin qui refuse de se lire est
+/// une panne. Le vide, lui, est la réponse normale d'un premier lancement — la
+/// synchronisation n'a pas encore rempli le magasin — et se dit sans bouton :
+/// il n'y a rien à réessayer, seulement à attendre.
+class _LatestTeachingsSection extends ConsumerWidget {
+  const _LatestTeachingsSection();
 
   @override
-  Widget build(BuildContext context) {
-    if (teachings.isEmpty) return const SizedBox.shrink();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     return Column(
       children: [
         const SizedBox(height: AppSpacing.xl),
         Padding(
           padding: AppSpacing.screenPadding,
           child: SectionHeader(
-            title: title,
-            icon: icon,
-            actionLabel: showSeeAll ? context.l10n.actionSeeAll : null,
-            onAction:
-                showSeeAll ? () => context.pushNamed(AppRoute.media) : null,
+            title: l10n.sectionLatestTeachings,
+            icon: Icons.menu_book_outlined,
+            actionLabel: l10n.actionSeeAll,
+            onAction: () => context.pushNamed(AppRoute.media),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        _TeachingsCarousel(teachings: teachings),
+        ref.watch(latestTeachingsProvider).when(
+              loading: () => const AppListSkeleton(
+                itemCount: 1,
+                padding: AppSpacing.screenPadding,
+              ),
+              error: (_, __) => Padding(
+                padding: AppSpacing.screenPadding,
+                child: AppErrorState(
+                  message: l10n.stateErrorMessage,
+                  onRetry: () => ref.invalidate(latestTeachingsProvider),
+                ),
+              ),
+              data: (teachings) => teachings.isEmpty
+                  ? Padding(
+                      padding: AppSpacing.screenPadding,
+                      child: AppEmptyState(
+                        icon: Icons.menu_book_outlined,
+                        title: l10n.stateEmptyTitle,
+                        message: l10n.stateEmptyMessage,
+                      ),
+                    )
+                  : _TeachingsCarousel(teachings: teachings),
+            ),
       ],
     );
   }
@@ -880,7 +671,7 @@ class _TeachingSection extends StatelessWidget {
 /// Carrousel horizontal des derniers enseignements (cartes image + texte).
 class _TeachingsCarousel extends StatelessWidget {
   const _TeachingsCarousel({required this.teachings});
-  final List<Teaching> teachings;
+  final List<TeachingView> teachings;
 
   @override
   Widget build(BuildContext context) {
@@ -905,12 +696,13 @@ class _TeachingsCarousel extends StatelessWidget {
 
 class _TeachingCard extends StatelessWidget {
   const _TeachingCard({required this.teaching, this.onTap});
-  final Teaching teaching;
+  final TeachingView teaching;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final author = teaching.authorName;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -941,19 +733,27 @@ class _TeachingCard extends StatelessWidget {
                       style: AppTypography.bodyStrong
                           .copyWith(color: palette.textPrimary),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      children: [
-                        Icon(Icons.schedule,
-                            size: 13, color: palette.textSecondary),
-                        const SizedBox(width: 4),
-                        Text(
-                          teaching.duration,
-                          style: AppTypography.caption
-                              .copyWith(color: palette.textSecondary),
-                        ),
-                      ],
-                    ),
+                    // Ligne d'auteur **facultative** : absente, elle ne se rend
+                    // pas du tout — pas de « Auteur inconnu » de remplissage.
+                    if (author != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Icon(Icons.person_outline,
+                              size: 13, color: palette.textSecondary),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              author,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption
+                                  .copyWith(color: palette.textSecondary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.md),
                     // Bouton « Écouter » en pilule contournée (façon maquette).
                     Container(

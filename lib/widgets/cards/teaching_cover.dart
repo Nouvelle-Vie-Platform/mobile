@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../models/models.dart';
+import '../../models/mediatheque_view.dart';
 import '../../theme/app_spacing.dart';
-import '../../utils/media_url.dart';
 
 /// Orientation du visuel demandé — le back en sert **un par ratio**, recadré à
 /// la main dans le portail : on choisit, on ne recadre pas.
@@ -29,7 +28,10 @@ class TeachingCover extends StatelessWidget {
     this.orientation = CoverOrientation.portrait,
   });
 
-  final Teaching teaching;
+  /// **Le modèle de lecture, pas la ligne.** Ses deux URL sont déjà absolues
+  /// et sa couleur déjà résolue : ce widget n'applique plus aucune règle, il
+  /// choisit un cadrage et dessine.
+  final TeachingView teaching;
   final double radius;
 
   /// Ratio voulu. Si le visuel correspondant manque, l'autre prend le relais
@@ -46,13 +48,11 @@ class TeachingCover extends StatelessWidget {
       ),
     );
 
-    // Le back sert des chemins relatifs : sans résolution, `Image.network`
-    // échoue faute de schéma.
-    final image = resolveMediaUrl(
-      orientation == CoverOrientation.landscape
-          ? (teaching.imageLandscapeUrl ?? teaching.imagePortraitUrl)
-          : (teaching.imagePortraitUrl ?? teaching.imageLandscapeUrl),
-    );
+    // La résolution des chemins relatifs a déjà eu lieu, une fois, dans le
+    // modèle de lecture — ici on ne fait que choisir le cadrage.
+    final image = orientation == CoverOrientation.landscape
+        ? teaching.landscapeOrPortrait
+        : teaching.portraitOrLandscape;
     final Widget content = image == null
         ? fallback
         : Image.network(

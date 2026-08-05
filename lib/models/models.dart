@@ -299,27 +299,55 @@ class Announcement {
 
 /// Rubrique éditoriale d'un enseignement — pilote son classement sur l'accueil.
 ///
-/// Miroir du `slug` du référentiel servi par le back (`GET /teaching-types`) :
-/// JSON `"dimanche"` | `"etude"` | `"priere"`.
+/// **Ce n'est plus un enum, et ça ne peut pas en être un.** Côté serveur la
+/// rubrique est une table SERIAL éditable depuis le portail : la première
+/// rubrique créée par un administrateur n'aurait aucune valeur d'enum où aller.
+/// La raison de fond est plus forte que ce cas limite — un enum est une
+/// **décision figée à l'écriture** : il oblige à traduire une rubrique serveur
+/// en valeur locale au moment de désérialiser, et cette traduction ne peut que
+/// se périmer. [Teaching.teachingTypeId] porte donc l'identifiant nu, et la
+/// rubrique se **joint** (ADR-0026, décision 3).
 ///
-/// **`libre` n'existe plus.** Ce n'était pas une espèce d'enseignement mais un
-/// **tri** déguisé en rubrique : « Derniers enseignements » se calcule
-/// désormais par récence, toutes rubriques confondues (voir
-/// `latestTeachingsProvider`). Le référentiel serveur l'a retirée, et la
-/// rubrique y est devenue **obligatoire et sans défaut** — aucune des trois
-/// restantes n'étant neutre, en désigner une par défaut mettrait un
-/// enseignement en avant sur l'accueil de tous les membres sans que personne
-/// l'ait décidé. [Teaching.rubric] est donc requise elle aussi.
-enum TeachingRubric {
-  /// Message porté au culte dominical.
-  dimanche,
+/// Miroir de `teaching_types` : [label] est la carte de traduction **entière**
+/// (`pick` choisit à la lecture), [color] est le maillon dont hérite un
+/// enseignement sans couleur propre, et [position] / [layout] / [visibleOnHome]
+/// décrivent la composition de l'accueil voulue par le serveur.
+@immutable
+class TeachingType {
+  const TeachingType({
+    required this.id,
+    required this.label,
+    required this.slug,
+    this.color,
+    this.position = 0,
+    this.visibleOnHome = true,
+    this.layout,
+  });
 
-  /// Étude biblique de la semaine.
-  etude,
+  /// SERIAL côté serveur.
+  final int id;
 
-  /// Enregistrement centré sur la prière (veillée, intercession) : peu
-  /// d'enseignement, beaucoup de prière.
-  priere,
+  /// Libellé par code de langue : `{fr: '…', en: '…', ee: '…'}`.
+  final Map<String, String> label;
+
+  /// Clé stable que le mobile reconnaît : elle survit au renommage du libellé.
+  final String slug;
+
+  /// Couleur de la rubrique (ARGB), `null` = aucune. Dont hérite un
+  /// enseignement dont la couleur propre est nulle — l'héritage se calcule
+  /// **à la lecture**, jamais à l'écriture.
+  final int? color;
+
+  /// Rang voulu par le serveur sur l'accueil.
+  final int position;
+
+  /// `false` = la rubrique a quitté l'accueil, mais ses enseignements restent.
+  final bool visibleOnHome;
+
+  /// `hero` | `carousel` | `list`. Chaîne libre, jamais un enum : le
+  /// référentiel est administrable, une valeur inconnue se replie à
+  /// l'affichage.
+  final String? layout;
 }
 
 /// Enseignement de la médiathèque — miroir du `TeachingTransformer` du back,
@@ -341,11 +369,11 @@ class Teaching {
     required this.title,
     required this.author,
     required this.duration,
-    required this.rubric,
     required this.recordedAt,
     required this.publishedAt,
+    this.teachingTypeId,
     this.seed = 0,
-    this.color = 0xFF223B8C,
+    this.color,
     this.isFullService = false,
     this.imageLandscapeUrl,
     this.imagePortraitUrl,
@@ -370,9 +398,13 @@ class Teaching {
   final String duration;
   final int seed;
 
-  /// Rubrique d'accueil à laquelle l'enseignement appartient. **Requise** :
-  /// voir [TeachingRubric].
-  final TeachingRubric rubric;
+  /// Rubrique à laquelle l'enseignement appartient — un **entier nu**, celui
+  /// de [TeachingType.id]. `null` = l'enseignement n'en porte pas (encore).
+  ///
+  /// Aucune contrainte ne garantit que la cible existe localement, et c'est
+  /// voulu : les deux collections se synchronisent séparément, la jointure est
+  /// tolérante et l'enseignement s'affiche quand même.
+  final int? teachingTypeId;
 
   /// **Jour** de l'enregistrement — la date propre de l'enseignement, celle du
   /// culte (`recordedAt`, servi en `YYYY-MM-DD` ; voir [parseCalendarDay]).
@@ -400,17 +432,17 @@ class Teaching {
   /// de « Derniers enseignements » (voir `latestTeachingsProvider`).
   final bool isFullService;
 
-  /// Couleur d'habillage (ARGB hexadécimal) pilotant l'écran de détail et le
-  /// repli de `TeachingCover`.
+  /// Couleur d'habillage **brute** (ARGB), telle que la sert le serveur.
   ///
-  /// **Déjà résolue par le serveur** (`#RRGGBB`, opacité ajoutée au parsing) :
-  /// la cascade « choisie > déduite de la photo > héritée de la rubrique »
-  /// (PRD §5 quater) est un calcul du back. Ne jamais la recalculer ici — ce
-  /// serait la réimplémenter, donc en diverger un jour.
+  /// `null` ne veut pas dire « pas de couleur » mais **« hérite de ma
+  /// rubrique »** : le serveur ne résout plus rien (issue serveur #130), il
+  /// sert la colonne. S'il l'avait résolue, changer la couleur d'une rubrique
+  /// aurait laissé les téléphones sur l'ancienne teinte indéfiniment et en
+  /// silence — ça ne bouscule l'`updated_at` d'aucun enseignement, donc aucune
+  /// ligne ne repasserait par le flux delta pour corriger la valeur figée.
   ///
-  /// Elle n'est pas décorative : c'est ce que voient les membres en
-  /// connectivité limitée, chaque fois que l'image manque ou tarde.
-  final int color;
+  /// La cascade se termine **à la lecture**, dans `TeachingView.resolve`.
+  final int? color;
 
   /// Visuel **paysage** (1,7:1), recadré au dépôt pour la mise en avant de
   /// l'accueil (320 × 188). `null` = aucune photo déposée → c'est [color] qui

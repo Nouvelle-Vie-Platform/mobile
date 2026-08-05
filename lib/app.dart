@@ -6,6 +6,7 @@ import 'l10n/app_localizations.dart';
 import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
 import 'state/auth_providers.dart';
+import 'state/locale_providers.dart';
 import 'state/theme_provider.dart';
 import 'theme/app_theme.dart';
 
@@ -59,6 +60,46 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
       localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: appSupportedLocales,
       routerConfig: router,
+      builder: (context, child) =>
+          _ContentLocaleSync(child: child ?? const SizedBox.shrink()),
     );
   }
+}
+
+/// Recopie dans [contentLocaleProvider] la locale que `MaterialApp` a
+/// **réellement résolue**.
+///
+/// C'est le seul endroit de l'application où les deux existent : la résolution
+/// de locale (langues du système ✕ [appSupportedLocales]) appartient au
+/// framework et ne se lit que sous `MaterialApp`, tandis que le repli de
+/// contenu se fait hors de l'arbre, dans les repositories. La re-dériver depuis
+/// `PlatformDispatcher` donnerait une seconde résolution, qui divergerait de la
+/// première.
+///
+/// L'écriture est **différée d'une image** : modifier un provider pendant la
+/// construction de l'arbre est interdit, et la valeur par défaut (le français,
+/// langue de repli du contenu) est exactement ce que `pick` aurait choisi de
+/// toute façon.
+class _ContentLocaleSync extends ConsumerStatefulWidget {
+  const _ContentLocaleSync({required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<_ContentLocaleSync> createState() => _ContentLocaleSyncState();
+}
+
+class _ContentLocaleSyncState extends ConsumerState<_ContentLocaleSync> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context).languageCode;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(contentLocaleProvider.notifier).set(locale);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

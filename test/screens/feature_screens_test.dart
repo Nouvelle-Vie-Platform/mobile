@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
+import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/data/sample_data.dart';
 import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/screens/agenda_screen.dart';
@@ -11,7 +12,6 @@ import 'package:maison_du_miracle/screens/notes_screen.dart';
 import 'package:maison_du_miracle/screens/prayer_requests_screen.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
-import 'package:maison_du_miracle/state/repository_providers.dart';
 
 import '../helpers/pump_screen.dart';
 
@@ -70,7 +70,7 @@ void main() {
         author: 'Pasteur Test',
         duration: '10:00',
         color: 0xFF223B8C,
-        rubric: TeachingRubric.dimanche,
+        teachingTypeId: 1,
         recordedAt: DateTime.utc(2026, 4, 12),
         publishedAt: DateTime.utc(2026, 4, 12, 8),
       );
@@ -78,9 +78,7 @@ void main() {
       await pumpScreen(
         tester,
         TeachingDetailScreen(teachingId: teaching.id),
-        overrides: [
-          teachingsProvider.overrideWithValue([teaching])
-        ],
+        mediatheque: InMemoryMediathequeRepository(teachings: [teaching]),
       );
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
       expect(find.text(teaching.title), findsOneWidget);

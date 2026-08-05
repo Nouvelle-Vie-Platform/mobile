@@ -21,9 +21,6 @@ class _FakeRepository implements ChurchRepository {
   List<Announcement> announcements() => _announcements;
 
   @override
-  List<Teaching> teachings() => const [];
-
-  @override
   List<CommunityGroup> groups() => const [];
 
   @override

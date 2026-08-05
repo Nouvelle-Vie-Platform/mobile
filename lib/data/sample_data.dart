@@ -227,12 +227,80 @@ abstract final class SampleData {
     ),
   ];
 
+  /// Référentiel fictif des **rubriques**, miroir de `teaching_types`.
+  ///
+  /// Il existe pour que le mode maquette (`AppEnv.useBackend` faux) fasse la
+  /// même jointure que le magasin, et donc applique les mêmes règles de
+  /// lecture : sans rubriques ici, la cascade de couleur et le repli de libellé
+  /// ne seraient jamais exercés hors backend, et l'on découvrirait leurs bugs
+  /// en production.
+  ///
+  /// Trois choix délibérés dans ce jeu :
+  /// - `archives` est **masquée de l'accueil** (`visibleOnHome: false`) et n'a
+  ///   **pas de couleur** : elle exerce à la fois la rubrique retirée de la
+  ///   vitrine et le dernier maillon de la cascade (le bleu de marque) ;
+  /// - `archives` n'a **pas de traduction éwé** : c'est le repli de `pick` qui
+  ///   est mis à l'épreuve, pas seulement le chemin heureux ;
+  /// - les trois [layout] possibles sont représentés — le ticket #32 compose
+  ///   l'accueil avec, celui-ci se contente de les porter.
+  static const List<TeachingType> teachingTypes = [
+    TeachingType(
+      id: 1,
+      slug: 'dimanche',
+      label: {
+        'fr': 'Messages du dimanche',
+        'en': 'Sunday messages',
+        'ee': 'Kɔsiɖagbe nyawo',
+      },
+      color: 0xFF223B8C,
+      position: 1,
+      layout: 'hero',
+    ),
+    TeachingType(
+      id: 2,
+      slug: 'etude',
+      label: {
+        'fr': 'Études bibliques',
+        'en': 'Bible studies',
+        'ee': 'Biblia srɔ̃srɔ̃',
+      },
+      color: 0xFF7A5AF8,
+      position: 2,
+      layout: 'carousel',
+    ),
+    TeachingType(
+      id: 3,
+      slug: 'priere',
+      label: {
+        'fr': 'Moments de prière',
+        'en': 'Prayer times',
+        'ee': 'Gbedodoɖa ɣeyiɣiwo',
+      },
+      color: 0xFF1FA971,
+      position: 3,
+      layout: 'list',
+    ),
+    TeachingType(
+      id: 4,
+      slug: 'archives',
+      label: {'fr': 'Archives', 'en': 'Archives'},
+      position: 4,
+      visibleOnHome: false,
+      layout: 'list',
+    ),
+  ];
+
   /// Enseignements, du plus récent au plus ancien.
   ///
-  /// La [Teaching.rubric] décide de la rubrique d'accueil : les messages du
-  /// dimanche et les études bibliques ont leur propre section, les autres
-  /// alimentent « Derniers enseignements ». La médiathèque, elle, les affiche
-  /// tous.
+  /// Le [Teaching.teachingTypeId] désigne une rubrique de [teachingTypes] —
+  /// un **entier nu**, comme sur le fil : rien n'oblige la cible à exister, et
+  /// le dernier de la liste n'en porte aucune, exprès. Il vérifie que
+  /// l'enseignement s'affiche quand même, sans rubrique et sans intervenant
+  /// résolu.
+  ///
+  /// La [Teaching.color] est **brute** : `null` veut dire « hérite de ma
+  /// rubrique », pas « pas de couleur ». Plusieurs enseignements la laissent
+  /// nulle pour que la cascade soit visible en mode maquette.
   ///
   /// Les [Teaching.id] sont des **UUIDv7 écrits en dur, et ils doivent le
   /// rester** : la navigation ne passe plus l'objet mais son identifiant
@@ -261,7 +329,7 @@ abstract final class SampleData {
             'Là où les circonstances semblent avoir tranché, Dieu garde la '
             'parole finale sur nos vies, nos familles et nos projets.',
         verse: 'Romains 8:31',
-        rubric: TeachingRubric.dimanche),
+        teachingTypeId: 1),
     Teaching(
         id: '0195abb3-2800-7f50-924d-12ee32477961',
         title: 'Une maison bâtie sur le roc',
@@ -270,14 +338,14 @@ abstract final class SampleData {
         author: 'Pasteur Mike',
         duration: '52:05',
         seed: 5,
-        color: 0xFF3B5BD0,
+        // Couleur nulle : hérite de celle de sa rubrique (`dimanche`).
         imageLandscapeUrl: 'https://picsum.photos/seed/roc/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/roc/384/635',
         description:
             'Ce qui tient debout dans la tempête n\'est pas ce qui brille, '
             'mais ce qui est fondé sur la Parole mise en pratique.',
         verse: 'Matthieu 7:24',
-        rubric: TeachingRubric.dimanche),
+        teachingTypeId: 1),
     Teaching(
         id: '019587a6-a400-710b-9048-8a20d30288e7',
         title: 'Le temps de la faveur',
@@ -293,7 +361,7 @@ abstract final class SampleData {
             'Il y a des saisons que Dieu fixe lui-même : reconnaître le temps '
             'de sa faveur, c\'est cesser de courir après ce qu\'Il donne.',
         verse: 'Psaume 102:13',
-        rubric: TeachingRubric.dimanche),
+        teachingTypeId: 1),
     // ── Études bibliques ────────────────────────────────────────────────────
     Teaching(
         id: '0195639a-2000-7554-902f-d58a5f53f301',
@@ -311,7 +379,7 @@ abstract final class SampleData {
             'Première étape d\'un parcours dans l\'épître aux Romains : la '
             'justification par la foi, verset après verset.',
         verse: 'Romains 5:1',
-        rubric: TeachingRubric.etude),
+        teachingTypeId: 2),
     Teaching(
         id: '01953f8d-9c00-7d09-99c9-3f722eef070e',
         title: 'Les alliances de Dieu, pas à pas',
@@ -327,7 +395,7 @@ abstract final class SampleData {
             'D\'Abraham à la nouvelle alliance : comprendre le fil que Dieu '
             'tire d\'un bout à l\'autre de l\'Écriture.',
         verse: 'Genèse 9:13',
-        rubric: TeachingRubric.etude),
+        teachingTypeId: 2),
     Teaching(
         id: '01951b81-1800-7e8e-8f59-d2437dbd48a3',
         title: 'Prier avec les Psaumes',
@@ -336,14 +404,14 @@ abstract final class SampleData {
         author: 'Sœur Estelle',
         duration: '47:05',
         seed: 9,
-        color: 0xFF2A9D8F,
+        // Couleur nulle : hérite de celle de sa rubrique (`etude`).
         imageLandscapeUrl: 'https://picsum.photos/seed/psaumes/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/psaumes/384/635',
         description:
             'Les Psaumes mettent des mots sur ce que nous n\'osons pas dire : '
             'apprendre à en faire notre langue de prière.',
         verse: 'Psaume 63:2',
-        rubric: TeachingRubric.etude),
+        teachingTypeId: 2),
     // ── Temps de prière ─────────────────────────────────────────────────────
     Teaching(
         id: '0194f774-9400-7124-aeb4-a337eaf5c04f',
@@ -360,7 +428,7 @@ abstract final class SampleData {
             'Une nuit entière portée devant Dieu : quelques mots d\'exhortation, '
             'puis la prière de l\'assemblée jusqu\'au lever du jour.',
         verse: 'Psaume 5:4',
-        rubric: TeachingRubric.priere),
+        teachingTypeId: 3),
     Teaching(
         id: '0194d368-1000-792b-a9de-9c5d1427c9d4',
         title: 'Intercession pour la nation',
@@ -376,7 +444,7 @@ abstract final class SampleData {
             'Nous nous tenons sur la brèche pour le pays, les autorités et la '
             'paix de nos villes.',
         verse: 'Ézéchiel 22:30',
-        rubric: TeachingRubric.priere),
+        teachingTypeId: 3),
     Teaching(
         id: '0194af5b-8c00-7d6a-9b36-6afbc65a478b',
         title: 'Prière pour les familles',
@@ -392,7 +460,7 @@ abstract final class SampleData {
             'Un temps de prière pour les foyers : les couples, les enfants et '
             'ceux qui portent seuls leur maison.',
         verse: 'Josué 24:15',
-        rubric: TeachingRubric.priere),
+        teachingTypeId: 3),
     // ── Hors rubrique ───────────────────────────────────────────────────────
     Teaching(
         id: '01948b4f-0800-7bd7-835f-7081a853c4bb',
@@ -409,7 +477,7 @@ abstract final class SampleData {
             'La prière n\'est pas une formalité religieuse : c\'est un dialogue '
             'vivant avec Dieu qui transforme nos vies et nos circonstances.',
         verse: 'Jacques 5:16',
-        rubric: TeachingRubric.etude),
+        teachingTypeId: 2),
     Teaching(
         id: '01946742-8400-7fe2-9661-d853031937a8',
         title: 'La foi qui déplace les montagnes',
@@ -425,7 +493,7 @@ abstract final class SampleData {
             'La véritable foi nous connecte aux promesses de Dieu et permet de '
             'voir des résultats extraordinaires dans l\'impossible.',
         verse: 'Matthieu 17:20',
-        rubric: TeachingRubric.priere),
+        teachingTypeId: 3),
     Teaching(
         id: '01944336-0000-7f97-b43a-7a7fa48b2364',
         title: 'Marcher par l\'Esprit',
@@ -441,7 +509,7 @@ abstract final class SampleData {
             'Apprendre à être conduit par l\'Esprit de Dieu au quotidien, dans '
             'nos décisions comme dans notre caractère.',
         verse: 'Galates 5:25',
-        rubric: TeachingRubric.dimanche),
+        teachingTypeId: 1),
     Teaching(
         id: '01941f29-7c00-740c-88cd-f0b19cc920f6',
         title: 'Le tour du père',
@@ -450,14 +518,14 @@ abstract final class SampleData {
         author: 'Pasteur Jonas',
         duration: '28:12',
         seed: 3,
-        color: 0xFF7A5AF8,
+        // Ni couleur, ni rubrique : la cascade descend jusqu'au bleu de
+        // marque, et l'écran doit rester lisible sans libellé de rubrique.
         imageLandscapeUrl: 'https://picsum.photos/seed/pere/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/pere/384/635',
         description:
             'Le cœur du Père céleste pour ses enfants : un amour qui restaure, '
             'relève et accueille sans condition.',
-        verse: 'Luc 15:20',
-        rubric: TeachingRubric.etude),
+        verse: 'Luc 15:20'),
   ];
 
   static const List<CommunityGroup> groups = [
