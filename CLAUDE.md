@@ -42,9 +42,41 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
 - `lib/data/` — `sample_data.dart` (données fictives) + `repositories/` :
   - `church_repository.dart` (`ChurchRepository` abstrait + `InMemoryChurchRepository`)
     — **synchrone**, et il ne couvre que les domaines **encore fictifs**.
-  - `auth_repository.dart` / `http_auth_repository.dart`, `branch_repository.dart` —
-    repositories **dédiés et asynchrones**, chacun hors de `ChurchRepository`.
+  - `auth_repository.dart` / `http_auth_repository.dart`, `branch_repository.dart`,
+    `calendar_repository.dart`, `mediatheque_repository.dart` /
+    `store_mediatheque_repository.dart` — repositories **dédiés et asynchrones**,
+    chacun hors de `ChurchRepository`.
   - `local/` — **le magasin local Drift**, voir ci-dessous.
+
+### Le **modèle de lecture** de la médiathèque (`lib/models/mediatheque_view.dart`)
+`TeachingView` / `HomeSectionView` : ce qu'un écran affiche, et rien de plus.
+Ils se construisent **uniquement** par `.resolve(…)`, où les quatre règles de
+présentation s'appliquent une fois pour toutes (ADR-0026, décision 3 — *le
+magasin stocke ce que le serveur envoie ; la présentation se calcule à la
+lecture*) :
+
+1. **La cascade de couleur s'y termine** : `teaching.color` sinon `type.color`
+   sinon le bleu de marque (`kBrandFallbackColor`, `#223B8C`). Le serveur ne
+   résout plus rien : s'il le faisait, changer la couleur d'une rubrique
+   laisserait les téléphones sur l'ancienne teinte indéfiniment et en silence
+   (ça ne bouscule l'`updated_at` d'aucun enseignement).
+2. **Le libellé se replie par `pick`** — jamais de `?? label['fr']` ailleurs.
+3. **Les URL d'image se résolvent par `resolveMediaUrl`** — le back les sert
+   relatives, l'hôte change d'un environnement à l'autre.
+4. **L'absence s'affiche comme une absence** : `authorName` reste `null` et la
+   ligne ne se rend pas. **Jamais d'« Auteur inconnu »** — ça ressemble à une
+   donnée et sera pris pour une erreur de saisie.
+
+Un widget qui reçoit un `TeachingView` n'a plus aucune règle à appliquer, donc
+plus aucune occasion d'en appliquer une variante. `TeachingRubric` (enum à trois
+valeurs) a disparu avec lui : la rubrique est une table SERIAL éditable depuis
+le portail, et un enum est une décision figée à l'écriture. Le modèle porte
+`teachingTypeId`, la rubrique se **joint**.
+
+La langue du contenu vient de `contentLocaleProvider`
+(`lib/state/locale_providers.dart`), recopiée par `app.dart` depuis la locale
+que `MaterialApp` a réellement résolue : le repli se fait hors de l'arbre de
+widgets, là où il n'y a pas de `BuildContext`.
 
 ### Magasin local (`lib/data/local/`) — ADR-0026
 Base SQLite embarquée qui **peint les écrans** des collections répliquées : la
@@ -120,13 +152,23 @@ Le curseur du manifeste (`current_cursor`) est la **borne haute du périmètre**
 pas un accusé de réception : il ne devient jamais le curseur local.
 - `lib/state/` — providers Riverpod :
   - `repository_providers.dart` : `churchRepositoryProvider` + providers de données
-    (`teachingsProvider`, `groupsProvider`, `prayersProvider`, `notesProvider`,
+    (`groupsProvider`, `prayersProvider`, `notesProvider`,
     `announcementsProvider`, `chatProvider.family`) et `eventsProvider` (hors
     `ChurchRepository`, cf. ci-dessous).
+  - `mediatheque_providers.dart` : `mediathequeRepositoryProvider` (magasin avec
+    backend, double en mémoire sinon) + `latestTeachingsProvider`,
+    `allTeachingsProvider`, `teachingsOfTypeProvider.family`,
+    `teachingByIdProvider.family`, `homeSectionsProvider` — tous des
+    `StreamProvider`, donc des `AsyncValue` côté écran. **Pas de réessai
+    automatique** (`retry: _noAutomaticRetry`), même raison que l'agenda.
+  - `locale_providers.dart` : `contentLocaleProvider` — la langue de repli des
+    **contenus** servis par le back, distincte de celle de l'interface.
   - `sync_providers.dart` : `appDatabaseProvider` (à surcharger par une base en
     mémoire dans les tests), `syncDaoProvider`, `mediathequeDaoProvider`,
-    `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`. **Aucun
-    écran ne les lit encore** — étape 2.
+    `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`.
+    `mediathequeDaoProvider` est lu par `StoreMediathequeRepository` ; **personne
+    n'appelle encore `SyncScheduler.start()`**, le magasin ne se remplit donc pas
+    tout seul (à câbler avec la sortie de `sample_data`).
   - `theme_provider.dart` : `themeModeProvider` (Notifier) + `isDarkModeActive`.
 
 ### Brancher un vrai backend : **un repository dédié asynchrone par domaine**
@@ -135,12 +177,24 @@ son contrat est synchrone, alors qu'un appel HTTP est asynchrone. Passer toute
 l'interface en `Future` pour le premier domaine branché casserait d'un coup les
 cinq autres et tous leurs écrans.
 
-Le motif réel, déjà suivi par `AuthRepository`/`HttpAuthRepository` et
-`BranchRepository` : quand un domaine est servi par le back, il **sort** de
-`ChurchRepository` vers sa propre abstraction `Future`-based, avec une
-implémentation HTTP et une implémentation en mémoire (servie quand
-`AppEnv.useBackend` est faux), et son propre provider. `ChurchRepository`
-rétrécit à mesure — c'est voulu ; il finira par disparaître.
+Le motif réel, déjà suivi par `AuthRepository`/`HttpAuthRepository`,
+`BranchRepository`, `CalendarRepository` et `MediathequeRepository` : quand un
+domaine est servi par le back, il **sort** de `ChurchRepository` vers sa propre
+abstraction `Future`/`Stream`-based, avec une implémentation réelle (HTTP, ou
+**le magasin local** pour les collections répliquées) et une implémentation en
+mémoire (servie quand `AppEnv.useBackend` est faux), et son propre provider.
+`ChurchRepository` rétrécit à mesure — c'est voulu ; il finira par disparaître.
+
+Le double en mémoire n'est pas un bouchon : il doit appliquer **les mêmes règles
+de lecture** que l'implémentation réelle. Un double qui construirait ses modèles
+autrement laisserait les bugs de cascade et de repli de langue invisibles
+pendant tout le développement (`test/data/mediatheque_repository_test.dart`
+vérifie la parité).
+
+Un domaine adossé au magasin se lit en **`Stream`**, jamais en `Future` : la
+synchronisation réécrit sous les pieds des écrans, et une rétractation reçue
+pendant qu'un fidèle écoute doit retirer le contenu de l'écran ouvert. Un
+`Future` livrerait une photographie prise au moment du clic.
 
 Les écrans du domaine migré changent, eux : ils passent d'une lecture
 synchrone à un `AsyncValue` (chargement / vide / erreur). C'est le coût réel de
@@ -221,7 +275,9 @@ poussée). Le FAB n'est PAS un onglet.
 - `AppBackground` — dégradé « glass » global, **posé par route** (les `Scaffold`
   sont transparents). Indispensable : peindre le fond par écran garde les
   transitions opaques (sinon on voit la page sortante à travers).
-- `TeachingCover` — visuel d'un enseignement : image réseau **avec repli coloré**.
+- `TeachingCover` — visuel d'un `TeachingView` : image réseau **avec repli
+  coloré**. Il ne résout plus rien (URL et couleur arrivent déjà résolues), il
+  choisit un cadrage et dessine.
 - `widgets/chat/` — `ChatAppBar`, `ChatBubble`, `ChatDatePill`,
   `ChatInfoBanner`, `MessageInputBar`.
 
@@ -235,7 +291,7 @@ poussée). Le FAB n'est PAS un onglet.
   réseau).
 - Couleurs/espacements/typo : passer par `AppColors` / `context.palette` /
   `AppSpacing` / `AppTypography`. Ne pas coder de couleurs en dur sauf habillage
-  piloté par les données (ex. `Teaching.color`).
+  piloté par les données (ex. `TeachingView.color`, **déjà résolue**).
 - Textes destinés à l'utilisateur : **toujours via l10n** (`context.l10n.xxx`),
   jamais en dur.
 
