@@ -6,6 +6,7 @@ import '../l10n/l10n_extension.dart';
 import '../models/mediatheque_view.dart';
 import '../router/app_router.dart';
 import '../state/mediatheque_providers.dart';
+import '../state/sync_providers.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_empty_state.dart';
@@ -81,11 +82,20 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
                 onSelect: (i) => setState(() => _tab = i),
               ),
               Expanded(
-                child: ref.watch(allTeachingsProvider).when(
-                      loading: _buildLoading,
-                      error: (_, __) => _buildError(),
-                      data: _buildCatalogue,
-                    ),
+                // **Tirer-pour-rafraîchir** — le troisième déclencheur
+                // d'ADR-0017, et le seul que l'utilisateur commande. Il enrobe
+                // les trois états, pas seulement le catalogue rempli : c'est
+                // sur un magasin **vide** qu'on tire, au premier lancement,
+                // quand la synchronisation d'ouverture est tombée sur un
+                // réseau absent.
+                child: RefreshIndicator(
+                  onRefresh: ref.watch(pullToRefreshProvider),
+                  child: ref.watch(allTeachingsProvider).when(
+                        loading: _buildLoading,
+                        error: (_, __) => _buildError(),
+                        data: _buildCatalogue,
+                      ),
+                ),
               ),
             ],
           ),
@@ -101,26 +111,42 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
 
   /// Une lecture du magasin qui échoue est une **panne**, jamais un catalogue
   /// vide : teintée, et avec quelque chose à faire.
-  Widget _buildError() => Center(
-        child: Padding(
-          padding: AppSpacing.screenPadding,
-          child: AppErrorState(
-            message: context.l10n.stateErrorMessage,
-            onRetry: () => ref.invalidate(allTeachingsProvider),
-          ),
+  Widget _buildError() => _pullable(
+        AppErrorState(
+          message: context.l10n.stateErrorMessage,
+          onRetry: () => ref.invalidate(allTeachingsProvider),
         ),
       );
 
   /// Le magasin a répondu, et il n'a rien : c'est la réponse normale d'un
   /// premier lancement, avant que la synchronisation ne l'ait rempli. Neutre,
   /// sans bouton — il n'y a rien à réessayer.
-  Widget _buildEmpty() => Center(
-        child: Padding(
-          padding: AppSpacing.screenPadding,
-          child: AppEmptyState(
-            icon: Icons.library_music_outlined,
-            title: context.l10n.stateEmptyTitle,
-            message: context.l10n.stateEmptyMessage,
+  Widget _buildEmpty() => _pullable(
+        AppEmptyState(
+          icon: Icons.library_music_outlined,
+          title: context.l10n.stateEmptyTitle,
+          message: context.l10n.stateEmptyMessage,
+        ),
+      );
+
+  /// Centre un état de liste **sans le rendre immobile**.
+  ///
+  /// Un `Center` seul n'est pas défilable, et `RefreshIndicator` ne réagit
+  /// qu'à un défilement : sans cette enveloppe, le geste n'existerait pas
+  /// exactement là où il sert — sur un catalogue vide ou après une lecture
+  /// ratée. D'où l'`AlwaysScrollableScrollPhysics` : il faut pouvoir tirer un
+  /// contenu plus court que l'écran.
+  Widget _pullable(Widget child) => LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: AppSpacing.screenPadding,
+                child: child,
+              ),
+            ),
           ),
         ),
       );
@@ -130,6 +156,9 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
     final l = context.l10n;
 
     return CustomScrollView(
+      // Le catalogue est plus long que l'écran, mais le geste ne doit pas
+      // dépendre de sa longueur : on tire aussi sur trois enseignements.
+      physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
         // Carrousel phare.

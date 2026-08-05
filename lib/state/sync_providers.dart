@@ -1,11 +1,20 @@
-/// **Le socle de synchronisation, câblé — et branché sur aucun écran.**
+/// **Le socle de synchronisation, et les trois déclencheurs qui l'appellent.**
 ///
-/// C'est voulu, et c'est l'objet de l'étape 1 du cadrage (`docs/prd/
-/// mediatheque-mobile.md` §4.2) : le socle doit être vert **sans que la
-/// médiathèque soit en jeu**, pour qu'un bug de socle ne se lise pas comme un
-/// bug de médiathèque. `SampleData` reste la source des écrans jusqu'à
-/// l'étape 2, qui les branchera sur `MediathequeDao` et surchargera
-/// [appDatabaseProvider] dans ses tests.
+/// Le socle a été livré branché sur aucun écran (étape 1 du cadrage, `docs/prd/
+/// mediatheque-mobile.md` §4.2) : il devait être vert **sans que la médiathèque
+/// soit en jeu**, pour qu'un bug de socle ne se lise pas comme un bug de
+/// médiathèque. Ce n'est plus le cas — les écrans lisent le magasin
+/// ([mediathequeDaoProvider] via `StoreMediathequeRepository`), et c'est la
+/// synchronisation qui le remplit. Les trois déclencheurs d'ADR-0017 :
+///
+/// | Déclencheur | Où il est câblé |
+/// |---|---|
+/// | ouverture | `app.dart`, au premier frame, sous `AppEnv.useBackend` |
+/// | retour au premier plan | l'abonnement au cycle de vie posé par `SyncScheduler.start()` |
+/// | tirer-pour-rafraîchir | [pullToRefreshProvider], passé à un `RefreshIndicator` |
+///
+/// **Jamais de polling** : aucun `Timer`, et `test/sync/sync_scheduler_test.dart`
+/// le vérifie sur la source.
 ///
 /// Rien ici n'est instancié tant que personne ne le lit : ouvrir la base est un
 /// effet de bord (un fichier sur l'appareil), et les providers Riverpod sont
@@ -13,6 +22,8 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../core/config/app_env.dart';
 
 import '../data/local/app_database.dart';
 import '../data/local/mediatheque_dao.dart';
@@ -58,11 +69,38 @@ final syncEngineProvider = Provider<SyncEngine>(
 /// Les déclencheurs : ouverture, retour au premier plan, tirer-pour-rafraîchir.
 /// **Jamais de polling.**
 ///
-/// C'est l'étape 2 qui appellera `start()` au démarrage de l'application ;
-/// l'appeler ici ferait synchroniser une application dont aucun écran ne lit
-/// encore le magasin.
+/// `app.dart` appelle `start()` au premier frame. Ce n'est pas seulement le
+/// déclencheur « ouverture » : `start()` **abonne le planificateur au cycle de
+/// vie**, et c'est de cet abonnement que vient le déclencheur « retour au
+/// premier plan ». Les deux tiennent donc au même appel.
+///
+/// Le provider n'est **pas** `autoDispose`, et ça compte : l'abonnement au
+/// cycle de vie vit aussi longtemps que l'instance. Un planificateur recréé à
+/// chaque lecture se réabonnerait — ou pire, ne serait plus là pour entendre le
+/// retour au premier plan.
 final syncSchedulerProvider = Provider<SyncScheduler>((ref) {
   final scheduler = SyncScheduler(ref.watch(syncEngineProvider).synchronize);
   ref.onDispose(scheduler.dispose);
   return scheduler;
+});
+
+/// **Le déclencheur « tirer-pour-rafraîchir »**, sous la forme qu'attend
+/// `RefreshIndicator.onRefresh`.
+///
+/// Le drapeau `AppEnv.useBackend` se lit **ici et non dans l'écran**, comme
+/// partout ailleurs dans `lib/state/` : sans backend il n'y a rien à
+/// synchroniser, et lire [syncSchedulerProvider] ouvrirait une base Drift —
+/// donc un fichier sur l'appareil, ou sur le disque de la machine de test —
+/// pour ne rien tirer.
+///
+/// Le geste, lui, reste offert dans les deux modes : un écran ne change pas de
+/// forme selon l'environnement, et le mode maquette n'a de toute façon rien de
+/// neuf à montrer.
+///
+/// Rend le cycle **en cours** s'il y en a un : un tirer-pour-rafraîchir pendant
+/// qu'un retour au premier plan tourne rejoint le cycle plutôt que d'en lancer
+/// un second (deux cycles se disputeraient les mêmes curseurs).
+final pullToRefreshProvider = Provider<Future<void> Function()>((ref) {
+  if (!AppEnv.useBackend) return () async {};
+  return () => ref.read(syncSchedulerProvider).refresh();
 });

@@ -36,11 +36,16 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
 
     // **Le déclencheur « ouverture »** (ADR-0017). Sans lui, le magasin ne se
     // remplit jamais et la médiathèque reste muette : les écrans lisent le
-    // magasin, et rien n'y écrit tant que personne n'a lancé un cycle.
+    // magasin, et rien n'y écrit tant que personne n'a lancé un cycle. Une
+    // chaîne rompue ici ne lève rien — un magasin vide ne se plaint pas —,
+    // d'où `test/state/cold_start_test.dart`, qui la parcourt en entier.
     //
-    // Les deux autres déclencheurs — retour au premier plan et
-    // tirer-pour-rafraîchir — appartiennent au lot qui sort `sample_data` du
-    // chemin applicatif. **Jamais de polling.**
+    // `start()` fait **deux** choses, et la seconde est aussi importante que la
+    // première : elle abonne le planificateur au cycle de vie, et c'est de cet
+    // abonnement que vient le déclencheur « retour au premier plan ». Le
+    // troisième — tirer-pour-rafraîchir — est offert par
+    // `pullToRefreshProvider`, que la médiathèque passe à son
+    // `RefreshIndicator`. **Jamais de polling.**
     if (AppEnv.useBackend) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
