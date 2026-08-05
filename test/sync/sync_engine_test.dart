@@ -1,0 +1,390 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/core/network/api_client.dart';
+import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/local/sync_dao.dart';
+import 'package:maison_du_miracle/data/sync/sync_api.dart';
+import 'package:maison_du_miracle/data/sync/sync_engine.dart';
+import 'package:maison_du_miracle/data/sync/sync_rows.dart';
+import 'package:maison_du_miracle/data/sync/synced_collection.dart';
+
+import '../data/local/local_database_fixtures.dart';
+import '../helpers/fake_sync_server.dart';
+import '../helpers/sync_fixtures.dart';
+
+/// **Le moteur, de bout en bout.**
+///
+/// Le canari du cadrage est `branches` : la collection la plus pauvre du
+/// catalogue (un référentiel, une poignée de lignes, aucun périmètre, pas de
+/// tombstone). Elle permet de vérifier le manifeste, le curseur, la boucle et
+/// l'application transactionnelle **sans que la médiathèque soit en jeu** —
+/// donc sans qu'un bug de socle se lise comme un bug de médiathèque.
+///
+/// Elle se tire à **`limit=1`** : à 200, une poignée de lignes ne produit
+/// jamais de seconde page, et la boucle de rattrapage ne serait pas exercée du
+/// tout. Le paramètre est déjà accepté par la route.
+void main() {
+  late FakeSyncServer server;
+  late Dio dio;
+  late AppDatabase db;
+  late SyncDao dao;
+
+  setUp(() {
+    server = FakeSyncServer();
+    dio = Dio(BaseOptions(baseUrl: 'http://localhost:3333'))
+      ..interceptors.add(unwrapEnvelopeInterceptor)
+      ..httpClientAdapter = server;
+    db = openTestDatabase();
+    dao = db.syncDao;
+  });
+
+  tearDown(() => db.close());
+
+  SyncEngine engineOver(List<String> keys, {int limit = 1}) => SyncEngine(
+        api: SyncApi(dio: dio),
+        dao: dao,
+        collections: syncedCollections()
+            .where((collection) => keys.contains(collection.key))
+            .toList(growable: false),
+        pageLimit: limit,
+      );
+
+  group('Le canari : `branches` à `limit=1`', () {
+    /// Une troisième branche, pour que la boucle tourne trois fois plutôt que
+    /// deux — le cas où l'on oublie d'avancer le curseur passe encore à deux.
+    const thirdBranchPayload = <String, Object?>{
+      'id': 7,
+      'name': 'Maison du Miracle — Kara',
+      'isMotherChurch': false,
+      'address': 'Kara',
+      'email': null,
+      'phone': null,
+      'postalBox': null,
+      'createdAt': '2025-12-01T08:00:00.000Z',
+      'updatedAt': '2026-02-02T08:00:00.000Z',
+    };
+
+    final cursorPage1 = serverCursor(
+      updatedAtIso: '2025-11-02T08:00:00.000Z',
+      id: 1,
+    );
+    final cursorPage2 = serverCursor(
+      updatedAtIso: '2026-02-02T08:00:00.000Z',
+      id: 7,
+    );
+
+    setUp(() {
+      server
+        ..serveManifest(manifestFromZero())
+        ..servePages('branches', [
+          deltaPage(
+            items: const [motherBranchPayload],
+            nextCursor: cursorPage1,
+            hasMore: true,
+          ),
+          deltaPage(
+            items: const [thirdBranchPayload],
+            nextCursor: cursorPage2,
+            hasMore: true,
+          ),
+          deltaPage(items: const [branchPayload], nextCursor: branchesCursor),
+        ]);
+    });
+
+    test('trois pages appliquées, chaque curseur rejoué tel quel', () async {
+      final report = await engineOver(['branches']).synchronize();
+
+      expect(report.pulled, ['branches']);
+      expect(report.pages, 3);
+
+      final sent = server.requestsFor('branches');
+      expect(sent, hasLength(3));
+      // Le premier tour part **sans** `since` ; les suivants rejouent le
+      // curseur **reçu**, jamais un curseur fabriqué (ADR-0026).
+      expect(
+        sent.map((r) => r.queryParameters['since']),
+        [null, cursorPage1, cursorPage2],
+      );
+      expect(
+        sent.map((r) => r.queryParameters['limit']),
+        everyElement(1),
+        reason: 'sans `limit=1`, la boucle ne serait jamais exercée',
+      );
+    });
+
+    test('le magasin porte les trois lignes et le dernier curseur', () async {
+      await engineOver(['branches']).synchronize();
+
+      final rows = await db.mediathequeDao.allBranches().get();
+      expect(rows.map((r) => r.id).toList()..sort(), [1, 3, 7]);
+      expect(rows.firstWhere((r) => r.id == 1).isMotherChurch, isTrue);
+      expect(await dao.cursorFor(SyncCollectionKey.branches), branchesCursor);
+      expect(await dao.readScopeVersion(), 1);
+    });
+
+    test('le cycle suivant repart du curseur persisté, pas de zéro', () async {
+      await engineOver(['branches']).synchronize();
+      // La file du double s'épuise sur sa dernière page, qui se répète : le
+      // second cycle applique une page finale et s'arrête.
+      await engineOver(['branches']).synchronize();
+
+      expect(
+        server.requestsFor('branches').last.queryParameters['since'],
+        branchesCursor,
+      );
+      // Le manifeste du second tour porte ce que le client sait désormais.
+      final second = server.manifestRequests.last.queryParameters;
+      expect(second['cursors[branches]'], branchesCursor);
+      expect(second['scope_version'], 1);
+    });
+  });
+
+  group('L\'ordre d\'application : référentiels avant contenu', () {
+    test('le registre local est ordonné, et c\'est lui la règle', () {
+      expect(
+        syncedCollections().map((c) => c.key),
+        ['teaching_types', 'contributors', 'branches', 'teachings'],
+        reason: 'ça ne supprime pas la fenêtre où un enseignement arrive sans '
+            'son intervenant — la jointure de lecture reste tolérante pour '
+            'cette raison — mais ça supprime le cas fréquent : la toute '
+            'première synchronisation',
+      );
+    });
+
+    test('les tirages partent dans cet ordre', () async {
+      server
+        ..serveManifest(manifestFromZero())
+        ..serveCollection('teaching_types', teachingTypesPage())
+        ..serveCollection('contributors', contributorsPage())
+        ..serveCollection('branches', branchesPage())
+        ..serveCollection('teachings', mixedTeachingsPage());
+
+      await engineOver([
+        'teaching_types',
+        'contributors',
+        'branches',
+        'teachings',
+      ]).synchronize();
+
+      expect(
+        server.requests.map((r) => r.uri.path),
+        [
+          '/sync',
+          '/sync/teaching_types',
+          '/sync/contributors',
+          '/sync/branches',
+          '/sync/teachings',
+        ],
+      );
+    });
+  });
+
+  group('Le manifeste décide, le tirage exécute', () {
+    test(
+        '`has_changes: false` : aucun tirage, et le `current_cursor` n\'est '
+        'pas adopté', () async {
+      server.serveManifest(manifestNothingToPull());
+
+      final report = await engineOver(['branches', 'teachings']).synchronize();
+
+      expect(report.untouched, ['branches', 'teachings']);
+      expect(server.requestsFor('branches'), isEmpty);
+      expect(server.requestsFor('teachings'), isEmpty);
+      // Le `current_cursor` du manifeste est la **borne haute du périmètre**,
+      // pas un accusé de réception : l'adopter ferait avancer un curseur sur
+      // des lignes jamais appliquées.
+      expect(await dao.cursorFor(SyncCollectionKey.branches), isNull);
+      // La version de périmètre, elle, est retenue : le cycle est allé au bout.
+      expect(await dao.readScopeVersion(), 4);
+    });
+
+    test('une collection absente du manifeste n\'est pas tirée', () async {
+      // Le registre serveur ne connaît pas encore cette clé ; le client ne la
+      // devine pas et n'invente pas de requête.
+      server.serveManifest({
+        'scope_version': 4,
+        'collections': [
+          manifestEntry('branches', partition: 'reference', hasChanges: true),
+        ],
+      });
+      server.serveCollection('branches', branchesPage());
+
+      final report = await engineOver(['branches', 'teachings']).synchronize();
+
+      expect(report.pulled, ['branches']);
+      expect(report.untouched, ['teachings']);
+      expect(server.requestsFor('teachings'), isEmpty);
+    });
+  });
+
+  group('Ce que le magasin reçoit — on stocke ce que le serveur envoie', () {
+    setUp(() {
+      server
+        ..serveManifest(manifestFromZero())
+        ..serveCollection('teaching_types', teachingTypesPage())
+        ..serveCollection('teachings', mixedTeachingsPage());
+    });
+
+    test('la carte de traduction est écrite entière, pas repliée', () async {
+      await engineOver(['teaching_types']).synchronize();
+
+      final hero = await (db.select(db.teachingTypes)
+            ..where((t) => t.id.equals(1)))
+          .getSingle();
+      expect(hero.label, {
+        'fr': 'Message du dimanche',
+        'en': 'Sunday message',
+        'ee': 'Kɔsiɖagbe ƒe nya',
+      });
+    });
+
+    test('une rubrique masquée est stockée, pas filtrée', () async {
+      await engineOver(['teaching_types']).synchronize();
+
+      final hidden = await (db.select(db.teachingTypes)
+            ..where((t) => t.id.equals(3)))
+          .getSingle();
+      expect(hidden.visibleOnHome, isFalse);
+      expect(hidden.layout, 'list');
+    });
+
+    test(
+        'la couleur reste brute, le jour reste un jour, l\'image reste '
+        'relative', () async {
+      await engineOver(['teachings']).synchronize();
+
+      final national = await (db.select(db.teachings)
+            ..where(
+              (t) => t.id.equals(teachingWithoutColorPayload['id']! as String),
+            ))
+          .getSingle();
+
+      // `null` = « hérite de ma rubrique » : la cascade se termine à la
+      // lecture, jamais à l'écriture.
+      expect(national.color, isNull);
+      // `null` = **national**, pas « inconnu ».
+      expect(national.branchId, isNull);
+      // Un jour de calendrier, en texte : le lire en instant le décalerait.
+      expect(national.recordedAt, '2026-04-19');
+      // Relative : la résolution contre la base d'API appartient au client.
+      expect(national.imageLandscapeUrl, startsWith('/uploads/'));
+
+      final sansMedia = await (db.select(db.teachings)
+            ..where(
+              (t) =>
+                  t.id.equals(teachingWithoutPlaylistPayload['id']! as String),
+            ))
+          .getSingle();
+      expect(sansMedia.playlistUrl, isNull);
+      expect(sansMedia.isLive, isTrue);
+    });
+
+    test('les instants sont analysés, jamais comparés comme des chaînes',
+        () async {
+      await engineOver(['teachings']).synchronize();
+
+      final row = await (db.select(db.teachings)
+            ..where((t) => t.id.equals(fullTeachingPayload['id']! as String)))
+          .getSingle();
+
+      // L'orthographe du décalage (`Z` ou `+00:00`) dépend du fuseau du
+      // processus serveur et ne fait pas partie du contrat : on compare des
+      // **instants**. Le magasin les range en secondes d'époque et les rend
+      // dans le fuseau de l'appareil — l'instant, lui, est le bon.
+      expect(
+        row.publishedAt!.isAtSameMomentAs(DateTime.utc(2026, 4, 5, 18)),
+        isTrue,
+      );
+      expect(
+        row.updatedAt!.isAtSameMomentAs(DateTime.utc(2026, 4, 5, 18)),
+        isTrue,
+      );
+    });
+  });
+
+  group('Le client n\'efface jamais de sa propre initiative', () {
+    test('une rétractation ne fait quitter que la ligne rétractée', () async {
+      await dao.applyPage(
+        dao.contributorsCollection,
+        upserts: [contributorRow(7, 'Pasteur Komla Anani')],
+        cursor: 'c-contributors',
+      );
+      await dao.applyPage(
+        dao.teachingsCollection,
+        upserts: [teachingRow(retractedTeachingPayload['id']! as String)],
+        cursor: null,
+      );
+
+      server
+        ..serveManifest(manifestNominal())
+        ..serveCollection(
+          'teachings',
+          deltaPage(
+            items: const [retractedTeachingPayload],
+            nextCursor: teachingsCursorPage2,
+          ),
+        );
+
+      await engineOver(['teachings']).synchronize();
+
+      expect(await db.select(db.teachings).get(), isEmpty);
+      // L'intervenant appartient à une **autre collection répliquée** : seul le
+      // serveur peut l'en faire sortir, en le faisant voyager dans le flux.
+      expect(await db.select(db.contributors).get(), hasLength(1));
+    });
+
+    test(
+      'aucune collection privée n\'est répliquée par ce client, donc aucune '
+      'progression de lecture n\'est effaçable',
+      () {
+        // `playback_progress` **est** une collection synchronisée (partition
+        // `private`), pas de l'état local : l'effacer perdrait la position de
+        // lecture sans recours — le curseur est déjà passé devant elle, elle ne
+        // serait plus jamais livrée — et une rétractation se défait, republier
+        // est courant. La progression reste ; la ligne « reprendre la lecture »
+        // disparaît d'elle-même faute d'enseignement à joindre.
+        //
+        // Aujourd'hui la garantie est **structurelle** : ce client ne réplique
+        // aucune collection `private`, donc aucun chemin d'effacement n'existe.
+        // Ce test tombera le jour où l'une d'elles entrera au registre local —
+        // et c'est ce jour-là qu'il faudra écrire le vrai garde-fou.
+        expect(
+          syncedCollections().map((c) => c.key),
+          isNot(contains('playback_progress')),
+        );
+      },
+    );
+  });
+
+  group('Une ligne mutilée coûte sa page, pas le magasin', () {
+    test(
+        'un enseignement sans titre rejette la page entière, curseur '
+        'compris', () async {
+      server
+        ..serveManifest(manifestNominal())
+        ..serveCollection(
+          'teachings',
+          deltaPage(
+            items: const [
+              fullTeachingPayload,
+              // Ni une rétractation (pas de `deletedAt`), ni une ligne
+              // complète : le serveur n'en sert pas, et si cela arrivait, mieux
+              // vaut échouer bruyamment qu'écrire une ligne mutilée dans le
+              // magasin qui peint les écrans.
+              {'id': '019f2c40-0000-7000-8000-0000000000ee'},
+            ],
+            nextCursor: teachingsCursorPage3,
+          ),
+        );
+
+      await expectLater(
+        engineOver(['teachings']).synchronize(),
+        throwsA(isA<MalformedSyncRow>()),
+      );
+
+      expect(await db.select(db.teachings).get(), isEmpty);
+      expect(await dao.cursorFor(SyncCollectionKey.teachings), isNull);
+      expect(await dao.readScopeVersion(), isNull);
+    });
+  });
+}
