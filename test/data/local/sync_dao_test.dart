@@ -230,6 +230,51 @@ void main() {
       expect(await dao.cursorFor(SyncCollectionKey.branches), 'c-appris');
     });
 
+    test('la transaction finale ne valide rien à moitié', () async {
+      await dao.beginResync(SyncCollectionKey.branches);
+      await dao.applyResyncPage(
+        dao.branchesCollection,
+        upserts: [branchRow(1, 'Lomé')],
+      );
+
+      // Le balayage, le curseur et la levée du jeton voyagent ensemble : si
+      // quoi que ce soit échoue après eux, aucun des trois n'a eu lieu.
+      await expectLater(
+        db.transaction(() async {
+          await dao.finishResync(dao.branchesCollection,
+              cursor: 'curseur-neuf');
+          throw const _Coupure();
+        }),
+        throwsA(isA<_Coupure>()),
+      );
+
+      expect(await branchIds(), [1, 2, 3]);
+      expect(await dao.cursorFor(SyncCollectionKey.branches), 'curseur-ancien');
+      expect(await dao.resyncToken(SyncCollectionKey.branches), isNotNull);
+    });
+
+    test('une rétractation reçue en plein cycle est honorée', () async {
+      await dao.applyPage(
+        dao.teachingsCollection,
+        upserts: [teachingRow('t-1'), teachingRow('t-2')],
+        cursor: 'c1',
+      );
+
+      await dao.beginResync(SyncCollectionKey.teachings);
+      await dao.applyResyncPage(
+        dao.teachingsCollection,
+        upserts: [teachingRow('t-1')],
+        deletedIds: const ['t-2'],
+      );
+
+      // Retirée tout de suite, sans attendre le balayage : une rétractation
+      // est un ordre du serveur, pas une déduction du cycle.
+      expect(await teachingIds(), ['t-1']);
+
+      await dao.finishResync(dao.teachingsCollection, cursor: 'c2');
+      expect(await teachingIds(), ['t-1']);
+    });
+
     test('une collection resynchronisée n\'en balaie pas une autre', () async {
       await dao.applyPage(
         dao.contributorsCollection,
@@ -276,8 +321,14 @@ void main() {
       expect(await dao.readScopeVersion(), 3);
     });
 
-    test('la version de périmètre part de null et se persiste en dernier',
+    test('la version de périmètre part de null et se relit telle qu\'écrite',
         () async {
+      // Ce test ne couvre **que** l'emplacement. La discipline d'ADR-0027 —
+      // retenir la version en mémoire pendant tout le cycle et ne la persister
+      // qu'après que chaque collection marquée a purgé et re-tiré jusqu'à
+      // `has_more: false` — appartient au moteur de synchronisation (#29), qui
+      // n'existe pas encore. Le magasin ne peut qu'offrir un emplacement qui ne
+      // se valide avec rien d'autre ; il ne peut pas forcer l'ordre des appels.
       expect(await dao.readScopeVersion(), isNull);
       await dao.writeScopeVersion(7);
       expect(await dao.readScopeVersion(), 7);
@@ -291,6 +342,44 @@ void main() {
         throwsA(anything),
       );
       expect(await db.select(db.syncState).get(), hasLength(1));
+    });
+  });
+
+  group('Aucune clé étrangère entre collections', () {
+    // Vérifié contre le **DDL réellement créé**, et non contre la déclaration
+    // Dart : SQLite n'applique les clés étrangères que si `PRAGMA
+    // foreign_keys` est actif, donc une contrainte déclarée mais inerte
+    // passerait inaperçue dans un test de comportement — jusqu'au jour où
+    // quelqu'un activerait le pragma, et où une page parfaitement valide
+    // échouerait tout entière parce que son intervenant n'est pas encore
+    // arrivé.
+    for (final table in const [
+      'branches',
+      'teaching_types',
+      'contributors',
+      'teachings',
+    ]) {
+      test('« $table » n\'en déclare aucune', () async {
+        final rows =
+            await db.customSelect('PRAGMA foreign_key_list($table)').get();
+        expect(
+          rows,
+          isEmpty,
+          reason: 'Les collections se resynchronisent séparément : une '
+              'contrainte ferait échouer l\'application d\'une page valide.',
+        );
+      });
+    }
+
+    test('un enseignement s\'écrit sans que ses cibles existent', () async {
+      // Le pendant comportemental : `contributorId` et `teachingTypeId` sont
+      // des entiers nus, ils ne désignent rien qui doive exister.
+      await dao.applyPage(
+        dao.teachingsCollection,
+        upserts: [teachingRow('t-1', contributorId: 404, teachingTypeId: 404)],
+        cursor: 'c1',
+      );
+      expect(await teachingIds(), ['t-1']);
     });
   });
 }
