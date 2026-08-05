@@ -61,6 +61,7 @@ void main() {
         (tester) async {
       // Enseignement sans image : évite tout chargement réseau en test.
       const teaching = Teaching(
+        id: '01940000-0000-7000-8000-00000000cafe',
         title: 'Enseignement de test',
         author: 'Pasteur Test',
         duration: '10:00',
