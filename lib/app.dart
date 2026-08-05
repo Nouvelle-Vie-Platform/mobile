@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/config/app_env.dart';
 import 'core/network/api_client.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
 import 'state/auth_providers.dart';
 import 'state/locale_providers.dart';
+import 'state/sync_providers.dart';
 import 'state/theme_provider.dart';
 import 'theme/app_theme.dart';
 
@@ -29,6 +33,22 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
     // réseau, sans accès à Riverpod ni à GoRouter — et il ne doit pas en
     // acquérir. C'est ici, où les deux existent, qu'on branche la réaction.
     ApiClient.instance.onUnauthorized = _handleUnauthorized;
+
+    // **Le déclencheur « ouverture »** (ADR-0017). Sans lui, le magasin ne se
+    // remplit jamais et la médiathèque reste muette : les écrans lisent le
+    // magasin, et rien n'y écrit tant que personne n'a lancé un cycle.
+    //
+    // Les deux autres déclencheurs — retour au premier plan et
+    // tirer-pour-rafraîchir — appartiennent au lot qui sort `sample_data` du
+    // chemin applicatif. **Jamais de polling.**
+    if (AppEnv.useBackend) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
+        // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.
+        unawaited(ref.read(syncSchedulerProvider).start());
+      });
+    }
   }
 
   @override
