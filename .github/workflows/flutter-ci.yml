@@ -32,3 +32,15 @@ jobs:
 
       - name: Run tests
         run: flutter test
+
+      # Le magasin local est la première dépendance du dépôt qui peut casser le
+      # web sans casser autre chose : un `import 'package:drift/native.dart'`
+      # (dart:ffi) glissé dans `lib/` compile parfaitement sur mobile et rend le
+      # web injoignable. `flutter analyze` ne le voit pas — seule une
+      # compilation web le voit.
+      #
+      # Le second risque, lui, est couvert par `flutter test` :
+      # `test/data/local/web_assets_test.dart` apparie sqlite3.wasm et
+      # drift_worker.js à pubspec.lock.
+      - name: Build web
+        run: flutter build web --dart-define=API_BASE_URL=http://localhost:3333

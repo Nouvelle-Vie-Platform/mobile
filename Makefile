@@ -23,7 +23,8 @@ DART_DEFINES         := --dart-define=API_BASE_URL=$(API_BASE_URL)
 ANDROID_DART_DEFINES := --dart-define=API_BASE_URL=$(ANDROID_API_BASE_URL)
 
 .DEFAULT_GOAL := help
-.PHONY: help ios android web devices test analyze format l10n clean
+.PHONY: help ios android web web-assets devices test analyze format l10n gen \
+        migrations clean
 
 help: ## Affiche cette aide
 	@echo "Maison du Miracle — cibles disponibles :"
@@ -35,6 +36,9 @@ help: ## Affiche cette aide
 	@echo "  make analyze   flutter analyze"
 	@echo "  make format    dart format lib test"
 	@echo "  make l10n      flutter gen-l10n"
+	@echo "  make gen       Régénère le code Drift (.g.dart)"
+	@echo "  make migrations  Exporte le schéma local d'une nouvelle version"
+	@echo "  make web-assets  Re-télécharge sqlite3.wasm + drift_worker.js"
 	@echo "  make clean     flutter clean"
 	@echo ""
 	@echo "URL du backend (--dart-define=API_BASE_URL) :"
@@ -76,6 +80,19 @@ format: ## dart format
 
 l10n: ## Régénère les traductions
 	flutter gen-l10n
+
+gen: ## Régénère le code Drift du magasin local (.g.dart, à versionner)
+	@echo "▶ Les .g.dart sont VERSIONNÉS — la CI ne lance pas build_runner."
+	dart run build_runner build
+
+migrations: ## Exporte le schéma local de la version courante (drift_schemas/)
+	@echo "▶ Après un changement de schéma : bumper AppDatabase.schemaVersion,"
+	@echo "  écrire le palier dans onUpgrade, puis relancer cette cible."
+	dart run drift_dev make-migrations
+	dart run drift_dev schema generate drift_schemas/app_database/ test/data/local/schema/
+
+web-assets: ## Re-télécharge sqlite3.wasm + drift_worker.js aux versions de pubspec.lock
+	./tool/web_assets.sh
 
 clean: ## flutter clean
 	flutter clean

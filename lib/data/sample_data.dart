@@ -435,7 +435,6 @@ abstract final class SampleData {
             'relève et accueille sans condition.',
         verse: 'Luc 15:20',
         rubric: TeachingRubric.etude),
-
   ];
 
   static const List<CommunityGroup> groups = [

@@ -8,7 +8,16 @@ dépôt. Le respecter prime sur les habitudes par défaut.
 - **Flutter 3.44.2** / Dart `>=3.6.0 <4.0.0`. Material 3.
 - **flutter_riverpod ^3.x** (gestion d'état), **go_router ^17.x** (navigation),
   **flutter_localizations** + `gen-l10n` (i18n). `flutter_lints ^6`.
-- Aucune dépendance native/plugin → l'app tourne aussi sur **web**.
+- **drift 2.34.0** (épinglé) + `drift_flutter` — magasin local SQLite, voir
+  « Magasin local » plus bas. Premier générateur de code du dépôt
+  (`build_runner`, `drift_dev`).
+- **Le web reste une cible**, mais ce n'est plus gratuit. La règle précédente
+  (« aucune dépendance native/plugin ») était déjà fausse — `flutter_secure_storage`
+  a des implémentations natives — et Drift la retire pour de bon : il embarque
+  `sqlite3` en natif, et sur le web il exige `web/sqlite3.wasm` et
+  `web/drift_worker.js`, **versionnés dans le dépôt** et appariés à
+  `pubspec.lock`. Après toute montée de version de `drift` ou `sqlite3` :
+  `make web-assets`. Voir `web/WEB_ASSETS.md`.
 
 ## Commandes
 ```bash
@@ -17,8 +26,13 @@ flutter analyze              # doit rester à 0 problème
 flutter test                 # tests (smoke) — doivent rester verts
 flutter gen-l10n             # OBLIGATOIRE après toute édition d'un .arb
 dart format lib/ test/       # formatage (CI le vérifie)
+make gen                     # OBLIGATOIRE après tout changement de table Drift
+make migrations              # + après un changement de schemaVersion
+make web-assets              # après une montée de drift / sqlite3
 ```
 La CI (`.github/workflows/flutter-ci.yml`) lance format + analyze + test.
+**Elle ne lance pas `build_runner`** : les `.g.dart` et `drift_schemas/` sont
+**versionnés**. Oublier `make gen` fait passer la CI sur du code périmé.
 
 ## Architecture (à respecter)
 Couches claires, pensées pour brancher un backend sans toucher l'UI :
@@ -30,6 +44,42 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
     — **synchrone**, et il ne couvre que les domaines **encore fictifs**.
   - `auth_repository.dart` / `http_auth_repository.dart`, `branch_repository.dart` —
     repositories **dédiés et asynchrones**, chacun hors de `ChurchRepository`.
+  - `local/` — **le magasin local Drift**, voir ci-dessous.
+
+### Magasin local (`lib/data/local/`) — ADR-0026
+Base SQLite embarquée qui **peint les écrans** des collections répliquées : la
+synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
+
+- `app_database.dart` — `AppDatabase`, `schemaVersion`, `MigrationStrategy`.
+- `tables/sync_tables.dart` — plomberie : `sync_cursors` (un curseur **par
+  collection**), `sync_state` (état **global**, une ligne), `resync_tokens`.
+- `tables/mediatheque_tables.dart` — `branches`, `teaching_types`,
+  `contributors`, `teachings`.
+- `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart` —
+  lectures.
+
+**Six règles qui ne se renégocient pas** (ADR-0026 en donne le *pourquoi*) :
+1. **Une page appliquée = une transaction** : ses lignes **et** son curseur, ou
+   ni l'un ni l'autre. Un curseur avancé sur des lignes jamais appliquées est un
+   trou permanent que rien ne refermera.
+2. **La `scope_version` n'est PAS dans la table des curseurs** : un curseur
+   appartient à une collection, elle est globale. Persistée **en dernier**.
+3. **Resync = remplacement atomique**, jamais purger-puis-remplir : poser un
+   jeton, re-tirer sans rien effacer, balayer à la fin ce que le cycle n'a pas
+   revu.
+4. **Aucune clé étrangère entre collections** : `contributorId` et
+   `teachingTypeId` sont des entiers nus. Une contrainte ferait échouer une page
+   valide entière.
+5. **On stocke ce que le serveur envoie** : la carte `{fr,en,ee}` entière, la
+   couleur **brute** (`null` = hérite de la rubrique), toutes les rubriques y
+   compris masquées. Ce qui dépend d'autre chose se joint à la lecture.
+6. **Jointures tolérantes** + **« pas d'enseignement, pas de section »** :
+   un enseignement sans intervenant s'affiche quand même ; une rubrique sans
+   enseignement local ne sort pas de l'accueil (c'est ce qui fait disparaître
+   d'elle-même une rubrique supprimée côté serveur — elle n'a pas de tombstone).
+
+Le curseur est **opaque** : on le stocke et on le rejoue, jamais on ne le décode
+ni ne le construit.
 - `lib/state/` — providers Riverpod :
   - `repository_providers.dart` : `churchRepositoryProvider` + providers de données
     (`teachingsProvider`, `groupsProvider`, `prayersProvider`, `notesProvider`,
