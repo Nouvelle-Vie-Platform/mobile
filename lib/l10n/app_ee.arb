@@ -38,5 +38,15 @@
   "titleSister": "Nɔvinyɔnu",
   "fieldYourName": "Wò ŋkɔ",
   "actionCancel": "Gbugbɔ",
-  "actionSave": "Dzra ɖo"
+  "actionSave": "Dzra ɖo",
+
+  "absenceRetractedTitle": "Woɖe nu sia ɖa",
+  "absenceRetractedMessage": "Nu sia megali o. Sɔlemeha la ɖee ɖa.",
+  "absenceNotSyncedTitle": "Womekɔ ɖe mɔ̃a dzi haɖe o",
+  "absenceNotSyncedMessage": "Nu sia meva mɔ̃ sia dzi haɖe o. Ava do le kɔkɔɖedzi si gbɔna megbe.",
+  "absenceNoMediaTitle": "Nuɖeɖi la gbɔna",
+  "absenceNoMediaMessage": "Nuɖeɖi la meva ɖe internet dzi haɖe o. Gbugbɔ va le ŋkeke ʋɛ aɖewo megbe.",
+  "absenceOfflineMediaTitle": "Mele mɔ nu o",
+  "absenceOfflineMediaMessage": "Womeɖi nuɖeɖi sia ɖe mɔ̃a dzi o. Gbugbɔ ka internet ŋu hafi nàse.",
+  "absenceBack": "Trɔ yi megbe"
 }

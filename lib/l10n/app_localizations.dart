@@ -1311,6 +1311,60 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'À propos'**
   String get eventDetailAbout;
+
+  /// Absence « contenu retiré » (ContentAbsence.retracted) : l'identifiant a été valide, il ne l'est plus — le serveur a dépublié ou reprogrammé le contenu (rétractation du flux delta, ADR-0025). Écrit comme un fait définitif, jamais comme une panne : il n'y a rien à réessayer
+  ///
+  /// In fr, this message translates to:
+  /// **'Contenu retiré'**
+  String get absenceRetractedTitle;
+
+  /// Explication de l'absence « contenu retiré ». Répond à la seule question du fidèle : est-ce que ça revient ? Non
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce contenu n\'est plus disponible. Il a été retiré par l\'église.'**
+  String get absenceRetractedMessage;
+
+  /// Absence « pas encore synchronisé » (ContentAbsence.notSynced) : le magasin local n'a pas encore reçu ce contenu. À ne pas confondre avec absenceRetractedTitle — ici c'est une attente, le contenu existe probablement côté serveur. Pas encore câblé (arrive avec le magasin local)
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore synchronisé'**
+  String get absenceNotSyncedTitle;
+
+  /// Explication de l'absence « pas encore synchronisé » : dit quoi attendre et quand
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce contenu n\'est pas encore arrivé sur cet appareil. Il apparaîtra après la prochaine synchronisation.'**
+  String get absenceNotSyncedMessage;
+
+  /// Absence « pas encore de média » (ContentAbsence.noMedia) : le contenu est publié mais son fichier audio/vidéo n'est pas encore attaché. Pas encore câblé (arrive avec le lecteur média)
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement à venir'**
+  String get absenceNoMediaTitle;
+
+  /// Explication de l'absence « pas encore de média » : le contenu existe, le fichier arrive
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'enregistrement n\'est pas encore en ligne. Revenez d\'ici quelques jours.'**
+  String get absenceNoMediaMessage;
+
+  /// Absence « média indisponible hors ligne » (ContentAbsence.offlineMedia) : le média existe mais n'a pas été téléchargé et l'appareil est hors ligne. La seule des quatre qui se résout en retrouvant du réseau. Pas encore câblé
+  ///
+  /// In fr, this message translates to:
+  /// **'Indisponible hors ligne'**
+  String get absenceOfflineMediaTitle;
+
+  /// Explication de l'absence « média indisponible hors ligne » : dit l'action qui débloque
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet enregistrement n\'a pas été téléchargé. Reconnectez-vous à internet pour l\'écouter.'**
+  String get absenceOfflineMediaMessage;
+
+  /// Action commune aux quatre absences (ContentAbsenceView) : rend la main sans éjecter le fidèle de l'écran qu'il avait ouvert
+  ///
+  /// In fr, this message translates to:
+  /// **'Retour'**
+  String get absenceBack;
 }
 
 class _AppLocalizationsDelegate

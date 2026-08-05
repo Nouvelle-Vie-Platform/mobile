@@ -55,6 +55,26 @@ final teachingsProvider = Provider<List<Teaching>>(
   (ref) => ref.watch(churchRepositoryProvider).teachings(),
 );
 
+/// Résout un enseignement par son identifiant, ou `null` s'il n'existe plus.
+///
+/// C'est le point d'entrée des écrans de détail : ils reçoivent un identifiant
+/// par la route et relisent la donnée **ici**, dans la source de vérité, à
+/// chaque build. Passer l'objet par `extra` en faisait une copie figée au
+/// moment du clic — un contenu rétracté pendant la lecture restait affiché.
+///
+/// `null` n'est pas une erreur technique : c'est l'une des quatre absences que
+/// l'application doit distinguer (« contenu retiré », cf. `ContentAbsence`).
+/// L'identifiant a été valide, il ne l'est plus.
+///
+/// L'interface ne bougera pas quand le magasin local remplacera
+/// [teachingsProvider] : même signature, même `null`.
+final teachingByIdProvider = Provider.family<Teaching?, String>((ref, id) {
+  for (final teaching in ref.watch(teachingsProvider)) {
+    if (teaching.id == id) return teaching;
+  }
+  return null;
+});
+
 /// Enseignements d'une rubrique donnée, dans l'ordre du repository.
 ///
 /// Les rubriques de l'accueil se découpent ici (et non dans le repository) :

@@ -351,5 +351,24 @@
   "eventDetailTitle": "Événement",
   "@eventDetailTitle": { "description": "Détail d'un évènement : titre de la BrandAppBar. Générique — l'intitulé de l'évènement est déjà dans le corps de l'écran" },
   "eventDetailAbout": "À propos",
-  "@eventDetailAbout": { "description": "Détail d'un évènement : en-tête de la section description. La section entière disparaît quand `body` est absent (une prière hebdomadaire n'a rien à ajouter à son titre)" }
+  "@eventDetailAbout": { "description": "Détail d'un évènement : en-tête de la section description. La section entière disparaît quand `body` est absent (une prière hebdomadaire n'a rien à ajouter à son titre)" },
+
+  "absenceRetractedTitle": "Contenu retiré",
+  "@absenceRetractedTitle": { "description": "Absence « contenu retiré » (ContentAbsence.retracted) : l'identifiant a été valide, il ne l'est plus — le serveur a dépublié ou reprogrammé le contenu (rétractation du flux delta, ADR-0025). Écrit comme un fait définitif, jamais comme une panne : il n'y a rien à réessayer" },
+  "absenceRetractedMessage": "Ce contenu n'est plus disponible. Il a été retiré par l'église.",
+  "@absenceRetractedMessage": { "description": "Explication de l'absence « contenu retiré ». Répond à la seule question du fidèle : est-ce que ça revient ? Non" },
+  "absenceNotSyncedTitle": "Pas encore synchronisé",
+  "@absenceNotSyncedTitle": { "description": "Absence « pas encore synchronisé » (ContentAbsence.notSynced) : le magasin local n'a pas encore reçu ce contenu. À ne pas confondre avec absenceRetractedTitle — ici c'est une attente, le contenu existe probablement côté serveur. Pas encore câblé (arrive avec le magasin local)" },
+  "absenceNotSyncedMessage": "Ce contenu n'est pas encore arrivé sur cet appareil. Il apparaîtra après la prochaine synchronisation.",
+  "@absenceNotSyncedMessage": { "description": "Explication de l'absence « pas encore synchronisé » : dit quoi attendre et quand" },
+  "absenceNoMediaTitle": "Enregistrement à venir",
+  "@absenceNoMediaTitle": { "description": "Absence « pas encore de média » (ContentAbsence.noMedia) : le contenu est publié mais son fichier audio/vidéo n'est pas encore attaché. Pas encore câblé (arrive avec le lecteur média)" },
+  "absenceNoMediaMessage": "L'enregistrement n'est pas encore en ligne. Revenez d'ici quelques jours.",
+  "@absenceNoMediaMessage": { "description": "Explication de l'absence « pas encore de média » : le contenu existe, le fichier arrive" },
+  "absenceOfflineMediaTitle": "Indisponible hors ligne",
+  "@absenceOfflineMediaTitle": { "description": "Absence « média indisponible hors ligne » (ContentAbsence.offlineMedia) : le média existe mais n'a pas été téléchargé et l'appareil est hors ligne. La seule des quatre qui se résout en retrouvant du réseau. Pas encore câblé" },
+  "absenceOfflineMediaMessage": "Cet enregistrement n'a pas été téléchargé. Reconnectez-vous à internet pour l'écouter.",
+  "@absenceOfflineMediaMessage": { "description": "Explication de l'absence « média indisponible hors ligne » : dit l'action qui débloque" },
+  "absenceBack": "Retour",
+  "@absenceBack": { "description": "Action commune aux quatre absences (ContentAbsenceView) : rend la main sans éjecter le fidèle de l'écran qu'il avait ouvert" }
 }

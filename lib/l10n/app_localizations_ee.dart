@@ -678,4 +678,34 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get eventDetailAbout => 'À propos';
+
+  @override
+  String get absenceRetractedTitle => 'Woɖe nu sia ɖa';
+
+  @override
+  String get absenceRetractedMessage => 'Nu sia megali o. Sɔlemeha la ɖee ɖa.';
+
+  @override
+  String get absenceNotSyncedTitle => 'Womekɔ ɖe mɔ̃a dzi haɖe o';
+
+  @override
+  String get absenceNotSyncedMessage =>
+      'Nu sia meva mɔ̃ sia dzi haɖe o. Ava do le kɔkɔɖedzi si gbɔna megbe.';
+
+  @override
+  String get absenceNoMediaTitle => 'Nuɖeɖi la gbɔna';
+
+  @override
+  String get absenceNoMediaMessage =>
+      'Nuɖeɖi la meva ɖe internet dzi haɖe o. Gbugbɔ va le ŋkeke ʋɛ aɖewo megbe.';
+
+  @override
+  String get absenceOfflineMediaTitle => 'Mele mɔ nu o';
+
+  @override
+  String get absenceOfflineMediaMessage =>
+      'Womeɖi nuɖeɖi sia ɖe mɔ̃a dzi o. Gbugbɔ ka internet ŋu hafi nàse.';
+
+  @override
+  String get absenceBack => 'Trɔ yi megbe';
 }

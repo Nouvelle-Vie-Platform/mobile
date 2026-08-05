@@ -245,5 +245,15 @@
   "agendaDaySummary": "{day} — {count, plural, =0{no events} one{{count} event} other{{count} events}}",
 
   "eventDetailTitle": "Event",
-  "eventDetailAbout": "About"
+  "eventDetailAbout": "About",
+
+  "absenceRetractedTitle": "Content removed",
+  "absenceRetractedMessage": "This content is no longer available. It was removed by the church.",
+  "absenceNotSyncedTitle": "Not synced yet",
+  "absenceNotSyncedMessage": "This content hasn't reached this device yet. It will appear after the next sync.",
+  "absenceNoMediaTitle": "Recording coming soon",
+  "absenceNoMediaMessage": "The recording isn't online yet. Check back in a few days.",
+  "absenceOfflineMediaTitle": "Unavailable offline",
+  "absenceOfflineMediaMessage": "This recording hasn't been downloaded. Reconnect to the internet to listen.",
+  "absenceBack": "Back"
 }

@@ -676,4 +676,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventDetailAbout => 'About';
+
+  @override
+  String get absenceRetractedTitle => 'Content removed';
+
+  @override
+  String get absenceRetractedMessage =>
+      'This content is no longer available. It was removed by the church.';
+
+  @override
+  String get absenceNotSyncedTitle => 'Not synced yet';
+
+  @override
+  String get absenceNotSyncedMessage =>
+      'This content hasn\'t reached this device yet. It will appear after the next sync.';
+
+  @override
+  String get absenceNoMediaTitle => 'Recording coming soon';
+
+  @override
+  String get absenceNoMediaMessage =>
+      'The recording isn\'t online yet. Check back in a few days.';
+
+  @override
+  String get absenceOfflineMediaTitle => 'Unavailable offline';
+
+  @override
+  String get absenceOfflineMediaMessage =>
+      'This recording hasn\'t been downloaded. Reconnect to the internet to listen.';
+
+  @override
+  String get absenceBack => 'Back';
 }
