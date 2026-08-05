@@ -359,6 +359,21 @@ class TeachingType {
 /// `TeachingTypeTransformer` ne l'exposent, et quatre filtres `family =
 /// 'teaching'` cachent les rassemblements au parc installé. Rien à lire ici
 /// tant qu'ils n'auront pas leur propre collection de synchronisation.
+///
+/// **Trois champs en sont sortis, et ne reviendront pas par l'affichage**
+/// (cadrage D5) : aucun des trois n'a de source serveur, et un modèle qui porte
+/// ce que le back ne sert pas fabrique de la donnée en mode maquette — donc un
+/// écran qui marche sur les fixtures et se vide en production.
+///
+/// - `duration` : le serveur n'en sert **aucune**, et ADR-0005 dit pourquoi —
+///   la durée est dans la playlist HLS, que le lecteur lit de toute façon. La
+///   faire servir par l'API obligerait le serveur à connaître le média, ce
+///   qu'ADR-0005 lui refuse. **Le temps total vient du lecteur.**
+/// - `verse` : aucun équivalent serveur ; [description] existe. S'il faut un
+///   jour l'afficher, ce sera une colonne à ajouter et une décision d'édition,
+///   pas une variable d'affichage.
+/// - `seed` : graine du vignettage de remplacement, sans objet depuis qu'un
+///   enseignement porte deux URL d'image et une couleur de repli.
 @immutable
 class Teaching {
   /// Constructeur déclaré `const` (tous les champs sont finaux) mais **non
@@ -368,17 +383,14 @@ class Teaching {
     required this.id,
     required this.title,
     required this.author,
-    required this.duration,
     required this.recordedAt,
     required this.publishedAt,
     this.teachingTypeId,
-    this.seed = 0,
     this.color,
     this.isFullService = false,
     this.imageLandscapeUrl,
     this.imagePortraitUrl,
     this.description = '',
-    this.verse,
   });
 
   /// Identité de l'enseignement — **UUIDv7 servi par le serveur**, en chaîne.
@@ -395,8 +407,6 @@ class Teaching {
 
   final String title;
   final String author;
-  final String duration;
-  final int seed;
 
   /// Rubrique à laquelle l'enseignement appartient — un **entier nu**, celui
   /// de [TeachingType.id]. `null` = l'enseignement n'en porte pas (encore).
@@ -460,9 +470,6 @@ class Teaching {
 
   /// Description longue (affichée dans la feuille de détail).
   final String description;
-
-  /// Référence biblique associée (ex. « Matthieu 17:20 »), optionnelle.
-  final String? verse;
 }
 
 class CommunityGroup {

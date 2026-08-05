@@ -239,7 +239,6 @@ void main() {
             id: 't-herite',
             title: 'Hérite de sa rubrique',
             author: '',
-            duration: '',
             teachingTypeId: 1,
             recordedAt: DateTime.utc(2026, 4, 12),
             publishedAt: DateTime.utc(2026, 4, 12, 8),

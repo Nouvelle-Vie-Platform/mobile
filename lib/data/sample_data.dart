@@ -320,15 +320,12 @@ abstract final class SampleData {
         isFullService: true,
         publishedAt: _ago(const Duration(days: 3)),
         author: 'Pasteur Samuel',
-        duration: '48:20',
-        seed: 4,
         color: 0xFF223B8C,
         imageLandscapeUrl: 'https://picsum.photos/seed/dimanche/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/dimanche/384/635',
         description:
             'Là où les circonstances semblent avoir tranché, Dieu garde la '
             'parole finale sur nos vies, nos familles et nos projets.',
-        verse: 'Romains 8:31',
         teachingTypeId: 1),
     Teaching(
         id: '0195abb3-2800-7f50-924d-12ee32477961',
@@ -336,15 +333,12 @@ abstract final class SampleData {
         recordedAt: _day(10),
         publishedAt: _ago(const Duration(days: 10)),
         author: 'Pasteur Mike',
-        duration: '52:05',
-        seed: 5,
         // Couleur nulle : hérite de celle de sa rubrique (`dimanche`).
         imageLandscapeUrl: 'https://picsum.photos/seed/roc/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/roc/384/635',
         description:
             'Ce qui tient debout dans la tempête n\'est pas ce qui brille, '
             'mais ce qui est fondé sur la Parole mise en pratique.',
-        verse: 'Matthieu 7:24',
         teachingTypeId: 1),
     Teaching(
         id: '019587a6-a400-710b-9048-8a20d30288e7',
@@ -352,15 +346,12 @@ abstract final class SampleData {
         recordedAt: _day(17),
         publishedAt: _ago(const Duration(days: 17)),
         author: 'Pasteur Samuel',
-        duration: '45:30',
-        seed: 6,
         color: 0xFF1FA971,
         imageLandscapeUrl: 'https://picsum.photos/seed/faveur/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/faveur/384/635',
         description:
             'Il y a des saisons que Dieu fixe lui-même : reconnaître le temps '
             'de sa faveur, c\'est cesser de courir après ce qu\'Il donne.',
-        verse: 'Psaume 102:13',
         teachingTypeId: 1),
     // ── Études bibliques ────────────────────────────────────────────────────
     Teaching(
@@ -370,15 +361,12 @@ abstract final class SampleData {
         isFullService: true,
         publishedAt: _ago(const Duration(days: 24)),
         author: 'Pasteur Jonas',
-        duration: '1:04:30',
-        seed: 7,
         color: 0xFF7A5AF8,
         imageLandscapeUrl: 'https://picsum.photos/seed/romains/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/romains/384/635',
         description:
             'Première étape d\'un parcours dans l\'épître aux Romains : la '
             'justification par la foi, verset après verset.',
-        verse: 'Romains 5:1',
         teachingTypeId: 2),
     Teaching(
         id: '01953f8d-9c00-7d09-99c9-3f722eef070e',
@@ -386,15 +374,12 @@ abstract final class SampleData {
         recordedAt: _day(31),
         publishedAt: _ago(const Duration(days: 31)),
         author: 'Pasteur Mike',
-        duration: '58:15',
-        seed: 8,
         color: 0xFFE53935,
         imageLandscapeUrl: 'https://picsum.photos/seed/alliance/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/alliance/384/635',
         description:
             'D\'Abraham à la nouvelle alliance : comprendre le fil que Dieu '
             'tire d\'un bout à l\'autre de l\'Écriture.',
-        verse: 'Genèse 9:13',
         teachingTypeId: 2),
     Teaching(
         id: '01951b81-1800-7e8e-8f59-d2437dbd48a3',
@@ -402,15 +387,12 @@ abstract final class SampleData {
         recordedAt: _day(38),
         publishedAt: _ago(const Duration(days: 38)),
         author: 'Sœur Estelle',
-        duration: '47:05',
-        seed: 9,
         // Couleur nulle : hérite de celle de sa rubrique (`etude`).
         imageLandscapeUrl: 'https://picsum.photos/seed/psaumes/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/psaumes/384/635',
         description:
             'Les Psaumes mettent des mots sur ce que nous n\'osons pas dire : '
             'apprendre à en faire notre langue de prière.',
-        verse: 'Psaume 63:2',
         teachingTypeId: 2),
     // ── Temps de prière ─────────────────────────────────────────────────────
     Teaching(
@@ -419,15 +401,12 @@ abstract final class SampleData {
         recordedAt: _day(45),
         publishedAt: _ago(const Duration(days: 45)),
         author: 'Pasteur Samuel',
-        duration: '1:18:40',
-        seed: 10,
         color: 0xFF1B2A6B,
         imageLandscapeUrl: 'https://picsum.photos/seed/veillee/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/veillee/384/635',
         description:
             'Une nuit entière portée devant Dieu : quelques mots d\'exhortation, '
             'puis la prière de l\'assemblée jusqu\'au lever du jour.',
-        verse: 'Psaume 5:4',
         teachingTypeId: 3),
     Teaching(
         id: '0194d368-1000-792b-a9de-9c5d1427c9d4',
@@ -435,15 +414,12 @@ abstract final class SampleData {
         recordedAt: _day(52),
         publishedAt: _ago(const Duration(days: 52)),
         author: 'Pasteur Jonas',
-        duration: '54:25',
-        seed: 11,
         color: 0xFF0F766E,
         imageLandscapeUrl: 'https://picsum.photos/seed/intercession/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/intercession/384/635',
         description:
             'Nous nous tenons sur la brèche pour le pays, les autorités et la '
             'paix de nos villes.',
-        verse: 'Ézéchiel 22:30',
         teachingTypeId: 3),
     Teaching(
         id: '0194af5b-8c00-7d6a-9b36-6afbc65a478b',
@@ -451,15 +427,12 @@ abstract final class SampleData {
         recordedAt: _day(59),
         publishedAt: _ago(const Duration(days: 59)),
         author: 'Sœur Estelle',
-        duration: '41:10',
-        seed: 12,
         color: 0xFF9333EA,
         imageLandscapeUrl: 'https://picsum.photos/seed/familles/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/familles/384/635',
         description:
             'Un temps de prière pour les foyers : les couples, les enfants et '
             'ceux qui portent seuls leur maison.',
-        verse: 'Josué 24:15',
         teachingTypeId: 3),
     // ── Hors rubrique ───────────────────────────────────────────────────────
     Teaching(
@@ -468,15 +441,12 @@ abstract final class SampleData {
         recordedAt: _day(66),
         publishedAt: _ago(const Duration(days: 66)),
         author: 'Pasteur Samuel',
-        duration: '23:45',
-        seed: 0,
         color: 0xFF3B5BD0,
         imageLandscapeUrl: 'https://picsum.photos/seed/priere/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/priere/384/635',
         description:
             'La prière n\'est pas une formalité religieuse : c\'est un dialogue '
             'vivant avec Dieu qui transforme nos vies et nos circonstances.',
-        verse: 'Jacques 5:16',
         teachingTypeId: 2),
     Teaching(
         id: '01946742-8400-7fe2-9661-d853031937a8',
@@ -484,15 +454,12 @@ abstract final class SampleData {
         recordedAt: _day(73),
         publishedAt: _ago(const Duration(days: 73)),
         author: 'Pasteur Samuel',
-        duration: '36:10',
-        seed: 1,
         color: 0xFFE53935,
         imageLandscapeUrl: 'https://picsum.photos/seed/foi/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/foi/384/635',
         description:
             'La véritable foi nous connecte aux promesses de Dieu et permet de '
             'voir des résultats extraordinaires dans l\'impossible.',
-        verse: 'Matthieu 17:20',
         teachingTypeId: 3),
     Teaching(
         id: '01944336-0000-7f97-b43a-7a7fa48b2364',
@@ -500,15 +467,12 @@ abstract final class SampleData {
         recordedAt: _day(80),
         publishedAt: _ago(const Duration(days: 80)),
         author: 'Pasteur Mike',
-        duration: '31:45',
-        seed: 2,
         color: 0xFF1FA971,
         imageLandscapeUrl: 'https://picsum.photos/seed/esprit/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/esprit/384/635',
         description:
             'Apprendre à être conduit par l\'Esprit de Dieu au quotidien, dans '
             'nos décisions comme dans notre caractère.',
-        verse: 'Galates 5:25',
         teachingTypeId: 1),
     Teaching(
         id: '01941f29-7c00-740c-88cd-f0b19cc920f6',
@@ -516,16 +480,13 @@ abstract final class SampleData {
         recordedAt: _day(80),
         publishedAt: _ago(const Duration(days: 80)),
         author: 'Pasteur Jonas',
-        duration: '28:12',
-        seed: 3,
         // Ni couleur, ni rubrique : la cascade descend jusqu'au bleu de
         // marque, et l'écran doit rester lisible sans libellé de rubrique.
         imageLandscapeUrl: 'https://picsum.photos/seed/pere/1024/602',
         imagePortraitUrl: 'https://picsum.photos/seed/pere/384/635',
         description:
             'Le cœur du Père céleste pour ses enfants : un amour qui restaure, '
-            'relève et accueille sans condition.',
-        verse: 'Luc 15:20'),
+            'relève et accueille sans condition.'),
   ];
 
   static const List<CommunityGroup> groups = [

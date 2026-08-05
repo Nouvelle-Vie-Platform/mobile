@@ -68,7 +68,6 @@ void main() {
         id: '01940000-0000-7000-8000-00000000cafe',
         title: 'Enseignement de test',
         author: 'Pasteur Test',
-        duration: '10:00',
         color: 0xFF223B8C,
         teachingTypeId: 1,
         recordedAt: DateTime.utc(2026, 4, 12),
