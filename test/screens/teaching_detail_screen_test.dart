@@ -181,6 +181,40 @@ void main() {
     });
   });
 
+  group('Visuel de l\'enseignement', () {
+    testWidgets('un visuel injoignable retombe sur le placeholder',
+        (tester) async {
+      // `flutter test` répond 400 à tout accès réseau — comme un téléphone
+      // hors ligne. Sans repli, le lecteur lèverait au lieu de s'afficher.
+      const withImage = Teaching(
+        id: '01940000-0000-7000-8000-0000000000ff',
+        title: 'Avec visuel distant',
+        author: 'Pasteur Quatre',
+        duration: '40:00',
+        image: 'https://example.invalid/cover.jpg',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            teachingsProvider.overrideWithValue(const [withImage]),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            locale: const Locale('fr'),
+            localizationsDelegates: appLocalizationsDelegates,
+            supportedLocales: appSupportedLocales,
+            home: TeachingDetailScreen(teachingId: withImage.id),
+          ),
+        ),
+      );
+      await _settle(tester);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Avec visuel distant'), findsOneWidget);
+      expect(find.byIcon(Icons.auto_stories_rounded), findsOneWidget);
+    });
+  });
+
   group('Rétractation pendant la lecture', () {
     testWidgets('le contenu retiré remplace le lecteur, sans fermer l\'écran',
         (tester) async {

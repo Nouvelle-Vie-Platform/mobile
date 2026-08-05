@@ -235,22 +235,17 @@ class _Artwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final image = _imageProvider(teaching.image);
+    final source = teaching.image;
 
     // Pas d'image : grande icône flottant sur le dégradé.
-    if (image == null) {
-      return Center(
-        child: Icon(
-          Icons.auto_stories_rounded,
-          size: 110,
-          color: Colors.white.withValues(alpha: 0.85),
-        ),
-      );
-    }
+    if (source == null) return _placeholder();
 
     // Image fondue dans le dégradé : opaque en haut, transparente en bas
     // (et léger fondu en haut) via un masque d'opacité.
     return Hero(
+      // Étiquette bâtie sur l'identifiant, et non sur le titre : deux
+      // enseignements homonymes casseraient l'animation, un titre corrigé la
+      // désynchroniserait de la carte d'origine.
       tag: 'teaching_art_${teaching.id}',
       child: ShaderMask(
         blendMode: BlendMode.dstIn,
@@ -265,22 +260,35 @@ class _Artwork extends StatelessWidget {
           ],
           stops: [0.0, 0.12, 0.6, 1.0],
         ).createShader(rect),
-        child: Image(
-          image: image,
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
-        ),
+        // Repli obligatoire (cf. CLAUDE.md) : sans lui, un visuel injoignable
+        // — hors ligne, ou `flutter test` qui répond 400 à tout réseau — fait
+        // lever le lecteur au lieu de retomber sur le placeholder.
+        child: source.startsWith('http')
+            ? Image.network(
+                source,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(),
+              )
+            : Image.asset(
+                source,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(),
+              ),
       ),
     );
   }
 
-  static ImageProvider? _imageProvider(String? source) {
-    if (source == null) return null;
-    return source.startsWith('http')
-        ? NetworkImage(source)
-        : AssetImage(source);
-  }
+  Widget _placeholder() => Center(
+        child: Icon(
+          Icons.auto_stories_rounded,
+          size: 110,
+          color: Colors.white.withValues(alpha: 0.85),
+        ),
+      );
 }
 
 /// Bloc de contrôles : progression, temps, actions et lecture/pause.
