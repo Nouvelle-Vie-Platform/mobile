@@ -1,0 +1,21 @@
+# Configuration du générateur Drift.
+#
+# `databases` déclare le magasin local à `dart run drift_dev make-migrations`,
+# qui exporte le schéma de chaque version dans `drift_schemas/` et en dérive de
+# quoi **tester les transitions**. Une migration ratée sur un téléphone installé
+# n'est pas un test rouge : c'est une application qui ne démarre plus chez un
+# fidèle, sans correction possible à distance.
+#
+# Après tout changement de schéma : bumper `AppDatabase.schemaVersion`, écrire
+# le palier dans `MigrationStrategy.onUpgrade`, puis relancer
+# `make gen && make migrations`. Les fichiers produits sont **versionnés** — la
+# CI ne lance pas `build_runner`.
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          databases:
+            app_database: lib/data/local/app_database.dart
+          test_dir: test/data/local/schema/
+          schema_dir: drift_schemas/

@@ -1,0 +1,364 @@
+import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
+
+import 'app_database.dart';
+import 'tables/mediatheque_tables.dart';
+import 'tables/sync_tables.dart';
+
+part 'sync_dao.g.dart';
+
+/// Clés de collection du protocole delta. **Le seul discriminant du rangement**
+/// (ADR-0026, décision 1) : une ligne se range d'après le canal par lequel elle
+/// est arrivée, jamais d'après un champ qu'elle porte.
+abstract final class SyncCollectionKey {
+  static const String branches = 'branches';
+  static const String teachingTypes = 'teaching_types';
+  static const String contributors = 'contributors';
+  static const String teachings = 'teachings';
+}
+
+/// Descripteur local d'une collection répliquée : sa clé de protocole et la
+/// table où ses lignes se rangent.
+///
+/// Il existe pour que les primitives transactionnelles soient écrites **une
+/// fois** plutôt qu'une par collection. Quatre copies de « appliquer une page »
+/// seraient quatre occasions d'en oublier le curseur.
+final class LocalCollection<D> {
+  const LocalCollection._(this.key, this.table);
+
+  /// Clé du protocole (`teachings`, `teaching_types`, …).
+  final String key;
+
+  /// Table locale de destination.
+  final TableInfo<Table, D> table;
+}
+
+/// Nom de la colonne de jeton d'écriture, commune à toutes les tables de
+/// collection (voir `SyncedRow`).
+const String _kSyncStampColumn = 'sync_stamp';
+
+/// **Les primitives transactionnelles du magasin.**
+///
+/// Trois opérations, et l'ordre dans lequel elles se composent est l'essentiel
+/// de ce fichier :
+///
+/// - [applyPage] — appliquer une page du flux : ses lignes **et** son curseur,
+///   ou ni l'un ni l'autre ;
+/// - [beginResync] / [applyResyncPage] / [finishResync] — remplacer une
+///   collection entière **sans jamais la vider d'abord** ;
+/// - [readScopeVersion] / [writeScopeVersion] — l'état global, qui ne suit
+///   surtout pas la règle des curseurs.
+@DriftAccessor(
+  tables: [
+    SyncCursors,
+    SyncState,
+    ResyncTokens,
+    Branches,
+    TeachingTypes,
+    Contributors,
+    Teachings,
+  ],
+)
+class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
+  SyncDao(super.db);
+
+  /// **Point d'injection de panne, réservé aux tests.**
+  ///
+  /// Appelé à l'intérieur de la transaction d'[applyPage], entre l'écriture des
+  /// lignes et celle du curseur. Il n'existe que pour prouver l'invariant
+  /// central : une coupure à cet instant précis ne doit **rien** laisser
+  /// derrière elle. Nul en production.
+  @visibleForTesting
+  Future<void> Function()? crashBetweenRowsAndCursor;
+
+  LocalCollection<BranchRow> get branchesCollection =>
+      LocalCollection._(SyncCollectionKey.branches, branches);
+
+  LocalCollection<TeachingTypeRow> get teachingTypesCollection =>
+      LocalCollection._(SyncCollectionKey.teachingTypes, teachingTypes);
+
+  LocalCollection<ContributorRow> get contributorsCollection =>
+      LocalCollection._(SyncCollectionKey.contributors, contributors);
+
+  LocalCollection<TeachingRow> get teachingsCollection =>
+      LocalCollection._(SyncCollectionKey.teachings, teachings);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Application d'une page
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// **Applique une page du flux : ses lignes et son curseur, ou ni l'un ni
+  /// l'autre.** C'est l'invariant central du magasin.
+  ///
+  /// Un curseur écrit séparément des lignes qu'il représente produit, à la
+  /// première coupure, l'un de deux états : des lignes appliquées deux fois —
+  /// bénin —, ou **un curseur avancé sur des lignes jamais appliquées**. Le
+  /// second est un trou permanent : le keyset ne repassera jamais derrière la
+  /// borne, rien ne le signalera, et seul un `full_resync` le refermerait —
+  /// que rien ne déclenchera.
+  ///
+  /// [deletedIds] porte les lignes que le serveur a fait quitter le magasin :
+  /// tombstone (`deletedAt` non nul) sur la plupart des collections,
+  /// **rétractation** `{ id, deletedAt }` sur `teachings`. Un seul mécanisme
+  /// create/update/delete, deux formes de charge utile — c'est à l'appelant de
+  /// trancher « rétractation ou ligne » **avant** toute construction d'objet,
+  /// jamais à un désérialiseur unique et strict, qui lèverait sur la première
+  /// rétractation reçue.
+  ///
+  /// [cursor] est **opaque** : il est stocké et rejoué, jamais décodé ni
+  /// construit. Il est écrit tel que le serveur l'a rendu, `null` compris.
+  Future<void> applyPage<D>(
+    LocalCollection<D> collection, {
+    List<Insertable<D>> upserts = const [],
+    List<Object> deletedIds = const [],
+    required String? cursor,
+    DateTime? syncedAt,
+  }) {
+    return transaction(() async {
+      await _writeRows(collection, upserts, deletedIds);
+      await crashBetweenRowsAndCursor?.call();
+      await _writeCursor(collection.key, cursor, syncedAt);
+    });
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Resynchronisation complète — un remplacement, jamais une destruction
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// **(1) Pose le jeton de resync**, dans la transaction qui l'apprend.
+  ///
+  /// À composer avec l'application de la page qui portait `full_resync: true` :
+  /// `db.transaction(() async { await dao.beginResync(…); … })`. Le jeton
+  /// survit à une coupure ; tant qu'il est là, le cycle recommence.
+  ///
+  /// Rendre le jeton d'écriture alloué n'est pas nécessaire à l'appelant — il
+  /// est rendu pour les tests et le diagnostic.
+  Future<int> beginResync(String collectionKey, {DateTime? startedAt}) {
+    return transaction(() async {
+      final stamp = await _allocateStamp();
+      await into(resyncTokens).insert(
+        ResyncTokensCompanion.insert(
+          collection: collectionKey,
+          stamp: stamp,
+          startedAt: startedAt ?? DateTime.now(),
+        ),
+        mode: InsertMode.insertOrReplace,
+      );
+      return stamp;
+    });
+  }
+
+  /// **(2) Applique une page du re-tirage, sans rien effacer et sans avancer le
+  /// curseur.**
+  ///
+  /// Les écrans continuent de rendre l'ancien contenu pendant tout le
+  /// re-tirage : c'est tout l'objet du remplacement atomique. Le curseur n'est
+  /// pas écrit ici — une coupure en plein cycle doit faire **recommencer** le
+  /// re-tirage depuis zéro au tour suivant, pas le reprendre au milieu d'un
+  /// magasin dont le balayage final n'a pas eu lieu.
+  Future<void> applyResyncPage<D>(
+    LocalCollection<D> collection, {
+    List<Insertable<D>> upserts = const [],
+    List<Object> deletedIds = const [],
+  }) {
+    return transaction(() => _writeRows(collection, upserts, deletedIds));
+  }
+
+  /// **(3) Ferme le cycle** : supprime les lignes que ce cycle n'a pas revues,
+  /// écrit le curseur, lève le jeton — le tout en une transaction.
+  ///
+  /// C'est ici, et seulement ici, que quelque chose est supprimé. Vider d'abord
+  /// aurait laissé un fidèle hors ligne **sans son catalogue et sans rien
+  /// reçu** : il était hors ligne avec ses enseignements trente secondes plus
+  /// tôt, il se retrouverait devant un écran « pas encore synchronisé », ce qui
+  /// est un mensonge.
+  ///
+  /// Lève un [StateError] si aucun cycle n'est ouvert : balayer sans jeton
+  /// supprimerait tout ce qui n'a pas été réécrit à l'instant.
+  Future<int> finishResync<D>(
+    LocalCollection<D> collection, {
+    required String? cursor,
+    DateTime? syncedAt,
+  }) {
+    return transaction(() async {
+      final token = await _resyncTokenRow(collection.key);
+      if (token == null) {
+        throw StateError(
+          'finishResync sans jeton pour « ${collection.key} » : '
+          'le balayage supprimerait des lignes que rien n\'a re-tirées.',
+        );
+      }
+
+      final swept = await (delete(collection.table)
+            ..where((_) => _syncStampOf(collection).isSmallerThanValue(
+                  token.stamp,
+                )))
+          .go();
+
+      await _writeCursor(collection.key, cursor, syncedAt);
+      await (delete(resyncTokens)
+            ..where((t) => t.collection.equals(collection.key)))
+          .go();
+
+      return swept;
+    });
+  }
+
+  /// Jeton de resync en cours pour [collectionKey], `null` si aucun cycle n'est
+  /// ouvert. Le moteur s'en sert pour savoir qu'il doit repartir de zéro plutôt
+  /// que de rejouer le curseur persisté.
+  Future<int?> resyncToken(String collectionKey) async =>
+      (await _resyncTokenRow(collectionKey))?.stamp;
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Curseurs
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// Curseur persisté de [collectionKey] ; `null` si la collection n'a jamais
+  /// vu de page appliquée **ou** si le serveur a rendu un curseur nul.
+  Future<String?> cursorFor(String collectionKey) async {
+    final row = await (select(syncCursors)
+          ..where((t) => t.collection.equals(collectionKey)))
+        .getSingleOrNull();
+    return row?.cursor;
+  }
+
+  /// Tous les curseurs connus, prêts à partir en `cursors[<collection>]` sur le
+  /// manifeste.
+  Future<Map<String, String>> allCursors() async {
+    final rows = await select(syncCursors).get();
+    return {
+      for (final row in rows)
+        if (row.cursor != null) row.collection: row.cursor!,
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // État global
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// Version de périmètre persistée ; `null` = jamais synchronisé.
+  Future<int?> readScopeVersion() async {
+    final row = await (select(syncState)
+          ..where((t) => t.id.equals(kSyncStateRowId)))
+        .getSingleOrNull();
+    return row?.scopeVersion;
+  }
+
+  /// Persiste la version de périmètre.
+  ///
+  /// **À n'appeler qu'en dernier**, une fois que chaque collection marquée
+  /// `full_resync_required` a purgé et re-tiré jusqu'à `has_more: false`
+  /// (ADR-0027). Persistée trop tôt — a fortiori collection par collection —
+  /// elle éteindrait à jamais un resync qui n'a pas eu lieu : le manifeste
+  /// suivant recevrait une version à jour et ne le redemanderait plus.
+  ///
+  /// Volontairement **hors** de toute transaction de page : la rapprocher d'une
+  /// écriture de lignes serait la ranger par collection, ce que la table de
+  /// curseurs interdit précisément.
+  Future<void> writeScopeVersion(int version) async {
+    await (update(syncState)..where((t) => t.id.equals(kSyncStateRowId)))
+        .write(SyncStateCompanion(scopeVersion: Value(version)));
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Rouages
+  // ───────────────────────────────────────────────────────────────────────────
+
+  Future<void> _writeRows<D>(
+    LocalCollection<D> collection,
+    List<Insertable<D>> upserts,
+    List<Object> deletedIds,
+  ) async {
+    if (upserts.isEmpty && deletedIds.isEmpty) return;
+
+    if (deletedIds.isNotEmpty) {
+      await (delete(collection.table)
+            ..where((_) => _idIn(collection, deletedIds)))
+          .go();
+    }
+
+    if (upserts.isEmpty) return;
+
+    // Un seul jeton pour toute la page : les lignes d'une même transaction sont
+    // vues ou pas vues ensemble.
+    final stamp = await _allocateStamp();
+    for (final row in upserts) {
+      await into(collection.table).insert(
+        _stamped(row, stamp),
+        // Le serveur envoie la ligne **entière** à chaque fois : remplacer est
+        // exact, et évite d'avoir à distinguer création et mise à jour.
+        mode: InsertMode.insertOrReplace,
+      );
+    }
+  }
+
+  Future<void> _writeCursor(
+    String collectionKey,
+    String? cursor,
+    DateTime? syncedAt,
+  ) async {
+    await into(syncCursors).insert(
+      SyncCursorsCompanion.insert(
+        collection: collectionKey,
+        cursor: Value(cursor),
+        syncedAt: syncedAt ?? DateTime.now(),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  Future<ResyncTokenRow?> _resyncTokenRow(String collectionKey) {
+    return (select(resyncTokens)
+          ..where((t) => t.collection.equals(collectionKey)))
+        .getSingleOrNull();
+  }
+
+  /// Alloue le prochain jeton d'écriture. **Toujours appelé dans une
+  /// transaction**, ce qui sérialise les allocations concurrentes.
+  Future<int> _allocateStamp() async {
+    final row = await (select(syncState)
+          ..where((t) => t.id.equals(kSyncStateRowId)))
+        .getSingle();
+    final stamp = row.nextStamp;
+    await (update(syncState)..where((t) => t.id.equals(kSyncStateRowId)))
+        .write(SyncStateCompanion(nextStamp: Value(stamp + 1)));
+    return stamp;
+  }
+
+  /// Recopie [row] en y posant le jeton d'écriture de la transaction.
+  ///
+  /// Passe par les colonnes brutes plutôt que par un `copyWith` par collection :
+  /// le jeton est une mécanique du magasin, pas une donnée que l'appelant a à
+  /// connaître — donc pas une chose qu'il puisse oublier de renseigner.
+  Insertable<D> _stamped<D>(Insertable<D> row, int stamp) {
+    return RawValuesInsertable<D>({
+      ...row.toColumns(false),
+      _kSyncStampColumn: Variable<int>(stamp),
+    });
+  }
+
+  GeneratedColumn<int> _syncStampOf<D>(LocalCollection<D> collection) {
+    return collection.table.columnsByName[_kSyncStampColumn]!
+        as GeneratedColumn<int>;
+  }
+
+  /// Prédicat « l'identifiant est dans cette liste ».
+  ///
+  /// Le protocole préserve le type natif de l'identifiant : entier (SERIAL)
+  /// pour les référentiels, chaîne (UUIDv7) pour le contenu (§2.4 du cadrage).
+  /// Ce sont les deux seules formes, et une troisième doit lever plutôt que se
+  /// deviner.
+  Expression<bool> _idIn<D>(LocalCollection<D> collection, List<Object> ids) {
+    final key = collection.table.$primaryKey.single;
+    if (key is GeneratedColumn<int>) {
+      return key.isIn([for (final id in ids) id as int]);
+    }
+    if (key is GeneratedColumn<String>) {
+      return key.isIn([for (final id in ids) id as String]);
+    }
+    throw StateError(
+      'Clé primaire de type inattendu sur « ${collection.key} ».',
+    );
+  }
+}

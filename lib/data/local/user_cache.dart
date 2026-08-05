@@ -24,9 +24,16 @@ const String _kUserKey = 'cached_user';
 ///
 /// **Pourquoi le coffre pour du non-secret ?** Uniquement parce que c'est le
 /// seul stockage déjà présent (aucune dépendance en plus pour **un seul
-/// objet**). Au jalon synchro ce cache passera à **ObjectBox**, avec la
-/// douzaine d'entités qui justifieront le générateur de code. La bascule ne
-/// touchera que cette classe : les écrans ne connaissent que `AuthRepository`.
+/// objet**). Le magasin local existe désormais — **Drift**, voir
+/// `app_database.dart` — et ce cache pourra l'y rejoindre ; la bascule ne
+/// toucherait que cette classe, les écrans ne connaissant que `AuthRepository`.
+///
+/// Une version antérieure de ce commentaire annonçait **ObjectBox**. C'était une
+/// intention, pas une décision, et elle a été **écartée** : ObjectBox lie les
+/// objets par des relations qui exigent que la cible existe, ce que l'invariant
+/// « aucun lien dur entre collections » interdit précisément — un enseignement
+/// doit pouvoir vivre sans son intervenant (ADR-0026, D1 du cadrage
+/// médiathèque). Ne pas l'hériter comme un choix arrêté.
 ///
 /// Toute erreur de lecture est **avalée** : un coffre indisponible ou un JSON
 /// devenu illisible (modèle qui a changé de forme entre deux versions de l'app)
