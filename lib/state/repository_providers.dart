@@ -80,13 +80,33 @@ final prayerTeachingsProvider = Provider<List<Teaching>>(
   (ref) => _byRubric(ref, TeachingRubric.priere),
 );
 
-/// Enseignements hors rubrique dédiée — section « Derniers enseignements ».
+/// Section « Derniers enseignements » — **les plus récents, toutes rubriques
+/// confondues**, à l'exclusion des cultes entiers.
 ///
-/// Les évite en double sur l'accueil : ce qui est déjà mis en avant plus haut
-/// n'y réapparaît pas.
-final latestTeachingsProvider = Provider<List<Teaching>>(
-  (ref) => _byRubric(ref, TeachingRubric.libre),
-);
+/// Ce n'est plus une rubrique mais un **tri** : `libre` a été retiré du
+/// référentiel serveur précisément parce qu'il déguisait un tri en espèce.
+///
+/// Le tri porte sur [Teaching.recordedAt], le jour du culte — et non sur la
+/// date de parution. Un enseignement de dimanche dernier publié ce matin doit
+/// se ranger à sa place dans l'histoire de l'église, pas en tête sous prétexte
+/// qu'on vient de le mettre en ligne ; c'est la date que le membre reconnaît.
+///
+/// Les **cultes entiers** en sont exclus : ils durent des heures et
+/// écraseraient une liste faite pour picorer. Ils restent atteignables par leur
+/// propre rubrique et par la médiathèque.
+///
+/// Contrairement à la version précédente, cette liste **n'exclut plus** ce qui
+/// est mis en avant plus haut : la déduplication reposait sur une rubrique
+/// fourre-tout qui n'existe plus, et un enseignement peut légitimement être à
+/// la fois récent et mis en avant.
+final latestTeachingsProvider = Provider<List<Teaching>>((ref) {
+  final teachings = ref
+      .watch(teachingsProvider)
+      .where((teaching) => !teaching.isFullService)
+      .toList()
+    ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
+  return List<Teaching>.unmodifiable(teachings);
+});
 
 /// Groupes communautaires.
 final groupsProvider = Provider<List<CommunityGroup>>(
