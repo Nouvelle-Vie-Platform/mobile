@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
+import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
+import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 
 /// Monte un écran isolé dans un environnement minimal (ProviderScope + thème).
@@ -21,10 +23,21 @@ import 'package:maison_du_miracle/theme/app_theme.dart';
 /// implémentations **en mémoire** : les versions HTTP ouvriraient une socket
 /// dès le montage (`GET /auth/me`, `GET /sync/branches`) et `flutter test`
 /// répond **400 à tout accès réseau**.
+///
+/// Celui de la médiathèque l'est pour une raison voisine mais distincte : son
+/// implémentation par défaut lit le **magasin Drift**, qui ouvrirait un fichier
+/// de base de données sur la machine de test. Un test d'écran n'a pas à laisser
+/// de trace sur le disque ; ceux qui veulent le vrai magasin surchargent
+/// `appDatabaseProvider` par une base en mémoire (voir `test/data/local/`).
+/// [mediatheque] remplace ce double par un autre. C'est un paramètre nommé et
+/// non un `Override` de plus : Riverpod 3 **refuse** deux surcharges du même
+/// provider dans un même conteneur, un test ne peut donc pas simplement
+/// « repasser par-dessus » celui posé ici.
 Future<void> pumpScreen(
   WidgetTester tester,
   Widget screen, {
   List<Override> overrides = const [],
+  MediathequeRepository? mediatheque,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -32,6 +45,8 @@ Future<void> pumpScreen(
         authRepositoryProvider.overrideWithValue(InMemoryAuthRepository()),
         branchRepositoryProvider
             .overrideWithValue(const InMemoryBranchRepository()),
+        mediathequeRepositoryProvider
+            .overrideWithValue(mediatheque ?? InMemoryMediathequeRepository()),
         ...overrides,
       ],
       child: MaterialApp(

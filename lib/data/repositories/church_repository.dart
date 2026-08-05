@@ -10,10 +10,11 @@ import '../sample_data.dart';
 /// pour le premier domaine servi par HTTP casserait d'un coup les cinq autres
 /// et tous leurs écrans, pour aucun gain.
 ///
-/// L'agenda est déjà parti : [ChurchEvent] ne se lit plus ici (cf. #16).
+/// L'agenda est déjà parti ([ChurchEvent], #16), la médiathèque aussi
+/// ([Teaching], #30 → `MediathequeRepository`) : ce contrat **rétrécit à chaque
+/// domaine branché**, jusqu'à disparaître.
 abstract interface class ChurchRepository {
   List<Announcement> announcements();
-  List<Teaching> teachings();
   List<CommunityGroup> groups();
   List<PrayerRequest> prayers();
   List<SpiritualNote> notes();
@@ -31,9 +32,6 @@ class InMemoryChurchRepository implements ChurchRepository {
 
   @override
   List<Announcement> announcements() => SampleData.announcements;
-
-  @override
-  List<Teaching> teachings() => SampleData.teachings;
 
   @override
   List<CommunityGroup> groups() => SampleData.groups;

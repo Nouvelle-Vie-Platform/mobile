@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/l10n_extension.dart';
-import '../models/models.dart';
+import '../models/mediatheque_view.dart';
 import '../router/app_router.dart';
-import '../state/repository_providers.dart';
+import '../state/mediatheque_providers.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../widgets/app_empty_state.dart';
+import '../widgets/app_error_state.dart';
+import '../widgets/app_list_skeleton.dart';
 import '../widgets/cards/teaching_cover.dart';
 
 /// Accent chaud (pêche) propre à l'écran « Découverte ».
@@ -26,6 +29,14 @@ const LinearGradient _discoverGradient = LinearGradient(
 
 /// Écran « Médiathèque » façon Découverte : carrousel phare, cartes
 /// horizontales et liste de recommandations, habillés par les données.
+///
+/// Sa source est désormais un `AsyncValue` : le catalogue vient du magasin
+/// local, et une lecture de base n'est pas instantanée. Les trois états sont
+/// donc dessinés, et **distincts** — un catalogue vide (`AppEmptyState`,
+/// neutre) ne doit jamais ressembler à une lecture qui a échoué
+/// (`AppErrorState`, teinté, avec « Réessayer »). Sur un premier lancement, le
+/// vide est la réponse normale : la synchronisation n'a pas encore rempli le
+/// magasin.
 class MediaLibraryScreen extends ConsumerStatefulWidget {
   const MediaLibraryScreen({super.key});
 
@@ -38,7 +49,7 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
 
   /// Ouvre l'enseignement **par son identifiant** : l'écran de détail le
   /// relira dans la source de vérité, il n'en reçoit pas une copie.
-  void _openTeaching(Teaching t) => context.pushNamed(
+  void _openTeaching(TeachingView t) => context.pushNamed(
         AppRoute.teachingDetail,
         pathParameters: {'id': t.id},
       );
@@ -46,7 +57,6 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final teachings = ref.watch(teachingsProvider);
     final tabs = [
       l.filterAll,
       l.filterSermons,
@@ -63,90 +73,125 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
             children: [
               // En-tête fixe (ne défile pas avec le contenu).
               _Header(title: l.mediaTitle),
+              // Les onglets restent visibles dans les trois états : ils
+              // appartiennent au chrome de l'écran, pas au catalogue.
+              _CategoryTabs(
+                tabs: tabs,
+                selected: _tab,
+                onSelect: (i) => setState(() => _tab = i),
+              ),
               Expanded(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: _CategoryTabs(
-                        tabs: tabs,
-                        selected: _tab,
-                        onSelect: (i) => setState(() => _tab = i),
-                      ),
+                child: ref.watch(allTeachingsProvider).when(
+                      loading: _buildLoading,
+                      error: (_, __) => _buildError(),
+                      data: _buildCatalogue,
                     ),
-                    const SliverToBoxAdapter(
-                        child: SizedBox(height: AppSpacing.xl)),
-                    // Carrousel phare.
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 210,
-                        child: PageView.builder(
-                          controller: PageController(viewportFraction: 0.86),
-                          itemCount: teachings.length,
-                          itemBuilder: (_, i) => _HeroCard(
-                            teaching: teachings[i],
-                            onTap: () => _openTeaching(teachings[i]),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(
-                        child: SizedBox(height: AppSpacing.xxl)),
-                    // Derniers enseignements (cartes horizontales).
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: AppSpacing.screenPadding,
-                        child: _SectionHeader(title: l.sectionLatestTeachings),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(
-                        child: SizedBox(height: AppSpacing.md)),
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 176,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          padding: AppSpacing.screenPadding,
-                          itemCount: teachings.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(width: AppSpacing.md),
-                          itemBuilder: (_, i) => _AlbumCard(
-                            teaching: teachings[i],
-                            onTap: () => _openTeaching(teachings[i]),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(
-                        child: SizedBox(height: AppSpacing.xl)),
-                    // Recommandés (liste verticale).
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: AppSpacing.screenPadding,
-                        child: _SectionHeader(title: l.mediaRecommended),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(
-                        child: SizedBox(height: AppSpacing.sm)),
-                    SliverList.builder(
-                      itemCount: teachings.length,
-                      itemBuilder: (_, i) => _PlaylistItem(
-                        teaching: teachings[i],
-                        onTap: () => _openTeaching(teachings[i]),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: MediaQuery.paddingOf(context).bottom +
-                            AppSpacing.xl,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLoading() => const Padding(
+        padding: EdgeInsets.only(top: AppSpacing.xl),
+        child: AppListSkeleton(itemCount: 4, padding: AppSpacing.screenPadding),
+      );
+
+  /// Une lecture du magasin qui échoue est une **panne**, jamais un catalogue
+  /// vide : teintée, et avec quelque chose à faire.
+  Widget _buildError() => Center(
+        child: Padding(
+          padding: AppSpacing.screenPadding,
+          child: AppErrorState(
+            message: context.l10n.stateErrorMessage,
+            onRetry: () => ref.invalidate(allTeachingsProvider),
+          ),
+        ),
+      );
+
+  /// Le magasin a répondu, et il n'a rien : c'est la réponse normale d'un
+  /// premier lancement, avant que la synchronisation ne l'ait rempli. Neutre,
+  /// sans bouton — il n'y a rien à réessayer.
+  Widget _buildEmpty() => Center(
+        child: Padding(
+          padding: AppSpacing.screenPadding,
+          child: AppEmptyState(
+            icon: Icons.library_music_outlined,
+            title: context.l10n.stateEmptyTitle,
+            message: context.l10n.stateEmptyMessage,
+          ),
+        ),
+      );
+
+  Widget _buildCatalogue(List<TeachingView> teachings) {
+    if (teachings.isEmpty) return _buildEmpty();
+    final l = context.l10n;
+
+    return CustomScrollView(
+      slivers: [
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+        // Carrousel phare.
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 210,
+            child: PageView.builder(
+              controller: PageController(viewportFraction: 0.86),
+              itemCount: teachings.length,
+              itemBuilder: (_, i) => _HeroCard(
+                teaching: teachings[i],
+                onTap: () => _openTeaching(teachings[i]),
+              ),
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+        // Derniers enseignements (cartes horizontales).
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: AppSpacing.screenPadding,
+            child: _SectionHeader(title: l.sectionLatestTeachings),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 176,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: AppSpacing.screenPadding,
+              itemCount: teachings.length,
+              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+              itemBuilder: (_, i) => _AlbumCard(
+                teaching: teachings[i],
+                onTap: () => _openTeaching(teachings[i]),
+              ),
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+        // Recommandés (liste verticale).
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: AppSpacing.screenPadding,
+            child: _SectionHeader(title: l.mediaRecommended),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
+        SliverList.builder(
+          itemCount: teachings.length,
+          itemBuilder: (_, i) => _PlaylistItem(
+            teaching: teachings[i],
+            onTap: () => _openTeaching(teachings[i]),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: MediaQuery.paddingOf(context).bottom + AppSpacing.xl,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -275,11 +320,12 @@ class _SectionHeader extends StatelessWidget {
 /// Grande carte du carrousel phare.
 class _HeroCard extends StatelessWidget {
   const _HeroCard({required this.teaching, this.onTap});
-  final Teaching teaching;
+  final TeachingView teaching;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final author = teaching.authorName;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -318,14 +364,20 @@ class _HeroCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
-                    teaching.author.toUpperCase(),
-                    style: AppTypography.caption.copyWith(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      letterSpacing: 1.5,
+                  // Intervenant manquant : **la ligne ne se rend pas**. Un
+                  // « Auteur inconnu » ressemblerait à une donnée et serait
+                  // pris pour une erreur de saisie ; l'enseignement, lui,
+                  // s'affiche quand même et le nom paraîtra au cycle suivant.
+                  if (author != null) ...[
+                    Text(
+                      author.toUpperCase(),
+                      style: AppTypography.caption.copyWith(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        letterSpacing: 1.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
+                  ],
                   Text(
                     teaching.title,
                     maxLines: 2,
@@ -348,11 +400,12 @@ class _HeroCard extends StatelessWidget {
 /// Carte carrée (enseignement récent).
 class _AlbumCard extends StatelessWidget {
   const _AlbumCard({required this.teaching, this.onTap});
-  final Teaching teaching;
+  final TeachingView teaching;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final author = teaching.authorName;
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -372,14 +425,18 @@ class _AlbumCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: AppTypography.bodyStrong.copyWith(color: Colors.white),
             ),
-            const SizedBox(height: 2),
-            Text(
-              teaching.author,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.caption
-                  .copyWith(color: Colors.white.withValues(alpha: 0.6)),
-            ),
+            // Rien à la place de l'intervenant manquant : la carte se
+            // referme d'un cran, elle ne porte pas de nom inventé.
+            if (author != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                author,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption
+                    .copyWith(color: Colors.white.withValues(alpha: 0.6)),
+              ),
+            ],
           ],
         ),
       ),
@@ -390,11 +447,12 @@ class _AlbumCard extends StatelessWidget {
 /// Ligne verticale (recommandation).
 class _PlaylistItem extends StatelessWidget {
   const _PlaylistItem({required this.teaching, this.onTap});
-  final Teaching teaching;
+  final TeachingView teaching;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final author = teaching.authorName;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -421,20 +479,26 @@ class _PlaylistItem extends StatelessWidget {
                     style:
                         AppTypography.bodyStrong.copyWith(color: Colors.white),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    teaching.author,
-                    style: AppTypography.caption
-                        .copyWith(color: Colors.white.withValues(alpha: 0.6)),
-                  ),
+                  if (author != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      author,
+                      style: AppTypography.caption
+                          .copyWith(color: Colors.white.withValues(alpha: 0.6)),
+                    ),
+                  ],
                 ],
               ),
             ),
-            Text(
-              teaching.duration,
-              style: AppTypography.caption
-                  .copyWith(color: Colors.white.withValues(alpha: 0.6)),
-            ),
+            // Le libellé de la rubrique remplace la durée, que le serveur ne
+            // sert pas. Il est **déjà replié** dans la langue courante par le
+            // modèle de lecture — chaîne vide si la rubrique manque.
+            if (teaching.typeLabel.isNotEmpty)
+              Text(
+                teaching.typeLabel,
+                style: AppTypography.caption
+                    .copyWith(color: Colors.white.withValues(alpha: 0.6)),
+              ),
           ],
         ),
       ),

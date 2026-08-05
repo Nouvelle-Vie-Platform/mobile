@@ -1,17 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
+import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/data/sample_data.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
+import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
-import 'package:maison_du_miracle/state/repository_providers.dart';
+import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
+import 'package:maison_du_miracle/widgets/app_error_state.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
 
 /// Enseignements de test **sans image** : `flutter test` répond 400 à tout
@@ -23,7 +28,7 @@ final _teachings = [
     title: 'Le premier de la liste',
     author: 'Pasteur Un',
     duration: '10:00',
-    rubric: TeachingRubric.dimanche,
+    teachingTypeId: 1,
     recordedAt: DateTime.utc(2026, 4, 12),
     publishedAt: DateTime.utc(2026, 4, 12, 8),
   ),
@@ -32,7 +37,7 @@ final _teachings = [
     title: 'Celui du milieu',
     author: 'Pasteur Deux',
     duration: '20:00',
-    rubric: TeachingRubric.etude,
+    teachingTypeId: 2,
     recordedAt: DateTime.utc(2026, 4, 5),
     publishedAt: DateTime.utc(2026, 4, 5, 8),
   ),
@@ -41,26 +46,91 @@ final _teachings = [
     title: 'Le dernier de la liste',
     author: 'Pasteur Trois',
     duration: '30:00',
-    rubric: TeachingRubric.priere,
+    teachingTypeId: 3,
     recordedAt: DateTime.utc(2026, 3, 29),
     publishedAt: DateTime.utc(2026, 3, 29, 8),
   ),
 ];
 
-/// Magasin d'enseignements **mutable**, pour rejouer une rétractation reçue
-/// pendant que l'écran est ouvert — le scénario qui justifie tout ce ticket.
-class _TeachingStore extends Notifier<List<Teaching>> {
-  @override
-  List<Teaching> build() => _teachings;
+/// Médiathèque **pilotée par le test**, et surtout **rejouable** : son flux
+/// ré-émet, ce qui est le seul moyen de reproduire ce qui justifie tout ce
+/// ticket — une rétractation qui arrive pendant que l'écran est ouvert.
+class _FakeMediatheque implements MediathequeRepository {
+  _FakeMediatheque(List<Teaching> teachings)
+      : _teachings = StreamController<List<Teaching>>.broadcast() {
+    _latest = teachings;
+  }
+
+  final StreamController<List<Teaching>> _teachings;
+  late List<Teaching> _latest;
+
+  /// Échec de lecture du magasin, quand le test veut une panne.
+  Object? failure;
+
+  void dispose() => _teachings.close();
 
   /// Ce que produit `{ id, deletedAt }` dans le flux delta (ADR-0025) : le
-  /// contenu quitte le magasin.
+  /// contenu quitte le magasin, et les écrans ouverts l'apprennent.
   void retract(String id) =>
-      state = state.where((t) => t.id != id).toList(growable: false);
-}
+      emit(_latest.where((t) => t.id != id).toList(growable: false));
 
-final _storeProvider =
-    NotifierProvider<_TeachingStore, List<Teaching>>(_TeachingStore.new);
+  void emit(List<Teaching> teachings) {
+    _latest = teachings;
+    _teachings.add(teachings);
+  }
+
+  /// Rejoue la dernière valeur connue puis suit les suivantes — c'est le
+  /// comportement d'un `watch()` Drift, qui émet immédiatement.
+  Stream<List<Teaching>> get _stream async* {
+    if (failure != null) throw failure!;
+    yield _latest;
+    yield* _teachings.stream;
+  }
+
+  @override
+  Stream<List<TeachingView>> latestTeachings({
+    required String locale,
+    int? limit,
+  }) =>
+      _stream.map((rows) => rows.map((t) => _view(t, locale)).toList());
+
+  @override
+  Stream<List<TeachingView>> teachingsOfType(
+    int teachingTypeId, {
+    required String locale,
+  }) =>
+      _stream.map(
+        (rows) => rows
+            .where((t) => t.teachingTypeId == teachingTypeId)
+            .map((t) => _view(t, locale))
+            .toList(),
+      );
+
+  @override
+  Stream<TeachingView?> teachingById(String id, {required String locale}) =>
+      _stream.map((rows) {
+        for (final teaching in rows) {
+          if (teaching.id == id) return _view(teaching, locale);
+        }
+        return null;
+      });
+
+  @override
+  Stream<List<HomeSectionView>> homeSections({required String locale}) =>
+      _stream.map((_) => const <HomeSectionView>[]);
+
+  TeachingView _view(Teaching teaching, String locale) => TeachingView.resolve(
+        id: teaching.id,
+        title: teaching.title,
+        locale: locale,
+        contributorName: teaching.author,
+        teachingTypeId: teaching.teachingTypeId,
+        color: teaching.color,
+        imageLandscapeUrl: teaching.imageLandscapeUrl,
+        publishedAt: teaching.publishedAt,
+        recordedAt: teaching.recordedAt,
+      );
+}
 
 /// Repository d'auth déjà connecté : le routeur n'ouvre les routes internes
 /// qu'une fois la session résolue (garde `redirect`).
@@ -104,6 +174,19 @@ void main() {
         '0195cfbf-ac00-7a60-9eb6-46f7b38cf45a',
         reason: 'changer un id casse tout lien déjà partagé ou notifié',
       );
+    });
+
+    test('chaque rubrique désignée existe dans le référentiel fictif', () {
+      final known = SampleData.teachingTypes.map((t) => t.id).toSet();
+      final designated = SampleData.teachings
+          .map((t) => t.teachingTypeId)
+          .whereType<int>()
+          .toSet();
+
+      // Pas une contrainte du magasin — l'entier y est nu, exprès — mais une
+      // exigence de la maquette : un jeu de démonstration dont les rubriques
+      // ne résolvent rien ne montrerait jamais un libellé.
+      expect(designated.difference(known), isEmpty);
     });
   });
 
@@ -190,56 +273,53 @@ void main() {
     });
   });
 
-  group('Visuel de l\'enseignement', () {
-    testWidgets('un visuel injoignable retombe sur le placeholder',
+  group('Ce que l\'AsyncValue a ajouté', () {
+    testWidgets(
+        'une lecture qui échoue se dit comme une panne, pas une absence',
         (tester) async {
-      // `flutter test` répond 400 à tout accès réseau — comme un téléphone
-      // hors ligne. Sans repli, le lecteur lèverait au lieu de s'afficher.
-      final withImage = Teaching(
-        id: '01940000-0000-7000-8000-0000000000ff',
-        title: 'Avec visuel distant',
-        author: 'Pasteur Quatre',
-        duration: '40:00',
-        rubric: TeachingRubric.dimanche,
-        recordedAt: DateTime.utc(2026, 4, 12),
-        publishedAt: DateTime.utc(2026, 4, 12, 8),
-        imageLandscapeUrl: 'https://example.invalid/cover.jpg',
-      );
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            teachingsProvider.overrideWithValue([withImage]),
-          ],
-          child: MaterialApp(
-            theme: AppTheme.light,
-            locale: const Locale('fr'),
-            localizationsDelegates: appLocalizationsDelegates,
-            supportedLocales: appSupportedLocales,
-            home: TeachingDetailScreen(teachingId: withImage.id),
-          ),
-        ),
-      );
-      await _settle(tester);
+      // Un magasin illisible n'est pas un contenu retiré : il y a quelque
+      // chose à réessayer, et l'écran doit le proposer.
+      final repository = _FakeMediatheque(_teachings)
+        ..failure = StateError('magasin illisible');
+      addTearDown(repository.dispose);
 
-      expect(tester.takeException(), isNull);
-      expect(find.text('Avec visuel distant'), findsOneWidget);
-      expect(find.byIcon(Icons.auto_stories_rounded), findsOneWidget);
+      await _pumpDetail(tester, _container(repository), _teachings[1].id);
+
+      expect(find.byType(AppErrorState), findsOneWidget);
+      expect(find.byType(ContentAbsenceView), findsNothing);
+      expect(find.byKey(AppErrorState.retryKey), findsOneWidget);
+    });
+
+    testWidgets('l\'écran reste le même dans les quatre états', (tester) async {
+      final repository = _FakeMediatheque(_teachings);
+      addTearDown(repository.dispose);
+
+      await _pumpDetail(tester, _container(repository), _teachings[1].id);
+      expect(find.byType(TeachingDetailScreen), findsOneWidget);
+
+      repository.retract(_teachings[1].id);
+      await tester.pump();
+      // Ni fermeture, ni redirection : le fidèle n'est pas déplacé.
+      expect(find.byType(TeachingDetailScreen), findsOneWidget);
     });
   });
 
   group('Rétractation pendant la lecture', () {
     testWidgets('le contenu retiré remplace le lecteur, sans fermer l\'écran',
         (tester) async {
-      final container = _container();
-      await _pumpDetail(tester, container, _teachings[1].id);
+      final repository = _FakeMediatheque(_teachings);
+      addTearDown(repository.dispose);
+      await _pumpDetail(tester, _container(repository), _teachings[1].id);
 
       // On est bien en lecture : le bouton affiche « pause ».
       expect(find.text('Celui du milieu'), findsOneWidget);
       expect(find.byIcon(Icons.pause), findsOneWidget);
       expect(find.byType(Slider), findsOneWidget);
 
-      // Le serveur rétracte pendant l'écoute.
-      container.read(_storeProvider.notifier).retract(_teachings[1].id);
+      // Le serveur rétracte pendant l'écoute. Deux `pump` : le premier livre
+      // l'évènement du flux au `StreamProvider`, le second reconstruit l'écran.
+      repository.retract(_teachings[1].id);
+      await tester.pump();
       await tester.pump();
 
       // L'écran reste ouvert — on n'éjecte pas quelqu'un en pleine lecture.
@@ -255,14 +335,15 @@ void main() {
 
     testWidgets('la lecture ne redémarre pas si le contenu réapparaît',
         (tester) async {
-      final container = _container();
-      await _pumpDetail(tester, container, _teachings[1].id);
+      final repository = _FakeMediatheque(_teachings);
+      addTearDown(repository.dispose);
+      await _pumpDetail(tester, _container(repository), _teachings[1].id);
 
-      container.read(_storeProvider.notifier).retract(_teachings[1].id);
+      repository.retract(_teachings[1].id);
       await tester.pump();
       // Une resynchronisation le rend : l'écran le réaffiche, à l'arrêt.
       // Reprendre le son tout seul serait une surprise sonore.
-      container.read(_storeProvider.notifier).state = _teachings;
+      repository.emit(_teachings);
       await tester.pump();
 
       expect(find.text('Celui du milieu'), findsOneWidget);
@@ -270,19 +351,73 @@ void main() {
       expect(find.byIcon(Icons.pause), findsNothing);
     });
   });
+
+  group('L\'absence s\'affiche comme une absence', () {
+    testWidgets('un enseignement sans intervenant s\'affiche quand même',
+        (tester) async {
+      // Le cas normal du magasin : `teachings` et `contributors` se
+      // synchronisent séparément, l'un peut arriver sans l'autre.
+      final orphan = Teaching(
+        id: '01940000-0000-7000-8000-0000000000aa',
+        title: 'Sans intervenant',
+        author: '',
+        duration: '00:00',
+        recordedAt: DateTime.utc(2026, 4, 12),
+        publishedAt: DateTime.utc(2026, 4, 12, 8),
+      );
+      final repository = _FakeMediatheque([orphan]);
+      addTearDown(repository.dispose);
+
+      await _pumpDetail(tester, _container(repository), orphan.id);
+
+      expect(tester.takeException(), isNull);
+      // Le contenu est là — la jointure tolérante l'a laissé passer.
+      expect(find.text('Sans intervenant'), findsOneWidget);
+      // Et **rien** n'a été inventé à la place du nom.
+      expect(find.textContaining('inconnu'), findsNothing);
+      expect(find.textContaining('Inconnu'), findsNothing);
+    });
+  });
+
+  group('Visuel de l\'enseignement', () {
+    testWidgets('un visuel injoignable retombe sur le placeholder',
+        (tester) async {
+      // `flutter test` répond 400 à tout accès réseau — comme un téléphone
+      // hors ligne. Sans repli, le lecteur lèverait au lieu de s'afficher.
+      final withImage = Teaching(
+        id: '01940000-0000-7000-8000-0000000000ff',
+        title: 'Avec visuel distant',
+        author: 'Pasteur Quatre',
+        duration: '40:00',
+        teachingTypeId: 1,
+        recordedAt: DateTime.utc(2026, 4, 12),
+        publishedAt: DateTime.utc(2026, 4, 12, 8),
+        imageLandscapeUrl: 'https://example.invalid/cover.jpg',
+      );
+      final repository = _FakeMediatheque([withImage]);
+      addTearDown(repository.dispose);
+
+      await _pumpDetail(tester, _container(repository), withImage.id);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Avec visuel distant'), findsOneWidget);
+      expect(find.byIcon(Icons.auto_stories_rounded), findsOneWidget);
+    });
+  });
 }
 
-/// Conteneur partagé par les tests de rétractation : le magasin y est mutable.
-ProviderContainer _container() => ProviderContainer.test(
+/// Conteneur branché sur une médiathèque pilotée par le test.
+ProviderContainer _container(MediathequeRepository repository) =>
+    ProviderContainer.test(
       overrides: [
         authRepositoryProvider.overrideWithValue(_SignedInAuthRepository()),
         branchRepositoryProvider
             .overrideWithValue(const InMemoryBranchRepository()),
-        teachingsProvider.overrideWith((ref) => ref.watch(_storeProvider)),
+        mediathequeRepositoryProvider.overrideWithValue(repository),
       ],
     );
 
-/// Monte l'écran de détail seul, adossé au magasin mutable.
+/// Monte l'écran de détail seul, adossé à la médiathèque fournie.
 Future<void> _pumpDetail(
   WidgetTester tester,
   ProviderContainer container,
@@ -311,21 +446,15 @@ Future<GoRouter> _pumpApp(
   WidgetTester tester, {
   List<Teaching>? teachings,
 }) async {
-  final data = teachings ?? _teachings;
+  final repository = _FakeMediatheque(teachings ?? _teachings);
+  addTearDown(repository.dispose);
   // Écran haut : les listes de l'app sont paresseuses, et une carte jamais
   // construite ne peut pas être tapée.
   tester.view.physicalSize = const Size(800, 1800);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  final container = ProviderContainer.test(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(_SignedInAuthRepository()),
-      branchRepositoryProvider
-          .overrideWithValue(const InMemoryBranchRepository()),
-      teachingsProvider.overrideWithValue(data),
-    ],
-  );
+  final container = _container(repository);
   final router = container.read(routerProvider);
 
   await tester.pumpWidget(
