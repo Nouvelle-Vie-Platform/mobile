@@ -9,6 +9,7 @@ import '../state/repository_providers.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../utils/media_url.dart';
 import '../widgets/content_absence.dart';
 
 /// Habillage du lecteur quand il n'y a plus d'enseignement d'où tirer une
@@ -235,10 +236,14 @@ class _Artwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final source = teaching.image;
+    // En-tête pleine largeur : le cadrage paysage. Le portrait prend le relais
+    // s'il est seul, plutôt que de renoncer à toute image.
+    final image = _imageProvider(
+      resolveMediaUrl(teaching.imageLandscapeUrl ?? teaching.imagePortraitUrl),
+    );
 
     // Pas d'image : grande icône flottant sur le dégradé.
-    if (source == null) return _placeholder();
+    if (image == null) return _placeholder();
 
     // Image fondue dans le dégradé : opaque en haut, transparente en bas
     // (et léger fondu en haut) via un masque d'opacité.
@@ -263,23 +268,24 @@ class _Artwork extends StatelessWidget {
         // Repli obligatoire (cf. CLAUDE.md) : sans lui, un visuel injoignable
         // — hors ligne, ou `flutter test` qui répond 400 à tout réseau — fait
         // lever le lecteur au lieu de retomber sur le placeholder.
-        child: source.startsWith('http')
-            ? Image.network(
-                source,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholder(),
-              )
-            : Image.asset(
-                source,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholder(),
-              ),
+        child: Image(
+          image: image,
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _placeholder(),
+        ),
       ),
     );
+  }
+
+  /// Les deux cadrages sont servis en **URL relative** par l'API : la
+  /// résolution contre la base courante appartient au client (ADR-0005).
+  static ImageProvider? _imageProvider(String? source) {
+    if (source == null) return null;
+    return source.startsWith('http')
+        ? NetworkImage(source)
+        : AssetImage(source);
   }
 
   Widget _placeholder() => Center(

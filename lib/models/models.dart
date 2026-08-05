@@ -66,6 +66,22 @@ Map<String, String>? parseI18nMap(Object? raw) {
 /// de la branche à partir d'une base fausse.
 DateTime parseInstant(Object? raw) => DateTime.parse(raw as String).toUtc();
 
+/// Lit une **date de calendrier** servie par le back (`YYYY-MM-DD`).
+///
+/// À ne pas confondre avec [parseInstant] : ce que le back sert ici n'est pas
+/// un moment mais un **jour**, et il n'y a donc aucun fuseau à appliquer. Le
+/// résultat est ancré à minuit **UTC** non pour désigner un instant, mais pour
+/// qu'aucun appareil ne puisse le déplacer : `DateTime.parse('2026-04-12')`
+/// seul rend minuit en heure **locale**, et un téléphone à l'est du serveur
+/// afficherait alors « samedi 11 » un enseignement du dimanche 12.
+///
+/// Le résultat ne se compare donc **jamais** à un instant ni à un `now()` :
+/// ce sont deux grandeurs différentes.
+DateTime parseCalendarDay(Object? raw) {
+  final parsed = DateTime.parse(raw as String);
+  return DateTime.utc(parsed.year, parsed.month, parsed.day);
+}
+
 /// Évènement de l'agenda — **un rassemblement physique, à un lieu**.
 ///
 /// Aucun champ n'est pré-formaté : le back sert un **instant** (UTC) et le
@@ -283,9 +299,17 @@ class Announcement {
 
 /// Rubrique éditoriale d'un enseignement — pilote son classement sur l'accueil.
 ///
-/// JSON : `"dimanche"` | `"etude"` | `"priere"` | `"libre"`.
-/// `libre` = hors rubrique (série, invité, rediffusion…) : ces enseignements
-/// alimentent « Derniers enseignements ».
+/// Miroir du `slug` du référentiel servi par le back (`GET /teaching-types`) :
+/// JSON `"dimanche"` | `"etude"` | `"priere"`.
+///
+/// **`libre` n'existe plus.** Ce n'était pas une espèce d'enseignement mais un
+/// **tri** déguisé en rubrique : « Derniers enseignements » se calcule
+/// désormais par récence, toutes rubriques confondues (voir
+/// `latestTeachingsProvider`). Le référentiel serveur l'a retirée, et la
+/// rubrique y est devenue **obligatoire et sans défaut** — aucune des trois
+/// restantes n'étant neutre, en désigner une par défaut mettrait un
+/// enseignement en avant sur l'accueil de tous les membres sans que personne
+/// l'ait décidé. [Teaching.rubric] est donc requise elle aussi.
 enum TeachingRubric {
   /// Message porté au culte dominical.
   dimanche,
@@ -296,23 +320,37 @@ enum TeachingRubric {
   /// Enregistrement centré sur la prière (veillée, intercession) : peu
   /// d'enseignement, beaucoup de prière.
   priere,
-
-  /// Aucune rubrique dédiée.
-  libre,
 }
 
+/// Enseignement de la médiathèque — miroir du `TeachingTransformer` du back,
+/// réduit à ce que les écrans savent afficher aujourd'hui.
+///
+/// **La famille n'y figure pas.** Le serveur range désormais les contenus de
+/// médiathèque en deux familles (`teaching` / `gathering`, PRD §5 sexies), mais
+/// il ne sert **pas** le discriminant : ni `TeachingTransformer` ni
+/// `TeachingTypeTransformer` ne l'exposent, et quatre filtres `family =
+/// 'teaching'` cachent les rassemblements au parc installé. Rien à lire ici
+/// tant qu'ils n'auront pas leur propre collection de synchronisation.
+@immutable
 class Teaching {
+  /// Constructeur déclaré `const` (tous les champs sont finaux) mais **non
+  /// invocable** en `const` : [DateTime] n'est pas constructible en constante —
+  /// même contrainte que [ChurchEvent] et [Announcement].
   const Teaching({
     required this.id,
     required this.title,
     required this.author,
     required this.duration,
+    required this.rubric,
+    required this.recordedAt,
+    required this.publishedAt,
     this.seed = 0,
     this.color = 0xFF223B8C,
-    this.image,
+    this.isFullService = false,
+    this.imageLandscapeUrl,
+    this.imagePortraitUrl,
     this.description = '',
     this.verse,
-    this.rubric = TeachingRubric.libre,
   });
 
   /// Identité de l'enseignement — **UUIDv7 servi par le serveur**, en chaîne.
@@ -332,14 +370,61 @@ class Teaching {
   final String duration;
   final int seed;
 
-  /// Rubrique d'accueil à laquelle l'enseignement appartient.
+  /// Rubrique d'accueil à laquelle l'enseignement appartient. **Requise** :
+  /// voir [TeachingRubric].
   final TeachingRubric rubric;
 
-  /// Couleur d'habillage (ARGB hexadécimal) pilotant l'écran de détail.
+  /// **Jour** de l'enregistrement — la date propre de l'enseignement, celle du
+  /// culte (`recordedAt`, servi en `YYYY-MM-DD` ; voir [parseCalendarDay]).
+  ///
+  /// Ce n'est **pas** un horodatage : aucun fuseau ne s'y applique et rien ne
+  /// doit la comparer à un `now()`. C'est la seule des trois dates du serveur
+  /// qu'un fidèle reconnaît (« le message du dimanche 12 avril »), la seule qui
+  /// ne bouge pas si l'on republie, et celle sur laquelle le catalogue se
+  /// classe.
+  final DateTime recordedAt;
+
+  /// Instant de **mise à disposition** (`publishedAt`), en UTC.
+  ///
+  /// Toujours dans le passé : les chemins de lecture mobile ne servent jamais
+  /// le non-publié. Il ne sert donc pas à re-tester la visibilité, mais à dater
+  /// « publié le … » et à départager deux enseignements enregistrés le même
+  /// jour.
+  final DateTime publishedAt;
+
+  /// **Culte entier** : l'enregistrement porte le service complet, et non un
+  /// extrait de prédication.
+  ///
+  /// C'est un **marqueur**, pas une rubrique — un message du dimanche peut
+  /// l'être, une étude biblique non : les deux axes sont indépendants. Écarté
+  /// de « Derniers enseignements » (voir `latestTeachingsProvider`).
+  final bool isFullService;
+
+  /// Couleur d'habillage (ARGB hexadécimal) pilotant l'écran de détail et le
+  /// repli de `TeachingCover`.
+  ///
+  /// **Déjà résolue par le serveur** (`#RRGGBB`, opacité ajoutée au parsing) :
+  /// la cascade « choisie > déduite de la photo > héritée de la rubrique »
+  /// (PRD §5 quater) est un calcul du back. Ne jamais la recalculer ici — ce
+  /// serait la réimplémenter, donc en diverger un jour.
+  ///
+  /// Elle n'est pas décorative : c'est ce que voient les membres en
+  /// connectivité limitée, chaque fois que l'image manque ou tarde.
   final int color;
 
-  /// Image d'habillage optionnelle (chemin d'asset ou URL `http`).
-  final String? image;
+  /// Visuel **paysage** (1,7:1), recadré au dépôt pour la mise en avant de
+  /// l'accueil (320 × 188). `null` = aucune photo déposée → c'est [color] qui
+  /// habille la tuile.
+  ///
+  /// URL **relative** au serveur d'API côté back (`/uploads/teachings/…`) :
+  /// l'hôte change d'un environnement à l'autre, c'est au client de la
+  /// résoudre (voir `utils/media_url.dart`).
+  final String? imageLandscapeUrl;
+
+  /// Visuel **portrait** (0,6:1), recadré au dépôt pour le carrousel de
+  /// l'accueil (104 × 172). Le même enseignement porte les deux : une image
+  /// unique serait amputée dans l'un des deux cadres.
+  final String? imagePortraitUrl;
 
   /// Description longue (affichée dans la feuille de détail).
   final String description;

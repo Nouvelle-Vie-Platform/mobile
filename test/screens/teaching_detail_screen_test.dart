@@ -16,25 +16,34 @@ import 'package:maison_du_miracle/widgets/content_absence.dart';
 
 /// Enseignements de test **sans image** : `flutter test` répond 400 à tout
 /// accès réseau, et un visuel distant ne prouverait rien de plus ici.
-const _teachings = [
+/// `final` et non `const` : les dates ne sont pas constructibles en constante.
+final _teachings = [
   Teaching(
     id: '01940000-0000-7000-8000-000000000001',
     title: 'Le premier de la liste',
     author: 'Pasteur Un',
     duration: '10:00',
     rubric: TeachingRubric.dimanche,
+    recordedAt: DateTime.utc(2026, 4, 12),
+    publishedAt: DateTime.utc(2026, 4, 12, 8),
   ),
   Teaching(
     id: '01940000-0000-7000-8000-000000000002',
     title: 'Celui du milieu',
     author: 'Pasteur Deux',
     duration: '20:00',
+    rubric: TeachingRubric.etude,
+    recordedAt: DateTime.utc(2026, 4, 5),
+    publishedAt: DateTime.utc(2026, 4, 5, 8),
   ),
   Teaching(
     id: '01940000-0000-7000-8000-000000000003',
     title: 'Le dernier de la liste',
     author: 'Pasteur Trois',
     duration: '30:00',
+    rubric: TeachingRubric.priere,
+    recordedAt: DateTime.utc(2026, 3, 29),
+    publishedAt: DateTime.utc(2026, 3, 29, 8),
   ),
 ];
 
@@ -186,17 +195,20 @@ void main() {
         (tester) async {
       // `flutter test` répond 400 à tout accès réseau — comme un téléphone
       // hors ligne. Sans repli, le lecteur lèverait au lieu de s'afficher.
-      const withImage = Teaching(
+      final withImage = Teaching(
         id: '01940000-0000-7000-8000-0000000000ff',
         title: 'Avec visuel distant',
         author: 'Pasteur Quatre',
         duration: '40:00',
-        image: 'https://example.invalid/cover.jpg',
+        rubric: TeachingRubric.dimanche,
+        recordedAt: DateTime.utc(2026, 4, 12),
+        publishedAt: DateTime.utc(2026, 4, 12, 8),
+        imageLandscapeUrl: 'https://example.invalid/cover.jpg',
       );
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            teachingsProvider.overrideWithValue(const [withImage]),
+            teachingsProvider.overrideWithValue([withImage]),
           ],
           child: MaterialApp(
             theme: AppTheme.light,
@@ -297,8 +309,9 @@ Future<void> _pumpDetail(
 /// `redirect` — et non un routeur reconstruit pour l'occasion.
 Future<GoRouter> _pumpApp(
   WidgetTester tester, {
-  List<Teaching> teachings = _teachings,
+  List<Teaching>? teachings,
 }) async {
+  final data = teachings ?? _teachings;
   // Écran haut : les listes de l'app sont paresseuses, et une carte jamais
   // construite ne peut pas être tapée.
   tester.view.physicalSize = const Size(800, 1800);
@@ -310,7 +323,7 @@ Future<GoRouter> _pumpApp(
       authRepositoryProvider.overrideWithValue(_SignedInAuthRepository()),
       branchRepositoryProvider
           .overrideWithValue(const InMemoryBranchRepository()),
-      teachingsProvider.overrideWithValue(teachings),
+      teachingsProvider.overrideWithValue(data),
     ],
   );
   final router = container.read(routerProvider);

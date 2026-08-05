@@ -60,20 +60,26 @@ void main() {
 
     testWidgets('TeachingDetailScreen affiche l\'enseignement résolu',
         (tester) async {
-      // Enseignement sans image : évite tout chargement réseau en test.
-      const teaching = Teaching(
+      // Enseignement sans image : évite tout chargement réseau en test — c'est
+      // le repli coloré qui s'affiche, exactement comme hors ligne.
+      // `final` et non `const` : les dates ne sont pas constructibles en
+      // constante.
+      final teaching = Teaching(
         id: '01940000-0000-7000-8000-00000000cafe',
         title: 'Enseignement de test',
         author: 'Pasteur Test',
         duration: '10:00',
         color: 0xFF223B8C,
+        rubric: TeachingRubric.dimanche,
+        recordedAt: DateTime.utc(2026, 4, 12),
+        publishedAt: DateTime.utc(2026, 4, 12, 8),
       );
       // L'écran ne reçoit qu'un identifiant : la donnée vient du provider.
       await pumpScreen(
         tester,
         TeachingDetailScreen(teachingId: teaching.id),
         overrides: [
-          teachingsProvider.overrideWithValue(const [teaching])
+          teachingsProvider.overrideWithValue([teaching])
         ],
       );
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
