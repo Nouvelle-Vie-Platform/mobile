@@ -1,0 +1,17 @@
+# Étiquettes de test du dépôt.
+#
+# `live-server` — les tests d'intégration qui parlent **en HTTP à un vrai
+# serveur** `new-life-server` (`test/integration/`). Ils sont **sautés par
+# défaut**, donc en CI, qui n'a pas de serveur : les lancer là échouerait sur
+# une connexion refusée, pas sur un défaut du client.
+#
+# Les jouer en local, serveur en marche :
+#
+# ```sh
+# flutter test --run-skipped test/integration/
+# ```
+#
+# Voir `test/integration/README.md` pour monter le serveur et la base.
+tags:
+  live-server:
+    skip: 'exige un serveur new-life-server en marche — `flutter test --run-skipped test/integration/`'

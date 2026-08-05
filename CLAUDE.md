@@ -24,6 +24,7 @@ dépôt. Le respecter prime sur les habitudes par défaut.
 flutter run -d <device>      # macos | chrome | <id simulateur/emulateur>
 flutter analyze              # doit rester à 0 problème
 flutter test                 # tests (smoke) — doivent rester verts
+flutter test --run-skipped test/integration/   # exige un vrai serveur (voir plus bas)
 flutter gen-l10n             # OBLIGATOIRE après toute édition d'un .arb
 dart format lib/ test/       # formatage (CI le vérifie)
 make gen                     # OBLIGATOIRE après tout changement de table Drift
@@ -33,6 +34,14 @@ make web-assets              # après une montée de drift / sqlite3
 La CI (`.github/workflows/flutter-ci.yml`) lance format + analyze + test.
 **Elle ne lance pas `build_runner`** : les `.g.dart` et `drift_schemas/` sont
 **versionnés**. Oublier `make gen` fait passer la CI sur du code périmé.
+
+### `test/integration/` — contre un **vrai** serveur
+Les tests qui parlent en HTTP à une instance `new-life-server` en marche, sans
+aucun double d'`HttpClientAdapter` : ils vérifient ce qu'une fixture ne peut pas
+prouver — que le serveur se comporte comme l'ADR le décrit, et que le moteur
+s'accorde avec lui. Étiquetés `live-server` (`dart_test.yaml`) et **sautés par
+défaut**, donc en CI, qui n'a pas de serveur. Marche à suivre (monter le
+serveur, amorcer la base) : `test/integration/README.md`.
 
 ## Architecture (à respecter)
 Couches claires, pensées pour brancher un backend sans toucher l'UI :
