@@ -491,6 +491,74 @@ void main() {
       expect(sent, [null, teachingsCursorPage1, teachingsCursorPage2]);
       expect(cursor, teachingsCursorPage3);
     });
+
+    /// **Le cas s'est produit contre le vrai serveur** (issue #31, sur
+    /// `branches`) : le curseur composé encode `updated_at` en
+    /// **millisecondes** alors que PostgreSQL stocke des **microsecondes**, si
+    /// bien qu'une ligne à `…089887` satisfait sa propre borne keyset
+    /// (`…089887 > …089`) et revient à chaque page. Le serveur annonçait
+    /// `has_more` en resservant le même curseur, indéfiniment.
+    ///
+    /// Le garde-fou du moteur a fait exactement son travail — et n'était
+    /// couvert par aucun test. Il l'est ici, dans les deux régimes : c'est la
+    /// seule chose qui sépare un défaut serveur visible d'une application qui
+    /// tourne en rond jusqu'à épuiser la batterie.
+    test(
+        'un serveur qui redemande le même curseur en annonçant `has_more` '
+        'arrête la boucle au lieu de tourner sans fin', () async {
+      server
+        ..serveManifest(manifestNominal())
+        ..serveCollection(
+          'teachings',
+          deltaPage(
+            items: const [fullTeachingPayload],
+            nextCursor: teachingsCursorPage1,
+            hasMore: true,
+          ),
+        );
+
+      await expectLater(
+        engineOver(['teachings']).synchronize(),
+        throwsA(isA<SyncStalled>()),
+      );
+
+      // Deux requêtes, pas mille : le moteur s'arrête au premier curseur
+      // rejoué à l'identique.
+      expect(server.requestsFor('teachings'), hasLength(2));
+      expect(
+        await dao.readScopeVersion(),
+        isNull,
+        reason: 'Un cycle qui lève ne persiste aucune version.',
+      );
+    });
+
+    test(
+        'même arrêt pendant un resync de périmètre, où la boucle est ouverte '
+        'depuis zéro', () async {
+      server
+        ..serveManifest(manifestScopeChanged())
+        ..serveCollection(
+          'teachings',
+          deltaPage(
+            items: const [fullTeachingPayload],
+            nextCursor: teachingsCursorPage1,
+            hasMore: true,
+          ),
+        );
+
+      await expectLater(
+        engineOver(['teachings']).synchronize(),
+        throwsA(isA<SyncStalled>()),
+      );
+
+      expect(server.requestsFor('teachings'), hasLength(2));
+      expect(
+        await dao.resyncToken(SyncCollectionKey.teachings),
+        isNotNull,
+        reason: 'Le remplacement reste ouvert : le cycle suivant le rejoue.',
+      );
+      expect(await dao.readScopeVersion(), isNull);
+    });
   });
 
   group('Une coupure au milieu d\'un cycle', () {
