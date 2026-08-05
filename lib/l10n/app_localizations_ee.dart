@@ -708,4 +708,11 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get absenceBack => 'Trɔ yi megbe';
+
+  @override
+  String get teachingRetractedTitle => 'Nufiafia sia megali o';
+
+  @override
+  String get teachingRetractedMessage =>
+      'Woɖee ɖa le nudzraɖoƒe la. Sese la tɔ.';
 }

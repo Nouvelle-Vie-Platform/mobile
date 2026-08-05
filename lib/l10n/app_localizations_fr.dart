@@ -709,4 +709,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get absenceBack => 'Retour';
+
+  @override
+  String get teachingRetractedTitle =>
+      'Cet enseignement n\'est plus disponible';
+
+  @override
+  String get teachingRetractedMessage =>
+      'Il a été retiré de la médiathèque. La lecture est arrêtée.';
 }

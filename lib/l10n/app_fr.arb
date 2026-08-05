@@ -370,5 +370,9 @@
   "absenceOfflineMediaMessage": "Cet enregistrement n'a pas été téléchargé. Reconnectez-vous à internet pour l'écouter.",
   "@absenceOfflineMediaMessage": { "description": "Explication de l'absence « média indisponible hors ligne » : dit l'action qui débloque" },
   "absenceBack": "Retour",
-  "@absenceBack": { "description": "Action commune aux quatre absences (ContentAbsenceView) : rend la main sans éjecter le fidèle de l'écran qu'il avait ouvert" }
+  "@absenceBack": { "description": "Action commune aux quatre absences (ContentAbsenceView) : rend la main sans éjecter le fidèle de l'écran qu'il avait ouvert" },
+  "teachingRetractedTitle": "Cet enseignement n'est plus disponible",
+  "@teachingRetractedTitle": { "description": "Absence « contenu retiré » vue depuis l'écran de détail d'un enseignement : dit de quoi on parle, là où absenceRetractedTitle reste générique" },
+  "teachingRetractedMessage": "Il a été retiré de la médiathèque. La lecture est arrêtée.",
+  "@teachingRetractedMessage": { "description": "Explication de l'enseignement retiré. Mentionne explicitement l'arrêt de la lecture : le son s'est coupé, il faut dire pourquoi" }
 }

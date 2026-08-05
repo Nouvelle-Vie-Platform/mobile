@@ -255,5 +255,7 @@
   "absenceNoMediaMessage": "The recording isn't online yet. Check back in a few days.",
   "absenceOfflineMediaTitle": "Unavailable offline",
   "absenceOfflineMediaMessage": "This recording hasn't been downloaded. Reconnect to the internet to listen.",
-  "absenceBack": "Back"
+  "absenceBack": "Back",
+  "teachingRetractedTitle": "This teaching is no longer available",
+  "teachingRetractedMessage": "It was removed from the media library. Playback has stopped."
 }

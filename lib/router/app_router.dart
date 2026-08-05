@@ -138,14 +138,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         name: AppRoute.teachingDetail,
-        path: '/teaching',
+        path: '/teaching/:id',
         builder: (_, state) {
-          // L'enseignement ciblé est passé via `extra` ; repli sur le premier
-          // enseignement disponible en cas d'accès direct.
-          final teaching =
-              state.extra as Teaching? ?? ref.read(teachingsProvider).first;
+          // La route porte l'**identifiant**, jamais l'objet : c'est l'écran
+          // qui résout, dans la source de vérité, à chaque build. Passer un
+          // `Teaching` par `extra` en aurait fait une copie figée au clic, que
+          // ni une rétractation ni une mise à jour n'auraient rattrapée.
+          //
+          // Plus de repli non plus : `.first` n'était pas un garde-fou mais un
+          // aveu — `/teaching` sans argument n'avait aucun moyen de désigner
+          // *quel* enseignement, et levait de toute façon sur liste vide. Un
+          // identifiant est présent (go_router garantit le paramètre de
+          // chemin) ou absent, et absent qui ne résout rien est un contenu
+          // retiré, traité par l'écran.
           return AppBackground(
-            child: TeachingDetailScreen(teaching: teaching),
+            child:
+                TeachingDetailScreen(teachingId: state.pathParameters['id']!),
           );
         },
       ),

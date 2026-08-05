@@ -11,6 +11,7 @@ import 'package:maison_du_miracle/screens/notes_screen.dart';
 import 'package:maison_du_miracle/screens/prayer_requests_screen.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
+import 'package:maison_du_miracle/state/repository_providers.dart';
 
 import '../helpers/pump_screen.dart';
 
@@ -57,7 +58,7 @@ void main() {
       expect(find.byType(DonationsScreen), findsOneWidget);
     });
 
-    testWidgets('TeachingDetailScreen affiche l\'enseignement reçu',
+    testWidgets('TeachingDetailScreen affiche l\'enseignement résolu',
         (tester) async {
       // Enseignement sans image : évite tout chargement réseau en test.
       const teaching = Teaching(
@@ -67,7 +68,14 @@ void main() {
         duration: '10:00',
         color: 0xFF223B8C,
       );
-      await pumpScreen(tester, const TeachingDetailScreen(teaching: teaching));
+      // L'écran ne reçoit qu'un identifiant : la donnée vient du provider.
+      await pumpScreen(
+        tester,
+        TeachingDetailScreen(teachingId: teaching.id),
+        overrides: [
+          teachingsProvider.overrideWithValue(const [teaching])
+        ],
+      );
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
       expect(find.text(teaching.title), findsOneWidget);
     });

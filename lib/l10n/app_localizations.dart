@@ -1365,6 +1365,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Retour'**
   String get absenceBack;
+
+  /// Absence « contenu retiré » vue depuis l'écran de détail d'un enseignement : dit de quoi on parle, là où absenceRetractedTitle reste générique
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet enseignement n\'est plus disponible'**
+  String get teachingRetractedTitle;
+
+  /// Explication de l'enseignement retiré. Mentionne explicitement l'arrêt de la lecture : le son s'est coupé, il faut dire pourquoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Il a été retiré de la médiathèque. La lecture est arrêtée.'**
+  String get teachingRetractedMessage;
 }
 
 class _AppLocalizationsDelegate

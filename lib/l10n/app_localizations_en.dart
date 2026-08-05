@@ -707,4 +707,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get absenceBack => 'Back';
+
+  @override
+  String get teachingRetractedTitle => 'This teaching is no longer available';
+
+  @override
+  String get teachingRetractedMessage =>
+      'It was removed from the media library. Playback has stopped.';
 }

@@ -48,5 +48,7 @@
   "absenceNoMediaMessage": "Nuɖeɖi la meva ɖe internet dzi haɖe o. Gbugbɔ va le ŋkeke ʋɛ aɖewo megbe.",
   "absenceOfflineMediaTitle": "Mele mɔ nu o",
   "absenceOfflineMediaMessage": "Womeɖi nuɖeɖi sia ɖe mɔ̃a dzi o. Gbugbɔ ka internet ŋu hafi nàse.",
-  "absenceBack": "Trɔ yi megbe"
+  "absenceBack": "Trɔ yi megbe",
+  "teachingRetractedTitle": "Nufiafia sia megali o",
+  "teachingRetractedMessage": "Woɖee ɖa le nudzraɖoƒe la. Sese la tɔ."
 }

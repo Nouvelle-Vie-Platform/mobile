@@ -36,8 +36,12 @@ class MediaLibraryScreen extends ConsumerStatefulWidget {
 class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
   int _tab = 0;
 
-  void _openTeaching(Teaching t) =>
-      context.pushNamed(AppRoute.teachingDetail, extra: t);
+  /// Ouvre l'enseignement **par son identifiant** : l'écran de détail le
+  /// relira dans la source de vérité, il n'en reçoit pas une copie.
+  void _openTeaching(Teaching t) => context.pushNamed(
+        AppRoute.teachingDetail,
+        pathParameters: {'id': t.id},
+      );
 
   @override
   Widget build(BuildContext context) {
