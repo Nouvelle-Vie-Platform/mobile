@@ -233,9 +233,20 @@ abstract final class SampleData {
   /// dimanche et les études bibliques ont leur propre section, les autres
   /// alimentent « Derniers enseignements ». La médiathèque, elle, les affiche
   /// tous.
+  ///
+  /// Les [Teaching.id] sont des **UUIDv7 écrits en dur, et ils doivent le
+  /// rester** : la navigation ne passe plus l'objet mais son identifiant
+  /// (`/teaching/:id`). Un identifiant régénéré à chaque lancement — un
+  /// `Uuid().v7()` appelé ici, un index de liste — casserait tout lien déjà
+  /// ouvert et rendrait l'écran de détail « contenu retiré » au moindre
+  /// rechargement. Ordre des horodatages : décroissant, comme la liste.
+  ///
+  /// `final` et non `const` : les dates (`recordedAt`, `publishedAt`) ne sont
+  /// pas constructibles en constante.
   static final List<Teaching> teachings = [
     // ── Messages du dimanche ────────────────────────────────────────────────
     Teaching(
+        id: '0195cfbf-ac00-7a60-9eb6-46f7b38cf45a',
         title: 'Dieu a le dernier mot',
         recordedAt: _day(3),
         isFullService: true,
@@ -252,6 +263,7 @@ abstract final class SampleData {
         verse: 'Romains 8:31',
         rubric: TeachingRubric.dimanche),
     Teaching(
+        id: '0195abb3-2800-7f50-924d-12ee32477961',
         title: 'Une maison bâtie sur le roc',
         recordedAt: _day(10),
         publishedAt: _ago(const Duration(days: 10)),
@@ -267,6 +279,7 @@ abstract final class SampleData {
         verse: 'Matthieu 7:24',
         rubric: TeachingRubric.dimanche),
     Teaching(
+        id: '019587a6-a400-710b-9048-8a20d30288e7',
         title: 'Le temps de la faveur',
         recordedAt: _day(17),
         publishedAt: _ago(const Duration(days: 17)),
@@ -283,6 +296,7 @@ abstract final class SampleData {
         rubric: TeachingRubric.dimanche),
     // ── Études bibliques ────────────────────────────────────────────────────
     Teaching(
+        id: '0195639a-2000-7554-902f-d58a5f53f301',
         title: 'Romains : vivre par la grâce',
         recordedAt: _day(24),
         isFullService: true,
@@ -299,6 +313,7 @@ abstract final class SampleData {
         verse: 'Romains 5:1',
         rubric: TeachingRubric.etude),
     Teaching(
+        id: '01953f8d-9c00-7d09-99c9-3f722eef070e',
         title: 'Les alliances de Dieu, pas à pas',
         recordedAt: _day(31),
         publishedAt: _ago(const Duration(days: 31)),
@@ -314,6 +329,7 @@ abstract final class SampleData {
         verse: 'Genèse 9:13',
         rubric: TeachingRubric.etude),
     Teaching(
+        id: '01951b81-1800-7e8e-8f59-d2437dbd48a3',
         title: 'Prier avec les Psaumes',
         recordedAt: _day(38),
         publishedAt: _ago(const Duration(days: 38)),
@@ -330,6 +346,7 @@ abstract final class SampleData {
         rubric: TeachingRubric.etude),
     // ── Temps de prière ─────────────────────────────────────────────────────
     Teaching(
+        id: '0194f774-9400-7124-aeb4-a337eaf5c04f',
         title: 'Veillée : le cri du matin',
         recordedAt: _day(45),
         publishedAt: _ago(const Duration(days: 45)),
@@ -345,6 +362,7 @@ abstract final class SampleData {
         verse: 'Psaume 5:4',
         rubric: TeachingRubric.priere),
     Teaching(
+        id: '0194d368-1000-792b-a9de-9c5d1427c9d4',
         title: 'Intercession pour la nation',
         recordedAt: _day(52),
         publishedAt: _ago(const Duration(days: 52)),
@@ -360,6 +378,7 @@ abstract final class SampleData {
         verse: 'Ézéchiel 22:30',
         rubric: TeachingRubric.priere),
     Teaching(
+        id: '0194af5b-8c00-7d6a-9b36-6afbc65a478b',
         title: 'Prière pour les familles',
         recordedAt: _day(59),
         publishedAt: _ago(const Duration(days: 59)),
@@ -376,6 +395,7 @@ abstract final class SampleData {
         rubric: TeachingRubric.priere),
     // ── Hors rubrique ───────────────────────────────────────────────────────
     Teaching(
+        id: '01948b4f-0800-7bd7-835f-7081a853c4bb',
         title: 'La puissance de la prière',
         recordedAt: _day(66),
         publishedAt: _ago(const Duration(days: 66)),
@@ -391,6 +411,7 @@ abstract final class SampleData {
         verse: 'Jacques 5:16',
         rubric: TeachingRubric.etude),
     Teaching(
+        id: '01946742-8400-7fe2-9661-d853031937a8',
         title: 'La foi qui déplace les montagnes',
         recordedAt: _day(73),
         publishedAt: _ago(const Duration(days: 73)),
@@ -406,6 +427,7 @@ abstract final class SampleData {
         verse: 'Matthieu 17:20',
         rubric: TeachingRubric.priere),
     Teaching(
+        id: '01944336-0000-7f97-b43a-7a7fa48b2364',
         title: 'Marcher par l\'Esprit',
         recordedAt: _day(80),
         publishedAt: _ago(const Duration(days: 80)),
@@ -421,6 +443,7 @@ abstract final class SampleData {
         verse: 'Galates 5:25',
         rubric: TeachingRubric.dimanche),
     Teaching(
+        id: '01941f29-7c00-740c-88cd-f0b19cc920f6',
         title: 'Le tour du père',
         recordedAt: _day(80),
         publishedAt: _ago(const Duration(days: 80)),

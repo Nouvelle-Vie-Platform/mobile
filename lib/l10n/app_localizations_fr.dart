@@ -678,4 +678,43 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventDetailAbout => 'À propos';
+
+  @override
+  String get absenceRetractedTitle => 'Contenu retiré';
+
+  @override
+  String get absenceRetractedMessage =>
+      'Ce contenu n\'est plus disponible. Il a été retiré par l\'église.';
+
+  @override
+  String get absenceNotSyncedTitle => 'Pas encore synchronisé';
+
+  @override
+  String get absenceNotSyncedMessage =>
+      'Ce contenu n\'est pas encore arrivé sur cet appareil. Il apparaîtra après la prochaine synchronisation.';
+
+  @override
+  String get absenceNoMediaTitle => 'Enregistrement à venir';
+
+  @override
+  String get absenceNoMediaMessage =>
+      'L\'enregistrement n\'est pas encore en ligne. Revenez d\'ici quelques jours.';
+
+  @override
+  String get absenceOfflineMediaTitle => 'Indisponible hors ligne';
+
+  @override
+  String get absenceOfflineMediaMessage =>
+      'Cet enregistrement n\'a pas été téléchargé. Reconnectez-vous à internet pour l\'écouter.';
+
+  @override
+  String get absenceBack => 'Retour';
+
+  @override
+  String get teachingRetractedTitle =>
+      'Cet enseignement n\'est plus disponible';
+
+  @override
+  String get teachingRetractedMessage =>
+      'Il a été retiré de la médiathèque. La lecture est arrêtée.';
 }

@@ -1,37 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
 import '../router/app_router.dart';
+import '../state/repository_providers.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../utils/media_url.dart';
+import '../widgets/content_absence.dart';
+
+/// Habillage du lecteur quand il n'y a plus d'enseignement d'où tirer une
+/// couleur : le bleu de marque, celui qui sert déjà de défaut au modèle.
+const _fallbackBase = Color(0xFF223B8C);
 
 /// Écran de détail d'un enseignement, façon **lecteur plein écran**.
 ///
+/// Il reçoit un **identifiant**, jamais l'objet, et relit la donnée dans la
+/// source de vérité ([teachingByIdProvider]) à chaque build. Ce n'est pas un
+/// détail d'implémentation : un enseignement passé par `extra` serait une copie
+/// figée au moment du clic, et une rétractation reçue pendant les vingt minutes
+/// d'écoute laisserait l'écran afficher — lecteur compris — un contenu que le
+/// serveur a retiré. Le fidèle le retrouverait disparu de la liste au retour,
+/// sans comprendre ce qu'il vient d'écouter.
+///
+/// Quand l'identifiant ne résout plus rien, l'écran **reste ouvert** et bascule
+/// sur [ContentAbsence.retracted] : on n'éjecte pas quelqu'un en pleine
+/// lecture, et on ne fige pas une copie qui mentirait.
+///
 /// L'habillage (dégradé, accents) est piloté par les données : la couleur
 /// [Teaching.color] et l'image optionnelle [Teaching.image].
-class TeachingDetailScreen extends StatefulWidget {
-  const TeachingDetailScreen({super.key, required this.teaching});
+class TeachingDetailScreen extends ConsumerStatefulWidget {
+  const TeachingDetailScreen({super.key, required this.teachingId});
 
-  final Teaching teaching;
+  /// UUIDv7 de l'enseignement, porté par la route (`/teaching/:id`).
+  final String teachingId;
 
   @override
-  State<TeachingDetailScreen> createState() => _TeachingDetailScreenState();
+  ConsumerState<TeachingDetailScreen> createState() =>
+      _TeachingDetailScreenState();
 }
 
-class _TeachingDetailScreenState extends State<TeachingDetailScreen> {
+class _TeachingDetailScreenState extends ConsumerState<TeachingDetailScreen> {
   bool _playing = true;
   bool _liked = false;
   double _progress = 0.35;
 
-  Teaching get _t => widget.teaching;
-
   /// Ouvre une demi-feuille native (glissable vers le bas) : description,
   /// versets et infos de l'enseignement.
-  void _showInfoSheet(BuildContext context) {
+  void _showInfoSheet(BuildContext context, Teaching teaching) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -40,85 +59,138 @@ class _TeachingDetailScreenState extends State<TeachingDetailScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) => _TeachingInfoSheet(teaching: _t),
+      builder: (_) => _TeachingInfoSheet(teaching: teaching),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final base = Color(_t.color);
-    final dark = Color.lerp(base, Colors.black, 0.55)!;
-    final total = _durationToSeconds(_t.duration);
+    final provider = teachingByIdProvider(widget.teachingId);
+
+    // Une rétractation reçue pendant l'écoute doit **arrêter la lecture**, et
+    // pas seulement retirer les commandes de l'écran.
+    ref.listen<Teaching?>(provider, (_, next) {
+      if (next == null && _playing) setState(() => _playing = false);
+    });
+
+    final teaching = ref.watch(provider);
+    if (teaching == null) return _buildAbsent(context);
+    return _buildPlayer(context, teaching);
+  }
+
+  /// L'identifiant ne résout plus rien : même chrome (le fidèle n'est pas
+  /// déplacé), contenu remplacé par la déclaration d'absence.
+  Widget _buildAbsent(BuildContext context) {
+    return _PlayerScaffold(
+      base: _fallbackBase,
+      child: Column(
+        children: [
+          _PlayerTopBar(title: context.l10n.teachingAppBarTitle),
+          Expanded(
+            child: ContentAbsenceView(
+              absence: ContentAbsence.retracted,
+              onDark: true,
+              title: context.l10n.teachingRetractedTitle,
+              message: context.l10n.teachingRetractedMessage,
+              onBack: () => context.pop(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayer(BuildContext context, Teaching t) {
+    final base = Color(t.color);
+    final total = _durationToSeconds(t.duration);
     final current = (_progress * total).round();
 
+    return _PlayerScaffold(
+      base: base,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _PlayerTopBar(
+              title: context.l10n.teachingAppBarTitle,
+              onInfo: () => _showInfoSheet(context, t),
+            ),
+            Expanded(child: Center(child: _Artwork(teaching: t))),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              t.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 36,
+                fontWeight: FontWeight.w800,
+                height: 1.1,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              t.author,
+              style: AppTypography.h4.copyWith(color: Colors.white),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.verified, color: Colors.white70, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  t.duration,
+                  style: AppTypography.caption
+                      .copyWith(color: Colors.white.withValues(alpha: 0.7)),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            _Controls(
+              progress: _progress,
+              timeLabel: '${_format(current)} / ${t.duration}',
+              playing: _playing,
+              liked: _liked,
+              accent: base,
+              onSeek: (v) => setState(() => _progress = v),
+              onPlayPause: () => setState(() => _playing = !_playing),
+              onLike: () => setState(() => _liked = !_liked),
+              onNotes: () => context.pushNamed(AppRoute.notes),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Le cadre du lecteur : dégradé plein écran tiré d'une couleur d'accent.
+///
+/// Extrait pour que l'**absence** garde exactement le même cadre que la
+/// lecture. Basculer sur un écran d'allure différente reviendrait à déplacer le
+/// fidèle sans le lui dire.
+class _PlayerScaffold extends StatelessWidget {
+  const _PlayerScaffold({required this.base, required this.child});
+
+  final Color base;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [base, dark],
+            colors: [base, Color.lerp(base, Colors.black, 0.55)!],
             stops: const [0.15, 1.0],
           ),
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _PlayerTopBar(
-                  title: context.l10n.teachingAppBarTitle,
-                  onInfo: () => _showInfoSheet(context),
-                ),
-                Expanded(child: Center(child: _Artwork(teaching: _t))),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  _t.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  _t.author,
-                  style: AppTypography.h4.copyWith(color: Colors.white),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.verified, color: Colors.white70, size: 14),
-                    const SizedBox(width: 6),
-                    Text(
-                      _t.duration,
-                      style: AppTypography.caption
-                          .copyWith(color: Colors.white.withValues(alpha: 0.7)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                _Controls(
-                  progress: _progress,
-                  timeLabel: '${_format(current)} / ${_t.duration}',
-                  playing: _playing,
-                  liked: _liked,
-                  accent: base,
-                  onSeek: (v) => setState(() => _progress = v),
-                  onPlayPause: () => setState(() => _playing = !_playing),
-                  onLike: () => setState(() => _liked = !_liked),
-                  onNotes: () => context.pushNamed(AppRoute.notes),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-              ],
-            ),
-          ),
-        ),
+        child: SafeArea(child: child),
       ),
     );
   }
@@ -171,20 +243,15 @@ class _Artwork extends StatelessWidget {
     );
 
     // Pas d'image : grande icône flottant sur le dégradé.
-    if (image == null) {
-      return Center(
-        child: Icon(
-          Icons.auto_stories_rounded,
-          size: 110,
-          color: Colors.white.withValues(alpha: 0.85),
-        ),
-      );
-    }
+    if (image == null) return _placeholder();
 
     // Image fondue dans le dégradé : opaque en haut, transparente en bas
     // (et léger fondu en haut) via un masque d'opacité.
     return Hero(
-      tag: 'teaching_art_${teaching.title}',
+      // Étiquette bâtie sur l'identifiant, et non sur le titre : deux
+      // enseignements homonymes casseraient l'animation, un titre corrigé la
+      // désynchroniserait de la carte d'origine.
+      tag: 'teaching_art_${teaching.id}',
       child: ShaderMask(
         blendMode: BlendMode.dstIn,
         shaderCallback: (rect) => const LinearGradient(
@@ -198,22 +265,36 @@ class _Artwork extends StatelessWidget {
           ],
           stops: [0.0, 0.12, 0.6, 1.0],
         ).createShader(rect),
+        // Repli obligatoire (cf. CLAUDE.md) : sans lui, un visuel injoignable
+        // — hors ligne, ou `flutter test` qui répond 400 à tout réseau — fait
+        // lever le lecteur au lieu de retomber sur le placeholder.
         child: Image(
           image: image,
           width: double.infinity,
           height: double.infinity,
           fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _placeholder(),
         ),
       ),
     );
   }
 
+  /// Les deux cadrages sont servis en **URL relative** par l'API : la
+  /// résolution contre la base courante appartient au client (ADR-0005).
   static ImageProvider? _imageProvider(String? source) {
     if (source == null) return null;
     return source.startsWith('http')
         ? NetworkImage(source)
         : AssetImage(source);
   }
+
+  Widget _placeholder() => Center(
+        child: Icon(
+          Icons.auto_stories_rounded,
+          size: 110,
+          color: Colors.white.withValues(alpha: 0.85),
+        ),
+      );
 }
 
 /// Bloc de contrôles : progression, temps, actions et lecture/pause.

@@ -110,9 +110,9 @@ une `Map<String,String>` multilingue et non un libellé. Le formatage vit dans l
 vue : `utils/i18n_text.dart` (`pick`, repli de langue) et `utils/event_time.dart`
 (dates et heures). Ces helpers sont l'**unique** endroit où ces règles sont
 écrites — ne pas disséminer de `?? title['fr']` dans les widgets.
+
 - `lib/router/app_router.dart` — `routerProvider` (GoRouter), noms dans `AppRoute`.
-  Les écrans de détail reçoivent leur objet via `extra` (ex. `Teaching`,
-  `CommunityGroup`), avec repli sur le 1er élément si accès direct.
+  Voir « Navigation : l'identifiant, jamais l'objet ».
 - `lib/theme/` — `app_colors.dart` (couleurs de marque + dégradés),
   `app_palette.dart` (palette adaptative clair/sombre via `ThemeExtension`,
   accès `context.palette`), `app_typography.dart` (police **Atkinson Hyperlegible**),
@@ -121,6 +121,50 @@ vue : `utils/i18n_text.dart` (`pick`, repli de langue) et `utils/event_time.dart
   (`cards/`, `chat/`).
 - `lib/l10n/` — voir i18n.
 - `main.dart` → `ProviderScope(MaisonDuMiracleApp)` ; `app.dart` → `MaterialApp.router`.
+
+### Navigation : **l'identifiant, jamais l'objet** (domaines branchés)
+Convention **abandonnée** (#27) : « les écrans de détail reçoivent leur objet
+via `extra`, avec repli sur le 1er élément si accès direct ». Elle survit
+seulement là où le domaine est encore fictif et sans identité (`/group-chat`,
+`/event`), et doit tomber avec chacun d'eux.
+
+La règle pour tout domaine porteur d'un `id` : **la route porte l'identifiant
+en `pathParameter`, l'écran résout la donnée depuis son provider** — voir
+`/teaching/:id`, `teachingByIdProvider` et `TeachingDetailScreen`. Trois
+raisons, dans l'ordre d'importance :
+
+1. **Un objet passé par `extra` est une copie hors du magasin**, figée au
+   moment du clic. Le serveur peut rétracter (dépublication ou
+   reprogrammation : `{ id, deletedAt }` dans le flux delta, ADR-0025) ; l'écran
+   qui tient sa copie continue d'afficher — lecteur compris — un contenu retiré,
+   et l'utilisateur le retrouve disparu de la liste au retour. Résoudre à chaque
+   build, c'est rester branché sur la source de vérité.
+2. **Sans identifiant, rien n'est désignable de l'extérieur.** Une notification
+   FCM (ADR-0017) ou un lien partagé n'a qu'une chaîne à transmettre. Le repli
+   `.first` n'était pas un garde-fou : c'était l'aveu qu'`/teaching` ne pouvait
+   désigner *aucun* enseignement en particulier — et il levait de toute façon
+   sur un magasin vide.
+3. Un identifiant est **présent ou absent**, il n'y a rien à quoi se replier.
+   Un identifiant qui ne résout rien n'est pas une erreur technique : c'est un
+   contenu retiré, et ça s'affiche (ci-dessous).
+
+### Les **quatre absences** — `widgets/content_absence.dart`
+Un contenu ouvert peut n'avoir rien à montrer pour quatre raisons distinctes,
+qui se ressemblent à l'écran et répondent à des questions différentes :
+`retracted` (retiré, définitif), `notSynced` (pas encore reçu par le magasin
+local), `noMedia` (publié, fichier pas encore attaché), `offlineMedia` (média
+non téléchargé, appareil hors ligne). `ContentAbsence` porte les quatre textes,
+`ContentAbsenceView` les rend toutes — **ne pas écrire un écran d'absence de
+plus**, ajouter une variante.
+
+Partis pris valables pour les quatre : on **n'éjecte pas** l'utilisateur de
+l'écran qu'il avait ouvert (il croirait à un bug), on **ne fige pas** la
+dernière copie connue (ça ment), la lecture en cours **s'arrête**, et il y a
+toujours une porte de sortie.
+
+À ne pas confondre avec les états de liste : `AppErrorState` (teinté,
+« Réessayer ») dit « je n'ai pas pu charger » ; `AppEmptyState` est une carte
+dans une liste. Une absence, elle, occupe l'écran entier.
 
 ### Navigation principale
 `HomeShell` = `IndexedStack` de 4 onglets **Accueil · Annonces · Communauté ·

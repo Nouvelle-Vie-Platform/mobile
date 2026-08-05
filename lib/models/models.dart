@@ -337,6 +337,7 @@ class Teaching {
   /// invocable** en `const` : [DateTime] n'est pas constructible en constante —
   /// même contrainte que [ChurchEvent] et [Announcement].
   const Teaching({
+    required this.id,
     required this.title,
     required this.author,
     required this.duration,
@@ -351,6 +352,18 @@ class Teaching {
     this.description = '',
     this.verse,
   });
+
+  /// Identité de l'enseignement — **UUIDv7 servi par le serveur**, en chaîne.
+  ///
+  /// C'est ce qui circule dans l'application, et non l'objet : la route de
+  /// détail porte cet identifiant (`/teaching/:id`) et l'écran relit la donnée
+  /// dans la source de vérité à chaque build. Deux conséquences voulues :
+  /// - une **rétractation** (dépublication ou reprogrammation dans le futur,
+  ///   `{ id, deletedAt }` du flux delta, cf. ADR-0025) retire le contenu de
+  ///   l'écran ouvert au lieu de le laisser afficher une copie périmée ;
+  /// - un enseignement devient **désignable de l'extérieur** — notification
+  ///   FCM, lien partagé — ce qu'aucun objet passé de main en main ne permet.
+  final String id;
 
   final String title;
   final String author;

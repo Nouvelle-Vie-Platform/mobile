@@ -8,6 +8,7 @@ import 'package:maison_du_miracle/widgets/app_card.dart';
 import 'package:maison_du_miracle/widgets/app_empty_state.dart';
 import 'package:maison_du_miracle/widgets/app_error_state.dart';
 import 'package:maison_du_miracle/widgets/app_list_skeleton.dart';
+import 'package:maison_du_miracle/widgets/content_absence.dart';
 
 /// Monte un état isolé, dans une luminosité donnée, avec les traductions.
 ///
@@ -238,6 +239,88 @@ void main() {
       expect(emptyCard.color, isNull);
       expect(emptyCard.color, isNot(AppPalette.light.dangerBg));
       expect(find.byType(AppButton), findsNothing);
+    });
+  });
+
+  // Les quatre absences ne se distinguent pas par leur dessin — c'est le but —
+  // mais par ce qu'elles répondent. Un seul widget, quatre textes.
+  group('ContentAbsenceView (les quatre absences)', () {
+    testWidgets('chaque variante a son propre titre et sa propre explication',
+        (tester) async {
+      final seen = <String>{};
+      for (final absence in ContentAbsence.values) {
+        await _pump(tester, ContentAbsenceView(absence: absence));
+
+        // Toutes rendent la même anatomie : pictogramme, titre, explication,
+        // porte de sortie.
+        expect(find.byIcon(absence.icon), findsOneWidget);
+        expect(find.byKey(ContentAbsenceView.backKey), findsOneWidget);
+        expect(find.text('Retour'), findsOneWidget);
+
+        final title = tester.widget<Text>(find.byType(Text).first).data!;
+        expect(seen.add(title), isTrue,
+            reason: 'deux absences ne peuvent pas dire la même chose');
+      }
+      expect(seen, hasLength(4));
+    });
+
+    testWidgets('« contenu retiré » ne se lit pas comme une panne',
+        (tester) async {
+      await _pump(
+        tester,
+        const ContentAbsenceView(absence: ContentAbsence.retracted),
+      );
+
+      expect(find.text('Contenu retiré'), findsOneWidget);
+      // Rien à réessayer : la seule action rend la main.
+      expect(find.text('Réessayer'), findsNothing);
+      expect(find.byType(AppButton), findsOneWidget);
+      // Neutre, sans la carte teintée d'un état d'erreur.
+      expect(find.byType(AppCard), findsNothing);
+    });
+
+    testWidgets('les textes fournis remplacent ceux de la variante',
+        (tester) async {
+      await _pump(
+        tester,
+        const ContentAbsenceView(
+          absence: ContentAbsence.retracted,
+          title: 'Cet enseignement a été retiré',
+          message: 'Il n\'est plus proposé par l\'église.',
+        ),
+      );
+
+      expect(find.text('Cet enseignement a été retiré'), findsOneWidget);
+      expect(find.text('Contenu retiré'), findsNothing);
+    });
+
+    testWidgets('le bouton de retour appelle le callback fourni',
+        (tester) async {
+      var backs = 0;
+      await _pump(
+        tester,
+        ContentAbsenceView(
+          absence: ContentAbsence.retracted,
+          onBack: () => backs++,
+        ),
+      );
+
+      await tester.tap(find.byKey(ContentAbsenceView.backKey));
+      await tester.pump();
+      expect(backs, 1);
+    });
+
+    testWidgets('sur fond sombre, les textes passent en blanc', (tester) async {
+      await _pump(
+        tester,
+        const ContentAbsenceView(
+          absence: ContentAbsence.retracted,
+          onDark: true,
+        ),
+      );
+
+      final title = tester.widget<Text>(find.text('Contenu retiré'));
+      expect(title.style?.color, Colors.white);
     });
   });
 }

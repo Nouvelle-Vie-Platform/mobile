@@ -661,7 +661,7 @@ class _SundayMessagesCarousel extends StatelessWidget {
             teaching: messages[i],
             onTap: () => context.pushNamed(
               AppRoute.teachingDetail,
-              extra: messages[i],
+              pathParameters: {'id': messages[i].id},
             ),
           ),
         ),
@@ -895,7 +895,7 @@ class _TeachingsCarousel extends StatelessWidget {
           teaching: teachings[i],
           onTap: () => context.pushNamed(
             AppRoute.teachingDetail,
-            extra: teachings[i],
+            pathParameters: {'id': teachings[i].id},
           ),
         ),
       ),

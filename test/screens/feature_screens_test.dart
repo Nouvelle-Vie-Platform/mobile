@@ -11,6 +11,7 @@ import 'package:maison_du_miracle/screens/notes_screen.dart';
 import 'package:maison_du_miracle/screens/prayer_requests_screen.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
+import 'package:maison_du_miracle/state/repository_providers.dart';
 
 import '../helpers/pump_screen.dart';
 
@@ -57,13 +58,14 @@ void main() {
       expect(find.byType(DonationsScreen), findsOneWidget);
     });
 
-    testWidgets('TeachingDetailScreen affiche l\'enseignement reçu',
+    testWidgets('TeachingDetailScreen affiche l\'enseignement résolu',
         (tester) async {
       // Enseignement sans image : évite tout chargement réseau en test — c'est
       // le repli coloré qui s'affiche, exactement comme hors ligne.
       // `final` et non `const` : les dates ne sont pas constructibles en
       // constante.
       final teaching = Teaching(
+        id: '01940000-0000-7000-8000-00000000cafe',
         title: 'Enseignement de test',
         author: 'Pasteur Test',
         duration: '10:00',
@@ -72,7 +74,14 @@ void main() {
         recordedAt: DateTime.utc(2026, 4, 12),
         publishedAt: DateTime.utc(2026, 4, 12, 8),
       );
-      await pumpScreen(tester, TeachingDetailScreen(teaching: teaching));
+      // L'écran ne reçoit qu'un identifiant : la donnée vient du provider.
+      await pumpScreen(
+        tester,
+        TeachingDetailScreen(teachingId: teaching.id),
+        overrides: [
+          teachingsProvider.overrideWithValue([teaching])
+        ],
+      );
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
       expect(find.text(teaching.title), findsOneWidget);
     });
