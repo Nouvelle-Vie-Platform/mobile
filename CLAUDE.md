@@ -80,11 +80,53 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
 
 Le curseur est **opaque** : on le stocke et on le rejoue, jamais on ne le décode
 ni ne le construit.
+
+### Moteur de synchronisation (`lib/data/sync/`) — ADR-0026 + ADR-0027
+La boucle **manifeste → tirage → application**, qui écrit dans le magasin et
+**ne rend rien**. Aucun écran n'en dépend : c'est l'étape 2 qui les branchera.
+
+- `sync_protocol.dart` — `SyncManifest`, `ManifestEntry`, `DeltaPage`,
+  `readsAsRetraction`. **`snake_case` uniquement** (enveloppe et protocole).
+- `sync_rows.dart` — JSON → companions Drift. **`camelCase` uniquement**
+  (lignes). Les deux conventions vivent dans deux fichiers exprès : un
+  désérialiseur à convention unique se trompe sur la moitié des clés.
+- `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
+  `contributors`, `branches`, puis `teachings`.
+- `sync_api.dart` — `GET /sync` et `GET /sync/{collection}`, sur le `Dio`
+  d'`ApiClient`. Un **404** devient `UnknownSyncCollection`.
+- `sync_engine.dart` — la boucle. `sync_scheduler.dart` — les déclencheurs.
+
+**Six règles, en plus des six du magasin :**
+1. **Référentiels avant contenu.** Ça ne ferme pas la fenêtre où un enseignement
+   arrive sans son intervenant (la jointure de lecture reste tolérante), ça
+   supprime le cas fréquent : la toute première synchronisation.
+2. **La `scope_version` est retenue en mémoire pendant tout le cycle et
+   persistée en dernier** (ADR-0027). Une valeur pour les treize collections.
+   Persistée trop tôt, elle éteint un resync qui n'a pas eu lieu — et le
+   manifeste ne le redemandera **jamais**. Un cycle interrompu ne persiste rien.
+3. **« Rétractation ou ligne », décidé avant toute construction d'objet** :
+   `deletedAt` non nul → la ligne quitte le magasin, rien n'est désérialisé.
+4. **Le client n'efface jamais de sa propre initiative** une ligne d'une
+   collection répliquée — `playback_progress` en particulier, qui **est** une
+   collection synchronisée et non de l'état local.
+5. **Un resync forcé se lit dans un `200`** (`full_resync` / `full_resync_required`),
+   jamais dans une erreur — et il **remplace**, il ne purge pas d'abord.
+6. **Un `404` de collection n'est pas fatal** : collection sautée, synchro
+   poursuivie.
+
+Déclenchement : **ouverture, foreground, tirer-pour-rafraîchir**. *Jamais de
+polling* — aucun `Timer` dans `lib/data/sync/`, et un test le vérifie.
+Le curseur du manifeste (`current_cursor`) est la **borne haute du périmètre**,
+pas un accusé de réception : il ne devient jamais le curseur local.
 - `lib/state/` — providers Riverpod :
   - `repository_providers.dart` : `churchRepositoryProvider` + providers de données
     (`teachingsProvider`, `groupsProvider`, `prayersProvider`, `notesProvider`,
     `announcementsProvider`, `chatProvider.family`) et `eventsProvider` (hors
     `ChurchRepository`, cf. ci-dessous).
+  - `sync_providers.dart` : `appDatabaseProvider` (à surcharger par une base en
+    mémoire dans les tests), `syncDaoProvider`, `mediathequeDaoProvider`,
+    `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`. **Aucun
+    écran ne les lit encore** — étape 2.
   - `theme_provider.dart` : `themeModeProvider` (Notifier) + `isDarkModeActive`.
 
 ### Brancher un vrai backend : **un repository dédié asynchrone par domaine**
