@@ -59,14 +59,20 @@ void main() {
 
     testWidgets('TeachingDetailScreen affiche l\'enseignement reçu',
         (tester) async {
-      // Enseignement sans image : évite tout chargement réseau en test.
-      const teaching = Teaching(
+      // Enseignement sans image : évite tout chargement réseau en test — c'est
+      // le repli coloré qui s'affiche, exactement comme hors ligne.
+      // `final` et non `const` : les dates ne sont pas constructibles en
+      // constante.
+      final teaching = Teaching(
         title: 'Enseignement de test',
         author: 'Pasteur Test',
         duration: '10:00',
         color: 0xFF223B8C,
+        rubric: TeachingRubric.dimanche,
+        recordedAt: DateTime.utc(2026, 4, 12),
+        publishedAt: DateTime.utc(2026, 4, 12, 8),
       );
-      await pumpScreen(tester, const TeachingDetailScreen(teaching: teaching));
+      await pumpScreen(tester, TeachingDetailScreen(teaching: teaching));
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
       expect(find.text(teaching.title), findsOneWidget);
     });

@@ -6,6 +6,14 @@ DateTime _ago(Duration since) => DateTime.now().toUtc().subtract(since);
 /// Instant futur, exprimé en UTC comme le ferait le backend.
 DateTime _inFuture(Duration until) => DateTime.now().toUtc().add(until);
 
+/// **Jour** d'enregistrement d'une fixture — sans heure, comme ce que le back
+/// sert en `YYYY-MM-DD`. Ancré en UTC pour qu'aucun fuseau ne le déplace d'un
+/// jour à l'affichage.
+DateTime _day(int daysAgo) {
+  final moment = DateTime.now().toUtc().subtract(Duration(days: daysAgo));
+  return DateTime.utc(moment.year, moment.month, moment.day);
+}
+
 /// Fuseau de la branche de Lomé — UTC+0 toute l'année, sans heure d'été.
 const String _lome = 'Africa/Lome';
 
@@ -225,15 +233,19 @@ abstract final class SampleData {
   /// dimanche et les études bibliques ont leur propre section, les autres
   /// alimentent « Derniers enseignements ». La médiathèque, elle, les affiche
   /// tous.
-  static const List<Teaching> teachings = [
+  static final List<Teaching> teachings = [
     // ── Messages du dimanche ────────────────────────────────────────────────
     Teaching(
         title: 'Dieu a le dernier mot',
+        recordedAt: _day(3),
+        isFullService: true,
+        publishedAt: _ago(const Duration(days: 3)),
         author: 'Pasteur Samuel',
         duration: '48:20',
         seed: 4,
         color: 0xFF223B8C,
-        image: 'https://picsum.photos/seed/dimanche/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/dimanche/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/dimanche/384/635',
         description:
             'Là où les circonstances semblent avoir tranché, Dieu garde la '
             'parole finale sur nos vies, nos familles et nos projets.',
@@ -241,11 +253,14 @@ abstract final class SampleData {
         rubric: TeachingRubric.dimanche),
     Teaching(
         title: 'Une maison bâtie sur le roc',
+        recordedAt: _day(10),
+        publishedAt: _ago(const Duration(days: 10)),
         author: 'Pasteur Mike',
         duration: '52:05',
         seed: 5,
         color: 0xFF3B5BD0,
-        image: 'https://picsum.photos/seed/roc/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/roc/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/roc/384/635',
         description:
             'Ce qui tient debout dans la tempête n\'est pas ce qui brille, '
             'mais ce qui est fondé sur la Parole mise en pratique.',
@@ -253,11 +268,14 @@ abstract final class SampleData {
         rubric: TeachingRubric.dimanche),
     Teaching(
         title: 'Le temps de la faveur',
+        recordedAt: _day(17),
+        publishedAt: _ago(const Duration(days: 17)),
         author: 'Pasteur Samuel',
         duration: '45:30',
         seed: 6,
         color: 0xFF1FA971,
-        image: 'https://picsum.photos/seed/faveur/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/faveur/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/faveur/384/635',
         description:
             'Il y a des saisons que Dieu fixe lui-même : reconnaître le temps '
             'de sa faveur, c\'est cesser de courir après ce qu\'Il donne.',
@@ -266,11 +284,15 @@ abstract final class SampleData {
     // ── Études bibliques ────────────────────────────────────────────────────
     Teaching(
         title: 'Romains : vivre par la grâce',
+        recordedAt: _day(24),
+        isFullService: true,
+        publishedAt: _ago(const Duration(days: 24)),
         author: 'Pasteur Jonas',
         duration: '1:04:30',
         seed: 7,
         color: 0xFF7A5AF8,
-        image: 'https://picsum.photos/seed/romains/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/romains/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/romains/384/635',
         description:
             'Première étape d\'un parcours dans l\'épître aux Romains : la '
             'justification par la foi, verset après verset.',
@@ -278,11 +300,14 @@ abstract final class SampleData {
         rubric: TeachingRubric.etude),
     Teaching(
         title: 'Les alliances de Dieu, pas à pas',
+        recordedAt: _day(31),
+        publishedAt: _ago(const Duration(days: 31)),
         author: 'Pasteur Mike',
         duration: '58:15',
         seed: 8,
         color: 0xFFE53935,
-        image: 'https://picsum.photos/seed/alliance/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/alliance/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/alliance/384/635',
         description:
             'D\'Abraham à la nouvelle alliance : comprendre le fil que Dieu '
             'tire d\'un bout à l\'autre de l\'Écriture.',
@@ -290,11 +315,14 @@ abstract final class SampleData {
         rubric: TeachingRubric.etude),
     Teaching(
         title: 'Prier avec les Psaumes',
+        recordedAt: _day(38),
+        publishedAt: _ago(const Duration(days: 38)),
         author: 'Sœur Estelle',
         duration: '47:05',
         seed: 9,
         color: 0xFF2A9D8F,
-        image: 'https://picsum.photos/seed/psaumes/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/psaumes/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/psaumes/384/635',
         description:
             'Les Psaumes mettent des mots sur ce que nous n\'osons pas dire : '
             'apprendre à en faire notre langue de prière.',
@@ -303,11 +331,14 @@ abstract final class SampleData {
     // ── Temps de prière ─────────────────────────────────────────────────────
     Teaching(
         title: 'Veillée : le cri du matin',
+        recordedAt: _day(45),
+        publishedAt: _ago(const Duration(days: 45)),
         author: 'Pasteur Samuel',
         duration: '1:18:40',
         seed: 10,
         color: 0xFF1B2A6B,
-        image: 'https://picsum.photos/seed/veillee/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/veillee/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/veillee/384/635',
         description:
             'Une nuit entière portée devant Dieu : quelques mots d\'exhortation, '
             'puis la prière de l\'assemblée jusqu\'au lever du jour.',
@@ -315,11 +346,14 @@ abstract final class SampleData {
         rubric: TeachingRubric.priere),
     Teaching(
         title: 'Intercession pour la nation',
+        recordedAt: _day(52),
+        publishedAt: _ago(const Duration(days: 52)),
         author: 'Pasteur Jonas',
         duration: '54:25',
         seed: 11,
         color: 0xFF0F766E,
-        image: 'https://picsum.photos/seed/intercession/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/intercession/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/intercession/384/635',
         description:
             'Nous nous tenons sur la brèche pour le pays, les autorités et la '
             'paix de nos villes.',
@@ -327,11 +361,14 @@ abstract final class SampleData {
         rubric: TeachingRubric.priere),
     Teaching(
         title: 'Prière pour les familles',
+        recordedAt: _day(59),
+        publishedAt: _ago(const Duration(days: 59)),
         author: 'Sœur Estelle',
         duration: '41:10',
         seed: 12,
         color: 0xFF9333EA,
-        image: 'https://picsum.photos/seed/familles/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/familles/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/familles/384/635',
         description:
             'Un temps de prière pour les foyers : les couples, les enfants et '
             'ceux qui portent seuls leur maison.',
@@ -340,48 +377,65 @@ abstract final class SampleData {
     // ── Hors rubrique ───────────────────────────────────────────────────────
     Teaching(
         title: 'La puissance de la prière',
+        recordedAt: _day(66),
+        publishedAt: _ago(const Duration(days: 66)),
         author: 'Pasteur Samuel',
         duration: '23:45',
         seed: 0,
         color: 0xFF3B5BD0,
-        image: 'https://picsum.photos/seed/priere/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/priere/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/priere/384/635',
         description:
             'La prière n\'est pas une formalité religieuse : c\'est un dialogue '
             'vivant avec Dieu qui transforme nos vies et nos circonstances.',
-        verse: 'Jacques 5:16'),
+        verse: 'Jacques 5:16',
+        rubric: TeachingRubric.etude),
     Teaching(
         title: 'La foi qui déplace les montagnes',
+        recordedAt: _day(73),
+        publishedAt: _ago(const Duration(days: 73)),
         author: 'Pasteur Samuel',
         duration: '36:10',
         seed: 1,
         color: 0xFFE53935,
-        image: 'https://picsum.photos/seed/foi/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/foi/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/foi/384/635',
         description:
             'La véritable foi nous connecte aux promesses de Dieu et permet de '
             'voir des résultats extraordinaires dans l\'impossible.',
-        verse: 'Matthieu 17:20'),
+        verse: 'Matthieu 17:20',
+        rubric: TeachingRubric.priere),
     Teaching(
         title: 'Marcher par l\'Esprit',
+        recordedAt: _day(80),
+        publishedAt: _ago(const Duration(days: 80)),
         author: 'Pasteur Mike',
         duration: '31:45',
         seed: 2,
         color: 0xFF1FA971,
-        image: 'https://picsum.photos/seed/esprit/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/esprit/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/esprit/384/635',
         description:
             'Apprendre à être conduit par l\'Esprit de Dieu au quotidien, dans '
             'nos décisions comme dans notre caractère.',
-        verse: 'Galates 5:25'),
+        verse: 'Galates 5:25',
+        rubric: TeachingRubric.dimanche),
     Teaching(
         title: 'Le tour du père',
+        recordedAt: _day(80),
+        publishedAt: _ago(const Duration(days: 80)),
         author: 'Pasteur Jonas',
         duration: '28:12',
         seed: 3,
         color: 0xFF7A5AF8,
-        image: 'https://picsum.photos/seed/pere/600/800',
+        imageLandscapeUrl: 'https://picsum.photos/seed/pere/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/pere/384/635',
         description:
             'Le cœur du Père céleste pour ses enfants : un amour qui restaure, '
             'relève et accueille sans condition.',
-        verse: 'Luc 15:20'),
+        verse: 'Luc 15:20',
+        rubric: TeachingRubric.etude),
+
   ];
 
   static const List<CommunityGroup> groups = [

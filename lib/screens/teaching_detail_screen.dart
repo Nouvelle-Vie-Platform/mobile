@@ -7,6 +7,7 @@ import '../router/app_router.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../utils/media_url.dart';
 
 /// Écran de détail d'un enseignement, façon **lecteur plein écran**.
 ///
@@ -163,7 +164,11 @@ class _Artwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final image = _imageProvider(teaching.image);
+    // En-tête pleine largeur : le cadrage paysage. Le portrait prend le relais
+    // s'il est seul, plutôt que de renoncer à toute image.
+    final image = _imageProvider(
+      resolveMediaUrl(teaching.imageLandscapeUrl ?? teaching.imagePortraitUrl),
+    );
 
     // Pas d'image : grande icône flottant sur le dégradé.
     if (image == null) {
