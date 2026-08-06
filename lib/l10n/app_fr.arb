@@ -103,15 +103,6 @@
   "actionListen": "Écouter",
   "@actionListen": { "description": "Bouton d'écoute d'un enseignement" },
   "sectionLatestTeachings": "Derniers enseignements",
-  "sectionSundayMessage": "Messages du dimanche",
-  "@sectionSundayMessage": {
-    "description": "Rubrique d'accueil : les messages portés au culte dominical"
-  },
-  "sectionBibleStudy": "Études bibliques",
-  "sectionPrayerTimes": "Moments de prière",
-  "@sectionPrayerTimes": {
-    "description": "Rubrique d'accueil : enregistrements centrés sur la prière (veillées, intercession)"
-  },
 
   "mediaTitle": "Médiathèque",
   "mediaSearchHint": "Rechercher un enseignement...",

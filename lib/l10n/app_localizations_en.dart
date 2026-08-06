@@ -232,15 +232,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionLatestTeachings => 'Latest teachings';
 
   @override
-  String get sectionSundayMessage => 'Sunday messages';
-
-  @override
-  String get sectionBibleStudy => 'Bible studies';
-
-  @override
-  String get sectionPrayerTimes => 'Prayer moments';
-
-  @override
   String get mediaTitle => 'Media library';
 
   @override

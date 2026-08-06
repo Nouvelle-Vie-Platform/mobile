@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,13 +22,16 @@ import '../widgets/app_card.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_state.dart';
 import '../widgets/app_list_skeleton.dart';
-import '../widgets/cards/teaching_cover.dart';
+import '../widgets/content_absence.dart';
+import '../widgets/home/home_section_layout.dart';
+import '../widgets/home/home_teaching_cards.dart';
+import '../widgets/home/home_teaching_section.dart';
 import '../widgets/profile_completion_banner.dart';
 import '../widgets/profile_setup_sheet.dart';
 import '../widgets/section_header.dart';
 
-/// Onglet « Accueil » : en-tête ondulé, cultes à venir, puis les derniers
-/// enseignements.
+/// Onglet « Accueil » : en-tête ondulé, cultes à venir, les derniers
+/// enseignements, puis **les rubriques que le serveur y a placées**.
 ///
 /// **Les trois rubriques en dur ont disparu** (#30). Elles filtraient sur un
 /// enum à trois valeurs (`dimanche`, `etude`, `priere`) alors que la rubrique
@@ -35,10 +40,22 @@ import '../widgets/section_header.dart';
 /// et rien de ce qui est figé à l'écriture ne peut suivre un référentiel
 /// administrable.
 ///
-/// Ce qui les remplace est déjà là — `homeSectionsProvider` rend les rubriques
-/// du serveur, dans son ordre, avec leur `layout` et leur `visibleOnHome`. Les
-/// composer est le travail du **ticket #32** ; jusque-là l'accueil ne montre
-/// que « Derniers enseignements », et la médiathèque reste le chemin complet.
+/// Ce qui les remplace **renverse la décision** (#32) : l'accueil ne choisit
+/// plus ses sections, il rend celles du référentiel. `position` en donne
+/// l'ordre, `layout` la mise en page, `visibleOnHome` la présence, `label` le
+/// titre et `color` la teinte. Un administrateur crée une rubrique, la place,
+/// choisit sa forme — et l'application suit, **sans livraison**.
+///
+/// Deux règles ne se contournent pas ici :
+///
+/// - **`visibleOnHome` se filtre à l'affichage, jamais au stockage.** Le
+///   référentiel est répliqué **entier**, masquées comprises, et c'est ce
+///   drapeau qui apprend au client qu'une rubrique a quitté l'accueil. Filtré à
+///   l'écriture, il ferait disparaître l'information au lieu de la propager, et
+///   la rubrique resterait à l'accueil pour toujours. Le filtre vit donc dans
+///   `MediathequeDao.homeSections()`, à la lecture.
+/// - **Pas d'enseignement, pas de section.** Le magasin l'applique déjà et
+///   l'écran n'ajoute aucune section de son cru.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -101,7 +118,7 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             const _UpcomingSection(),
-            const _LatestTeachingsSection(),
+            const _MediathequeHome(),
           ],
         ),
         // En-tête opaque posé par-dessus : le contenu disparaît derrière lui.
@@ -612,22 +629,122 @@ class _UpcomingCard extends StatelessWidget {
   }
 }
 
-/// Section « Derniers enseignements » de l'accueil, branchée sur
-/// [latestTeachingsProvider].
+/// **Tout ce que l'accueil tire du magasin local**, en un seul bloc : les
+/// derniers enseignements, puis les rubriques du référentiel dans l'ordre du
+/// serveur.
 ///
-/// Les trois états sont **distincts**, et pour la même raison que la section
-/// « À venir » juste au-dessus : une section silencieusement vide ferait croire
-/// que l'église n'a rien publié, alors qu'un magasin qui refuse de se lire est
-/// une panne. Le vide, lui, est la réponse normale d'un premier lancement — la
-/// synchronisation n'a pas encore rempli le magasin — et se dit sans bouton :
-/// il n'y a rien à réessayer, seulement à attendre.
-class _LatestTeachingsSection extends ConsumerWidget {
-  const _LatestTeachingsSection();
+/// Les deux flux lisent **le même magasin**, et leurs états se décident donc
+/// ensemble plutôt qu'une fois par section :
+///
+/// - **Erreur** — un magasin qui refuse de se lire est une panne, et une seule.
+///   La répéter section par section transformerait un incident en mur d'alertes.
+/// - **Chargement** — tant qu'aucun des deux n'a répondu, un squelette. Il n'y a
+///   rien à dire de plus, et surtout pas « il n'y a rien ».
+/// - **Magasin vide** — les deux ont répondu, et ils n'ont rien. Ce n'est **ni**
+///   un chargement, **ni** une erreur, **ni** une liste vide : c'est « pas
+///   encore synchronisé », l'état normal d'un premier lancement. C'est la
+///   variante [ContentAbsence.notSynced] qui le dit, celle qui existe déjà —
+///   pas un écran d'absence de plus, et pas un `AppEmptyState`, qui est une
+///   carte posée dans une liste là où une absence occupe la place entière.
+///
+/// Une église qui n'aurait **rien publié du tout** se lirait ici comme un
+/// magasin pas encore synchronisé, et c'est assumé : de l'appareil, les deux
+/// situations sont indiscernables sans interroger l'état de synchronisation, et
+/// la réponse — « revenez après la prochaine synchronisation » — est la bonne
+/// dans les deux cas. Le contraire ne l'est pas : annoncer « il n'y a rien »
+/// à quelqu'un qui n'a simplement pas encore reçu le catalogue lui ferait
+/// croire l'église muette.
+class _MediathequeHome extends ConsumerWidget {
+  const _MediathequeHome();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final latest = ref.watch(latestTeachingsProvider);
+    final sections = ref.watch(homeSectionsProvider);
+
+    if (latest.hasError || sections.hasError) {
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.xl) +
+            AppSpacing.screenPadding,
+        child: AppErrorState(
+          message: context.l10n.stateErrorMessage,
+          onRetry: () {
+            ref.invalidate(latestTeachingsProvider);
+            ref.invalidate(homeSectionsProvider);
+          },
+        ),
+      );
+    }
+
+    if (!latest.hasValue || !sections.hasValue) {
+      return const Padding(
+        padding: EdgeInsets.only(top: AppSpacing.xl),
+        child: AppListSkeleton(
+          itemCount: 2,
+          padding: AppSpacing.screenPadding,
+        ),
+      );
+    }
+
+    final teachings = latest.requireValue;
+    final rubrics = sections.requireValue;
+    if (teachings.isEmpty && rubrics.isEmpty) return const _NotSyncedYet();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // « Derniers enseignements » n'est pas une rubrique mais un **tri** :
+        // il survit au référentiel et se range avant lui. Il peut être vide
+        // alors que des rubriques existent — il écarte les cultes entiers.
+        if (teachings.isNotEmpty) _LatestTeachingsShelf(teachings: teachings),
+        // Les rubriques, dans l'ordre du serveur. Rien n'est trié, filtré ni
+        // complété ici : `homeSections()` a déjà écarté les masquées et les
+        // vides, et les a rangées par `position`.
+        for (final section in rubrics) HomeTeachingSection(section: section),
+      ],
+    );
+  }
+}
+
+/// L'accueil au premier lancement : le magasin n'a **rien encore reçu**.
+///
+/// Occupe la place plutôt que de se glisser entre deux sections : une absence
+/// n'est pas une carte dans une liste. Et **sans bouton de retour** — on est à
+/// la racine de la navigation, il n'y a rien à dépiler, la barre d'onglets est
+/// déjà la porte de sortie.
+class _NotSyncedYet extends StatelessWidget {
+  const _NotSyncedYet();
+
+  @override
+  Widget build(BuildContext context) {
+    // La moitié basse de l'écran, jamais moins que de quoi respirer : la liste
+    // qui l'accueille n'a pas de contrainte de hauteur à lui donner.
+    final height = math.max(MediaQuery.sizeOf(context).height * 0.5, 300.0);
+    return SizedBox(
+      height: height,
+      child: const ContentAbsenceView(
+        absence: ContentAbsence.notSynced,
+        showBack: false,
+      ),
+    );
+  }
+}
+
+/// Étagère « Derniers enseignements » — **un tri, pas une rubrique**.
+///
+/// Elle garde l'icône et le bleu de marque du thème là où les rubriques portent
+/// la teinte que le serveur leur a donnée : c'est une section de l'application,
+/// pas une ligne du référentiel.
+class _LatestTeachingsShelf extends StatelessWidget {
+  const _LatestTeachingsShelf({required this.teachings});
+
+  final List<TeachingView> teachings;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: AppSpacing.xl),
         Padding(
@@ -640,156 +757,23 @@ class _LatestTeachingsSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        ref.watch(latestTeachingsProvider).when(
-              loading: () => const AppListSkeleton(
-                itemCount: 1,
-                padding: AppSpacing.screenPadding,
+        SizedBox(
+          height: kCarouselCoverSize.height,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: AppSpacing.screenPadding,
+            itemCount: teachings.length,
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+            itemBuilder: (context, i) => HomeCarouselCard(
+              teaching: teachings[i],
+              onTap: () => context.pushNamed(
+                AppRoute.teachingDetail,
+                pathParameters: {'id': teachings[i].id},
               ),
-              error: (_, __) => Padding(
-                padding: AppSpacing.screenPadding,
-                child: AppErrorState(
-                  message: l10n.stateErrorMessage,
-                  onRetry: () => ref.invalidate(latestTeachingsProvider),
-                ),
-              ),
-              data: (teachings) => teachings.isEmpty
-                  ? Padding(
-                      padding: AppSpacing.screenPadding,
-                      child: AppEmptyState(
-                        icon: Icons.menu_book_outlined,
-                        title: l10n.stateEmptyTitle,
-                        message: l10n.stateEmptyMessage,
-                      ),
-                    )
-                  : _TeachingsCarousel(teachings: teachings),
             ),
-      ],
-    );
-  }
-}
-
-/// Carrousel horizontal des derniers enseignements (cartes image + texte).
-class _TeachingsCarousel extends StatelessWidget {
-  const _TeachingsCarousel({required this.teachings});
-  final List<TeachingView> teachings;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 172,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: AppSpacing.screenPadding,
-        itemCount: teachings.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (context, i) => _TeachingCard(
-          teaching: teachings[i],
-          onTap: () => context.pushNamed(
-            AppRoute.teachingDetail,
-            pathParameters: {'id': teachings[i].id},
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _TeachingCard extends StatelessWidget {
-  const _TeachingCard({required this.teaching, this.onTap});
-  final TeachingView teaching;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final author = teaching.authorName;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 264,
-        decoration: BoxDecoration(
-          color: palette.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: palette.divider),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 104,
-              child: TeachingCover(teaching: teaching, radius: 0),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      teaching.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodyStrong
-                          .copyWith(color: palette.textPrimary),
-                    ),
-                    // Ligne d'auteur **facultative** : absente, elle ne se rend
-                    // pas du tout — pas de « Auteur inconnu » de remplissage.
-                    if (author != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      Row(
-                        children: [
-                          Icon(Icons.person_outline,
-                              size: 13, color: palette.textSecondary),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              author,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.caption
-                                  .copyWith(color: palette.textSecondary),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.md),
-                    // Bouton « Écouter » en pilule contournée (façon maquette).
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(
-                          color: palette.primary.withValues(alpha: 0.45),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.play_arrow_rounded,
-                              size: 16, color: palette.primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            context.l10n.actionListen,
-                            style: AppTypography.caption.copyWith(
-                              color: palette.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }
