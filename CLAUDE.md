@@ -124,7 +124,8 @@ ni ne le construit.
 
 ### Moteur de synchronisation (`lib/data/sync/`) — ADR-0026 + ADR-0027
 La boucle **manifeste → tirage → application**, qui écrit dans le magasin et
-**ne rend rien**. Aucun écran n'en dépend : c'est l'étape 2 qui les branchera.
+**ne rend rien**. Aucun écran n'en dépend directement — ils lisent le magasin,
+qu'elle remplit. Le réseau ne peint jamais.
 
 - `sync_protocol.dart` — `SyncManifest`, `ManifestEntry`, `DeltaPage`,
   `readsAsRetraction`. **`snake_case` uniquement** (enveloppe et protocole).
@@ -174,10 +175,16 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     **contenus** servis par le back, distincte de celle de l'interface.
   - `sync_providers.dart` : `appDatabaseProvider` (à surcharger par une base en
     mémoire dans les tests), `syncDaoProvider`, `mediathequeDaoProvider`,
-    `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`.
-    `mediathequeDaoProvider` est lu par `StoreMediathequeRepository` ; **personne
-    n'appelle encore `SyncScheduler.start()`**, le magasin ne se remplit donc pas
-    tout seul (à câbler avec la sortie de `sample_data`).
+    `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`,
+    `pullToRefreshProvider`. `mediathequeDaoProvider` est lu par
+    `StoreMediathequeRepository`. **Les trois déclencheurs d'ADR-0017 sont
+    câblés** : `app.dart` appelle `SyncScheduler.start()` au premier frame sous
+    `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
+    cycle de vie, donc au **retour au premier plan**) ; la médiathèque passe
+    `pullToRefreshProvider` à son `RefreshIndicator`. Jamais de polling.
+    `test/state/cold_start_test.dart` parcourt la chaîne entière — sans lui,
+    une rupture entre synchronisation et magasin donnerait une application
+    **muette**, pas une erreur : un magasin vide ne se plaint pas.
   - `theme_provider.dart` : `themeModeProvider` (Notifier) + `isDarkModeActive`.
 
 ### Brancher un vrai backend : **un repository dédié asynchrone par domaine**

@@ -45,6 +45,26 @@ const List<int> _waveformExhortation = [
 ];
 
 /// Données fictives reproduisant le contenu des maquettes.
+///
+/// **Sa place, depuis #33 : les tests, les captures d'écran et le mode
+/// maquette — plus le chemin applicatif.** Aucun écran ni widget ne la lit
+/// (`grep SampleData lib/screens lib/widgets` doit rester vide) : la
+/// médiathèque est peinte par le **magasin local**, que la synchronisation
+/// remplit, et `SampleData.teachings` n'est plus servi que par le double en
+/// mémoire de `MediathequeRepository`, lui-même choisi par
+/// `AppEnv.useBackend`.
+///
+/// Elle ne disparaît pas pour autant, et ce n'est pas un compromis : le double
+/// en mémoire doit avoir de quoi exercer **les mêmes règles de lecture** que le
+/// magasin (cascade de couleur, repli de langue, jointure tolérante), et un
+/// jeu de données écrit à la main est le seul moyen d'en garder les cas
+/// limites lisibles — une rubrique absente, une couleur nulle, un
+/// enseignement sans rubrique.
+///
+/// Ce qu'elle ne doit **pas** contenir : un champ que le serveur ne sert pas.
+/// Trois en sont sortis avec #33 (`duration`, `verse`, `seed`, cf. `Teaching`)
+/// — une fixture plus riche que la source fabrique des écrans qui marchent en
+/// maquette et se vident en production.
 abstract final class SampleData {
   /// Statuts de l'onglet « Annonces ».
   ///
