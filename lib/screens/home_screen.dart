@@ -646,6 +646,14 @@ class _UpcomingCard extends StatelessWidget {
 ///   variante [ContentAbsence.notSynced] qui le dit, celle qui existe déjà —
 ///   pas un écran d'absence de plus, et pas un `AppEmptyState`, qui est une
 ///   carte posée dans une liste là où une absence occupe la place entière.
+///
+/// Une église qui n'aurait **rien publié du tout** se lirait ici comme un
+/// magasin pas encore synchronisé, et c'est assumé : de l'appareil, les deux
+/// situations sont indiscernables sans interroger l'état de synchronisation, et
+/// la réponse — « revenez après la prochaine synchronisation » — est la bonne
+/// dans les deux cas. Le contraire ne l'est pas : annoncer « il n'y a rien »
+/// à quelqu'un qui n'a simplement pas encore reçu le catalogue lui ferait
+/// croire l'église muette.
 class _MediathequeHome extends ConsumerWidget {
   const _MediathequeHome();
 
