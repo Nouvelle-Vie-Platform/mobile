@@ -95,6 +95,7 @@ class ContentAbsenceView extends StatelessWidget {
     this.title,
     this.message,
     this.onDark = false,
+    this.showBack = true,
   });
 
   final ContentAbsence absence;
@@ -102,6 +103,12 @@ class ContentAbsenceView extends StatelessWidget {
   /// Retour en arrière. À défaut, `Navigator.maybePop` — un écran d'absence
   /// sans porte de sortie est un cul-de-sac.
   final VoidCallback? onBack;
+
+  /// Affiche le bouton de retour. À mettre à `false` **uniquement à la racine
+  /// de la navigation** (l'accueil) : il n'y a rien à dépiler, la barre
+  /// d'onglets est déjà la porte de sortie, et un bouton qui ne fait rien est
+  /// pire qu'un bouton absent — il fait croire à une panne.
+  final bool showBack;
 
   /// Titre plus précis que celui de la variante (ex. « Cet enseignement n'est
   /// plus disponible »). Déjà localisé par l'appelant.
@@ -151,15 +158,17 @@ class ContentAbsenceView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: AppTypography.body.copyWith(color: secondary),
             ),
-            const SizedBox(height: AppSpacing.xl),
-            AppButton(
-              key: backKey,
-              label: l10n.absenceBack,
-              icon: Icons.arrow_back,
-              variant: AppButtonVariant.outline,
-              expand: false,
-              onPressed: onBack ?? () => Navigator.of(context).maybePop(),
-            ),
+            if (showBack) ...[
+              const SizedBox(height: AppSpacing.xl),
+              AppButton(
+                key: backKey,
+                label: l10n.absenceBack,
+                icon: Icons.arrow_back,
+                variant: AppButtonVariant.outline,
+                expand: false,
+                onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+              ),
+            ],
           ],
         ),
       ),
