@@ -6,6 +6,7 @@ import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/data/repositories/store_mediatheque_repository.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
+import 'package:maison_du_miracle/widgets/cards/teaching_cover.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
 import 'package:maison_du_miracle/widgets/home/home_section_layout.dart';
 import 'package:maison_du_miracle/widgets/home/home_teaching_cards.dart';
@@ -103,6 +104,18 @@ void main() {
   double topOf(WidgetTester tester, String label) =>
       tester.getTopLeft(find.text(label.toUpperCase())).dy;
 
+  /// Cadrage demandé par la carte de type [card] au visuel qu'elle dessine.
+  CoverOrientation orientationIn(WidgetTester tester, Type card) => tester
+      .widget<TeachingCover>(
+        find
+            .descendant(
+              of: find.byType(card),
+              matching: find.byType(TeachingCover),
+            )
+            .first,
+      )
+      .orientation;
+
   group('L\'ordre des sections appartient au serveur', () {
     homeTest('les rubriques sortent dans l\'ordre de `position`',
         (tester) async {
@@ -166,6 +179,11 @@ void main() {
         tester.getSize(find.byType(HomeHeroCard).first),
         kHeroCoverSize,
       );
+      // Le **cadrage paysage**, et pas seulement une boîte large : c'est parce
+      // que les deux ratios sont opposés que le serveur sert deux URL d'image
+      // par enseignement. Demander le portrait ici perdrait le sujet dans un
+      // `BoxFit.cover` de 320 × 188.
+      expect(orientationIn(tester, HomeHeroCard), CoverOrientation.landscape);
     });
 
     homeTest('`carousel` rend des vignettes portrait', (tester) async {
@@ -188,6 +206,12 @@ void main() {
         tester.getSize(cards.first).height,
         kCarouselCoverSize.height,
       );
+      // Le cadrage **portrait**, l'exact opposé de `hero` : c'est la seconde
+      // des deux URL d'image que le serveur sert.
+      expect(
+        orientationIn(tester, HomeCarouselCard),
+        CoverOrientation.portrait,
+      );
       expect(find.byType(HomeHeroCard), findsNothing);
     });
 
@@ -209,6 +233,9 @@ void main() {
       final second = tester.getTopLeft(find.byType(HomeListRow).at(1));
       expect(second.dy, greaterThan(first.dy));
       expect(second.dx, first.dx);
+      // La liste n'introduit pas un troisième recadrage : elle réutilise le
+      // portrait, en plus petit. Il n'y a que deux images.
+      expect(orientationIn(tester, HomeListRow), CoverOrientation.portrait);
     });
 
     homeTest('une mise en page inconnue se replie au lieu de disparaître',
