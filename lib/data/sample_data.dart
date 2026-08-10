@@ -509,6 +509,109 @@ abstract final class SampleData {
             'relève et accueille sans condition.'),
   ];
 
+  /// **Rubriques de rassemblement** — le référentiel `gathering_types`, la
+  /// seconde famille de la médiathèque (issue #34).
+  ///
+  /// Elles réutilisent [TeachingType] comme forme de fixture, et c'est
+  /// délibéré : ces modèles de maquette ne sont jamais rendus à l'écran — le
+  /// modèle de lecture (`GatheringSectionView`) s'interpose — et le serveur
+  /// lui-même range les deux familles dans **une seule table**, discriminée par
+  /// une colonne qui ne voyage pas. Les dédoubler aurait doublé la surface de la
+  /// maquette pour zéro différence de comportement.
+  ///
+  /// Les identifiants **recouvrent exprès** ceux de [teachingTypes] : les deux
+  /// référentiels sont deux collections distinctes, rien ne garantit que leurs
+  /// SERIAL soient disjoints, et un double qui l'aurait supposé aurait masqué le
+  /// jour où une jointure se trompe de table.
+  static const List<TeachingType> gatheringTypes = [
+    TeachingType(
+      id: 1,
+      slug: 'concerts',
+      label: {'fr': 'Concerts', 'en': 'Concerts', 'ee': 'Hadzidziwo'},
+      color: 0xFF0F6E5C,
+      position: 1,
+      layout: 'hero',
+    ),
+    TeachingType(
+      id: 2,
+      slug: 'conventions',
+      label: {'fr': 'Conventions', 'en': 'Conventions', 'ee': 'Takpekpewo'},
+      // Couleur nulle : la cascade descend jusqu'au bleu de marque.
+      position: 2,
+      layout: 'carousel',
+    ),
+    TeachingType(
+      id: 5,
+      slug: 'croisades',
+      label: {'fr': 'Croisades', 'en': 'Crusades'},
+      color: 0xFFB45309,
+      position: 3,
+      visibleOnHome: false,
+      layout: 'list',
+    ),
+  ];
+
+  /// **Rassemblements**, du plus récent au plus ancien.
+  ///
+  /// Mêmes partis pris que [teachings] : identifiants UUIDv7 **écrits en dur**
+  /// (la navigation porte l'identifiant, un identifiant régénéré casserait tout
+  /// lien déjà ouvert), couleur **brute** (`null` = « hérite de ma rubrique »),
+  /// et un dernier élément **sans rubrique ni couleur** pour que le cas
+  /// « rassemblement sans rubrique » soit visible en mode maquette.
+  static final List<Teaching> gatherings = [
+    Teaching(
+        id: '019f3a10-1c00-7a11-9c01-2b1f8d4e0001',
+        title: 'Nuit de gloire — concert de louange',
+        recordedAt: _day(6),
+        publishedAt: _ago(const Duration(days: 6)),
+        author: 'Chorale Harmonie',
+        color: 0xFF0F6E5C,
+        imageLandscapeUrl: 'https://picsum.photos/seed/gloire/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/gloire/384/635',
+        description:
+            'Une soirée entière portée par la louange : l\'assemblée, la '
+            'chorale et les musiciens, jusque tard dans la nuit.',
+        teachingTypeId: 1),
+    Teaching(
+        id: '019f3a10-1c00-7a11-9c01-2b1f8d4e0002',
+        title: 'Adoration sans fin',
+        recordedAt: _day(20),
+        publishedAt: _ago(const Duration(days: 20)),
+        author: 'Chorale Harmonie',
+        // Couleur nulle : hérite de celle de sa rubrique (`concerts`).
+        imageLandscapeUrl: 'https://picsum.photos/seed/adoration/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/adoration/384/635',
+        description:
+            'Deux heures d\'adoration continue, enregistrées au temple '
+            'central.',
+        teachingTypeId: 1),
+    Teaching(
+        id: '019f3a10-1c00-7a11-9c01-2b1f8d4e0003',
+        title: 'Convention nationale 2026 — ouverture',
+        recordedAt: _day(34),
+        publishedAt: _ago(const Duration(days: 34)),
+        author: 'Pasteur Samuel',
+        imageLandscapeUrl: 'https://picsum.photos/seed/convention/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/convention/384/635',
+        description:
+            'La séance d\'ouverture de la convention : accueil des délégations '
+            'et message d\'orientation pour l\'année.',
+        teachingTypeId: 2),
+    Teaching(
+        id: '019f3a10-1c00-7a11-9c01-2b1f8d4e0004',
+        title: 'Forum des jeunes — sortir du bruit',
+        recordedAt: _day(48),
+        publishedAt: _ago(const Duration(days: 48)),
+        author: 'Pasteur Mike',
+        // Ni couleur, ni rubrique : la cascade descend jusqu'au bleu de
+        // marque, et l'écran doit rester lisible sans libellé de rubrique.
+        imageLandscapeUrl: 'https://picsum.photos/seed/forum/1024/602',
+        imagePortraitUrl: 'https://picsum.photos/seed/forum/384/635',
+        description:
+            'Une journée avec les jeunes de l\'église : témoignages, ateliers '
+            'et prière.'),
+  ];
+
   static const List<CommunityGroup> groups = [
     CommunityGroup(
         name: 'Jeunesse Nouvelle Vie', members: 125, role: 'Responsable'),

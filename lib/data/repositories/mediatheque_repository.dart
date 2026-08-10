@@ -129,7 +129,7 @@ class InMemoryMediathequeRepository implements MediathequeRepository {
           label: type.label,
           slug: type.slug,
           locale: locale,
-          teachingCount: count,
+          itemCount: count,
           color: type.color,
           layout: type.layout,
           position: type.position,

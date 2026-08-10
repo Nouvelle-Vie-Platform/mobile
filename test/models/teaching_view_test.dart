@@ -135,7 +135,7 @@ void main() {
         label: const {'fr': 'Archives', 'en': 'Archives'},
         slug: 'archives',
         locale: 'ee',
-        teachingCount: 3,
+        itemCount: 3,
       );
 
       expect(section.label, 'Archives');
@@ -148,7 +148,7 @@ void main() {
         label: const {'fr': 'Messages du dimanche'},
         slug: 'dimanche',
         locale: 'fr',
-        teachingCount: 3,
+        itemCount: 3,
         layout: 'hero',
         position: 1,
         color: 0xFF223B8C,

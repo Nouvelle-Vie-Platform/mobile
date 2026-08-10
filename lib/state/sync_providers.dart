@@ -26,6 +26,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/app_env.dart';
 
 import '../data/local/app_database.dart';
+import '../data/local/gathering_dao.dart';
 import '../data/local/mediatheque_dao.dart';
 import '../data/local/sync_dao.dart';
 import '../data/sync/sync_api.dart';
@@ -52,6 +53,13 @@ final syncDaoProvider = Provider<SyncDao>(
 /// jamais le moteur.
 final mediathequeDaoProvider = Provider<MediathequeDao>(
   (ref) => ref.watch(appDatabaseProvider).mediathequeDao,
+);
+
+/// Les lectures du magasin, côté **rassemblements** — la seconde famille de la
+/// médiathèque. Un DAO distinct, jamais des méthodes de plus sur le premier :
+/// ce sont deux collections, deux types, deux écrans.
+final gatheringDaoProvider = Provider<GatheringDao>(
+  (ref) => ref.watch(appDatabaseProvider).gatheringDao,
 );
 
 /// Les deux routes du protocole, sur le `Dio` d'`ApiClient` : la requête

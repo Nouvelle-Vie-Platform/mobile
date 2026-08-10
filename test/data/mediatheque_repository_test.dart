@@ -214,7 +214,7 @@ void main() {
 
       expect(sections.map((s) => s.teachingTypeId), [1]);
       expect(sections.single.label, 'Dimanche');
-      expect(sections.single.teachingCount, 1);
+      expect(sections.single.itemCount, 1);
     });
   });
 
