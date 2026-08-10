@@ -147,13 +147,13 @@ class _DoveAnimation extends StatelessWidget {
             gaplessPlayback: true,
             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
-          // Plaque de marque posée sur le bas de l'animation : la queue de la
-          // colombe (tronquée dans la vidéo source) passe derrière.
+          // Nom de marque posé sur le bas de l'animation. La colombe est
+          // entière : plus rien à masquer, seul le mot-symbole doré subsiste.
           const Positioned(
             left: 0,
             right: 0,
             bottom: 40,
-            child: Center(child: _NouvelleViePlaque()),
+            child: Center(child: _NouvelleVieWordmark()),
           ),
         ],
       ),
@@ -161,8 +161,8 @@ class _DoveAnimation extends StatelessWidget {
   }
 }
 
-/// Typo de la plaque : serif classique, majuscules très espacées.
-const TextStyle _plaqueTextStyle = TextStyle(
+/// Typo du mot-symbole : serif classique, majuscules très espacées.
+const TextStyle _wordmarkTextStyle = TextStyle(
   color: Colors.white, // remplacé par le dégradé doré (ShaderMask)
   fontFamily: 'Georgia',
   fontFamilyFallback: ['Times New Roman', 'serif'],
@@ -171,9 +171,10 @@ const TextStyle _plaqueTextStyle = TextStyle(
   letterSpacing: 3.4,
 );
 
-/// Même typo, en sombre : sert d'ombre portée sous le texte doré.
-const TextStyle _plaqueShadowStyle = TextStyle(
-  color: Color(0x8A03091F),
+/// Même typo, en sombre : sert d'ombre portée sous le texte doré. Sans plaque,
+/// c'est elle qui détache l'or de la scène nocturne en arrière-plan.
+const TextStyle _wordmarkShadowStyle = TextStyle(
+  color: Color(0xB003091F),
   fontFamily: 'Georgia',
   fontFamilyFallback: ['Times New Roman', 'serif'],
   fontSize: 18,
@@ -181,16 +182,14 @@ const TextStyle _plaqueShadowStyle = TextStyle(
   letterSpacing: 3.4,
 );
 
-/// Plaque dorée « Nouvelle Vie » posée sur le bas de la colombe.
+/// Mot-symbole doré « Nouvelle Vie » posé sous la colombe.
 ///
-/// Élément de marque (nom de l'église) qui habille l'écran et recouvre la
-/// partie basse de l'animation : la queue de la colombe, tronquée dans la
-/// vidéo source, disparaît derrière la plaque.
-///
-/// Couleurs et dégradés relevés sur la maquette de référence : liseré doré en
-/// dégradé, fond navy dégradé, et texte serif à dégradé métallique.
-class _NouvelleViePlaque extends StatelessWidget {
-  const _NouvelleViePlaque();
+/// Élément de marque (nom de l'église) qui habille l'écran. La colombe étant
+/// désormais entière, il n'y a plus rien à masquer : la plaque (liseré, fond
+/// navy) et le rameau doré ont disparu, seul reste le texte serif à dégradé
+/// métallique, détaché de la scène nocturne par une ombre portée.
+class _NouvelleVieWordmark extends StatelessWidget {
+  const _NouvelleVieWordmark();
 
   /// Dégradé métallique du texte (clair en haut, ambre en bas).
   static const _textGradient = LinearGradient(
@@ -200,90 +199,26 @@ class _NouvelleViePlaque extends StatelessWidget {
     stops: [0.0, 0.55, 1.0],
   );
 
-  /// Dégradé du liseré : or vif en haut ET en bas, terni au milieu — ce qui
-  /// éclaire les bords horizontaux et assombrit les montants latéraux, comme
-  /// un vrai métal éclairé par le haut (relevé sur la maquette).
-  static const _borderGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [
-      Color(0xFFFFEFC2),
-      Color(0xFFE3CB9E),
-      Color(0xFF9A8877),
-      Color(0xFFE7CFA1),
-      Color(0xFFF4DFB4),
-    ],
-    stops: [0.0, 0.16, 0.5, 0.84, 1.0],
-  );
-
-  /// Fond de la plaque : bleu dégradé, clair en haut et profond en bas
-  /// (opaque : c'est lui qui masque la queue de la colombe).
-  static const _fillGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFF173A81), Color(0xFF0B2456), Color(0xFF061A4B)],
-    stops: [0.0, 0.5, 1.0],
-  );
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 228,
-      height: 52,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Liseré dégradé : un conteneur en dégradé + un fond légèrement
-          // plus petit par-dessus (Flutter ne borde pas en dégradé nativement).
-          Container(
-            decoration: BoxDecoration(
-              gradient: _borderGradient,
-              borderRadius: BorderRadius.circular(5),
-            ),
-            padding: const EdgeInsets.all(1.6),
-            child: Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                gradient: _fillGradient,
-                borderRadius: BorderRadius.circular(3.5),
-                // Fine ombre intérieure : c'est elle qui « biseaute » le liseré.
-                border: Border.all(color: const Color(0x9E0B1738), width: 0.9),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Ombre portée discrète : détache l'or du fond.
-                  const Padding(
-                    padding: EdgeInsets.only(top: 1.6),
-                    child: Text('NOUVELLE VIE', style: _plaqueShadowStyle),
-                  ),
-                  ShaderMask(
-                    shaderCallback: (bounds) =>
-                        _textGradient.createShader(bounds),
-                    blendMode: BlendMode.srcIn,
-                    child: const Text(
-                      // Nom de marque : non localisé.
-                      'NOUVELLE VIE',
-                      style: _plaqueTextStyle,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Ombre portée : détache l'or du fond immersif.
+        const Padding(
+          padding: EdgeInsets.only(top: 1.6),
+          child: Text('NOUVELLE VIE', style: _wordmarkShadowStyle),
+        ),
+        ShaderMask(
+          shaderCallback: (bounds) => _textGradient.createShader(bounds),
+          blendMode: BlendMode.srcIn,
+          child: const Text(
+            // Nom de marque : non localisé.
+            'NOUVELLE VIE',
+            style: _wordmarkTextStyle,
           ),
-          // Rameau d'olivier doré (extrait de la maquette) en débord du coin.
-          Positioned(
-            left: -13,
-            top: -19,
-            child: Image.asset(
-              'assets/images/rameau_or.webp',
-              width: 66,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
