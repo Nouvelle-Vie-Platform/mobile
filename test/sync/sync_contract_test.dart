@@ -14,13 +14,29 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les treize collections du registre, dans l\'ordre', () {
-      expect(kSyncCollections, hasLength(13));
+    test('les quinze collections du registre, dans l\'ordre', () {
+      expect(kSyncCollections, hasLength(15));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
       );
     });
+
+    test(
+      'les deux familles de la médiathèque ont chacune leur paire de clés',
+      () {
+        // **Quatre clés, pas deux élargies** (issue serveur #133). Une
+        // collection neuve est ignorée par un client qui ne la demande pas ; une
+        // collection élargie contamine ceux qui ne savent pas la lire — un
+        // concert arrivé dans `teachings` se rangerait dans les rubriques
+        // d'accueil de la médiathèque et s'y afficherait comme un message du
+        // dimanche.
+        expect(kSyncCollections['teaching_types'], 'reference');
+        expect(kSyncCollections['gathering_types'], 'reference');
+        expect(kSyncCollections['teachings'], 'branch');
+        expect(kSyncCollections['gatherings'], 'branch');
+      },
+    );
 
     test('les clés de protocole ne sont jamais en camelCase', () {
       final manifest = manifestNominal();
@@ -242,6 +258,80 @@ void main() {
     });
   });
 
+  group('GET /sync/gatherings — la ligne', () {
+    test('la même charge utile qu\'un enseignement, clé pour clé', () {
+      // Les deux familles passent par le **même transformer** côté serveur
+      // (`teaching_family_collection.ts`). Ce test l'écrit noir sur blanc :
+      // le jour où l'un des deux gagnerait un champ que l'autre n'a pas, il
+      // tombe ici plutôt qu'à l'écran.
+      for (final gathering in _gatherings) {
+        expect(gathering.keys.toSet(), fullTeachingPayload.keys.toSet());
+        expect(gathering.keys, hasLength(18));
+      }
+    });
+
+    test('ni `family`, ni `deletedAt`, ni durée, ni `mimeType`', () {
+      // **La famille ne voyage pas**, et ce n'est pas un oubli : la clé de
+      // collection est le discriminant, et servir un champ dont le filtre
+      // garantit qu'il vaut toujours la même valeur serait une constante
+      // déguisée en donnée.
+      for (final gathering in _gatherings) {
+        expect(
+          gathering.keys,
+          isNot(anyElement(isIn(const [
+            'family',
+            'deletedAt',
+            'duration',
+            'durationSeconds',
+            'mimeType',
+          ]))),
+        );
+      }
+    });
+
+    test('la rubrique se nomme `teachingTypeId` — la verrue, assumée', () {
+      // Le nom de la colonne FK de la table partagée côté serveur. La renommer
+      // aurait cassé les consommateurs de `teachings`, qui la lisent déjà ; et
+      // l'identifiant se joint bien sur `gathering_types`.
+      for (final gathering in _gatherings) {
+        expect(gathering.containsKey('teachingTypeId'), isTrue);
+        expect(gathering.containsKey('gatheringTypeId'), isFalse);
+        expect(gathering['teachingTypeId'], isA<int>());
+      }
+    });
+
+    test('`recordedAt` est un jour, `color` et `branchId` peuvent être nuls',
+        () {
+      for (final gathering in _gatherings) {
+        expect(
+          gathering['recordedAt'],
+          matches(RegExp(r'^\d{4}-\d{2}-\d{2}$')),
+        );
+      }
+      expect(gatheringWithoutColorPayload['color'], isNull);
+      expect(gatheringWithoutColorPayload['branchId'], isNull);
+      expect(gatheringWithoutColorPayload['playlistUrl'], isNull);
+    });
+
+    test('la rétractation a exactement deux clés, comme celle de teachings',
+        () {
+      expect(retractedGatheringPayload.keys.toSet(), {'id', 'deletedAt'});
+      expect(
+        DateTime.tryParse(retractedGatheringPayload['deletedAt']! as String),
+        isNotNull,
+      );
+    });
+
+    test('les deux natures voyagent dans le même tableau', () {
+      final items = (mixedGatheringsPage()['items']! as List)
+          .cast<Map<String, Object?>>();
+
+      expect(items.where((i) => i.length == 2), hasLength(1));
+      expect(items.where((i) => i.length == 18), hasLength(2));
+      expect(items.last.keys.toSet(), {'id', 'deletedAt'});
+    });
+  });
+
   group('GET /sync/teachings — la rétractation', () {
     test('exactement deux clés', () {
       for (final retraction in const [
@@ -365,6 +455,21 @@ void main() {
       expect(contributorWithoutBioPayload['bio'], isNull);
     });
 
+    test('gathering_types : la même forme que teaching_types', () {
+      // Le même transformer côté serveur : les deux référentiels ne diffèrent
+      // **que** par le canal. Vérifié clé à clé plutôt que de bonne foi — si
+      // l'un des deux gagnait un champ, ce test le dirait.
+      for (final type in _gatheringTypes) {
+        expect(type.keys.toSet(), heroTeachingTypePayload.keys.toSet());
+        final label = type['label']! as Map<String, Object?>;
+        expect(label.keys.toSet(), {'fr', 'en', 'ee'});
+        expect(type['id'], isA<int>());
+        expect(type['layout'], isIn(kTeachingTypeLayouts));
+      }
+      // Et la couleur d'une rubrique peut être nulle, comme partout.
+      expect(listGatheringTypePayload['color'], isNull);
+    });
+
     test('branches : ni `timezone` ni `pastorId` ne voyagent', () {
       expect(branchPayload.keys.toSet(), {
         'id',
@@ -392,6 +497,16 @@ const List<Map<String, Object?>> _teachingTypes = [
   heroTeachingTypePayload,
   carouselTeachingTypePayload,
   hiddenTeachingTypePayload,
+];
+
+const List<Map<String, Object?>> _gatherings = [
+  fullGatheringPayload,
+  gatheringWithoutColorPayload,
+];
+
+const List<Map<String, Object?>> _gatheringTypes = [
+  heroGatheringTypePayload,
+  listGatheringTypePayload,
 ];
 
 List<Map<String, Object?>> _collections(Map<String, Object?> manifest) =>

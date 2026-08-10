@@ -143,13 +143,91 @@ void main() {
     test('le registre local est ordonné, et c\'est lui la règle', () {
       expect(
         syncedCollections().map((c) => c.key),
-        ['teaching_types', 'contributors', 'branches', 'teachings'],
+        [
+          'teaching_types',
+          'gathering_types',
+          'contributors',
+          'branches',
+          'teachings',
+          'gatherings',
+        ],
         reason: 'ça ne supprime pas la fenêtre où un enseignement arrive sans '
             'son intervenant — la jointure de lecture reste tolérante pour '
             'cette raison — mais ça supprime le cas fréquent : la toute '
             'première synchronisation',
       );
     });
+
+    test('les deux référentiels précèdent leurs deux contenus', () {
+      // La règle est « référentiels avant contenu », pas « chaque référentiel
+      // juste avant son contenu » : ce qui compte est qu'aucune collection de
+      // contenu ne soit tirée avant le référentiel dont elle dépend.
+      final keys = syncedCollections().map((c) => c.key).toList();
+
+      expect(
+          keys.indexOf('teaching_types'), lessThan(keys.indexOf('teachings')));
+      expect(
+        keys.indexOf('gathering_types'),
+        lessThan(keys.indexOf('gatherings')),
+      );
+      expect(keys.indexOf('contributors'), lessThan(keys.indexOf('teachings')));
+      expect(
+          keys.indexOf('contributors'), lessThan(keys.indexOf('gatherings')));
+    });
+
+    test(
+      'un cycle complet remplit les deux familles sans jamais les mélanger',
+      () async {
+        server
+          ..serveManifest(manifestFromZero())
+          ..serveCollection('teaching_types', teachingTypesPage())
+          ..serveCollection('gathering_types', gatheringTypesPage())
+          ..serveCollection('teachings', mixedTeachingsPage())
+          ..serveCollection('gatherings', mixedGatheringsPage());
+
+        await engineOver([
+          'teaching_types',
+          'gathering_types',
+          'teachings',
+          'gatherings',
+        ], limit: 200)
+            .synchronize();
+
+        // Chaque canal a rempli **sa** table, et rien d'autre. C'est ce que
+        // garantit « la clé de collection est le discriminant » : la ligne se
+        // range d'après le canal par lequel elle est arrivée.
+        expect(
+          (await db.select(db.teachings).get()).map((r) => r.id),
+          containsAll(const [
+            '019f2c40-0000-7000-8000-000000000001',
+            '019f2c40-0000-7000-8000-000000000003',
+          ]),
+        );
+        expect(
+          (await db.select(db.gatherings).get()).map((r) => r.id),
+          const [
+            '019f3a10-0000-7000-8000-000000000001',
+            '019f3a10-0000-7000-8000-000000000002',
+          ],
+        );
+
+        // Les rétractations des deux flux ont été triées avant toute
+        // construction : elles n'ont laissé aucune ligne derrière elles.
+        expect(
+          (await db.select(db.gatherings).get()).map((r) => r.id),
+          isNot(contains('019f3a10-0000-7000-8000-000000000009')),
+        );
+
+        // Les deux référentiels sont distincts et chacun a ses curseurs.
+        expect(await db.select(db.gatheringTypes).get(), hasLength(2));
+        expect(await db.select(db.teachingTypes).get(), hasLength(3));
+        expect(await dao.cursorFor(SyncCollectionKey.gatherings), isNotNull);
+        expect(
+          await dao.cursorFor(SyncCollectionKey.gatheringTypes),
+          isNotNull,
+        );
+      },
+    );
 
     test('les tirages partent dans cet ordre', () async {
       server

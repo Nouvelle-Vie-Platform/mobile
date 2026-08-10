@@ -8,7 +8,7 @@
 /// | Forme | Route serveur | Source |
 /// |---|---|---|
 /// | manifeste | `GET /sync` | `app/sync/transformers/sync_manifest_transformer.ts` (ADR-0016/0017/0027) |
-/// | les 13 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
+/// | les 15 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
 /// | `full_resync_required` | `GET /sync` | `app/sync/actions/build_manifest.ts` (issues serveur #48/#49) |
 /// | tirage delta | `GET /sync/{collection}` | `app/sync/controllers/pull_collection_delta_controller.ts` |
 /// | `next_cursor` / `has_more` / `full_resync` | `GET /sync/{collection}` | `app/sync/actions/pull_delta.ts` (ADR-0017) |
@@ -19,6 +19,8 @@
 /// | ligne `teaching_types` | `GET /sync/teaching_types` | `app/mediatheque/transformers/teaching_type_transformer.ts` (ADR-0023) |
 /// | ligne `contributors` | `GET /sync/contributors` | `app/mediatheque/transformers/contributor_transformer.ts` |
 /// | ligne `branches` | `GET /sync/branches` | `app/auth/transformers/branch_transformer.ts` |
+/// | ligne `gatherings` | `GET /sync/gatherings` | `app/sync/descriptors/teaching_family_collection.ts` (issue serveur #133) |
+/// | ligne `gathering_types` | `GET /sync/gathering_types` | idem — **le même transformer** que les deux collections d'enseignement |
 ///
 /// ## Pourquoi ce fichier existe
 ///
@@ -118,8 +120,15 @@ final String staleCursor = serverCursor(
 // `GET /sync` — le manifeste
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Les **treize** collections du registre serveur (`app/sync/descriptors/
+/// Les **quinze** collections du registre serveur (`app/sync/descriptors/
 /// registry.ts`), dans l'ordre du registre, avec leur partition.
+///
+/// Treize jusqu'à l'issue serveur #133, qui y a ajouté la seconde famille de la
+/// médiathèque — `gathering_types` (référentiel) juste après `teaching_types`,
+/// et `gatherings` (contenu) juste après `teachings`. Une **collection neuve**
+/// et non un élargissement : une collection neuve est ignorée par un client qui
+/// ne la demande pas, là où une collection élargie contamine ceux qui ne savent
+/// pas la lire.
 ///
 /// Le manifeste les liste **toutes**, pas seulement celles qui ont bougé. La
 /// partition n'est pas décorative : le garde-fou « droits changés » ne lève
@@ -132,19 +141,27 @@ const Map<String, String> kSyncCollections = {
   'modules': 'reference',
   'contributors': 'reference',
   'teaching_types': 'reference',
+  'gathering_types': 'reference',
   'spiritual_notes': 'private',
   'playback_progress': 'private',
   'events': 'branch',
   'teachings': 'branch',
+  'gatherings': 'branch',
   'prayer_wall': 'branch',
   'groups': 'branch',
   'group_messages': 'branch',
 };
 
 /// Clé de collection **inconnue du registre** : le mobile pourrait la demander
-/// (les rassemblements sont prévus, PRD §5 sexies) et le serveur répond alors
-/// `404`. Un client doit **sauter la collection**, pas échouer sa synchro.
-const String kUnregisteredCollection = 'gatherings';
+/// et le serveur répond alors `404`. Un client doit **sauter la collection**,
+/// pas échouer sa synchro.
+///
+/// C'était `gatherings` jusqu'à l'issue serveur #133 — elle est désormais
+/// enregistrée, et il fallait donc une clé qui ne le soit pas. `gathering_type`
+/// au **singulier** est celle que le serveur documente explicitement comme
+/// inconnue : c'est la faute de frappe qu'un client commettra, pas une
+/// collection imaginaire.
+const String kUnregisteredCollection = 'gathering_type';
 
 /// Une entrée de manifeste, clés en `snake_case`.
 Map<String, Object?> manifestEntry(
@@ -609,4 +626,139 @@ const Map<String, Object?> motherBranchPayload = {
 Map<String, Object?> branchesPage() => deltaPage(
       items: const [motherBranchPayload, branchPayload],
       nextCursor: branchesCursor,
+    );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lignes des rassemblements — issue serveur #133
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Un rassemblement complet.** Les mêmes dix-huit clés qu'un enseignement, et
+/// ce n'est pas une coïncidence : les deux familles vivent dans la même table
+/// côté serveur et passent par le **même transformer**
+/// (`teaching_family_collection.ts`).
+///
+/// Trois choses n'y sont **pas**, et chacune est une décision :
+///
+/// - **`family`** — la clé de collection est déjà le discriminant, et le filtre
+///   garantit que le champ vaudrait toujours `'gathering'`. Une constante
+///   déguisée en donnée installerait chez le client l'idée qu'il lui revient de
+///   trier ce qui arrive par un canal.
+/// - **`deletedAt`** — un rassemblement complet n'en porte pas ; c'est la
+///   rétractation qui l'apporte, et elle n'a que deux clés.
+/// - une durée, un `mimeType` — le serveur n'en sert pour aucune des deux
+///   familles.
+///
+/// > **La verrue** : la référence de rubrique s'appelle `teachingTypeId` — le
+/// > nom de la colonne FK de la table partagée — et se joint sur
+/// > `gathering_types`. La renommer aurait cassé les consommateurs de
+/// > `teachings`, qui la lisent déjà.
+const Map<String, Object?> fullGatheringPayload = {
+  'id': '019f3a10-0000-7000-8000-000000000001',
+  'ownerId': 'b6f0a1c2-0000-4000-8000-000000000001',
+  'branchId': 3,
+  'contributorId': 4,
+  'teachingTypeId': 11,
+  'title': 'Concert de louange — Nuit de gloire',
+  'description': 'Soirée de louange au temple central.',
+  'isLive': false,
+  'isFullService': false,
+  'playlistUrl': 'https://media.example.org/hls/019f3a10/master.m3u8',
+  'imageLandscapeUrl': '/uploads/teachings/019f3a10-landscape.webp',
+  'imagePortraitUrl': '/uploads/teachings/019f3a10-portrait.webp',
+  'publishedAt': '2026-05-03T20:00:00.000Z',
+  'clientCreatedAt': null,
+  'createdAt': '2026-05-02T09:00:00.000Z',
+  'updatedAt': '2026-05-03T20:00:00.000Z',
+  'recordedAt': '2026-05-02',
+  'color': '#0F6E5C',
+};
+
+/// **Un rassemblement à couleur nulle et à portée nationale.** `color: null` =
+/// « hérite de ma rubrique » ; `branchId: null` = **national**, pas « inconnu ».
+const Map<String, Object?> gatheringWithoutColorPayload = {
+  'id': '019f3a10-0000-7000-8000-000000000002',
+  'ownerId': 'b6f0a1c2-0000-4000-8000-000000000002',
+  'branchId': null,
+  'contributorId': 7,
+  'teachingTypeId': 12,
+  'title': 'Convention nationale 2026',
+  'description': null,
+  'isLive': false,
+  'isFullService': false,
+  'playlistUrl': null,
+  'imageLandscapeUrl': '/uploads/teachings/019f3a11-landscape.webp',
+  'imagePortraitUrl': null,
+  'publishedAt': '2026-05-10T08:00:00.000Z',
+  'clientCreatedAt': null,
+  'createdAt': '2026-05-09T18:00:00.000Z',
+  'updatedAt': '2026-05-10T08:00:00.000Z',
+  'recordedAt': '2026-05-09',
+  'color': null,
+};
+
+/// **Une rétractation de rassemblement — deux clés, pas une de plus**
+/// (ADR-0025). Exactement la forme de `teachings` : c'est le même descripteur.
+const Map<String, Object?> retractedGatheringPayload = {
+  'id': '019f3a10-0000-7000-8000-000000000009',
+  'deletedAt': '2026-05-10T08:00:00.000Z',
+};
+
+/// Page mixte de `gatherings` : lignes complètes et rétractation **dans le même
+/// tableau**, la rétractation en dernier — là où un désérialiseur tolérant au
+/// premier élément se fait quand même prendre.
+Map<String, Object?> mixedGatheringsPage({String? nextCursor}) => deltaPage(
+      items: const [
+        fullGatheringPayload,
+        gatheringWithoutColorPayload,
+        retractedGatheringPayload,
+      ],
+      nextCursor: nextCursor ??
+          serverCursor(
+            updatedAtIso: '2026-05-10T08:00:00.000Z',
+            id: '019f3a10-0000-7000-8000-000000000009',
+          ),
+    );
+
+/// **Une rubrique de rassemblement mise en avant.**
+///
+/// Le référentiel `gathering_types` a la même forme que `teaching_types` — même
+/// table, même transformer — mais il ne se mélange **jamais** avec lui : le
+/// serveur ne livre à chacun que les rubriques de sa famille. Les identifiants
+/// des deux référentiels n'ont aucune raison d'être disjoints ; ici on les prend
+/// distincts pour la lisibilité, et `gathering_dao_test.dart` couvre exprès le
+/// cas où ils se recouvrent.
+const Map<String, Object?> heroGatheringTypePayload = {
+  'id': 11,
+  'label': {'fr': 'Concerts', 'en': 'Concerts', 'ee': 'Hadzidzi'},
+  'slug': 'concerts',
+  'icon': 'music',
+  'color': '#0F6E5C',
+  'position': 1,
+  'visibleOnHome': true,
+  'layout': 'hero',
+  'createdAt': '2026-02-01T08:00:00.000Z',
+  'updatedAt': '2026-04-20T08:00:00.000Z',
+};
+
+/// **Une rubrique de rassemblement en liste.**
+const Map<String, Object?> listGatheringTypePayload = {
+  'id': 12,
+  'label': {'fr': 'Conventions', 'en': 'Conventions', 'ee': 'Takpekpewo'},
+  'slug': 'conventions',
+  'icon': 'groups',
+  'color': null,
+  'position': 2,
+  'visibleOnHome': true,
+  'layout': 'list',
+  'createdAt': '2026-02-01T08:00:00.000Z',
+  'updatedAt': '2026-02-01T08:00:00.000Z',
+};
+
+/// Page complète du référentiel des rubriques de rassemblement.
+Map<String, Object?> gatheringTypesPage() => deltaPage(
+      items: const [heroGatheringTypePayload, listGatheringTypePayload],
+      nextCursor: serverCursor(
+        updatedAtIso: '2026-04-20T08:00:00.000Z',
+        id: 11,
+      ),
     );
