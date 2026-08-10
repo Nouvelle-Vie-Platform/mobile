@@ -41,6 +41,50 @@ TeachingTypesCompanion teachingTypeRow(
       layout: Value(layout),
     );
 
+/// Une rubrique de **rassemblement**. Même forme que [teachingTypeRow] — c'est
+/// le même référentiel côté serveur, l'autre famille — mais une **destination
+/// différente** : la barrière de type est ce qui rend impossible d'écrire une
+/// rubrique de concert dans le référentiel de la médiathèque.
+GatheringTypesCompanion gatheringTypeRow(
+  int id, {
+  required Map<String, String> label,
+  String slug = 'rubrique',
+  String? color,
+  int position = 0,
+  bool visibleOnHome = true,
+  String? layout,
+}) =>
+    GatheringTypesCompanion.insert(
+      id: Value(id),
+      label: label,
+      slug: slug,
+      color: Value(color),
+      position: Value(position),
+      visibleOnHome: Value(visibleOnHome),
+      layout: Value(layout),
+    );
+
+/// Un rassemblement. `teachingTypeId` porte le nom de la colonne FK du fil
+/// (la verrue assumée du protocole) et désigne une ligne de `gathering_types`.
+GatheringsCompanion gatheringRow(
+  String id, {
+  String title = 'Concert de louange',
+  int? contributorId,
+  int? teachingTypeId,
+  String? color,
+  DateTime? publishedAt,
+  String? recordedAt,
+}) =>
+    GatheringsCompanion.insert(
+      id: id,
+      title: title,
+      contributorId: Value(contributorId),
+      teachingTypeId: Value(teachingTypeId),
+      color: Value(color),
+      publishedAt: Value(publishedAt),
+      recordedAt: Value(recordedAt),
+    );
+
 /// Un enseignement. `contributorId` et `teachingTypeId` sont des **entiers
 /// nus** : rien n'oblige la cible à exister.
 TeachingsCompanion teachingRow(

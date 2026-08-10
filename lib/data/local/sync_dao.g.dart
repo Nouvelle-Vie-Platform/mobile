@@ -11,6 +11,8 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
   $TeachingTypesTable get teachingTypes => attachedDatabase.teachingTypes;
   $ContributorsTable get contributors => attachedDatabase.contributors;
   $TeachingsTable get teachings => attachedDatabase.teachings;
+  $GatheringTypesTable get gatheringTypes => attachedDatabase.gatheringTypes;
+  $GatheringsTable get gatherings => attachedDatabase.gatherings;
   SyncDaoManager get managers => SyncDaoManager(this);
 }
 
@@ -31,4 +33,9 @@ class SyncDaoManager {
       $$ContributorsTableTableManager(_db.attachedDatabase, _db.contributors);
   $$TeachingsTableTableManager get teachings =>
       $$TeachingsTableTableManager(_db.attachedDatabase, _db.teachings);
+  $$GatheringTypesTableTableManager get gatheringTypes =>
+      $$GatheringTypesTableTableManager(
+          _db.attachedDatabase, _db.gatheringTypes);
+  $$GatheringsTableTableManager get gatherings =>
+      $$GatheringsTableTableManager(_db.attachedDatabase, _db.gatherings);
 }

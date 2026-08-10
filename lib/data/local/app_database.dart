@@ -4,8 +4,10 @@ import 'package:drift_flutter/drift_flutter.dart';
 // Utilisé par le code généré (`app_database.g.dart`), qui est une `part` de ce
 // fichier : le convertisseur de carte de traduction y est instancié.
 import 'converters/i18n_map_converter.dart';
+import 'gathering_dao.dart';
 import 'mediatheque_dao.dart';
 import 'sync_dao.dart';
+import 'tables/gathering_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/sync_tables.dart';
 
@@ -40,8 +42,10 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     TeachingTypes,
     Contributors,
     Teachings,
+    GatheringTypes,
+    Gatherings,
   ],
-  daos: [SyncDao, MediathequeDao],
+  daos: [SyncDao, MediathequeDao, GatheringDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Constructeur explicite — c'est celui qu'utilisent les tests, avec une base
@@ -51,8 +55,10 @@ class AppDatabase extends _$AppDatabase {
   /// Base de l'application, à l'emplacement standard de la plateforme.
   AppDatabase.defaults() : super(driftDatabase(name: kLocalDatabaseName));
 
+  /// **v2** — les deux tables des rassemblements (`gathering_types`,
+  /// `gatherings`) entrent au magasin, issue #34.
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -61,12 +67,21 @@ class AppDatabase extends _$AppDatabase {
           await _ensureGlobalStateRow();
         },
         onUpgrade: (m, from, to) async {
-          // v1 est la première version : aucune transition n'existe encore.
-          //
-          // Les paliers futurs se rangent ici, **un par version**, et chacun se
-          // teste (`test/data/local/migration_test.dart`). Ne jamais recréer la
-          // base pour se simplifier la vie : le magasin est la seule copie du
+          // Les paliers se rangent ici, **un par version**, et chacun se teste
+          // (`test/data/local/migration_test.dart`). Ne jamais recréer la base
+          // pour se simplifier la vie : le magasin est la seule copie du
           // catalogue d'un fidèle hors ligne.
+
+          // v1 → v2 — les rassemblements (issue #34). **Deux créations de
+          // table, et rien d'autre** : aucune colonne existante ne bouge, aucune
+          // donnée n'est recopiée, donc rien du catalogue déjà téléchargé n'est
+          // en jeu. Les deux tables naissent vides et le premier cycle de
+          // synchronisation les remplit — leurs curseurs n'existent pas encore,
+          // le manifeste les annoncera `from_zero`.
+          if (from < 2) {
+            await m.createTable(gatheringTypes);
+            await m.createTable(gatherings);
+          }
         },
         beforeOpen: (details) async {
           // La ligne d'état global doit exister avant la première allocation de

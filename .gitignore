@@ -98,3 +98,11 @@ coverage/
 
 # Worktrees temporaires des agents Claude Code
 .claude/worktrees/
+
+# Sous-produits de `make migrations` (drift_dev make-migrations) que ce dépôt
+# n'utilise pas : les paliers sont écrits à la main dans `MigrationStrategy`
+# (`app_database.dart`) et testés à la main (`test/data/local/migration_test.dart`),
+# conformément à la v1. Ce qui compte — `drift_schemas/` et
+# `test/data/local/schema/` — reste versionné.
+lib/data/local/app_database.steps.dart
+test/data/local/schema/app_database/

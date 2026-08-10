@@ -24,15 +24,50 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('le schéma déclaré correspond au schéma v1 exporté', () async {
+  test('le schéma déclaré correspond au schéma v2 exporté', () async {
     // Le garde-fou de tous les jours : quiconque touche à une table sans
     // exporter la version correspondante casse ce test avant de casser un
     // téléphone.
+    final connection = await verifier.startAt(2);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 2);
+  });
+
+  test('v1 → v2 : les deux tables de rassemblement apparaissent', () async {
+    // **Le seul test qui compte vraiment de ce fichier.** Une migration ratée
+    // sur un téléphone installé n'est pas un test rouge : c'est une application
+    // qui ne démarre plus chez un fidèle, sans correction possible à distance.
+    // On part donc d'une base réellement à la v1, telle qu'un appareil déjà
+    // installé la porte, et on rejoue le palier.
     final connection = await verifier.startAt(1);
     final db = AppDatabase(connection);
     addTearDown(db.close);
 
-    await verifier.migrateAndValidate(db, 1);
+    await verifier.migrateAndValidate(db, 2);
+  });
+
+  test('v1 → v2 : le catalogue déjà téléchargé survit au palier', () async {
+    // Le palier ne fait que **créer deux tables** — aucune colonne existante ne
+    // bouge, aucune donnée n'est recopiée. Ce test le prouve plutôt que de le
+    // supposer : c'est exactement ce qu'un fidèle hors ligne risque de perdre.
+    final schema = await verifier.schemaAt(1);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 2);
+
+    final rows = await db.select(db.teachings).get();
+    expect(rows.single.title, 'Dieu a le dernier mot');
+    // Et les deux nouvelles tables sont là, vides : leurs curseurs n'existent
+    // pas encore, le prochain manifeste les annoncera `from_zero`.
+    expect(await db.select(db.gatherings).get(), isEmpty);
+    expect(await db.select(db.gatheringTypes).get(), isEmpty);
   });
 
   test('la version de schéma couvre bien toutes les versions exportées', () {

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
 import 'app_database.dart';
+import 'tables/gathering_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/sync_tables.dart';
 
@@ -15,6 +16,17 @@ abstract final class SyncCollectionKey {
   static const String teachingTypes = 'teaching_types';
   static const String contributors = 'contributors';
   static const String teachings = 'teachings';
+
+  /// Rubriques de **rassemblement** — le jumeau de [teachingTypes] pour l'autre
+  /// famille. Deux référentiels distincts, jamais mélangés : le serveur ne
+  /// livre à chacun que les rubriques de sa famille.
+  static const String gatheringTypes = 'gathering_types';
+
+  /// Les **rassemblements** : concert, convention, formation, forum, croisade.
+  /// Une collection neuve, jamais un élargissement de [teachings] — une
+  /// collection neuve est ignorée par un client qui ne la demande pas, là où une
+  /// collection élargie contamine ceux qui ne savent pas la lire.
+  static const String gatherings = 'gatherings';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -57,6 +69,8 @@ const String _kSyncStampColumn = 'sync_stamp';
     TeachingTypes,
     Contributors,
     Teachings,
+    GatheringTypes,
+    Gatherings,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -82,6 +96,12 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
 
   LocalCollection<TeachingRow> get teachingsCollection =>
       LocalCollection._(SyncCollectionKey.teachings, teachings);
+
+  LocalCollection<GatheringTypeRow> get gatheringTypesCollection =>
+      LocalCollection._(SyncCollectionKey.gatheringTypes, gatheringTypes);
+
+  LocalCollection<GatheringRow> get gatheringsCollection =>
+      LocalCollection._(SyncCollectionKey.gatherings, gatherings);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Application d'une page

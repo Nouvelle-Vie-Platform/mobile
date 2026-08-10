@@ -165,6 +165,72 @@ TeachingsCompanion teachingRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/gathering_types` — la rubrique de **rassemblement**.
+///
+/// Mêmes dix clés que `teaching_types`, servies par le même transformer côté
+/// serveur : les deux familles partagent une table, et **seule la clé de
+/// collection les sépare**. Les deux fonctions restent distinctes parce que
+/// leurs destinations le sont — un `Insertable<TeachingTypeRow>` n'est pas un
+/// `Insertable<GatheringTypeRow>`, et c'est cette barrière de type qui rend
+/// impossible d'écrire une rubrique de concert dans le référentiel de la
+/// médiathèque.
+GatheringTypesCompanion gatheringTypeRowOf(Map<String, Object?> item) {
+  const collection = 'gathering_types';
+  return GatheringTypesCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    label: _i18nMap(collection, item, 'label'),
+    slug: _text(collection, item, 'slug'),
+    icon: Value(_optionalText(item, 'icon')),
+    color: Value(_optionalText(item, 'color')),
+    position: Value(item['position'] is int ? item['position']! as int : 0),
+    visibleOnHome: Value(item['visibleOnHome'] != false),
+    layout: Value(_optionalText(item, 'layout')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/gatherings` — dix-huit clés, les mêmes que `teachings`.
+///
+/// **Ni `family`, ni durée, ni `mimeType`.** La famille ne voyage pas : la clé
+/// de collection est le discriminant, et un champ dont le filtre garantit qu'il
+/// vaut toujours la même valeur serait une constante déguisée en donnée.
+///
+/// La référence de rubrique s'appelle **`teachingTypeId`** — le nom de la
+/// colonne FK de la table partagée côté serveur — et se joint sur
+/// `gathering_types`. C'est une verrue assumée du protocole : la renommer aurait
+/// cassé les consommateurs de `teachings`, qui la lisent déjà.
+///
+/// N'est appelée que sur un élément dont `readsAsRetraction` a dit qu'il n'en
+/// était pas une : c'est ce qui l'autorise à exiger `title`.
+GatheringsCompanion gatheringRowOf(Map<String, Object?> item) {
+  const collection = 'gatherings';
+  return GatheringsCompanion.insert(
+    id: contentId(collection, item),
+    ownerId: Value(_optionalText(item, 'ownerId')),
+    // `null` = **national**, jamais « inconnu ».
+    branchId: Value(_optionalInt(item, 'branchId')),
+    // Entiers nus, sans clé étrangère : la cible n'a pas à exister.
+    contributorId: Value(_optionalInt(item, 'contributorId')),
+    teachingTypeId: Value(_optionalInt(item, 'teachingTypeId')),
+    title: _text(collection, item, 'title'),
+    description: Value(_optionalText(item, 'description')),
+    isLive: Value(item['isLive'] == true),
+    isFullService: Value(item['isFullService'] == true),
+    playlistUrl: Value(_optionalText(item, 'playlistUrl')),
+    imageLandscapeUrl: Value(_optionalText(item, 'imageLandscapeUrl')),
+    imagePortraitUrl: Value(_optionalText(item, 'imagePortraitUrl')),
+    publishedAt: Value(_instant(item, 'publishedAt')),
+    clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+    // Un **jour**, gardé en texte. Voir la règle 2 en tête de fichier.
+    recordedAt: Value(_optionalText(item, 'recordedAt')),
+    // Couleur **brute** : `null` = « hérite de ma rubrique ».
+    color: Value(_optionalText(item, 'color')),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Rouages
 // ─────────────────────────────────────────────────────────────────────────────

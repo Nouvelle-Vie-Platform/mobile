@@ -111,12 +111,26 @@ class _PageSplit<D> {
 /// Les neuf autres collections du registre serveur n'ont pas de table locale :
 /// le manifeste les liste, le moteur ne les tire pas. Elles entreront ici avec
 /// leur table, jamais avant.
+///
+/// **Deux familles, deux paires d'entrées** (issue #34) : `teaching_types` /
+/// `teachings` d'un côté, `gathering_types` / `gatherings` de l'autre. Ce sont
+/// quatre clés distinctes et non deux clés « élargies », parce qu'une
+/// collection neuve est **ignorée** par un client qui ne la demande pas, là où
+/// une collection élargie **contamine** ceux qui ne savent pas la lire : un
+/// concert arrivé dans `teachings` se rangerait dans les rubriques d'accueil de
+/// la médiathèque et s'y afficherait comme un message du dimanche.
 List<SyncedCollection<Object?>> syncedCollections() => [
       SyncedCollection<TeachingTypeRow>(
         key: SyncCollectionKey.teachingTypes,
         local: (dao) => dao.teachingTypesCollection,
         idOf: (item) => referenceId(SyncCollectionKey.teachingTypes, item),
         rowOf: teachingTypeRowOf,
+      ),
+      SyncedCollection<GatheringTypeRow>(
+        key: SyncCollectionKey.gatheringTypes,
+        local: (dao) => dao.gatheringTypesCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.gatheringTypes, item),
+        rowOf: gatheringTypeRowOf,
       ),
       SyncedCollection<ContributorRow>(
         key: SyncCollectionKey.contributors,
@@ -135,5 +149,11 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.teachingsCollection,
         idOf: (item) => contentId(SyncCollectionKey.teachings, item),
         rowOf: teachingRowOf,
+      ),
+      SyncedCollection<GatheringRow>(
+        key: SyncCollectionKey.gatherings,
+        local: (dao) => dao.gatheringsCollection,
+        idOf: (item) => contentId(SyncCollectionKey.gatherings, item),
+        rowOf: gatheringRowOf,
       ),
     ];
