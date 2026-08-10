@@ -12,7 +12,7 @@ import '../theme/app_typography.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_state.dart';
 import '../widgets/app_list_skeleton.dart';
-import '../widgets/cards/teaching_cover.dart';
+import '../widgets/cards/content_cover.dart';
 
 /// Accent chaud (pêche) propre à l'écran « Découverte ».
 const Color _peach = Color(0xFFF1A895);
@@ -373,7 +373,7 @@ class _HeroCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            TeachingCover(teaching: teaching),
+            ContentCover(content: teaching),
             // Voile dégradé pour la lisibilité du texte.
             DecoratedBox(
               decoration: BoxDecoration(
@@ -445,7 +445,7 @@ class _AlbumCard extends StatelessWidget {
             SizedBox(
               width: 124,
               height: 120,
-              child: TeachingCover(teaching: teaching, radius: AppRadius.lg),
+              child: ContentCover(content: teaching, radius: AppRadius.lg),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -494,7 +494,7 @@ class _PlaylistItem extends StatelessWidget {
             SizedBox(
               width: 56,
               height: 56,
-              child: TeachingCover(teaching: teaching, radius: AppRadius.md),
+              child: ContentCover(content: teaching, radius: AppRadius.md),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(

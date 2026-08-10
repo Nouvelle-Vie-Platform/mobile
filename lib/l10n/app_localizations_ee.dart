@@ -701,6 +701,19 @@ class AppLocalizationsEe extends AppLocalizations {
   String get absenceBack => 'Trɔ yi megbe';
 
   @override
+  String get gatheringAppBarTitle => 'Takpekpe';
+
+  @override
+  String get gatheringRetractedTitle => 'Takpekpe sia megali o';
+
+  @override
+  String get gatheringRetractedMessage =>
+      'Il a été retiré par l\'église. La lecture est arrêtée.';
+
+  @override
+  String get sectionGatherings => 'Takpekpewo';
+
+  @override
   String get teachingRetractedTitle => 'Nufiafia sia megali o';
 
   @override

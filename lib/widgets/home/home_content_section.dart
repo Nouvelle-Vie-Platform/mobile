@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../l10n/l10n_extension.dart';
+import '../../models/content_view.dart';
+import '../../theme/app_spacing.dart';
+import '../app_error_state.dart';
+import '../app_list_skeleton.dart';
+import '../section_header.dart';
+import 'home_content_cards.dart';
+import 'home_section_layout.dart';
+
+/// **Une rubrique du référentiel, rendue à l'accueil** — le dessin, sans la
+/// famille.
+///
+/// Tout ce qui la décrit vient du serveur et rien n'est décidé ici : son rang
+/// (`position`, déjà appliqué par le magasin), son titre (`label`, déjà replié
+/// dans la langue courante), sa teinte (`color`, déjà en bout de cascade) et sa
+/// forme (`layout`, traduite en dessin par [HomeSectionLayout.of]). Un
+/// administrateur crée une rubrique, la place, choisit sa mise en page — et
+/// l'accueil suit, sans livraison.
+///
+/// Ce widget ne lit **aucun provider** et ne connaît **aucune route** : c'est ce
+/// qui lui permet de servir les deux familles sans les mélanger. Les
+/// enveloppes qui le câblent (`HomeTeachingSection`, `HomeGatheringSection`)
+/// choisissent le flux et la destination ; lui ne voit qu'une liste de
+/// [ContentView].
+///
+/// **Une rubrique sans contenu ne se rend pas du tout**, en-tête compris. Le
+/// magasin applique déjà la règle en amont (`itemCount` est toujours strictement
+/// positif) et cet écran ne la contourne pas : c'est elle qui fait disparaître
+/// d'elle-même une rubrique **supprimée côté serveur**. Les deux référentiels se
+/// suppriment durement et sans tombstone — aucun message de retrait ne voyage
+/// jamais — et sans cette règle l'accueil garderait une section fantôme
+/// définitivement vide.
+class HomeContentSection extends StatelessWidget {
+  const HomeContentSection({
+    super.key,
+    required this.section,
+    required this.items,
+    required this.onOpen,
+    required this.onRetry,
+    this.onSeeAll,
+  });
+
+  /// La rubrique telle que le magasin la rend : déjà filtrée sur
+  /// `visibleOnHome`, déjà rangée, déjà repliée.
+  final SectionView section;
+
+  /// Les contenus de la rubrique, dans l'état où le flux les a laissés.
+  ///
+  /// Déclaré sur [ContentView] et non sur la famille : `AsyncValue` est
+  /// covariant, un `AsyncValue<List<TeachingView>>` se passe donc ici tel quel.
+  final AsyncValue<List<ContentView>> items;
+
+  /// Ouvre un contenu. C'est l'enveloppe qui sait vers quelle route — la route
+  /// porte l'identifiant, jamais l'objet.
+  final void Function(ContentView content) onOpen;
+
+  /// Relance la lecture après un échec.
+  final VoidCallback onRetry;
+
+  /// « Voir tout », quand la famille a un écran qui les montre tous.
+  final VoidCallback? onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return items.when(
+      // La rubrique est **connue non vide** (le magasin ne l'aurait pas rendue
+      // sinon) : annoncer son titre pendant la lecture ne promet rien de faux.
+      loading: () => _framed(
+        context,
+        const AppListSkeleton(
+          itemCount: 1,
+          padding: AppSpacing.screenPadding,
+        ),
+      ),
+      error: (_, __) => _framed(
+        context,
+        Padding(
+          padding: AppSpacing.screenPadding,
+          child: AppErrorState(
+            message: context.l10n.stateErrorMessage,
+            onRetry: onRetry,
+          ),
+        ),
+      ),
+      data: (contents) {
+        // Le compte du magasin et la liste se lisent dans deux flux : entre les
+        // deux, une rétractation a pu vider la rubrique. Elle disparaît alors
+        // entièrement, comme si elle n'avait jamais été rendue.
+        if (contents.isEmpty) return const SizedBox.shrink();
+        return _framed(context, _body(context, contents));
+      },
+    );
+  }
+
+  /// En-tête de la rubrique + corps, avec les respirations de l'accueil.
+  Widget _framed(BuildContext context, Widget body) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: AppSpacing.xl),
+        Padding(
+          padding: AppSpacing.screenPadding,
+          child: SectionHeader(
+            title: section.label,
+            // La teinte du référentiel, portée par une **pastille pleine** et
+            // non par le texte du titre : une couleur administrable est sûre en
+            // aplat (la forme la porte) et ne l'est pas en texte, où le fond
+            // adaptatif clair/sombre en avalerait la moitié.
+            accent: Color(section.color),
+            actionLabel: onSeeAll == null ? null : context.l10n.actionSeeAll,
+            onAction: onSeeAll,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        body,
+      ],
+    );
+  }
+
+  Widget _body(BuildContext context, List<ContentView> contents) {
+    switch (HomeSectionLayout.of(section.layout)) {
+      case HomeSectionLayout.hero:
+        return _Shelf(
+          height: kHeroCoverSize.height,
+          itemCount: contents.length,
+          itemBuilder: (_, i) => HomeHeroCard(
+            content: contents[i],
+            onTap: () => onOpen(contents[i]),
+          ),
+        );
+      case HomeSectionLayout.carousel:
+        return _Shelf(
+          height: kCarouselCoverSize.height,
+          itemCount: contents.length,
+          itemBuilder: (_, i) => HomeCarouselCard(
+            content: contents[i],
+            onTap: () => onOpen(contents[i]),
+          ),
+        );
+      case HomeSectionLayout.list:
+        // Plafonnée : l'accueil est une vitrine, et une liste verticale non
+        // bornée chasserait les sections suivantes hors de portée du pouce.
+        final shown = contents.length > kHomeSectionListLimit
+            ? contents.sublist(0, kHomeSectionListLimit)
+            : contents;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final content in shown)
+              HomeListRow(content: content, onTap: () => onOpen(content)),
+          ],
+        );
+    }
+  }
+}
+
+/// Étagère horizontale à hauteur fixe — la forme commune de `hero` et
+/// `carousel`, qui ne diffèrent que par la carte et sa taille.
+class _Shelf extends StatelessWidget {
+  const _Shelf({
+    required this.height,
+    required this.itemCount,
+    required this.itemBuilder,
+  });
+
+  final double height;
+  final int itemCount;
+  final IndexedWidgetBuilder itemBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: AppSpacing.screenPadding,
+        itemCount: itemCount,
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+        itemBuilder: itemBuilder,
+      ),
+    );
+  }
+}

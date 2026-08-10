@@ -702,6 +702,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get absenceBack => 'Retour';
 
   @override
+  String get gatheringAppBarTitle => 'Rassemblement';
+
+  @override
+  String get gatheringRetractedTitle =>
+      'Ce rassemblement n\'est plus disponible';
+
+  @override
+  String get gatheringRetractedMessage =>
+      'Il a été retiré par l\'église. La lecture est arrêtée.';
+
+  @override
+  String get sectionGatherings => 'Rassemblements';
+
+  @override
   String get teachingRetractedTitle =>
       'Cet enseignement n\'est plus disponible';
 

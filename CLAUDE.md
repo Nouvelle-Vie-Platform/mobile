@@ -53,16 +53,16 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
     — **synchrone**, et il ne couvre que les domaines **encore fictifs**.
   - `auth_repository.dart` / `http_auth_repository.dart`, `branch_repository.dart`,
     `calendar_repository.dart`, `mediatheque_repository.dart` /
-    `store_mediatheque_repository.dart` — repositories **dédiés et asynchrones**,
+    `store_mediatheque_repository.dart`, `gathering_repository.dart` /
+    `store_gathering_repository.dart` — repositories **dédiés et asynchrones**,
     chacun hors de `ChurchRepository`.
   - `local/` — **le magasin local Drift**, voir ci-dessous.
 
-### Le **modèle de lecture** de la médiathèque (`lib/models/mediatheque_view.dart`)
-`TeachingView` / `HomeSectionView` : ce qu'un écran affiche, et rien de plus.
-Ils se construisent **uniquement** par `.resolve(…)`, où les quatre règles de
-présentation s'appliquent une fois pour toutes (ADR-0026, décision 3 — *le
-magasin stocke ce que le serveur envoie ; la présentation se calcule à la
-lecture*) :
+### Le **modèle de lecture** de la médiathèque (`lib/models/content_view.dart`)
+`ContentView` / `SectionView` : ce qu'un écran affiche, et rien de plus. Les
+quatre règles de présentation y sont écrites **une fois pour les deux familles**
+(ADR-0026, décision 3 — *le magasin stocke ce que le serveur envoie ; la
+présentation se calcule à la lecture*) :
 
 1. **La cascade de couleur s'y termine** : `teaching.color` sinon `type.color`
    sinon le bleu de marque (`kBrandFallbackColor`, `#223B8C`). Le serveur ne
@@ -76,11 +76,22 @@ lecture*) :
    ligne ne se rend pas. **Jamais d'« Auteur inconnu »** — ça ressemble à une
    donnée et sera pris pour une erreur de saisie.
 
-Un widget qui reçoit un `TeachingView` n'a plus aucune règle à appliquer, donc
+Un widget qui reçoit un `ContentView` n'a plus aucune règle à appliquer, donc
 plus aucune occasion d'en appliquer une variante. `TeachingRubric` (enum à trois
 valeurs) a disparu avec lui : la rubrique est une table SERIAL éditable depuis
 le portail, et un enum est une décision figée à l'écriture. Le modèle porte
 `teachingTypeId`, la rubrique se **joint**.
+
+**Deux familles, deux types** (#34). `mediatheque_view.dart` porte
+`TeachingView` / `HomeSectionView`, `gathering_view.dart` porte `GatheringView`
+/ `GatheringSectionView` ; chacun descend du type commun sans s'y confondre.
+C'est voulu, et c'est la règle qui gouverne tout le lot : **la clé de collection
+est le discriminant, jamais un champ de ligne** (ADR-0026, décision 1). Un
+enseignement et un rassemblement sont deux types, alimentés par deux
+collections, rendus par deux écrans ; ce qu'ils partagent — la forme de la
+charge utile, la couleur de repli, les deux cadrages d'image — se partage **par
+composition**. Ni l'un ni l'autre ne porte de **champ de famille**, et n'en
+portera : le serveur ne le sert pas, et ce n'est pas un oubli.
 
 La langue du contenu vient de `contentLocaleProvider`
 (`lib/state/locale_providers.dart`), recopiée par `app.dart` depuis la locale
@@ -95,9 +106,10 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
 - `tables/sync_tables.dart` — plomberie : `sync_cursors` (un curseur **par
   collection**), `sync_state` (état **global**, une ligne), `resync_tokens`.
 - `tables/mediatheque_tables.dart` — `branches`, `teaching_types`,
-  `contributors`, `teachings`.
-- `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart` —
-  lectures.
+  `contributors`, `teachings`. `tables/gathering_tables.dart` —
+  `gathering_types`, `gatherings` (la seconde famille, #34).
+- `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart` et
+  `gathering_dao.dart` — lectures, **un DAO par famille**.
 
 **Six règles qui ne se renégocient pas** (ADR-0026 en donne le *pourquoi*) :
 1. **Une page appliquée = une transaction** : ses lignes **et** son curseur, ou
@@ -114,10 +126,17 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
 5. **On stocke ce que le serveur envoie** : la carte `{fr,en,ee}` entière, la
    couleur **brute** (`null` = hérite de la rubrique), toutes les rubriques y
    compris masquées. Ce qui dépend d'autre chose se joint à la lecture.
-6. **Jointures tolérantes** + **« pas d'enseignement, pas de section »** :
-   un enseignement sans intervenant s'affiche quand même ; une rubrique sans
-   enseignement local ne sort pas de l'accueil (c'est ce qui fait disparaître
-   d'elle-même une rubrique supprimée côté serveur — elle n'a pas de tombstone).
+6. **Jointures tolérantes** + **« pas de contenu, pas de section »** :
+   un contenu sans intervenant s'affiche quand même ; une rubrique sans contenu
+   local ne sort pas de l'accueil (c'est ce qui fait disparaître d'elle-même une
+   rubrique supprimée côté serveur — ni `teaching_types` ni `gathering_types`
+   n'a de tombstone).
+
+Les deux familles n'ont **aucun invariant en propre** : les six règles valent
+mot pour mot. Une verrue à connaître, en revanche : un élément de `gatherings`
+porte **`teachingTypeId`** — le nom de la colonne FK de la table partagée côté
+serveur — et se joint sur **`gathering_types`**. Le champ n'a pas été renommé
+pour ne pas casser les consommateurs de `teachings` ; ne pas le « corriger ».
 
 Le curseur est **opaque** : on le stocke et on le rejoue, jamais on ne le décode
 ni ne le construit.
@@ -133,7 +152,8 @@ qu'elle remplit. Le réseau ne peint jamais.
   (lignes). Les deux conventions vivent dans deux fichiers exprès : un
   désérialiseur à convention unique se trompe sur la moitié des clés.
 - `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
-  `contributors`, `branches`, puis `teachings`.
+  `gathering_types`, `contributors`, `branches`, puis `teachings`,
+  `gatherings`.
 - `sync_api.dart` — `GET /sync` et `GET /sync/{collection}`, sur le `Dio`
   d'`ApiClient`. Un **404** devient `UnknownSyncCollection`.
 - `sync_engine.dart` — la boucle. `sync_scheduler.dart` — les déclencheurs.
@@ -143,7 +163,7 @@ qu'elle remplit. Le réseau ne peint jamais.
    arrive sans son intervenant (la jointure de lecture reste tolérante), ça
    supprime le cas fréquent : la toute première synchronisation.
 2. **La `scope_version` est retenue en mémoire pendant tout le cycle et
-   persistée en dernier** (ADR-0027). Une valeur pour les treize collections.
+   persistée en dernier** (ADR-0027). Une valeur pour les quinze collections.
    Persistée trop tôt, elle éteint un resync qui n'a pas eu lieu — et le
    manifeste ne le redemandera **jamais**. Un cycle interrompu ne persiste rien.
 3. **« Rétractation ou ligne », décidé avant toute construction d'objet** :
@@ -171,15 +191,21 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `teachingByIdProvider.family`, `homeSectionsProvider` — tous des
     `StreamProvider`, donc des `AsyncValue` côté écran. **Pas de réessai
     automatique** (`retry: _noAutomaticRetry`), même raison que l'agenda.
+  - `gathering_providers.dart` : le pendant strict du précédent pour la
+    seconde famille — `gatheringRepositoryProvider`, `allGatheringsProvider`,
+    `gatheringsOfTypeProvider.family`, `gatheringByIdProvider.family`,
+    `gatheringSectionsProvider`. Deux jeux de providers et non un paramétré par
+    une famille : c'est ce qui rend impossible qu'un rassemblement se glisse
+    dans une liste d'enseignements.
   - `locale_providers.dart` : `contentLocaleProvider` — la langue de repli des
     **contenus** servis par le back, distincte de celle de l'interface.
   - `sync_providers.dart` : `appDatabaseProvider` (à surcharger par une base en
     mémoire dans les tests), `syncDaoProvider`, `mediathequeDaoProvider`,
     `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`,
-    `pullToRefreshProvider`. `mediathequeDaoProvider` est lu par
-    `StoreMediathequeRepository`. **Les trois déclencheurs d'ADR-0017 sont
-    câblés** : `app.dart` appelle `SyncScheduler.start()` au premier frame sous
-    `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
+    `gatheringDaoProvider`, `pullToRefreshProvider`. `mediathequeDaoProvider`
+    et `gatheringDaoProvider` sont lus par les deux repositories de magasin.
+    **Les trois déclencheurs d'ADR-0017 sont câblés** : `app.dart` appelle
+    `SyncScheduler.start()` au premier frame sous `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
     cycle de vie, donc au **retour au premier plan**) ; la médiathèque passe
     `pullToRefreshProvider` à son `RefreshIndicator`. Jamais de polling.
     `test/state/cold_start_test.dart` parcourt la chaîne entière — sans lui,
@@ -242,8 +268,11 @@ seulement là où le domaine est encore fictif et sans identité (`/group-chat`,
 
 La règle pour tout domaine porteur d'un `id` : **la route porte l'identifiant
 en `pathParameter`, l'écran résout la donnée depuis son provider** — voir
-`/teaching/:id`, `teachingByIdProvider` et `TeachingDetailScreen`. Trois
-raisons, dans l'ordre d'importance :
+`/teaching/:id`, `teachingByIdProvider` et `TeachingDetailScreen`, et son jumeau
+`/gathering/:id`. **Une route par famille**, jamais `/content/:famille/:id` : le
+chemin dirait alors au client qu'il lui revient de trancher entre deux
+collections, exactement ce que la clé de collection sert à ne pas avoir à faire.
+Trois raisons, dans l'ordre d'importance :
 
 1. **Un objet passé par `extra` est une copie hors du magasin**, figée au
    moment du clic. Le serveur peut rétracter (dépublication ou
@@ -291,9 +320,16 @@ poussée). Le FAB n'est PAS un onglet.
 - `AppBackground` — dégradé « glass » global, **posé par route** (les `Scaffold`
   sont transparents). Indispensable : peindre le fond par écran garde les
   transitions opaques (sinon on voit la page sortante à travers).
-- `TeachingCover` — visuel d'un `TeachingView` : image réseau **avec repli
-  coloré**. Il ne résout plus rien (URL et couleur arrivent déjà résolues), il
-  choisit un cadrage et dessine.
+- `ContentCover` — visuel d'un `ContentView` (les deux familles) : image réseau
+  **avec repli coloré**. Il ne résout plus rien (URL et couleur arrivent déjà
+  résolues), il choisit un cadrage et dessine.
+- `ContentPlayerView` — le lecteur plein écran, partagé par les deux écrans de
+  détail. Il reçoit le **provider** (et non sa valeur) pour pouvoir l'écouter :
+  une rétractation immédiatement suivie d'une resynchronisation ne produirait
+  qu'une reconstruction, et le son aurait continué sur un contenu retiré.
+- `home/home_content_section.dart` — le dessin d'une section d'accueil, sans la
+  famille ; `home_teaching_section.dart` et `home_gathering_section.dart` le
+  câblent, chacun à son provider et à sa route.
 - `widgets/chat/` — `ChatAppBar`, `ChatBubble`, `ChatDatePill`,
   `ChatInfoBanner`, `MessageInputBar`.
 
@@ -307,7 +343,7 @@ poussée). Le FAB n'est PAS un onglet.
   réseau).
 - Couleurs/espacements/typo : passer par `AppColors` / `context.palette` /
   `AppSpacing` / `AppTypography`. Ne pas coder de couleurs en dur sauf habillage
-  piloté par les données (ex. `TeachingView.color`, **déjà résolue**).
+  piloté par les données (ex. `ContentView.color`, **déjà résolue**).
 - Textes destinés à l'utilisateur : **toujours via l10n** (`context.l10n.xxx`),
   jamais en dur.
 

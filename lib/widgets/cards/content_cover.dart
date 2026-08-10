@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/mediatheque_view.dart';
+import '../../models/content_view.dart';
 import '../../theme/app_spacing.dart';
 
 /// Orientation du visuel demandé — le back en sert **un par ratio**, recadré à
@@ -13,25 +13,31 @@ enum CoverOrientation {
   portrait,
 }
 
-/// Visuel d'un enseignement : image d'habillage (réseau) avec **repli coloré**
-/// (la couleur de l'enseignement) si l'image est absente, hors-ligne ou en test.
+/// Visuel d'un **contenu de médiathèque** — enseignement ou rassemblement :
+/// image d'habillage (réseau) avec **repli coloré** si l'image est absente,
+/// hors-ligne ou en test.
+///
+/// Il prend un [ContentView] et non l'un des deux types concrets, et c'est le
+/// **seul partage qui ait un sens ici** : les deux familles servent deux URL
+/// recadrées à la main et une couleur de repli, et ce widget ne fait rien
+/// d'autre que choisir un cadrage et dessiner. Le distinguer par famille aurait
+/// donné deux copies d'un `Image.network` avec repli — deux occasions d'oublier
+/// l'`errorBuilder`, dont l'absence casse aussi bien le hors-ligne que
+/// `flutter test`.
 ///
 /// Le repli n'est pas un pis-aller : en connectivité limitée, c'est ce que
 /// verront la plupart des membres.
-///
-/// Partagé par l'accueil et la médiathèque pour un rendu cohérent.
-class TeachingCover extends StatelessWidget {
-  const TeachingCover({
+class ContentCover extends StatelessWidget {
+  const ContentCover({
     super.key,
-    required this.teaching,
+    required this.content,
     this.radius = AppRadius.lg,
     this.orientation = CoverOrientation.portrait,
   });
 
   /// **Le modèle de lecture, pas la ligne.** Ses deux URL sont déjà absolues
-  /// et sa couleur déjà résolue : ce widget n'applique plus aucune règle, il
-  /// choisit un cadrage et dessine.
-  final TeachingView teaching;
+  /// et sa couleur déjà résolue : ce widget n'applique plus aucune règle.
+  final ContentView content;
   final double radius;
 
   /// Ratio voulu. Si le visuel correspondant manque, l'autre prend le relais
@@ -42,7 +48,7 @@ class TeachingCover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = Container(
-      color: Color(teaching.color),
+      color: Color(content.color),
       child: const Center(
         child: Icon(Icons.headphones_rounded, color: Colors.white70, size: 30),
       ),
@@ -51,9 +57,9 @@ class TeachingCover extends StatelessWidget {
     // La résolution des chemins relatifs a déjà eu lieu, une fois, dans le
     // modèle de lecture — ici on ne fait que choisir le cadrage.
     final image = orientation == CoverOrientation.landscape
-        ? teaching.landscapeOrPortrait
-        : teaching.portraitOrLandscape;
-    final Widget content = image == null
+        ? content.landscapeOrPortrait
+        : content.portraitOrLandscape;
+    final Widget child = image == null
         ? fallback
         : Image.network(
             image,
@@ -65,7 +71,7 @@ class TeachingCover extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
-      child: SizedBox.expand(child: content),
+      child: SizedBox.expand(child: child),
     );
   }
 }

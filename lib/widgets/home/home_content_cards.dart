@@ -1,11 +1,13 @@
-/// Les trois dessins d'un enseignement à l'accueil — un par
-/// [HomeSectionLayout].
+/// Les trois dessins d'un **contenu de médiathèque** à l'accueil — un par
+/// [HomeSectionLayout], et les mêmes pour un enseignement et un rassemblement.
 ///
-/// Ils reçoivent un [TeachingView] et **n'appliquent aucune règle** : la
+/// Ils reçoivent un [ContentView] et **n'appliquent aucune règle** : la
 /// couleur est déjà en bout de cascade, le libellé de rubrique déjà replié dans
 /// la langue courante, les deux URL déjà absolues, et `authorName` déjà `null`
 /// quand l'intervenant manque. Ce qui leur reste est du dessin : un cadre, un
-/// cadrage, une hiérarchie de texte.
+/// cadrage, une hiérarchie de texte — et c'est précisément ce qui n'a aucune
+/// raison de différer d'une famille à l'autre. La famille se décide en amont,
+/// dans le provider et la route ; ici il n'y a plus qu'un contenu à dessiner.
 ///
 /// La seule règle qu'ils portent est celle de la **quatrième absence** : une
 /// ligne d'auteur nulle ne se rend pas du tout. Jamais d'« Auteur inconnu » —
@@ -15,23 +17,23 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n_extension.dart';
-import '../../models/mediatheque_view.dart';
+import '../../models/content_view.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
-import '../cards/teaching_cover.dart';
+import '../cards/content_cover.dart';
 import 'home_section_layout.dart';
 
 /// Grande carte **paysage** ([kHeroCoverSize]) : le visuel porte le texte.
 class HomeHeroCard extends StatelessWidget {
-  const HomeHeroCard({super.key, required this.teaching, this.onTap});
+  const HomeHeroCard({super.key, required this.content, this.onTap});
 
-  final TeachingView teaching;
+  final ContentView content;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final author = teaching.authorName;
+    final author = content.authorName;
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -47,8 +49,8 @@ class HomeHeroCard extends StatelessWidget {
             children: [
               // Cadrage **paysage** : c'est l'unique décision de ce widget sur
               // l'image, et elle est portée par `TeachingCover`.
-              TeachingCover(
-                teaching: teaching,
+              ContentCover(
+                content: content,
                 radius: AppRadius.xl,
                 orientation: CoverOrientation.landscape,
               ),
@@ -86,7 +88,7 @@ class HomeHeroCard extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xs),
                     ],
                     Text(
-                      teaching.title,
+                      content.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.h4.copyWith(
@@ -108,9 +110,9 @@ class HomeHeroCard extends StatelessWidget {
 /// Carte d'étagère : vignette **portrait** ([kCarouselCoverSize]) à gauche,
 /// texte et bouton d'écoute à droite.
 class HomeCarouselCard extends StatelessWidget {
-  const HomeCarouselCard({super.key, required this.teaching, this.onTap});
+  const HomeCarouselCard({super.key, required this.content, this.onTap});
 
-  final TeachingView teaching;
+  final ContentView content;
   final VoidCallback? onTap;
 
   /// Largeur totale : la vignette plus la colonne de texte.
@@ -119,7 +121,7 @@ class HomeCarouselCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final author = teaching.authorName;
+    final author = content.authorName;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -135,7 +137,7 @@ class HomeCarouselCard extends StatelessWidget {
           children: [
             SizedBox(
               width: kCarouselCoverSize.width,
-              child: TeachingCover(teaching: teaching, radius: 0),
+              child: ContentCover(content: content, radius: 0),
             ),
             Expanded(
               child: Padding(
@@ -145,7 +147,7 @@ class HomeCarouselCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      teaching.title,
+                      content.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.bodyStrong
@@ -213,15 +215,15 @@ class HomeCarouselCard extends StatelessWidget {
 /// Ligne de liste : vignette **portrait** réduite ([kListCoverSize]), titre,
 /// intervenant, et le bouton de lecture au bout.
 class HomeListRow extends StatelessWidget {
-  const HomeListRow({super.key, required this.teaching, this.onTap});
+  const HomeListRow({super.key, required this.content, this.onTap});
 
-  final TeachingView teaching;
+  final ContentView content;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final author = teaching.authorName;
+    final author = content.authorName;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -234,7 +236,7 @@ class HomeListRow extends StatelessWidget {
             SizedBox(
               width: kListCoverSize.width,
               height: kListCoverSize.height,
-              child: TeachingCover(teaching: teaching, radius: AppRadius.md),
+              child: ContentCover(content: content, radius: AppRadius.md),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -243,7 +245,7 @@ class HomeListRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    teaching.title,
+                    content.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.bodyStrong

@@ -10,6 +10,7 @@ import '../screens/auth/profile_form_screen.dart';
 import '../screens/auth/welcome_screen.dart';
 import '../screens/donations_screen.dart';
 import '../screens/event_detail_screen.dart';
+import '../screens/gathering_detail_screen.dart';
 import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
 import '../screens/live_screen.dart';
@@ -35,6 +36,7 @@ abstract final class AppRoute {
   static const media = 'media';
   static const live = 'live';
   static const teachingDetail = 'teaching';
+  static const gatheringDetail = 'gathering';
   static const groupChat = 'group-chat';
   static const agenda = 'agenda';
   static const eventDetail = 'event';
@@ -154,6 +156,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           return AppBackground(
             child:
                 TeachingDetailScreen(teachingId: state.pathParameters['id']!),
+          );
+        },
+      ),
+      GoRoute(
+        name: AppRoute.gatheringDetail,
+        path: '/gathering/:id',
+        builder: (_, state) {
+          // **Une route par famille, et l'identifiant seul dessus.** Pas de
+          // `/content/:famille/:id` : le chemin dirait alors au client qu'il
+          // lui revient de trancher entre deux collections, exactement ce que
+          // la clé de collection sert à ne pas avoir à faire. Ici la route
+          // désigne la collection, et l'écran lit **un** provider.
+          return AppBackground(
+            child:
+                GatheringDetailScreen(gatheringId: state.pathParameters['id']!),
           );
         },
       ),

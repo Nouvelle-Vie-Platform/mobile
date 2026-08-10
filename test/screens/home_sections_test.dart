@@ -3,13 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/local/sync_dao.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
+import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/store_mediatheque_repository.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
-import 'package:maison_du_miracle/widgets/cards/teaching_cover.dart';
+import 'package:maison_du_miracle/widgets/cards/content_cover.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
 import 'package:maison_du_miracle/widgets/home/home_section_layout.dart';
-import 'package:maison_du_miracle/widgets/home/home_teaching_cards.dart';
+import 'package:maison_du_miracle/widgets/home/home_content_cards.dart';
 import 'package:maison_du_miracle/widgets/home/home_teaching_section.dart';
 import 'package:maison_du_miracle/widgets/section_header.dart';
 
@@ -94,6 +95,11 @@ void main() {
       tester,
       const Scaffold(body: HomeScreen()),
       mediatheque: StoreMediathequeRepository(db.mediathequeDao),
+      // Les rassemblements sont **vides** ici : ce fichier vérifie les
+      // rubriques d'enseignement, et le double par défaut y ajouterait ses
+      // propres sections — donc des cartes qu'aucune assertion ne vise.
+      gatherings:
+          InMemoryGatheringRepository(gatherings: const [], types: const []),
       overrides: [
         calendarRepositoryProvider.overrideWithValue(_EmptyCalendarRepository())
       ],
@@ -106,11 +112,11 @@ void main() {
 
   /// Cadrage demandé par la carte de type [card] au visuel qu'elle dessine.
   CoverOrientation orientationIn(WidgetTester tester, Type card) => tester
-      .widget<TeachingCover>(
+      .widget<ContentCover>(
         find
             .descendant(
               of: find.byType(card),
-              matching: find.byType(TeachingCover),
+              matching: find.byType(ContentCover),
             )
             .first,
       )

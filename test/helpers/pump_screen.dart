@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
+import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
+import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 
@@ -33,11 +35,16 @@ import 'package:maison_du_miracle/theme/app_theme.dart';
 /// non un `Override` de plus : Riverpod 3 **refuse** deux surcharges du même
 /// provider dans un même conteneur, un test ne peut donc pas simplement
 /// « repasser par-dessus » celui posé ici.
+///
+/// Celui des **rassemblements** ([gatherings]) est posé de la même façon et pour
+/// la même raison : la seconde famille de la médiathèque lit le même magasin
+/// Drift, et l'accueil la rend désormais.
 Future<void> pumpScreen(
   WidgetTester tester,
   Widget screen, {
   List<Override> overrides = const [],
   MediathequeRepository? mediatheque,
+  GatheringRepository? gatherings,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -47,6 +54,8 @@ Future<void> pumpScreen(
             .overrideWithValue(const InMemoryBranchRepository()),
         mediathequeRepositoryProvider
             .overrideWithValue(mediatheque ?? InMemoryMediathequeRepository()),
+        gatheringRepositoryProvider
+            .overrideWithValue(gatherings ?? InMemoryGatheringRepository()),
         ...overrides,
       ],
       child: MaterialApp(

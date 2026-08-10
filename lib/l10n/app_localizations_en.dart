@@ -700,6 +700,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get absenceBack => 'Back';
 
   @override
+  String get gatheringAppBarTitle => 'Gathering';
+
+  @override
+  String get gatheringRetractedTitle => 'This gathering is no longer available';
+
+  @override
+  String get gatheringRetractedMessage =>
+      'It was removed by the church. Playback has stopped.';
+
+  @override
+  String get sectionGatherings => 'Gatherings';
+
+  @override
   String get teachingRetractedTitle => 'This teaching is no longer available';
 
   @override

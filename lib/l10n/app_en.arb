@@ -253,6 +253,10 @@
   "absenceOfflineMediaTitle": "Unavailable offline",
   "absenceOfflineMediaMessage": "This recording hasn't been downloaded. Reconnect to the internet to listen.",
   "absenceBack": "Back",
+  "gatheringAppBarTitle": "Gathering",
+  "gatheringRetractedTitle": "This gathering is no longer available",
+  "gatheringRetractedMessage": "It was removed by the church. Playback has stopped.",
+  "sectionGatherings": "Gatherings",
   "teachingRetractedTitle": "This teaching is no longer available",
   "teachingRetractedMessage": "It was removed from the media library. Playback has stopped."
 }

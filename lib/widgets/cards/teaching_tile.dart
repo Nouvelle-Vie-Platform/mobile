@@ -5,12 +5,12 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../app_card.dart';
-import 'teaching_cover.dart';
+import 'content_cover.dart';
 
 /// Ligne d'enseignement (médiathèque, derniers enseignements).
 ///
 /// Prend le **modèle de lecture**, pas la ligne : couleur résolue, libellé
-/// replié, URL absolues. Le visuel passe donc par [TeachingCover], qui sait
+/// replié, URL absolues. Le visuel passe donc par [ContentCover], qui sait
 /// replier sur la couleur de l'enseignement — la vignette dégradée tirée d'une
 /// graine (`Teaching.seed`) n'avait plus rien à faire ici dès lors que le
 /// serveur sert deux images et une couleur.
@@ -37,8 +37,8 @@ class TeachingTile extends StatelessWidget {
           SizedBox(
             width: 76,
             height: 64,
-            child: TeachingCover(
-              teaching: teaching,
+            child: ContentCover(
+              content: teaching,
               radius: 12,
               orientation: CoverOrientation.landscape,
             ),

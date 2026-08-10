@@ -11,6 +11,7 @@ import '../models/models.dart';
 import '../router/app_router.dart';
 import '../state/auth_providers.dart';
 import '../state/calendar_providers.dart';
+import '../state/gathering_providers.dart';
 import '../state/mediatheque_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
@@ -23,8 +24,9 @@ import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_state.dart';
 import '../widgets/app_list_skeleton.dart';
 import '../widgets/content_absence.dart';
+import '../widgets/home/home_content_cards.dart';
+import '../widgets/home/home_gathering_section.dart';
 import '../widgets/home/home_section_layout.dart';
-import '../widgets/home/home_teaching_cards.dart';
 import '../widgets/home/home_teaching_section.dart';
 import '../widgets/profile_completion_banner.dart';
 import '../widgets/profile_setup_sheet.dart';
@@ -654,6 +656,20 @@ class _UpcomingCard extends StatelessWidget {
 /// dans les deux cas. Le contraire ne l'est pas : annoncer « il n'y a rien »
 /// à quelqu'un qui n'a simplement pas encore reçu le catalogue lui ferait
 /// croire l'église muette.
+///
+/// ## Les rassemblements, depuis #34
+///
+/// La seconde famille de la médiathèque a son propre référentiel
+/// (`gathering_types`), qui porte lui aussi un `visibleOnHome` : ces rubriques
+/// sont **faites pour l'accueil**, et c'est ce drapeau qui le dit. Elles se
+/// rendent donc ici, **après** celles de la médiathèque et sous un titre à
+/// elles — jamais entrelacées : deux référentiels ont deux suites de
+/// `position`, et les mêler donnerait un ordre que personne n'a voulu.
+///
+/// Le troisième flux entre dans la **même** décision d'états que les deux
+/// autres, pour la même raison : les trois lisent le même magasin, une panne y
+/// est une panne unique, et un magasin vide y est « pas encore synchronisé » et
+/// non trois listes vides.
 class _MediathequeHome extends ConsumerWidget {
   const _MediathequeHome();
 
@@ -661,8 +677,9 @@ class _MediathequeHome extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final latest = ref.watch(latestTeachingsProvider);
     final sections = ref.watch(homeSectionsProvider);
+    final gatheringSections = ref.watch(gatheringSectionsProvider);
 
-    if (latest.hasError || sections.hasError) {
+    if (latest.hasError || sections.hasError || gatheringSections.hasError) {
       return Padding(
         padding: const EdgeInsets.only(top: AppSpacing.xl) +
             AppSpacing.screenPadding,
@@ -671,12 +688,13 @@ class _MediathequeHome extends ConsumerWidget {
           onRetry: () {
             ref.invalidate(latestTeachingsProvider);
             ref.invalidate(homeSectionsProvider);
+            ref.invalidate(gatheringSectionsProvider);
           },
         ),
       );
     }
 
-    if (!latest.hasValue || !sections.hasValue) {
+    if (!latest.hasValue || !sections.hasValue || !gatheringSections.hasValue) {
       return const Padding(
         padding: EdgeInsets.only(top: AppSpacing.xl),
         child: AppListSkeleton(
@@ -688,7 +706,10 @@ class _MediathequeHome extends ConsumerWidget {
 
     final teachings = latest.requireValue;
     final rubrics = sections.requireValue;
-    if (teachings.isEmpty && rubrics.isEmpty) return const _NotSyncedYet();
+    final gatherings = gatheringSections.requireValue;
+    if (teachings.isEmpty && rubrics.isEmpty && gatherings.isEmpty) {
+      return const _NotSyncedYet();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -701,6 +722,21 @@ class _MediathequeHome extends ConsumerWidget {
         // complété ici : `homeSections()` a déjà écarté les masquées et les
         // vides, et les a rangées par `position`.
         for (final section in rubrics) HomeTeachingSection(section: section),
+        // Puis les rassemblements, sous leur propre titre. Le titre n'apparaît
+        // que s'il y a quelque chose sous lui : un en-tête suivi du vide est
+        // pire que rien.
+        if (gatherings.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xl),
+          Padding(
+            padding: AppSpacing.screenPadding,
+            child: SectionHeader(
+              title: context.l10n.sectionGatherings,
+              icon: Icons.celebration_outlined,
+            ),
+          ),
+          for (final section in gatherings)
+            HomeGatheringSection(section: section),
+        ],
       ],
     );
   }
@@ -765,7 +801,7 @@ class _LatestTeachingsShelf extends StatelessWidget {
             itemCount: teachings.length,
             separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
             itemBuilder: (context, i) => HomeCarouselCard(
-              teaching: teachings[i],
+              content: teachings[i],
               onTap: () => context.pushNamed(
                 AppRoute.teachingDetail,
                 pathParameters: {'id': teachings[i].id},

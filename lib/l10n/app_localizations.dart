@@ -1348,6 +1348,30 @@ abstract class AppLocalizations {
   /// **'Retour'**
   String get absenceBack;
 
+  /// Écran de détail d'un rassemblement (concert, convention, formation, forum, croisade) : le mot en surtitre du lecteur. Jamais « Événement » — le calendrier (collection `events`) est une autre chose, des occurrences datées ; un rassemblement de médiathèque est un contenu enregistré
+  ///
+  /// In fr, this message translates to:
+  /// **'Rassemblement'**
+  String get gatheringAppBarTitle;
+
+  /// Absence « contenu retiré » vue depuis l'écran de détail d'un rassemblement : dit de quoi on parle, là où absenceRetractedTitle reste générique
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce rassemblement n\'est plus disponible'**
+  String get gatheringRetractedTitle;
+
+  /// Explication du rassemblement retiré. Mentionne explicitement l'arrêt de la lecture : le son s'est coupé, il faut dire pourquoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Il a été retiré par l\'église. La lecture est arrêtée.'**
+  String get gatheringRetractedMessage;
+
+  /// Accueil : titre du bloc qui regroupe les rubriques de rassemblement, avant les rubriques du référentiel. Distingue les deux familles de la médiathèque à l'écran, comme deux collections les distinguent sur le fil
+  ///
+  /// In fr, this message translates to:
+  /// **'Rassemblements'**
+  String get sectionGatherings;
+
   /// Absence « contenu retiré » vue depuis l'écran de détail d'un enseignement : dit de quoi on parle, là où absenceRetractedTitle reste générique
   ///
   /// In fr, this message translates to:
