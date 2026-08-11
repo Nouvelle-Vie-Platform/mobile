@@ -18,6 +18,10 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   `web/drift_worker.js`, **versionnés dans le dépôt** et appariés à
   `pubspec.lock`. Après toute montée de version de `drift` ou `sqlite3` :
   `make web-assets`. Voir `web/WEB_ASSETS.md`.
+- **image_picker ^1.2.3** (#36) — dépôt d'image du composeur d'annonces. Lu
+  uniquement derrière `StatusImagePicker` (`lib/data/pickers/`). iOS exige
+  `NSPhotoLibraryUsageDescription` dans `ios/Runner/Info.plist` : sans elle, le
+  système **tue** l'application à l'ouverture du sélecteur.
 
 ## Commandes
 ```bash
@@ -59,7 +63,12 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
     `store_gathering_repository.dart`, `announcement_repository.dart` /
     `store_announcement_repository.dart` — repositories **dédiés et asynchrones**,
     chacun hors de `ChurchRepository`.
+  - `announcement_composer.dart` / `http_announcement_composer.dart` —
+    **l'écriture** des annonces (#36), séparée de leur lecture ; voir « L'onglet
+    Annonces ».
   - `local/` — **le magasin local Drift**, voir ci-dessous.
+  - `pickers/status_image_picker.dart` — le choix d'une image de fond, derrière
+    une abstraction (les tests injectent un sélecteur inerte).
 
 ### Le **modèle de lecture** de la médiathèque (`lib/models/content_view.dart`)
 `ContentView` / `SectionView` : ce qu'un écran affiche, et rien de plus. Les
@@ -196,7 +205,11 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `announcementsProvider` et `canComposeAnnouncementProvider`. **C'est là que
     vivent les deux règles que le serveur ne prend pas** — le filtre
     d'expiration et le tri —, et le § « L'onglet Annonces » plus bas dit
-    pourquoi.
+    pourquoi. Côté **écriture** (#36) : `announcementComposerProvider` (le seul
+    provider de cet onglet qui parle au réseau), `composerOptionsProvider` (mes
+    comptes + les fonds actifs, lus du magasin) et
+    `announcementDraftProvider.family` (la ligne **brute** d'une annonce à
+    modifier), plus `statusImagePickerProvider`.
   - `mediatheque_providers.dart` : `mediathequeRepositoryProvider` (magasin avec
     backend, double en mémoire sinon) + `latestTeachingsProvider`,
     `allTeachingsProvider`, `teachingsOfTypeProvider.family`,
@@ -254,6 +267,50 @@ file d'envoi ni de brouillon local) et son affordance n'existe que si
 `official_account_memberships` est non vide — un **confort d'affichage, jamais
 une autorisation** : le serveur revérifie à chaque écriture, et un membre retiré
 du bureau verra encore le bouton et recevra un 403.
+
+#### L'écriture (#36) — le seul endroit de l'onglet qui parle au réseau
+`AnnouncementComposer` (`data/repositories/announcement_composer.dart`,
+implémentation HTTP à côté) est **séparé** d'`AnnouncementRepository`, et pas par
+commodité : les deux n'ont ni la même source (serveur / magasin), ni la même
+forme (`Future` / `Stream`), ni le même régime hors-ligne (**impossible** /
+normal). Les fondre donnerait un objet dont la moitié des méthodes marchent en
+avion. `models/announcement_draft.dart` porte le modèle d'**écriture** —
+identifiants bruts et octets d'image — face au modèle de **lecture**.
+
+Six règles, toutes vérifiées par des tests :
+
+1. **Le corps est en `camelCase`** (`accountId`, `publishedAt`…), et le champ de
+   fichier s'appelle `backgroundImage`. Le **`snake_case` de ce serveur ne
+   concerne que les query strings** (`?branch_id=`) et l'enveloppe `/sync` : ses
+   corps REST sont en `camelCase` de bout en bout, `HttpAuthRepository` y poste
+   déjà `firstName` / `branchId`. Ne pas « corriger » vers `snake_case` — le
+   validateur VineJS refuserait chaque clé.
+2. **Quatre champs ne partent jamais** : `branchId` (dérivé du compte),
+   `audienceId`, `isPinned`, `notify` — refusés en 422 pour un membre de
+   compte. Le composeur n'a donc **pas de sélecteur de branche** : choisir le
+   compte *est* choisir la portée.
+3. **Trois modes de publication, un seul champ `publishedAt`** : omis =
+   maintenant (l'horloge est celle du serveur), `null` explicite = brouillon,
+   instant futur = programmé. La nuance « clé absente / clé nulle » décide si
+   l'annonce paraît. En multipart, où l'on ne peut pas écrire `null`, **la chaîne
+   vide vaut `null`** — règle du contrat (PRD §18, étendue à `publishedAt`,
+   `expiresAt` et `backgroundId`), et non un booléen `draft` de plus qui ferait
+   diverger le mobile du portail.
+4. **Le composeur n'écrit pas dans le magasin.** Après un envoi réussi il
+   déclenche un cycle de synchronisation et rend la main ; le flux delta ramène
+   l'annonce. Le réseau ne peint jamais.
+5. **Modifier et supprimer se décident sur `accountId`, pas sur `ownerId`** : un
+   compte officiel est un espace éditorial **collectif**, et un comité doit
+   pouvoir se corriger. C'est la seule raison pour laquelle `AnnouncementView`
+   porte `accountId`, un champ qui ne s'affiche pas.
+6. **Aucun refus ne sort en brut.** `AnnouncementWriteErrorCode` distingue
+   réseau / 401 / 403 / 422 / 404 / 5xx, l'écran choisit la phrase, et **la
+   saisie reste à l'écran** dans tous les cas. Hors ligne et 403 sont les deux
+   chemins **normaux** de cet écran, pas des cas exotiques.
+
+Le contrat détaillé, le nom du champ de fichier (`backgroundImage`) et la limite
+assumée (on ne sait pas retirer une image déjà publiée) sont dans
+`docs/statuts-annonces.md` §11.
 
 ### Brancher un vrai backend : **un repository dédié asynchrone par domaine**
 Surcharger `churchRepositoryProvider` **ne suffit pas** et n'est pas le motif :

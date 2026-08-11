@@ -44,6 +44,7 @@ identifiants nus qui se **joignent** à la lecture.
 | `publishedAt` | `DateTime` (UTC) | date de publication ; **formatée côté client**, jamais par le back |
 | `title` | `String?` | absent ⇒ bloc de texte centré façon WhatsApp |
 | `body` | `String?` | corps du statut |
+| `accountId` | `int?` | **seul champ non destiné à l'affichage** (#36) : il répond à « ce statut est-il de l'un de mes comptes ? », donc à l'existence des actions modifier/supprimer. Comparer `accountName` serait un faux ami — deux comptes de branches différentes peuvent porter le même nom court |
 | `accountName` | `String?` | en-tête — `shortName ?? name` du **compte officiel joint** |
 | `accountAvatarUrl` | `String?` | avatar du compte, URL déjà résolue |
 | `backdrop` | `StatusBackdrop?` | trois arrêts de dégradé + encre, **servis** ; `null` ⇒ repli |
@@ -247,8 +248,8 @@ au lancement de l'app.
 
 ### Écriture — la composition depuis l'app
 
-Elle **existe**, contrairement à ce que disait le cadrage initial, mais pour une
-poignée de personnes seulement, et sous trois règles.
+**Livrée par #36.** Elle **existe**, contrairement à ce que disait le cadrage
+initial, mais pour une poignée de personnes seulement, et sous trois règles.
 
 1. **Elle exige le réseau** (ADR-0031). Pas de file d'envoi, pas de brouillon
    local, pas d'`id` fabriqué hors-ligne. « Publier maintenant » choisi lundi et
@@ -265,11 +266,110 @@ poignée de personnes seulement, et sous trois règles.
    comme sur un droit acquis.
 
 Endpoints : `POST /announcements`, `PUT /announcements/:id`,
-`DELETE /announcements/:id`, corps en **`snake_case`**, guard `api`, image en
-`multipart`. Le client envoie `account_id`, `title`, `body`, `background_id`,
-`published_at`, `expires_at`. Il **n'envoie jamais** `branch_id` (dérivé du
-compte côté serveur), ni `audience_id`, ni `is_pinned`, ni `notify` — ces
+`DELETE /announcements/:id`, corps en **`camelCase`**, guard `api`, image en
+`multipart`. Le client envoie `accountId`, `title`, `body`, `backgroundId`,
+`publishedAt`, `expiresAt`. Il **n'envoie jamais** `branchId` (dérivé du
+compte côté serveur), ni `audienceId`, ni `isPinned`, ni `notify` — ces
 trois-là sont refusés en **422** pour un membre de compte.
+
+> **`camelCase`, et non `snake_case`.** Le cadrage disait l'inverse ; il avait
+> tort. Chez ce serveur, le `snake_case` ne concerne que les **query strings**
+> (`?branch_id=`, `?from=`) et l'enveloppe `/sync`. Les **corps** de son API REST
+> sont en `camelCase` de bout en bout : `create_announcement_controller` valide
+> `branchId` et `clientCreatedAt`, `update_profile_controller` valide
+> `firstName`, et `HttpAuthRepository` poste déjà `firstName` / `branchId`. Un
+> corps en `snake_case` serait refusé par le validateur VineJS sur chaque clé.
+
+#### Ce que le composeur dessine
+
+L'écran est `screens/announcement_composer_screen.dart`, **un seul pour la
+création et la modification** : mêmes champs, mêmes règles de validité, même
+traitement des refus. Deux écrans jumeaux auraient divergé au premier correctif.
+
+- **Le sélecteur de compte, et pas de sélecteur de branche.** Choisir le compte
+  *est* choisir la portée : le serveur la dérive. Avec un seul compte — le cas
+  dominant — la ligne s'affiche sans radio, parce que ce n'est plus un choix.
+- **Le sélecteur de fond** propose les lignes `isActive` de `status_backgrounds`
+  triées par `position`, et **peint les trois arrêts servis**. Un fond désactivé
+  au portail n'y figure plus mais **reste peint** sur les annonces qui le
+  portent. Un fond dont les couleurs ne se lisent pas n'est pas proposé : la
+  pastille *est* le dégradé, et il n'y a pas de repli honnête (celui du mur est
+  dérivé de l'identifiant de l'annonce, qui n'existe pas encore).
+- **L'image** se choisit dans la photothèque, derrière l'abstraction
+  `StatusImagePicker` (`data/pickers/`) — les tests injectent un sélecteur
+  inerte. Pas d'appareil photo : une annonce d'église est une affiche préparée,
+  pas une photo prise dans l'instant. Une **affiche** (image seule, sans texte)
+  est le cas le plus courant, pas une exception tolérée.
+- **Trois modes de publication, un seul champ.** Maintenant ⇒ `publishedAt`
+  **omis** (l'horloge est celle du serveur, pas celle d'un téléphone qui dérive).
+  Programmer ⇒ l'instant choisi, en UTC. Brouillon ⇒ `publishedAt` **nul
+  explicite**. La nuance « clé absente / clé nulle » décide si l'annonce paraît.
+- **Validité, vérifiée avant tout appel réseau** : au moins un titre, un corps ou
+  une image ; `expiresAt > publishedAt`. Titre et corps vides après `trim`
+  valent `null`, jamais `''`.
+
+#### Modifier et supprimer
+
+Un compte officiel est un espace éditorial **collectif** : un membre peut
+corriger et retirer **toute** annonce de ses comptes, pas seulement les siennes.
+Le lecteur tient le comité pour responsable de ce qui est signé de son nom, et un
+comité doit pouvoir se corriger. L'affordance apparaît donc sur `accountId`, pas
+sur `ownerId`.
+
+Le composeur repart de la **ligne brute** (`AnnouncementDao.announcementById`),
+jamais d'`AnnouncementView` : celui-ci a remplacé les identifiants par un nom de
+compte et trois arrêts de dégradé, et retrouver un identifiant depuis un libellé
+n'a pas de solution quand deux comptes ont le même nom court. La route porte
+l'identifiant (`/announcement/:id/edit`) et l'écran résout à chaque `build` — une
+annonce retirée pendant qu'on la modifie s'affiche comme une **absence**.
+
+#### Les refus, dits en langage humain
+
+| Cause | Ce que lit l'auteur |
+|---|---|
+| pas de réponse (hors ligne) | « Publier demande une connexion internet. Votre saisie est conservée. » |
+| **403** — retiré du bureau | « Vous ne publiez plus pour ce compte » |
+| **422** | le message du serveur, seul cas où il parle du contenu saisi |
+| **404 / 410** | « Elle a été supprimée entre-temps, peut-être par un autre membre » |
+| **5xx** | « Le serveur ne répond pas correctement » |
+| **401** | « Session expirée » — la purge et le retour à `/auth` sont déjà faits |
+
+Jamais un code HTTP, jamais un `toString()` d'exception. Et dans tous les cas
+**la saisie reste à l'écran** : l'échec vit dans l'état du formulaire, il ne
+ferme rien.
+
+#### Ce que le composeur ne fait pas
+
+Il **n'écrit pas dans le magasin local**. Après un envoi réussi il déclenche un
+cycle de synchronisation (`pullToRefreshProvider`) et rend la main : c'est le flux
+delta qui ramène l'annonce. Écrire la ligne nous-mêmes demanderait d'inventer un
+identifiant, une branche dérivée et un horodatage — trois valeurs que seul le
+serveur connaît.
+
+#### Le dépôt d'image, et la chaîne vide
+
+Deux points que le cadrage laissait ouverts, tranchés depuis :
+
+1. **Le champ de fichier s'appelle `backgroundImage`** — `camelCase` comme le
+   reste du corps et comme les dépôts d'image existants du serveur
+   (`save_teaching_controller` reçoit `imageLandscape` / `imagePortrait`). Sans
+   le suffixe `Url` de la colonne `background_image_url` : ce qui monte est un
+   fichier, ce que la colonne garde est le chemin que le serveur en dérive.
+2. **La chaîne vide vaut `null`, et c'est une règle du contrat**, pas un
+   contournement du multipart. Le PRD §18 la pose déjà pour `title` / `body` ;
+   elle s'étend à `publishedAt` — donc une chaîne vide **fait un brouillon** —,
+   `expiresAt` et `backgroundId`.
+
+   C'est elle qui permet aux trois modes de publication de rester repliés sur le
+   **seul** `publishedAt`, en JSON comme en multipart. L'alternative — un booléen
+   `draft` de plus, uniquement quand un fichier est joint — ferait diverger le
+   mobile du portail, qui exprime déjà les trois modes sur ce seul champ, et
+   introduirait deux façons de dire « brouillon » dont une seule serait jamais
+   testée.
+
+Et une limite assumée : **le composeur ne sait pas retirer une image déjà
+publiée**, faute de champ pour l'exprimer dans le contrat. Une affiche ne peut
+donc pas redevenir un statut texte depuis le mobile.
 
 ### Hors périmètre assumé
 
