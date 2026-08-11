@@ -1,3 +1,4 @@
+import '../../models/announcement_draft.dart';
 import '../../models/announcement_view.dart';
 import '../sample_data.dart';
 
@@ -38,6 +39,24 @@ abstract interface class AnnouncementRepository {
   /// synchronisé verra encore le bouton et recevra un 403. L'écran doit traiter
   /// ce cas, pas s'y fier.
   Stream<bool> canCompose();
+
+  /// **Ce que le composeur propose** : mes comptes officiels et les fonds encore
+  /// actifs, triés comme le portail les range.
+  ///
+  /// Une lecture de magasin, comme le reste — l'écriture seule exige le réseau
+  /// (ADR-0031). Ouvrir le formulaire sur un appel REST le rendrait dépendant du
+  /// réseau **à l'ouverture**, dans une application locale d'abord, et ferait
+  /// attendre un sélecteur de teintes qui est déjà dans la poche.
+  Stream<ComposerOptions> composerOptions();
+
+  /// **L'annonce [id] telle qu'on la modifie** — identifiants bruts, pas valeurs
+  /// résolues. `null` = elle n'est plus dans le magasin.
+  ///
+  /// Un `Stream` et non un `Future`, pour la raison de tout l'onglet : une
+  /// rétractation reçue pendant qu'un membre corrige un statut doit se voir sur
+  /// l'écran ouvert. Un `Future` livrerait une photographie prise au moment du
+  /// clic, et l'auteur enverrait sa correction dans le vide.
+  Stream<AnnouncementDraft?> draftOf(String id);
 }
 
 /// Implémentation **en mémoire**, servie quand `AppEnv.useBackend` est faux
@@ -51,6 +70,7 @@ class InMemoryAnnouncementRepository implements AnnouncementRepository {
   InMemoryAnnouncementRepository({
     List<AnnouncementView>? announcements,
     this.member = false,
+    this.options = ComposerOptions.empty,
   }) : _announcements = announcements ?? SampleData.announcements;
 
   final List<AnnouncementView> _announcements;
@@ -59,10 +79,25 @@ class InMemoryAnnouncementRepository implements AnnouncementRepository {
   /// l'immense majorité des fidèles, et donc l'état par défaut de l'onglet.
   final bool member;
 
+  /// Comptes et fonds proposés par le double. Vides par défaut, pour la même
+  /// raison que [member] : en maquette, l'onglet est une visionneuse.
+  final ComposerOptions options;
+
   @override
   Stream<List<AnnouncementView>> announcements() =>
       Stream.value(List<AnnouncementView>.unmodifiable(_announcements));
 
   @override
   Stream<bool> canCompose() => Stream.value(member);
+
+  @override
+  Stream<ComposerOptions> composerOptions() => Stream.value(options);
+
+  /// Le double n'a **aucune valeur brute** à rendre : `SampleData` porte des
+  /// modèles de lecture, pas des lignes de magasin. Rendre `null` plutôt que de
+  /// reconstituer un brouillon depuis des valeurs déjà résolues — l'écran de
+  /// modification affiche alors « cette annonce n'est plus disponible », ce qui
+  /// est exact en mode maquette, où l'écriture est de toute façon refusée.
+  @override
+  Stream<AnnouncementDraft?> draftOf(String id) => Stream.value(null);
 }

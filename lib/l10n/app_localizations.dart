@@ -1383,6 +1383,336 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Il a été retiré de la médiathèque. La lecture est arrêtée.'**
   String get teachingRetractedMessage;
+
+  /// Visionneuse : bouton d'ouverture du composeur. **N'existe que si l'acteur appartient à au moins un compte officiel** (canComposeAnnouncementProvider) — pour l'écrasante majorité des fidèles, l'onglet reste une visionneuse sans aucune affordance d'écriture
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier une annonce'**
+  String get composeAnnouncement;
+
+  /// Composeur en création : titre de la BrandAppBar
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle annonce'**
+  String get composerNewTitle;
+
+  /// Composeur en modification : titre de la BrandAppBar. Un compte officiel est un espace éditorial collectif — un membre corrige toute annonce de ses comptes, pas seulement les siennes
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l\'annonce'**
+  String get composerEditTitle;
+
+  /// Composeur : libellé du sélecteur de compte officiel. Choisir le compte **est** choisir la portée — il n'y a pas de sélecteur de branche, le serveur la dérive du compte
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier au nom de'**
+  String get composerAccountLabel;
+
+  /// Composeur : libellé du champ titre. Facultatif — une annonce valide porte au moins un titre, un message ou une image
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get composerTitleLabel;
+
+  /// Composeur : indication du champ titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Facultatif'**
+  String get composerTitleHint;
+
+  /// Composeur : libellé du champ corps
+  ///
+  /// In fr, this message translates to:
+  /// **'Message'**
+  String get composerBodyLabel;
+
+  /// Composeur : indication du champ corps
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce que l\'église doit savoir'**
+  String get composerBodyHint;
+
+  /// Composeur : libellé du sélecteur de teinte. Les fonds viennent du référentiel `status_backgrounds` avec leurs arrêts et leur encre déjà dérivés par le serveur ; l'application ne calcule aucune couleur
+  ///
+  /// In fr, this message translates to:
+  /// **'Fond'**
+  String get composerBackgroundLabel;
+
+  /// Composeur : option « pas de fond choisi » du sélecteur de teinte. Le rendu retombe alors sur la teinte dérivée de l'identifiant de l'annonce
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun'**
+  String get composerBackgroundNone;
+
+  /// Composeur : libellé du bloc de dépôt d'image
+  ///
+  /// In fr, this message translates to:
+  /// **'Image de fond'**
+  String get composerImageLabel;
+
+  /// Composeur : action ouvrant la photothèque
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une image'**
+  String get composerImageAdd;
+
+  /// Composeur : action remplaçant l'image déjà choisie
+  ///
+  /// In fr, this message translates to:
+  /// **'Remplacer l\'image'**
+  String get composerImageReplace;
+
+  /// Composeur : action retirant l'image choisie **avant envoi**. Ne retire pas une image déjà publiée — le contrat serveur n'a pas de champ pour ça
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer l\'image'**
+  String get composerImageRemove;
+
+  /// Composeur en modification : dit que l'annonce porte déjà une image côté serveur et qu'elle reste en place tant qu'on n'en dépose pas une autre
+  ///
+  /// In fr, this message translates to:
+  /// **'Image déjà publiée conservée'**
+  String get composerImageKept;
+
+  /// Composeur : libellé du choix entre publier maintenant, programmer et brouillon — trois modes repliés sur le seul champ `published_at`
+  ///
+  /// In fr, this message translates to:
+  /// **'Publication'**
+  String get composerTimingLabel;
+
+  /// Composeur : publier immédiatement. Le champ est **omis** de la requête, et c'est l'horloge du serveur qui fait foi — pas celle du téléphone, qui peut dériver
+  ///
+  /// In fr, this message translates to:
+  /// **'Maintenant'**
+  String get composerTimingNow;
+
+  /// Composeur : publier à une date future
+  ///
+  /// In fr, this message translates to:
+  /// **'Programmer'**
+  String get composerTimingScheduled;
+
+  /// Composeur : garder l'annonce sans la publier (`published_at` explicitement nul)
+  ///
+  /// In fr, this message translates to:
+  /// **'Brouillon'**
+  String get composerTimingDraft;
+
+  /// Composeur : libellé de l'instant de publication programmée
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de publication'**
+  String get composerScheduleLabel;
+
+  /// Composeur : action ouvrant le sélecteur de date de publication
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir la date'**
+  String get composerSchedulePick;
+
+  /// Composeur : libellé de la date d'expiration, facultative
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin de publication'**
+  String get composerExpiryLabel;
+
+  /// Composeur : état par défaut de la fin de publication
+  ///
+  /// In fr, this message translates to:
+  /// **'N\'expire jamais'**
+  String get composerExpiryNever;
+
+  /// Composeur : action ouvrant le sélecteur de date de fin
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une fin'**
+  String get composerExpiryPick;
+
+  /// Composeur : action supprimant la date de fin choisie
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer la fin'**
+  String get composerExpiryClear;
+
+  /// Composeur : action d'envoi en création
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier'**
+  String get composerPublish;
+
+  /// Composeur : action d'envoi en modification
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get composerSave;
+
+  /// Composeur en modification : action de suppression
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'annonce'**
+  String get composerDelete;
+
+  /// Boîte de confirmation de suppression : question
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer cette annonce ?'**
+  String get composerDeleteConfirmTitle;
+
+  /// Boîte de confirmation de suppression : conséquence. Dite en termes de lecteurs, pas de base de données
+  ///
+  /// In fr, this message translates to:
+  /// **'Elle disparaîtra de l\'application de tous les fidèles.'**
+  String get composerDeleteConfirmBody;
+
+  /// Boîte de confirmation de suppression : action destructrice
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get composerDeleteConfirmAction;
+
+  /// Composeur : aucun compte officiel utilisable n'est encore arrivé dans le magasin local, alors que l'appartenance, elle, y est. Une fenêtre de synchronisation, pas une erreur
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun compte disponible'**
+  String get composerNoAccountTitle;
+
+  /// Composeur : explication de l'absence de compte utilisable
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos comptes officiels ne sont pas encore arrivés sur cet appareil. Réessayez après la prochaine synchronisation.'**
+  String get composerNoAccountBody;
+
+  /// Composeur en modification : l'annonce n'est plus dans le magasin local — retirée par le serveur, ou supprimée par un autre membre du compte
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonce introuvable'**
+  String get composerMissingTitle;
+
+  /// Composeur en modification : explication de l'annonce disparue
+  ///
+  /// In fr, this message translates to:
+  /// **'Elle a été retirée. Il n\'y a plus rien à modifier.'**
+  String get composerMissingBody;
+
+  /// Composeur : rien à publier. Une image seule — une affiche — est une annonce parfaitement valide, et c'est le cas le plus courant
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez au moins un titre, un message ou une image.'**
+  String get composerIssueNothing;
+
+  /// Composeur : mode « programmer » retenu sans date
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez la date de publication.'**
+  String get composerIssueSchedule;
+
+  /// Composeur : fin antérieure ou égale au début. Une annonce expirée à sa naissance n'aura jamais été lue
+  ///
+  /// In fr, this message translates to:
+  /// **'La fin de publication doit venir après la publication.'**
+  String get composerIssueExpiry;
+
+  /// Échec d'écriture, pas de réponse du serveur. Publier exige le réseau : il n'y a ni file d'envoi ni brouillon local, et l'application doit le **dire** plutôt que d'échouer en silence
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion requise'**
+  String get composerErrorNetworkTitle;
+
+  /// Échec d'écriture réseau : dit l'action qui débloque, et rassure sur la saisie — qui n'est jamais perdue à l'écran
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier une annonce demande une connexion internet. Votre saisie est conservée : reconnectez-vous, puis réessayez.'**
+  String get composerErrorNetworkBody;
+
+  /// Échec d'écriture 403. Le chemin normal, pas un cas exotique : l'appartenance connue du téléphone est un confort d'affichage, jamais une autorisation, et le serveur revérifie à chaque écriture
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne publiez plus pour ce compte'**
+  String get composerErrorForbiddenTitle;
+
+  /// Échec d'écriture 403 : explique sans accuser, et donne le recours
+  ///
+  /// In fr, this message translates to:
+  /// **'Le bureau de ce compte officiel a changé. Rapprochez-vous d\'un responsable si c\'est une erreur.'**
+  String get composerErrorForbiddenBody;
+
+  /// Échec d'écriture 422 : le serveur a répondu, mais le contenu ne passe pas
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonce refusée'**
+  String get composerErrorRejectedTitle;
+
+  /// Échec d'écriture 422 : repli quand le serveur n'a pas fourni de message
+  ///
+  /// In fr, this message translates to:
+  /// **'Le serveur n\'a pas accepté cette annonce. Corrigez la saisie, puis réessayez.'**
+  String get composerErrorRejectedBody;
+
+  /// Échec d'écriture 404/410 : l'annonce a disparu entre l'ouverture et l'envoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonce introuvable'**
+  String get composerErrorGoneTitle;
+
+  /// Échec d'écriture 404/410 : nomme la cause la plus probable — un compte officiel est un espace éditorial collectif
+  ///
+  /// In fr, this message translates to:
+  /// **'Elle a été supprimée entre-temps, peut-être par un autre membre du compte.'**
+  String get composerErrorGoneBody;
+
+  /// Échec d'écriture 5xx : le serveur est joignable, ce n'est pas la connexion de l'auteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Serveur indisponible'**
+  String get composerErrorServerTitle;
+
+  /// Échec d'écriture 5xx : dit qu'attendre peut suffire
+  ///
+  /// In fr, this message translates to:
+  /// **'Le serveur ne répond pas correctement. Réessayez dans un instant.'**
+  String get composerErrorServerBody;
+
+  /// Échec d'écriture 401 : le token n'est plus valide. La purge et le retour à l'authentification sont déjà déclenchés globalement — inutile de proposer « Réessayer »
+  ///
+  /// In fr, this message translates to:
+  /// **'Session expirée'**
+  String get composerErrorUnauthorizedTitle;
+
+  /// Échec d'écriture 401 : la seule action utile
+  ///
+  /// In fr, this message translates to:
+  /// **'Reconnectez-vous pour publier.'**
+  String get composerErrorUnauthorizedBody;
+
+  /// Confirmation après création. L'annonce apparaîtra au mur une fois ramenée par le flux delta — le composeur n'écrit jamais dans le magasin local
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonce publiée'**
+  String get composerPublished;
+
+  /// Confirmation après modification
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonce mise à jour'**
+  String get composerUpdated;
+
+  /// Confirmation après suppression
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonce supprimée'**
+  String get composerDeleted;
+
+  /// Visionneuse : action de modification du statut affiché. N'existe que si ce statut appartient à l'un de mes comptes officiels
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l\'annonce'**
+  String get statusEdit;
+
+  /// Visionneuse : action de suppression du statut affiché
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'annonce'**
+  String get statusDelete;
 }
 
 class _AppLocalizationsDelegate

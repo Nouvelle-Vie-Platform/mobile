@@ -20,6 +20,15 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   drift: 2.34.0
   drift_flutter: ^0.3.1
+  # Dépôt d'image du composeur d'annonces (#36). Un plugin natif de plus, après
+  # `flutter_secure_storage` et `drift` : le web reste une cible et
+  # `image_picker_for_web` la couvre, macOS passe par `file_selector`. Il n'est
+  # lu que derrière `StatusImagePicker` (lib/data/pickers/), pour que les tests
+  # d'écran n'aient jamais à toucher la galerie de la machine.
+  # iOS exige `NSPhotoLibraryUsageDescription` dans `ios/Runner/Info.plist` —
+  # sans elle, l'application est **tuée** par le système à l'ouverture du
+  # sélecteur, pas seulement refusée.
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:

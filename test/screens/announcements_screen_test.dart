@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/players/status_player.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
+import 'package:maison_du_miracle/models/announcement_draft.dart';
 import 'package:maison_du_miracle/models/announcement_view.dart';
 import 'package:maison_du_miracle/screens/announcements_screen.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
@@ -19,14 +20,20 @@ import '../helpers/pump_screen.dart';
 /// l'écran — et sait échouer, pour que l'état d'erreur soit exercé et non
 /// supposé.
 class _FakeRepository implements AnnouncementRepository {
-  _FakeRepository(this._announcements, {this.member = false});
+  _FakeRepository(
+    this._announcements, {
+    this.member = false,
+    this.options = ComposerOptions.empty,
+  });
 
   _FakeRepository.failing()
       : _announcements = null,
-        member = false;
+        member = false,
+        options = ComposerOptions.empty;
 
   final List<AnnouncementView>? _announcements;
   final bool member;
+  final ComposerOptions options;
 
   @override
   Stream<List<AnnouncementView>> announcements() {
@@ -37,22 +44,35 @@ class _FakeRepository implements AnnouncementRepository {
 
   @override
   Stream<bool> canCompose() => Stream.value(member);
+
+  @override
+  Stream<ComposerOptions> composerOptions() => Stream.value(options);
+
+  @override
+  Stream<AnnouncementDraft?> draftOf(String id) => Stream.value(null);
 }
 
 /// Monte la visionneuse avec un lecteur **inerte** : sans minuterie, l'écran
 /// reste déterministe et aucun timer ne survit au démontage.
 Future<void> pumpViewer(
   WidgetTester tester,
-  List<AnnouncementView> statuses,
-) {
-  return pumpScreen(
+  List<AnnouncementView> statuses, {
+  bool member = false,
+  ComposerOptions options = ComposerOptions.empty,
+}) async {
+  await pumpScreen(
     tester,
     const Scaffold(body: AnnouncementsScreen()),
-    announcements: _FakeRepository(statuses),
+    announcements: _FakeRepository(statuses, member: member, options: options),
     overrides: [
       statusPlayerProvider.overrideWithValue(InertStatusPlayer()),
     ],
   );
+  // Une image de plus : les comptes ne sont lus **qu'une fois** l'appartenance
+  // connue — la visionneuse ne fait pas tourner deux requêtes de plus sur les
+  // téléphones qui ne publieront jamais. La seconde lecture arrive donc au build
+  // suivant, pas au premier.
+  await tester.pump();
 }
 
 /// Un fond **servi**, tel que le référentiel `status_backgrounds` le rend.
@@ -70,6 +90,7 @@ AnnouncementView _status({
   StatusAudio? audio,
   String? backgroundImageUrl,
   StatusBackdrop? backdrop,
+  int? accountId,
   String? accountName = 'Diaconat',
   DateTime? expiresAt,
   bool isPinned = false,
@@ -80,6 +101,7 @@ AnnouncementView _status({
     publishedAt: DateTime.now().toUtc().subtract(age),
     title: title,
     body: body,
+    accountId: accountId,
     accountName: accountName,
     audio: audio,
     backgroundImageUrl: backgroundImageUrl,
@@ -382,8 +404,71 @@ void main() {
         isTrue,
       );
     });
+
+    testWidgets(
+      'aucun bouton de composition pour qui n\'appartient à aucun compte',
+      (tester) async {
+        // Pour l'écrasante majorité des fidèles, l'onglet est une visionneuse :
+        // pas de bouton grisé, pas de menu caché, **aucune** trace d'écriture.
+        await pumpViewer(tester, [_status(id: 'a', body: 'Paix sur vous.')]);
+
+        expect(find.byKey(composeActionKey), findsNothing);
+        expect(find.byKey(editActionKey), findsNothing);
+      },
+    );
+
+    testWidgets('le bouton de composition apparaît avec une appartenance',
+        (tester) async {
+      await pumpViewer(
+        tester,
+        [_status(id: 'a', body: 'Paix sur vous.')],
+        member: true,
+        options: _options,
+      );
+
+      expect(find.byKey(composeActionKey), findsOneWidget);
+    });
+
+    testWidgets(
+      'la modification n\'apparaît que sur les annonces de mes comptes',
+      (tester) async {
+        // Un compte officiel est un espace éditorial **collectif** : ce qui
+        // décide n'est pas « ai-je écrit ce statut » mais « est-il signé de
+        // l'un de mes comptes ». Ici, le statut affiché appartient au compte 9,
+        // dont je ne suis pas membre.
+        await pumpViewer(
+          tester,
+          [_status(id: 'a', body: 'Paix.', accountId: 9)],
+          member: true,
+          options: _options,
+        );
+
+        expect(find.byKey(composeActionKey), findsOneWidget);
+        expect(find.byKey(editActionKey), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'la modification apparaît sur une annonce d\'un de mes comptes',
+      (tester) async {
+        await pumpViewer(
+          tester,
+          [_status(id: 'a', body: 'Paix.', accountId: 3)],
+          member: true,
+          options: _options,
+        );
+
+        expect(find.byKey(editActionKey), findsOneWidget);
+      },
+    );
   });
 }
+
+/// Ce que le magasin propose à un membre du compte 3.
+const _options = ComposerOptions(
+  accounts: [ComposerAccount(id: 3, name: 'Diaconat')],
+  backgrounds: [],
+);
 
 /// Résout un provider **en gardant un abonnement ouvert**.
 ///
