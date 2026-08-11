@@ -8,36 +8,13 @@ import '../models/models.dart';
 ///
 /// **Il rétrécit, et c'est voulu.** Son contrat est synchrone : chaque domaine
 /// que le back se met à servir en **sort** vers son propre repository
-/// asynchrone (`AuthRepository`, `BranchRepository`, `CalendarRepository`, et
-/// désormais `MediathequeRepository`). Ce qui reste ici n'est que ce qui est
-/// encore fictif.
+/// asynchrone (`AuthRepository`, `BranchRepository`, `CalendarRepository`,
+/// `MediathequeRepository`, `GatheringRepository`, et désormais
+/// `AnnouncementRepository`). Ce qui reste ici n'est que ce qui est encore
+/// fictif : groupes, requêtes de prière, notes et discussions.
 final churchRepositoryProvider = Provider<ChurchRepository>(
   (ref) => const InMemoryChurchRepository(),
 );
-
-/// Annonces (statuts) de l'église, prêtes à l'affichage.
-///
-/// Le repository renvoie la liste brute ; c'est ici qu'on applique le cycle de
-/// vie du feed :
-/// - les statuts dont `expiresAt` est passé **disparaissent** (pas de grisé) ;
-/// - tri : épinglés d'abord, puis `publishedAt` décroissant.
-final announcementsProvider = Provider<List<Announcement>>((ref) {
-  final now = DateTime.now().toUtc();
-  final visible = ref
-      .watch(churchRepositoryProvider)
-      .announcements()
-      .where((a) => a.expiresAt == null || a.expiresAt!.isAfter(now))
-      .toList()
-    ..sort((a, b) {
-      if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
-      final byDate = b.publishedAt.compareTo(a.publishedAt);
-      if (byDate != 0) return byDate;
-      // `List.sort` n'est pas stable en Dart : sans départage, deux statuts
-      // publiés à la même seconde changeraient d'ordre d'un tri à l'autre.
-      return a.id.compareTo(b.id);
-    });
-  return List<Announcement>.unmodifiable(visible);
-});
 
 /// Évènements de l'agenda.
 ///

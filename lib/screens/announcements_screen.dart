@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/players/status_player.dart';
 import '../l10n/l10n_extension.dart';
-import '../models/models.dart';
+import '../models/announcement_view.dart';
+import '../state/announcement_providers.dart';
 import '../state/player_providers.dart';
-import '../state/repository_providers.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../widgets/app_error_state.dart';
 import '../widgets/status/status_background.dart';
 import '../widgets/status/status_content.dart';
 import '../widgets/status/status_list_sheet.dart';
@@ -116,7 +117,15 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     super.dispose();
   }
 
-  List<Announcement> get _statuses => ref.read(announcementsProvider);
+  /// Les statuts **actuellement affichables**, ou la liste vide tant que le
+  /// magasin n'a pas répondu.
+  ///
+  /// La source est désormais un `AsyncValue` : la lecture du magasin local n'est
+  /// pas instantanée. Les rappels du lecteur, eux, peuvent survenir avant — d'où
+  /// le repli sur le vide plutôt qu'un `requireValue` qui lèverait au premier
+  /// tick reçu pendant le chargement.
+  List<AnnouncementView> get _statuses =>
+      ref.read(announcementsProvider).value ?? const [];
 
   /// La lecture n'a lieu que si l'onglet est visible, l'application au premier
   /// plan, et qu'aucun geste de lecture ne la suspend.
@@ -124,12 +133,14 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
       widget.isActive && _foreground && !_held && !_scrolling && !_sheetOpen;
 
   /// Chaîne de résolution de la durée (§4) : durée du média annoncée par le
-  /// back → durée d'affichage du statut → défaut par type. La durée réelle du
-  /// lecteur primera d'elle-même en phase 2.
-  Duration _durationFor(Announcement status) {
-    final announced = status.audio?.durationMs ??
-        status.video?.durationMs ??
-        status.durationMs;
+  /// back, sinon défaut par type. La durée réelle du lecteur primera d'elle-même
+  /// en phase 2.
+  ///
+  /// La **durée d'affichage** du statut (`durationMs`) a disparu du modèle avec
+  /// la refonte : le serveur n'en sert aucune, et un champ que le back ne sert
+  /// pas fabrique un écran qui marche en maquette et se vide en production.
+  Duration _durationFor(AnnouncementView status) {
+    final announced = status.audio?.durationMs ?? status.video?.durationMs;
     if (announced != null) return Duration(milliseconds: announced);
     final hasMedia = status.audio != null || status.video != null;
     return hasMedia ? StatusDurations.media : StatusDurations.still;
@@ -226,7 +237,21 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     ref.listen<bool>(
         statusMutedProvider, (_, muted) => _player.setMuted(muted));
 
-    final statuses = ref.watch(announcementsProvider);
+    // Le mur vient du magasin local : sa lecture est asynchrone, et les trois
+    // états sont **distincts**. Un magasin vide au premier lancement est la
+    // réponse normale — la synchronisation ne l'a pas encore rempli —, jamais
+    // une panne : les confondre ferait lire « il n'y a aucune annonce » à un
+    // fidèle dont la base est simplement illisible.
+    return ref.watch(announcementsProvider).when(
+          loading: () => const _LoadingState(),
+          error: (_, __) => _ErrorState(
+            onRetry: () => ref.invalidate(announcementsProvider),
+          ),
+          data: _buildViewer,
+        );
+  }
+
+  Widget _buildViewer(List<AnnouncementView> statuses) {
     if (statuses.isEmpty) return const _EmptyState();
 
     // La coquille garde `extendBody: true` : le contenu passe derrière la barre
@@ -238,11 +263,11 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     // Tout ce qui est posé en surimpression (barre de segments, actions) doit
     // adopter la couleur de texte résolue du statut affiché dessous, sinon il
     // hérite de celle du thème de l'application et disparaît sur le fond.
-    final current = statuses[_index];
+    final current = statuses[_index.clamp(0, statuses.length - 1)];
     final overlayColor = StatusBackground.foregroundFor(
       current.id,
-      backgroundColor: current.backgroundColor,
-      imageUrl: current.video?.poster ?? current.backgroundImage,
+      backdrop: current.backdrop,
+      imageUrl: current.video?.poster ?? current.backgroundImageUrl,
     );
 
     return GestureDetector(
@@ -357,7 +382,7 @@ class _StatusPage extends StatelessWidget {
     required this.onBodyScroll,
   });
 
-  final Announcement status;
+  final AnnouncementView status;
   final bool isCurrent;
   final StatusPlayer player;
   final double topInset;
@@ -368,16 +393,16 @@ class _StatusPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Une vidéo affiche son poster en phase 1 : c'est ce qui valide dès
     // maintenant la mise en page (bandes, voile) sans dépendance native.
-    final imageUrl = status.video?.poster ?? status.backgroundImage;
+    final imageUrl = status.video?.poster ?? status.backgroundImageUrl;
     final foreground = StatusBackground.foregroundFor(
       status.id,
-      backgroundColor: status.backgroundColor,
+      backdrop: status.backdrop,
       imageUrl: imageUrl,
     );
 
     return StatusBackground(
       id: status.id,
-      backgroundColor: status.backgroundColor,
+      backdrop: status.backdrop,
       imageUrl: imageUrl,
       child: StatusContent(
         announcement: status,
@@ -412,6 +437,47 @@ class _StatusPage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// **Chargement** : la lecture du magasin local n'est pas instantanée.
+///
+/// Volontairement muet — un indicateur, pas un texte. La visionneuse occupe
+/// l'écran entier : y écrire « chargement » sur un fond vide donnerait une page
+/// bien plus inquiétante que le fond seul, pour les quelques dizaines de
+/// millisecondes que dure une lecture SQLite.
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.4,
+            semanticsLabel: context.l10n.stateLoading,
+          ),
+        ),
+      );
+}
+
+/// **Échec de lecture du magasin** — une panne, jamais un mur vide.
+///
+/// La distinction n'est pas cosmétique : un écran vide faute de base lisible ne
+/// doit pas se lire « l'église n'a rien annoncé ». `AppErrorState` est teinté et
+/// porte une action ; l'état vide, lui, est neutre et n'en propose aucune.
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: AppErrorState(onRetry: onRetry),
+        ),
+      );
 }
 
 /// État vide : c'est l'écran qu'un nouveau membre verra le jour où le back

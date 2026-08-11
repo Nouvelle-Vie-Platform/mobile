@@ -1,3 +1,4 @@
+import '../models/announcement_view.dart';
 import '../models/models.dart';
 
 /// Instant passé, exprimé en UTC comme le ferait le backend.
@@ -36,13 +37,29 @@ final DateTime _culte = _nextWeekdayAt(DateTime.sunday, 15);
 /// Prochaine veillée de prière (vendredi 20 h à Lomé).
 final DateTime _veillee = _nextWeekdayAt(DateTime.friday, 20);
 
-/// Forme d'onde fictive « précalculée par le back » (valeurs 0–100).
-const List<int> _waveformExhortation = [
-  12, 20, 34, 48, 61, 55, 40, 33, 47, 66, //
-  78, 84, 72, 58, 44, 30, 22, 29, 41, 57,
-  70, 82, 91, 76, 63, 49, 36, 25, 18, 14,
-  22, 31,
-];
+/// Les trois fonds de statut de la maquette, sous la **forme servie** par le
+/// référentiel `status_backgrounds` : trois arrêts de dégradé et une encre, tous
+/// dérivés côté serveur (ADR-0030). Le client les lit, il ne les recalcule pas.
+final StatusBackdrop _brandBackdrop = StatusBackdrop.read(
+  baseColor: '#223B8C',
+  topColor: '#2E4CAE',
+  bottomColor: '#16265C',
+  ink: 'light',
+)!;
+
+final StatusBackdrop _deepBlueBackdrop = StatusBackdrop.read(
+  baseColor: '#3B5BD0',
+  topColor: '#5474E6',
+  bottomColor: '#26409B',
+  ink: 'light',
+)!;
+
+final StatusBackdrop _tealBackdrop = StatusBackdrop.read(
+  baseColor: '#0F6E5C',
+  topColor: '#178A74',
+  bottomColor: '#0A4E41',
+  ink: 'light',
+)!;
 
 /// Données fictives reproduisant le contenu des maquettes.
 ///
@@ -71,35 +88,47 @@ abstract final class SampleData {
   /// `static final` (et non `const`) : les [DateTime] sont calculés au premier
   /// accès pour que l'horodatage relatif reste réaliste.
   ///
-  /// Le jeu couvre toutes les formes attendues : texte seul, texte long,
-  /// vocal seul, vocal + texte, vidéo, image seule, expiration (passée et à
-  /// venir) et statut épinglé.
-  static final List<Announcement> announcements = [
-    // Épinglé + bouton d'action.
-    Announcement(
+  /// Les valeurs passent par [AnnouncementView.resolve] **sous leur forme
+  /// serveur** — deux colonnes de nom séparées, des couleurs en `#RRGGBB`, une
+  /// encre en chaîne : le double en mémoire doit exercer exactement les règles
+  /// de lecture du magasin, sinon un bug de repli d'en-tête ou d'URL resterait
+  /// invisible jusqu'à la production.
+  ///
+  /// Le jeu couvre les cas limites qui comptent : un statut épinglé, un statut
+  /// sans titre, un texte long qui déborde, un fond image, un **fond absent**
+  /// (teinte dérivée du hash de l'identifiant), un **compte absent du magasin**
+  /// (en-tête qui ne se rend pas), une expiration à venir et une expiration
+  /// dépassée.
+  ///
+  /// Ce qu'il ne contient **pas** : ni piste audio, ni vidéo, ni durée
+  /// d'affichage, ni bouton d'action. Le serveur n'en sert aucun — les médias de
+  /// statut attendent le transcodage (phase 2) —, et une fixture plus riche que
+  /// la source fabrique des écrans qui marchent en maquette et se vident en
+  /// production (#33).
+  static final List<AnnouncementView> announcements = [
+    // Épinglé, fond de marque.
+    AnnouncementView.resolve(
       id: 'veillee-priere',
       publishedAt: _ago(const Duration(minutes: 45)),
       title: 'Veillée de prière',
       body: 'Vendredi de 20h à minuit au Temple Central. Venons chercher la '
           'face de Dieu ensemble.',
-      author: 'Pasteur Samuel',
-      tag: 'Prière',
+      accountName: 'Maison du Miracle — Temple Central',
+      accountShortName: 'Maison du Miracle',
       isPinned: true,
-      backgroundColor: 0xFF223B8C,
-      actionLabel: 'Voir l\'agenda',
-      actionRoute: 'agenda',
+      backdrop: _brandBackdrop,
     ),
-    // Texte seul, très récent.
-    Announcement(
+    // Sans titre : bloc de texte centré façon WhatsApp.
+    AnnouncementView.resolve(
       id: 'mot-du-matin',
       publishedAt: _ago(const Duration(minutes: 7)),
       body: 'Ce que Dieu a promis, Il est assez puissant pour l\'accomplir.',
-      author: 'Pasteur Samuel',
-      tag: 'Parole',
-      backgroundColor: 0xFF3B5BD0,
+      accountName: 'Maison du Miracle — Temple Central',
+      accountShortName: 'Maison du Miracle',
+      backdrop: _deepBlueBackdrop,
     ),
     // Texte long : déborde l'écran, doit défiler.
-    Announcement(
+    AnnouncementView.resolve(
       id: 'temoignage-famille',
       publishedAt: _ago(const Duration(hours: 3)),
       title: 'Un témoignage qui fortifie',
@@ -116,95 +145,66 @@ abstract final class SampleData {
           'à la fin du culte. Venez nombreux les entourer, et apportez avec '
           'vous les sujets que vous portez depuis trop longtemps : le même Dieu '
           'répond encore aujourd\'hui.',
-      author: 'Cellule d\'accompagnement',
-      tag: 'Témoignage',
-      backgroundColor: 0xFF1FA971,
+      accountName: 'Cellule d\'accompagnement',
+      backdrop: _tealBackdrop,
     ),
-    // Vocal seul, waveform fournie par le back.
-    Announcement(
-      id: 'exhortation-vocale',
-      publishedAt: _ago(const Duration(hours: 5)),
-      author: 'Pasteur Mike',
-      tag: 'Exhortation',
-      audio: const StatusAudio(
-        url: 'https://media.maisondumiracle.org/statuts/exhortation-mike.m4a',
-        durationMs: 42000,
-        waveform: _waveformExhortation,
-      ),
-      backgroundColor: 0xFF7A5AF8,
-    ),
-    // Vocal + texte, waveform absente → repli déterministe côté UI.
-    Announcement(
+    // **Aucun fond servi** : le rendu retombe sur la teinte dérivée du hash de
+    // l'identifiant. Le repli doit être exercé en maquette, pas seulement en
+    // test — c'est ce que verra un fidèle dont le référentiel des fonds n'est
+    // pas encore arrivé.
+    AnnouncementView.resolve(
       id: 'chorale-repetition',
       publishedAt: _ago(const Duration(hours: 26)),
       title: 'Chorale Harmonie',
-      body: 'Écoutez le passage que nous répétons samedi à 16h.',
-      author: 'Sœur Estelle',
-      tag: 'Jeunesse',
-      audio: const StatusAudio(
-        url: 'https://media.maisondumiracle.org/statuts/chorale-extrait.m4a',
-        durationMs: 28000,
-      ),
-      backgroundColor: 0xFFE53935,
+      body: 'Répétition samedi à 16h, salle du fond. Merci d\'être à l\'heure.',
+      accountName: 'Chorale Harmonie',
     ),
-    // Vidéo (poster requis).
-    Announcement(
-      id: 'convention-teaser',
-      publishedAt: _ago(const Duration(days: 2)),
-      title: 'Convention annuelle',
-      body: 'Trois jours de communion et de prière au Temple Central.',
-      author: 'Maison du Miracle',
-      tag: 'Important',
-      video: const StatusVideo(
-        url: 'https://media.maisondumiracle.org/statuts/convention.mp4',
-        poster: 'https://picsum.photos/seed/convention/800/1400',
-        durationMs: 24000,
-      ),
+    // **Compte absent du magasin** : l'en-tête ne se rend pas, et le statut
+    // s'affiche quand même. Jamais de « Compte inconnu ».
+    AnnouncementView.resolve(
+      id: 'annonce-sans-compte',
+      publishedAt: _ago(const Duration(hours: 20)),
+      body: 'Le culte de dimanche débutera à 14h30, exceptionnellement.',
+      backdrop: _brandBackdrop,
     ),
-    // Expiration à venir : reste visible jusqu'à la fin de la collecte.
-    Announcement(
+    // Fond image + expiration à venir : reste visible jusqu'à la fin de la
+    // collecte.
+    AnnouncementView.resolve(
       id: 'collecte-solidaire',
       publishedAt: _ago(const Duration(hours: 9)),
       title: 'Collecte de dons solidaires',
       body: 'Apportez vivres et vêtements pour les familles dans le besoin.',
-      author: 'Diaconat',
-      tag: 'Solidarité',
-      backgroundImage: 'https://picsum.photos/seed/solidarite/800/1400',
+      accountName: 'Diaconat',
+      backgroundImageUrl: 'https://picsum.photos/seed/solidarite/800/1400',
       expiresAt: _inFuture(const Duration(days: 2)),
-      actionLabel: 'Faire un don',
-      actionRoute: 'donations',
     ),
     // Image seule (ni titre ni corps) : l'affiche parle d'elle-même.
-    Announcement(
+    AnnouncementView.resolve(
       id: 'affiche-jeunesse',
       publishedAt: _ago(const Duration(days: 4)),
-      author: 'Jeunesse Nouvelle Vie',
-      tag: 'Affiche',
-      backgroundImage: 'https://picsum.photos/seed/jeunesse/800/1400',
-      durationMs: 6000,
+      accountName: 'Jeunesse Nouvelle Vie',
+      backgroundImageUrl: 'https://picsum.photos/seed/jeunesse/800/1400',
     ),
-    // Expiration dépassée : filtré par le provider, jamais affiché.
-    Announcement(
+    // **Expiration dépassée** : filtrée par le provider, jamais affichée. Le
+    // serveur, lui, continue de la servir — c'est au client de la retirer.
+    AnnouncementView.resolve(
       id: 'repetition-annulee',
       publishedAt: _ago(const Duration(days: 3)),
       title: 'Répétition annulée',
       body: 'La répétition d\'hier soir est reportée. Merci de votre '
           'compréhension.',
-      author: 'Chorale Harmonie',
-      tag: 'Info',
+      accountName: 'Chorale Harmonie',
       expiresAt: _ago(const Duration(hours: 2)),
     ),
     // Plus d'une semaine : bascule sur une date courte localisée.
-    Announcement(
+    AnnouncementView.resolve(
       id: 'retraite-spirituelle',
       publishedAt: _ago(const Duration(days: 12)),
       title: 'Retraite spirituelle',
       body: 'Retour en images sur trois jours de jeûne et de louange.',
-      author: 'Maison du Miracle',
-      tag: 'Médias',
-      backgroundColor: 0xFF223B8C,
-      actionLabel: 'Voir la médiathèque',
-      actionRoute: 'media',
+      accountName: 'Maison du Miracle — Temple Central',
+      accountShortName: 'Maison du Miracle',
+      backdrop: _brandBackdrop,
     ),
   ];
 

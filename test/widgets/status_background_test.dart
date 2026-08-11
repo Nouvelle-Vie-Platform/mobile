@@ -1,10 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/models/announcement_view.dart';
 import 'package:maison_du_miracle/theme/app_colors.dart';
 import 'package:maison_du_miracle/theme/status_palette.dart';
 import 'package:maison_du_miracle/widgets/status/status_background.dart';
 
 const _imageUrl = 'https://example.invalid/statut.jpg';
+
+/// Un fond **servi** : trois arrêts dérivés par le serveur et une encre claire.
+const _servedBackdrop = StatusBackdrop(
+  baseColor: 0xFF3355AA,
+  topColor: 0xFF5474E6,
+  bottomColor: 0xFF26409B,
+  ink: StatusInk.light,
+);
+
+/// Un fond clair, dont le serveur a décidé qu'il portait une encre sombre.
+const _paleBackdrop = StatusBackdrop(
+  baseColor: 0xFFF8D05E,
+  topColor: 0xFFFBE08F,
+  bottomColor: 0xFFD6A92F,
+  ink: StatusInk.dark,
+);
 
 Future<void> _pump(WidgetTester tester, Widget background) async {
   await tester.pumpWidget(MaterialApp(home: Scaffold(body: background)));
@@ -29,22 +46,46 @@ void main() {
       expect(gradient.colors, contains(statusBaseColor('ann-1')));
     });
 
-    testWidgets('couleur seule : la couleur du back pilote le dégradé', (
+    testWidgets('fond servi : les trois arrêts partent tels quels', (
       tester,
     ) async {
-      const custom = 0xFF3355AA;
+      // Le serveur a dérivé la variation à l'écriture (ADR-0030) : le widget
+      // peint ce qu'on lui donne, il ne recalcule rien. C'est ce qui garantit
+      // qu'une même annonce a le même fond sur deux versions de l'application.
       await _pump(
         tester,
         const StatusBackground(
           id: 'ann-2',
-          backgroundColor: custom,
+          backdrop: _servedBackdrop,
           child: SizedBox.shrink(),
         ),
       );
 
       expect(tester.takeException(), isNull);
-      expect(_firstGradient(tester).colors, contains(const Color(custom)));
+      expect(_firstGradient(tester).colors, const [
+        Color(0xFF5474E6),
+        Color(0xFF3355AA),
+        Color(0xFF26409B),
+      ]);
       expect(find.byType(Image), findsNothing);
+    });
+
+    testWidgets('fond servi : aucune teinte de repli ne s\'y glisse', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const StatusBackground(
+          id: 'ann-2',
+          backdrop: _servedBackdrop,
+          child: SizedBox.shrink(),
+        ),
+      );
+
+      expect(
+        _firstGradient(tester).colors,
+        isNot(contains(statusBaseColor('ann-2'))),
+      );
     });
 
     testWidgets('image seule : l\'Image.network est bien montée', (
@@ -63,12 +104,12 @@ void main() {
       expect(find.byType(Image), findsOneWidget);
     });
 
-    testWidgets('couleur et image ensemble', (tester) async {
+    testWidgets('fond servi et image ensemble', (tester) async {
       await _pump(
         tester,
         const StatusBackground(
           id: 'ann-4',
-          backgroundColor: 0xFF884422,
+          backdrop: _servedBackdrop,
           imageUrl: _imageUrl,
           child: Text('Contenu'),
         ),
@@ -76,7 +117,10 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Contenu'), findsOneWidget);
-      expect(_firstGradient(tester).colors, contains(const Color(0xFF884422)));
+      expect(
+        _firstGradient(tester).colors,
+        contains(const Color(0xFF3355AA)),
+      );
     });
 
     testWidgets('sans voile, le fond reste peint', (tester) async {
@@ -150,15 +194,37 @@ void main() {
   });
 
   group('StatusBackground.foregroundFor', () {
-    test('sans image, délègue à la garantie de contraste', () {
+    test('l\'encre vient du serveur quand un fond est servi', () {
+      // **Le contraste a été tranché à l'écriture** (ADR-0030). Le déduire ici
+      // de la luminance serait refaire un calcul déjà fait — et le refaire
+      // différemment un jour, sur un fond pâle, sans que personne le voie
+      // avant les utilisateurs.
       expect(
-        StatusBackground.foregroundFor('ann-1', backgroundColor: 0xFFFFFFFF),
-        AppColors.textPrimary,
-      );
-      expect(
-        StatusBackground.foregroundFor('ann-1', backgroundColor: 0xFF000000),
+        StatusBackground.foregroundFor('ann-1', backdrop: _servedBackdrop),
         AppColors.textOnPrimary,
       );
+      expect(
+        StatusBackground.foregroundFor('ann-1', backdrop: _paleBackdrop),
+        AppColors.textPrimary,
+      );
+    });
+
+    test('l\'encre servie prime sur ce que la luminance suggérerait', () {
+      // Un fond très clair déclaré `ink: light` : incohérent, mais c'est la
+      // décision du serveur, et le client ne la corrige pas en silence.
+      const contrarian = StatusBackdrop(
+        baseColor: 0xFFFFFFFF,
+        topColor: 0xFFFFFFFF,
+        bottomColor: 0xFFFFFFFF,
+        ink: StatusInk.light,
+      );
+      expect(
+        StatusBackground.foregroundFor('ann-1', backdrop: contrarian),
+        AppColors.textOnPrimary,
+      );
+    });
+
+    test('sans fond servi, la luminance du repli tranche', () {
       expect(
         StatusBackground.foregroundFor('ann-1'),
         statusForegroundOn(statusBaseColor('ann-1')),
@@ -169,7 +235,7 @@ void main() {
       expect(
         StatusBackground.foregroundFor(
           'ann-1',
-          backgroundColor: 0xFFFFFFFF, // fond blanc… mais couvert par l'image
+          backdrop: _paleBackdrop, // fond pâle… mais couvert par l'image
           imageUrl: _imageUrl,
         ),
         AppColors.textOnPrimary,

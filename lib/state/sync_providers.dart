@@ -25,6 +25,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
 
+import '../data/local/announcement_dao.dart';
 import '../data/local/app_database.dart';
 import '../data/local/gathering_dao.dart';
 import '../data/local/mediatheque_dao.dart';
@@ -60,6 +61,13 @@ final mediathequeDaoProvider = Provider<MediathequeDao>(
 /// ce sont deux collections, deux types, deux écrans.
 final gatheringDaoProvider = Provider<GatheringDao>(
   (ref) => ref.watch(appDatabaseProvider).gatheringDao,
+);
+
+/// Les lectures du magasin, côté **annonces** — les quatre collections du mur
+/// de statuts. Un DAO de plus, pour les mêmes raisons : d'autres collections, un
+/// autre modèle, un autre écran.
+final announcementDaoProvider = Provider<AnnouncementDao>(
+  (ref) => ref.watch(appDatabaseProvider).announcementDao,
 );
 
 /// Les deux routes du protocole, sur le `Dio` d'`ApiClient` : la requête

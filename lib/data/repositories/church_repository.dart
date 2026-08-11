@@ -11,10 +11,10 @@ import '../sample_data.dart';
 /// et tous leurs écrans, pour aucun gain.
 ///
 /// L'agenda est déjà parti ([ChurchEvent], #16), la médiathèque aussi
-/// ([Teaching], #30 → `MediathequeRepository`) : ce contrat **rétrécit à chaque
-/// domaine branché**, jusqu'à disparaître.
+/// ([Teaching], #30 → `MediathequeRepository`), les rassemblements ensuite
+/// (#34), et les **annonces** avec #35 (`AnnouncementRepository`) : ce contrat
+/// **rétrécit à chaque domaine branché**, jusqu'à disparaître.
 abstract interface class ChurchRepository {
-  List<Announcement> announcements();
   List<CommunityGroup> groups();
   List<PrayerRequest> prayers();
   List<SpiritualNote> notes();
@@ -29,9 +29,6 @@ abstract interface class ChurchRepository {
 /// n'est branché.
 class InMemoryChurchRepository implements ChurchRepository {
   const InMemoryChurchRepository();
-
-  @override
-  List<Announcement> announcements() => SampleData.announcements;
 
   @override
   List<CommunityGroup> groups() => SampleData.groups;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n_extension.dart';
-import '../../models/models.dart';
+import '../../models/announcement_view.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../utils/relative_time.dart';
@@ -26,7 +26,7 @@ class StatusContent extends StatelessWidget {
     this.onBodyScroll,
   });
 
-  final Announcement announcement;
+  final AnnouncementView announcement;
 
   /// Couleur de texte résolue pour ce fond (garantie de contraste, cf. §8).
   final Color foreground;
@@ -87,9 +87,13 @@ class StatusContent extends StatelessWidget {
               foreground: foreground,
               muted: muted,
             ),
-            if (announcement.tag != null || announcement.video != null) ...[
+            // Une seule pastille possible désormais : le badge « vidéo ».
+            // Celle de catégorie (`tag`) a disparu avec la refonte des annonces
+            // — le compte officiel occupe déjà l'en-tête, et « COE » en auteur
+            // *et* en pastille disait deux fois la même chose.
+            if (announcement.video != null) ...[
               const SizedBox(height: AppSpacing.sm),
-              _Badges(announcement: announcement, foreground: foreground),
+              _Badges(foreground: foreground),
             ],
             const SizedBox(height: AppSpacing.md),
             // Sans texte, la waveform occupe le centre : la reléguer en bas
@@ -170,8 +174,13 @@ class StatusContent extends StatelessWidget {
   }
 }
 
-/// En-tête : auteur, horodatage relatif localisé, pastille de catégorie et
-/// badge « vidéo » le cas échéant.
+/// En-tête : le **compte officiel** signataire et l'horodatage relatif localisé.
+///
+/// Le nom vient d'une jointure, jamais d'une chaîne recopiée dans l'annonce, et
+/// il peut manquer : quand le compte n'est pas encore dans le magasin, la ligne
+/// et l'avatar **ne se rendent pas**. Aucun « Compte inconnu » de remplacement —
+/// ça ressemble à une donnée et serait pris pour une erreur de saisie ; le nom
+/// paraîtra au cycle de synchronisation suivant.
 class _Header extends StatelessWidget {
   const _Header({
     required this.announcement,
@@ -179,7 +188,7 @@ class _Header extends StatelessWidget {
     required this.muted,
   });
 
-  final Announcement announcement;
+  final AnnouncementView announcement;
   final Color foreground;
   final Color muted;
 
@@ -188,12 +197,12 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final author = announcement.author;
+    final account = announcement.accountName;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (author != null) ...[
-          AppAvatar(name: author, size: 36),
+        if (account != null) ...[
+          AppAvatar(name: account, size: 36),
           const SizedBox(width: AppSpacing.sm),
         ],
         Expanded(
@@ -201,9 +210,9 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (author != null)
+              if (account != null)
                 Text(
-                  author,
+                  account,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodyStrong.copyWith(color: foreground),
@@ -224,11 +233,13 @@ class _Header extends StatelessWidget {
 }
 
 /// Pastilles du statut, sur leur propre ligne **sous** l'en-tête — jamais dans
-/// la ligne de l'auteur, dont la droite appartient aux boutons d'action.
+/// la ligne du compte, dont la droite appartient aux boutons d'action.
+///
+/// Il n'en reste qu'une : le badge « vidéo ». La pastille de catégorie est
+/// partie avec `tag` (issue #35).
 class _Badges extends StatelessWidget {
-  const _Badges({required this.announcement, required this.foreground});
+  const _Badges({required this.foreground});
 
-  final Announcement announcement;
   final Color foreground;
 
   @override
@@ -237,14 +248,11 @@ class _Badges extends StatelessWidget {
       spacing: AppSpacing.sm,
       runSpacing: AppSpacing.xs,
       children: [
-        if (announcement.video != null)
-          _Badge(
-            icon: Icons.videocam_rounded,
-            label: context.l10n.statusVideoBadge,
-            foreground: foreground,
-          ),
-        if (announcement.tag != null)
-          _Badge(label: announcement.tag!, foreground: foreground),
+        _Badge(
+          icon: Icons.videocam_rounded,
+          label: context.l10n.statusVideoBadge,
+          foreground: foreground,
+        ),
       ],
     );
   }

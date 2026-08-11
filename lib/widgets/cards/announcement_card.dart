@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n_extension.dart';
-import '../../models/models.dart';
+import '../../models/announcement_view.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
-import '../../theme/status_palette.dart';
 import '../../utils/relative_time.dart';
 import '../app_card.dart';
-import '../app_chip.dart';
+import '../status/status_background.dart';
 
 /// Carte d'une annonce de l'église (catégorie, date, titre, contenu).
 ///
@@ -22,7 +21,7 @@ class AnnouncementCard extends StatelessWidget {
     this.compact = false,
   });
 
-  final Announcement announcement;
+  final AnnouncementView announcement;
   final VoidCallback? onTap;
 
   /// Vignette de liste plutôt que carte pleine.
@@ -33,16 +32,29 @@ class AnnouncementCard extends StatelessWidget {
     final palette = context.palette;
     final title = announcement.title;
     final body = announcement.body;
+    final accountName = announcement.accountName;
     if (compact) return _CompactTile(announcement: announcement, onTap: onTap);
     return AppCard(
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Le compte officiel signe le statut ; à défaut — il n'est pas
+          // encore dans le magasin — la ligne se réduit à la date, et rien
+          // n'est inventé pour la remplir.
           Row(
             children: [
-              if (announcement.tag != null)
-                AppChip(announcement.tag!, tone: AppChipTone.info),
+              if (accountName != null)
+                Flexible(
+                  child: Text(
+                    accountName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.caption.copyWith(
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                ),
               const Spacer(),
               Text(
                 relativeTime(context.l10n, announcement.publishedAt),
@@ -68,14 +80,14 @@ class AnnouncementCard extends StatelessWidget {
   }
 }
 
-/// Vignette compacte : miniature du fond, libellé, catégorie et date.
+/// Vignette compacte : miniature du fond, libellé, compte signataire et date.
 ///
 /// Le libellé retombe sur un extrait du corps quand le statut n'a pas de titre
 /// — un statut court façon WhatsApp n'en a pas.
 class _CompactTile extends StatelessWidget {
   const _CompactTile({required this.announcement, this.onTap});
 
-  final Announcement announcement;
+  final AnnouncementView announcement;
   final VoidCallback? onTap;
 
   static const double _thumbSize = 52;
@@ -97,6 +109,15 @@ class _CompactTile extends StatelessWidget {
     if (title != null && title.isNotEmpty) return title;
     final body = announcement.body ?? '';
     return body.isEmpty ? '—' : body;
+  }
+
+  /// Seconde ligne : le compte signataire puis la date, ou la date seule quand
+  /// le compte n'est pas encore dans le magasin. **Rien n'est inventé pour
+  /// combler l'absence.**
+  String _subtitle(BuildContext context) {
+    final date = relativeTime(context.l10n, announcement.publishedAt);
+    final account = announcement.accountName;
+    return account == null ? date : '$account • $date';
   }
 
   @override
@@ -126,22 +147,12 @@ class _CompactTile extends StatelessWidget {
                     style: AppTypography.bodyStrong,
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      if (announcement.tag != null) ...[
-                        AppChip(announcement.tag!, tone: AppChipTone.info),
-                        const SizedBox(width: AppSpacing.sm),
-                      ],
-                      Flexible(
-                        child: Text(
-                          relativeTime(context.l10n, announcement.publishedAt),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.caption
-                              .copyWith(color: palette.textSecondary),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    _subtitle(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.caption
+                        .copyWith(color: palette.textSecondary),
                   ),
                 ],
               ),
@@ -164,16 +175,13 @@ class _CompactTile extends StatelessWidget {
 class _Thumbnail extends StatelessWidget {
   const _Thumbnail({required this.announcement, this.icon});
 
-  final Announcement announcement;
+  final AnnouncementView announcement;
   final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
-    final base = statusBaseColor(
-      announcement.id,
-      backgroundColor: announcement.backgroundColor,
-    );
-    final imageUrl = announcement.video?.poster ?? announcement.backgroundImage;
+    final imageUrl =
+        announcement.video?.poster ?? announcement.backgroundImageUrl;
 
     return ClipRRect(
       borderRadius: const BorderRadius.all(Radius.circular(AppRadius.sm)),
@@ -184,7 +192,12 @@ class _Thumbnail extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             DecoratedBox(
-              decoration: BoxDecoration(gradient: statusGradient(base)),
+              decoration: BoxDecoration(
+                gradient: StatusBackground.gradientFor(
+                  announcement.id,
+                  announcement.backdrop,
+                ),
+              ),
             ),
             // Repli obligatoire : hors-ligne comme en test (le réseau renvoie
             // 400), l'échec doit retomber sur le dégradé sans bruit.
@@ -199,7 +212,10 @@ class _Thumbnail extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 20,
-                  color: statusForegroundOn(base),
+                  color: StatusBackground.foregroundFor(
+                    announcement.id,
+                    backdrop: announcement.backdrop,
+                  ),
                 ),
               ),
           ],
