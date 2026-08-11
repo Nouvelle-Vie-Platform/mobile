@@ -4,20 +4,11 @@ import 'package:maison_du_miracle/theme/app_colors.dart';
 import 'package:maison_du_miracle/theme/status_palette.dart';
 
 void main() {
-  group('statusPalette', () {
-    test('est une palette fermée de 4 à 6 teintes distinctes', () {
-      expect(statusPalette.length, inInclusiveRange(4, 6));
-      expect(statusPalette.toSet().length, statusPalette.length);
-    });
-
-    test('ne contient que des teintes issues d\'AppColors', () {
-      expect(statusPalette, contains(AppColors.primary));
-      expect(statusPalette, contains(AppColors.secondary));
-      expect(statusPalette, contains(AppColors.accent));
-      expect(statusPalette, contains(AppColors.gradientPrimary.colors.last));
-      expect(statusPalette, contains(AppColors.gradientAppDark.colors.first));
-    });
-  });
+  // `statusPalette` a disparu avec la refonte des annonces (#35) : l'habillage
+  // d'un statut est **servi** par le référentiel `status_backgrounds`, et une
+  // palette codée en dur est une décision figée à la livraison. Ce qui reste
+  // ici ne sert qu'au repli — aucun fond choisi, ou fond pas encore
+  // synchronisé — et c'est ce que vérifient les tests ci-dessous.
 
   group('statusBaseColor', () {
     test('est déterministe : même id ⇒ même couleur', () {
@@ -26,32 +17,31 @@ void main() {
       }
     });
 
-    test('reste dans la palette fermée', () {
-      for (var i = 0; i < 60; i++) {
-        expect(statusPalette, contains(statusBaseColor('ann-$i')));
-      }
-    });
-
-    test('répartit les ids sur toute la palette', () {
+    test('reste dans un jeu fermé de 4 à 6 teintes distinctes', () {
       final seen = <Color>{
         for (var i = 0; i < 200; i++) statusBaseColor('ann-$i'),
       };
-      expect(seen.length, statusPalette.length);
+      expect(seen.length, inInclusiveRange(4, 6));
     });
 
-    test('la couleur du back gagne sur la palette', () {
-      const custom = 0xFF123456;
-      expect(statusBaseColor('ann-1', backgroundColor: custom),
-          const Color(custom));
-      // Et cela quel que soit l'id.
+    test('ne puise que dans les teintes de la charte', () {
+      final seen = <Color>{
+        for (var i = 0; i < 200; i++) statusBaseColor('ann-$i'),
+      };
       expect(
-        statusBaseColor('autre', backgroundColor: custom),
-        statusBaseColor('ann-1', backgroundColor: custom),
+        seen,
+        everyElement(isIn(<Color>[
+          AppColors.primary,
+          AppColors.secondary,
+          AppColors.accent,
+          AppColors.gradientPrimary.colors.last,
+          AppColors.gradientAppDark.colors.first,
+        ])),
       );
     });
 
     test('accepte un id vide sans lever', () {
-      expect(statusPalette, contains(statusBaseColor('')));
+      expect(statusBaseColor(''), isA<Color>());
     });
   });
 
@@ -99,8 +89,11 @@ void main() {
       );
     });
 
-    test('chaque teinte de la palette obtient un contraste ≥ 4.5:1', () {
-      for (final base in statusPalette) {
+    test('chaque teinte de repli obtient un contraste ≥ 4.5:1', () {
+      final tints = <Color>{
+        for (var i = 0; i < 200; i++) statusBaseColor('ann-$i'),
+      };
+      for (final base in tints) {
         final ratio = _contrast(base, statusForegroundOn(base));
         expect(
           ratio,

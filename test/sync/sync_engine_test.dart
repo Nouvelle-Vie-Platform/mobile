@@ -146,10 +146,14 @@ void main() {
         [
           'teaching_types',
           'gathering_types',
+          'status_backgrounds',
+          'official_accounts',
+          'official_account_memberships',
           'contributors',
           'branches',
           'teachings',
           'gatherings',
+          'announcements',
         ],
         reason: 'ça ne supprime pas la fenêtre où un enseignement arrive sans '
             'son intervenant — la jointure de lecture reste tolérante pour '
@@ -173,7 +177,70 @@ void main() {
       expect(keys.indexOf('contributors'), lessThan(keys.indexOf('teachings')));
       expect(
           keys.indexOf('contributors'), lessThan(keys.indexOf('gatherings')));
+      // Les annonces obéissent à la même règle : une annonce dont le compte
+      // manque s'affiche quand même — la jointure est tolérante —, mais elle
+      // s'affiche **sans en-tête**, ce qu'un fidèle lit comme une donnée perdue.
+      expect(
+        keys.indexOf('official_accounts'),
+        lessThan(keys.indexOf('announcements')),
+      );
+      expect(
+        keys.indexOf('status_backgrounds'),
+        lessThan(keys.indexOf('announcements')),
+      );
     });
+
+    test(
+      'un cycle complet peuple les annonces et leurs deux référentiels',
+      () async {
+        server
+          ..serveManifest(manifestFromZero())
+          ..serveCollection('status_backgrounds', statusBackgroundsPage())
+          ..serveCollection('official_accounts', officialAccountsPage())
+          ..serveCollection('official_account_memberships', membershipsPage())
+          ..serveCollection('announcements', mixedAnnouncementsPage());
+
+        await engineOver([
+          'status_backgrounds',
+          'official_accounts',
+          'official_account_memberships',
+          'announcements',
+        ], limit: 200)
+            .synchronize();
+
+        expect(
+          (await db.select(db.announcements).get()).map((r) => r.id),
+          const [
+            '019f5a00-0000-7000-8000-000000000001',
+            '019f5a00-0000-7000-8000-000000000002',
+          ],
+        );
+        // La rétractation a été triée avant toute construction : rien n'en est
+        // resté, pas même un titre.
+        expect(
+          (await db.select(db.announcements).get()).map((r) => r.id),
+          isNot(contains('019f5a00-0000-7000-8000-000000000009')),
+        );
+
+        // Le fond retiré du catalogue est stocké quand même : `isActive` est
+        // une donnée, pas un filtre — les annonces qui le portent gardent leur
+        // habillage.
+        final backgrounds = await db.select(db.statusBackgrounds).get();
+        expect(backgrounds, hasLength(3));
+        expect(backgrounds.firstWhere((b) => b.id == 3).isActive, isFalse);
+        // Les arrêts du dégradé arrivent **dérivés**, et sont stockés bruts.
+        final brand = backgrounds.firstWhere((b) => b.id == 1);
+        expect(brand.topColor, '#2E4CAE');
+        expect(brand.bottomColor, '#16265C');
+        expect(brand.ink, 'light');
+
+        expect(await db.select(db.officialAccounts).get(), hasLength(2));
+        expect(
+          await db.select(db.officialAccountMemberships).get(),
+          hasLength(1),
+        );
+      },
+    );
 
     test(
       'un cycle complet remplit les deux familles sans jamais les mélanger',

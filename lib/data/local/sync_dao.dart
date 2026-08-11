@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
 import 'app_database.dart';
+import 'tables/announcement_tables.dart';
 import 'tables/gathering_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/sync_tables.dart';
@@ -27,6 +28,24 @@ abstract final class SyncCollectionKey {
   /// collection neuve est ignorée par un client qui ne la demande pas, là où une
   /// collection élargie contamine ceux qui ne savent pas la lire.
   static const String gatherings = 'gatherings';
+
+  /// Le **référentiel des fonds de statut** : trois arrêts de dégradé et une
+  /// encre, dérivés par le serveur à l'écriture (ADR-0030). Le client peint, il
+  /// ne recalcule pas.
+  static const String statusBackgrounds = 'status_backgrounds';
+
+  /// Les **comptes officiels d'église** sous lesquels une annonce est publiée.
+  /// C'est là que se joint l'en-tête d'un statut, jamais dans l'annonce.
+  static const String officialAccounts = 'official_accounts';
+
+  /// **Mes** appartenances aux comptes officiels — la collection est scoppée sur
+  /// l'acteur, elle ne contient rien d'autre. Un confort d'affichage, jamais une
+  /// autorisation : le serveur revérifie à chaque écriture.
+  static const String officialAccountMemberships =
+      'official_account_memberships';
+
+  /// Les **annonces** de l'onglet Annonces (les « statuts »).
+  static const String announcements = 'announcements';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -71,6 +90,10 @@ const String _kSyncStampColumn = 'sync_stamp';
     Teachings,
     GatheringTypes,
     Gatherings,
+    StatusBackgrounds,
+    OfficialAccounts,
+    OfficialAccountMemberships,
+    Announcements,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -102,6 +125,21 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
 
   LocalCollection<GatheringRow> get gatheringsCollection =>
       LocalCollection._(SyncCollectionKey.gatherings, gatherings);
+
+  LocalCollection<StatusBackgroundRow> get statusBackgroundsCollection =>
+      LocalCollection._(SyncCollectionKey.statusBackgrounds, statusBackgrounds);
+
+  LocalCollection<OfficialAccountRow> get officialAccountsCollection =>
+      LocalCollection._(SyncCollectionKey.officialAccounts, officialAccounts);
+
+  LocalCollection<OfficialAccountMembershipRow>
+      get officialAccountMembershipsCollection => LocalCollection._(
+            SyncCollectionKey.officialAccountMemberships,
+            officialAccountMemberships,
+          );
+
+  LocalCollection<AnnouncementRow> get announcementsCollection =>
+      LocalCollection._(SyncCollectionKey.announcements, announcements);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Application d'une page

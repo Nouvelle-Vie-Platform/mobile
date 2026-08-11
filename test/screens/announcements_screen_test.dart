@@ -1,72 +1,91 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/players/status_player.dart';
-import 'package:maison_du_miracle/data/repositories/church_repository.dart';
-import 'package:maison_du_miracle/models/models.dart';
+import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
+import 'package:maison_du_miracle/models/announcement_view.dart';
 import 'package:maison_du_miracle/screens/announcements_screen.dart';
+import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
-import 'package:maison_du_miracle/state/repository_providers.dart';
+import 'package:maison_du_miracle/widgets/app_error_state.dart';
 import 'package:maison_du_miracle/widgets/status/status_background.dart';
 import 'package:maison_du_miracle/widgets/status/status_waveform.dart';
 
 import '../helpers/pump_screen.dart';
 
 /// Repository de test : la liste de statuts est fournie par le test lui-même.
-class _FakeRepository implements ChurchRepository {
-  _FakeRepository(this._announcements);
+///
+/// Il rend un `Stream` comme le vrai — le magasin réécrit sous les pieds de
+/// l'écran — et sait échouer, pour que l'état d'erreur soit exercé et non
+/// supposé.
+class _FakeRepository implements AnnouncementRepository {
+  _FakeRepository(this._announcements, {this.member = false});
 
-  final List<Announcement> _announcements;
+  _FakeRepository.failing()
+      : _announcements = null,
+        member = false;
 
-  @override
-  List<Announcement> announcements() => _announcements;
-
-  @override
-  List<CommunityGroup> groups() => const [];
-
-  @override
-  List<PrayerRequest> prayers() => const [];
-
-  @override
-  List<SpiritualNote> notes() => const [];
+  final List<AnnouncementView>? _announcements;
+  final bool member;
 
   @override
-  List<ChatMessage> chatFor(CommunityGroup group) => const [];
+  Stream<List<AnnouncementView>> announcements() {
+    final values = _announcements;
+    if (values == null) return Stream.error(StateError('magasin illisible'));
+    return Stream.value(values);
+  }
+
+  @override
+  Stream<bool> canCompose() => Stream.value(member);
 }
 
 /// Monte la visionneuse avec un lecteur **inerte** : sans minuterie, l'écran
 /// reste déterministe et aucun timer ne survit au démontage.
 Future<void> pumpViewer(
   WidgetTester tester,
-  List<Announcement> statuses,
+  List<AnnouncementView> statuses,
 ) {
   return pumpScreen(
     tester,
     const Scaffold(body: AnnouncementsScreen()),
+    announcements: _FakeRepository(statuses),
     overrides: [
-      churchRepositoryProvider.overrideWithValue(_FakeRepository(statuses)),
       statusPlayerProvider.overrideWithValue(InertStatusPlayer()),
     ],
   );
 }
 
-Announcement _status({
+/// Un fond **servi**, tel que le référentiel `status_backgrounds` le rend.
+const _backdrop = StatusBackdrop(
+  baseColor: 0xFF223B8C,
+  topColor: 0xFF2E4CAE,
+  bottomColor: 0xFF16265C,
+  ink: StatusInk.light,
+);
+
+AnnouncementView _status({
   required String id,
   String? title,
   String? body,
   StatusAudio? audio,
-  String? backgroundImage,
-  int? backgroundColor,
+  String? backgroundImageUrl,
+  StatusBackdrop? backdrop,
+  String? accountName = 'Diaconat',
+  DateTime? expiresAt,
+  bool isPinned = false,
   Duration age = const Duration(hours: 2),
 }) {
-  return Announcement(
+  return AnnouncementView.resolve(
     id: id,
     publishedAt: DateTime.now().toUtc().subtract(age),
     title: title,
     body: body,
-    author: 'Pasteur Samuel',
+    accountName: accountName,
     audio: audio,
-    backgroundImage: backgroundImage,
-    backgroundColor: backgroundColor,
+    backgroundImageUrl: backgroundImageUrl,
+    backdrop: backdrop,
+    expiresAt: expiresAt,
+    isPinned: isPinned,
   );
 }
 
@@ -82,10 +101,31 @@ void main() {
 
       expect(find.byType(AnnouncementsScreen), findsOneWidget);
       expect(find.text('Convention annuelle'), findsOneWidget);
-      expect(find.text('Pasteur Samuel'), findsOneWidget);
+      // L'en-tête porte le **compte officiel**, joint, jamais une chaîne
+      // d'auteur recopiée dans l'annonce.
+      expect(find.text('Diaconat'), findsOneWidget);
       // Horodatage relatif localisé, jamais une chaîne venue du back.
       expect(find.textContaining('Il y a 2 heures'), findsOneWidget);
     });
+
+    testWidgets(
+      'un compte absent du magasin n\'invente pas d\'en-tête',
+      (tester) async {
+        // La jointure est tolérante : le statut s'affiche, sa ligne d'en-tête
+        // non. Jamais de « Compte inconnu » — ça ressemble à une donnée et
+        // serait pris pour une erreur de saisie.
+        await pumpViewer(tester, [
+          _status(
+              id: 'orphelin',
+              body: 'Le culte débute à 14h30.',
+              accountName: null),
+        ]);
+
+        expect(find.text('Le culte débute à 14h30.'), findsOneWidget);
+        expect(find.textContaining('inconnu'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('sans annonce, affiche l’état vide', (tester) async {
       await pumpViewer(tester, const []);
@@ -93,6 +133,25 @@ void main() {
       expect(find.text('Aucune annonce'), findsOneWidget);
       expect(find.byType(StatusWaveform), findsNothing);
     });
+
+    testWidgets(
+      'une lecture de magasin en échec se lit comme une panne, pas comme un vide',
+      (tester) async {
+        // La distinction n'est pas cosmétique : un mur vide faute de base
+        // lisible ne doit pas se lire « l'église n'a rien annoncé ».
+        await pumpScreen(
+          tester,
+          const Scaffold(body: AnnouncementsScreen()),
+          announcements: _FakeRepository.failing(),
+          overrides: [
+            statusPlayerProvider.overrideWithValue(InertStatusPlayer()),
+          ],
+        );
+
+        expect(find.byType(AppErrorState), findsOneWidget);
+        expect(find.text('Aucune annonce'), findsNothing);
+      },
+    );
 
     testWidgets(
       'un statut vocal + texte affiche le texte ET la waveform',
@@ -127,13 +186,42 @@ void main() {
     );
 
     testWidgets(
-      'sans couleur ni image, le fond retombe sur la palette dérivée de l’id',
+      'sans fond servi, le rendu retombe sur la teinte dérivée de l’id',
       (tester) async {
         await pumpViewer(
             tester, [_status(id: 'sans-habillage', body: 'Paix.')]);
 
         expect(find.byType(StatusBackground), findsOneWidget);
         expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'un fond servi est peint tel quel, sans recalcul',
+      (tester) async {
+        await pumpViewer(tester, [
+          _status(id: 'habille', body: 'Veillée.', backdrop: _backdrop),
+        ]);
+
+        final decorated = tester
+            .widgetList<DecoratedBox>(
+              find.descendant(
+                of: find.byType(StatusBackground),
+                matching: find.byType(DecoratedBox),
+              ),
+            )
+            .map((box) => box.decoration)
+            .whereType<BoxDecoration>()
+            .toList();
+
+        expect(
+          decorated.first.gradient,
+          isA<LinearGradient>().having(
+            (g) => g.colors,
+            'les trois arrêts servis',
+            const [Color(0xFF2E4CAE), Color(0xFF223B8C), Color(0xFF16265C)],
+          ),
+        );
       },
     );
 
@@ -185,7 +273,7 @@ void main() {
           _status(
             id: 'image',
             body: 'Affiche de la convention.',
-            backgroundImage: 'https://example.org/affiche.jpg',
+            backgroundImageUrl: 'https://example.org/affiche.jpg',
           ),
         ]);
         await tester.pump(const Duration(seconds: 1));
@@ -195,4 +283,125 @@ void main() {
       },
     );
   });
+
+  group('Le cycle de vie du mur — ce que le serveur ne fait pas', () {
+    test('une annonce expirée ne sort pas du provider', () async {
+      // Le serveur sert `expiresAt` brut et ne retire **jamais** une annonce
+      // expirée du flux delta : un statut « valable jusqu'à ce soir » doit
+      // disparaître à la seconde, y compris hors-ligne.
+      final container = _container([
+        _status(id: 'vivante', body: 'Encore valable'),
+        _status(
+          id: 'perimee',
+          body: 'Plus valable',
+          expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+        ),
+      ]);
+
+      final visible = await _resolve(container, announcementsProvider);
+
+      expect(visible.map((a) => a.id), ['vivante']);
+    });
+
+    test('une expiration à venir reste affichée', () async {
+      final container = _container([
+        _status(
+          id: 'jusqu-a-ce-soir',
+          body: 'Collecte en cours',
+          expiresAt: DateTime.now().toUtc().add(const Duration(hours: 3)),
+        ),
+      ]);
+
+      expect(
+        (await _resolve(container, announcementsProvider)).map((a) => a.id),
+        ['jusqu-a-ce-soir'],
+      );
+    });
+
+    test('épinglés d\'abord, puis la date, puis l\'id en départage', () async {
+      // `List.sort` n'est pas stable en Dart : sans le départage par
+      // identifiant, deux statuts publiés à la même seconde changeraient
+      // d'ordre d'un `build` à l'autre, et le pager sauterait sous le doigt.
+      const sameAge = Duration(hours: 5);
+      final container = _container([
+        _status(id: 'c', body: 'Troisième', age: const Duration(days: 2)),
+        _status(id: 'b', body: 'Deuxième', age: sameAge),
+        _status(id: 'a', body: 'Premier', age: sameAge),
+        _status(
+          id: 'z',
+          body: 'Épinglé',
+          age: const Duration(days: 9),
+          isPinned: true,
+        ),
+      ]);
+
+      expect(
+        (await _resolve(container, announcementsProvider)).map((a) => a.id),
+        ['z', 'a', 'b', 'c'],
+      );
+    });
+
+    test('un statut programmé n\'est pas re-filtré par le client', () async {
+      // Le serveur ne sert au mobile ni brouillon ni annonce programmée : tout
+      // ce qui arrive est publiable. Re-tester la visibilité ici reviendrait à
+      // réimplémenter une règle serveur avec l'horloge de l'appareil pour
+      // arbitre — et un téléphone en avance ferait disparaître une annonce.
+      final container = _container([
+        AnnouncementView.resolve(
+          id: 'demain',
+          publishedAt: DateTime.now().toUtc().add(const Duration(hours: 2)),
+          body: 'Servie par le serveur, donc publiable.',
+        ),
+      ]);
+
+      expect(
+        (await _resolve(container, announcementsProvider)),
+        hasLength(1),
+      );
+    });
+  });
+
+  group('L\'affordance d\'écriture', () {
+    test('absente pour qui n\'appartient à aucun compte officiel', () async {
+      final container = _container(const [], member: false);
+
+      expect(
+        await _resolve(container, canComposeAnnouncementProvider),
+        isFalse,
+      );
+    });
+
+    test('présente dès une appartenance — un confort, pas un droit', () async {
+      // Le serveur revérifie à chaque écriture : un membre retiré du bureau
+      // dont le téléphone n'a pas synchronisé verra encore le bouton et
+      // recevra un 403.
+      final container = _container(const [], member: true);
+
+      expect(
+        await _resolve(container, canComposeAnnouncementProvider),
+        isTrue,
+      );
+    });
+  });
+}
+
+/// Résout un provider **en gardant un abonnement ouvert**.
+///
+/// Sans lui, Riverpod dispose l'élément aussitôt lu — les providers sont
+/// `autoDispose` par défaut — et la lecture n'aboutit jamais.
+Future<T> _resolve<T>(ProviderContainer container, StreamProvider<T> provider) {
+  container.listen(provider, (_, __) {});
+  return container.read(provider.future);
+}
+
+ProviderContainer _container(
+  List<AnnouncementView> statuses, {
+  bool member = false,
+}) {
+  return ProviderContainer.test(
+    overrides: [
+      announcementRepositoryProvider
+          .overrideWithValue(_FakeRepository(statuses, member: member)),
+    ],
+  );
 }

@@ -4573,6 +4573,2155 @@ class GatheringsCompanion extends UpdateCompanion<GatheringRow> {
   }
 }
 
+class $StatusBackgroundsTable extends StatusBackgrounds
+    with TableInfo<$StatusBackgroundsTable, StatusBackgroundRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StatusBackgroundsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+      'label', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _baseColorMeta =
+      const VerificationMeta('baseColor');
+  @override
+  late final GeneratedColumn<String> baseColor = GeneratedColumn<String>(
+      'base_color', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _topColorMeta =
+      const VerificationMeta('topColor');
+  @override
+  late final GeneratedColumn<String> topColor = GeneratedColumn<String>(
+      'top_color', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _bottomColorMeta =
+      const VerificationMeta('bottomColor');
+  @override
+  late final GeneratedColumn<String> bottomColor = GeneratedColumn<String>(
+      'bottom_color', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _inkMeta = const VerificationMeta('ink');
+  @override
+  late final GeneratedColumn<String> ink = GeneratedColumn<String>(
+      'ink', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _positionMeta =
+      const VerificationMeta('position');
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+      'position', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        label,
+        baseColor,
+        topColor,
+        bottomColor,
+        ink,
+        position,
+        isActive,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'status_backgrounds';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<StatusBackgroundRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+          _labelMeta, label.isAcceptableOrUnknown(data['label']!, _labelMeta));
+    } else if (isInserting) {
+      context.missing(_labelMeta);
+    }
+    if (data.containsKey('base_color')) {
+      context.handle(_baseColorMeta,
+          baseColor.isAcceptableOrUnknown(data['base_color']!, _baseColorMeta));
+    } else if (isInserting) {
+      context.missing(_baseColorMeta);
+    }
+    if (data.containsKey('top_color')) {
+      context.handle(_topColorMeta,
+          topColor.isAcceptableOrUnknown(data['top_color']!, _topColorMeta));
+    } else if (isInserting) {
+      context.missing(_topColorMeta);
+    }
+    if (data.containsKey('bottom_color')) {
+      context.handle(
+          _bottomColorMeta,
+          bottomColor.isAcceptableOrUnknown(
+              data['bottom_color']!, _bottomColorMeta));
+    } else if (isInserting) {
+      context.missing(_bottomColorMeta);
+    }
+    if (data.containsKey('ink')) {
+      context.handle(
+          _inkMeta, ink.isAcceptableOrUnknown(data['ink']!, _inkMeta));
+    } else if (isInserting) {
+      context.missing(_inkMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(_positionMeta,
+          position.isAcceptableOrUnknown(data['position']!, _positionMeta));
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StatusBackgroundRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StatusBackgroundRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      label: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label'])!,
+      baseColor: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}base_color'])!,
+      topColor: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}top_color'])!,
+      bottomColor: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}bottom_color'])!,
+      ink: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}ink'])!,
+      position: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position'])!,
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $StatusBackgroundsTable createAlias(String alias) {
+    return $StatusBackgroundsTable(attachedDatabase, alias);
+  }
+}
+
+class StatusBackgroundRow extends DataClass
+    implements Insertable<StatusBackgroundRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final int id;
+
+  /// Libellé **monolingue** du fond, tel que l'administrateur l'a nommé. Ce
+  /// n'est pas un texte d'interface : il ne sert qu'au sélecteur de composition.
+  final String label;
+
+  /// Teinte de référence du fond (`#RRGGBB`).
+  final String baseColor;
+
+  /// Arrêt **haut** du dégradé, dérivé par le serveur à l'écriture.
+  final String topColor;
+
+  /// Arrêt **bas** du dégradé, dérivé par le serveur à l'écriture.
+  final String bottomColor;
+
+  /// `light` | `dark` — l'encre lisible sur ce fond. Stocké **tel quel**,
+  /// jamais en enum côté magasin : une valeur inconnue se replie à l'affichage
+  /// plutôt que de faire échouer l'application d'une page entière.
+  final String ink;
+  final int position;
+
+  /// `false` = le fond n'est plus proposé à la composition. Les annonces qui le
+  /// portent gardent leur habillage.
+  final bool isActive;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const StatusBackgroundRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.label,
+      required this.baseColor,
+      required this.topColor,
+      required this.bottomColor,
+      required this.ink,
+      required this.position,
+      required this.isActive,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['label'] = Variable<String>(label);
+    map['base_color'] = Variable<String>(baseColor);
+    map['top_color'] = Variable<String>(topColor);
+    map['bottom_color'] = Variable<String>(bottomColor);
+    map['ink'] = Variable<String>(ink);
+    map['position'] = Variable<int>(position);
+    map['is_active'] = Variable<bool>(isActive);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  StatusBackgroundsCompanion toCompanion(bool nullToAbsent) {
+    return StatusBackgroundsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      label: Value(label),
+      baseColor: Value(baseColor),
+      topColor: Value(topColor),
+      bottomColor: Value(bottomColor),
+      ink: Value(ink),
+      position: Value(position),
+      isActive: Value(isActive),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory StatusBackgroundRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StatusBackgroundRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      label: serializer.fromJson<String>(json['label']),
+      baseColor: serializer.fromJson<String>(json['baseColor']),
+      topColor: serializer.fromJson<String>(json['topColor']),
+      bottomColor: serializer.fromJson<String>(json['bottomColor']),
+      ink: serializer.fromJson<String>(json['ink']),
+      position: serializer.fromJson<int>(json['position']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'label': serializer.toJson<String>(label),
+      'baseColor': serializer.toJson<String>(baseColor),
+      'topColor': serializer.toJson<String>(topColor),
+      'bottomColor': serializer.toJson<String>(bottomColor),
+      'ink': serializer.toJson<String>(ink),
+      'position': serializer.toJson<int>(position),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  StatusBackgroundRow copyWith(
+          {int? syncStamp,
+          int? id,
+          String? label,
+          String? baseColor,
+          String? topColor,
+          String? bottomColor,
+          String? ink,
+          int? position,
+          bool? isActive,
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      StatusBackgroundRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        label: label ?? this.label,
+        baseColor: baseColor ?? this.baseColor,
+        topColor: topColor ?? this.topColor,
+        bottomColor: bottomColor ?? this.bottomColor,
+        ink: ink ?? this.ink,
+        position: position ?? this.position,
+        isActive: isActive ?? this.isActive,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  StatusBackgroundRow copyWithCompanion(StatusBackgroundsCompanion data) {
+    return StatusBackgroundRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      label: data.label.present ? data.label.value : this.label,
+      baseColor: data.baseColor.present ? data.baseColor.value : this.baseColor,
+      topColor: data.topColor.present ? data.topColor.value : this.topColor,
+      bottomColor:
+          data.bottomColor.present ? data.bottomColor.value : this.bottomColor,
+      ink: data.ink.present ? data.ink.value : this.ink,
+      position: data.position.present ? data.position.value : this.position,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StatusBackgroundRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('label: $label, ')
+          ..write('baseColor: $baseColor, ')
+          ..write('topColor: $topColor, ')
+          ..write('bottomColor: $bottomColor, ')
+          ..write('ink: $ink, ')
+          ..write('position: $position, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, label, baseColor, topColor,
+      bottomColor, ink, position, isActive, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StatusBackgroundRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.label == this.label &&
+          other.baseColor == this.baseColor &&
+          other.topColor == this.topColor &&
+          other.bottomColor == this.bottomColor &&
+          other.ink == this.ink &&
+          other.position == this.position &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class StatusBackgroundsCompanion extends UpdateCompanion<StatusBackgroundRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String> label;
+  final Value<String> baseColor;
+  final Value<String> topColor;
+  final Value<String> bottomColor;
+  final Value<String> ink;
+  final Value<int> position;
+  final Value<bool> isActive;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const StatusBackgroundsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.label = const Value.absent(),
+    this.baseColor = const Value.absent(),
+    this.topColor = const Value.absent(),
+    this.bottomColor = const Value.absent(),
+    this.ink = const Value.absent(),
+    this.position = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  StatusBackgroundsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required String label,
+    required String baseColor,
+    required String topColor,
+    required String bottomColor,
+    required String ink,
+    this.position = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : label = Value(label),
+        baseColor = Value(baseColor),
+        topColor = Value(topColor),
+        bottomColor = Value(bottomColor),
+        ink = Value(ink);
+  static Insertable<StatusBackgroundRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? label,
+    Expression<String>? baseColor,
+    Expression<String>? topColor,
+    Expression<String>? bottomColor,
+    Expression<String>? ink,
+    Expression<int>? position,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (label != null) 'label': label,
+      if (baseColor != null) 'base_color': baseColor,
+      if (topColor != null) 'top_color': topColor,
+      if (bottomColor != null) 'bottom_color': bottomColor,
+      if (ink != null) 'ink': ink,
+      if (position != null) 'position': position,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  StatusBackgroundsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String>? label,
+      Value<String>? baseColor,
+      Value<String>? topColor,
+      Value<String>? bottomColor,
+      Value<String>? ink,
+      Value<int>? position,
+      Value<bool>? isActive,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return StatusBackgroundsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      label: label ?? this.label,
+      baseColor: baseColor ?? this.baseColor,
+      topColor: topColor ?? this.topColor,
+      bottomColor: bottomColor ?? this.bottomColor,
+      ink: ink ?? this.ink,
+      position: position ?? this.position,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (baseColor.present) {
+      map['base_color'] = Variable<String>(baseColor.value);
+    }
+    if (topColor.present) {
+      map['top_color'] = Variable<String>(topColor.value);
+    }
+    if (bottomColor.present) {
+      map['bottom_color'] = Variable<String>(bottomColor.value);
+    }
+    if (ink.present) {
+      map['ink'] = Variable<String>(ink.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StatusBackgroundsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('label: $label, ')
+          ..write('baseColor: $baseColor, ')
+          ..write('topColor: $topColor, ')
+          ..write('bottomColor: $bottomColor, ')
+          ..write('ink: $ink, ')
+          ..write('position: $position, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $OfficialAccountsTable extends OfficialAccounts
+    with TableInfo<$OfficialAccountsTable, OfficialAccountRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OfficialAccountsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _shortNameMeta =
+      const VerificationMeta('shortName');
+  @override
+  late final GeneratedColumn<String> shortName = GeneratedColumn<String>(
+      'short_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _branchIdMeta =
+      const VerificationMeta('branchId');
+  @override
+  late final GeneratedColumn<int> branchId = GeneratedColumn<int>(
+      'branch_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _avatarUrlMeta =
+      const VerificationMeta('avatarUrl');
+  @override
+  late final GeneratedColumn<String> avatarUrl = GeneratedColumn<String>(
+      'avatar_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _backgroundIdMeta =
+      const VerificationMeta('backgroundId');
+  @override
+  late final GeneratedColumn<int> backgroundId = GeneratedColumn<int>(
+      'background_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        name,
+        shortName,
+        branchId,
+        avatarUrl,
+        backgroundId,
+        isActive,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'official_accounts';
+  @override
+  VerificationContext validateIntegrity(Insertable<OfficialAccountRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('short_name')) {
+      context.handle(_shortNameMeta,
+          shortName.isAcceptableOrUnknown(data['short_name']!, _shortNameMeta));
+    }
+    if (data.containsKey('branch_id')) {
+      context.handle(_branchIdMeta,
+          branchId.isAcceptableOrUnknown(data['branch_id']!, _branchIdMeta));
+    }
+    if (data.containsKey('avatar_url')) {
+      context.handle(_avatarUrlMeta,
+          avatarUrl.isAcceptableOrUnknown(data['avatar_url']!, _avatarUrlMeta));
+    }
+    if (data.containsKey('background_id')) {
+      context.handle(
+          _backgroundIdMeta,
+          backgroundId.isAcceptableOrUnknown(
+              data['background_id']!, _backgroundIdMeta));
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OfficialAccountRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OfficialAccountRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      shortName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}short_name']),
+      branchId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}branch_id']),
+      avatarUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}avatar_url']),
+      backgroundId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}background_id']),
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $OfficialAccountsTable createAlias(String alias) {
+    return $OfficialAccountsTable(attachedDatabase, alias);
+  }
+}
+
+class OfficialAccountRow extends DataClass
+    implements Insertable<OfficialAccountRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final int id;
+  final String name;
+
+  /// Nom court, préféré à [name] dans l'en-tête quand il existe : « Diaconat »
+  /// plutôt que « Diaconat de la Maison du Miracle — Bè Kpota », sur une ligne
+  /// où l'ellipse guette.
+  final String? shortName;
+
+  /// Branche du compte ; `null` = portée **nationale**, jamais « inconnue ».
+  final int? branchId;
+
+  /// URL **relative** de l'avatar : l'hôte de l'API change d'un environnement à
+  /// l'autre, la résolution appartient au client (`utils/media_url.dart`).
+  final String? avatarUrl;
+
+  /// Fond par défaut du compte — **entier nu, sans clé étrangère** vers
+  /// `status_backgrounds`. Il n'habille aucune annonce : c'est la valeur que le
+  /// composeur propose. Une annonce porte toujours le sien.
+  final int? backgroundId;
+  final bool isActive;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const OfficialAccountRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.name,
+      this.shortName,
+      this.branchId,
+      this.avatarUrl,
+      this.backgroundId,
+      required this.isActive,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || shortName != null) {
+      map['short_name'] = Variable<String>(shortName);
+    }
+    if (!nullToAbsent || branchId != null) {
+      map['branch_id'] = Variable<int>(branchId);
+    }
+    if (!nullToAbsent || avatarUrl != null) {
+      map['avatar_url'] = Variable<String>(avatarUrl);
+    }
+    if (!nullToAbsent || backgroundId != null) {
+      map['background_id'] = Variable<int>(backgroundId);
+    }
+    map['is_active'] = Variable<bool>(isActive);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  OfficialAccountsCompanion toCompanion(bool nullToAbsent) {
+    return OfficialAccountsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      name: Value(name),
+      shortName: shortName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shortName),
+      branchId: branchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(branchId),
+      avatarUrl: avatarUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avatarUrl),
+      backgroundId: backgroundId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(backgroundId),
+      isActive: Value(isActive),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory OfficialAccountRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OfficialAccountRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      shortName: serializer.fromJson<String?>(json['shortName']),
+      branchId: serializer.fromJson<int?>(json['branchId']),
+      avatarUrl: serializer.fromJson<String?>(json['avatarUrl']),
+      backgroundId: serializer.fromJson<int?>(json['backgroundId']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'shortName': serializer.toJson<String?>(shortName),
+      'branchId': serializer.toJson<int?>(branchId),
+      'avatarUrl': serializer.toJson<String?>(avatarUrl),
+      'backgroundId': serializer.toJson<int?>(backgroundId),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  OfficialAccountRow copyWith(
+          {int? syncStamp,
+          int? id,
+          String? name,
+          Value<String?> shortName = const Value.absent(),
+          Value<int?> branchId = const Value.absent(),
+          Value<String?> avatarUrl = const Value.absent(),
+          Value<int?> backgroundId = const Value.absent(),
+          bool? isActive,
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      OfficialAccountRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        name: name ?? this.name,
+        shortName: shortName.present ? shortName.value : this.shortName,
+        branchId: branchId.present ? branchId.value : this.branchId,
+        avatarUrl: avatarUrl.present ? avatarUrl.value : this.avatarUrl,
+        backgroundId:
+            backgroundId.present ? backgroundId.value : this.backgroundId,
+        isActive: isActive ?? this.isActive,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  OfficialAccountRow copyWithCompanion(OfficialAccountsCompanion data) {
+    return OfficialAccountRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      shortName: data.shortName.present ? data.shortName.value : this.shortName,
+      branchId: data.branchId.present ? data.branchId.value : this.branchId,
+      avatarUrl: data.avatarUrl.present ? data.avatarUrl.value : this.avatarUrl,
+      backgroundId: data.backgroundId.present
+          ? data.backgroundId.value
+          : this.backgroundId,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OfficialAccountRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('shortName: $shortName, ')
+          ..write('branchId: $branchId, ')
+          ..write('avatarUrl: $avatarUrl, ')
+          ..write('backgroundId: $backgroundId, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, name, shortName, branchId,
+      avatarUrl, backgroundId, isActive, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OfficialAccountRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.shortName == this.shortName &&
+          other.branchId == this.branchId &&
+          other.avatarUrl == this.avatarUrl &&
+          other.backgroundId == this.backgroundId &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class OfficialAccountsCompanion extends UpdateCompanion<OfficialAccountRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String?> shortName;
+  final Value<int?> branchId;
+  final Value<String?> avatarUrl;
+  final Value<int?> backgroundId;
+  final Value<bool> isActive;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const OfficialAccountsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.shortName = const Value.absent(),
+    this.branchId = const Value.absent(),
+    this.avatarUrl = const Value.absent(),
+    this.backgroundId = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  OfficialAccountsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required String name,
+    this.shortName = const Value.absent(),
+    this.branchId = const Value.absent(),
+    this.avatarUrl = const Value.absent(),
+    this.backgroundId = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<OfficialAccountRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? shortName,
+    Expression<int>? branchId,
+    Expression<String>? avatarUrl,
+    Expression<int>? backgroundId,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (shortName != null) 'short_name': shortName,
+      if (branchId != null) 'branch_id': branchId,
+      if (avatarUrl != null) 'avatar_url': avatarUrl,
+      if (backgroundId != null) 'background_id': backgroundId,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  OfficialAccountsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String>? name,
+      Value<String?>? shortName,
+      Value<int?>? branchId,
+      Value<String?>? avatarUrl,
+      Value<int?>? backgroundId,
+      Value<bool>? isActive,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return OfficialAccountsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      shortName: shortName ?? this.shortName,
+      branchId: branchId ?? this.branchId,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      backgroundId: backgroundId ?? this.backgroundId,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (shortName.present) {
+      map['short_name'] = Variable<String>(shortName.value);
+    }
+    if (branchId.present) {
+      map['branch_id'] = Variable<int>(branchId.value);
+    }
+    if (avatarUrl.present) {
+      map['avatar_url'] = Variable<String>(avatarUrl.value);
+    }
+    if (backgroundId.present) {
+      map['background_id'] = Variable<int>(backgroundId.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OfficialAccountsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('shortName: $shortName, ')
+          ..write('branchId: $branchId, ')
+          ..write('avatarUrl: $avatarUrl, ')
+          ..write('backgroundId: $backgroundId, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $OfficialAccountMembershipsTable extends OfficialAccountMemberships
+    with
+        TableInfo<$OfficialAccountMembershipsTable,
+            OfficialAccountMembershipRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OfficialAccountMembershipsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+      'user_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, id, accountId, userId, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'official_account_memberships';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<OfficialAccountMembershipRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OfficialAccountMembershipRow map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OfficialAccountMembershipRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id'])!,
+      userId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $OfficialAccountMembershipsTable createAlias(String alias) {
+    return $OfficialAccountMembershipsTable(attachedDatabase, alias);
+  }
+}
+
+class OfficialAccountMembershipRow extends DataClass
+    implements Insertable<OfficialAccountMembershipRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final int id;
+
+  /// **Entier nu, sans clé étrangère** vers `official_accounts` : les deux
+  /// collections se resynchronisent séparément.
+  final int accountId;
+
+  /// Porteur de l'appartenance — moi, par construction de la collection.
+  final String userId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const OfficialAccountMembershipRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.accountId,
+      required this.userId,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['account_id'] = Variable<int>(accountId);
+    map['user_id'] = Variable<String>(userId);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  OfficialAccountMembershipsCompanion toCompanion(bool nullToAbsent) {
+    return OfficialAccountMembershipsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      accountId: Value(accountId),
+      userId: Value(userId),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory OfficialAccountMembershipRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OfficialAccountMembershipRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      accountId: serializer.fromJson<int>(json['accountId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'accountId': serializer.toJson<int>(accountId),
+      'userId': serializer.toJson<String>(userId),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  OfficialAccountMembershipRow copyWith(
+          {int? syncStamp,
+          int? id,
+          int? accountId,
+          String? userId,
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      OfficialAccountMembershipRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        accountId: accountId ?? this.accountId,
+        userId: userId ?? this.userId,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  OfficialAccountMembershipRow copyWithCompanion(
+      OfficialAccountMembershipsCompanion data) {
+    return OfficialAccountMembershipRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OfficialAccountMembershipRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('accountId: $accountId, ')
+          ..write('userId: $userId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(syncStamp, id, accountId, userId, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OfficialAccountMembershipRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.accountId == this.accountId &&
+          other.userId == this.userId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class OfficialAccountMembershipsCompanion
+    extends UpdateCompanion<OfficialAccountMembershipRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<int> accountId;
+  final Value<String> userId;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const OfficialAccountMembershipsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.accountId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  OfficialAccountMembershipsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required int accountId,
+    required String userId,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : accountId = Value(accountId),
+        userId = Value(userId);
+  static Insertable<OfficialAccountMembershipRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<int>? accountId,
+    Expression<String>? userId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (accountId != null) 'account_id': accountId,
+      if (userId != null) 'user_id': userId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  OfficialAccountMembershipsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<int>? accountId,
+      Value<String>? userId,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return OfficialAccountMembershipsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      accountId: accountId ?? this.accountId,
+      userId: userId ?? this.userId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OfficialAccountMembershipsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('accountId: $accountId, ')
+          ..write('userId: $userId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AnnouncementsTable extends Announcements
+    with TableInfo<$AnnouncementsTable, AnnouncementRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AnnouncementsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _branchIdMeta =
+      const VerificationMeta('branchId');
+  @override
+  late final GeneratedColumn<int> branchId = GeneratedColumn<int>(
+      'branch_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+      'body', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _publishedAtMeta =
+      const VerificationMeta('publishedAt');
+  @override
+  late final GeneratedColumn<DateTime> publishedAt = GeneratedColumn<DateTime>(
+      'published_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _expiresAtMeta =
+      const VerificationMeta('expiresAt');
+  @override
+  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+      'expires_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _backgroundIdMeta =
+      const VerificationMeta('backgroundId');
+  @override
+  late final GeneratedColumn<int> backgroundId = GeneratedColumn<int>(
+      'background_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _backgroundImageUrlMeta =
+      const VerificationMeta('backgroundImageUrl');
+  @override
+  late final GeneratedColumn<String> backgroundImageUrl =
+      GeneratedColumn<String>('background_image_url', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isPinnedMeta =
+      const VerificationMeta('isPinned');
+  @override
+  late final GeneratedColumn<bool> isPinned = GeneratedColumn<bool>(
+      'is_pinned', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_pinned" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _ownerIdMeta =
+      const VerificationMeta('ownerId');
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+      'owner_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        accountId,
+        branchId,
+        title,
+        body,
+        publishedAt,
+        expiresAt,
+        backgroundId,
+        backgroundImageUrl,
+        isPinned,
+        ownerId,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'announcements';
+  @override
+  VerificationContext validateIntegrity(Insertable<AnnouncementRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('branch_id')) {
+      context.handle(_branchIdMeta,
+          branchId.isAcceptableOrUnknown(data['branch_id']!, _branchIdMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+          _bodyMeta, body.isAcceptableOrUnknown(data['body']!, _bodyMeta));
+    }
+    if (data.containsKey('published_at')) {
+      context.handle(
+          _publishedAtMeta,
+          publishedAt.isAcceptableOrUnknown(
+              data['published_at']!, _publishedAtMeta));
+    } else if (isInserting) {
+      context.missing(_publishedAtMeta);
+    }
+    if (data.containsKey('expires_at')) {
+      context.handle(_expiresAtMeta,
+          expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta));
+    }
+    if (data.containsKey('background_id')) {
+      context.handle(
+          _backgroundIdMeta,
+          backgroundId.isAcceptableOrUnknown(
+              data['background_id']!, _backgroundIdMeta));
+    }
+    if (data.containsKey('background_image_url')) {
+      context.handle(
+          _backgroundImageUrlMeta,
+          backgroundImageUrl.isAcceptableOrUnknown(
+              data['background_image_url']!, _backgroundImageUrlMeta));
+    }
+    if (data.containsKey('is_pinned')) {
+      context.handle(_isPinnedMeta,
+          isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta));
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(_ownerIdMeta,
+          ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AnnouncementRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AnnouncementRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id'])!,
+      branchId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}branch_id']),
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title']),
+      body: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}body']),
+      publishedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}published_at'])!,
+      expiresAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}expires_at']),
+      backgroundId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}background_id']),
+      backgroundImageUrl: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}background_image_url']),
+      isPinned: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_pinned'])!,
+      ownerId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_id']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $AnnouncementsTable createAlias(String alias) {
+    return $AnnouncementsTable(attachedDatabase, alias);
+  }
+}
+
+class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// UUID servi par le serveur, **en chaîne**.
+  final String id;
+
+  /// **Entier nu, sans clé étrangère** vers `official_accounts`. La jointure
+  /// est tolérante : une annonce dont le compte n'est pas encore arrivé
+  /// s'affiche quand même, sans en-tête inventé.
+  final int accountId;
+
+  /// Branche de l'annonce ; `null` = portée **nationale**. Le client ne s'en
+  /// sert pas pour filtrer — le périmètre est décidé par le serveur, qui ne
+  /// sert que ce que l'acteur a le droit de voir.
+  final int? branchId;
+
+  /// Absent ⇒ bloc de texte centré, façon WhatsApp.
+  final String? title;
+  final String? body;
+
+  /// Mise à disposition, en UTC. **Non nulle** : c'est la clé de tri du mur de
+  /// statuts, et une annonce sans date n'a pas de place où aller.
+  final DateTime publishedAt;
+
+  /// `null` = n'expire jamais (le défaut).
+  final DateTime? expiresAt;
+
+  /// **Entier nu, sans clé étrangère** vers `status_backgrounds`. `null` =
+  /// aucun fond choisi : le rendu retombe alors sur la teinte dérivée du hash
+  /// de l'[id] (`lib/theme/status_palette.dart`).
+  final int? backgroundId;
+
+  /// Image de fond, URL **relative** comme partout ailleurs.
+  final String? backgroundImageUrl;
+  final bool isPinned;
+
+  /// Auteur humain de la publication — l'identité derrière le compte. Elle ne
+  /// s'affiche pas : le statut est signé par le **compte**, pas par la personne.
+  final String? ownerId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const AnnouncementRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.accountId,
+      this.branchId,
+      this.title,
+      this.body,
+      required this.publishedAt,
+      this.expiresAt,
+      this.backgroundId,
+      this.backgroundImageUrl,
+      required this.isPinned,
+      this.ownerId,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    map['account_id'] = Variable<int>(accountId);
+    if (!nullToAbsent || branchId != null) {
+      map['branch_id'] = Variable<int>(branchId);
+    }
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(title);
+    }
+    if (!nullToAbsent || body != null) {
+      map['body'] = Variable<String>(body);
+    }
+    map['published_at'] = Variable<DateTime>(publishedAt);
+    if (!nullToAbsent || expiresAt != null) {
+      map['expires_at'] = Variable<DateTime>(expiresAt);
+    }
+    if (!nullToAbsent || backgroundId != null) {
+      map['background_id'] = Variable<int>(backgroundId);
+    }
+    if (!nullToAbsent || backgroundImageUrl != null) {
+      map['background_image_url'] = Variable<String>(backgroundImageUrl);
+    }
+    map['is_pinned'] = Variable<bool>(isPinned);
+    if (!nullToAbsent || ownerId != null) {
+      map['owner_id'] = Variable<String>(ownerId);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  AnnouncementsCompanion toCompanion(bool nullToAbsent) {
+    return AnnouncementsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      accountId: Value(accountId),
+      branchId: branchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(branchId),
+      title:
+          title == null && nullToAbsent ? const Value.absent() : Value(title),
+      body: body == null && nullToAbsent ? const Value.absent() : Value(body),
+      publishedAt: Value(publishedAt),
+      expiresAt: expiresAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expiresAt),
+      backgroundId: backgroundId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(backgroundId),
+      backgroundImageUrl: backgroundImageUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(backgroundImageUrl),
+      isPinned: Value(isPinned),
+      ownerId: ownerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerId),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory AnnouncementRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AnnouncementRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      accountId: serializer.fromJson<int>(json['accountId']),
+      branchId: serializer.fromJson<int?>(json['branchId']),
+      title: serializer.fromJson<String?>(json['title']),
+      body: serializer.fromJson<String?>(json['body']),
+      publishedAt: serializer.fromJson<DateTime>(json['publishedAt']),
+      expiresAt: serializer.fromJson<DateTime?>(json['expiresAt']),
+      backgroundId: serializer.fromJson<int?>(json['backgroundId']),
+      backgroundImageUrl:
+          serializer.fromJson<String?>(json['backgroundImageUrl']),
+      isPinned: serializer.fromJson<bool>(json['isPinned']),
+      ownerId: serializer.fromJson<String?>(json['ownerId']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'accountId': serializer.toJson<int>(accountId),
+      'branchId': serializer.toJson<int?>(branchId),
+      'title': serializer.toJson<String?>(title),
+      'body': serializer.toJson<String?>(body),
+      'publishedAt': serializer.toJson<DateTime>(publishedAt),
+      'expiresAt': serializer.toJson<DateTime?>(expiresAt),
+      'backgroundId': serializer.toJson<int?>(backgroundId),
+      'backgroundImageUrl': serializer.toJson<String?>(backgroundImageUrl),
+      'isPinned': serializer.toJson<bool>(isPinned),
+      'ownerId': serializer.toJson<String?>(ownerId),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  AnnouncementRow copyWith(
+          {int? syncStamp,
+          String? id,
+          int? accountId,
+          Value<int?> branchId = const Value.absent(),
+          Value<String?> title = const Value.absent(),
+          Value<String?> body = const Value.absent(),
+          DateTime? publishedAt,
+          Value<DateTime?> expiresAt = const Value.absent(),
+          Value<int?> backgroundId = const Value.absent(),
+          Value<String?> backgroundImageUrl = const Value.absent(),
+          bool? isPinned,
+          Value<String?> ownerId = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      AnnouncementRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        accountId: accountId ?? this.accountId,
+        branchId: branchId.present ? branchId.value : this.branchId,
+        title: title.present ? title.value : this.title,
+        body: body.present ? body.value : this.body,
+        publishedAt: publishedAt ?? this.publishedAt,
+        expiresAt: expiresAt.present ? expiresAt.value : this.expiresAt,
+        backgroundId:
+            backgroundId.present ? backgroundId.value : this.backgroundId,
+        backgroundImageUrl: backgroundImageUrl.present
+            ? backgroundImageUrl.value
+            : this.backgroundImageUrl,
+        isPinned: isPinned ?? this.isPinned,
+        ownerId: ownerId.present ? ownerId.value : this.ownerId,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  AnnouncementRow copyWithCompanion(AnnouncementsCompanion data) {
+    return AnnouncementRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      branchId: data.branchId.present ? data.branchId.value : this.branchId,
+      title: data.title.present ? data.title.value : this.title,
+      body: data.body.present ? data.body.value : this.body,
+      publishedAt:
+          data.publishedAt.present ? data.publishedAt.value : this.publishedAt,
+      expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
+      backgroundId: data.backgroundId.present
+          ? data.backgroundId.value
+          : this.backgroundId,
+      backgroundImageUrl: data.backgroundImageUrl.present
+          ? data.backgroundImageUrl.value
+          : this.backgroundImageUrl,
+      isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AnnouncementRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('accountId: $accountId, ')
+          ..write('branchId: $branchId, ')
+          ..write('title: $title, ')
+          ..write('body: $body, ')
+          ..write('publishedAt: $publishedAt, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('backgroundId: $backgroundId, ')
+          ..write('backgroundImageUrl: $backgroundImageUrl, ')
+          ..write('isPinned: $isPinned, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp,
+      id,
+      accountId,
+      branchId,
+      title,
+      body,
+      publishedAt,
+      expiresAt,
+      backgroundId,
+      backgroundImageUrl,
+      isPinned,
+      ownerId,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AnnouncementRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.accountId == this.accountId &&
+          other.branchId == this.branchId &&
+          other.title == this.title &&
+          other.body == this.body &&
+          other.publishedAt == this.publishedAt &&
+          other.expiresAt == this.expiresAt &&
+          other.backgroundId == this.backgroundId &&
+          other.backgroundImageUrl == this.backgroundImageUrl &&
+          other.isPinned == this.isPinned &&
+          other.ownerId == this.ownerId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<int> accountId;
+  final Value<int?> branchId;
+  final Value<String?> title;
+  final Value<String?> body;
+  final Value<DateTime> publishedAt;
+  final Value<DateTime?> expiresAt;
+  final Value<int?> backgroundId;
+  final Value<String?> backgroundImageUrl;
+  final Value<bool> isPinned;
+  final Value<String?> ownerId;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const AnnouncementsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.accountId = const Value.absent(),
+    this.branchId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.body = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+    this.expiresAt = const Value.absent(),
+    this.backgroundId = const Value.absent(),
+    this.backgroundImageUrl = const Value.absent(),
+    this.isPinned = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AnnouncementsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    required int accountId,
+    this.branchId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.body = const Value.absent(),
+    required DateTime publishedAt,
+    this.expiresAt = const Value.absent(),
+    this.backgroundId = const Value.absent(),
+    this.backgroundImageUrl = const Value.absent(),
+    this.isPinned = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        accountId = Value(accountId),
+        publishedAt = Value(publishedAt);
+  static Insertable<AnnouncementRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<int>? accountId,
+    Expression<int>? branchId,
+    Expression<String>? title,
+    Expression<String>? body,
+    Expression<DateTime>? publishedAt,
+    Expression<DateTime>? expiresAt,
+    Expression<int>? backgroundId,
+    Expression<String>? backgroundImageUrl,
+    Expression<bool>? isPinned,
+    Expression<String>? ownerId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (accountId != null) 'account_id': accountId,
+      if (branchId != null) 'branch_id': branchId,
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (expiresAt != null) 'expires_at': expiresAt,
+      if (backgroundId != null) 'background_id': backgroundId,
+      if (backgroundImageUrl != null)
+        'background_image_url': backgroundImageUrl,
+      if (isPinned != null) 'is_pinned': isPinned,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AnnouncementsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<int>? accountId,
+      Value<int?>? branchId,
+      Value<String?>? title,
+      Value<String?>? body,
+      Value<DateTime>? publishedAt,
+      Value<DateTime?>? expiresAt,
+      Value<int?>? backgroundId,
+      Value<String?>? backgroundImageUrl,
+      Value<bool>? isPinned,
+      Value<String?>? ownerId,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return AnnouncementsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      accountId: accountId ?? this.accountId,
+      branchId: branchId ?? this.branchId,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      publishedAt: publishedAt ?? this.publishedAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      backgroundId: backgroundId ?? this.backgroundId,
+      backgroundImageUrl: backgroundImageUrl ?? this.backgroundImageUrl,
+      isPinned: isPinned ?? this.isPinned,
+      ownerId: ownerId ?? this.ownerId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
+    }
+    if (branchId.present) {
+      map['branch_id'] = Variable<int>(branchId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (publishedAt.present) {
+      map['published_at'] = Variable<DateTime>(publishedAt.value);
+    }
+    if (expiresAt.present) {
+      map['expires_at'] = Variable<DateTime>(expiresAt.value);
+    }
+    if (backgroundId.present) {
+      map['background_id'] = Variable<int>(backgroundId.value);
+    }
+    if (backgroundImageUrl.present) {
+      map['background_image_url'] = Variable<String>(backgroundImageUrl.value);
+    }
+    if (isPinned.present) {
+      map['is_pinned'] = Variable<bool>(isPinned.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AnnouncementsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('accountId: $accountId, ')
+          ..write('branchId: $branchId, ')
+          ..write('title: $title, ')
+          ..write('body: $body, ')
+          ..write('publishedAt: $publishedAt, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('backgroundId: $backgroundId, ')
+          ..write('backgroundImageUrl: $backgroundImageUrl, ')
+          ..write('isPinned: $isPinned, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4585,10 +6734,19 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TeachingsTable teachings = $TeachingsTable(this);
   late final $GatheringTypesTable gatheringTypes = $GatheringTypesTable(this);
   late final $GatheringsTable gatherings = $GatheringsTable(this);
+  late final $StatusBackgroundsTable statusBackgrounds =
+      $StatusBackgroundsTable(this);
+  late final $OfficialAccountsTable officialAccounts =
+      $OfficialAccountsTable(this);
+  late final $OfficialAccountMembershipsTable officialAccountMemberships =
+      $OfficialAccountMembershipsTable(this);
+  late final $AnnouncementsTable announcements = $AnnouncementsTable(this);
   late final SyncDao syncDao = SyncDao(this as AppDatabase);
   late final MediathequeDao mediathequeDao =
       MediathequeDao(this as AppDatabase);
   late final GatheringDao gatheringDao = GatheringDao(this as AppDatabase);
+  late final AnnouncementDao announcementDao =
+      AnnouncementDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4602,7 +6760,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         contributors,
         teachings,
         gatheringTypes,
-        gatherings
+        gatherings,
+        statusBackgrounds,
+        officialAccounts,
+        officialAccountMemberships,
+        announcements
       ];
 }
 
@@ -6745,6 +8907,1011 @@ typedef $$GatheringsTableProcessedTableManager = ProcessedTableManager<
     ),
     GatheringRow,
     PrefetchHooks Function()>;
+typedef $$StatusBackgroundsTableCreateCompanionBuilder
+    = StatusBackgroundsCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required String label,
+  required String baseColor,
+  required String topColor,
+  required String bottomColor,
+  required String ink,
+  Value<int> position,
+  Value<bool> isActive,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$StatusBackgroundsTableUpdateCompanionBuilder
+    = StatusBackgroundsCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String> label,
+  Value<String> baseColor,
+  Value<String> topColor,
+  Value<String> bottomColor,
+  Value<String> ink,
+  Value<int> position,
+  Value<bool> isActive,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$StatusBackgroundsTableFilterComposer
+    extends Composer<_$AppDatabase, $StatusBackgroundsTable> {
+  $$StatusBackgroundsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get baseColor => $composableBuilder(
+      column: $table.baseColor, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get topColor => $composableBuilder(
+      column: $table.topColor, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get bottomColor => $composableBuilder(
+      column: $table.bottomColor, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ink => $composableBuilder(
+      column: $table.ink, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$StatusBackgroundsTableOrderingComposer
+    extends Composer<_$AppDatabase, $StatusBackgroundsTable> {
+  $$StatusBackgroundsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get baseColor => $composableBuilder(
+      column: $table.baseColor, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get topColor => $composableBuilder(
+      column: $table.topColor, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get bottomColor => $composableBuilder(
+      column: $table.bottomColor, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ink => $composableBuilder(
+      column: $table.ink, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$StatusBackgroundsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $StatusBackgroundsTable> {
+  $$StatusBackgroundsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<String> get baseColor =>
+      $composableBuilder(column: $table.baseColor, builder: (column) => column);
+
+  GeneratedColumn<String> get topColor =>
+      $composableBuilder(column: $table.topColor, builder: (column) => column);
+
+  GeneratedColumn<String> get bottomColor => $composableBuilder(
+      column: $table.bottomColor, builder: (column) => column);
+
+  GeneratedColumn<String> get ink =>
+      $composableBuilder(column: $table.ink, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$StatusBackgroundsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $StatusBackgroundsTable,
+    StatusBackgroundRow,
+    $$StatusBackgroundsTableFilterComposer,
+    $$StatusBackgroundsTableOrderingComposer,
+    $$StatusBackgroundsTableAnnotationComposer,
+    $$StatusBackgroundsTableCreateCompanionBuilder,
+    $$StatusBackgroundsTableUpdateCompanionBuilder,
+    (
+      StatusBackgroundRow,
+      BaseReferences<_$AppDatabase, $StatusBackgroundsTable,
+          StatusBackgroundRow>
+    ),
+    StatusBackgroundRow,
+    PrefetchHooks Function()> {
+  $$StatusBackgroundsTableTableManager(
+      _$AppDatabase db, $StatusBackgroundsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StatusBackgroundsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StatusBackgroundsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$StatusBackgroundsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String> label = const Value.absent(),
+            Value<String> baseColor = const Value.absent(),
+            Value<String> topColor = const Value.absent(),
+            Value<String> bottomColor = const Value.absent(),
+            Value<String> ink = const Value.absent(),
+            Value<int> position = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              StatusBackgroundsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            label: label,
+            baseColor: baseColor,
+            topColor: topColor,
+            bottomColor: bottomColor,
+            ink: ink,
+            position: position,
+            isActive: isActive,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required String label,
+            required String baseColor,
+            required String topColor,
+            required String bottomColor,
+            required String ink,
+            Value<int> position = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              StatusBackgroundsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            label: label,
+            baseColor: baseColor,
+            topColor: topColor,
+            bottomColor: bottomColor,
+            ink: ink,
+            position: position,
+            isActive: isActive,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$StatusBackgroundsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $StatusBackgroundsTable,
+    StatusBackgroundRow,
+    $$StatusBackgroundsTableFilterComposer,
+    $$StatusBackgroundsTableOrderingComposer,
+    $$StatusBackgroundsTableAnnotationComposer,
+    $$StatusBackgroundsTableCreateCompanionBuilder,
+    $$StatusBackgroundsTableUpdateCompanionBuilder,
+    (
+      StatusBackgroundRow,
+      BaseReferences<_$AppDatabase, $StatusBackgroundsTable,
+          StatusBackgroundRow>
+    ),
+    StatusBackgroundRow,
+    PrefetchHooks Function()>;
+typedef $$OfficialAccountsTableCreateCompanionBuilder
+    = OfficialAccountsCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required String name,
+  Value<String?> shortName,
+  Value<int?> branchId,
+  Value<String?> avatarUrl,
+  Value<int?> backgroundId,
+  Value<bool> isActive,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$OfficialAccountsTableUpdateCompanionBuilder
+    = OfficialAccountsCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String> name,
+  Value<String?> shortName,
+  Value<int?> branchId,
+  Value<String?> avatarUrl,
+  Value<int?> backgroundId,
+  Value<bool> isActive,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$OfficialAccountsTableFilterComposer
+    extends Composer<_$AppDatabase, $OfficialAccountsTable> {
+  $$OfficialAccountsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get shortName => $composableBuilder(
+      column: $table.shortName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get branchId => $composableBuilder(
+      column: $table.branchId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get avatarUrl => $composableBuilder(
+      column: $table.avatarUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get backgroundId => $composableBuilder(
+      column: $table.backgroundId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$OfficialAccountsTableOrderingComposer
+    extends Composer<_$AppDatabase, $OfficialAccountsTable> {
+  $$OfficialAccountsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get shortName => $composableBuilder(
+      column: $table.shortName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get branchId => $composableBuilder(
+      column: $table.branchId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get avatarUrl => $composableBuilder(
+      column: $table.avatarUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get backgroundId => $composableBuilder(
+      column: $table.backgroundId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$OfficialAccountsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OfficialAccountsTable> {
+  $$OfficialAccountsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get shortName =>
+      $composableBuilder(column: $table.shortName, builder: (column) => column);
+
+  GeneratedColumn<int> get branchId =>
+      $composableBuilder(column: $table.branchId, builder: (column) => column);
+
+  GeneratedColumn<String> get avatarUrl =>
+      $composableBuilder(column: $table.avatarUrl, builder: (column) => column);
+
+  GeneratedColumn<int> get backgroundId => $composableBuilder(
+      column: $table.backgroundId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$OfficialAccountsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $OfficialAccountsTable,
+    OfficialAccountRow,
+    $$OfficialAccountsTableFilterComposer,
+    $$OfficialAccountsTableOrderingComposer,
+    $$OfficialAccountsTableAnnotationComposer,
+    $$OfficialAccountsTableCreateCompanionBuilder,
+    $$OfficialAccountsTableUpdateCompanionBuilder,
+    (
+      OfficialAccountRow,
+      BaseReferences<_$AppDatabase, $OfficialAccountsTable, OfficialAccountRow>
+    ),
+    OfficialAccountRow,
+    PrefetchHooks Function()> {
+  $$OfficialAccountsTableTableManager(
+      _$AppDatabase db, $OfficialAccountsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OfficialAccountsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OfficialAccountsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$OfficialAccountsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> shortName = const Value.absent(),
+            Value<int?> branchId = const Value.absent(),
+            Value<String?> avatarUrl = const Value.absent(),
+            Value<int?> backgroundId = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              OfficialAccountsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            name: name,
+            shortName: shortName,
+            branchId: branchId,
+            avatarUrl: avatarUrl,
+            backgroundId: backgroundId,
+            isActive: isActive,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required String name,
+            Value<String?> shortName = const Value.absent(),
+            Value<int?> branchId = const Value.absent(),
+            Value<String?> avatarUrl = const Value.absent(),
+            Value<int?> backgroundId = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              OfficialAccountsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            name: name,
+            shortName: shortName,
+            branchId: branchId,
+            avatarUrl: avatarUrl,
+            backgroundId: backgroundId,
+            isActive: isActive,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$OfficialAccountsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $OfficialAccountsTable,
+    OfficialAccountRow,
+    $$OfficialAccountsTableFilterComposer,
+    $$OfficialAccountsTableOrderingComposer,
+    $$OfficialAccountsTableAnnotationComposer,
+    $$OfficialAccountsTableCreateCompanionBuilder,
+    $$OfficialAccountsTableUpdateCompanionBuilder,
+    (
+      OfficialAccountRow,
+      BaseReferences<_$AppDatabase, $OfficialAccountsTable, OfficialAccountRow>
+    ),
+    OfficialAccountRow,
+    PrefetchHooks Function()>;
+typedef $$OfficialAccountMembershipsTableCreateCompanionBuilder
+    = OfficialAccountMembershipsCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required int accountId,
+  required String userId,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$OfficialAccountMembershipsTableUpdateCompanionBuilder
+    = OfficialAccountMembershipsCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<int> accountId,
+  Value<String> userId,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$OfficialAccountMembershipsTableFilterComposer
+    extends Composer<_$AppDatabase, $OfficialAccountMembershipsTable> {
+  $$OfficialAccountMembershipsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$OfficialAccountMembershipsTableOrderingComposer
+    extends Composer<_$AppDatabase, $OfficialAccountMembershipsTable> {
+  $$OfficialAccountMembershipsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$OfficialAccountMembershipsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OfficialAccountMembershipsTable> {
+  $$OfficialAccountMembershipsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$OfficialAccountMembershipsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $OfficialAccountMembershipsTable,
+    OfficialAccountMembershipRow,
+    $$OfficialAccountMembershipsTableFilterComposer,
+    $$OfficialAccountMembershipsTableOrderingComposer,
+    $$OfficialAccountMembershipsTableAnnotationComposer,
+    $$OfficialAccountMembershipsTableCreateCompanionBuilder,
+    $$OfficialAccountMembershipsTableUpdateCompanionBuilder,
+    (
+      OfficialAccountMembershipRow,
+      BaseReferences<_$AppDatabase, $OfficialAccountMembershipsTable,
+          OfficialAccountMembershipRow>
+    ),
+    OfficialAccountMembershipRow,
+    PrefetchHooks Function()> {
+  $$OfficialAccountMembershipsTableTableManager(
+      _$AppDatabase db, $OfficialAccountMembershipsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OfficialAccountMembershipsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OfficialAccountMembershipsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$OfficialAccountMembershipsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<int> accountId = const Value.absent(),
+            Value<String> userId = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              OfficialAccountMembershipsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            accountId: accountId,
+            userId: userId,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required int accountId,
+            required String userId,
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              OfficialAccountMembershipsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            accountId: accountId,
+            userId: userId,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$OfficialAccountMembershipsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $OfficialAccountMembershipsTable,
+        OfficialAccountMembershipRow,
+        $$OfficialAccountMembershipsTableFilterComposer,
+        $$OfficialAccountMembershipsTableOrderingComposer,
+        $$OfficialAccountMembershipsTableAnnotationComposer,
+        $$OfficialAccountMembershipsTableCreateCompanionBuilder,
+        $$OfficialAccountMembershipsTableUpdateCompanionBuilder,
+        (
+          OfficialAccountMembershipRow,
+          BaseReferences<_$AppDatabase, $OfficialAccountMembershipsTable,
+              OfficialAccountMembershipRow>
+        ),
+        OfficialAccountMembershipRow,
+        PrefetchHooks Function()>;
+typedef $$AnnouncementsTableCreateCompanionBuilder = AnnouncementsCompanion
+    Function({
+  Value<int> syncStamp,
+  required String id,
+  required int accountId,
+  Value<int?> branchId,
+  Value<String?> title,
+  Value<String?> body,
+  required DateTime publishedAt,
+  Value<DateTime?> expiresAt,
+  Value<int?> backgroundId,
+  Value<String?> backgroundImageUrl,
+  Value<bool> isPinned,
+  Value<String?> ownerId,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$AnnouncementsTableUpdateCompanionBuilder = AnnouncementsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<int> accountId,
+  Value<int?> branchId,
+  Value<String?> title,
+  Value<String?> body,
+  Value<DateTime> publishedAt,
+  Value<DateTime?> expiresAt,
+  Value<int?> backgroundId,
+  Value<String?> backgroundImageUrl,
+  Value<bool> isPinned,
+  Value<String?> ownerId,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$AnnouncementsTableFilterComposer
+    extends Composer<_$AppDatabase, $AnnouncementsTable> {
+  $$AnnouncementsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get branchId => $composableBuilder(
+      column: $table.branchId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get body => $composableBuilder(
+      column: $table.body, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get expiresAt => $composableBuilder(
+      column: $table.expiresAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get backgroundId => $composableBuilder(
+      column: $table.backgroundId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get backgroundImageUrl => $composableBuilder(
+      column: $table.backgroundImageUrl,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isPinned => $composableBuilder(
+      column: $table.isPinned, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$AnnouncementsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AnnouncementsTable> {
+  $$AnnouncementsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get branchId => $composableBuilder(
+      column: $table.branchId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get body => $composableBuilder(
+      column: $table.body, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get expiresAt => $composableBuilder(
+      column: $table.expiresAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get backgroundId => $composableBuilder(
+      column: $table.backgroundId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get backgroundImageUrl => $composableBuilder(
+      column: $table.backgroundImageUrl,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isPinned => $composableBuilder(
+      column: $table.isPinned, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$AnnouncementsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AnnouncementsTable> {
+  $$AnnouncementsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<int> get branchId =>
+      $composableBuilder(column: $table.branchId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get expiresAt =>
+      $composableBuilder(column: $table.expiresAt, builder: (column) => column);
+
+  GeneratedColumn<int> get backgroundId => $composableBuilder(
+      column: $table.backgroundId, builder: (column) => column);
+
+  GeneratedColumn<String> get backgroundImageUrl => $composableBuilder(
+      column: $table.backgroundImageUrl, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPinned =>
+      $composableBuilder(column: $table.isPinned, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$AnnouncementsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AnnouncementsTable,
+    AnnouncementRow,
+    $$AnnouncementsTableFilterComposer,
+    $$AnnouncementsTableOrderingComposer,
+    $$AnnouncementsTableAnnotationComposer,
+    $$AnnouncementsTableCreateCompanionBuilder,
+    $$AnnouncementsTableUpdateCompanionBuilder,
+    (
+      AnnouncementRow,
+      BaseReferences<_$AppDatabase, $AnnouncementsTable, AnnouncementRow>
+    ),
+    AnnouncementRow,
+    PrefetchHooks Function()> {
+  $$AnnouncementsTableTableManager(_$AppDatabase db, $AnnouncementsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AnnouncementsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AnnouncementsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AnnouncementsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<int> accountId = const Value.absent(),
+            Value<int?> branchId = const Value.absent(),
+            Value<String?> title = const Value.absent(),
+            Value<String?> body = const Value.absent(),
+            Value<DateTime> publishedAt = const Value.absent(),
+            Value<DateTime?> expiresAt = const Value.absent(),
+            Value<int?> backgroundId = const Value.absent(),
+            Value<String?> backgroundImageUrl = const Value.absent(),
+            Value<bool> isPinned = const Value.absent(),
+            Value<String?> ownerId = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AnnouncementsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            accountId: accountId,
+            branchId: branchId,
+            title: title,
+            body: body,
+            publishedAt: publishedAt,
+            expiresAt: expiresAt,
+            backgroundId: backgroundId,
+            backgroundImageUrl: backgroundImageUrl,
+            isPinned: isPinned,
+            ownerId: ownerId,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            required int accountId,
+            Value<int?> branchId = const Value.absent(),
+            Value<String?> title = const Value.absent(),
+            Value<String?> body = const Value.absent(),
+            required DateTime publishedAt,
+            Value<DateTime?> expiresAt = const Value.absent(),
+            Value<int?> backgroundId = const Value.absent(),
+            Value<String?> backgroundImageUrl = const Value.absent(),
+            Value<bool> isPinned = const Value.absent(),
+            Value<String?> ownerId = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AnnouncementsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            accountId: accountId,
+            branchId: branchId,
+            title: title,
+            body: body,
+            publishedAt: publishedAt,
+            expiresAt: expiresAt,
+            backgroundId: backgroundId,
+            backgroundImageUrl: backgroundImageUrl,
+            isPinned: isPinned,
+            ownerId: ownerId,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$AnnouncementsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $AnnouncementsTable,
+    AnnouncementRow,
+    $$AnnouncementsTableFilterComposer,
+    $$AnnouncementsTableOrderingComposer,
+    $$AnnouncementsTableAnnotationComposer,
+    $$AnnouncementsTableCreateCompanionBuilder,
+    $$AnnouncementsTableUpdateCompanionBuilder,
+    (
+      AnnouncementRow,
+      BaseReferences<_$AppDatabase, $AnnouncementsTable, AnnouncementRow>
+    ),
+    AnnouncementRow,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6767,4 +9934,14 @@ class $AppDatabaseManager {
       $$GatheringTypesTableTableManager(_db, _db.gatheringTypes);
   $$GatheringsTableTableManager get gatherings =>
       $$GatheringsTableTableManager(_db, _db.gatherings);
+  $$StatusBackgroundsTableTableManager get statusBackgrounds =>
+      $$StatusBackgroundsTableTableManager(_db, _db.statusBackgrounds);
+  $$OfficialAccountsTableTableManager get officialAccounts =>
+      $$OfficialAccountsTableTableManager(_db, _db.officialAccounts);
+  $$OfficialAccountMembershipsTableTableManager
+      get officialAccountMemberships =>
+          $$OfficialAccountMembershipsTableTableManager(
+              _db, _db.officialAccountMemberships);
+  $$AnnouncementsTableTableManager get announcements =>
+      $$AnnouncementsTableTableManager(_db, _db.announcements);
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n_extension.dart';
-import '../../models/models.dart';
+import '../../models/announcement_view.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -17,7 +17,7 @@ import '../cards/announcement_card.dart';
 /// Renvoie l'index choisi, ou `null` si la feuille est refermée sans choix.
 Future<int?> showStatusListSheet(
   BuildContext context, {
-  required List<Announcement> statuses,
+  required List<AnnouncementView> statuses,
   required int currentIndex,
 }) {
   return showModalBottomSheet<int>(
@@ -34,7 +34,7 @@ Future<int?> showStatusListSheet(
 class _StatusListSheet extends StatelessWidget {
   const _StatusListSheet({required this.statuses, required this.currentIndex});
 
-  final List<Announcement> statuses;
+  final List<AnnouncementView> statuses;
   final int currentIndex;
 
   @override

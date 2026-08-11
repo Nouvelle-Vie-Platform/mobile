@@ -10,9 +10,6 @@ import '../helpers/pump_screen.dart';
 /// Faux repository renvoyant des données contrôlées par le test.
 class _FakeRepository implements ChurchRepository {
   @override
-  List<Announcement> announcements() => const [];
-
-  @override
   List<CommunityGroup> groups() => const [
         CommunityGroup(name: 'Groupe de Test', members: 3),
       ];

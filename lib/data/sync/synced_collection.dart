@@ -108,9 +108,17 @@ class _PageSplit<D> {
 /// synchronisation, où tout arrive en même temps et où l'ordre décide de ce que
 /// le fidèle voit à l'ouverture.
 ///
-/// Les neuf autres collections du registre serveur n'ont pas de table locale :
-/// le manifeste les liste, le moteur ne les tire pas. Elles entreront ici avec
-/// leur table, jamais avant.
+/// Les autres collections du registre serveur n'ont pas de table locale : le
+/// manifeste les liste, le moteur ne les tire pas. Elles entreront ici avec leur
+/// table, jamais avant.
+///
+/// **Les annonces amènent quatre entrées** (issue #35), et l'ordre y compte
+/// autant qu'ailleurs : `status_backgrounds`, `official_accounts` et
+/// `official_account_memberships` précèdent `announcements`. Une annonce dont le
+/// compte manque s'affiche quand même — la jointure est tolérante —, mais elle
+/// s'affiche alors **sans en-tête**, ce qu'un fidèle lit comme une donnée
+/// perdue. Ranger les trois référentiels avant supprime le cas fréquent : la
+/// toute première synchronisation.
 ///
 /// **Deux familles, deux paires d'entrées** (issue #34) : `teaching_types` /
 /// `teachings` d'un côté, `gathering_types` / `gatherings` de l'autre. Ce sont
@@ -131,6 +139,25 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.gatheringTypesCollection,
         idOf: (item) => referenceId(SyncCollectionKey.gatheringTypes, item),
         rowOf: gatheringTypeRowOf,
+      ),
+      SyncedCollection<StatusBackgroundRow>(
+        key: SyncCollectionKey.statusBackgrounds,
+        local: (dao) => dao.statusBackgroundsCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.statusBackgrounds, item),
+        rowOf: statusBackgroundRowOf,
+      ),
+      SyncedCollection<OfficialAccountRow>(
+        key: SyncCollectionKey.officialAccounts,
+        local: (dao) => dao.officialAccountsCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.officialAccounts, item),
+        rowOf: officialAccountRowOf,
+      ),
+      SyncedCollection<OfficialAccountMembershipRow>(
+        key: SyncCollectionKey.officialAccountMemberships,
+        local: (dao) => dao.officialAccountMembershipsCollection,
+        idOf: (item) =>
+            referenceId(SyncCollectionKey.officialAccountMemberships, item),
+        rowOf: officialAccountMembershipRowOf,
       ),
       SyncedCollection<ContributorRow>(
         key: SyncCollectionKey.contributors,
@@ -155,5 +182,11 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.gatheringsCollection,
         idOf: (item) => contentId(SyncCollectionKey.gatherings, item),
         rowOf: gatheringRowOf,
+      ),
+      SyncedCollection<AnnouncementRow>(
+        key: SyncCollectionKey.announcements,
+        local: (dao) => dao.announcementsCollection,
+        idOf: (item) => contentId(SyncCollectionKey.announcements, item),
+        rowOf: announcementRowOf,
       ),
     ];

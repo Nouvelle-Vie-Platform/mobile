@@ -1,35 +1,42 @@
 import 'package:flutter/material.dart';
 
+import '../../models/announcement_view.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/status_palette.dart';
 
 /// Fond d'un statut (onglet Annonces), empilé du fond vers l'avant :
 ///
-/// 1. le **dégradé** dérivé de la couleur du statut — toujours présent : il
-///    sert aussi de repli image et couvre le temps de chargement ;
+/// 1. le **dégradé** du statut — toujours présent : il sert aussi de repli
+///    image et couvre le temps de chargement ;
 /// 2. l'**image** de fond éventuelle, en `BoxFit.cover` ;
 /// 3. le **voile** de lisibilité, plus dense en bas (là où vivent le texte et
 ///    la waveform) ;
 /// 4. le [child].
 ///
-/// Composant pur : il ne connaît ni le modèle `Announcement` ni le lecteur, il
-/// ne reçoit que des primitives.
+/// **C'est ici, et nulle part ailleurs, que se décide « fond servi ou repli ».**
+/// Les deux statiques [gradientFor] et [foregroundFor] portent cette bascule
+/// pour tout ce qui peint un statut — la visionneuse, les vignettes de la
+/// feuille, la barre de segments. Dupliquer la règle donnerait deux fonds
+/// différents pour la même annonce selon l'endroit où on la regarde.
 class StatusBackground extends StatelessWidget {
   const StatusBackground({
     super.key,
     required this.id,
-    this.backgroundColor,
+    this.backdrop,
     this.imageUrl,
     this.scrim = true,
     required this.child,
   });
 
-  /// Identifiant du statut : sert au choix **déterministe** de la couleur de
+  /// Identifiant du statut : sert au choix **déterministe** de la teinte de
   /// repli (voir `statusBaseColor`).
   final String id;
 
-  /// Couleur envoyée par le back, prioritaire sur la palette de marque.
-  final int? backgroundColor;
+  /// Fond **servi** par le référentiel, ou `null`.
+  ///
+  /// Ses trois arrêts et son encre ont été dérivés par le serveur à l'écriture
+  /// (ADR-0030) : le widget les peint, il ne les recalcule pas.
+  final StatusBackdrop? backdrop;
 
   /// Image de fond éventuelle. Un échec (hors-ligne, 404, ou test — le réseau
   /// renvoie 400 sous `flutter test`) retombe silencieusement sur le dégradé.
@@ -49,19 +56,46 @@ class StatusBackground extends StatelessWidget {
   /// doit pouvoir se terminer.
   static const Duration fadeDuration = Duration(milliseconds: 240);
 
+  /// **Le dégradé du statut : celui qu'on a servi, ou celui qu'on déduit.**
+  ///
+  /// Avec un [backdrop], les trois arrêts partent tels quels — le serveur les a
+  /// dérivés à l'écriture et le client ne refait pas ce calcul. Sans lui, la
+  /// teinte vient du hash de l'[id] et le dégradé s'en déduit : c'est le seul
+  /// endroit de l'application où une variation de couleur se calcule encore.
+  static LinearGradient gradientFor(String id, StatusBackdrop? backdrop) {
+    if (backdrop == null) return statusGradient(statusBaseColor(id));
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: <Color>[
+        Color(backdrop.topColor),
+        Color(backdrop.baseColor),
+        Color(backdrop.bottomColor),
+      ],
+    );
+  }
+
   /// Couleur de texte à poser sur ce fond.
   ///
-  /// En présence d'une image le texte est **toujours clair** : c'est le voile
-  /// qui garantit alors la lisibilité, quelle que soit la couleur de base.
+  /// Trois cas, dans cet ordre :
+  /// - en présence d'une **image**, le texte est toujours clair : c'est le voile
+  ///   qui garantit alors la lisibilité, quelle que soit la couleur dessous ;
+  /// - avec un [backdrop], l'encre vient du **serveur** (ADR-0030). La déduire
+  ///   de la luminance serait refaire un calcul déjà fait, et le refaire
+  ///   différemment un jour ;
+  /// - sans fond servi, la luminance de la teinte de repli tranche.
   static Color foregroundFor(
     String id, {
-    int? backgroundColor,
+    StatusBackdrop? backdrop,
     String? imageUrl,
   }) {
     if (imageUrl != null) return AppColors.textOnPrimary;
-    return statusForegroundOn(
-      statusBaseColor(id, backgroundColor: backgroundColor),
-    );
+    if (backdrop != null) {
+      return backdrop.ink == StatusInk.light
+          ? AppColors.textOnPrimary
+          : AppColors.textPrimary;
+    }
+    return statusForegroundOn(statusBaseColor(id));
   }
 
   /// Voile dégradé : discret en haut (l'en-tête auteur y vit), transparent au
@@ -91,23 +125,20 @@ class StatusBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = statusBaseColor(id, backgroundColor: backgroundColor);
     final url = imageUrl;
 
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        DecoratedBox(decoration: BoxDecoration(gradient: statusGradient(base))),
+        DecoratedBox(
+          decoration: BoxDecoration(gradient: gradientFor(id, backdrop)),
+        ),
         if (url != null) _buildImage(url),
         if (scrim)
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: scrimGradient(
-                foregroundFor(
-                  id,
-                  backgroundColor: backgroundColor,
-                  imageUrl: imageUrl,
-                ),
+                foregroundFor(id, backdrop: backdrop, imageUrl: imageUrl),
               ),
             ),
           ),

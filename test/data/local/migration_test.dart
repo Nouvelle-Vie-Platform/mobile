@@ -24,15 +24,15 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('le schéma déclaré correspond au schéma v2 exporté', () async {
+  test('le schéma déclaré correspond au schéma v3 exporté', () async {
     // Le garde-fou de tous les jours : quiconque touche à une table sans
     // exporter la version correspondante casse ce test avant de casser un
     // téléphone.
-    final connection = await verifier.startAt(2);
+    final connection = await verifier.startAt(3);
     final db = AppDatabase(connection);
     addTearDown(db.close);
 
-    await verifier.migrateAndValidate(db, 2);
+    await verifier.migrateAndValidate(db, 3);
   });
 
   test('v1 → v2 : les deux tables de rassemblement apparaissent', () async {
@@ -68,6 +68,51 @@ void main() {
     // pas encore, le prochain manifeste les annoncera `from_zero`.
     expect(await db.select(db.gatherings).get(), isEmpty);
     expect(await db.select(db.gatheringTypes).get(), isEmpty);
+  });
+
+  test('v2 → v3 : les quatre tables d\'annonce apparaissent', () async {
+    final connection = await verifier.startAt(2);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 3);
+  });
+
+  test('v1 → v3 : un appareil resté en v1 rejoue les deux paliers', () async {
+    // Le cas qu'on oublie de tester : un téléphone qui n'a pas été ouvert
+    // depuis deux livraisons ne saute pas la v2, il traverse les paliers l'un
+    // après l'autre. Un `onUpgrade` écrit en `if (from == 2)` passerait ce test
+    // en v2 → v3 et laisserait cet appareil-là sans ses tables.
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 3);
+  });
+
+  test('v2 → v3 : le catalogue déjà téléchargé survit au palier', () async {
+    // Le palier ne fait que **créer quatre tables** : le mur de statuts était
+    // encore peint par `SampleData`, il n'y a aucune donnée locale à reprendre.
+    // Ce qu'un fidèle hors ligne risquerait de perdre, c'est son catalogue — et
+    // c'est ce que ce test protège.
+    final schema = await verifier.schemaAt(2);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 3);
+
+    final rows = await db.select(db.teachings).get();
+    expect(rows.single.title, 'Dieu a le dernier mot');
+    // Et les quatre nouvelles tables sont là, vides : leurs curseurs n'existent
+    // pas encore, le prochain manifeste les annoncera `from_zero`.
+    expect(await db.select(db.announcements).get(), isEmpty);
+    expect(await db.select(db.officialAccounts).get(), isEmpty);
+    expect(await db.select(db.officialAccountMemberships).get(), isEmpty);
+    expect(await db.select(db.statusBackgrounds).get(), isEmpty);
   });
 
   test('la version de schéma couvre bien toutes les versions exportées', () {

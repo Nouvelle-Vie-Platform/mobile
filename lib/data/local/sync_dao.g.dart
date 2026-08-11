@@ -13,6 +13,13 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
   $TeachingsTable get teachings => attachedDatabase.teachings;
   $GatheringTypesTable get gatheringTypes => attachedDatabase.gatheringTypes;
   $GatheringsTable get gatherings => attachedDatabase.gatherings;
+  $StatusBackgroundsTable get statusBackgrounds =>
+      attachedDatabase.statusBackgrounds;
+  $OfficialAccountsTable get officialAccounts =>
+      attachedDatabase.officialAccounts;
+  $OfficialAccountMembershipsTable get officialAccountMemberships =>
+      attachedDatabase.officialAccountMemberships;
+  $AnnouncementsTable get announcements => attachedDatabase.announcements;
   SyncDaoManager get managers => SyncDaoManager(this);
 }
 
@@ -38,4 +45,16 @@ class SyncDaoManager {
           _db.attachedDatabase, _db.gatheringTypes);
   $$GatheringsTableTableManager get gatherings =>
       $$GatheringsTableTableManager(_db.attachedDatabase, _db.gatherings);
+  $$StatusBackgroundsTableTableManager get statusBackgrounds =>
+      $$StatusBackgroundsTableTableManager(
+          _db.attachedDatabase, _db.statusBackgrounds);
+  $$OfficialAccountsTableTableManager get officialAccounts =>
+      $$OfficialAccountsTableTableManager(
+          _db.attachedDatabase, _db.officialAccounts);
+  $$OfficialAccountMembershipsTableTableManager
+      get officialAccountMemberships =>
+          $$OfficialAccountMembershipsTableTableManager(
+              _db.attachedDatabase, _db.officialAccountMemberships);
+  $$AnnouncementsTableTableManager get announcements =>
+      $$AnnouncementsTableTableManager(_db.attachedDatabase, _db.announcements);
 }

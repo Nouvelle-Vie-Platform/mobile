@@ -47,14 +47,17 @@ serveur, amorcer la base) : `test/integration/README.md`.
 Couches claires, pensées pour brancher un backend sans toucher l'UI :
 
 - `lib/models/` — modèles immuables (`ChurchEvent`, `Teaching`, `CommunityGroup`,
-  `PrayerRequest`, `SpiritualNote`, `ChatMessage`, `Announcement`).
+  `PrayerRequest`, `SpiritualNote`, `ChatMessage`) et **modèles de lecture**
+  (`content_view.dart`, `mediatheque_view.dart`, `gathering_view.dart`,
+  `announcement_view.dart`).
 - `lib/data/` — `sample_data.dart` (données fictives) + `repositories/` :
   - `church_repository.dart` (`ChurchRepository` abstrait + `InMemoryChurchRepository`)
     — **synchrone**, et il ne couvre que les domaines **encore fictifs**.
   - `auth_repository.dart` / `http_auth_repository.dart`, `branch_repository.dart`,
     `calendar_repository.dart`, `mediatheque_repository.dart` /
     `store_mediatheque_repository.dart`, `gathering_repository.dart` /
-    `store_gathering_repository.dart` — repositories **dédiés et asynchrones**,
+    `store_gathering_repository.dart`, `announcement_repository.dart` /
+    `store_announcement_repository.dart` — repositories **dédiés et asynchrones**,
     chacun hors de `ChurchRepository`.
   - `local/` — **le magasin local Drift**, voir ci-dessous.
 
@@ -108,8 +111,11 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
 - `tables/mediatheque_tables.dart` — `branches`, `teaching_types`,
   `contributors`, `teachings`. `tables/gathering_tables.dart` —
   `gathering_types`, `gatherings` (la seconde famille, #34).
-- `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart` et
-  `gathering_dao.dart` — lectures, **un DAO par famille**.
+  `tables/announcement_tables.dart` — `status_backgrounds`, `official_accounts`,
+  `official_account_memberships`, `announcements` (le mur de statuts, #35).
+- `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart`,
+  `gathering_dao.dart` et `announcement_dao.dart` — lectures, **un DAO par
+  domaine**.
 
 **Six règles qui ne se renégocient pas** (ADR-0026 en donne le *pourquoi*) :
 1. **Une page appliquée = une transaction** : ses lignes **et** son curseur, ou
@@ -152,8 +158,9 @@ qu'elle remplit. Le réseau ne peint jamais.
   (lignes). Les deux conventions vivent dans deux fichiers exprès : un
   désérialiseur à convention unique se trompe sur la moitié des clés.
 - `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
-  `gathering_types`, `contributors`, `branches`, puis `teachings`,
-  `gatherings`.
+  `gathering_types`, `status_backgrounds`, `official_accounts`,
+  `official_account_memberships`, `contributors`, `branches`, puis `teachings`,
+  `gatherings`, `announcements`.
 - `sync_api.dart` — `GET /sync` et `GET /sync/{collection}`, sur le `Dio`
   d'`ApiClient`. Un **404** devient `UnknownSyncCollection`.
 - `sync_engine.dart` — la boucle. `sync_scheduler.dart` — les déclencheurs.
@@ -163,7 +170,7 @@ qu'elle remplit. Le réseau ne peint jamais.
    arrive sans son intervenant (la jointure de lecture reste tolérante), ça
    supprime le cas fréquent : la toute première synchronisation.
 2. **La `scope_version` est retenue en mémoire pendant tout le cycle et
-   persistée en dernier** (ADR-0027). Une valeur pour les quinze collections.
+   persistée en dernier** (ADR-0027). Une valeur pour les dix-huit collections.
    Persistée trop tôt, elle éteint un resync qui n'a pas eu lieu — et le
    manifeste ne le redemandera **jamais**. Un cycle interrompu ne persiste rien.
 3. **« Rétractation ou ligne », décidé avant toute construction d'objet** :
@@ -183,8 +190,13 @@ pas un accusé de réception : il ne devient jamais le curseur local.
 - `lib/state/` — providers Riverpod :
   - `repository_providers.dart` : `churchRepositoryProvider` + providers de données
     (`groupsProvider`, `prayersProvider`, `notesProvider`,
-    `announcementsProvider`, `chatProvider.family`) et `eventsProvider` (hors
-    `ChurchRepository`, cf. ci-dessous).
+    `chatProvider.family`) et `eventsProvider` (hors `ChurchRepository`, cf.
+    ci-dessous).
+  - `announcement_providers.dart` : `announcementRepositoryProvider`,
+    `announcementsProvider` et `canComposeAnnouncementProvider`. **C'est là que
+    vivent les deux règles que le serveur ne prend pas** — le filtre
+    d'expiration et le tri —, et le § « L'onglet Annonces » plus bas dit
+    pourquoi.
   - `mediatheque_providers.dart` : `mediathequeRepositoryProvider` (magasin avec
     backend, double en mémoire sinon) + `latestTeachingsProvider`,
     `allTeachingsProvider`, `teachingsOfTypeProvider.family`,
@@ -202,8 +214,8 @@ pas un accusé de réception : il ne devient jamais le curseur local.
   - `sync_providers.dart` : `appDatabaseProvider` (à surcharger par une base en
     mémoire dans les tests), `syncDaoProvider`, `mediathequeDaoProvider`,
     `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`,
-    `gatheringDaoProvider`, `pullToRefreshProvider`. `mediathequeDaoProvider`
-    et `gatheringDaoProvider` sont lus par les deux repositories de magasin.
+    `gatheringDaoProvider`, `announcementDaoProvider`, `pullToRefreshProvider`.
+    Les trois DAO de lecture sont lus par les trois repositories de magasin.
     **Les trois déclencheurs d'ADR-0017 sont câblés** : `app.dart` appelle
     `SyncScheduler.start()` au premier frame sous `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
     cycle de vie, donc au **retour au premier plan**) ; la médiathèque passe
@@ -212,6 +224,36 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     une rupture entre synchronisation et magasin donnerait une application
     **muette**, pas une erreur : un magasin vide ne se plaint pas.
   - `theme_provider.dart` : `themeModeProvider` (Notifier) + `isDarkModeActive`.
+
+### L'onglet Annonces — trois responsabilités que le serveur ne prend pas
+Le mur de statuts est peint par le magasin (#35), comme la médiathèque. Sa
+spécification de **rendu** est `docs/statuts-annonces.md` ; son contrat de
+**donnée** vient du serveur (PRD `annonces-comptes-officiels.md`, ADR-0029 à
+ADR-0031). Trois règles vivent côté client, et aucune n'est un choix de confort :
+
+1. **L'expiration se filtre à la lecture** (`announcementsProvider`). Le serveur
+   sert `expiresAt` brut et ne retire jamais une annonce expirée du flux delta :
+   un statut « valable jusqu'à ce soir » doit disparaître **à la seconde**, y
+   compris hors-ligne. Ni le serveur ni une requête SQL ne peuvent le tenir — une
+   requête est évaluée quand la table change, pas quand l'heure passe.
+2. **Le tri est écrit une fois** : épinglés, `publishedAt` décroissant, `id` en
+   départage (`List.sort` n'est pas stable en Dart).
+3. **Les deux jointures** : `accountId` → `official_accounts` (l'en-tête est
+   `shortName ?? name`), `backgroundId` → `status_backgrounds`. Tolérantes : une
+   annonce dont le compte manque s'affiche quand même, **sans en-tête inventé**.
+
+**Interdit : recalculer un dégradé ou un contraste.** Le serveur a dérivé
+`topColor`, `bottomColor` et `ink` à l'écriture (ADR-0030) ; le rendu peint.
+`statusGradient` / `statusForegroundOn` / `statusBaseColor`
+(`lib/theme/status_palette.dart`) ne servent plus **que de repli** quand aucun
+fond n'est servi — teinte dérivée du hash de l'`id`. `statusPalette` a disparu.
+
+Le client ne re-teste pas `publishedAt` : le serveur ne sert au mobile ni
+brouillon ni annonce programmée. **L'écriture exige le réseau** (ADR-0031, pas de
+file d'envoi ni de brouillon local) et son affordance n'existe que si
+`official_account_memberships` est non vide — un **confort d'affichage, jamais
+une autorisation** : le serveur revérifie à chaque écriture, et un membre retiré
+du bureau verra encore le bouton et recevra un 403.
 
 ### Brancher un vrai backend : **un repository dédié asynchrone par domaine**
 Surcharger `churchRepositoryProvider` **ne suffit pas** et n'est pas le motif :
@@ -371,7 +413,8 @@ poussée). Le FAB n'est PAS un onglet.
 - Le premier build iOS/Android est long ; relances suivantes rapides.
 
 ## Statut
-Maquette UI riche et cohérente, **données fictives** + **auth factice**.
+Maquette UI riche et cohérente, **données fictives** + **auth factice** pour ce
+qui reste dans `ChurchRepository` (groupes, prières, notes, discussions).
 Prochaines grandes étapes : backend + auth réels, dons/paiement, notifications,
 finir d'habiller les écrans restants (onboarding, login/register, live, dons,
 notes, nouvelle requête).

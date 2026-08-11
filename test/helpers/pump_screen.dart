@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
+import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
@@ -39,12 +41,18 @@ import 'package:maison_du_miracle/theme/app_theme.dart';
 /// Celui des **rassemblements** ([gatherings]) est posé de la même façon et pour
 /// la même raison : la seconde famille de la médiathèque lit le même magasin
 /// Drift, et l'accueil la rend désormais.
+///
+/// Celui des **annonces** ([announcements]) aussi, et il est le plus facile à
+/// oublier : `HomeShell` monte les quatre onglets dans un `IndexedStack`, donc
+/// la visionneuse de statuts vit dès qu'un test monte la coquille — et
+/// ouvrirait le magasin Drift sans que le test parle jamais d'annonces.
 Future<void> pumpScreen(
   WidgetTester tester,
   Widget screen, {
   List<Override> overrides = const [],
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
+  AnnouncementRepository? announcements,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -56,6 +64,9 @@ Future<void> pumpScreen(
             .overrideWithValue(mediatheque ?? InMemoryMediathequeRepository()),
         gatheringRepositoryProvider
             .overrideWithValue(gatherings ?? InMemoryGatheringRepository()),
+        announcementRepositoryProvider.overrideWithValue(
+          announcements ?? InMemoryAnnouncementRepository(),
+        ),
         ...overrides,
       ],
       child: MaterialApp(

@@ -1,12 +1,14 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'announcement_dao.dart';
 // Utilisé par le code généré (`app_database.g.dart`), qui est une `part` de ce
 // fichier : le convertisseur de carte de traduction y est instancié.
 import 'converters/i18n_map_converter.dart';
 import 'gathering_dao.dart';
 import 'mediatheque_dao.dart';
 import 'sync_dao.dart';
+import 'tables/announcement_tables.dart';
 import 'tables/gathering_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/sync_tables.dart';
@@ -44,8 +46,12 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     Teachings,
     GatheringTypes,
     Gatherings,
+    StatusBackgrounds,
+    OfficialAccounts,
+    OfficialAccountMemberships,
+    Announcements,
   ],
-  daos: [SyncDao, MediathequeDao, GatheringDao],
+  daos: [SyncDao, MediathequeDao, GatheringDao, AnnouncementDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Constructeur explicite — c'est celui qu'utilisent les tests, avec une base
@@ -55,10 +61,11 @@ class AppDatabase extends _$AppDatabase {
   /// Base de l'application, à l'emplacement standard de la plateforme.
   AppDatabase.defaults() : super(driftDatabase(name: kLocalDatabaseName));
 
-  /// **v2** — les deux tables des rassemblements (`gathering_types`,
-  /// `gatherings`) entrent au magasin, issue #34.
+  /// **v3** — les quatre tables des annonces (`status_backgrounds`,
+  /// `official_accounts`, `official_account_memberships`, `announcements`)
+  /// entrent au magasin, issue #35.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -81,6 +88,19 @@ class AppDatabase extends _$AppDatabase {
           if (from < 2) {
             await m.createTable(gatheringTypes);
             await m.createTable(gatherings);
+          }
+
+          // v2 → v3 — les annonces (issue #35). **Quatre créations de table, et
+          // rien d'autre** : le mur de statuts était jusqu'ici peint par
+          // `SampleData`, il n'y a donc aucune donnée locale à reprendre, et
+          // aucune colonne existante ne bouge. Les quatre tables naissent vides
+          // et le premier cycle les remplit — leurs curseurs n'existent pas
+          // encore, le manifeste les annoncera `from_zero`.
+          if (from < 3) {
+            await m.createTable(statusBackgrounds);
+            await m.createTable(officialAccounts);
+            await m.createTable(officialAccountMemberships);
+            await m.createTable(announcements);
           }
         },
         beforeOpen: (details) async {
