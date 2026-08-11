@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../models/models.dart';
 import '../screens/agenda_screen.dart';
+import '../screens/announcement_composer_screen.dart';
 import '../screens/auth/code_screen.dart';
 import '../screens/auth/identifier_screen.dart';
 import '../screens/auth/profile_form_screen.dart';
@@ -44,6 +45,14 @@ abstract final class AppRoute {
   static const newRequest = 'new-request';
   static const donations = 'donations';
   static const notes = 'notes';
+
+  /// Composeur d'annonce, en **création**.
+  static const announcementCompose = 'announcement-compose';
+
+  /// Composeur d'annonce, en **modification** — l'identifiant en paramètre de
+  /// chemin, comme `/teaching/:id` : l'écran résout la ligne dans le magasin, il
+  /// ne reçoit pas de copie figée au moment du clic.
+  static const announcementEdit = 'announcement-edit';
 }
 
 /// Arguments passés à [CodeScreen] via `extra`.
@@ -127,6 +136,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.home,
         path: '/home',
         builder: (_, __) => const AppBackground(child: HomeShell()),
+      ),
+      // Composeur d'annonce — deux chemins, un seul écran. Ils ne se disputent
+      // rien : `/announcement/compose` a un segment, `/announcement/:id/edit`
+      // en a trois. **Aucune garde de route** : l'affordance n'existe déjà que
+      // pour les membres d'un compte officiel, et le serveur revérifie à chaque
+      // écriture — une garde côté client ferait passer une copie locale de
+      // permissions pour la source de vérité.
+      GoRoute(
+        name: AppRoute.announcementCompose,
+        path: '/announcement/compose',
+        builder: (_, __) =>
+            const AppBackground(child: AnnouncementComposerScreen()),
+      ),
+      GoRoute(
+        name: AppRoute.announcementEdit,
+        path: '/announcement/:id/edit',
+        builder: (_, state) => AppBackground(
+          child: AnnouncementComposerScreen(
+            announcementId: state.pathParameters['id']!,
+          ),
+        ),
       ),
       GoRoute(
         name: AppRoute.media,

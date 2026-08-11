@@ -718,4 +718,180 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teachingRetractedMessage =>
       'It was removed from the media library. Playback has stopped.';
+
+  @override
+  String get composeAnnouncement => 'Post an announcement';
+
+  @override
+  String get composerNewTitle => 'New announcement';
+
+  @override
+  String get composerEditTitle => 'Edit announcement';
+
+  @override
+  String get composerAccountLabel => 'Post as';
+
+  @override
+  String get composerTitleLabel => 'Title';
+
+  @override
+  String get composerTitleHint => 'Optional';
+
+  @override
+  String get composerBodyLabel => 'Message';
+
+  @override
+  String get composerBodyHint => 'What the church needs to know';
+
+  @override
+  String get composerBackgroundLabel => 'Background';
+
+  @override
+  String get composerBackgroundNone => 'None';
+
+  @override
+  String get composerImageLabel => 'Background image';
+
+  @override
+  String get composerImageAdd => 'Choose an image';
+
+  @override
+  String get composerImageReplace => 'Replace image';
+
+  @override
+  String get composerImageRemove => 'Remove image';
+
+  @override
+  String get composerImageKept => 'Published image kept';
+
+  @override
+  String get composerTimingLabel => 'Publication';
+
+  @override
+  String get composerTimingNow => 'Now';
+
+  @override
+  String get composerTimingScheduled => 'Schedule';
+
+  @override
+  String get composerTimingDraft => 'Draft';
+
+  @override
+  String get composerScheduleLabel => 'Publication date';
+
+  @override
+  String get composerSchedulePick => 'Pick a date';
+
+  @override
+  String get composerExpiryLabel => 'Ends on';
+
+  @override
+  String get composerExpiryNever => 'Never expires';
+
+  @override
+  String get composerExpiryPick => 'Pick an end date';
+
+  @override
+  String get composerExpiryClear => 'Remove end date';
+
+  @override
+  String get composerPublish => 'Publish';
+
+  @override
+  String get composerSave => 'Save';
+
+  @override
+  String get composerDelete => 'Delete announcement';
+
+  @override
+  String get composerDeleteConfirmTitle => 'Delete this announcement?';
+
+  @override
+  String get composerDeleteConfirmBody =>
+      'It will disappear from every member\'s app.';
+
+  @override
+  String get composerDeleteConfirmAction => 'Delete';
+
+  @override
+  String get composerNoAccountTitle => 'No account available';
+
+  @override
+  String get composerNoAccountBody =>
+      'Your official accounts haven\'t reached this device yet. Try again after the next sync.';
+
+  @override
+  String get composerMissingTitle => 'Announcement not found';
+
+  @override
+  String get composerMissingBody =>
+      'It has been removed. There is nothing left to edit.';
+
+  @override
+  String get composerIssueNothing =>
+      'Add at least a title, a message or an image.';
+
+  @override
+  String get composerIssueSchedule => 'Pick the publication date.';
+
+  @override
+  String get composerIssueExpiry =>
+      'The end date must come after the publication date.';
+
+  @override
+  String get composerErrorNetworkTitle => 'Connection required';
+
+  @override
+  String get composerErrorNetworkBody =>
+      'Posting an announcement needs an internet connection. Your text is kept: reconnect, then try again.';
+
+  @override
+  String get composerErrorForbiddenTitle =>
+      'You no longer post for this account';
+
+  @override
+  String get composerErrorForbiddenBody =>
+      'This official account\'s team has changed. Reach out to a leader if this is a mistake.';
+
+  @override
+  String get composerErrorRejectedTitle => 'Announcement refused';
+
+  @override
+  String get composerErrorRejectedBody =>
+      'The server did not accept this announcement. Fix it, then try again.';
+
+  @override
+  String get composerErrorGoneTitle => 'Announcement not found';
+
+  @override
+  String get composerErrorGoneBody =>
+      'It was deleted in the meantime, perhaps by another member of the account.';
+
+  @override
+  String get composerErrorServerTitle => 'Server unavailable';
+
+  @override
+  String get composerErrorServerBody =>
+      'The server is not responding properly. Try again in a moment.';
+
+  @override
+  String get composerErrorUnauthorizedTitle => 'Session expired';
+
+  @override
+  String get composerErrorUnauthorizedBody => 'Sign in again to post.';
+
+  @override
+  String get composerPublished => 'Announcement posted';
+
+  @override
+  String get composerUpdated => 'Announcement updated';
+
+  @override
+  String get composerDeleted => 'Announcement deleted';
+
+  @override
+  String get statusEdit => 'Edit announcement';
+
+  @override
+  String get statusDelete => 'Delete announcement';
 }

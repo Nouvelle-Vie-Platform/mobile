@@ -719,4 +719,180 @@ class AppLocalizationsEe extends AppLocalizations {
   @override
   String get teachingRetractedMessage =>
       'Woɖee ɖa le nudzraɖoƒe la. Sese la tɔ.';
+
+  @override
+  String get composeAnnouncement => 'Publier une annonce';
+
+  @override
+  String get composerNewTitle => 'Nouvelle annonce';
+
+  @override
+  String get composerEditTitle => 'Modifier l\'annonce';
+
+  @override
+  String get composerAccountLabel => 'Publier au nom de';
+
+  @override
+  String get composerTitleLabel => 'Titre';
+
+  @override
+  String get composerTitleHint => 'Facultatif';
+
+  @override
+  String get composerBodyLabel => 'Message';
+
+  @override
+  String get composerBodyHint => 'Ce que l\'église doit savoir';
+
+  @override
+  String get composerBackgroundLabel => 'Fond';
+
+  @override
+  String get composerBackgroundNone => 'Aucun';
+
+  @override
+  String get composerImageLabel => 'Image de fond';
+
+  @override
+  String get composerImageAdd => 'Choisir une image';
+
+  @override
+  String get composerImageReplace => 'Remplacer l\'image';
+
+  @override
+  String get composerImageRemove => 'Retirer l\'image';
+
+  @override
+  String get composerImageKept => 'Image déjà publiée conservée';
+
+  @override
+  String get composerTimingLabel => 'Publication';
+
+  @override
+  String get composerTimingNow => 'Maintenant';
+
+  @override
+  String get composerTimingScheduled => 'Programmer';
+
+  @override
+  String get composerTimingDraft => 'Brouillon';
+
+  @override
+  String get composerScheduleLabel => 'Date de publication';
+
+  @override
+  String get composerSchedulePick => 'Choisir la date';
+
+  @override
+  String get composerExpiryLabel => 'Fin de publication';
+
+  @override
+  String get composerExpiryNever => 'N\'expire jamais';
+
+  @override
+  String get composerExpiryPick => 'Choisir une fin';
+
+  @override
+  String get composerExpiryClear => 'Retirer la fin';
+
+  @override
+  String get composerPublish => 'Publier';
+
+  @override
+  String get composerSave => 'Enregistrer';
+
+  @override
+  String get composerDelete => 'Supprimer l\'annonce';
+
+  @override
+  String get composerDeleteConfirmTitle => 'Supprimer cette annonce ?';
+
+  @override
+  String get composerDeleteConfirmBody =>
+      'Elle disparaîtra de l\'application de tous les fidèles.';
+
+  @override
+  String get composerDeleteConfirmAction => 'Supprimer';
+
+  @override
+  String get composerNoAccountTitle => 'Aucun compte disponible';
+
+  @override
+  String get composerNoAccountBody =>
+      'Vos comptes officiels ne sont pas encore arrivés sur cet appareil. Réessayez après la prochaine synchronisation.';
+
+  @override
+  String get composerMissingTitle => 'Annonce introuvable';
+
+  @override
+  String get composerMissingBody =>
+      'Elle a été retirée. Il n\'y a plus rien à modifier.';
+
+  @override
+  String get composerIssueNothing =>
+      'Ajoutez au moins un titre, un message ou une image.';
+
+  @override
+  String get composerIssueSchedule => 'Choisissez la date de publication.';
+
+  @override
+  String get composerIssueExpiry =>
+      'La fin de publication doit venir après la publication.';
+
+  @override
+  String get composerErrorNetworkTitle => 'Connexion requise';
+
+  @override
+  String get composerErrorNetworkBody =>
+      'Publier une annonce demande une connexion internet. Votre saisie est conservée : reconnectez-vous, puis réessayez.';
+
+  @override
+  String get composerErrorForbiddenTitle =>
+      'Vous ne publiez plus pour ce compte';
+
+  @override
+  String get composerErrorForbiddenBody =>
+      'Le bureau de ce compte officiel a changé. Rapprochez-vous d\'un responsable si c\'est une erreur.';
+
+  @override
+  String get composerErrorRejectedTitle => 'Annonce refusée';
+
+  @override
+  String get composerErrorRejectedBody =>
+      'Le serveur n\'a pas accepté cette annonce. Corrigez la saisie, puis réessayez.';
+
+  @override
+  String get composerErrorGoneTitle => 'Annonce introuvable';
+
+  @override
+  String get composerErrorGoneBody =>
+      'Elle a été supprimée entre-temps, peut-être par un autre membre du compte.';
+
+  @override
+  String get composerErrorServerTitle => 'Serveur indisponible';
+
+  @override
+  String get composerErrorServerBody =>
+      'Le serveur ne répond pas correctement. Réessayez dans un instant.';
+
+  @override
+  String get composerErrorUnauthorizedTitle => 'Session expirée';
+
+  @override
+  String get composerErrorUnauthorizedBody => 'Reconnectez-vous pour publier.';
+
+  @override
+  String get composerPublished => 'Annonce publiée';
+
+  @override
+  String get composerUpdated => 'Annonce mise à jour';
+
+  @override
+  String get composerDeleted => 'Annonce supprimée';
+
+  @override
+  String get statusEdit => 'Modifier l\'annonce';
+
+  @override
+  String get statusDelete => 'Supprimer l\'annonce';
 }

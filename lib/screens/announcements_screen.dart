@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/players/status_player.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/announcement_view.dart';
+import '../router/app_router.dart';
 import '../state/announcement_providers.dart';
 import '../state/player_providers.dart';
 import '../theme/app_spacing.dart';
@@ -69,8 +71,11 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
   /// Application au premier plan.
   bool _foreground = true;
 
-  /// Feuille listant les statuts ouverte par-dessus la visionneuse.
-  bool _sheetOpen = false;
+  /// Quelque chose est ouvert **par-dessus** la visionneuse : la feuille de
+  /// liste, ou le composeur. Dans les deux cas la lecture se suspend — on ne
+  /// laisse pas les statuts défiler derrière un formulaire, et le son ne doit
+  /// pas continuer sous un écran poussé.
+  bool _overlayOpen = false;
 
   /// Géométrie de la barre de segments — une seule source de vérité, partagée
   /// entre la barre posée en surimpression et l'espace que le contenu doit lui
@@ -130,7 +135,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
   /// La lecture n'a lieu que si l'onglet est visible, l'application au premier
   /// plan, et qu'aucun geste de lecture ne la suspend.
   bool get _shouldPlay =>
-      widget.isActive && _foreground && !_held && !_scrolling && !_sheetOpen;
+      widget.isActive && _foreground && !_held && !_scrolling && !_overlayOpen;
 
   /// Chaîne de résolution de la durée (§4) : durée du média annoncée par le
   /// back, sinon défaut par type. La durée réelle du lecteur primera d'elle-même
@@ -164,7 +169,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
   Future<void> _openList() async {
     final statuses = _statuses;
     if (statuses.isEmpty) return;
-    _sheetOpen = true;
+    _overlayOpen = true;
     _syncPlayback();
     final chosen = await showStatusListSheet(
       context,
@@ -172,7 +177,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
       currentIndex: _index,
     );
     if (!mounted) return;
-    _sheetOpen = false;
+    _overlayOpen = false;
     if (chosen != null && chosen != _index) {
       // Saut direct plutôt qu'animation : d'un bout à l'autre de l'historique,
       // faire défiler toutes les pages intermédiaires n'a aucun sens.
@@ -180,6 +185,36 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     } else {
       _syncPlayback();
     }
+  }
+
+  /// Largeur à réserver à droite de l'en-tête : 48 points par bouton.
+  ///
+  /// Le son et la liste sont toujours là ; la composition et la modification
+  /// s'ajoutent pour la poignée de membres d'un compte officiel. Une réserve
+  /// figée laissait le nom du compte passer sous leurs icônes.
+  double _actionsWidth({required bool compose, required bool edit}) =>
+      48 * (2 + (compose ? 1 : 0) + (edit ? 1 : 0));
+
+  /// **Le composeur suspend la visionneuse** : on ne rédige pas une annonce
+  /// pendant que les statuts défilent derrière le formulaire.
+  Future<void> _openComposer() => _pauseDuring(
+        () => context.pushNamed(AppRoute.announcementCompose),
+      );
+
+  Future<void> _openEditor(String id) => _pauseDuring(
+        () => context.pushNamed(
+          AppRoute.announcementEdit,
+          pathParameters: {'id': id},
+        ),
+      );
+
+  Future<void> _pauseDuring(Future<void> Function() push) async {
+    _overlayOpen = true;
+    _syncPlayback();
+    await push();
+    if (!mounted) return;
+    _overlayOpen = false;
+    _syncPlayback();
   }
 
   void _syncPlayback() {
@@ -270,6 +305,29 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
       imageUrl: current.video?.poster ?? current.backgroundImageUrl,
     );
 
+    // **L'affordance d'écriture, et rien quand elle n'a pas lieu d'être.**
+    //
+    // Pour l'écrasante majorité des fidèles, `canCompose` est faux et cet onglet
+    // reste une visionneuse : pas de bouton grisé, pas de menu caché, aucune
+    // trace. Un chargement ou une lecture de magasin en échec valent « pas
+    // d'affordance » — offrir un bouton dont on ne sait pas encore s'il a un
+    // sens vaut moins que de l'ajouter une demi-seconde plus tard.
+    //
+    // Et c'est un **confort d'affichage, jamais une autorisation** : le serveur
+    // revérifie à chaque écriture, un membre retiré du bureau arrive jusqu'au
+    // composeur et y reçoit un 403, traité là-bas.
+    final canCompose = ref.watch(canComposeAnnouncementProvider).value ?? false;
+    // Les comptes ne se lisent que si l'affordance existe : inutile de faire
+    // tourner deux requêtes de plus sur les téléphones qui ne publieront jamais.
+    final myAccounts =
+        canCompose ? ref.watch(composerOptionsProvider).value?.accounts : null;
+    // Un compte officiel est un espace éditorial **collectif** : ce qui décide
+    // n'est pas « ai-je écrit ce statut » mais « est-il signé de l'un de mes
+    // comptes ». Un comité doit pouvoir se corriger.
+    final canEditCurrent = current.accountId != null &&
+        (myAccounts?.any((account) => account.id == current.accountId) ??
+            false);
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapUp: (details) => _onTapUp(details, width),
@@ -291,6 +349,10 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
               player: _player,
               topInset: _contentTopInset,
               bottomInset: bottomInset,
+              actionsWidth: _actionsWidth(
+                compose: canCompose,
+                edit: canEditCurrent,
+              ),
               onBodyScroll: _setScrolling,
             ),
           ),
@@ -321,6 +383,8 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
               onToggleMute: () =>
                   ref.read(statusMutedProvider.notifier).toggle(),
               onOpenList: _openList,
+              onCompose: canCompose ? _openComposer : null,
+              onEdit: canEditCurrent ? () => _openEditor(current.id) : null,
             ),
           ),
         ],
@@ -328,6 +392,16 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     );
   }
 }
+
+/// Clés des deux commandes d'écriture de la visionneuse.
+///
+/// Ciblées par clé et non par icône : c'est **l'absence** que les tests doivent
+/// pouvoir prouver pour l'immense majorité des fidèles, et une absence se
+/// vérifie mal sur un pictogramme qui pourrait changer.
+@visibleForTesting
+const Key composeActionKey = Key('status-compose');
+@visibleForTesting
+const Key editActionKey = Key('status-edit');
 
 /// Actions de la visionneuse : coupure du son et accès à la liste.
 ///
@@ -340,6 +414,8 @@ class _Actions extends StatelessWidget {
     required this.muted,
     required this.onToggleMute,
     required this.onOpenList,
+    this.onCompose,
+    this.onEdit,
   });
 
   final Color foreground;
@@ -347,11 +423,37 @@ class _Actions extends StatelessWidget {
   final VoidCallback onToggleMute;
   final VoidCallback onOpenList;
 
+  /// Ouvre le composeur. **`null` = le bouton n'existe pas**, et c'est le cas de
+  /// presque tout le monde. Pas de bouton désactivé : une commande grisée dit
+  /// « ce n'est pas pour vous maintenant », alors qu'ici ce n'est pas pour eux
+  /// du tout.
+  final VoidCallback? onCompose;
+
+  /// Ouvre la modification du statut affiché — `null` quand il n'est signé
+  /// d'aucun de mes comptes.
+  final VoidCallback? onEdit;
+
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (onEdit != null)
+          IconButton(
+            key: editActionKey,
+            onPressed: onEdit,
+            color: foreground,
+            tooltip: context.l10n.statusEdit,
+            icon: const Icon(Icons.edit_outlined),
+          ),
+        if (onCompose != null)
+          IconButton(
+            key: composeActionKey,
+            onPressed: onCompose,
+            color: foreground,
+            tooltip: context.l10n.composeAnnouncement,
+            icon: const Icon(Icons.add_rounded),
+          ),
         IconButton(
           onPressed: onToggleMute,
           color: foreground,
@@ -379,6 +481,7 @@ class _StatusPage extends StatelessWidget {
     required this.player,
     required this.topInset,
     required this.bottomInset,
+    required this.actionsWidth,
     required this.onBodyScroll,
   });
 
@@ -387,6 +490,7 @@ class _StatusPage extends StatelessWidget {
   final StatusPlayer player;
   final double topInset;
   final double bottomInset;
+  final double actionsWidth;
   final ValueChanged<bool> onBodyScroll;
 
   @override
@@ -409,6 +513,7 @@ class _StatusPage extends StatelessWidget {
         foreground: foreground,
         topInset: topInset,
         bottomInset: bottomInset,
+        actionsWidth: actionsWidth,
         onBodyScroll: onBodyScroll,
         waveform: status.audio == null ? null : _waveform(foreground),
       ),

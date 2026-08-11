@@ -23,6 +23,7 @@ class StatusContent extends StatelessWidget {
     this.waveform,
     this.topInset = 0,
     this.bottomInset = 0,
+    this.actionsWidth = _Header.defaultActionsWidth,
     this.onBodyScroll,
   });
 
@@ -41,6 +42,15 @@ class StatusContent extends StatelessWidget {
 
   /// Hauteur réservée en bas pour la barre de navigation et son encoche.
   final double bottomInset;
+
+  /// Largeur réservée à droite de l'en-tête pour les boutons posés en
+  /// surimpression par l'écran.
+  ///
+  /// Elle **varie** : le son et la liste sont là pour tout le monde, la
+  /// composition et la modification seulement pour les membres d'un compte
+  /// officiel. Figée à deux boutons, la réserve laissait le nom du compte passer
+  /// sous les icônes des rares personnes qui en ont quatre.
+  final double actionsWidth;
 
   /// Notifié quand le corps commence (`true`) ou cesse (`false`) de défiler :
   /// l'auto-avance doit se suspendre tant qu'on lit.
@@ -86,6 +96,7 @@ class StatusContent extends StatelessWidget {
               announcement: announcement,
               foreground: foreground,
               muted: muted,
+              actionsWidth: actionsWidth,
             ),
             // Une seule pastille possible désormais : le badge « vidéo ».
             // Celle de catégorie (`tag`) a disparu avec la refonte des annonces
@@ -186,14 +197,18 @@ class _Header extends StatelessWidget {
     required this.announcement,
     required this.foreground,
     required this.muted,
+    required this.actionsWidth,
   });
 
   final AnnouncementView announcement;
   final Color foreground;
   final Color muted;
 
-  /// Largeur occupée par les deux boutons d'action posés en surimpression.
-  static const double actionsWidth = 96;
+  /// Largeur occupée par les boutons d'action posés en surimpression.
+  final double actionsWidth;
+
+  /// Le cas commun : le son et la liste, deux boutons de 48 points.
+  static const double defaultActionsWidth = 96;
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +241,7 @@ class _Header extends StatelessWidget {
         ),
         // Place réservée aux actions (son, liste) posées en surimpression par
         // l'écran : sans ça, l'en-tête passerait dessous.
-        const SizedBox(width: _Header.actionsWidth),
+        SizedBox(width: actionsWidth),
       ],
     );
   }

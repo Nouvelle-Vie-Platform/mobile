@@ -116,4 +116,65 @@ class AnnouncementDao extends DatabaseAccessor<AppDatabase>
     final query = selectOnly(officialAccountMemberships)..addColumns([count]);
     return query.map((row) => (row.read(count) ?? 0) > 0);
   }
+
+  /// **Les comptes officiels sous lesquels je peux publier.**
+  ///
+  /// Une jointure **interne**, à rebours de tout le reste de ce DAO, et c'est
+  /// délibéré : ailleurs on tolère l'absence parce qu'il vaut mieux un statut
+  /// sans en-tête qu'un statut disparu. Ici l'absence est bloquante — on ne peut
+  /// pas offrir de signer au nom d'un compte qu'on ne sait pas nommer. Une
+  /// appartenance dont le compte n'est pas encore arrivé sort donc de la liste
+  /// et y entrera au cycle suivant.
+  ///
+  /// Les comptes désactivés (`isActive` faux) sont écartés : un compte se
+  /// désactive au portail, jamais ne se supprime, et ses annonces continuent de
+  /// s'afficher — mais on n'en publie plus de nouvelles.
+  ///
+  /// Trié par nom, avec l'identifiant en départage : deux comptes homonymes de
+  /// branches différentes ne doivent pas échanger leur place d'un `build` à
+  /// l'autre.
+  Selectable<OfficialAccountRow> myAccounts() {
+    final query = select(officialAccounts).join([
+      innerJoin(
+        officialAccountMemberships,
+        officialAccountMemberships.accountId.equalsExp(officialAccounts.id),
+      ),
+    ])
+      ..where(officialAccounts.isActive.equals(true))
+      ..orderBy([
+        OrderingTerm.asc(officialAccounts.name),
+        OrderingTerm.asc(officialAccounts.id),
+      ]);
+    return query.map((row) => row.readTable(officialAccounts));
+  }
+
+  /// **Les fonds encore proposés à la composition**, dans l'ordre du portail.
+  ///
+  /// `isActive` est une **donnée, pas un filtre de stockage** : un fond retiré
+  /// du catalogue n'est plus offert ici, mais les annonces qui le portent déjà
+  /// gardent leur habillage — c'est pour ça qu'`allAnnouncements` le joint sans
+  /// condition. Filtrer au stockage aurait fait perdre leur dégradé à des
+  /// statuts parfaitement valides.
+  Selectable<StatusBackgroundRow> composableBackgrounds() =>
+      select(statusBackgrounds)
+        ..where((t) => t.isActive.equals(true))
+        ..orderBy([
+          (t) => OrderingTerm.asc(t.position),
+          (t) => OrderingTerm.asc(t.id),
+        ]);
+
+  /// **Une annonce brute, par identifiant** — les valeurs telles que le serveur
+  /// les a servies, sans jointure ni résolution.
+  ///
+  /// C'est ce que lit le composeur pour préremplir une modification, et
+  /// justement pas `AnnouncementView` : le modèle de lecture a remplacé
+  /// `accountId` et `backgroundId` par un nom de compte et trois arrêts de
+  /// dégradé. Repartir de lui obligerait à **défaire la jointure** — retrouver
+  /// un identifiant à partir d'un libellé, ce qui n'a pas de solution quand deux
+  /// comptes portent le même nom court.
+  ///
+  /// Se lit en `watchSingleOrNull` : `null` = l'annonce a été retirée (par le
+  /// serveur, ou par un autre membre du même compte) pendant qu'on la modifiait.
+  Selectable<AnnouncementRow> announcementById(String id) =>
+      select(announcements)..where((t) => t.id.equals(id));
 }

@@ -179,6 +179,7 @@ class AnnouncementView {
   const AnnouncementView({
     required this.id,
     required this.publishedAt,
+    this.accountId,
     this.accountName,
     this.accountAvatarUrl,
     this.title,
@@ -199,6 +200,7 @@ class AnnouncementView {
   AnnouncementView.resolve({
     required this.id,
     required this.publishedAt,
+    this.accountId,
     String? accountName,
     String? accountShortName,
     String? accountAvatarUrl,
@@ -228,6 +230,26 @@ class AnnouncementView {
 
   /// Mise à disposition, en UTC. **Formatée côté client**, jamais par le back.
   final DateTime publishedAt;
+
+  /// **Le compte signataire, en identifiant brut** — le seul champ de ce modèle
+  /// qui ne se destine pas à l'affichage.
+  ///
+  /// Il n'y est pas par symétrie avec le magasin, mais parce qu'une seule
+  /// question a besoin de lui : *cette annonce est-elle de l'un de mes
+  /// comptes ?*, celle qui décide si les actions « modifier » et « supprimer »
+  /// existent sur le statut affiché. Un compte officiel est un espace éditorial
+  /// **collectif** : un membre peut corriger toute annonce de ses comptes, pas
+  /// seulement celles qu'il a écrites — le lecteur tient le comité pour
+  /// responsable de ce qui est signé de son nom.
+  ///
+  /// Comparer [accountName] à la place serait un faux ami : deux comptes de
+  /// branches différentes peuvent porter le même nom court, et l'écran offrirait
+  /// de modifier l'annonce d'un autre bureau — que le serveur refuserait ensuite
+  /// en 403, après la saisie.
+  ///
+  /// `null` quand la source ne le porte pas (double en mémoire, fixtures de
+  /// test) : l'affordance n'apparaît alors pas, ce qui est le bon défaut.
+  final int? accountId;
 
   /// En-tête du statut — `shortName ?? name` du compte officiel.
   ///

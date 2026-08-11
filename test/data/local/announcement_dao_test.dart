@@ -132,4 +132,107 @@ void main() {
       expect(await db.announcementDao.hasMembership().getSingle(), isTrue);
     });
   });
+
+  group('AnnouncementDao.myAccounts — ce que le composeur peut signer', () {
+    test('joint mes appartenances aux comptes officiels', () async {
+      await db.batch((b) {
+        b.insert(db.officialAccounts, officialAccountRow(3, name: 'Diaconat'));
+        b.insert(db.officialAccounts, officialAccountRow(4, name: 'Jeunesse'));
+        b.insert(db.officialAccountMemberships, membershipRow(1, accountId: 3));
+      });
+
+      final rows = await db.announcementDao.myAccounts().get();
+
+      // Le compte 4 existe, mais je n'en suis pas membre.
+      expect(rows.map((row) => row.id), [3]);
+    });
+
+    test(
+      'une appartenance dont le compte n\'est pas arrivé ne se propose pas',
+      () async {
+        // À rebours du reste du DAO, la jointure est **interne** : ailleurs on
+        // tolère l'absence parce qu'il vaut mieux un statut sans en-tête qu'un
+        // statut disparu. Ici l'absence est bloquante — on ne peut pas offrir
+        // de signer au nom d'un compte qu'on ne sait pas nommer.
+        await db
+            .into(db.officialAccountMemberships)
+            .insert(membershipRow(1, accountId: 404));
+
+        expect(await db.announcementDao.myAccounts().get(), isEmpty);
+      },
+    );
+
+    test('un compte désactivé n\'est plus proposé', () async {
+      // Un compte se désactive au portail, jamais ne se supprime : ses annonces
+      // continuent de s'afficher, mais on n'en publie plus de nouvelles.
+      await db.batch((b) {
+        b.insert(db.officialAccounts, officialAccountRow(3, isActive: false));
+        b.insert(db.officialAccountMemberships, membershipRow(1, accountId: 3));
+      });
+
+      expect(await db.announcementDao.myAccounts().get(), isEmpty);
+    });
+  });
+
+  group('AnnouncementDao.composableBackgrounds', () {
+    test('ne propose que les fonds actifs, triés par position', () async {
+      await db.batch((b) {
+        b.insert(db.statusBackgrounds, statusBackgroundRow(1, position: 2));
+        b.insert(db.statusBackgrounds, statusBackgroundRow(2, position: 1));
+        b.insert(
+          db.statusBackgrounds,
+          statusBackgroundRow(3, position: 0, isActive: false),
+        );
+      });
+
+      final rows = await db.announcementDao.composableBackgrounds().get();
+
+      expect(rows.map((row) => row.id), [2, 1]);
+    });
+
+    test(
+      'un fond désactivé reste peint sur les annonces qui le portent',
+      () async {
+        // `isActive` est une **donnée**, pas un filtre de stockage : le retirer
+        // du magasin ferait perdre son dégradé à un statut parfaitement valide.
+        await db.batch((b) {
+          b.insert(
+            db.statusBackgrounds,
+            statusBackgroundRow(7, isActive: false),
+          );
+          b.insert(db.announcements, announcementRow('a-1', backgroundId: 7));
+        });
+
+        expect(await db.announcementDao.composableBackgrounds().get(), isEmpty);
+        final rows = await db.announcementDao.allAnnouncements().get();
+        expect(rows.single.background?.id, 7);
+      },
+    );
+  });
+
+  group('AnnouncementDao.announcementById — les valeurs brutes', () {
+    test('rend la ligne telle que le serveur l\'a servie', () async {
+      // Le composeur repart des **identifiants**, pas du modèle de lecture :
+      // celui-ci a remplacé `accountId` et `backgroundId` par un nom de compte
+      // et trois arrêts de dégradé, et retrouver un identifiant depuis un
+      // libellé n'a pas de solution quand deux comptes ont le même nom court.
+      await db.into(db.announcements).insert(
+            announcementRow('a-1', accountId: 3, backgroundId: 5, title: 'Vig'),
+          );
+
+      final row =
+          await db.announcementDao.announcementById('a-1').getSingleOrNull();
+
+      expect(row?.accountId, 3);
+      expect(row?.backgroundId, 5);
+      expect(row?.title, 'Vig');
+    });
+
+    test('rend null pour une annonce retirée du magasin', () async {
+      expect(
+        await db.announcementDao.announcementById('absente').getSingleOrNull(),
+        isNull,
+      );
+    });
+  });
 }

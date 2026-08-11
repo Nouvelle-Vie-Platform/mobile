@@ -1,8 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
+import '../data/pickers/status_image_picker.dart';
+import '../data/repositories/announcement_composer.dart';
 import '../data/repositories/announcement_repository.dart';
+import '../data/repositories/http_announcement_composer.dart';
 import '../data/repositories/store_announcement_repository.dart';
+import '../models/announcement_draft.dart';
 import '../models/announcement_view.dart';
 import 'sync_providers.dart';
 
@@ -63,6 +67,51 @@ final announcementsProvider = StreamProvider<List<AnnouncementView>>(
 final canComposeAnnouncementProvider = StreamProvider<bool>(
   (ref) => ref.watch(announcementRepositoryProvider).canCompose(),
   retry: _noAutomaticRetry,
+);
+
+/// **L'écriture** — le seul provider de cet onglet qui parle au réseau.
+///
+/// Sans backend, [UnavailableAnnouncementComposer] refuse tout en disant qu'il
+/// faut du réseau. Ce n'est pas un bouchon paresseux : l'écriture exige le
+/// réseau (ADR-0031), il n'y a **pas** de chemin hors-ligne à simuler, et un
+/// double qui « réussirait » en mémoire mentirait sur l'existence d'un tel
+/// chemin.
+final announcementComposerProvider = Provider<AnnouncementComposer>(
+  (ref) => AppEnv.useBackend
+      ? HttpAnnouncementComposer()
+      : const UnavailableAnnouncementComposer(),
+);
+
+/// **Ce que le composeur propose** : mes comptes officiels et les fonds actifs.
+///
+/// Une lecture de **magasin**, comme le reste de l'onglet — seul l'envoi passe
+/// par le réseau. Ouvrir le formulaire sur un appel REST le rendrait dépendant
+/// du réseau *à l'ouverture*, et ferait attendre un sélecteur de teintes qui est
+/// déjà dans la poche.
+final composerOptionsProvider = StreamProvider<ComposerOptions>(
+  (ref) => ref.watch(announcementRepositoryProvider).composerOptions(),
+  retry: _noAutomaticRetry,
+);
+
+/// **L'annonce que l'on modifie**, en valeurs brutes.
+///
+/// Une `family` sur l'identifiant, comme `teachingByIdProvider` : la route porte
+/// l'identifiant, l'écran résout depuis le magasin à chaque `build`. Une valeur
+/// `null` n'est pas une erreur — c'est une annonce retirée pendant qu'on la
+/// modifiait, et l'écran le dit.
+final announcementDraftProvider =
+    StreamProvider.family<AnnouncementDraft?, String>(
+  (ref, id) => ref.watch(announcementRepositoryProvider).draftOf(id),
+  retry: _noAutomaticRetry,
+);
+
+/// **Le choix d'une image de fond**, derrière une abstraction.
+///
+/// À surcharger par [InertStatusImagePicker] dans les tests d'écran : sans ça,
+/// monter le composeur toucherait la photothèque de la machine — ou lèverait une
+/// `MissingPluginException` que personne ne relierait au formulaire.
+final statusImagePickerProvider = Provider<StatusImagePicker>(
+  (ref) => GalleryStatusImagePicker(),
 );
 
 List<AnnouncementView> _visibleAndSorted(
