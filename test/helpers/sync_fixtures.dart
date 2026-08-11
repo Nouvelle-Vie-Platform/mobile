@@ -21,6 +21,10 @@
 /// | ligne `branches` | `GET /sync/branches` | `app/auth/transformers/branch_transformer.ts` |
 /// | ligne `gatherings` | `GET /sync/gatherings` | `app/sync/descriptors/teaching_family_collection.ts` (issue serveur #133) |
 /// | ligne `gathering_types` | `GET /sync/gathering_types` | idem — **le même transformer** que les deux collections d'enseignement |
+/// | ligne `announcements` | `GET /sync/announcements` | PRD `annonces-comptes-officiels.md`, ADR-0029 |
+/// | ligne `status_backgrounds` | `GET /sync/status_backgrounds` | ADR-0030 (les arrêts de dégradé et l'encre, dérivés à l'écriture) |
+/// | ligne `official_accounts` | `GET /sync/official_accounts` | PRD `annonces-comptes-officiels.md` |
+/// | ligne `official_account_memberships` | `GET /sync/official_account_memberships` | idem — collection **scoppée sur l'acteur** |
 ///
 /// ## Pourquoi ce fichier existe
 ///
@@ -120,7 +124,7 @@ final String staleCursor = serverCursor(
 // `GET /sync` — le manifeste
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Les **quinze** collections du registre serveur (`app/sync/descriptors/
+/// Les **dix-huit** collections du registre serveur (`app/sync/descriptors/
 /// registry.ts`), dans l'ordre du registre, avec leur partition.
 ///
 /// Treize jusqu'à l'issue serveur #133, qui y a ajouté la seconde famille de la
@@ -129,6 +133,15 @@ final String staleCursor = serverCursor(
 /// et non un élargissement : une collection neuve est ignorée par un client qui
 /// ne la demande pas, là où une collection élargie contamine ceux qui ne savent
 /// pas la lire.
+///
+/// Trois de plus avec la refonte des annonces (PRD serveur
+/// `annonces-comptes-officiels.md`, ADR-0029 à ADR-0031) : `status_backgrounds`
+/// est un référentiel partagé, `official_accounts` est cloisonnée par branche —
+/// donc soumise au garde-fou « périmètre modifié », un fidèle qui change de
+/// branche ne doit pas garder en magasin les comptes de l'ancienne —, et
+/// `official_account_memberships` est **scoppée sur l'acteur** : le serveur n'y
+/// sert jamais l'appartenance de quelqu'un d'autre, d'où la partition `private`.
+/// `announcements`, elle, était déjà au registre.
 ///
 /// Le manifeste les liste **toutes**, pas seulement celles qui ont bougé. La
 /// partition n'est pas décorative : le garde-fou « droits changés » ne lève
@@ -142,6 +155,9 @@ const Map<String, String> kSyncCollections = {
   'contributors': 'reference',
   'teaching_types': 'reference',
   'gathering_types': 'reference',
+  'status_backgrounds': 'reference',
+  'official_accounts': 'branch',
+  'official_account_memberships': 'private',
   'spiritual_notes': 'private',
   'playback_progress': 'private',
   'events': 'branch',
@@ -761,4 +777,212 @@ Map<String, Object?> gatheringTypesPage() => deltaPage(
         updatedAtIso: '2026-04-20T08:00:00.000Z',
         id: 11,
       ),
+    );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lignes des annonces — PRD serveur `annonces-comptes-officiels.md`
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Un fond de statut**, tel que le référentiel partagé le sert.
+///
+/// Les trois arrêts du dégradé arrivent **déjà dérivés** de `baseColor`, et
+/// `ink` dit quelle encre reste lisible dessus (ADR-0030). Le client peint ; il
+/// ne recalcule ni la variation ni le contraste. Un client qui dériverait ses
+/// propres arrêts rendrait deux dégradés différents pour la même annonce selon
+/// la version installée — sur un mur de statuts, ça se voit.
+const Map<String, Object?> brandStatusBackgroundPayload = {
+  'id': 1,
+  'label': 'Bleu de marque',
+  'baseColor': '#223B8C',
+  'topColor': '#2E4CAE',
+  'bottomColor': '#16265C',
+  'ink': 'light',
+  'position': 1,
+  'isActive': true,
+  'createdAt': '2026-02-01T08:00:00.000Z',
+  'updatedAt': '2026-02-01T08:00:00.000Z',
+};
+
+/// **Un fond clair** — `ink: 'dark'`. C'est le cas qui prouve que l'encre est
+/// une donnée et non une déduction : sur un or pâle, un texte blanc devient
+/// illisible, et personne ne s'en aperçoit avant les utilisateurs.
+const Map<String, Object?> lightStatusBackgroundPayload = {
+  'id': 2,
+  'label': 'Or accent',
+  'baseColor': '#F8D05E',
+  'topColor': '#FBE08F',
+  'bottomColor': '#D6A92F',
+  'ink': 'dark',
+  'position': 2,
+  'isActive': true,
+  'createdAt': '2026-02-01T08:00:00.000Z',
+  'updatedAt': '2026-02-01T08:00:00.000Z',
+};
+
+/// **Un fond retiré du catalogue** (`isActive: false`).
+///
+/// Il voyage quand même, et c'est le même motif que `visibleOnHome` d'une
+/// rubrique : le drapeau apprend au client que le fond n'est plus proposé à la
+/// composition, alors que les annonces qui le portent déjà gardent leur
+/// habillage. Le filtrer côté serveur ferait perdre leur dégradé à des statuts
+/// parfaitement valides.
+const Map<String, Object?> retiredStatusBackgroundPayload = {
+  'id': 3,
+  'label': 'Nuit profonde',
+  'baseColor': '#0C1422',
+  'topColor': '#16223A',
+  'bottomColor': '#050810',
+  'ink': 'light',
+  'position': 3,
+  'isActive': false,
+  'createdAt': '2026-02-01T08:00:00.000Z',
+  'updatedAt': '2026-04-02T08:00:00.000Z',
+};
+
+/// Page complète du référentiel des fonds.
+Map<String, Object?> statusBackgroundsPage() => deltaPage(
+      items: const [
+        brandStatusBackgroundPayload,
+        lightStatusBackgroundPayload,
+        retiredStatusBackgroundPayload,
+      ],
+      nextCursor: serverCursor(
+        updatedAtIso: '2026-04-02T08:00:00.000Z',
+        id: 3,
+      ),
+    );
+
+/// **Un compte officiel d'église.** C'est lui qui signe un statut : l'annonce ne
+/// porte que son identifiant, et l'en-tête se joint (`shortName ?? name`).
+///
+/// `avatarUrl` est **relative**, comme toutes les URL de média du protocole.
+const Map<String, Object?> officialAccountPayload = {
+  'id': 1,
+  'name': 'Maison du Miracle — Temple Central',
+  'shortName': 'Maison du Miracle',
+  'branchId': 1,
+  'avatarUrl': '/uploads/accounts/temple-central.webp',
+  'backgroundId': 1,
+  'isActive': true,
+  'createdAt': '2026-02-01T08:00:00.000Z',
+  'updatedAt': '2026-02-01T08:00:00.000Z',
+};
+
+/// **Un compte sans nom court ni avatar**, à portée nationale (`branchId` nul).
+const Map<String, Object?> minimalOfficialAccountPayload = {
+  'id': 2,
+  'name': 'Diaconat',
+  'shortName': null,
+  'branchId': null,
+  'avatarUrl': null,
+  'backgroundId': null,
+  'isActive': true,
+  'createdAt': '2026-02-01T08:00:00.000Z',
+  'updatedAt': '2026-02-01T08:00:00.000Z',
+};
+
+/// Page du référentiel des comptes officiels.
+Map<String, Object?> officialAccountsPage() => deltaPage(
+      items: const [officialAccountPayload, minimalOfficialAccountPayload],
+      nextCursor: serverCursor(
+        updatedAtIso: '2026-02-01T08:00:00.000Z',
+        id: 2,
+      ),
+    );
+
+/// **Une appartenance — la mienne.** La collection est scoppée sur l'acteur : le
+/// serveur n'y sert jamais celle de quelqu'un d'autre, `userId` est donc
+/// toujours le porteur du jeton.
+const Map<String, Object?> membershipPayload = {
+  'id': 10,
+  'accountId': 2,
+  'userId': 'b6f0a1c2-0000-4000-8000-000000000001',
+  'createdAt': '2026-03-01T08:00:00.000Z',
+  'updatedAt': '2026-03-01T08:00:00.000Z',
+};
+
+/// Page des appartenances.
+Map<String, Object?> membershipsPage() => deltaPage(
+      items: const [membershipPayload],
+      nextCursor: serverCursor(
+        updatedAtIso: '2026-03-01T08:00:00.000Z',
+        id: 10,
+      ),
+    );
+
+/// **Une annonce complète.**
+///
+/// Trois champs qu'un lecteur du modèle mobile d'avant chercherait n'y sont
+/// **pas**, et chacun est une décision :
+///
+/// - **`author`** — remplacé par `accountId`, qui se joint sur
+///   `official_accounts`. Une chaîne d'auteur recopiée dans chaque annonce est
+///   une valeur figée : renommer le compte laisserait les téléphones sur
+///   l'ancien nom, indéfiniment et en silence ;
+/// - **`backgroundColor`** — remplacé par `backgroundId`, qui se joint sur
+///   `status_backgrounds` ;
+/// - **`tag`** — abandonné : le compte occupe déjà l'en-tête, « COE » en auteur
+///   *et* en pastille serait la même information dite deux fois.
+///
+/// Il n'y a pas davantage de durée d'affichage, de libellé d'action, de piste
+/// audio ni de vidéo : le serveur n'en sert aucun (les médias sont la phase 2).
+const Map<String, Object?> fullAnnouncementPayload = {
+  'id': '019f5a00-0000-7000-8000-000000000001',
+  'accountId': 1,
+  'branchId': 1,
+  'title': 'Veillée de prière',
+  'body': 'Vendredi de 20h à minuit au Temple Central.',
+  'publishedAt': '2026-05-20T18:00:00.000Z',
+  'expiresAt': null,
+  'backgroundId': 1,
+  'backgroundImageUrl': null,
+  'isPinned': true,
+  'ownerId': 'b6f0a1c2-0000-4000-8000-000000000001',
+  'createdAt': '2026-05-20T17:55:00.000Z',
+  'updatedAt': '2026-05-20T18:00:00.000Z',
+};
+
+/// **Une annonce qui expire.**
+///
+/// `expiresAt` voyage **brut**, et le serveur ne retirera jamais cette ligne du
+/// flux une fois la date passée : un statut « valable jusqu'à ce soir » doit
+/// disparaître **à la seconde**, y compris hors-ligne, ce qu'un filtrage serveur
+/// ne peut pas tenir — il la laisserait affichée jusqu'à la synchronisation
+/// suivante. Le filtre appartient donc au client, et à lui seul.
+const Map<String, Object?> expiringAnnouncementPayload = {
+  'id': '019f5a00-0000-7000-8000-000000000002',
+  'accountId': 2,
+  'branchId': null,
+  'title': null,
+  'body': 'Collecte de vivres jusqu\'à ce soir, salle paroissiale.',
+  'publishedAt': '2026-05-21T07:00:00.000Z',
+  'expiresAt': '2026-05-21T20:00:00.000Z',
+  'backgroundId': null,
+  'backgroundImageUrl': '/uploads/announcements/collecte.webp',
+  'isPinned': false,
+  'ownerId': 'b6f0a1c2-0000-4000-8000-000000000002',
+  'createdAt': '2026-05-21T06:58:00.000Z',
+  'updatedAt': '2026-05-21T07:00:00.000Z',
+};
+
+/// **Une rétractation d'annonce.** Le tombstone porte `deletedAt` ; c'est la
+/// seule question posée à un élément avant de le désérialiser.
+const Map<String, Object?> retractedAnnouncementPayload = {
+  'id': '019f5a00-0000-7000-8000-000000000009',
+  'deletedAt': '2026-05-22T09:00:00.000Z',
+};
+
+/// Page mixte de `announcements` : annonces complètes et rétractation **dans le
+/// même tableau**, la rétractation en dernier.
+Map<String, Object?> mixedAnnouncementsPage({String? nextCursor}) => deltaPage(
+      items: const [
+        fullAnnouncementPayload,
+        expiringAnnouncementPayload,
+        retractedAnnouncementPayload,
+      ],
+      nextCursor: nextCursor ??
+          serverCursor(
+            updatedAtIso: '2026-05-22T09:00:00.000Z',
+            id: '019f5a00-0000-7000-8000-000000000009',
+          ),
     );

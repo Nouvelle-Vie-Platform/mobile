@@ -14,8 +14,8 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les quinze collections du registre, dans l\'ordre', () {
-      expect(kSyncCollections, hasLength(15));
+    test('les dix-huit collections du registre, dans l\'ordre', () {
+      expect(kSyncCollections, hasLength(18));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
@@ -258,6 +258,98 @@ void main() {
     });
   });
 
+  group('GET /sync/announcements — la ligne', () {
+    test('treize clés : deux identifiants à joindre, aucune valeur résolue',
+        () {
+      for (final announcement in _announcements) {
+        expect(announcement.keys.toSet(), {
+          'id',
+          'accountId',
+          'branchId',
+          'title',
+          'body',
+          'publishedAt',
+          'expiresAt',
+          'backgroundId',
+          'backgroundImageUrl',
+          'isPinned',
+          'ownerId',
+          'createdAt',
+          'updatedAt',
+        });
+        expect(announcement['id'], isA<String>());
+        expect(announcement['accountId'], isA<int>());
+      }
+    });
+
+    test('ni `author`, ni `tag`, ni `backgroundColor`, ni durée d\'affichage',
+        () {
+      // Le cœur de la refonte. Un nom d'auteur recopié dans chaque annonce est
+      // une **valeur figée** : renommer le compte ne bouscule l'`updatedAt`
+      // d'aucune annonce, donc aucune ligne ne repasserait par le flux delta
+      // pour corriger la copie — les téléphones garderaient l'ancien nom
+      // indéfiniment et en silence. Même raisonnement pour la couleur.
+      //
+      // `tag` est parti pour une autre raison : le compte occupe déjà
+      // l'en-tête, « COE » en auteur *et* en pastille dit deux fois la même
+      // chose.
+      for (final announcement in _announcements) {
+        expect(
+          announcement.keys,
+          isNot(anyElement(isIn(const [
+            'author',
+            'tag',
+            'backgroundColor',
+            'durationMs',
+            'actionLabel',
+            'actionRoute',
+            'audio',
+            'video',
+          ]))),
+        );
+      }
+    });
+
+    test('`expiresAt` voyage brut, et l\'annonce expirée reste dans le flux',
+        () {
+      // Le serveur ne retire **jamais** une annonce expirée du flux delta. Un
+      // statut « valable jusqu'à ce soir » doit disparaître **à la seconde**, y
+      // compris hors-ligne : un filtrage serveur le laisserait affiché jusqu'à
+      // la synchronisation suivante. Le filtre appartient au client, et à lui
+      // seul.
+      expect(
+        DateTime.tryParse(expiringAnnouncementPayload['expiresAt']! as String),
+        isNotNull,
+      );
+      // `null` = n'expire jamais, le défaut.
+      expect(fullAnnouncementPayload['expiresAt'], isNull);
+    });
+
+    test('titre, corps, fond et image sont tous facultatifs', () {
+      // Un statut façon WhatsApp n'a souvent pas de titre ; sans fond servi, le
+      // rendu retombe sur la teinte dérivée du hash de l'identifiant.
+      expect(expiringAnnouncementPayload['title'], isNull);
+      expect(expiringAnnouncementPayload['backgroundId'], isNull);
+      expect(fullAnnouncementPayload['backgroundImageUrl'], isNull);
+    });
+
+    test('la rétractation porte `deletedAt`', () {
+      expect(retractedAnnouncementPayload['deletedAt'], isNotNull);
+      expect(
+        DateTime.tryParse(retractedAnnouncementPayload['deletedAt']! as String),
+        isNotNull,
+      );
+    });
+
+    test('les deux natures voyagent dans le même tableau', () {
+      final items = (mixedAnnouncementsPage()['items']! as List)
+          .cast<Map<String, Object?>>();
+
+      expect(items.where((i) => i['deletedAt'] != null), hasLength(1));
+      expect(items.last['deletedAt'], isNotNull);
+    });
+  });
+
   group('GET /sync/gatherings — la ligne', () {
     test('la même charge utile qu\'un enseignement, clé pour clé', () {
       // Les deux familles passent par le **même transformer** côté serveur
@@ -470,6 +562,81 @@ void main() {
       expect(listGatheringTypePayload['color'], isNull);
     });
 
+    test(
+      'status_backgrounds : les trois arrêts et l\'encre, dérivés à l\'écriture',
+      () {
+        // C'est le contrat central de l'habillage des statuts (ADR-0030) : le
+        // serveur **a déjà** dérivé la variation et tranché le contraste. Un
+        // client qui recalculerait un dégradé à partir de `baseColor` rendrait
+        // deux fonds différents pour la même annonce selon la version
+        // installée ; un client qui déduirait l'encre de la luminance
+        // laisserait un or pâle sous un texte blanc.
+        for (final background in _statusBackgrounds) {
+          expect(background.keys.toSet(), {
+            'id',
+            'label',
+            'baseColor',
+            'topColor',
+            'bottomColor',
+            'ink',
+            'position',
+            'isActive',
+            'createdAt',
+            'updatedAt',
+          });
+          expect(background['id'], isA<int>());
+          expect(background['ink'], isIn(const ['light', 'dark']));
+          for (final key in ['baseColor', 'topColor', 'bottomColor']) {
+            expect(background[key], matches(RegExp(r'^#[0-9A-Fa-f]{6}$')));
+          }
+        }
+        // Un fond retiré du catalogue voyage quand même : c'est le drapeau qui
+        // l'apprend au client, et les annonces qui le portent gardent leur
+        // habillage.
+        expect(retiredStatusBackgroundPayload['isActive'], isFalse);
+      },
+    );
+
+    test('official_accounts : le nom court et l\'avatar peuvent être nuls', () {
+      for (final account in _officialAccounts) {
+        expect(account.keys.toSet(), {
+          'id',
+          'name',
+          'shortName',
+          'branchId',
+          'avatarUrl',
+          'backgroundId',
+          'isActive',
+          'createdAt',
+          'updatedAt',
+        });
+        expect(account['id'], isA<int>());
+      }
+      // `branchId: null` = **national**, pas « inconnu » ; `shortName: null` =
+      // l'en-tête retombe sur le nom complet.
+      expect(minimalOfficialAccountPayload['shortName'], isNull);
+      expect(minimalOfficialAccountPayload['branchId'], isNull);
+      expect(minimalOfficialAccountPayload['avatarUrl'], isNull);
+      // L'URL d'avatar est **relative** : l'hôte change d'un environnement à
+      // l'autre, la résolution appartient au client.
+      expect(officialAccountPayload['avatarUrl'], startsWith('/uploads/'));
+    });
+
+    test('official_account_memberships : cinq clés, scoppée sur l\'acteur', () {
+      expect(membershipPayload.keys.toSet(), {
+        'id',
+        'accountId',
+        'userId',
+        'createdAt',
+        'updatedAt',
+      });
+      // Le serveur n'y sert jamais l'appartenance de quelqu'un d'autre : une
+      // ligne suffit à décider de l'affordance d'écriture, et il n'y a personne
+      // à écarter côté client.
+      expect(membershipPayload['accountId'], isA<int>());
+      expect(membershipPayload['userId'], isA<String>());
+    });
+
     test('branches : ni `timezone` ni `pastorId` ne voyagent', () {
       expect(branchPayload.keys.toSet(), {
         'id',
@@ -507,6 +674,22 @@ const List<Map<String, Object?>> _gatherings = [
 const List<Map<String, Object?>> _gatheringTypes = [
   heroGatheringTypePayload,
   listGatheringTypePayload,
+];
+
+const List<Map<String, Object?>> _announcements = [
+  fullAnnouncementPayload,
+  expiringAnnouncementPayload,
+];
+
+const List<Map<String, Object?>> _statusBackgrounds = [
+  brandStatusBackgroundPayload,
+  lightStatusBackgroundPayload,
+  retiredStatusBackgroundPayload,
+];
+
+const List<Map<String, Object?>> _officialAccounts = [
+  officialAccountPayload,
+  minimalOfficialAccountPayload,
 ];
 
 List<Map<String, Object?>> _collections(Map<String, Object?> manifest) =>
