@@ -231,6 +231,109 @@ GatheringsCompanion gatheringRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/status_backgrounds` — le référentiel des **fonds de statut**.
+///
+/// Les trois arrêts du dégradé et l'encre sont écrits **tels que servis** : le
+/// serveur les a dérivés à l'écriture (ADR-0030), et le client peint. Les
+/// recalculer à partir de `baseColor` donnerait deux dégradés différents pour la
+/// même annonce selon la version installée — sur un mur de statuts, ça se voit.
+///
+/// `isActive: false` est une **donnée**, pas un filtre : le fond cesse d'être
+/// proposé à la composition, mais les annonces qui le portent gardent leur
+/// habillage.
+StatusBackgroundsCompanion statusBackgroundRowOf(Map<String, Object?> item) {
+  const collection = 'status_backgrounds';
+  return StatusBackgroundsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    label: _text(collection, item, 'label'),
+    baseColor: _text(collection, item, 'baseColor'),
+    topColor: _text(collection, item, 'topColor'),
+    bottomColor: _text(collection, item, 'bottomColor'),
+    // `light` | `dark`, stocké tel quel. Une valeur inconnue se replie à
+    // l'affichage plutôt que de coûter la page entière.
+    ink: _text(collection, item, 'ink'),
+    position: Value(item['position'] is int ? item['position']! as int : 0),
+    isActive: Value(item['isActive'] != false),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/official_accounts` — les **comptes officiels d'église**.
+///
+/// C'est ce référentiel qui porte l'en-tête d'un statut (`shortName ?? name`),
+/// résolu **à la lecture** : une annonce ne porte que l'identifiant du compte.
+OfficialAccountsCompanion officialAccountRowOf(Map<String, Object?> item) {
+  const collection = 'official_accounts';
+  return OfficialAccountsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    name: _text(collection, item, 'name'),
+    shortName: Value(_optionalText(item, 'shortName')),
+    // `null` = **national**, jamais « inconnu ».
+    branchId: Value(_optionalInt(item, 'branchId')),
+    // Relative : la résolution contre la base d'API appartient au client.
+    avatarUrl: Value(_optionalText(item, 'avatarUrl')),
+    // Entier nu, sans clé étrangère : la cible n'a pas à exister.
+    backgroundId: Value(_optionalInt(item, 'backgroundId')),
+    isActive: Value(item['isActive'] != false),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/official_account_memberships` — **mes** appartenances.
+///
+/// La collection est scoppée sur l'acteur : le serveur n'y sert jamais
+/// l'appartenance de quelqu'un d'autre. Le client n'a donc personne à écarter,
+/// et `userId` n'est stocké que pour le diagnostic.
+OfficialAccountMembershipsCompanion officialAccountMembershipRowOf(
+  Map<String, Object?> item,
+) {
+  const collection = 'official_account_memberships';
+  return OfficialAccountMembershipsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    accountId: _requiredInt(collection, item, 'accountId'),
+    userId: _text(collection, item, 'userId'),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/announcements` — les statuts de l'onglet Annonces.
+///
+/// **Ni `author`, ni `tag`, ni `backgroundColor`, ni durée d'affichage** : le
+/// serveur sert `accountId` et `backgroundId`, qui se **joignent**. Une valeur
+/// résolue à l'écriture est une valeur figée qu'aucun renommage ne viendrait
+/// rafraîchir (ADR-0026, décision 3).
+///
+/// `expiresAt` est écrit **brut** : le serveur ne retire jamais une annonce
+/// expirée du flux, et c'est la lecture qui la fait disparaître — à la seconde,
+/// y compris hors-ligne.
+///
+/// N'est appelée que sur un élément dont `readsAsRetraction` a dit qu'il n'en
+/// était pas un : c'est ce qui l'autorise à exiger `accountId` et `publishedAt`.
+AnnouncementsCompanion announcementRowOf(Map<String, Object?> item) {
+  const collection = 'announcements';
+  return AnnouncementsCompanion.insert(
+    id: contentId(collection, item),
+    // Entier nu, sans clé étrangère : le compte n'a pas à être déjà arrivé.
+    accountId: _requiredInt(collection, item, 'accountId'),
+    branchId: Value(_optionalInt(item, 'branchId')),
+    title: Value(_optionalText(item, 'title')),
+    body: Value(_optionalText(item, 'body')),
+    // Exigée : c'est la clé de tri du mur, une annonce sans date n'a pas de
+    // place où aller.
+    publishedAt: _requiredInstant(collection, item, 'publishedAt'),
+    expiresAt: Value(_instant(item, 'expiresAt')),
+    backgroundId: Value(_optionalInt(item, 'backgroundId')),
+    backgroundImageUrl: Value(_optionalText(item, 'backgroundImageUrl')),
+    isPinned: Value(item['isPinned'] == true),
+    ownerId: Value(_optionalText(item, 'ownerId')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Rouages
 // ─────────────────────────────────────────────────────────────────────────────
@@ -249,6 +352,33 @@ String? _optionalText(Map<String, Object?> item, String field) {
 int? _optionalInt(Map<String, Object?> item, String field) {
   final value = item[field];
   return value is int ? value : null;
+}
+
+/// Entier **exigé** — un `accountId` d'annonce, une cible d'appartenance.
+///
+/// Comme [_text], et pour la même raison : une ligne qui ne porte pas ce que sa
+/// collection exige ne devrait jamais arriver, et échouer bruyamment vaut mieux
+/// que d'écrire une ligne mutilée dans le magasin qui peint les écrans.
+int _requiredInt(String collection, Map<String, Object?> item, String field) {
+  final value = item[field];
+  if (value is int) return value;
+  throw MalformedSyncRow(collection, field, value);
+}
+
+/// Instant **exigé** et ancré en UTC — la date de mise à disposition d'une
+/// annonce, qui est aussi sa clé de tri.
+///
+/// À la différence d'[_instant], une valeur illisible lève : une annonce sans
+/// date de publication n'a pas de place où aller sur le mur, et la ranger
+/// arbitrairement serait pire que de rejeter la page et la rejouer.
+DateTime _requiredInstant(
+  String collection,
+  Map<String, Object?> item,
+  String field,
+) {
+  final parsed = _instant(item, field);
+  if (parsed == null) throw MalformedSyncRow(collection, field, item[field]);
+  return parsed;
 }
 
 /// Analyse un instant ISO-8601 et l'**ancre en UTC**.

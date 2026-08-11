@@ -85,6 +85,87 @@ GatheringsCompanion gatheringRow(
       recordedAt: Value(recordedAt),
     );
 
+/// Un **fond de statut**. Les trois arrêts du dégradé arrivent dérivés par le
+/// serveur (ADR-0030) : le magasin les stocke bruts, le client peint.
+StatusBackgroundsCompanion statusBackgroundRow(
+  int id, {
+  String label = 'Bleu de marque',
+  String baseColor = '#223B8C',
+  String topColor = '#2E4CAE',
+  String bottomColor = '#16265C',
+  String ink = 'light',
+  int position = 0,
+  bool isActive = true,
+}) =>
+    StatusBackgroundsCompanion.insert(
+      id: Value(id),
+      label: label,
+      baseColor: baseColor,
+      topColor: topColor,
+      bottomColor: bottomColor,
+      ink: ink,
+      position: Value(position),
+      isActive: Value(isActive),
+    );
+
+/// Un **compte officiel d'église**. C'est lui qui porte l'en-tête d'un statut :
+/// `shortName ?? name`, résolu à la lecture.
+OfficialAccountsCompanion officialAccountRow(
+  int id, {
+  String name = 'Maison du Miracle',
+  String? shortName,
+  int? branchId,
+  String? avatarUrl,
+  int? backgroundId,
+  bool isActive = true,
+}) =>
+    OfficialAccountsCompanion.insert(
+      id: Value(id),
+      name: name,
+      shortName: Value(shortName),
+      branchId: Value(branchId),
+      avatarUrl: Value(avatarUrl),
+      backgroundId: Value(backgroundId),
+      isActive: Value(isActive),
+    );
+
+/// Une **appartenance** — la mienne, par construction de la collection.
+OfficialAccountMembershipsCompanion membershipRow(
+  int id, {
+  int accountId = 1,
+  String userId = 'b6f0a1c2-0000-4000-8000-000000000001',
+}) =>
+    OfficialAccountMembershipsCompanion.insert(
+      id: Value(id),
+      accountId: accountId,
+      userId: userId,
+    );
+
+/// Une **annonce**. `accountId` et `backgroundId` sont des **entiers nus** :
+/// rien n'oblige la cible à exister, et l'annonce s'affiche quand même.
+AnnouncementsCompanion announcementRow(
+  String id, {
+  int accountId = 1,
+  String? title,
+  String? body,
+  DateTime? publishedAt,
+  DateTime? expiresAt,
+  int? backgroundId,
+  String? backgroundImageUrl,
+  bool isPinned = false,
+}) =>
+    AnnouncementsCompanion.insert(
+      id: id,
+      accountId: accountId,
+      title: Value(title),
+      body: Value(body),
+      publishedAt: publishedAt ?? DateTime.utc(2026, 5, 1, 8),
+      expiresAt: Value(expiresAt),
+      backgroundId: Value(backgroundId),
+      backgroundImageUrl: Value(backgroundImageUrl),
+      isPinned: Value(isPinned),
+    );
+
 /// Un enseignement. `contributorId` et `teachingTypeId` sont des **entiers
 /// nus** : rien n'oblige la cible à exister.
 TeachingsCompanion teachingRow(
