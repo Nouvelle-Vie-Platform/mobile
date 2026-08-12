@@ -51,9 +51,9 @@ serveur, amorcer la base) : `test/integration/README.md`.
 Couches claires, pensées pour brancher un backend sans toucher l'UI :
 
 - `lib/models/` — modèles immuables (`ChurchEvent`, `Teaching`, `CommunityGroup`,
-  `PrayerRequest`, `SpiritualNote`, `ChatMessage`) et **modèles de lecture**
-  (`content_view.dart`, `mediatheque_view.dart`, `gathering_view.dart`,
-  `announcement_view.dart`).
+  `PrayerRequest`, `SpiritualNote`, `ChatMessage` — **fictif**, voir « La
+  messagerie de groupe ») et **modèles de lecture** (`content_view.dart`,
+  `mediatheque_view.dart`, `gathering_view.dart`, `announcement_view.dart`).
 - `lib/data/` — `sample_data.dart` (données fictives) + `repositories/` :
   - `church_repository.dart` (`ChurchRepository` abstrait + `InMemoryChurchRepository`)
     — **synchrone**, et il ne couvre que les domaines **encore fictifs**.
@@ -311,6 +311,32 @@ Six règles, toutes vérifiées par des tests :
 Le contrat détaillé, le nom du champ de fichier (`backgroundImage`) et la limite
 assumée (on ne sait pas retirer une image déjà publiée) sont dans
 `docs/statuts-annonces.md` §11.
+
+### La messagerie de groupe — l'origine se lit sur `(authorId, isSystem)`
+**Encore fictive** (`ChatMessage`, `chatProvider`, `InMemoryChurchRepository`) :
+le modèle mobile ne porte aujourd'hui **ni `authorId` ni `isSystem`**. Le
+contrat de branchement est écrit d'avance dans `docs/messagerie-groupe.md`, et
+il tient en une règle :
+
+| `authorId` | `isSystem` | origine |
+| --- | --- | --- |
+| uuid | `false` | un membre |
+| `null` | `true` | message **système** (serveur) |
+| `null` | `false` | **auteur retiré** — compte supprimé (ADR-0032) |
+
+**Ne jamais tester `authorId == null` pour décider « c'est un message
+système ».** Le nul a deux sens depuis la suppression de compte
+(`miracle-house-server#128`) : un client qui teste le nul seul affiche les
+messages d'un membre parti comme des annonces du serveur — centrés, en gris,
+sans bulle. Rien ne plante, aucun test ne rougit.
+
+Deux corollaires qui se ratent aussi en silence : le détachement arrive **sur
+une ligne déjà stockée** (`author_id → NULL` avec `updated_at` bumpé, donc dans
+le flux delta), l'écriture du magasin doit donc **remplacer** et non fusionner —
+`Value(_optionalText(…))` + `InsertMode.insertOrReplace`, le patron existant ; et
+le mobile n'a **aucune source de nom de membre** (pas de collection `users`,
+ADR-0029), ce qui est un prérequis de branchement, pas un détail d'habillage
+(§6 du document).
 
 ### Brancher un vrai backend : **un repository dédié asynchrone par domaine**
 Surcharger `churchRepositoryProvider` **ne suffit pas** et n'est pas le motif :
