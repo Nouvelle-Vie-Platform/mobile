@@ -45,6 +45,11 @@ class GroupChatScreen extends ConsumerWidget {
               children: [
                 ChatDatePill(label: l.chatToday),
                 const SizedBox(height: AppSpacing.md),
+                // Le choix bannière / bulle est le **seul** point où l'origine
+                // d'un message se décide. Au branchement il se lira sur le
+                // couple `(authorId, isSystem)` et non sur un auteur absent :
+                // `(null, false)` = auteur retiré, et c'est une **bulle**
+                // (docs/messagerie-groupe.md §1 et §3).
                 for (final m in messages)
                   if (m.system)
                     ChatInfoBanner(text: m.text)

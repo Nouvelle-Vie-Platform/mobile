@@ -374,6 +374,36 @@ class SpiritualNote {
   final String preview;
 }
 
+/// Message d'une discussion de groupe — **modèle de maquette**, alimenté par
+/// `SampleData` (voir `docs/messagerie-groupe.md`, qui tient le contrat de
+/// branchement).
+///
+/// Il porte des valeurs déjà résolues que le serveur ne sert pas : [author] est
+/// un nom d'affichage (aucune identité de membre ne circule — il n'existe pas
+/// de collection de synchronisation `users`, ADR-0029), [time] une chaîne déjà
+/// formatée, [mine] une comparaison déjà faite.
+///
+/// **La règle à ne pas rater au branchement.** Le serveur sert `authorId`
+/// (uuid nullable) et `isSystem`, et l'origine d'un message se lit sur le
+/// **couple**, jamais sur `authorId` seul :
+///
+/// | `authorId` | `isSystem` | origine |
+/// | --- | --- | --- |
+/// | uuid | `false` | un membre |
+/// | `null` | `true` | message **système**, émis par le serveur |
+/// | `null` | `false` | **auteur retiré** — compte supprimé (ADR-0032) |
+///
+/// Le nul avait un seul sens jusqu'à la suppression de compte
+/// (`miracle-house-server#128`) : `null` = message système. Il en a deux
+/// depuis. Un client qui teste `authorId == null` pour décider « c'est un
+/// message système » affiche les messages d'un membre parti comme des annonces
+/// du serveur — centrés, en gris, sans bulle. Rien ne plante, aucun test ne
+/// rougit.
+///
+/// [system] est donc le futur `isSystem` — il ne se déduit pas d'un auteur
+/// absent — et il n'a **pas** de champ jumeau ici : la maquette n'a pas de cas
+/// « auteur retiré », et en fabriquer un sans donnée serveur derrière donnerait
+/// un écran qui marche sur les fixtures et se vide en production.
 class ChatMessage {
   const ChatMessage({
     required this.author,
