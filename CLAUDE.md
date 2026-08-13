@@ -72,7 +72,8 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
 - `lib/models/` — modèles immuables (`ChurchEvent`, `Teaching`, `CommunityGroup`,
   `PrayerRequest`, `SpiritualNote`, `ChatMessage` — **fictif**, voir « La
   messagerie de groupe ») et **modèles de lecture** (`content_view.dart`,
-  `mediatheque_view.dart`, `gathering_view.dart`, `announcement_view.dart`).
+  `mediatheque_view.dart`, `gathering_view.dart`, `announcement_view.dart`,
+  `legal_document_view.dart`).
 - `lib/data/` — `sample_data.dart` (données fictives) + `repositories/` :
   - `church_repository.dart` (`ChurchRepository` abstrait + `InMemoryChurchRepository`)
     — **synchrone**, et il ne couvre que les domaines **encore fictifs**.
@@ -80,7 +81,8 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
     `calendar_repository.dart`, `mediatheque_repository.dart` /
     `store_mediatheque_repository.dart`, `gathering_repository.dart` /
     `store_gathering_repository.dart`, `announcement_repository.dart` /
-    `store_announcement_repository.dart` — repositories **dédiés et asynchrones**,
+    `store_announcement_repository.dart`, `legal_repository.dart` /
+    `store_legal_repository.dart` — repositories **dédiés et asynchrones**,
     chacun hors de `ChurchRepository`.
   - `announcement_composer.dart` / `http_announcement_composer.dart` —
     **l'écriture** des annonces (#36), séparée de leur lecture ; voir « L'onglet
@@ -309,10 +311,13 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   `official_account_memberships`, `announcements` (le mur de statuts, #35).
   `tables/playback_tables.dart` — `playback_progress` (collection **répliquée**)
   et `local_playback_positions` (**locale seule**, #43).
+  `tables/legal_tables.dart` — `legal_documents` (#55) : **une ligne courante
+  par genre** (`cgu`, `privacy`, `about`), sections brutes en JSON,
+  **sans tombstone** — un document ne se supprime pas, il s'édite.
 - `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart`,
-  `gathering_dao.dart`, `announcement_dao.dart` et `playback_dao.dart` —
-  lectures, **un DAO par domaine**. Le dernier est le seul qui **écrive**, et
-  seulement dans la table locale seule.
+  `gathering_dao.dart`, `announcement_dao.dart`, `playback_dao.dart` et
+  `legal_dao.dart` — lectures, **un DAO par domaine**. `playback_dao` est le
+  seul qui **écrive**, et seulement dans la table locale seule.
 
 **Six règles qui ne se renégocient pas** (ADR-0026 en donne le *pourquoi*) :
 1. **Une page appliquée = une transaction** : ses lignes **et** son curseur, ou
@@ -356,8 +361,9 @@ qu'elle remplit. Le réseau ne peint jamais.
   désérialiseur à convention unique se trompe sur la moitié des clés.
 - `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
   `gathering_types`, `status_backgrounds`, `official_accounts`,
-  `official_account_memberships`, `contributors`, `branches`, puis `teachings`,
-  `gatherings`, `announcements`, `playback_progress`.
+  `official_account_memberships`, `legal_documents`, `contributors`,
+  `branches`, puis `teachings`, `gatherings`, `announcements`,
+  `playback_progress`.
 - `sync_api.dart` — `GET /sync` et `GET /sync/{collection}`, sur le `Dio`
   d'`ApiClient`. Un **404** devient `UnknownSyncCollection`.
 - `sync_engine.dart` — la boucle. `sync_scheduler.dart` — les déclencheurs.
@@ -414,13 +420,17 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `gatheringSectionsProvider`. Deux jeux de providers et non un paramétré par
     une famille : c'est ce qui rend impossible qu'un rassemblement se glisse
     dans une liste d'enseignements.
+  - `legal_providers.dart` : `legalRepositoryProvider` (magasin avec backend,
+    double en mémoire sinon) et `legalDocumentProvider.family` (par genre) —
+    `StreamProvider`, `retry: _noAutomaticRetry`. **Le repli de langue n'y
+    passe pas par `pick`** : voir la section i18n plus bas.
   - `locale_providers.dart` : `contentLocaleProvider` — la langue de repli des
     **contenus** servis par le back, distincte de celle de l'interface.
   - `sync_providers.dart` : `appDatabaseProvider` (à surcharger par une base en
     mémoire dans les tests), `syncDaoProvider`, `mediathequeDaoProvider`,
     `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`,
     `gatheringDaoProvider`, `announcementDaoProvider`, `playbackDaoProvider`,
-    `pullToRefreshProvider`.
+    `legalDaoProvider`, `pullToRefreshProvider`.
     Les trois DAO de lecture sont lus par les trois repositories de magasin.
     **Les trois déclencheurs d'ADR-0017 sont câblés** : `app.dart` appelle
     `SyncScheduler.start()` au premier frame sous `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
@@ -731,11 +741,13 @@ route — par un `PopScope` **du dépôt** : celui du paquet
 (`androidCloseOnBackTap`) évalue sa garde pendant le `build` et referme donc le
 tiroir à la moindre reconstruction.
 
-`/legal/:kind` et `/about` existent **avant leurs écrans** (#55, #57) : une
-entrée de menu inerte passe pour une panne. `LegalPlaceholderScreen` y rend
-`ContentAbsence.notSynced` — exactement ce que les écrans réels diront devant un
-magasin vide. Ce n'est **pas un écran d'absence de plus** : ni pictogramme, ni
-libellé, ni disposition en propre.
+`/legal/:kind` est servie depuis #55 par `LegalDocumentScreen` : `BrandAppBar`,
+`LegalDocumentBody` dans un `ListView`, et `ContentAbsence.notSynced` devant un
+magasin qui n'a pas encore reçu le document. `/about` attend encore #57 et garde
+`LegalPlaceholderScreen` — son écran ne se réduit pas au document servi, il
+porte la version du binaire. Ce provisoire n'est **pas un écran d'absence de
+plus** : ni pictogramme, ni libellé, ni disposition en propre. Il disparaît avec
+#57.
 
 ### Composants réutilisables clés
 - `BrandAppBar` — en-tête au dégradé bleu de marque (`gradientPrimary`), texte
@@ -811,6 +823,30 @@ libellé, ni disposition en propre.
 - Workflow : éditer les `.arb` (au moins `fr`) → `flutter gen-l10n` → utiliser
   `context.l10n.maCle`. Ne pas éditer à la main les `app_localizations*.dart`
   (générés).
+
+### La **seule dérogation** à `pick` — les documents légaux (ADR-0035)
+`pick` est l'unique autorité du repli de langue des **contenus** (ADR-0023), et
+il se replie **par champ**. `legal_documents` en sort, et c'est la seule
+collection qui en sorte : **la langue d'un document légal se décide une fois,
+pour le document entier** — `resolveLegalLocale`
+(`models/legal_document_view.dart`). La locale demandée n'est retenue que si
+**toutes** les sections la portent, `heading` **et** `body` ; une seule absence
+bascule le document **entier** sur le français. Le résultat est binaire.
+
+Le motif n'est pas esthétique : un document en éwé dont trois articles sortent
+en français est **impossible à accepter** — on demande de cocher « j'ai lu et
+j'accepte » un texte dont une partie est illisible, et le serveur en garde une
+trace horodatée. Et ça s'affiche parfaitement, sans faire rougir un test.
+
+Trois garde-fous, et la redondance est voulue : la fonction porte le nom du
+**motif** (jamais `pickAll` ni `pickSections`) ; un test prouve qu'**une seule**
+section manquante bascule tout — pas « la majorité »
+(`test/models/legal_document_view_test.dart`) ; et un garde-fou de **source**
+interdit `pick(` dans tout fichier de `lib/` dont le chemin porte « legal ».
+
+`languageSubtag` (`utils/i18n_text.dart`) est public pour cette fonction-là :
+découper `fr_FR` en `fr` est mécanique, la dérogation porte sur la **règle de
+repli**, pas sur la lecture d'une étiquette.
 
 ## Git
 - **Commits canoniques** : un commit par fonctionnalité, atomique, préfixes

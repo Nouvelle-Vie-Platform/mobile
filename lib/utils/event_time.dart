@@ -147,6 +147,19 @@ String formatEventFullDate(ChurchEvent event, String locale) {
 String formatHorizonDate(DateTime instant, String locale) =>
     DateFormat.yMMMMd(locale).format(instant.toUtc());
 
+/// Date en toutes lettres du pied d'un **document légal** (« 9 mars 2026 »).
+///
+/// Même règle que [formatHorizonDate], et pour la même raison : la date de
+/// publication d'une CGU n'appartient à aucune branche, n'a ni fuseau ni heure
+/// qui compte, et se rend **telle que le serveur l'a posée** (UTC). La
+/// convertir dans le fuseau du lecteur ferait reculer d'un jour la date d'un
+/// texte qui fait foi.
+///
+/// Nommée à part plutôt que réutilisée telle quelle : « horizon » est un mot de
+/// l'agenda, et un pied de CGU n'en borne aucun.
+String formatLegalDate(DateTime instant, String locale) =>
+    DateFormat.yMMMMd(locale).format(instant.toUtc());
+
 /// Jour de la semaine en toutes lettres, capitalisé (« Dimanche »).
 String formatEventWeekday(ChurchEvent event, String locale) {
   final day = DateFormat.EEEE(locale)

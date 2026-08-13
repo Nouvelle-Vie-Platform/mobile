@@ -919,4 +919,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get drawerAbout => 'About';
+
+  @override
+  String legalFooterUpdated(int version, String date) {
+    return 'Version $version — updated on $date';
+  }
+
+  @override
+  String legalFooterVersion(int version) {
+    return 'Version $version';
+  }
 }

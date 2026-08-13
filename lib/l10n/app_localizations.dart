@@ -1761,6 +1761,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'À propos'**
   String get drawerAbout;
+
+  /// Pied d'un document légal. La date est formatée CÔTÉ CLIENT (utils/event_time.dart), jamais servie en toutes lettres par le serveur : un texte pré-formaté ne se traduit pas et ne se relit pas dans le fuseau du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Version {version} — mise à jour le {date}'**
+  String legalFooterUpdated(int version, String date);
+
+  /// Pied d'un document légal quand le serveur n'a servi NI date de mise à jour NI date de publication. L'absence se rend comme une absence — jamais une date inventée, qui ferait foi sur un texte qu'on demande d'accepter
+  ///
+  /// In fr, this message translates to:
+  /// **'Version {version}'**
+  String legalFooterVersion(int version);
 }
 
 class _AppLocalizationsDelegate
