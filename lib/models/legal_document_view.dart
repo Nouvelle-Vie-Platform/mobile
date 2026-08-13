@@ -33,6 +33,18 @@ abstract final class LegalDocumentKind {
   /// « À propos » a la sienne (`/about`), parce que son écran ne se réduit pas
   /// au document servi.
   static const List<String> consultable = [terms, privacy];
+
+  /// **Les genres qui entrent dans la barrière de consentement** (#56), dans
+  /// l'ordre où ils s'y présentent.
+  ///
+  /// Une liste à part de [consultable], bien qu'elle porte aujourd'hui les
+  /// mêmes deux valeurs : ce sont deux questions différentes — « quoi lire »
+  /// et « quoi accepter » —, et le jour où un genre sera consultable sans être
+  /// acceptable, la garde ne doit pas se mettre à l'exiger parce qu'une liste
+  /// de routes a bougé. [about] n'est ni l'un ni l'autre : accepter une
+  /// présentation n'a pas de sens, et le serveur refuse d'ailleurs son
+  /// acceptation (`E_LEGAL_KIND_NOT_ACCEPTABLE`).
+  static const List<String> acceptable = [terms, privacy];
 }
 
 /// Une **section brute**, telle que le serveur l'envoie et telle que le magasin

@@ -473,6 +473,7 @@ class User {
     this.status = UserStatus.newcomer,
     this.avatarUrl,
     this.profileComplete = false,
+    this.acceptedLegal = const {},
   });
 
   final String id;
@@ -498,6 +499,44 @@ class User {
   /// Calculé côté serveur. Ne bloque jamais : pilote seulement une bannière
   /// douce d'invitation à compléter le profil.
   final bool profileComplete;
+
+  /// **Le résumé des versions légales acceptées**, par genre :
+  /// `{ 'cgu': 3, 'privacy': 2 }` (ADR-0036, `GET /auth/me` et
+  /// `POST /legal/accept` servent le même objet sous le même nom).
+  ///
+  /// Il voyage avec la **session**, et non dans le magasin, parce que la garde
+  /// de route qui le lit est **synchrone** : elle ne peut ni attendre une
+  /// requête ni attendre un cycle de synchronisation.
+  ///
+  /// **Un genre jamais accepté est ABSENT de la carte, jamais à `0`.** Le
+  /// serveur l'omet délibérément — il n'existe pas de « version 0 » à
+  /// accepter, et l'absence se lit « jamais accepté ». Un client qui garnirait
+  /// les trous à zéro n'y gagnerait rien et perdrait la distinction.
+  ///
+  /// La carte est **vide** quand le serveur n'a rien servi : un `User` reconstruit
+  /// d'un JSON sans la clé (le portail admin en sert un, ADR-0036) se lit donc
+  /// « rien d'accepté ». C'est le pire cas, et c'est le bon : la barrière se
+  /// lève, elle ne se saute pas.
+  final Map<String, int> acceptedLegal;
+
+  /// Le même utilisateur, avec un **nouveau résumé d'acceptation**.
+  ///
+  /// La réponse de `POST /legal/accept` porte le résumé à jour : l'appliquer
+  /// ici évite un `GET /auth/me` de plus entre le bouton « Continuer » et
+  /// l'application (ADR-0036).
+  User withAcceptedLegal(Map<String, int> accepted) => User(
+        id: id,
+        phone: phone,
+        email: email,
+        title: title,
+        firstName: firstName,
+        lastName: lastName,
+        branchId: branchId,
+        status: status,
+        avatarUrl: avatarUrl,
+        profileComplete: profileComplete,
+        acceptedLegal: Map<String, int>.unmodifiable(accepted),
+      );
 
   /// Nom d'affichage recomposé : « civilité + prénom + nom ».
   ///
@@ -529,6 +568,7 @@ class User {
             : UserStatus.values.byName(json['status'] as String),
         avatarUrl: json['avatarUrl'] as String?,
         profileComplete: json['profileComplete'] as bool? ?? false,
+        acceptedLegal: _acceptedLegalFromJson(json['acceptedLegal']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -542,7 +582,26 @@ class User {
         'status': status.name,
         'avatarUrl': avatarUrl,
         'profileComplete': profileComplete,
+        // **Le cache local le porte aussi**, et ce n'est pas un détail : sans
+        // lui, un démarrage hors ligne rouvrirait la barrière à quelqu'un qui a
+        // déjà accepté — et il ne pourrait pas la refermer, l'accord exigeant
+        // le réseau (ADR-0036, décision 2).
+        'acceptedLegal': acceptedLegal,
       };
+}
+
+/// Le résumé d'acceptation tel qu'il arrive du serveur (ou du cache local).
+///
+/// **Clé absente ou nulle → carte vide**, jamais une carte garnie de zéros.
+/// Les valeurs sont relues en `int` : le JSON les rend en `num`, et le cache
+/// local repasse par la même porte.
+Map<String, int> _acceptedLegalFromJson(Object? raw) {
+  if (raw is! Map) return const {};
+  return {
+    for (final entry in raw.entries)
+      if (entry.key is String && entry.value is num)
+        entry.key as String: (entry.value as num).toInt(),
+  };
 }
 
 /// Branche locale de l'église (liste statique en phase mock, référentiel servi

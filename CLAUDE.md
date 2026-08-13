@@ -87,6 +87,10 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
   - `announcement_composer.dart` / `http_announcement_composer.dart` —
     **l'écriture** des annonces (#36), séparée de leur lecture ; voir « L'onglet
     Annonces ».
+  - `legal_acceptance_recorder.dart` / `http_legal_acceptance_recorder.dart` —
+    **l'écriture du consentement** (#56, `POST /legal/accept`), séparée de la
+    lecture des documents pour les mêmes trois raisons que le composeur
+    d'annonces : autre source, autre forme, autre régime hors-ligne.
   - `playback_progress_reporter.dart` / `http_playback_progress_reporter.dart`
     / `playback_progress_recorder.dart` — **la reprise de lecture** (#43) :
     le contrat de rapport, son implémentation HTTP muette, et les cinq
@@ -423,7 +427,11 @@ pas un accusé de réception : il ne devient jamais le curseur local.
   - `legal_providers.dart` : `legalRepositoryProvider` (magasin avec backend,
     double en mémoire sinon) et `legalDocumentProvider.family` (par genre) —
     `StreamProvider`, `retry: _noAutomaticRetry`. **Le repli de langue n'y
-    passe pas par `pick`** : voir la section i18n plus bas.
+    passe pas par `pick`** : voir la section i18n plus bas. Depuis #56 s'y
+    ajoutent `legalAcceptanceRecorderProvider` (le seul de ce domaine qui parle
+    au réseau), `mandatoryLegalVersionsProvider` et
+    `pendingLegalAcceptancesProvider` — la **lecture synchrone** dont vit la
+    barrière, voir plus bas.
   - `locale_providers.dart` : `contentLocaleProvider` — la langue de repli des
     **contenus** servis par le back, distincte de celle de l'interface.
   - `sync_providers.dart` : `appDatabaseProvider` (à surcharger par une base en
@@ -748,6 +756,55 @@ magasin qui n'a pas encore reçu le document. `/about` attend encore #57 et gard
 porte la version du binaire. Ce provisoire n'est **pas un écran d'absence de
 plus** : ni pictogramme, ni libellé, ni disposition en propre. Il disparaît avec
 #57.
+
+#### La barrière de consentement (#56) — `/legal/accept`, ADR-0036
+Spécification : `docs/documents-legaux.md` §4. **Une garde de route, pas une
+case de formulaire** : le parcours d'authentification est unifié et le
+formulaire de profil est skippable, il n'existe aucun écran d'inscription où
+poser une case — et aucun des trois emplacements « évidents » ne sait traiter la
+**re-acceptation** d'un fidèle connecté depuis deux ans.
+
+Cinq points qui se ratent en silence :
+
+1. **La garde est SYNCHRONE.** Elle lit `AuthState.user` (le résumé
+   `acceptedLegal` voyage avec la session, jamais dans le magasin) et la ligne
+   courante du magasin par `AsyncValue.value` — jamais un `Future`, jamais un
+   `AsyncValue` en chargement. Une garde qui attend, c'est un écran blanc au
+   démarrage.
+2. **Une absence de document NE BLOQUE PAS ; une absence d'acceptation BLOQUE.**
+   Pas de `lastMandatoryVersion` → pas de barrière (sinon le premier lancement
+   est un écran mort). `acceptedLegal` ne porte **pas de `0`** : un genre jamais
+   accepté est *absent* de la carte, et cette absence-là bloque. `about` n'entre
+   jamais dans le calcul (`LegalDocumentKind.acceptable`).
+3. **`pendingLegalAcceptancesProvider` lit les planchers AVANT l'utilisateur.**
+   Un `return` anticipé sur l'utilisateur nul le laisserait sans dépendance vers
+   le magasin pendant tout le démarrage — la session s'ouvre après —, et la
+   barrière n'apparaîtrait qu'à la navigation suivante. Corollaire : le routeur
+   doit être **écouté** (`app.dart` en fait un `ref.watch`), un provider inactif
+   voyant ses abonnements mis en pause par Riverpod 3.
+4. **`/legal/accept` se déclare AVANT `/legal/:kind`** — go_router essaie les
+   routes dans l'ordre —, et la garde renvoie `/home` depuis `/legal/accept` dès
+   que plus rien n'est exigé. C'est ce qui retire l'écran **de lui-même** après
+   un accord (l'écran ne navigue jamais, motif de la déconnexion) et ce qui
+   empêche la route d'être un cul-de-sac : `PopScope(canPop: false)` n'en laisse
+   sortir personne.
+5. **Hors ligne : lisible, mais bloquant.** Le texte vient du magasin ; l'accord
+   exige le réseau, comme l'écriture d'une annonce (ADR-0031) — pas de file
+   d'envoi, pas d'état « accepté, non confirmé ». Quatre refus, quatre phrases
+   (réseau / 401 / 422 → **recharger**, jamais réessayer / 5xx), **les cases
+   restent cochées** dans les quatre, et l'application reste inaccessible tant
+   que le `POST` n'a pas abouti.
+
+Le succès applique le résumé rendu par la réponse (`applyAcceptedLegal`) **et le
+redescend au cache local** : sans cela, le prochain démarrage hors ligne
+rouvrirait une barrière que seul le réseau peut refermer.
+
+`registerTermsPrefix` / `registerTermsLink` ont été **réécrites** avant d'être
+câblées sur l'écran du code : « En créant un compte, vous acceptez nos… » est la
+formule de l'acceptation *implicite*, fausse sous consentement explicite tracé.
+Elles y annoncent désormais la barrière au lieu de prétendre l'avoir remplacée,
+et ne sont **pas cliquables** — `/legal/:kind` est hors des emplacements
+autorisés avant authentification.
 
 ### Composants réutilisables clés
 - `BrandAppBar` — en-tête au dégradé bleu de marque (`gradientPrimary`), texte

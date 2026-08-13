@@ -14,6 +14,7 @@ import '../screens/event_detail_screen.dart';
 import '../screens/gathering_detail_screen.dart';
 import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
+import '../screens/legal_acceptance_screen.dart';
 import '../screens/legal_document_screen.dart';
 import '../screens/legal_placeholder_screen.dart';
 import '../screens/live_screen.dart';
@@ -24,6 +25,7 @@ import '../screens/prayer_requests_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/teaching_detail_screen.dart';
 import '../state/auth_providers.dart';
+import '../state/legal_providers.dart';
 import '../state/repository_providers.dart';
 import '../widgets/app_background.dart';
 
@@ -54,6 +56,10 @@ abstract final class AppRoute {
   static const legalDocument = 'legal';
   static const about = 'about';
 
+  /// **La barrière de consentement.** Atteinte par le `redirect`, jamais par
+  /// une navigation explicite — le nom existe pour la nommer, pas pour y aller.
+  static const legalAccept = 'legal-accept';
+
   /// Composeur d'annonce, en **création**.
   static const announcementCompose = 'announcement-compose';
 
@@ -80,6 +86,10 @@ class CodeArgs {
 /// Emplacements autorisés tant que l'utilisateur n'est pas authentifié.
 const _authLocations = {'/auth', '/auth/identifier', '/auth/code'};
 
+/// La barrière de consentement — écrite une fois, lue par la garde et par la
+/// route.
+const _legalGate = '/legal/accept';
+
 /// Routeur de l'application (go_router).
 ///
 /// Exposé via Riverpod pour résoudre des dépendances (repository) lors d'un
@@ -95,9 +105,32 @@ final routerProvider = Provider<GoRouter>((ref) {
     (_, next) => authListenable.value = next,
   );
 
+  // Le second pont, celui de la **barrière de consentement** (#56) : les genres
+  // qu'il reste à accepter, calculés hors du `redirect`.
+  //
+  // Deux raisons de passer par un `ValueNotifier` plutôt que de lire le
+  // provider dans la garde, et la seconde est la vraie :
+  //
+  // 1. c'est déjà le motif de l'authentification, et une garde a tout intérêt à
+  //    n'avoir qu'une façon de lire son état ;
+  // 2. **un `ref.listen` maintient le provider vivant**, donc abonné au flux du
+  //    magasin. La garde lit alors une valeur déjà là — jamais un `Future`,
+  //    jamais un `AsyncValue` en cours de chargement (ADR-0036, décision 1).
+  //    Et c'est ce même abonnement qui fait réévaluer la garde quand la
+  //    synchronisation ramène une révision : sans lui, une barrière publiée
+  //    n'apparaîtrait qu'à la navigation suivante.
+  final legalGateListenable = ValueNotifier<List<String>>(
+    ref.read(pendingLegalAcceptancesProvider),
+  );
+  ref.onDispose(legalGateListenable.dispose);
+  ref.listen<List<String>>(
+    pendingLegalAcceptancesProvider,
+    (_, next) => legalGateListenable.value = next,
+  );
+
   return GoRouter(
     initialLocation: '/',
-    refreshListenable: authListenable,
+    refreshListenable: Listenable.merge([authListenable, legalGateListenable]),
     redirect: (context, state) {
       final auth = authListenable.value;
       final loc = state.matchedLocation;
@@ -111,7 +144,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Depuis splash ou parcours d'auth → accueil. `/profile/edit` et le
           // reste de l'app restent accessibles.
           if (loc == '/' || _authLocations.contains(loc)) return '/home';
-          return null;
+          // **La barrière** : les versions acceptées couvrent-elles les
+          // versions exigées ? La comparaison a déjà eu lieu — ici on ne fait
+          // que lire son résultat, sans rien attendre.
+          if (legalGateListenable.value.isNotEmpty) {
+            return loc == _legalGate ? null : _legalGate;
+          }
+          // Barrière levée — ou jamais dressée : l'écran se retire **de
+          // lui-même**, personne ne navigue. C'est le motif de la déconnexion,
+          // et c'est aussi ce qui empêche `/legal/accept` d'être un cul-de-sac
+          // pour qui l'atteindrait sans rien avoir à accepter : rien n'en sort,
+          // pas même un retour Android.
+          return loc == _legalGate ? '/home' : null;
       }
     },
     routes: [
@@ -268,6 +312,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       //
       // Aucune garde ici : la barrière d'acceptation (`/legal/accept`) est un
       // `redirect`, pas une route de consultation.
+      // **Avant `/legal/:kind`, et l'ordre n'est pas cosmétique** : go_router
+      // essaie les routes dans l'ordre déclaré, et `/legal/accept` se ferait
+      // sinon avaler par le paramètre de chemin — la barrière rendrait alors la
+      // CGU en consultation, avec un bouton retour et aucune case.
+      GoRoute(
+        name: AppRoute.legalAccept,
+        path: _legalGate,
+        builder: (_, __) => const AppBackground(child: LegalAcceptanceScreen()),
+      ),
       GoRoute(
         name: AppRoute.legalDocument,
         path: '/legal/:kind',

@@ -110,6 +110,11 @@ class HttpAuthRepository implements AuthRepository {
   @override
   Future<User?> cachedUser() => _cache.read();
 
+  /// Écriture **purement locale**, elle aussi : ce que le serveur vient de dire
+  /// descend jusqu'au cache sans repasser par lui.
+  @override
+  Future<void> rememberUser(User user) => _cache.write(user);
+
   @override
   Future<void> forgetSession() async {
     // Le token a en général déjà été purgé par l'intercepteur 401 ; l'appel

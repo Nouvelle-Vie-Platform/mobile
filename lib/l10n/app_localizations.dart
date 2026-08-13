@@ -412,16 +412,16 @@ abstract class AppLocalizations {
   /// **'Branche locale'**
   String get fieldLocalBranch;
 
-  /// No description provided for @registerTermsPrefix.
+  /// Annonce, sur l'écran du code, de la barrière de consentement qui suit. RÉÉCRITE en #56 : « En créant un compte, vous acceptez nos… » était la formule de l'acceptation IMPLICITE, devenue fausse sous consentement explicite tracé — l'accord n'est plus déduit de la création du compte, il est donné à la barrière
   ///
   /// In fr, this message translates to:
-  /// **'En créant un compte, vous acceptez nos '**
+  /// **'Après la vérification, il vous sera demandé d\'accepter nos '**
   String get registerTermsPrefix;
 
-  /// No description provided for @registerTermsLink.
+  /// Suite de registerTermsPrefix, mise en valeur. Elle ne mène nulle part et ce n'est pas un oubli : /legal/:kind est hors des emplacements autorisés avant authentification, la garde y renverrait vers /auth. Les DEUX documents y sont nommés — la barrière peut en exiger deux
   ///
   /// In fr, this message translates to:
-  /// **'Conditions d\'utilisation.'**
+  /// **'conditions d\'utilisation et notre politique de confidentialité.'**
   String get registerTermsLink;
 
   /// Salutation d'accueil
@@ -1773,6 +1773,66 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Version {version}'**
   String legalFooterVersion(int version);
+
+  /// Titre de la barrière de consentement à la PREMIÈRE acceptation — déduit d'un résumé d'acceptation vide. Dire « nos conditions ont changé » à quelqu'un qui n'en a jamais lu aucune lui ferait chercher ce qu'il a manqué
+  ///
+  /// In fr, this message translates to:
+  /// **'Avant de commencer'**
+  String get legalGateTitleFirst;
+
+  /// Titre de la barrière de consentement lors d'une RE-acceptation, après révision. Le fidèle concerné est connecté depuis longtemps : ce qu'il doit savoir, c'est que le texte a bougé
+  ///
+  /// In fr, this message translates to:
+  /// **'Nos conditions ont changé'**
+  String get legalGateTitleUpdated;
+
+  /// Sous-titre de la barrière, commun aux deux cas. Il dit le blocage sans le déguiser : il n'y a ni « Plus tard », ni croix, ni retour
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre accord est nécessaire pour continuer.'**
+  String get legalGateSubtitle;
+
+  /// Case à cocher des CGU, sur la barrière. Une case PAR document exigé, jamais précochée — une case précochée n'est pas un consentement
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'ai lu et j\'accepte les conditions générales d\'utilisation.'**
+  String get legalGateAcceptTerms;
+
+  /// Case à cocher de la politique de confidentialité, sur la barrière. Si seule la politique a changé, c'est la seule case et le seul document affichés
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'ai lu et j\'accepte la politique de confidentialité.'**
+  String get legalGateAcceptPrivacy;
+
+  /// Refus d'enregistrement, serveur injoignable. Le document se lit hors ligne (il vient du magasin), l'accord ne s'enregistre pas : pas de file d'envoi, pas d'état « accepté, non confirmé » (ADR-0036, décision 2). Suivi de « Réessayer »
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion requise pour enregistrer votre accord.'**
+  String get legalGateErrorNetwork;
+
+  /// Refus d'enregistrement, 401. Aucun bouton : le retour à /auth se fait par la garde de route, l'écran ne navigue pas lui-même. Proposer « Réessayer » promettrait ce qui ne peut pas marcher
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre session a expiré. Reconnectez-vous pour enregistrer votre accord.'**
+  String get legalGateErrorUnauthorized;
+
+  /// Refus d'enregistrement, 422 : une révision a paru entre la synchronisation et l'appui sur « Continuer ». Réessayer à l'identique échouerait toujours — l'issue est de RECHARGER le document
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces conditions ont été mises à jour.'**
+  String get legalGateErrorOutdated;
+
+  /// Refus d'enregistrement, 5xx. Le serveur est joignable : ce n'est pas la connexion du fidèle qui est en cause. Suivi de « Réessayer »
+  ///
+  /// In fr, this message translates to:
+  /// **'Le serveur n\'a pas pu enregistrer votre accord.'**
+  String get legalGateErrorServer;
+
+  /// Issue du refus 422 : redemande le document au serveur. Pas « Réessayer » — ce n'est pas le même envoi qu'on rejoue, c'est le texte qu'on va chercher
+  ///
+  /// In fr, this message translates to:
+  /// **'Recharger'**
+  String get legalGateReload;
 }
 
 class _AppLocalizationsDelegate

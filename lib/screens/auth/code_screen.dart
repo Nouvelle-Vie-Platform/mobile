@@ -225,6 +225,8 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
                     ? null
                     : () => _verify(_code, args),
               ),
+              const SizedBox(height: AppSpacing.md),
+              const _TermsNotice(),
               const SizedBox(height: AppSpacing.lg),
               Center(
                 child: canResend
@@ -246,6 +248,47 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// **L'annonce de la barrière de consentement**, sous le bouton de validation.
+///
+/// Les deux clés qu'elle rend (`registerTermsPrefix` / `registerTermsLink`)
+/// existaient sans emplacement depuis l'abandon du formulaire d'inscription.
+/// Elles ont été **réécrites** avant d'être câblées (#56), et pas seulement
+/// déplacées : « En créant un compte, vous acceptez nos Conditions
+/// d'utilisation » est la formule de l'acceptation **implicite**, et sous
+/// consentement explicite tracé (ADR-0036) elle est simplement fausse —
+/// l'accord n'est plus déduit de la création du compte, il est donné à la
+/// barrière. Les câbler telles quelles aurait produit un écran qui dit avoir
+/// obtenu un accord que le suivant redemande.
+///
+/// **Rien n'est cliquable ici**, et ce n'est pas un oubli d'affordance : la
+/// garde de route n'autorise que le parcours d'authentification tant qu'aucune
+/// session n'est ouverte, et un appui vers `/legal/cgu` ne ferait que renvoyer
+/// à `/auth`. Le texte se lit en entier à la barrière, une seconde plus tard.
+class _TermsNotice extends StatelessWidget {
+  const _TermsNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final palette = context.palette;
+    final base = AppTypography.caption.copyWith(color: palette.textSecondary);
+
+    return Text.rich(
+      TextSpan(
+        text: l.registerTermsPrefix,
+        style: base,
+        children: [
+          TextSpan(
+            text: l.registerTermsLink,
+            style: base.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }

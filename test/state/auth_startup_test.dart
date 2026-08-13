@@ -25,6 +25,11 @@ class _ScriptedAuthRepository implements AuthRepository {
   Future<User?> currentUser() => remote.future;
 
   @override
+  Future<void> rememberUser(User user) async {
+    cached = user;
+  }
+
+  @override
   Future<void> forgetSession() async {
     forgetCalls++;
     cached = null;

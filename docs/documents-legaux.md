@@ -204,8 +204,14 @@ case AuthStatus.authenticated:
   if (_legalGateRequired(auth.user, ref)) {
     return loc == '/legal/accept' ? null : '/legal/accept';
   }
-  return null;
+  // Barrière levée — ou jamais dressée : l'écran se retire de lui-même (§4.4).
+  return loc == '/legal/accept' ? '/home' : null;
 ```
+
+**La dernière ligne est ce qui fait tenir le §4.4.** Un `return null` y laisserait l'écran en place
+après l'accord : personne ne navigue depuis la barrière, c'est la garde qui l'enlève. Elle empêche
+accessoirement `/legal/accept` d'être un cul-de-sac pour qui l'atteindrait sans rien avoir à
+accepter — `PopScope(canPop: false)` n'en laisse sortir personne.
 
 `_legalGateRequired` compare, pour `cgu` et `privacy` :
 
