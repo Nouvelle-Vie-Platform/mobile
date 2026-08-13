@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/core/network/api_client.dart';
@@ -154,6 +156,7 @@ void main() {
           'teachings',
           'gatherings',
           'announcements',
+          'playback_progress',
         ],
         reason: 'ça ne supprime pas la fenêtre où un enseignement arrive sans '
             'son intervenant — la jointure de lecture reste tolérante pour '
@@ -188,7 +191,49 @@ void main() {
         keys.indexOf('status_backgrounds'),
         lessThan(keys.indexOf('announcements')),
       );
+      // La reprise de lecture se joint aux **deux** familles de contenu, et se
+      // range donc après elles : une progression arrivée avant son enseignement
+      // n'aurait rien à quoi se raccrocher.
+      expect(
+        keys.indexOf('teachings'),
+        lessThan(keys.indexOf('playback_progress')),
+      );
+      expect(
+        keys.indexOf('gatherings'),
+        lessThan(keys.indexOf('playback_progress')),
+      );
     });
+
+    test(
+      'un cycle complet ramène la progression de lecture, telle que servie',
+      () async {
+        server
+          ..serveManifest(manifestFromZero())
+          ..serveCollection('playback_progress', playbackProgressPage());
+
+        await engineOver(['playback_progress'], limit: 200).synchronize();
+
+        final rows = await db.select(db.playbackProgress).get();
+        expect(rows, hasLength(2));
+
+        final resumed = rows.firstWhere(
+          (r) => r.id == '019f6b00-0000-7000-8000-000000000001',
+        );
+        expect(resumed.teachingId, '019f2c40-0000-7000-8000-000000000001');
+        expect(resumed.positionSeconds, 942);
+        expect(resumed.completed, isFalse);
+        expect(resumed.userId, 'b6f0a1c2-0000-4000-8000-000000000001');
+
+        // `completed` arrive **tel que servi** : le serveur n'a aucune durée,
+        // nulle part, et n'a donc pas pu le calculer — il stocke le booléen
+        // qu'un client lui a envoyé.
+        final finished = rows.firstWhere(
+          (r) => r.id == '019f6b00-0000-7000-8000-000000000002',
+        );
+        expect(finished.completed, isTrue);
+        expect(finished.positionSeconds, 3600);
+      },
+    );
 
     test(
       'un cycle complet peuple les annonces et leurs deux référentiels',
@@ -478,25 +523,148 @@ void main() {
       expect(await db.select(db.contributors).get(), hasLength(1));
     });
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Le garde-fou de `playback_progress` (issue #43)
+    //
+    // Ce groupe a remplacé un test qui annonçait lui-même sa propre fin : « ce
+    // client ne réplique aucune collection `private`, donc aucun chemin
+    // d'effacement n'existe ; ce test tombera le jour où l'une d'elles entrera
+    // au registre local, et c'est ce jour-là qu'il faudra écrire le vrai
+    // garde-fou ». Ce jour est celui-ci. La garantie n'est plus structurelle,
+    // elle est vérifiée.
+    //
+    // Pourquoi elle compte : effacer une progression la perd **sans recours**.
+    // Le curseur est déjà passé devant la ligne, elle ne sera **plus jamais**
+    // livrée — là où une rétractation d'enseignement se défait couramment, une
+    // republication étant chose banale. La progression reste ; la ligne
+    // « reprendre la lecture » disparaît d'elle-même faute d'enseignement à
+    // joindre (règle 6 du magasin, la jointure tolérante).
+    // ─────────────────────────────────────────────────────────────────────────
+
     test(
-      'aucune collection privée n\'est répliquée par ce client, donc aucune '
-      'progression de lecture n\'est effaçable',
-      () {
-        // `playback_progress` **est** une collection synchronisée (partition
-        // `private`), pas de l'état local : l'effacer perdrait la position de
-        // lecture sans recours — le curseur est déjà passé devant elle, elle ne
-        // serait plus jamais livrée — et une rétractation se défait, republier
-        // est courant. La progression reste ; la ligne « reprendre la lecture »
-        // disparaît d'elle-même faute d'enseignement à joindre.
-        //
-        // Aujourd'hui la garantie est **structurelle** : ce client ne réplique
-        // aucune collection `private`, donc aucun chemin d'effacement n'existe.
-        // Ce test tombera le jour où l'une d'elles entrera au registre local —
-        // et c'est ce jour-là qu'il faudra écrire le vrai garde-fou.
-        expect(
-          syncedCollections().map((c) => c.key),
-          isNot(contains('playback_progress')),
+      'une rétractation d\'enseignement ne touche pas à la progression de '
+      'lecture qui le vise',
+      () async {
+        const teachingId = '019f2c40-0000-7000-8000-000000000009';
+        await dao.applyPage(
+          dao.teachingsCollection,
+          upserts: [teachingRow(teachingId)],
+          cursor: null,
         );
+        await dao.applyPage(
+          dao.playbackProgressCollection,
+          upserts: [
+            playbackProgressRowOf({
+              ...playbackProgressPayload,
+              'teachingId': teachingId,
+            }),
+          ],
+          cursor: 'c-progress',
+        );
+
+        server
+          ..serveManifest(manifestNominal())
+          ..serveCollection(
+            'teachings',
+            deltaPage(
+              items: const [retractedTeachingPayload],
+              nextCursor: teachingsCursorPage2,
+            ),
+          );
+
+        await engineOver(['teachings']).synchronize();
+
+        expect(await db.select(db.teachings).get(), isEmpty);
+        // **La progression survit à son contenu**, et c'est tout le propos :
+        // l'enseignement peut revenir, la position non.
+        final kept = await db.select(db.playbackProgress).get();
+        expect(kept, hasLength(1));
+        expect(kept.single.teachingId, teachingId);
+        expect(kept.single.positionSeconds, 942);
+      },
+    );
+
+    test(
+      'seul le serveur retire une progression, et seulement en la faisant '
+      'voyager',
+      () async {
+        await dao.applyPage(
+          dao.playbackProgressCollection,
+          upserts: [playbackProgressRowOf(playbackProgressPayload)],
+          cursor: 'c-progress',
+        );
+
+        server
+          ..serveManifest(manifestNominal())
+          ..serveCollection(
+            'playback_progress',
+            deltaPage(
+              items: [
+                {
+                  'id': playbackProgressPayload['id'],
+                  'deletedAt': '2026-05-25T09:00:00.000Z',
+                },
+              ],
+              nextCursor: 'c-progress-2',
+            ),
+          );
+
+        await engineOver(['playback_progress']).synchronize();
+
+        // La règle n'est pas « cette table ne se vide jamais » : c'est « le
+        // client ne l'efface jamais **de sa propre initiative** ». Un tombstone
+        // reçu s'applique comme partout ailleurs.
+        expect(await db.select(db.playbackProgress).get(), isEmpty);
+      },
+    );
+
+    test(
+      'aucun chemin applicatif n\'efface ni n\'écrit une ligne de '
+      'playback_progress',
+      () {
+        // Garde-fou **de source**, sur le modèle de « jamais de polling »
+        // (`sync_scheduler_test.dart`). Une écriture applicative dans une
+        // collection répliquée ne casse aucun test de comportement : elle est
+        // simplement écrasée au cycle suivant, et le bug qui en résulte est
+        // irreproductible — la position revient parfois, selon que la synchro
+        // est passée ou non.
+        //
+        // Le moteur, lui, n'écrit **jamais** en nommant la table : il passe par
+        // `LocalCollection.table`, donc par `delete(collection.table)` et
+        // `into(collection.table)`. Nommer `playbackProgress` dans un `delete`,
+        // un `into` ou un `update` est donc, par construction, le fait de
+        // quelqu'un d'autre que la synchronisation.
+        const forbidden = [
+          'delete(playbackProgress)',
+          'into(playbackProgress)',
+          'update(playbackProgress)',
+        ];
+
+        final sources = Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'));
+
+        expect(sources, isNotEmpty);
+        for (final source in sources) {
+          // Les commentaires sont retirés : ils **parlent** de l'interdiction,
+          // ils ne l'enfreignent pas.
+          final code = source
+              .readAsLinesSync()
+              .where((line) => !line.trimLeft().startsWith('//'))
+              .join('\n');
+
+          for (final fragment in forbidden) {
+            expect(
+              code,
+              isNot(contains(fragment)),
+              reason: '${source.path} écrit dans une collection répliquée : la '
+                  'position à chaud va dans `local_playback_positions`, et le '
+                  'serveur en est informé par '
+                  '`POST /teachings/:teachingId/progress`',
+            );
+          }
+        }
       },
     );
   });

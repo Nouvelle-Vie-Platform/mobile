@@ -98,6 +98,7 @@ coverage/
 
 # Worktrees temporaires des agents Claude Code
 .claude/worktrees/
+.worktrees/
 
 # Sous-produits de `make migrations` (drift_dev make-migrations) que ce dépôt
 # n'utilise pas : les paliers sont écrits à la main dans `MigrationStrategy`

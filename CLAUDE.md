@@ -72,6 +72,10 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
   - `announcement_composer.dart` / `http_announcement_composer.dart` —
     **l'écriture** des annonces (#36), séparée de leur lecture ; voir « L'onglet
     Annonces ».
+  - `playback_progress_reporter.dart` / `http_playback_progress_reporter.dart`
+    / `playback_progress_recorder.dart` — **la reprise de lecture** (#43) :
+    le contrat de rapport, son implémentation HTTP muette, et les cinq
+    déclencheurs. Voir « La reprise de lecture » plus bas.
   - `local/` — **le magasin local Drift**, voir ci-dessous.
   - `pickers/status_image_picker.dart` — le choix d'une image de fond, derrière
     une abstraction (les tests injectent un sélecteur inerte).
@@ -179,9 +183,12 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   `gathering_types`, `gatherings` (la seconde famille, #34).
   `tables/announcement_tables.dart` — `status_backgrounds`, `official_accounts`,
   `official_account_memberships`, `announcements` (le mur de statuts, #35).
+  `tables/playback_tables.dart` — `playback_progress` (collection **répliquée**)
+  et `local_playback_positions` (**locale seule**, #43).
 - `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart`,
-  `gathering_dao.dart` et `announcement_dao.dart` — lectures, **un DAO par
-  domaine**.
+  `gathering_dao.dart`, `announcement_dao.dart` et `playback_dao.dart` —
+  lectures, **un DAO par domaine**. Le dernier est le seul qui **écrive**, et
+  seulement dans la table locale seule.
 
 **Six règles qui ne se renégocient pas** (ADR-0026 en donne le *pourquoi*) :
 1. **Une page appliquée = une transaction** : ses lignes **et** son curseur, ou
@@ -226,7 +233,7 @@ qu'elle remplit. Le réseau ne peint jamais.
 - `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
   `gathering_types`, `status_backgrounds`, `official_accounts`,
   `official_account_memberships`, `contributors`, `branches`, puis `teachings`,
-  `gatherings`, `announcements`.
+  `gatherings`, `announcements`, `playback_progress`.
 - `sync_api.dart` — `GET /sync` et `GET /sync/{collection}`, sur le `Dio`
   d'`ApiClient`. Un **404** devient `UnknownSyncCollection`.
 - `sync_engine.dart` — la boucle. `sync_scheduler.dart` — les déclencheurs.
@@ -243,7 +250,11 @@ qu'elle remplit. Le réseau ne peint jamais.
    `deletedAt` non nul → la ligne quitte le magasin, rien n'est désérialisé.
 4. **Le client n'efface jamais de sa propre initiative** une ligne d'une
    collection répliquée — `playback_progress` en particulier, qui **est** une
-   collection synchronisée et non de l'état local.
+   collection synchronisée et non de l'état local. Depuis #43 la règle est
+   **vérifiée** et non plus structurelle : `test/sync/sync_engine_test.dart`
+   prouve qu'une rétractation d'enseignement laisse la progression intacte, et
+   un garde-fou de source interdit `delete(playbackProgress)`,
+   `into(playbackProgress)` et `update(playbackProgress)` dans tout `lib/`.
 5. **Un resync forcé se lit dans un `200`** (`full_resync` / `full_resync_required`),
    jamais dans une erreur — et il **remplace**, il ne purge pas d'abord.
 6. **Un `404` de collection n'est pas fatal** : collection sautée, synchro
@@ -284,7 +295,8 @@ pas un accusé de réception : il ne devient jamais le curseur local.
   - `sync_providers.dart` : `appDatabaseProvider` (à surcharger par une base en
     mémoire dans les tests), `syncDaoProvider`, `mediathequeDaoProvider`,
     `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`,
-    `gatheringDaoProvider`, `announcementDaoProvider`, `pullToRefreshProvider`.
+    `gatheringDaoProvider`, `announcementDaoProvider`, `playbackDaoProvider`,
+    `pullToRefreshProvider`.
     Les trois DAO de lecture sont lus par les trois repositories de magasin.
     **Les trois déclencheurs d'ADR-0017 sont câblés** : `app.dart` appelle
     `SyncScheduler.start()` au premier frame sous `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
@@ -368,6 +380,64 @@ Six règles, toutes vérifiées par des tests :
 Le contrat détaillé, le nom du champ de fichier (`backgroundImage`) et la limite
 assumée (on ne sait pas retirer une image déjà publiée) sont dans
 `docs/statuts-annonces.md` §11.
+
+### La reprise de lecture (#43) — **deux tables, et c'est délibéré**
+
+Où en était un fidèle dans un enseignement. Contrat serveur : écriture par
+`POST /teachings/:teachingId/progress` (corps **camelCase**
+`{ id, positionSeconds, completed? }`, `id` = **UUIDv7 fabriqué par le
+client**), lecture **uniquement** par `GET /sync/playback_progress` — il n'y a
+**aucun endpoint REST de lecture**, on ne peut pas demander « où en étais-je ? ».
+
+**Deux tables, et n'en faire qu'une serait la faute :**
+
+- **`playback_progress`** — collection **répliquée** (`private`, la première de
+  ce registre), remplie *uniquement* par la synchronisation. C'est elle qui
+  donne la reprise **multi-appareils** et **après réinstallation**. L'application
+  n'y écrit **jamais**.
+- **`local_playback_positions`** — **locale seule**, jamais synchronisée, écrite
+  en continu par le lecteur. C'est la seule qui marche en avion et qui survit à
+  une application tuée par le système.
+
+Suivre à la lettre le précédent du composeur d'annonces (« le réseau ne peint
+jamais, le flux delta ramène la ligne ») donnerait une position en retard de
+plusieurs secondes sur une donnée qui bouge toutes les dix, et **rien du tout
+hors ligne**. Les fondre ferait écrire l'application dans une collection
+répliquée — la règle à ne pas tordre. `PlaybackDao.resumeFor` départage : **la
+plus récente gagne**, jamais la plus grande position (ça renverrait à la fin
+quelqu'un qui réécoute depuis le début). L'**identifiant**, lui, ne se départage
+pas à l'horloge : dès que le serveur connaît une ligne, c'est son `id` qui
+repart — c'est ce qui fait de chaque rapport suivant un rejeu idempotent.
+
+**Cinq déclencheurs, jamais un sondage** (`PlaybackProgressRecorder`) : pause,
+sortie de l'écran, complétion, ~30 s de temps **joué** *et* plus de 5 s de
+déplacement, et `AppLifecycleState.paused` — **sans arrêter la lecture**, c'est
+le cas le plus fréquent (le fidèle éteint son écran, il ne quitte pas). Le temps
+joué se mesure sur l'avancée de la tête de lecture : aucun `Timer`, l'horloge
+appartient au lecteur. **L'écriture locale est continue et gratuite ; seul
+l'appel réseau est espacé.**
+
+**Le rapport est MUET.** Hors ligne, 401, 409, 5xx : rien ne s'affiche, rien ne
+bloque l'écoute, l'échec se retente au déclencheur suivant. `report` rend un
+booléen — *parti* / *pas parti* — et rien de plus : de quoi retenter, jamais de
+quoi composer une phrase à l'écran. Une progression perdue est un désagrément ;
+une erreur affichée pendant un prêche est une panne.
+
+**Le seuil de « terminé » est une décision _application_** : le serveur n'a de
+durée nulle part et n'a donc pas de dénominateur. `kPlaybackCompletionSlack`
+(**30 s**, constante nommée à un seul endroit, **valeur à confirmer**) —
+`completed` si `position ≥ durée − 30 s`, **ou** sur l'état terminal du lecteur,
+et **jamais** si la durée est inconnue, nulle ou plus courte que le seuil. En
+HLS sur iOS, `duration` est peu fiable et souvent nulle : mieux vaut
+sous-déclarer que faire disparaître de la liste « à reprendre » un prêche dont
+quelqu'un n'a entendu que dix minutes. Une fois `completed`, la position n'est
+plus **rapportée** — elle continue d'être tenue localement, pour une réécoute.
+
+Deux points **encore ouverts** : le seuil de 30 s n'a pas été validé par le
+produit ; et qu'un **rassemblement** rapporte par la même route (`teachings` et
+`gatherings` sont la même table serveur, discriminée par `family`) est démontré
+par le code serveur mais **prouvé par aucun test serveur** — à faire épingler
+(PRD `miracle-house-server#151`).
 
 ### La messagerie de groupe — l'origine se lit sur `(authorId, isSystem)`
 **Encore fictive** (`ChatMessage`, `chatProvider`, `InMemoryChurchRepository`) :

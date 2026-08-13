@@ -334,6 +334,45 @@ AnnouncementsCompanion announcementRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/playback_progress` — **la reprise de lecture**, partition
+/// `private`.
+///
+/// Huit clés, relevées sur `playback_progress_transformer.ts` : `id`, `userId`,
+/// `teachingId`, `positionSeconds`, `completed`, `clientCreatedAt`,
+/// `createdAt`, `updatedAt`. Le descripteur y ré-expose `deletedAt`, que le
+/// transformer n'expose pas — c'est le tombstone, et il est trié en amont par
+/// `readsAsRetraction` : cette fonction ne le voit jamais.
+///
+/// **Ni durée, ni titre, ni rien du contenu.** Le serveur n'a de durée nulle
+/// part, et c'est la raison pour laquelle `completed` est décidé par le client
+/// et seulement stocké ici.
+///
+/// `teachingId` est **exigé** : une progression sans contenu à rejoindre n'a
+/// aucun sens, et l'écrire à `null` la rendrait invisible tout en occupant la
+/// place. `positionSeconds` l'est aussi — c'est la donnée elle-même.
+///
+/// **`teachingId` désigne un enseignement *ou* un rassemblement** : les deux
+/// familles partagent la table côté serveur, discriminée par `family`. Le nom
+/// de la clé est celui de la colonne partagée, comme la verrue déjà connue de
+/// `gatherings.teachingTypeId`.
+PlaybackProgressCompanion playbackProgressRowOf(Map<String, Object?> item) {
+  const collection = 'playback_progress';
+  return PlaybackProgressCompanion.insert(
+    id: contentId(collection, item),
+    // Moi, par construction : la collection est scoppée sur l'acteur. Stocké
+    // pour le diagnostic, jamais pour filtrer.
+    userId: Value(_optionalText(item, 'userId')),
+    teachingId: _text(collection, item, 'teachingId'),
+    positionSeconds: _requiredInt(collection, item, 'positionSeconds'),
+    // Le serveur stocke le booléen qu'on lui a envoyé ; il n'a pas de
+    // dénominateur pour en décider lui-même.
+    completed: Value(item['completed'] == true),
+    clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Rouages
 // ─────────────────────────────────────────────────────────────────────────────

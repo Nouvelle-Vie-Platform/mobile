@@ -29,6 +29,7 @@ import '../data/local/announcement_dao.dart';
 import '../data/local/app_database.dart';
 import '../data/local/gathering_dao.dart';
 import '../data/local/mediatheque_dao.dart';
+import '../data/local/playback_dao.dart';
 import '../data/local/sync_dao.dart';
 import '../data/sync/sync_api.dart';
 import '../data/sync/sync_engine.dart';
@@ -68,6 +69,16 @@ final gatheringDaoProvider = Provider<GatheringDao>(
 /// autre modèle, un autre écran.
 final announcementDaoProvider = Provider<AnnouncementDao>(
   (ref) => ref.watch(appDatabaseProvider).announcementDao,
+);
+
+/// Les lectures du magasin, côté **reprise de lecture** — les deux tables de
+/// l'issue #43. Un DAO de plus, pour les mêmes raisons que les trois autres.
+///
+/// Celui-ci **écrit**, à la différence des trois précédents : la position à
+/// chaud, et elle seule. La collection répliquée `playback_progress` n'a
+/// d'autre écrivain que le moteur de synchronisation.
+final playbackDaoProvider = Provider<PlaybackDao>(
+  (ref) => ref.watch(appDatabaseProvider).playbackDao,
 );
 
 /// Les deux routes du protocole, sur le `Dio` d'`ApiClient` : la requête
