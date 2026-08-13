@@ -40,6 +40,14 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
   /// tenir l'élément qu'ils pilotent. En production, le lecteur crée le sien.
   HlsContentPlayer({web.HTMLAudioElement? element})
       : _audio = element ?? web.HTMLAudioElement() {
+    // **Le chien de garde du décrochage silencieux.** Il existe pour iOS, où
+    // rien ne remonte ; il vaut ici aussi — `hls.js` abandonne après ses
+    // propres réessais, et Safari partage le moteur natif de l'iPhone.
+    armStallWatchdog((at) {
+      final request = _request;
+      if (request == null) return;
+      _reopenAt(request, at);
+    });
     // `auto` et non `metadata` : un enseignement s'écoute d'un bout à l'autre,
     // et le tampon d'avance est ce qui absorbe une connexion irrégulière.
     _audio.preload = 'auto';
@@ -52,7 +60,16 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     // faire.
     _on('timeupdate', (_) => updatePosition(_audio.currentTime));
     _on('durationchange', (_) => updateDuration(_audio.duration));
-    _on('loadedmetadata', (_) => updateDuration(_audio.duration));
+    _on('loadedmetadata', (_) {
+      updateDuration(_audio.duration);
+      // **La position d'une reprise se repose ici, et pas avant.** Écrire
+      // `currentTime` sur un élément qui n'a pas encore ses métadonnées est
+      // sans effet : le fidèle repartirait du début du prêche.
+      final at = _resumeAt;
+      if (at == null) return;
+      _resumeAt = null;
+      _audio.currentTime = seekTo(at);
+    });
     _on('play', (_) => markPlayRequested());
     _on('playing', (_) => markRendering());
     _on('waiting', (_) => markWaiting());
@@ -77,6 +94,13 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
 
   /// Le moteur `hls.js` du chargement en cours, `null` sur le chemin natif.
   _HlsEngine? _engine;
+
+  /// Ce qui est tenu, et qu'une reprise rouvrirait. `null` après un [stop].
+  ContentRequest? _request;
+
+  /// Position à reposer dès que les métadonnées de la source rouverte
+  /// arrivent. `null` hors d'une reprise.
+  Duration? _resumeAt;
 
   void _on(String type, void Function(web.Event event) handler) {
     final listener = handler.toJS;
@@ -109,6 +133,14 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
   }) async {
     if (isDisposed) return;
     _releaseSource();
+    _request = ContentRequest(
+      contentId: contentId,
+      url: url,
+      title: title,
+      author: author,
+      artUrl: artUrl,
+    );
+    _resumeAt = null;
     startLoading(contentId);
 
     // [title], [author] et [artUrl] ne servent pas ici : ce sont les lignes de
@@ -116,6 +148,43 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     // Les afficher demanderait l'API Media Session — un autre sujet, et pas
     // celui du son qui ne sort pas.
 
+    _attach(url);
+
+    // **Rend la main dès que la source est attachée**, sans attendre les
+    // métadonnées. Attendre `loadedmetadata` donnerait un `Future` qui ne se
+    // résout jamais quand le manifeste ne répond pas : l'écran resterait sur
+    // son indicateur, pour toujours. Une panne de chargement arrive par
+    // `value.error`, exactement comme sur mobile, où seul `setUrl` est attendu
+    // et où les pannes de lecture voyagent par le flux.
+  }
+
+  /// **Reprendre une lecture interrompue, à la position atteinte.**
+  ///
+  /// Toujours une réouverture : sur le web il n'y a pas d'équivalent au
+  /// lecteur inactif de `just_audio`, et l'élément dont la source a échoué ne
+  /// rejouera pas. La décision — quelle position garder, quoi effacer — vient
+  /// de `MediaElementPlayback.beginResume` ; ici il n'y a que des câbles.
+  @override
+  Future<void> resume() async {
+    if (isDisposed) return;
+    final request = _request;
+    if (request == null) return;
+    final at = beginResume();
+    if (at == null) return;
+    _reopenAt(request, at);
+  }
+
+  /// Rouvre la source et repart de [at] — le geste commun à la reprise
+  /// manuelle et au chien de garde.
+  void _reopenAt(ContentRequest request, Duration at) {
+    _releaseSource();
+    _resumeAt = at;
+    _attach(request.url);
+    play();
+  }
+
+  /// Attache une source à l'élément, par `hls.js` ou en natif.
+  void _attach(String url) {
     if (_useHlsJs) {
       final engine = _HlsEngine();
       // Seules les pannes **fatales** remontent : `hls.js` se remet seul des
@@ -136,13 +205,6 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
       _audio.src = url;
       _audio.load();
     }
-
-    // **Rend la main dès que la source est attachée**, sans attendre les
-    // métadonnées. Attendre `loadedmetadata` donnerait un `Future` qui ne se
-    // résout jamais quand le manifeste ne répond pas : l'écran resterait sur
-    // son indicateur, pour toujours. Une panne de chargement arrive par
-    // `value.error`, exactement comme sur mobile, où seul `setUrl` est attendu
-    // et où les pannes de lecture voyagent par le flux.
   }
 
   @override
@@ -177,6 +239,8 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
   @override
   void stop() {
     if (isDisposed) return;
+    _request = null;
+    _resumeAt = null;
     _releaseSource();
     clear();
   }

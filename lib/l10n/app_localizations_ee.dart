@@ -721,6 +721,16 @@ class AppLocalizationsEe extends AppLocalizations {
       'Woɖee ɖa le nudzraɖoƒe la. Sese la tɔ.';
 
   @override
+  String get playerErrorTitle => 'Sese la tɔ';
+
+  @override
+  String get playerErrorMessage =>
+      'Gbeɖiɖi la tɔ. Kpɔ wò internet ŋu, eye nàgbugbɔ ase edzi.';
+
+  @override
+  String get playerErrorRetry => 'Gbugbɔ se edzi';
+
+  @override
   String get composeAnnouncement => 'Publier une annonce';
 
   @override

@@ -1,6 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/players/media_element_playback.dart';
+import 'package:maison_du_miracle/data/players/playback_watchdog.dart';
+
+/// Ce que fait `HlsContentPlayer` à sa construction, sans le DOM : armer le
+/// chien de garde sur sa propre réouverture de source.
+///
+/// La classe nue, elle, ne l'arme pas — sans quoi chacun des tests ci-dessus
+/// laisserait une minuterie en suspens.
+class _WatchedPlayback extends MediaElementPlayback {
+  _WatchedPlayback() {
+    armStallWatchdog(reopened.add);
+  }
+
+  final List<Duration> reopened = [];
+}
 
 /// **La part vérifiable du lecteur web.**
 ///
@@ -210,6 +224,37 @@ void main() {
       expect(emissions, 2);
     });
 
+    test('une panne avant tout son n\'a jamais commencé', () {
+      // Le manifeste ne répond pas : rien n'est jamais sorti. L'écran doit
+      // dire « il faut du réseau », pas « lecture interrompue » — il n'y a
+      // aucune position à défendre.
+      playback.startLoading('c1');
+      playback.fail(MediaPlaybackError('hls.js', 'manifeste introuvable'));
+      expect(playback.value.hasStarted, isFalse);
+    });
+
+    test('canplay suffit à dire que le son a commencé', () {
+      playback.startLoading('c1');
+      playback.markReady();
+      expect(playback.value.hasStarted, isTrue);
+    });
+
+    test('une panne après le premier son reste une lecture commencée', () {
+      playback.startLoading('c1');
+      playback.markRendering();
+      playback.updatePosition(2214);
+      playback.fail(MediaPlaybackError('media', 'code 2'));
+      expect(playback.value.hasStarted, isTrue);
+      expect(playback.value.position, const Duration(seconds: 2214));
+    });
+
+    test('un nouveau chargement oublie que le son avait commencé', () {
+      playback.startLoading('c1');
+      playback.markRendering();
+      playback.startLoading('c2');
+      expect(playback.value.hasStarted, isFalse);
+    });
+
     test('clear repart d\'une valeur vide', () {
       playback.startLoading('c1');
       playback.updateDuration(600);
@@ -267,6 +312,84 @@ void main() {
       playback.markEnded();
       playback.seekTo(const Duration(seconds: 120));
       expect(playback.value.isCompleted, isFalse);
+    });
+  });
+
+  group('MediaElementPlayback — la reprise', () {
+    late MediaElementPlayback playback;
+
+    setUp(() => playback = MediaElementPlayback());
+    tearDown(() => playback.dispose());
+
+    test('rend la position à restaurer et efface la panne', () {
+      playback.startLoading('c1');
+      playback.markRendering();
+      playback.updateDuration(3480);
+      playback.updatePosition(2214);
+      playback.fail(MediaPlaybackError('media', 'réseau coupé'));
+
+      expect(playback.beginResume(), const Duration(seconds: 2214));
+
+      // Ce que le mot « Reprendre » promet : la position tient, la durée
+      // aussi, et le lecteur repart en attente de données.
+      expect(playback.value.position, const Duration(seconds: 2214));
+      expect(playback.value.duration, const Duration(seconds: 3480));
+      expect(playback.value.hasError, isFalse);
+      expect(playback.value.isPlaying, isTrue);
+      expect(playback.value.isBuffering, isTrue);
+      expect(playback.value.hasStarted, isTrue);
+    });
+
+    test('sans rien de chargé, il n\'y a rien à reprendre', () {
+      expect(playback.beginResume(), isNull);
+      expect(playback.value, const ContentPlayback());
+    });
+  });
+
+  group('MediaElementPlayback — le chien de garde', () {
+    testWidgets('la classe nue ne pose aucune minuterie', (tester) async {
+      // Ce qui protège les vingt tests ci-dessus : une minuterie posée d'office
+      // les ferait tous rougir sur « pending timer ».
+      final playback = MediaElementPlayback();
+      addTearDown(playback.dispose);
+      playback.startLoading('c1');
+      playback.markPlayRequested();
+
+      await tester.pump(kPlaybackStallTimeout * 3);
+    });
+
+    testWidgets('une position figée en tampon rouvre la source', (
+      tester,
+    ) async {
+      final playback = _WatchedPlayback();
+      addTearDown(playback.dispose);
+
+      playback.startLoading('c1');
+      playback.markRendering();
+      playback.updatePosition(2214);
+      // `waiting` : le média s'est arrêté faute de données. Sur iOS, plus rien
+      // n'arrivera jamais — ni segment, ni erreur.
+      playback.markWaiting();
+
+      await tester.pump(kPlaybackStallTimeout + const Duration(seconds: 1));
+
+      expect(playback.reopened, [const Duration(seconds: 2214)]);
+    });
+
+    testWidgets('une lecture qui avance n\'est jamais rouverte', (
+      tester,
+    ) async {
+      final playback = _WatchedPlayback();
+      addTearDown(playback.dispose);
+
+      playback.startLoading('c1');
+      playback.markRendering();
+      for (var second = 1; second <= 60; second++) {
+        playback.updatePosition(second.toDouble());
+        await tester.pump(const Duration(seconds: 1));
+      }
+
+      expect(playback.reopened, isEmpty);
     });
   });
 

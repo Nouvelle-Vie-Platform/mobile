@@ -63,6 +63,27 @@ void main() {
       expect(sain.copyWith(error: 'réseau coupé').hasError, isTrue);
     });
 
+    group('hasStarted — ce qui départage les deux phrases', () {
+      test('une valeur neuve n\'a jamais commencé', () {
+        // Et surtout : `isBuffering` ne peut pas servir de test. Les deux
+        // implémentations le posent à vrai **dès le chargement**, avant tout
+        // aller-retour réseau — une première ouverture qui échoue aurait donc
+        // « mis en tampon » sans qu'un son soit jamais sorti.
+        const playback = ContentPlayback(contentId: 'c1', isBuffering: true);
+        expect(playback.hasStarted, isFalse);
+      });
+
+      test('une panne après le premier son reste une lecture commencée', () {
+        const commence = ContentPlayback(contentId: 'c1', hasStarted: true);
+        expect(commence.copyWith(error: 'réseau coupé').hasStarted, isTrue);
+      });
+
+      test('l\'égalité en tient compte', () {
+        const jamais = ContentPlayback(contentId: 'c1');
+        expect(jamais, isNot(equals(jamais.copyWith(hasStarted: true))));
+      });
+    });
+
     group('clampPosition', () {
       test('ramène une position négative à zéro', () {
         const playback = ContentPlayback(duration: Duration(minutes: 10));
@@ -216,6 +237,57 @@ void main() {
       // Rejouer un lecteur qui joue déjà ne produit pas de valeur nouvelle.
       player.play();
       expect(notifications, 2);
+    });
+
+    group('resume — reprendre, et non recommencer', () {
+      test('repart de la position atteinte, panne effacée', () async {
+        final player = InertContentPlayer();
+        addTearDown(player.dispose);
+
+        await player.load(contentId: 'c1', url: 'u', title: 't');
+        player.emit(
+          player.value.copyWith(
+            position: const Duration(minutes: 37),
+            duration: const Duration(minutes: 58),
+            hasStarted: true,
+            error: 'réseau coupé',
+          ),
+        );
+
+        await player.resume();
+
+        // Tout l'enjeu du mot « Reprendre » : la position tient. Repartir de
+        // zéro sur un prêche d'une heure serait la panne, pas le remède.
+        expect(player.value.position, const Duration(minutes: 37));
+        expect(player.value.duration, const Duration(minutes: 58));
+        expect(player.value.hasError, isFalse);
+        expect(player.value.isPlaying, isTrue);
+        // Le contenu est rouvert, pas rechargé depuis le catalogue : c'est la
+        // même écoute qui continue.
+        expect(player.value.contentId, 'c1');
+        expect(player.loadCount, 1);
+      });
+
+      test('sans rien de chargé, il n\'y a rien à reprendre', () async {
+        final player = InertContentPlayer();
+        addTearDown(player.dispose);
+
+        await player.resume();
+
+        expect(player.value, const ContentPlayback());
+        expect(player.resumeCount, 1);
+      });
+
+      test('après un stop, plus rien à reprendre non plus', () async {
+        final player = InertContentPlayer();
+        addTearDown(player.dispose);
+
+        await player.load(contentId: 'c1', url: 'u', title: 't');
+        player.stop();
+        await player.resume();
+
+        expect(player.value, const ContentPlayback());
+      });
     });
 
     test('après dispose, plus rien ne bouge, et re-disposer est sans effet',

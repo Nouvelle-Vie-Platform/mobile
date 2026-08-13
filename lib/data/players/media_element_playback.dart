@@ -15,6 +15,7 @@ library;
 import 'package:flutter/foundation.dart';
 
 import 'content_player.dart';
+import 'playback_watchdog.dart';
 
 /// **Une panne de lecture web**, portée telle quelle par
 /// [ContentPlayback.error].
@@ -57,6 +58,30 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
   MediaElementPlayback() : super(const ContentPlayback());
 
   bool _disposed = false;
+
+  /// Le chien de garde, `null` tant que personne ne l'a armé.
+  ///
+  /// **Désarmé par défaut, et c'est délibéré** : cette classe nue n'a aucune
+  /// source à rouvrir, et une minuterie qu'elle poserait d'elle-même ferait
+  /// rougir sur « pending timer » tous les tests qui l'instancient pour
+  /// vérifier une traduction d'événement. C'est l'implémentation qui sait
+  /// rouvrir une source qui l'arme — voir [armStallWatchdog].
+  PlaybackWatchdog? _watchdog;
+
+  /// **Arme le chien de garde du décrochage silencieux.**
+  ///
+  /// [reopen] reçoit la position figée et doit rouvrir la source à cet
+  /// endroit. Appelé par [HlsContentPlayer] à sa construction ; [timeout] n'est
+  /// là que pour les tests, la valeur de production étant unique
+  /// ([kPlaybackStallTimeout]).
+  @protected
+  void armStallWatchdog(
+    void Function(Duration at) reopen, {
+    Duration timeout = kPlaybackStallTimeout,
+  }) {
+    _watchdog?.dispose();
+    _watchdog = PlaybackWatchdog(onStalled: reopen, timeout: timeout);
+  }
 
   /// Vrai après [dispose] : toutes les entrées deviennent alors sans effet.
   ///
@@ -113,9 +138,17 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
   /// Efface la fin atteinte : reprendre après la fin d'un enseignement est un
   /// geste courant, et laisser `isCompleted` à vrai figerait l'écran sur son
   /// rendu de fin pendant que la lecture avance.
+  ///
+  /// Pose [ContentPlayback.hasStarted] : ce média a joué, une panne ultérieure
+  /// est donc une **interruption** et non un manque de réseau.
   void markRendering() {
     _emit(
-      value.copyWith(isPlaying: true, isBuffering: false, isCompleted: false),
+      value.copyWith(
+        isPlaying: true,
+        isBuffering: false,
+        isCompleted: false,
+        hasStarted: true,
+      ),
     );
   }
 
@@ -127,7 +160,13 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
   void markWaiting() => _emit(value.copyWith(isBuffering: true));
 
   /// `canplay` / `seeked` — il y a de quoi jouer.
-  void markReady() => _emit(value.copyWith(isBuffering: false));
+  ///
+  /// Suffit à poser [ContentPlayback.hasStarted] : le média est **prêt à
+  /// sortir du son**, c'est le seuil qui départage « il faut du réseau » de
+  /// « lecture interrompue ». Attendre `playing` laisserait passer pour un
+  /// manque de réseau une panne survenue entre les deux.
+  void markReady() =>
+      _emit(value.copyWith(isBuffering: false, hasStarted: true));
 
   /// `pause` — la lecture est suspendue, la position reste.
   ///
@@ -155,6 +194,33 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
   /// Le média est relâché : la valeur repart à vide.
   void clear() => _emit(const ContentPlayback());
 
+  /// **Prépare une reprise et rend la position à restaurer** — `null` quand il
+  /// n'y a rien à reprendre.
+  ///
+  /// Le web n'a pas le raccourci de `just_audio` (aucun lecteur inactif ne
+  /// capture la source) : reprendre y est **toujours** une réouverture. La
+  /// décision reste ici, la réouverture est un câble.
+  ///
+  /// Valeur neuve et non `copyWith` : c'est le seul moyen d'effacer la panne
+  /// et la fin atteinte. Tout le reste tient — position, durée, et le fait que
+  /// le son avait commencé.
+  Duration? beginResume() {
+    final contentId = value.contentId;
+    if (contentId == null) return null;
+    final at = value.position;
+    _emit(
+      ContentPlayback(
+        contentId: contentId,
+        position: at,
+        duration: value.duration,
+        isPlaying: true,
+        isBuffering: true,
+        hasStarted: value.hasStarted,
+      ),
+    );
+    return at;
+  }
+
   /// **Le déplacement de la tête de lecture**, borné au média chargé.
   ///
   /// Rend les secondes à écrire dans `currentTime`, et pose déjà la position
@@ -174,12 +240,18 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
   void _emit(ContentPlayback playback) {
     if (_disposed) return;
     value = playback;
+    // Le chien de garde se nourrit de **toutes** les émissions, y compris
+    // celles qui le désarment : c'est la position figée en tampon qu'il guette,
+    // et elle n'arrive que par là.
+    _watchdog?.observe(playback);
   }
 
   @override
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    _watchdog?.dispose();
+    _watchdog = null;
     super.dispose();
   }
 

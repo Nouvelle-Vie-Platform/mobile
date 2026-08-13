@@ -53,5 +53,9 @@
   "gatheringRetractedTitle": "Takpekpe sia megali o",
   "sectionGatherings": "Takpekpewo",
   "teachingRetractedTitle": "Nufiafia sia megali o",
-  "teachingRetractedMessage": "Woɖee ɖa le nudzraɖoƒe la. Sese la tɔ."
+  "teachingRetractedMessage": "Woɖee ɖa le nudzraɖoƒe la. Sese la tɔ.",
+
+  "playerErrorTitle": "Sese la tɔ",
+  "playerErrorMessage": "Gbeɖiɖi la tɔ. Kpɔ wò internet ŋu, eye nàgbugbɔ ase edzi.",
+  "playerErrorRetry": "Gbugbɔ se edzi"
 }

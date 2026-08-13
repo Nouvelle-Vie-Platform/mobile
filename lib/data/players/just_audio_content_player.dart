@@ -28,6 +28,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
 import 'content_player.dart';
+import 'playback_watchdog.dart';
 
 /// **Le pilote du média, côté système.**
 ///
@@ -74,10 +75,21 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
   /// Ouvre un média et annonce ce que le système doit afficher.
   ///
   /// Ne démarre pas la lecture : c'est [play] qui le fait.
-  Future<void> open({required String url, required MediaItem item}) async {
+  ///
+  /// [at] est la position d'ouverture, passée à `setUrl` plutôt que suivie
+  /// d'un `seek` : un déplacement demandé après coup part d'un lecteur qui a
+  /// déjà commencé à remplir son tampon depuis le début, et le fidèle entend
+  /// alors une seconde du tout début du prêche avant d'être ramené où il en
+  /// était. C'est le chemin du repli de [JustAudioContentPlayer.resume] et
+  /// celui du chien de garde.
+  Future<void> open({
+    required String url,
+    required MediaItem item,
+    Duration? at,
+  }) async {
     _failure = null;
     mediaItem.add(item);
-    await _player.setUrl(url);
+    await _player.setUrl(url, initialPosition: at);
   }
 
   @override
@@ -168,6 +180,14 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
             isBuffering: state.processingState == ProcessingState.loading ||
                 state.processingState == ProcessingState.buffering,
             isCompleted: state.processingState == ProcessingState.completed,
+            // `ready` est le premier instant où le média **peut** sortir du
+            // son. C'est ce qui fera dire à l'écran « lecture interrompue »
+            // plutôt que « il faut du réseau » si tout s'arrête ensuite. Une
+            // fois vrai, il ne redevient faux qu'au chargement d'un autre
+            // contenu — d'où le `||`.
+            hasStarted: value.hasStarted ||
+                state.processingState == ProcessingState.ready ||
+                state.processingState == ProcessingState.completed,
           ),
         );
       }),
@@ -186,9 +206,27 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   final List<StreamSubscription<Object?>> _subscriptions = [];
   bool _disposed = false;
 
+  /// Ce que le lecteur tient, et qu'une reprise rouvrirait. `null` après un
+  /// [stop] : il n'y a alors plus rien à reprendre.
+  ContentRequest? _request;
+
+  /// **Le chien de garde du décrochage silencieux — c'est ici qu'il compte.**
+  ///
+  /// Sur iOS, un décrochage réseau ne remonte aucune erreur et il n'y a pas de
+  /// reconnexion native : sans lui, un prêche d'une heure s'arrête au bout de
+  /// dix minutes, définitivement, et rien n'en portera jamais la trace.
+  late final PlaybackWatchdog _watchdog = PlaybackWatchdog(
+    onStalled: (at) {
+      final request = _request;
+      if (request == null) return;
+      unawaited(_reopenAt(request, at));
+    },
+  );
+
   void _emit(ContentPlayback playback) {
     if (_disposed) return;
     value = playback;
+    _watchdog.observe(playback);
   }
 
   @override
@@ -200,20 +238,84 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     String? artUrl,
   }) async {
     if (_disposed) return;
+    final request = ContentRequest(
+      contentId: contentId,
+      url: url,
+      title: title,
+      author: author,
+      artUrl: artUrl,
+    );
+    _request = request;
     // Valeur **neuve** : durée, fin atteinte et panne du contenu précédent
     // doivent disparaître, et `copyWith` ne sait pas effacer.
     _emit(ContentPlayback(contentId: contentId, isBuffering: true));
+    await _open(request);
+  }
+
+  /// **Reprendre une lecture interrompue, à la position atteinte.**
+  ///
+  /// Deux chemins, et le second existe parce que le premier n'est garanti par
+  /// aucun contrat :
+  ///
+  /// 1. **le raccourci.** À la panne fatale, la plateforme repasse en
+  ///    `ProcessingState.idle` et `just_audio` bascule sur un lecteur inactif
+  ///    **en capturant la position et la source** ; `play()` réactive alors la
+  ///    plateforme en rechargeant à la position mémorisée. Vérifié dans le
+  ///    source de `just_audio` 0.10.6, **documenté nulle part** — d'où le
+  ///    repli. La condition que `play()` exige est exactement celle qu'on
+  ///    teste : une source encore tenue (`audioSource`, c'est-à-dire la
+  ///    playlist non vide) ;
+  /// 2. **le repli explicite** : rouvrir la source nous-mêmes, à la dernière
+  ///    position connue.
+  ///
+  /// Dans les deux cas la position vient de [value], jamais de zéro : c'est ce
+  /// que le mot « Reprendre » promet au fidèle.
+  @override
+  Future<void> resume() async {
+    if (_disposed) return;
+    final request = _request;
+    if (request == null) return;
+    final at = value.position;
+    // Valeur neuve : `copyWith` ne sait pas effacer une panne.
+    _emit(
+      ContentPlayback(
+        contentId: request.contentId,
+        position: at,
+        duration: value.duration,
+        isPlaying: true,
+        isBuffering: true,
+        hasStarted: value.hasStarted,
+      ),
+    );
+    if (_handler.player.audioSource != null) {
+      unawaited(_handler.play());
+      return;
+    }
+    await _reopenAt(request, at);
+  }
+
+  /// Rouvre la source à [at] et repart — le geste commun au repli de [resume]
+  /// et au chien de garde.
+  Future<void> _reopenAt(ContentRequest request, Duration at) async {
+    await _open(request, at: at);
+    if (_disposed) return;
+    unawaited(_handler.play());
+  }
+
+  /// Ouvre (ou rouvre) la source, éventuellement à une position.
+  Future<void> _open(ContentRequest request, {Duration? at}) async {
     try {
       await _handler.open(
-        url: url,
+        url: request.url,
+        at: at,
         item: MediaItem(
           // L'identifiant du contenu, pas l'URL : c'est lui qui désigne un
           // enseignement dans tout le reste de l'application (routes,
           // notifications), et le système le rendra un jour à Android Auto.
-          id: contentId,
-          title: title,
-          artist: author,
-          artUri: artUrl == null ? null : Uri.tryParse(artUrl),
+          id: request.contentId,
+          title: request.title,
+          artist: request.author,
+          artUri: request.artUrl == null ? null : Uri.tryParse(request.artUrl!),
         ),
       );
     } catch (error) {
@@ -242,6 +344,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   @override
   void stop() {
     if (_disposed) return;
+    _request = null;
     _emit(const ContentPlayback());
     unawaited(_handler.stop());
   }
@@ -250,6 +353,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    _watchdog.dispose();
     for (final subscription in _subscriptions) {
       unawaited(subscription.cancel());
     }
