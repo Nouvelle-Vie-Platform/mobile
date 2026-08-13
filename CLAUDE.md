@@ -115,6 +115,36 @@ notification, or « −30 s / +30 s » est une exigence produit. Le pas unique e
 `kContentSkipInterval`, lu par le handler *et* par l'`AudioServiceConfig` *et*
 par l'écran — donc aussi sur le web, où il n'y a que l'écran.
 
+**Ce que ce choix n'a PAS évité — l'application embarque deux moteurs SQLite.**
+Le raisonnement ci-dessus laisse croire qu'écarter `just_audio_background`
+écarte aussi sa chaîne de dépendances. C'est faux, et la chaîne est courte :
+
+```
+audio_service 0.18.19 → flutter_cache_manager 3.4.1 → sqflite 2.4.3
+drift_flutter 0.3.1   → sqlite3 + sqlite3_flutter_libs
+```
+
+`just_audio` n'y est pour rien — c'est `audio_service` seul qui tire
+`flutter_cache_manager`. `sqflite` arrive donc avec ses implémentations natives
+(`sqflite_android`, `sqflite_darwin`) **à côté** du `sqlite3` de Drift.
+
+Ce n'est pas un bug et rien n'est à corriger : les deux moteurs ne se
+rencontrent jamais, Drift ne connaît que le sien. C'est écrit ici pour la
+personne qui auditera un jour la taille du binaire, ou qui s'étonnera de voir
+`sqflite` dans `pubspec.lock` alors qu'aucun `pubspec.yaml` ne le demande —
+sans quoi elle refera l'enquête, et pourrait « corriger » en retirant
+`audio_service`. Vérifier avec `flutter pub deps --style=compact`.
+
+**Le HLS est natif des deux côtés** : `just_audio` tire
+`androidx.media3:media3-exoplayer-hls` sur Android et s'appuie sur `AVPlayer`
+sur iOS. Aucun décodage logiciel, aucun greffon JS — c'est le web, sans
+`just_audio`, qui est le cas particulier.
+
+**Les cibles de déploiement ont de la marge** : le projet est à `minSdk 23`
+(Android) et `IPHONEOS_DEPLOYMENT_TARGET 13.0` (iOS), contre 19 et 12 exigés
+par la pile audio. Rien n'a eu à bouger pour l'ajouter, et rien n'a à bouger
+pour la faire évoluer.
+
 Cinq points qui se ratent en silence :
 
 1. **`contentPlayerProvider` n'est pas `autoDispose`** : la lecture doit
