@@ -225,12 +225,20 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
 
   bool _disposed = false;
 
-  /// URL du dernier `load` — pour que les tests vérifient **ce qu'on aurait
-  /// joué**, à défaut de le jouer.
+  /// URL du média **actuellement tenu** — pour que les tests vérifient ce
+  /// qu'on aurait joué, à défaut de le jouer. `null` après un [stop].
   @visibleForTesting
   String? loadedUrl;
 
-  /// Titre du dernier `load`, celui qu'aurait porté la notification.
+  /// Titre **actuellement affiché par le système** : la notification, l'écran
+  /// verrouillé.
+  ///
+  /// Il se vide sur [stop], comme la vraie implémentation vide son élément
+  /// média. Ce n'est pas de la coquetterie de double : c'est le seul endroit où
+  /// un test puisse constater qu'un contenu **retiré pendant l'écoute** cesse
+  /// d'être annoncé au système. Sans lui, l'oubli resterait invisible — l'écran
+  /// montrerait bien l'absence, et le titre continuerait de s'afficher sur
+  /// l'écran verrouillé.
   @visibleForTesting
   String? loadedTitle;
 
@@ -287,6 +295,10 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   @override
   void stop() {
     if (_disposed) return;
+    // Le média est relâché **et** ce que le système affiche est vidé — c'est ce
+    // que fait `ContentAudioHandler.stop()` avec `mediaItem.add(null)`.
+    loadedUrl = null;
+    loadedTitle = null;
     value = const ContentPlayback();
   }
 

@@ -176,6 +176,7 @@ TeachingsCompanion teachingRow(
   String? color,
   DateTime? publishedAt,
   String? recordedAt,
+  String? playlistUrl,
 }) =>
     TeachingsCompanion.insert(
       id: id,
@@ -185,4 +186,5 @@ TeachingsCompanion teachingRow(
       color: Value(color),
       publishedAt: Value(publishedAt),
       recordedAt: Value(recordedAt),
+      playlistUrl: Value(playlistUrl),
     );

@@ -256,6 +256,7 @@ class Teaching {
     this.isFullService = false,
     this.imageLandscapeUrl,
     this.imagePortraitUrl,
+    this.playlistUrl,
     this.description = '',
   });
 
@@ -333,6 +334,21 @@ class Teaching {
   /// l'accueil (104 × 172). Le même enseignement porte les deux : une image
   /// unique serait amputée dans l'un des deux cadres.
   final String? imagePortraitUrl;
+
+  /// **URL HLS publique** du média, telle que le serveur la sert
+  /// (`playlist_url`), ou `null`.
+  ///
+  /// Le champ n'est pas une entorse à la règle « rien que le serveur ne serve
+  /// pas » qui a sorti `duration`, `verse` et `seed` de ce modèle : la colonne
+  /// existe côté serveur, le magasin la réplique (`teachings.playlist_url`) et
+  /// `StoreMediathequeRepository` la lit déjà. C'est le double en mémoire qui
+  /// ne savait pas la porter — donc, depuis #40 où le lecteur en exige une, le
+  /// seul mode dans lequel rien ne pouvait jouer.
+  ///
+  /// `null` ne veut pas dire « erreur » : le contenu est publié, son fichier
+  /// n'est pas (encore) attaché. C'est une absence à dessiner
+  /// (`ContentAbsence.noMedia`).
+  final String? playlistUrl;
 
   /// Description longue (affichée dans la feuille de détail).
   final String description;

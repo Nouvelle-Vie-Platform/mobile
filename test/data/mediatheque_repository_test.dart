@@ -253,6 +253,40 @@ void main() {
       expect(view.authorName, isNull, reason: 'un auteur vide reste absent');
     });
 
+    test('l\'URL de playlist traverse les deux implémentations', () async {
+      // Sans elle, le double en mémoire donnait une médiathèque **muette** :
+      // le lecteur (#40) charge `playlistUrl`, et un modèle qui ne la porte pas
+      // bascule chaque contenu sur « média absent » en mode maquette — un
+      // défaut que seul un test de parité voit venir.
+      const url = 'https://exemple.test/t-media/master.m3u8';
+      await sync.applyPage(
+        sync.teachingsCollection,
+        upserts: [teachingRow('t-media', playlistUrl: url)],
+        cursor: 'c1',
+      );
+      final inMemory = InMemoryMediathequeRepository(
+        types: types,
+        teachings: [
+          Teaching(
+            id: 't-media',
+            title: 'Avec média',
+            author: 'Pasteur',
+            recordedAt: DateTime.utc(2026, 4, 12),
+            publishedAt: DateTime.utc(2026, 4, 12, 8),
+            playlistUrl: url,
+          ),
+        ],
+      );
+
+      final stored =
+          await repository.teachingById('t-media', locale: 'fr').first;
+      final doubled =
+          await inMemory.teachingById('t-media', locale: 'fr').first;
+
+      expect(stored!.playlistUrl, url);
+      expect(doubled!.playlistUrl, url);
+    });
+
     test('« pas d\'enseignement, pas de section » vaut aussi hors backend',
         () async {
       final empty = InMemoryMediathequeRepository(

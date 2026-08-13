@@ -576,9 +576,36 @@ poussée). Le FAB n'est PAS un onglet.
   **avec repli coloré**. Il ne résout plus rien (URL et couleur arrivent déjà
   résolues), il choisit un cadrage et dessine.
 - `ContentPlayerView` — le lecteur plein écran, partagé par les deux écrans de
-  détail. Il reçoit le **provider** (et non sa valeur) pour pouvoir l'écouter :
-  une rétractation immédiatement suivie d'une resynchronisation ne produirait
-  qu'une reconstruction, et le son aurait continué sur un contenu retiré.
+  détail, et **le seul endroit qui pilote le lecteur** (#40). Il reçoit le
+  **provider** (et non sa valeur) pour pouvoir l'écouter : une rétractation
+  immédiatement suivie d'une resynchronisation ne produirait qu'une
+  reconstruction, et le son aurait continué sur un contenu retiré. Cinq points
+  s'y ratent en silence :
+  1. **la rétractation appelle `stop()`**, pas un `setState` : couper l'état du
+     widget n'arrête pas le son, et un enseignement retiré continuerait de
+     jouer, écran éteint, son titre sur l'écran verrouillé. Le déclencheur est
+     la **valeur**, jamais l'`AsyncValue` — un rechargement ne coupe rien ;
+  2. **`load()` est gardé** par « ce contenu est déjà chargé » (`_requested` +
+     `ContentPlayback.contentId`) : sans quoi chaque reconstruction relance le
+     prêche depuis le début, et un contenu qui réapparaît après rétractation
+     repart tout seul ;
+  3. **seuls `_ProgressLine` et `_PlayButton` s'abonnent au lecteur**, par
+     `select`. La position émet plusieurs fois par seconde : la faire descendre
+     en paramètre reconstruirait le dégradé, le `Hero` et l'image au même
+     rythme ;
+  4. **l'auto-lecture à l'ouverture est un choix assumé** — elle coûte du
+     réseau, elle est pinnée par les tests des deux écrans de détail ;
+  5. **les cinq déclencheurs de #43 sont câblés ici** : position poussée,
+     pause, sortie d'écran, `AppLifecycleState.paused` (**sans arrêter la
+     lecture**) et état terminal — qui exige `pause()` **et** `seek(zero)`,
+     `just_audio` restant `playing == true`, curseur en fin, sans son.
+
+  Corollaire pour les tests : tout test qui monte un écran de lecture doit
+  poser un **magasin en mémoire** (`appDatabaseProvider`) et un **rapporteur
+  muet** (`playbackProgressReporterProvider`) — le premier écrirait un fichier
+  de base sur la machine, le second posterait sur une socket que `flutter test`
+  refuse, et laisserait la minuterie de Dio derrière lui. `pumpScreen` et
+  `test/helpers/playback_doubles.dart` s'en chargent.
 - `home/home_content_section.dart` — le dessin d'une section d'accueil, sans la
   famille ; `home_teaching_section.dart` et `home_gathering_section.dart` le
   câblent, chacun à son provider et à sa route.

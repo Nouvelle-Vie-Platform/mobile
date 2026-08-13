@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
@@ -15,13 +17,25 @@ import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
+import 'package:maison_du_miracle/state/playback_progress_providers.dart';
+import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 import 'package:maison_du_miracle/widgets/app_error_state.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
 
+import '../helpers/playback_doubles.dart';
+
 /// Enseignements de test **sans image** : `flutter test` répond 400 à tout
 /// accès réseau, et un visuel distant ne prouverait rien de plus ici.
 /// `final` et non `const` : les dates ne sont pas constructibles en constante.
+///
+/// **Avec `playlistUrl`, sauf le dernier**, et les deux moitiés de cette phrase
+/// sont voulues. Depuis #40 le lecteur charge cette URL : une fixture qui n'en
+/// porte pas décrit un enseignement **publié sans média**, ce qui est un cas
+/// réel — mais qui basculera tout l'écran sur la branche « média absent » du
+/// ticket suivant (#41). Les deux premiers en ont donc une, pour que les
+/// assertions de lecture portent bien sur la lecture ; le troisième la garde
+/// exprès, et c'est lui qui deviendra le cas de test de cette branche-là.
 final _teachings = [
   Teaching(
     id: '01940000-0000-7000-8000-000000000001',
@@ -30,6 +44,7 @@ final _teachings = [
     teachingTypeId: 1,
     recordedAt: DateTime.utc(2026, 4, 12),
     publishedAt: DateTime.utc(2026, 4, 12, 8),
+    playlistUrl: 'https://exemple.test/premier/master.m3u8',
   ),
   Teaching(
     id: '01940000-0000-7000-8000-000000000002',
@@ -38,6 +53,7 @@ final _teachings = [
     teachingTypeId: 2,
     recordedAt: DateTime.utc(2026, 4, 5),
     publishedAt: DateTime.utc(2026, 4, 5, 8),
+    playlistUrl: 'https://exemple.test/milieu/master.m3u8',
   ),
   Teaching(
     id: '01940000-0000-7000-8000-000000000003',
@@ -46,6 +62,7 @@ final _teachings = [
     teachingTypeId: 3,
     recordedAt: DateTime.utc(2026, 3, 29),
     publishedAt: DateTime.utc(2026, 3, 29, 8),
+    // **Gardé sans média, délibérément** — voir le commentaire ci-dessus.
   ),
 ];
 
@@ -124,6 +141,7 @@ class _FakeMediatheque implements MediathequeRepository {
         teachingTypeId: teaching.teachingTypeId,
         color: teaching.color,
         imageLandscapeUrl: teaching.imageLandscapeUrl,
+        playlistUrl: teaching.playlistUrl,
         publishedAt: teaching.publishedAt,
         recordedAt: teaching.recordedAt,
       );
@@ -360,6 +378,7 @@ void main() {
         author: '',
         recordedAt: DateTime.utc(2026, 4, 12),
         publishedAt: DateTime.utc(2026, 4, 12, 8),
+        playlistUrl: 'https://exemple.test/orphelin/master.m3u8',
       );
       final repository = _FakeMediatheque([orphan]);
       addTearDown(repository.dispose);
@@ -388,6 +407,7 @@ void main() {
         recordedAt: DateTime.utc(2026, 4, 12),
         publishedAt: DateTime.utc(2026, 4, 12, 8),
         imageLandscapeUrl: 'https://example.invalid/cover.jpg',
+        playlistUrl: 'https://exemple.test/visuel/master.m3u8',
       );
       final repository = _FakeMediatheque([withImage]);
       addTearDown(repository.dispose);
@@ -402,15 +422,26 @@ void main() {
 }
 
 /// Conteneur branché sur une médiathèque pilotée par le test.
-ProviderContainer _container(MediathequeRepository repository) =>
-    ProviderContainer.test(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(_SignedInAuthRepository()),
-        branchRepositoryProvider
-            .overrideWithValue(const InMemoryBranchRepository()),
-        mediathequeRepositoryProvider.overrideWithValue(repository),
-      ],
-    );
+///
+/// Le magasin est posé **en mémoire** : l'écran de lecture ouvre un
+/// enregistreur de progression (#43), qui lit et écrit son `PlaybackDao` sans
+/// passer par un repository. Sans cette surcharge, le test ouvrirait un fichier
+/// de base sur la machine — quand il ne lèverait pas, faute de canal de plugin.
+ProviderContainer _container(MediathequeRepository repository) {
+  final database = AppDatabase(NativeDatabase.memory());
+  addTearDown(database.close);
+  return ProviderContainer.test(
+    overrides: [
+      appDatabaseProvider.overrideWithValue(database),
+      playbackProgressReporterProvider
+          .overrideWithValue(FakePlaybackProgressReporter()),
+      authRepositoryProvider.overrideWithValue(_SignedInAuthRepository()),
+      branchRepositoryProvider
+          .overrideWithValue(const InMemoryBranchRepository()),
+      mediathequeRepositoryProvider.overrideWithValue(repository),
+    ],
+  );
+}
 
 /// Monte l'écran de détail seul, adossé à la médiathèque fournie.
 Future<void> _pumpDetail(
@@ -470,7 +501,12 @@ Future<GoRouter> _pumpApp(
 
 /// `pump` et jamais `pumpAndSettle` : plusieurs écrans de l'app animent en
 /// boucle (splash, squelettes) et ne se stabilisent jamais.
+///
+/// Trois passes depuis #40 : l'écran de lecture demande sa **reprise** au
+/// magasin avant de charger le média, et cette lecture est asynchrone. Deux
+/// frames livraient le contenu mais pas toujours le son.
 Future<void> _settle(WidgetTester tester) async {
   await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
   await tester.pump(const Duration(seconds: 1));
 }

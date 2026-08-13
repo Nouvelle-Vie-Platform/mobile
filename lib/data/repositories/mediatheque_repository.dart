@@ -174,6 +174,7 @@ class InMemoryMediathequeRepository implements MediathequeRepository {
       typeColor: type?.color,
       imageLandscapeUrl: teaching.imageLandscapeUrl,
       imagePortraitUrl: teaching.imagePortraitUrl,
+      playlistUrl: teaching.playlistUrl,
       description: teaching.description,
       recordedAt: teaching.recordedAt,
       publishedAt: teaching.publishedAt,

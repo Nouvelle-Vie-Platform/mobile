@@ -164,6 +164,7 @@ class InMemoryGatheringRepository implements GatheringRepository {
       typeColor: type?.color,
       imageLandscapeUrl: gathering.imageLandscapeUrl,
       imagePortraitUrl: gathering.imagePortraitUrl,
+      playlistUrl: gathering.playlistUrl,
       description: gathering.description,
       recordedAt: gathering.recordedAt,
       publishedAt: gathering.publishedAt,
