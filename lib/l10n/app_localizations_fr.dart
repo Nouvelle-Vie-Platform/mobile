@@ -692,11 +692,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'L\'enregistrement n\'est pas encore en ligne. Revenez d\'ici quelques jours.';
 
   @override
-  String get absenceOfflineMediaTitle => 'Indisponible hors ligne';
+  String get absenceOfflineMediaTitle => 'Écoute impossible hors ligne';
 
   @override
   String get absenceOfflineMediaMessage =>
-      'Cet enregistrement n\'a pas été téléchargé. Reconnectez-vous à internet pour l\'écouter.';
+      'La médiathèque s\'écoute en ligne. Reconnectez-vous à internet pour lancer la lecture.';
 
   @override
   String get absenceBack => 'Retour';

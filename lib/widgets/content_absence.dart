@@ -51,9 +51,17 @@ enum ContentAbsence {
   /// couleur de repli, la donnée ayant disparu.
   noMedia,
 
-  /// **Média indisponible hors ligne.** Le média existe et n'a pas été
-  /// téléchargé ; l'appareil est hors ligne. La seule des quatre qui se résout
-  /// toute seule en retrouvant du réseau.
+  /// **Écoute impossible hors ligne.** Le média existe, l'appareil est hors
+  /// ligne. La seule des quatre qui se résout toute seule en retrouvant du
+  /// réseau.
+  ///
+  /// **Ne pas y remettre de téléchargement.** La médiathèque mobile est en
+  /// **lecture en ligne seulement** (`docs/mediatheque-en-ligne.md`) : le
+  /// catalogue est hors ligne — le magasin local le peint —, le son ne l'est
+  /// pas, et aucune fonction de téléchargement n'est prévue. Le libellé a dit
+  /// « cet enregistrement n'a pas été téléchargé » pendant un temps : il
+  /// promettait un bouton qui n'existe pas, et envoyait chercher une panne là
+  /// où il n'y en a aucune.
   offlineMedia;
 
   IconData get icon => switch (this) {

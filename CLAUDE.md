@@ -593,8 +593,11 @@ Trois raisons, dans l'ordre d'importance :
 Un contenu ouvert peut n'avoir rien à montrer pour quatre raisons distinctes,
 qui se ressemblent à l'écran et répondent à des questions différentes :
 `retracted` (retiré, définitif), `notSynced` (pas encore reçu par le magasin
-local), `noMedia` (publié, fichier pas encore attaché), `offlineMedia` (média
-non téléchargé, appareil hors ligne). `ContentAbsence` porte les quatre textes,
+local), `noMedia` (publié, fichier pas encore attaché), `offlineMedia`
+(appareil hors ligne — le média existe, mais **la médiathèque s'écoute en ligne
+seulement**, `docs/mediatheque-en-ligne.md` ; il n'y a pas de téléchargement, et
+son libellé ne doit **jamais** en promettre un). `ContentAbsence` porte les
+quatre textes,
 `ContentAbsenceView` les rend toutes — **ne pas écrire un écran d'absence de
 plus**, ajouter une variante.
 

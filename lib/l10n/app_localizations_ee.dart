@@ -691,11 +691,11 @@ class AppLocalizationsEe extends AppLocalizations {
       'Nuɖeɖi la meva ɖe internet dzi haɖe o. Gbugbɔ va le ŋkeke ʋɛ aɖewo megbe.';
 
   @override
-  String get absenceOfflineMediaTitle => 'Mele mɔ nu o';
+  String get absenceOfflineMediaTitle => 'Màte ŋu ase o ne internet meli o';
 
   @override
   String get absenceOfflineMediaMessage =>
-      'Womeɖi nuɖeɖi sia ɖe mɔ̃a dzi o. Gbugbɔ ka internet ŋu hafi nàse.';
+      'Ele be nàka internet ŋu hafi ase nuɖeɖiwo. Gbugbɔ ka internet ŋu ne nàse.';
 
   @override
   String get absenceBack => 'Trɔ yi megbe';

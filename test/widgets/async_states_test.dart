@@ -18,11 +18,12 @@ Future<void> _pump(
   WidgetTester tester,
   Widget child, {
   ThemeData? theme,
+  Locale locale = const Locale('fr'),
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: theme ?? AppTheme.light,
-      locale: const Locale('fr'),
+      locale: locale,
       localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: appSupportedLocales,
       home: Scaffold(body: SingleChildScrollView(child: child)),
@@ -277,6 +278,46 @@ void main() {
       expect(find.byType(AppButton), findsOneWidget);
       // Neutre, sans la carte teintée d'un état d'erreur.
       expect(find.byType(AppCard), findsNothing);
+    });
+
+    testWidgets('« hors ligne » ne promet aucun téléchargement',
+        (tester) async {
+      await _pump(
+        tester,
+        const ContentAbsenceView(absence: ContentAbsence.offlineMedia),
+      );
+
+      // La médiathèque s'écoute **en ligne seulement** : il n'y a pas de
+      // bouton de téléchargement, et il n'y en aura pas
+      // (`docs/mediatheque-en-ligne.md`). Le libellé précédent en présupposait
+      // un, et envoyait le fidèle chercher une affordance inexistante.
+      expect(find.text('Écoute impossible hors ligne'), findsOneWidget);
+      expect(
+        find.text('La médiathèque s\'écoute en ligne. Reconnectez-vous à '
+            'internet pour lancer la lecture.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('aucune traduction ne parle de téléchargement', (tester) async {
+      // Le garde-fou de la règle, et pas un doublon du test ci-dessus : c'est
+      // par les traductions que le mensonge reviendrait, une langue à la fois.
+      for (final locale in const [Locale('fr'), Locale('en'), Locale('ee')]) {
+        await _pump(
+          tester,
+          const ContentAbsenceView(absence: ContentAbsence.offlineMedia),
+          locale: locale,
+        );
+
+        for (final mot in const ['élécharg', 'ownload']) {
+          expect(
+            find.textContaining(mot),
+            findsNothing,
+            reason: 'en ${locale.languageCode}, « $mot » promet une fonction '
+                'hors périmètre',
+          );
+        }
+      }
     });
 
     testWidgets('les textes fournis remplacent ceux de la variante',
