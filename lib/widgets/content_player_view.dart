@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // `ProviderListenable` n'est pas exporté par l'entrée principale de
@@ -6,9 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:go_router/go_router.dart';
 
+import '../data/players/content_player.dart';
+import '../data/repositories/playback_progress_recorder.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/content_view.dart';
 import '../router/app_router.dart';
+import '../state/playback_progress_providers.dart';
+import '../state/player_providers.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -22,12 +28,18 @@ const _fallbackBase = Color(kBrandFallbackColor);
 /// **Le lecteur plein écran d'un contenu de médiathèque** — le même pour un
 /// enseignement et pour un rassemblement.
 ///
-/// Il ne lit **aucun provider** et ne connaît **aucune route** : il reçoit un
-/// `AsyncValue<ContentView?>` déjà résolu par l'écran qui l'enveloppe. C'est ce
-/// qui permet aux deux familles de partager ce dessin sans que le partage
-/// devienne un chemin par lequel un rassemblement pourrait s'ouvrir dans
-/// l'écran d'un enseignement : la famille est décidée en amont, par le provider
-/// et par la route.
+/// Il ne connaît **aucune famille** : il reçoit le provider d'un
+/// `AsyncValue<ContentView?>`, choisi par l'écran qui l'enveloppe. C'est ce qui
+/// permet aux deux familles de partager ce dessin sans que le partage devienne
+/// un chemin par lequel un rassemblement pourrait s'ouvrir dans l'écran d'un
+/// enseignement : la famille est décidée en amont, par le provider et par la
+/// route.
+///
+/// Les providers qu'il lit de lui-même sont ceux du **lecteur**
+/// ([contentPlayerProvider], [contentPlaybackProvider]) et de la **reprise de
+/// lecture** ([playbackProgressRecorderProvider]) — tous trois sans famille, et
+/// c'est pourquoi ils vivent ici plutôt que dans les deux écrans, où ils
+/// auraient été écrits deux fois.
 ///
 /// Quatre situations, et elles sont distinctes :
 ///
@@ -45,9 +57,10 @@ const _fallbackBase = Color(kBrandFallbackColor);
 /// sur un écran d'allure différente reviendrait à déplacer le fidèle sans le lui
 /// dire.
 ///
-/// **Une rétractation reçue pendant l'écoute arrête la lecture.** C'est la
-/// disparition de la valeur qui le déclenche, jamais un simple retour à l'état
-/// « chargement » : un rechargement ne doit pas couper le son.
+/// **Une rétractation reçue pendant l'écoute arrête le son**, et pas seulement
+/// l'affichage. C'est la disparition de la valeur qui le déclenche, jamais un
+/// simple retour à l'état « chargement » : un rechargement ne doit pas couper
+/// la lecture.
 class ContentPlayerView extends ConsumerStatefulWidget {
   const ContentPlayerView({
     super.key,
@@ -85,10 +98,59 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   ConsumerState<ContentPlayerView> createState() => _ContentPlayerViewState();
 }
 
-class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
-  bool _playing = true;
+class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
+    with WidgetsBindingObserver {
+  /// **La dernière affordance encore feinte.** Le cœur n'a aucun contrat
+  /// serveur ; le brancher au passage aurait fabriqué une donnée que rien ne
+  /// conserve.
   bool _liked = false;
-  double _progress = 0.35;
+
+  /// Le contenu que **cet écran** a demandé au lecteur. Sans lui, chaque
+  /// reconstruction relancerait le son depuis le début.
+  ///
+  /// À distinguer de `ContentPlayback.contentId`, qui dit ce que le lecteur —
+  /// **global** — joue réellement, et qui peut être autre chose.
+  String? _requested;
+
+  /// Vrai dès qu'une rétractation a coupé le son.
+  ///
+  /// Ce qui suit ne doit pas le relancer tout seul : une rétractation
+  /// immédiatement suivie d'une republication est courante, et reprendre le son
+  /// sans que personne ne l'ait demandé serait une surprise sonore. Seul un
+  /// geste explicite sur le bouton lève l'interdit.
+  bool _stoppedByRetraction = false;
+
+  /// L'enregistreur de progression de la session d'écoute en cours (#43), ou
+  /// `null` tant que rien n'est ouvert — et quand le magasin est indisponible :
+  /// la reprise est un confort, son absence n'empêche pas d'écouter.
+  PlaybackProgressRecorder? _recorder;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Sortie de l'écran — l'un des cinq déclencheurs du rapport. La lecture,
+    // elle, **continue** : le lecteur est global, `context.pop()` ne l'arrête
+    // pas, c'est le sens même de l'écoute en arrière-plan.
+    _fireAndForget(_recorder?.onLeft());
+    super.dispose();
+  }
+
+  /// **Écran éteint, application rangée** — le cas le plus fréquent de tout ce
+  /// lot : le fidèle met son téléphone dans sa poche, il ne quitte pas.
+  ///
+  /// On rapporte, et **on ne touche pas à la lecture**. Couper ici serait la
+  /// panne la plus visible du lot.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.paused) return;
+    _fireAndForget(_recorder?.onAppPaused());
+  }
 
   /// Ouvre une demi-feuille native (glissable vers le bas) : description,
   /// rubrique et infos du contenu.
@@ -107,15 +169,18 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
 
   @override
   Widget build(BuildContext context) {
-    // Une rétractation reçue pendant l'écoute doit **arrêter la lecture**, et
-    // pas seulement retirer les commandes de l'écran. On écoute la valeur, pas
+    // Une rétractation reçue pendant l'écoute doit **arrêter le son**, et pas
+    // seulement retirer les commandes de l'écran. On écoute la valeur, pas
     // l'`AsyncValue` : un rechargement qui repasse par « chargement » ne doit
-    // pas couper le son, seule la disparition le doit.
+    // pas couper la lecture, seule la disparition le doit.
     ref.listen<AsyncValue<ContentView?>>(widget.content, (_, next) {
-      if (next.hasValue && next.value == null && _playing) {
-        setState(() => _playing = false);
-      }
+      if (next.hasValue && next.value == null) _stopForRetraction();
     });
+
+    // Le lecteur pousse ici sa position et ses événements. Un `listen` et non
+    // un `watch` : ce widget-ci ne doit surtout pas se reconstruire au rythme
+    // de la position — voir [_ProgressLine], qui s'en charge seule.
+    ref.listen<ContentPlayback>(contentPlaybackProvider, _onPlayback);
 
     return ref.watch(widget.content).when(
           loading: () => _buildLoading(context),
@@ -188,7 +253,173 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
     );
   }
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // Le pilotage du lecteur
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// **Confie le contenu au lecteur, une fois par contenu.**
+  ///
+  /// Appelée à chaque build de l'écran rempli, elle ne fait quelque chose que
+  /// la première fois : sans cette garde, chaque reconstruction — et il y en a
+  /// une à chaque cycle de synchronisation — relancerait le prêche depuis le
+  /// début.
+  ///
+  /// Le chargement lui-même est reporté **après le frame** : `build` décrit,
+  /// il ne commande pas. Charger depuis un `build` ferait muter un provider
+  /// pendant la construction de l'arbre.
+  void _loadOnce(ContentView content) {
+    if (_stoppedByRetraction || _requested == content.id) return;
+    _requested = content.id;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_open(content));
+    });
+  }
+
+  /// Ouvre le contenu : reprise résolue, média chargé, lecture démarrée.
+  ///
+  /// **L'auto-lecture à l'ouverture est un choix**, pas un héritage : elle
+  /// coûte désormais du réseau et de la batterie. Elle est conservée parce
+  /// qu'ouvrir la fiche d'un prêche est, ici, l'acte d'aller l'écouter.
+  Future<void> _open(ContentView content) async {
+    final url = content.playlistUrl;
+    // Publié sans média : rien à charger. La déclaration d'absence dédiée
+    // (`ContentAbsence.noMedia`) est l'affaire du ticket suivant ; ce qui
+    // compte ici est qu'aucune URL nulle ne parte dans le lecteur.
+    if (url == null) return;
+
+    final player = ref.read(contentPlayerProvider);
+    await _openRecorder(content.id);
+    if (!mounted) return;
+
+    // **Déjà chargé** : revenir sur un prêche en cours ne le recharge pas et ne
+    // le fait pas repartir de zéro. On ne force pas non plus la lecture — un
+    // contenu mis en pause depuis la notification doit le rester.
+    if (player.value.contentId == content.id) return;
+
+    await player.load(
+      contentId: content.id,
+      url: url,
+      title: content.title,
+      author: content.authorName,
+      artUrl: content.landscapeOrPortrait,
+    );
+    if (!mounted) return;
+
+    // Reprendre où l'on s'était arrêté — **sauf sur un contenu déjà terminé**,
+    // qu'on rouvre vraisemblablement pour le réécouter, pas pour en retrouver
+    // les trente dernières secondes.
+    final resume = _recorder?.resume;
+    if (resume != null &&
+        !resume.completed &&
+        resume.position > Duration.zero) {
+      player.seek(resume.position);
+    }
+    player.play();
+  }
+
+  /// Ouvre l'enregistreur de progression de ce contenu.
+  ///
+  /// Le magasin peut ne pas répondre ; la reprise est alors perdue, et rien de
+  /// plus. Une erreur affichée pendant un prêche serait une panne, une
+  /// progression perdue est un désagrément — c'est le parti pris de #43, et il
+  /// vaut aussi pour l'ouverture.
+  Future<void> _openRecorder(String contentId) async {
+    if (_recorder?.contentId == contentId) return;
+    final open = ref.read(playbackProgressRecorderProvider);
+    try {
+      final recorder = await open(contentId);
+      if (mounted) _recorder = recorder;
+    } catch (error, stack) {
+      debugPrint('[progression] enregistreur indisponible pour $contentId : '
+          '$error');
+      debugPrintStack(stackTrace: stack, maxFrames: 4);
+    }
+  }
+
+  /// **La rétractation coupe le son.**
+  ///
+  /// `setState` ne suffisait que tant que rien ne jouait. Avec un service de
+  /// premier plan derrière, un enseignement retiré continuerait de **jouer,
+  /// écran éteint, son titre affiché sur l'écran verrouillé** — l'écran, lui,
+  /// montrerait bien l'absence. `stop()` relâche le média **et** vide ce que le
+  /// système affiche (élément média, notification, commandes).
+  void _stopForRetraction() {
+    if (_stoppedByRetraction) return;
+    _stoppedByRetraction = true;
+    final player = ref.read(contentPlayerProvider);
+    // Le lecteur est global : il joue peut-être déjà autre chose, et couper le
+    // son d'un contenu qui n'a pas été retiré serait pire que le défaut qu'on
+    // corrige.
+    if (player.value.contentId != _requested) return;
+    player.stop();
+  }
+
+  /// Ce que le lecteur pousse à l'écran : la position, et deux transitions.
+  void _onPlayback(ContentPlayback? previous, ContentPlayback next) {
+    final recorder = _recorder;
+    // La valeur d'un **autre** contenu ne le concerne pas — celle que `stop()`
+    // remet à vide en particulier, dont la position nulle écraserait la reprise
+    // qu'on vient justement de sauver.
+    if (recorder == null || next.contentId != recorder.contentId) return;
+
+    // **Fin de piste.** À l'état terminal `just_audio` reste `playing == true`,
+    // curseur en fin, sans son : le bouton afficherait « pause » sur un
+    // silence. Remettre le lecteur d'aplomb appartient à l'écran — c'est le
+    // seul des deux qui connaisse un lecteur.
+    if (next.isCompleted && !(previous?.isCompleted ?? false)) {
+      _fireAndForget(recorder.onTerminated());
+      final player = ref.read(contentPlayerProvider);
+      player.pause();
+      player.seek(Duration.zero);
+      return;
+    }
+
+    _fireAndForget(
+      recorder.onPosition(
+        next.position,
+        duration: next.duration,
+        isPlaying: next.isPlaying,
+      ),
+    );
+    if ((previous?.isPlaying ?? false) && !next.isPlaying) {
+      _fireAndForget(recorder.onPaused());
+    }
+  }
+
+  /// **Un déclencheur de progression, muet et sans attente.**
+  ///
+  /// Ces appels partent d'un `dispose`, d'un rappel de cycle de vie ou d'une
+  /// émission du lecteur : personne ne peut les attendre, et une erreur non
+  /// rattrapée y remonterait jusqu'à la zone. Le rapport réseau est déjà muet
+  /// par contrat (#43) ; ce garde-fou couvre l'**écriture locale**, qui peut
+  /// échouer sur un magasin plein ou déjà fermé — à l'extinction de
+  /// l'application, par exemple. Une progression perdue est un désagrément.
+  void _fireAndForget(Future<void>? work) {
+    if (work == null) return;
+    unawaited(
+      work.catchError((Object error) {
+        debugPrint('[progression] déclencheur abandonné : $error');
+      }),
+    );
+  }
+
+  /// Lecture/pause — **sur le lecteur**, jamais sur un booléen local.
+  void _togglePlayback(ContentView content) {
+    final player = ref.read(contentPlayerProvider);
+    if (player.value.contentId != content.id) {
+      // Rien de chargé : contenu rétracté puis republié, ou lecteur arrêté
+      // depuis la notification. Le geste, lui, est explicite — on recharge.
+      _stoppedByRetraction = false;
+      _requested = content.id;
+      unawaited(_open(content));
+      return;
+    }
+    player.value.isPlaying ? player.pause() : player.play();
+  }
+
   Widget _buildPlayer(BuildContext context, ContentView content) {
+    _loadOnce(content);
+
     // Couleur **déjà résolue** par le modèle de lecture : la cascade
     // contenu → rubrique → marque s'est terminée avant d'arriver ici.
     final base = Color(content.color);
@@ -247,12 +478,11 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
             ],
             const SizedBox(height: AppSpacing.xl),
             _Controls(
-              progress: _progress,
-              playing: _playing,
               liked: _liked,
               accent: base,
-              onSeek: (v) => setState(() => _progress = v),
-              onPlayPause: () => setState(() => _playing = !_playing),
+              onSeek: (position) =>
+                  ref.read(contentPlayerProvider).seek(position),
+              onPlayPause: () => _togglePlayback(content),
               onLike: () => setState(() => _liked = !_liked),
               onNotes: () => context.pushNamed(AppRoute.notes),
             ),
@@ -395,13 +625,15 @@ class _Artwork extends StatelessWidget {
 
 /// Bloc de contrôles : progression, actions et lecture/pause.
 ///
-/// **Pas de compteur de temps.** Il se calculait sur une durée que le serveur ne
-/// sert pour aucune des deux familles. La vraie viendra du lecteur média
-/// lui-même, qui la lit dans le flux HLS — pas d'un champ de contenu.
+/// **Il ne reçoit ni position ni état de lecture**, et c'est la décision de
+/// forme de ce fichier. La position émet plusieurs fois par seconde : la faire
+/// descendre en paramètre obligerait tout ce qui est au-dessus — le dégradé, le
+/// `Hero`, le `ShaderMask`, l'image — à se reconstruire au même rythme, pendant
+/// toute une écoute. Les deux seuls widgets qui affichent l'état du lecteur
+/// s'y abonnent donc eux-mêmes, par `select` ([_ProgressLine], [_PlayButton]),
+/// et ce bloc-ci n'est plus que la mise en page et les gestes.
 class _Controls extends StatelessWidget {
   const _Controls({
-    required this.progress,
-    required this.playing,
     required this.liked,
     required this.accent,
     required this.onSeek,
@@ -410,11 +642,13 @@ class _Controls extends StatelessWidget {
     required this.onNotes,
   });
 
-  final double progress;
-  final bool playing;
   final bool liked;
   final Color accent;
-  final ValueChanged<double> onSeek;
+
+  /// Déplacement de la tête de lecture, **en temps** et non en fraction : une
+  /// fraction obligerait l'appelant à connaître la durée, que lui non plus n'a
+  /// pas.
+  final ValueChanged<Duration> onSeek;
   final VoidCallback onPlayPause;
   final VoidCallback onLike;
   final VoidCallback onNotes;
@@ -428,24 +662,9 @@ class _Controls extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(
-              child: SliderTheme(
-                data: SliderThemeData(
-                  trackHeight: 3,
-                  thumbShape:
-                      const RoundSliderThumbShape(enabledThumbRadius: 6),
-                  overlayShape:
-                      const RoundSliderOverlayShape(overlayRadius: 14),
-                  activeTrackColor: Colors.white,
-                  inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
-                  thumbColor: Colors.white,
-                ),
-                child: Slider(value: progress, onChanged: onSeek),
-              ),
-            ),
+            Expanded(child: _ProgressLine(onSeek: onSeek)),
             const SizedBox(width: AppSpacing.lg),
-            _PlayButton(
-                playing: playing, accent: accent, onPressed: onPlayPause),
+            _PlayButton(accent: accent, onPressed: onPlayPause),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -468,20 +687,128 @@ class _Controls extends StatelessWidget {
   }
 }
 
-/// Gros bouton lecture/pause (cercle blanc, icône à la couleur d'accent).
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({
-    required this.playing,
-    required this.accent,
-    required this.onPressed,
-  });
+/// **La ligne de progression** : le curseur et le compteur de temps.
+///
+/// Le seul widget de l'écran abonné à la position, et il l'est **par `select`**.
+///
+/// Deux réserves du lecteur s'y dessinent, et aucune n'est théorique :
+///
+/// - **la durée peut être inconnue** — en HLS elle arrive après le manifeste
+///   et, sur iOS, peut ne jamais arriver. Le compteur n'affiche alors que le
+///   temps écoulé : un `00:00` de droite se lirait comme un média de durée
+///   nulle. Le curseur, lui, ne prétend pas savoir où l'on en est et ne se
+///   laisse pas déplacer — il n'y a rien à quoi rapporter la fraction ;
+/// - **un glissement ne doit pas se faire écraser** par les émissions de
+///   position, qui arrivent plusieurs fois par seconde. D'où la valeur locale
+///   « en cours de glissement », qui a la priorité tant que le doigt est posé
+///   et n'est commise qu'au relâchement.
+class _ProgressLine extends ConsumerStatefulWidget {
+  const _ProgressLine({required this.onSeek});
 
-  final bool playing;
+  final ValueChanged<Duration> onSeek;
+
+  @override
+  ConsumerState<_ProgressLine> createState() => _ProgressLineState();
+}
+
+class _ProgressLineState extends ConsumerState<_ProgressLine> {
+  /// Fraction sous le doigt, `null` au repos.
+  double? _dragged;
+
+  @override
+  Widget build(BuildContext context) {
+    final position =
+        ref.watch(contentPlaybackProvider.select((p) => p.position));
+    final duration =
+        ref.watch(contentPlaybackProvider.select((p) => p.duration));
+    // La règle « `null` tant que la durée est inconnue » est écrite une fois,
+    // dans la valeur du lecteur. La recopier ici en donnerait une seconde
+    // version, donc une occasion de diverger.
+    final progress =
+        ContentPlayback(position: position, duration: duration).progress;
+    final dragged = _dragged;
+    // Pendant le glissement, le compteur suit le doigt : c'est ce qui permet de
+    // viser une minute précise.
+    final elapsed =
+        dragged != null && duration != null ? duration * dragged : position;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SliderTheme(
+          data: SliderThemeData(
+            trackHeight: 3,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+            activeTrackColor: Colors.white,
+            inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
+            thumbColor: Colors.white,
+            disabledActiveTrackColor: Colors.white.withValues(alpha: 0.5),
+            disabledInactiveTrackColor: Colors.white.withValues(alpha: 0.2),
+            disabledThumbColor: Colors.white.withValues(alpha: 0.5),
+          ),
+          child: Slider(
+            value: dragged ?? progress ?? 0,
+            onChanged: duration == null
+                ? null
+                : (value) => setState(() => _dragged = value),
+            onChangeEnd: duration == null
+                ? null
+                : (value) {
+                    setState(() => _dragged = null);
+                    widget.onSeek(duration * value);
+                  },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(_clock(elapsed), style: _clockStyle),
+              // **Rien** plutôt qu'un zéro : une durée inconnue est une
+              // absence, pas une valeur.
+              if (duration != null) Text(_clock(duration), style: _clockStyle),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  static final TextStyle _clockStyle = AppTypography.caption.copyWith(
+    color: Colors.white.withValues(alpha: 0.7),
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
+
+  /// `mm:ss`, ou `h:mm:ss` au-delà de l'heure — un culte entier en dépasse une.
+  static String _clock(Duration value) {
+    final seconds = value.inSeconds;
+    final minutes = (seconds ~/ 60) % 60;
+    final rest = seconds % 60;
+    final hours = seconds ~/ 3600;
+    final body = '${minutes.toString().padLeft(2, '0')}:'
+        '${rest.toString().padLeft(2, '0')}';
+    return hours > 0 ? '$hours:$body' : body;
+  }
+}
+
+/// Gros bouton lecture/pause (cercle blanc, icône à la couleur d'accent).
+///
+/// Il lit l'état de lecture **dans le lecteur**, par `select` : la notification
+/// et l'écran verrouillé pilotent le même lecteur, et un booléen mémorisé ici
+/// afficherait « pause » sur un silence dès qu'on met en pause depuis l'écran
+/// verrouillé.
+class _PlayButton extends ConsumerWidget {
+  const _PlayButton({required this.accent, required this.onPressed});
+
   final Color accent;
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final playing =
+        ref.watch(contentPlaybackProvider.select((p) => p.isPlaying));
     return Container(
       width: 70,
       height: 70,

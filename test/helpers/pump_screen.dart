@@ -14,8 +14,11 @@ import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
+import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
+
+import 'playback_doubles.dart';
 
 /// Monte un écran isolé dans un environnement minimal (ProviderScope + thème).
 ///
@@ -57,6 +60,10 @@ import 'package:maison_du_miracle/theme/app_theme.dart';
 /// machine de test, et sur un harnais sans canal de plugin il n'en ouvrirait
 /// même pas : il lèverait. Une base en mémoire ne coûte rien tant que personne
 /// ne l'interroge (Drift ouvre à la première requête).
+///
+/// Le **rapporteur de progression** est posé muet pour la raison qui vaut déjà
+/// pour l'auth : son implémentation par défaut est HTTP dès que
+/// `AppEnv.useBackend` est vrai — et il l'est hors surcharge.
 Future<void> pumpScreen(
   WidgetTester tester,
   Widget screen, {
@@ -72,6 +79,8 @@ Future<void> pumpScreen(
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
+        playbackProgressReporterProvider
+            .overrideWithValue(FakePlaybackProgressReporter()),
         authRepositoryProvider.overrideWithValue(InMemoryAuthRepository()),
         branchRepositoryProvider
             .overrideWithValue(const InMemoryBranchRepository()),

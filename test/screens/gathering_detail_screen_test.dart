@@ -19,9 +19,12 @@ import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
+import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
+
+import '../helpers/playback_doubles.dart';
 
 /// **Les rassemblements à l'écran** — l'écran de détail et sa route.
 ///
@@ -337,6 +340,8 @@ Future<GoRouter> _pumpApp(
   final container = ProviderContainer.test(
     overrides: [
       appDatabaseProvider.overrideWithValue(database),
+      playbackProgressReporterProvider
+          .overrideWithValue(FakePlaybackProgressReporter()),
       authRepositoryProvider.overrideWithValue(_SignedInAuthRepository()),
       branchRepositoryProvider
           .overrideWithValue(const InMemoryBranchRepository()),
@@ -369,7 +374,12 @@ Future<GoRouter> _pumpApp(
 
 /// `pump` et jamais `pumpAndSettle` : plusieurs écrans de l'app animent en
 /// boucle (splash, squelettes) et ne se stabilisent jamais.
+///
+/// Trois passes depuis #40 : l'écran de lecture demande sa **reprise** au
+/// magasin avant de charger le média, et cette lecture est asynchrone. Deux
+/// frames livraient le contenu mais pas toujours le son.
 Future<void> _settle(WidgetTester tester) async {
   await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
   await tester.pump(const Duration(seconds: 1));
 }
