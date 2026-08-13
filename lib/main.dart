@@ -1,5 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,9 +9,11 @@ import 'core/network/api_client.dart';
 import 'data/players/content_player.dart';
 import 'data/players/just_audio_content_player.dart';
 import 'data/players/playback_notifications.dart';
+import 'data/players/web_content_player.dart';
 import 'state/player_providers.dart';
 
-/// **Le seul chemin qui monte le lecteur réel.**
+/// **Le seul chemin qui monte un lecteur réel** — et le seul endroit du dépôt
+/// qui sache qu'il y en a deux.
 ///
 /// Ce fichier n'est importé par aucun test, et c'est la condition qui tient
 /// toute la suite verte : `AudioService.init()` produit sous `flutter test` une
@@ -40,12 +43,31 @@ Future<void> main() async {
   );
 }
 
-/// Monte le service de lecture et rend le lecteur qui s'y branche.
+/// Monte la lecture et rend le lecteur à brancher sur `contentPlayerProvider`.
 ///
 /// Rend `null` si la plateforme ne sait pas l'héberger : l'application démarre
 /// alors avec le lecteur inerte du provider. Une médiathèque muette vaut mieux
-/// qu'une application qui refuse de s'ouvrir.
+/// qu'une application qui refuse de s'ouvrir — c'est vrai des deux côtés du
+/// `kIsWeb`, et c'est pourquoi les deux chemins sont sous `try`.
 Future<ContentPlayer?> _startPlayback() async {
+  // **Le web ne monte pas `audio_service`.** Notification, écran verrouillé et
+  // service de premier plan n'y existent pas : `AudioService.init()` y est un
+  // no-op qui coûte une initialisation et un risque d'échec au démarrage. Les
+  // boutons « −30 s / +30 s » s'y rendent dans l'interface Flutter, comme sur
+  // mobile, au même pas (`kContentSkipInterval`).
+  //
+  // Et surtout : sur le web, `just_audio` **ne joue rien** hors Safari — son
+  // implémentation pose l'URL `.m3u8` dans un `<audio>` sans lecteur HLS. C'est
+  // `HlsContentPlayer` qui sert, sans aucun des trois paquets audio.
+  if (kIsWeb) {
+    try {
+      return createWebContentPlayer();
+    } catch (error, stackTrace) {
+      debugPrint('Le lecteur web n\'a pas démarré : $error\n$stackTrace');
+      return null;
+    }
+  }
+
   try {
     final handler = await AudioService.init(
       builder: ContentAudioHandler.new,
