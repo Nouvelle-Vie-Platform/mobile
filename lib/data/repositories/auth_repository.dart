@@ -1,3 +1,4 @@
+import '../../models/legal_document_view.dart';
 import '../../models/models.dart';
 import '../sample_data.dart';
 
@@ -84,6 +85,19 @@ abstract interface class AuthRepository {
   /// [cachedUser] lui avait donné.
   Future<User?> currentUser();
 
+  /// Réécrit le **cache local** avec cet utilisateur, sans rien demander au
+  /// serveur.
+  ///
+  /// Une seule chose l'appelle, et une seule doit l'appeler : l'acceptation des
+  /// documents légaux (#56). `POST /legal/accept` rend le résumé à jour ; s'il
+  /// ne descendait pas jusqu'au cache, le prochain démarrage **hors ligne**
+  /// rouvrirait la barrière à quelqu'un qui vient d'accepter — et il ne pourrait
+  /// pas la refermer, l'accord exigeant le réseau (ADR-0036, décision 2).
+  ///
+  /// Ce n'est pas une porte d'écriture générale : rien d'autre que ce que le
+  /// serveur vient de dire ne doit passer par là.
+  Future<void> rememberUser(User user);
+
   /// Oublie la session **localement** — token et cache — sans appeler le
   /// serveur.
   ///
@@ -117,6 +131,23 @@ class InMemoryAuthRepository implements AuthRepository {
 
   static bool _isEmail(String identifier) => identifier.contains('@');
 
+  /// Ce que le fidèle de la **maquette** a déjà accepté.
+  ///
+  /// Le mode maquette n'a pas de serveur, donc aucun `POST /legal/accept` ne
+  /// peut y aboutir : un utilisateur factice sans acceptation se retrouverait
+  /// devant une barrière qu'**aucun geste ne peut lever** (ADR-0036,
+  /// décision 2 — l'accord exige le réseau). Il est donc à jour.
+  ///
+  /// Calculé depuis `SampleData` plutôt que recopié : ajouter un document
+  /// fictif ou bousculer son plancher ne doit pas éteindre la maquette en
+  /// silence.
+  static Map<String, int> get _acceptedLegal => {
+        for (final document in SampleData.legalDocuments)
+          if (LegalDocumentKind.acceptable.contains(document.kind) &&
+              document.lastMandatoryVersion != null)
+            document.kind: document.version,
+      };
+
   @override
   Future<void> requestCode({
     required String identifier,
@@ -147,6 +178,7 @@ class InMemoryAuthRepository implements AuthRepository {
       // Un utilisateur déjà connu est considéré comme profil complet
       // (pas de bannière) ; un nouveau doit compléter son profil.
       profileComplete: isKnown,
+      acceptedLegal: _acceptedLegal,
     );
     _user = user;
     return Session(
@@ -168,6 +200,7 @@ class InMemoryAuthRepository implements AuthRepository {
       id: id,
       status: UserStatus.newcomer,
       profileComplete: false,
+      acceptedLegal: _acceptedLegal,
     );
     _user = user;
     return Session(token: 'mock-token-$id', user: user, isNewUser: true);
@@ -204,6 +237,7 @@ class InMemoryAuthRepository implements AuthRepository {
       status: resolvedStatus,
       avatarUrl: current.avatarUrl,
       profileComplete: complete,
+      acceptedLegal: current.acceptedLegal,
     );
     _user = updated;
     return updated;
@@ -213,6 +247,11 @@ class InMemoryAuthRepository implements AuthRepository {
   /// en mémoire. Redémarrer l'app déconnecte, comme avant.
   @override
   Future<User?> cachedUser() async => _user;
+
+  @override
+  Future<void> rememberUser(User user) async {
+    _user = user;
+  }
 
   @override
   Future<User?> currentUser() async {

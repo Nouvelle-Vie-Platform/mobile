@@ -202,7 +202,15 @@ final authProvider = NotifierProvider<AuthController, AuthState>(
 /// fond republierait un état identique à chaque démarrage et ferait rebâtir
 /// tous les écrans qui l'observent pour rien. La comparaison passe par le JSON,
 /// qui est déjà la forme canonique du modèle (et celle du cache).
+///
+/// **`acceptedLegal` se compare à part**, et l'oublier annulerait le paragraphe
+/// ci-dessus : `mapEquals` est *superficiel*, deux cartes de même contenu mais
+/// d'instances différentes n'y sont pas égales, et chaque revalidation
+/// republierait donc un état identique — y compris jusqu'à la garde de route.
 bool _sameUser(User? a, User? b) {
   if (a == null || b == null) return a == b;
-  return mapEquals(a.toJson(), b.toJson());
+  if (!mapEquals(a.acceptedLegal, b.acceptedLegal)) return false;
+  final left = a.toJson()..remove('acceptedLegal');
+  final right = b.toJson()..remove('acceptedLegal');
+  return mapEquals(left, right);
 }
