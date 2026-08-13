@@ -153,7 +153,19 @@ class HomeScreen extends ConsumerWidget {
 
 /// Hauteur du corps de l'en-tête (sous l'encoche). Fixe, car l'en-tête est
 /// superposé à la liste : le décalage haut du contenu doit être connu.
-const double _headerBodyHeight = 274;
+///
+/// Portée de 274 à 294 pour loger la cible tactile **standard** du bouton de
+/// menu. L'arbitrage s'est posé dans ce sens et pas dans l'autre : un
+/// `IconButton` rétréci à 28 px de haut aurait été le seul élément tactile de
+/// l'application sous le seuil Material, et l'assemblée compte beaucoup de
+/// fidèles âgés. Vingt pixels d'en-tête coûtent moins qu'un doigt qui rate.
+///
+/// Le compte : l'icône nue d'origine mesurait 28 px, un `IconButton` standard
+/// en mesure 48 — la colonne a donc gagné 20 px, pas 10. Se tromper de dix
+/// pixels ici ne se voit pas sur l'accueil : ça fait déborder la colonne d'un
+/// `RenderFlex`, et ce sont les **écrans de détail** qui rougissent, parce que
+/// l'accueil reste monté sous eux dans l'`IndexedStack`.
+const double _headerBodyHeight = 294;
 
 /// En-tête « plein écran » au dégradé bleu→teal, découpé en vague à sa base.
 class _WavyHeader extends StatelessWidget {
@@ -251,20 +263,15 @@ class _WavyHeader extends StatelessWidget {
                           key: HomeScreen.menuButtonKey,
                           onPressed: onMenuTap,
                           tooltip: context.l10n.drawerOpen,
-                          // La hauteur de l'en-tête est **fixe** (le contenu
-                          // qui défile dessous s'en décale) : la cible tactile
-                          // par défaut d'un `IconButton`, 48 px, la ferait
-                          // déborder de 10 px. Elle s'élargit donc
-                          // horizontalement, où il y a de la place, et reste
-                          // calée à gauche pour que l'icône ne bouge pas d'un
-                          // pixel par rapport à la maquette.
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints.tightFor(
-                              width: 44, height: 28),
+                          // Cible tactile **standard, 48 × 48**. C'est
+                          // `_headerBodyHeight` qui a cédé les 10 px qui
+                          // manquaient, pas l'inverse : rétrécir la cible
+                          // aurait fait de cette icône le seul élément tactile
+                          // de l'application sous le seuil Material, sur une
+                          // application dont une bonne part des fidèles sont
+                          // âgés. Calée à gauche pour que l'icône ne bouge pas
+                          // d'un pixel par rapport à la maquette.
                           alignment: Alignment.centerLeft,
-                          style: IconButton.styleFrom(
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
                           icon: const Icon(Icons.menu,
                               color: Colors.white, size: 28),
                         ),
