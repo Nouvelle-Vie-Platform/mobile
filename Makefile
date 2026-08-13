@@ -23,8 +23,8 @@ DART_DEFINES         := --dart-define=API_BASE_URL=$(API_BASE_URL)
 ANDROID_DART_DEFINES := --dart-define=API_BASE_URL=$(ANDROID_API_BASE_URL)
 
 .DEFAULT_GOAL := help
-.PHONY: help ios android web web-assets devices test analyze format l10n gen \
-        migrations clean
+.PHONY: help ios android web web-assets hls-probe devices test analyze format \
+        l10n gen migrations clean
 
 help: ## Affiche cette aide
 	@echo "Maison du Miracle — cibles disponibles :"
@@ -39,6 +39,7 @@ help: ## Affiche cette aide
 	@echo "  make gen       Régénère le code Drift (.g.dart)"
 	@echo "  make migrations  Exporte le schéma local d'une nouvelle version"
 	@echo "  make web-assets  Re-télécharge sqlite3.wasm + drift_worker.js + hls.min.js"
+	@echo "  make hls-probe   Prouve dans Chrome que le lecteur web joue (réseau requis)"
 	@echo "  make clean     flutter clean"
 	@echo ""
 	@echo "URL du backend (--dart-define=API_BASE_URL) :"
@@ -93,6 +94,10 @@ migrations: ## Exporte le schéma local de la version courante (drift_schemas/)
 
 web-assets: ## Re-télécharge les actifs web (drift/sqlite3 depuis pubspec.lock, hls.js épinglé)
 	./tool/web_assets.sh
+
+hls-probe: ## Pilote HlsContentPlayer contre un vrai flux HLS dans un Chrome sans tête
+	@echo "▶ Ni un test ni la CI : exige Chrome et le réseau."
+	./tool/hls_probe.sh
 
 clean: ## flutter clean
 	flutter clean
