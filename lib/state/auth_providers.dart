@@ -166,6 +166,28 @@ class AuthController extends Notifier<AuthState> {
     state = AuthState(status: AuthStatus.authenticated, user: user);
   }
 
+  /// Applique le **résumé d'acceptation** que vient de rendre
+  /// `POST /legal/accept` (#56).
+  ///
+  /// C'est ici que la barrière se lève, et **nulle part ailleurs** : l'écran ne
+  /// navigue pas, il ne se ferme pas lui-même. L'état change, le `redirect` se
+  /// réévalue et retire l'écran — le motif déjà suivi par la déconnexion, à
+  /// l'envers.
+  ///
+  /// Le cache local suit ([AuthRepository.rememberUser]) : sans lui, le
+  /// prochain démarrage hors ligne rouvrirait une barrière que le réseau seul
+  /// peut refermer.
+  ///
+  /// Sans utilisateur connecté, il n'y a rien à appliquer : la garde a déjà
+  /// renvoyé vers `/auth`.
+  Future<void> applyAcceptedLegal(Map<String, int> accepted) async {
+    final current = state.user;
+    if (current == null) return;
+    final updated = current.withAcceptedLegal(accepted);
+    await _repo.rememberUser(updated);
+    state = AuthState(status: AuthStatus.authenticated, user: updated);
+  }
+
   /// Session invalidée par le serveur (**401** sur n'importe quel appel).
   ///
   /// Branché sur `ApiClient.onUnauthorized` au démarrage de l'app. Le token a
