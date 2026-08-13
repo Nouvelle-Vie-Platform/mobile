@@ -29,6 +29,20 @@ dependencies:
   # sans elle, l'application est **tuée** par le système à l'ouverture du
   # sélecteur, pas seulement refusée.
   image_picker: ^1.2.3
+  # L'identifiant **UUIDv7 généré par le client** de la reprise de lecture
+  # (#43) : `POST /teachings/:teachingId/progress` exige un `id` que le serveur
+  # conserve à l'insert (ADR-0001/0018), et c'est ce qui rend le rapport
+  # rejouable — un rejeu retombe sur la même ligne au lieu d'en créer une
+  # seconde.
+  #
+  # Le paquet était déjà là, mais **en dépendance transitive** seulement
+  # (`pubspec.lock`, tiré par `image_picker`). S'appuyer dessus sans le déclarer
+  # est un piège classique : le jour où la dépendance intermédiaire s'en passe,
+  # l'import casse au build, sans qu'aucune ligne de ce dépôt n'ait bougé.
+  #
+  # V7 et non V4 : l'identifiant porte son instant de création, donc trie dans
+  # l'ordre d'écriture — c'est la convention d'identifiant de tout ce serveur.
+  uuid: ^4.5.1
 
 dev_dependencies:
   flutter_test:
