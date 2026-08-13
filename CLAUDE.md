@@ -170,6 +170,47 @@ avance — se prouve par **`make hls-probe`** : un point d'entrée web jetable
 Chrome sans tête. À relancer après toute montée de version de `hls.js`. Ce n'est
 pas un test : réseau et Chrome requis, jamais en CI.
 
+#### La panne **en cours d'écoute** (#42) — deux phrases, un chien de garde
+Un décrochage réseau au milieu d'un prêche d'une heure n'est pas la même chose
+qu'une ouverture qui n'a jamais joué, et le dépôt ne savait dire ni l'un ni
+l'autre. Quatre points, tous valables pour les **deux** implémentations
+réelles :
+
+1. **`ContentPlayback.hasStarted` départage les deux phrases.** Vrai dès que le
+   média a été prêt à jouer une fois (`ProcessingState.ready` côté `just_audio`,
+   `canplay`/`playing` côté web). Échec **sans** qu'il ait jamais été vrai → il
+   n'y a rien à reprendre, l'écran affiche `ContentAbsence.offlineMedia` (« il
+   faut du réseau »). Échec **après** → « Lecture interrompue », avec une
+   position à défendre. `isBuffering` ne pouvait pas servir de test : les deux
+   implémentations le posent **dès le chargement**, avant tout aller-retour.
+2. **Aucune bibliothèque de connectivité, et ce n'est pas un oubli.**
+   `connectivity_plus` répond « connecté » derrière un portail captif — hôtel,
+   wifi d'église mal configuré — c'est-à-dire exactement quand sa réponse
+   compterait. La distinction se déduit de l'échec lui-même.
+3. **`ContentPlayer.resume()` reprend à la position, jamais au début** — c'est
+   ce que promet le mot « Reprendre » (`playerErrorRetry`), et « Réessayer »
+   aurait fait craindre un retour à zéro suffisant pour que personne ne touche
+   au bouton. Sur `just_audio` : après une panne fatale la plateforme repasse en
+   `idle`, le lecteur bascule sur un lecteur **inactif qui capture position et
+   source**, et `play()` recharge tout seul là où on en était — **vérifié dans
+   le source de la 0.10.6, documenté nulle part**, d'où le **repli explicite**
+   (rouvrir la source avec `initialPosition`) dès que `audioSource` est nul. Sur
+   le web, aucun équivalent : reprendre y est **toujours** une réouverture, et
+   la position s'y repose sur `loadedmetadata` — l'écrire avant est sans effet.
+4. **Le chien de garde (`playback_watchdog.dart`) vit dans le lecteur**, jamais
+   dans le `State` d'un widget (même raison que `StatusPlayer` : « pending
+   timer »). Règle : lecture demandée + tampon en attente + position immobile
+   pendant `kPlaybackStallTimeout` (**25 s**, nommé à un seul endroit, **valeur
+   à confirmer**) → rouvrir la source à la position courante, indéfiniment. Il
+   existe pour **iOS**, où un décrochage ne remonte *aucune* erreur vers Dart et
+   où il n'y a *pas* de reconnexion native (contrairement à ExoPlayer) : sans
+   lui, l'écoute meurt en silence et rien n'en porte la trace. Une panne déjà
+   déclarée le désarme — l'écran affiche « Reprendre », recharger dans son dos
+   ferait repartir le son sans que personne ne l'ait demandé. `MediaElementPlayback`
+   ne l'arme **pas** d'elle-même (`armStallWatchdog`) : une minuterie d'office
+   ferait rougir tous les tests qui l'instancient pour une traduction
+   d'événement.
+
 Configuration native : Android exige quatre permissions (dont
 `POST_NOTIFICATIONS`, **demandée à l'exécution** par un canal de méthode vers
 `MainActivity` — `audio_service` ne la demande pas et son manifeste est vide),
@@ -646,7 +687,12 @@ poussée). Le FAB n'est PAS un onglet.
   5. **les cinq déclencheurs de #43 sont câblés ici** : position poussée,
      pause, sortie d'écran, `AppLifecycleState.paused` (**sans arrêter la
      lecture**) et état terminal — qui exige `pause()` **et** `seek(zero)`,
-     `just_audio` restant `playing == true`, curseur en fin, sans son.
+     `just_audio` restant `playing == true`, curseur en fin, sans son ;
+  6. **l'espace central (`_PlayerStage`) porte quatre réponses** (#42) —
+     visuel, mise en tampon **par-dessus** le visuel, « Lecture interrompue »
+     et « il faut du réseau » — et **aucune ne remplace l'écran** : le titre,
+     le compteur et les commandes restent dans les quatre. Il s'y abonne par
+     `select` sur un état dérivé, pour la raison du point 3.
 
   Corollaire pour les tests : tout test qui monte un écran de lecture doit
   poser un **magasin en mémoire** (`appDatabaseProvider`) et un **rapporteur
