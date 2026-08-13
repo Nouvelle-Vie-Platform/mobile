@@ -1,0 +1,250 @@
+/// **La troisième implémentation de [ContentPlayer] : le web, par `hls.js`** —
+/// et le seul fichier du dépôt qui touche au DOM.
+///
+/// Pourquoi elle existe : `just_audio_web` pose l'URL `.m3u8` dans un
+/// `<audio src>` **sans aucun lecteur HLS** — sa classe de source HLS est une
+/// sous-classe vide. Sur Chrome, cela donne un `MEDIA_ERR_SRC_NOT_SUPPORTED` et
+/// un `play()` rejeté : l'application tourne, et ne joue rien. Le correctif
+/// amont n'a jamais été fusionné ; on ne met pas un fork non maintenu sur le
+/// chemin critique de l'écoute.
+///
+/// Ce fichier ne contient **aucune décision** : elles vivent toutes dans
+/// [MediaElementPlayback], qui se teste sans navigateur. Ici il n'y a que des
+/// câbles — les événements du DOM d'un côté, les commandes de transport de
+/// l'autre.
+///
+/// Il n'est jamais compilé pour la VM ni pour le mobile : `web_content_player.dart`
+/// ne l'importe que sous `dart.library.js_interop`. C'est ce qui permet à
+/// `flutter test` de rester vert sans connaître `dart:js_interop`.
+library;
+
+import 'dart:async';
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
+
+import 'package:web/web.dart' as web;
+
+import 'content_player.dart';
+import 'media_element_playback.dart';
+
+/// Construit le lecteur web. Point d'entrée de `web_content_player.dart`.
+ContentPlayer createWebContentPlayer() => HlsContentPlayer();
+
+/// **Le lecteur de la médiathèque sur le web.**
+///
+/// Hérite de [MediaElementPlayback] : la valeur observée par l'UI et toute sa
+/// logique viennent de là, cette classe n'ajoute que l'élément `<audio>`, le
+/// moteur `hls.js` et le transport.
+class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
+  /// [element] n'est là que pour les tests de navigateur, qui ont besoin de
+  /// tenir l'élément qu'ils pilotent. En production, le lecteur crée le sien.
+  HlsContentPlayer({web.HTMLAudioElement? element})
+      : _audio = element ?? web.HTMLAudioElement() {
+    // `auto` et non `metadata` : un enseignement s'écoute d'un bout à l'autre,
+    // et le tampon d'avance est ce qui absorbe une connexion irrégulière.
+    _audio.preload = 'auto';
+    // L'élément **n'est pas attaché au document**. Un `<audio>` détaché joue
+    // parfaitement ; l'attacher au `<body>` le ferait cohabiter avec le canevas
+    // de Flutter, qui reconstruit son sous-arbre à sa guise.
+
+    // La correspondance événement → décision, et rien d'autre. Chaque nom de
+    // méthode dit lequel : c'est `MediaElementPlayback` qui décide quoi en
+    // faire.
+    _on('timeupdate', (_) => updatePosition(_audio.currentTime));
+    _on('durationchange', (_) => updateDuration(_audio.duration));
+    _on('loadedmetadata', (_) => updateDuration(_audio.duration));
+    _on('play', (_) => markPlayRequested());
+    _on('playing', (_) => markRendering());
+    _on('waiting', (_) => markWaiting());
+    _on('canplay', (_) => markReady());
+    _on('seeked', (_) => markReady());
+    _on('pause', (_) => markPaused());
+    _on('ended', (_) => markEnded());
+    _on('error', (_) => fail(_elementError()));
+  }
+
+  final web.HTMLAudioElement _audio;
+
+  /// L'élément piloté — pour les tests de navigateur seulement.
+  web.HTMLAudioElement get element => _audio;
+
+  /// Les écouteurs posés, gardés pour être retirés à la libération.
+  ///
+  /// Sans ce registre, `removeEventListener` ne pourrait rien retirer :
+  /// `.toJS` produit une **nouvelle** fonction JS à chaque appel, et le DOM
+  /// compare les fonctions par identité.
+  final Map<String, JSFunction> _listeners = {};
+
+  /// Le moteur `hls.js` du chargement en cours, `null` sur le chemin natif.
+  _HlsEngine? _engine;
+
+  void _on(String type, void Function(web.Event event) handler) {
+    final listener = handler.toJS;
+    _listeners[type] = listener;
+    _audio.addEventListener(type, listener);
+  }
+
+  /// **Faut-il `hls.js`, ou le navigateur lit-il le HLS lui-même ?**
+  ///
+  /// L'ordre est celui que `hls.js` documente, et il n'est pas
+  /// interchangeable : **Chrome répond `"maybe"`** à
+  /// `canPlayType('application/vnd.apple.mpegurl')` alors qu'il échoue en
+  /// `MEDIA_ERR_SRC_NOT_SUPPORTED` sur le premier segment (mesuré sur
+  /// Chrome, hls.js 1.7.0). Interroger le natif d'abord ferait donc reprendre
+  /// exactement la panne que ce lecteur existe pour corriger.
+  ///
+  /// `Hls.isSupported()` teste `MediaSource` : il rend faux là où le natif est
+  /// la seule voie — Safari iOS — et vrai partout ailleurs. C'est la détection
+  /// que la bibliothèque expose, et elle remplace tout reniflage d'agent
+  /// utilisateur.
+  bool get _useHlsJs => globalContext.has('Hls') && _HlsEngine.isSupported();
+
+  @override
+  Future<void> load({
+    required String contentId,
+    required String url,
+    required String title,
+    String? author,
+    String? artUrl,
+  }) async {
+    if (isDisposed) return;
+    _releaseSource();
+    startLoading(contentId);
+
+    // [title], [author] et [artUrl] ne servent pas ici : ce sont les lignes de
+    // la notification et de l'écran verrouillé, qui n'existent pas sur le web.
+    // Les afficher demanderait l'API Media Session — un autre sujet, et pas
+    // celui du son qui ne sort pas.
+
+    if (_useHlsJs) {
+      final engine = _HlsEngine();
+      // Seules les pannes **fatales** remontent : `hls.js` se remet seul des
+      // autres (un segment manqué, une bascule de qualité), et les faire
+      // paraître à l'écran ferait clignoter un message d'erreur pendant une
+      // lecture qui se poursuit.
+      engine.on(
+        _hlsErrorEvent,
+        ((JSAny _, _HlsErrorData data) {
+          if (!data.fatal) return;
+          fail(MediaPlaybackError('hls.js', '${data.type} / ${data.details}'));
+        }).toJS,
+      );
+      engine.loadSource(url);
+      engine.attachMedia(_audio);
+      _engine = engine;
+    } else {
+      _audio.src = url;
+      _audio.load();
+    }
+
+    // **Rend la main dès que la source est attachée**, sans attendre les
+    // métadonnées. Attendre `loadedmetadata` donnerait un `Future` qui ne se
+    // résout jamais quand le manifeste ne répond pas : l'écran resterait sur
+    // son indicateur, pour toujours. Une panne de chargement arrive par
+    // `value.error`, exactement comme sur mobile, où seul `setUrl` est attendu
+    // et où les pannes de lecture voyagent par le flux.
+  }
+
+  @override
+  void play() {
+    if (isDisposed) return;
+    // `play()` rend une promesse qui **peut être rejetée** : politique de
+    // lecture automatique du navigateur, ou source illisible. Sans ce
+    // rattrapage, ce serait une erreur asynchrone non rattrapée.
+    unawaited(
+      _audio.play().toDart.then<void>(
+        (_) {},
+        onError: (Object error) {
+          if (isDisposed) return;
+          fail(MediaPlaybackError('play', error.toString()));
+        },
+      ),
+    );
+  }
+
+  @override
+  void pause() {
+    if (isDisposed) return;
+    _audio.pause();
+  }
+
+  @override
+  void seek(Duration position) {
+    if (isDisposed) return;
+    _audio.currentTime = seekTo(position);
+  }
+
+  @override
+  void stop() {
+    if (isDisposed) return;
+    _releaseSource();
+    clear();
+  }
+
+  @override
+  void dispose() {
+    if (isDisposed) return;
+    for (final entry in _listeners.entries) {
+      _audio.removeEventListener(entry.key, entry.value);
+    }
+    _listeners.clear();
+    _releaseSource();
+    super.dispose();
+  }
+
+  /// Détache la source courante et rend le réseau.
+  ///
+  /// `removeAttribute('src')` puis `load()` — et **jamais `src = ''`**, qui
+  /// ferait charger à l'élément la page elle-même, puis échouer dessus.
+  void _releaseSource() {
+    _engine?.destroy();
+    _engine = null;
+    _audio.pause();
+    _audio.removeAttribute('src');
+    _audio.load();
+  }
+
+  /// Traduit le `MediaError` de l'élément en panne lisible au journal.
+  MediaPlaybackError _elementError() {
+    final error = _audio.error;
+    if (error == null) return MediaPlaybackError('media', 'erreur inconnue');
+    // Le code suffit à distinguer les quatre cas de la spécification ; le 4
+    // (`MEDIA_ERR_SRC_NOT_SUPPORTED`) est celui qu'on obtient quand du HLS
+    // atterrit dans un `<audio>` sans lecteur — la panne d'origine.
+    return MediaPlaybackError('media', 'code ${error.code} ${error.message}');
+  }
+}
+
+/// Le nom de l'événement d'erreur de `hls.js` (`'hlsError'`), lu **dans la
+/// bibliothèque** plutôt que recopié : un littéral se périmerait en silence.
+@JS('Hls.Events.ERROR')
+external String get _hlsErrorEvent;
+
+/// La part de l'API de `hls.js` dont ce lecteur dépend — cinq membres.
+///
+/// La bibliothèque est chargée par une balise `<script>` de `web/index.html`,
+/// et **versionnée dans le dépôt** (`web/hls.min.js`, voir `web/WEB_ASSETS.md`).
+/// Pas de CDN : une dépendance réseau tierce au démarrage est une panne de plus
+/// et un point de confiance de plus.
+@JS('Hls')
+extension type _HlsEngine._(JSObject _) implements JSObject {
+  external factory _HlsEngine();
+
+  /// Vrai quand `MediaSource` permet de démultiplexer le HLS en JavaScript.
+  external static bool isSupported();
+
+  external void loadSource(String url);
+  external void attachMedia(web.HTMLMediaElement media);
+  external void on(String event, JSFunction listener);
+  external void destroy();
+}
+
+/// La charge utile d'un événement d'erreur de `hls.js`.
+extension type _HlsErrorData._(JSObject _) implements JSObject {
+  /// Vrai quand la lecture ne peut pas se poursuivre. Les autres pannes sont
+  /// rattrapées par la bibliothèque elle-même.
+  external bool get fatal;
+
+  external String get type;
+  external String get details;
+}

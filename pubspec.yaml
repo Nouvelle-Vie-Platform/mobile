@@ -50,6 +50,17 @@ dependencies:
   just_audio: ^0.10.6
   audio_service: ^0.18.19
   audio_session: ^0.2.4
+  # Le lecteur **web** (#46) n'utilise aucun des trois ci-dessus :
+  # `just_audio_web` pose l'URL `.m3u8` dans un `<audio>` sans lecteur HLS, et
+  # ne joue donc rien hors Safari. `HlsContentPlayer` pilote l'élément par
+  # interop, et `hls.js` est **versionné dans `web/`** — aucun paquet Dart pour
+  # HLS, aucun fork.
+  #
+  # `web` était déjà là en dépendance **transitive** (Flutter s'en sert) ; la
+  # déclarer ne tire rien de neuf, c'est ce qu'exige `depend_on_referenced_packages`
+  # dès qu'on l'importe soi-même. C'est le successeur de `dart:html`, retiré du
+  # jeu en Dart 3.12 comme `package:js`.
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:
