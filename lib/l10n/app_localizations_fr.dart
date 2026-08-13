@@ -724,6 +724,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Il a été retiré de la médiathèque. La lecture est arrêtée.';
 
   @override
+  String get playerErrorTitle => 'Lecture interrompue';
+
+  @override
+  String get playerErrorMessage =>
+      'Le son s\'est arrêté. Vérifiez votre connexion, puis reprenez la lecture.';
+
+  @override
+  String get playerErrorRetry => 'Reprendre';
+
+  @override
   String get composeAnnouncement => 'Publier une annonce';
 
   @override

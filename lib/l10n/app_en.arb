@@ -260,6 +260,10 @@
   "teachingRetractedTitle": "This teaching is no longer available",
   "teachingRetractedMessage": "It was removed from the media library. Playback has stopped.",
 
+  "playerErrorTitle": "Playback interrupted",
+  "playerErrorMessage": "The sound stopped. Check your connection, then resume playback.",
+  "playerErrorRetry": "Resume",
+
   "composeAnnouncement": "Post an announcement",
   "composerNewTitle": "New announcement",
   "composerEditTitle": "Edit announcement",

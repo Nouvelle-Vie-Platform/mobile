@@ -1384,6 +1384,24 @@ abstract class AppLocalizations {
   /// **'Il a été retiré de la médiathèque. La lecture est arrêtée.'**
   String get teachingRetractedMessage;
 
+  /// Panne survenue **pendant** l'écoute (lecteur de la médiathèque). À ne surtout pas confondre avec stateErrorTitle, qui parle du catalogue : ici le contenu est bien arrivé, c'est le son qui s'est arrêté. Une panne survenue avant que le son n'ait jamais commencé s'affiche, elle, en ContentAbsence.offlineMedia — il n'y a alors rien à reprendre
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture interrompue'**
+  String get playerErrorTitle;
+
+  /// Explication de la panne en cours d'écoute. Ne met en cause ni l'appareil ni l'église : elle nomme le fait (le son s'est arrêté) et l'issue (reprendre)
+  ///
+  /// In fr, this message translates to:
+  /// **'Le son s\'est arrêté. Vérifiez votre connexion, puis reprenez la lecture.'**
+  String get playerErrorMessage;
+
+  /// Action de la panne en cours d'écoute — **jamais « Réessayer »**. Le mot doit promettre de repartir d'où on en était : sur un prêche d'une heure, la crainte d'un retour à zéro suffit à ce que le fidèle ne touche pas au bouton. Le lecteur tient parole (ContentPlayer.resume rouvre à la position courante)
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprendre'**
+  String get playerErrorRetry;
+
   /// Visionneuse : bouton d'ouverture du composeur. **N'existe que si l'acteur appartient à au moins un compte officiel** (canComposeAnnouncementProvider) — pour l'écrasante majorité des fidèles, l'onglet reste une visionneuse sans aucune affordance d'écriture
   ///
   /// In fr, this message translates to:

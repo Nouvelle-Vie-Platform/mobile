@@ -720,6 +720,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'It was removed from the media library. Playback has stopped.';
 
   @override
+  String get playerErrorTitle => 'Playback interrupted';
+
+  @override
+  String get playerErrorMessage =>
+      'The sound stopped. Check your connection, then resume playback.';
+
+  @override
+  String get playerErrorRetry => 'Resume';
+
+  @override
   String get composeAnnouncement => 'Post an announcement';
 
   @override
