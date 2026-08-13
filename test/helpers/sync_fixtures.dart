@@ -25,6 +25,7 @@
 /// | ligne `status_backgrounds` | `GET /sync/status_backgrounds` | ADR-0030 (les arrêts de dégradé et l'encre, dérivés à l'écriture) |
 /// | ligne `official_accounts` | `GET /sync/official_accounts` | PRD `annonces-comptes-officiels.md` |
 /// | ligne `official_account_memberships` | `GET /sync/official_account_memberships` | idem — collection **scoppée sur l'acteur** |
+/// | ligne `legal_documents` | `GET /sync/legal_documents` | `app/legal/transformers/legal_document_transformer.ts` (ADR-0035 à ADR-0037) |
 ///
 /// ## Pourquoi ce fichier existe
 ///
@@ -124,7 +125,7 @@ final String staleCursor = serverCursor(
 // `GET /sync` — le manifeste
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Les **dix-huit** collections du registre serveur (`app/sync/descriptors/
+/// Les **dix-neuf** collections du registre serveur (`app/sync/descriptors/
 /// registry.ts`), dans l'ordre du registre, avec leur partition.
 ///
 /// Treize jusqu'à l'issue serveur #133, qui y a ajouté la seconde famille de la
@@ -143,6 +144,14 @@ final String staleCursor = serverCursor(
 /// sert jamais l'appartenance de quelqu'un d'autre, d'où la partition `private`.
 /// `announcements`, elle, était déjà au registre.
 ///
+/// Une dix-neuvième avec les **documents légaux** (issue serveur #172,
+/// ADR-0035 à ADR-0037) : `legal_documents`, un **référentiel** sans aucun
+/// filtre de périmètre — un document légal n'appartient à aucune branche, ne
+/// s'adresse à aucune audience, et les trois genres partent aux trois lecteurs
+/// de la même façon. Elle passe par le flux delta et non par un
+/// `GET /legal/:kind` parce que la barrière de consentement doit afficher
+/// **hors ligne** ce qu'elle demande d'accepter.
+///
 /// Le manifeste les liste **toutes**, pas seulement celles qui ont bougé. La
 /// partition n'est pas décorative : le garde-fou « droits changés » ne lève
 /// `full_resync_required` que sur les collections `branch` — les privées
@@ -156,6 +165,7 @@ const Map<String, String> kSyncCollections = {
   'teaching_types': 'reference',
   'gathering_types': 'reference',
   'status_backgrounds': 'reference',
+  'legal_documents': 'reference',
   'official_accounts': 'branch',
   'official_account_memberships': 'private',
   'spiritual_notes': 'private',
@@ -848,6 +858,130 @@ Map<String, Object?> statusBackgroundsPage() => deltaPage(
       ],
       nextCursor: serverCursor(
         updatedAtIso: '2026-04-02T08:00:00.000Z',
+        id: 3,
+      ),
+    );
+
+/// **Les CGU**, complètes dans les trois langues (`legal_document_transformer.ts`).
+///
+/// Huit clés, et surtout **ni `publishedBy` ni `requiresReacceptance`** : le
+/// premier est une responsabilité interne, le second n'a aucun usage client —
+/// c'est `lastMandatoryVersion` qui décide de la barrière, un entier contre un
+/// entier.
+///
+/// Les `sections` arrivent **entières**, cartes de traduction comprises : la
+/// langue se décide à la lecture et sur le document entier (ADR-0035). Le corps
+/// est en **Markdown restreint** — quatre constructions et rien d'autre.
+const Map<String, Object?> termsDocumentPayload = {
+  'id': 1,
+  'kind': 'cgu',
+  'version': 3,
+  'lastMandatoryVersion': 3,
+  'sections': [
+    {
+      'key': 'objet',
+      'heading': {'fr': 'Objet', 'en': 'Purpose', 'ee': 'Taɖodzinu'},
+      'body': {
+        'fr': 'L\'application est éditée par l\'**Église Évangélique '
+            'Nouvelle Vie**.',
+        'en': 'The app is published by **Église Évangélique Nouvelle Vie**.',
+        'ee': 'Sɔlemeha **Église Évangélique Nouvelle Vie** ye tsɔ dɔwɔna sia.',
+      },
+    },
+    {
+      'key': 'contact',
+      'heading': {'fr': 'Contact', 'en': 'Contact', 'ee': 'Kadodo'},
+      'body': {
+        'fr':
+            'Écrivez à [contact@nouvelle-vie.tg](mailto:contact@nouvelle-vie.tg).',
+        'en':
+            'Write to [contact@nouvelle-vie.tg](mailto:contact@nouvelle-vie.tg).',
+        'ee':
+            'Ŋlɔ na [contact@nouvelle-vie.tg](mailto:contact@nouvelle-vie.tg).',
+      },
+    },
+  ],
+  'publishedAt': '2026-03-09T09:00:00.000Z',
+  'createdAt': '2026-01-04T09:00:00.000Z',
+  'updatedAt': '2026-03-09T09:00:00.000Z',
+};
+
+/// **La politique de confidentialité**, dont **une seule** section manque en
+/// éwé.
+///
+/// C'est la fixture qui rend visible la dérogation d'ADR-0035 : appliqué champ
+/// par champ, `pick` rendrait ce document en éwé avec un article en français.
+/// Le repli en bloc le fait sortir **intégralement** en français.
+const Map<String, Object?> privacyDocumentPayload = {
+  'id': 2,
+  'kind': 'privacy',
+  'version': 2,
+  'lastMandatoryVersion': 2,
+  'sections': [
+    {
+      'key': 'donnees',
+      'heading': {
+        'fr': 'Vos données',
+        'en': 'Your data',
+        'ee': 'Wò nyatakakawo'
+      },
+      'body': {
+        'fr': 'Nous collectons :\n- votre nom\n- votre adresse e-mail',
+        'en': 'We collect:\n- your name\n- your e-mail address',
+        'ee': 'Míeƒoa nu siawo nu ƒu :\n- wò ŋkɔ\n- wò e-mail',
+      },
+    },
+    {
+      'key': 'conservation',
+      'heading': {'fr': 'Conservation', 'en': 'Retention'},
+      'body': {
+        'fr': 'Vos données sont conservées *trois ans*.',
+        'en': 'Your data is kept for *three years*.',
+      },
+    },
+  ],
+  'publishedAt': '2026-02-14T09:00:00.000Z',
+  'createdAt': '2026-01-04T09:00:00.000Z',
+  'updatedAt': '2026-02-14T09:00:00.000Z',
+};
+
+/// **« À propos »** — le genre qui n'entre **jamais** dans la barrière :
+/// `lastMandatoryVersion` y est nul, accepter une présentation n'a pas de sens.
+const Map<String, Object?> aboutDocumentPayload = {
+  'id': 3,
+  'kind': 'about',
+  'version': 1,
+  'lastMandatoryVersion': null,
+  'sections': [
+    {
+      'key': 'presentation',
+      'heading': {
+        'fr': 'Notre église',
+        'en': 'Our church',
+        'ee': 'Míaƒe sɔleme'
+      },
+      'body': {
+        'fr': 'Une église de la Maison du Miracle.',
+        'en': 'A Maison du Miracle church.',
+        'ee': 'Maison du Miracle ƒe sɔleme.',
+      },
+    },
+  ],
+  'publishedAt': '2026-01-04T09:00:00.000Z',
+  'createdAt': '2026-01-04T09:00:00.000Z',
+  'updatedAt': '2026-01-04T09:00:00.000Z',
+};
+
+/// Page complète du référentiel des documents légaux. Les trois genres arrivent
+/// d'un coup : la collection n'a **aucun filtre de périmètre**.
+Map<String, Object?> legalDocumentsPage() => deltaPage(
+      items: const [
+        termsDocumentPayload,
+        privacyDocumentPayload,
+        aboutDocumentPayload,
+      ],
+      nextCursor: serverCursor(
+        updatedAtIso: '2026-03-09T09:00:00.000Z',
         id: 3,
       ),
     );

@@ -23,6 +23,7 @@ library;
 
 import 'package:drift/drift.dart';
 
+import '../../models/legal_document_view.dart';
 import '../local/app_database.dart';
 
 /// Une ligne du flux qui ne porte pas ce que sa collection exige.
@@ -373,9 +374,86 @@ PlaybackProgressCompanion playbackProgressRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/legal_documents` — CGU, confidentialité, « à propos ».
+///
+/// Huit clés, relevées sur `legal_document_transformer.ts` : `id`, `kind`,
+/// `version`, `lastMandatoryVersion`, `sections`, `publishedAt`, `createdAt`,
+/// `updatedAt`.
+///
+/// **Ni `publishedBy`, ni `requiresReacceptance`** : le premier est une
+/// responsabilité interne (motif d'ADR-0029), le second n'a aucun usage
+/// client — c'est `lastMandatoryVersion` qui décide de la barrière, un entier
+/// contre un entier, et servir le drapeau inviterait à recoder la règle ici, et
+/// à la recoder faux.
+///
+/// Les `sections` sont écrites **entières**, cartes de traduction comprises :
+/// la langue d'un document légal se décide sur le document entier, à la
+/// lecture (`resolveLegalLocale`, ADR-0035). Il faut les voir toutes pour la
+/// trancher — en figer une à l'écriture rendrait la règle inapplicable.
+LegalDocumentsCompanion legalDocumentRowOf(Map<String, Object?> item) {
+  const collection = 'legal_documents';
+  return LegalDocumentsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    // Exigé : un document sans genre n'a aucun écran où aller. Stocké tel
+    // quel, jamais refermé sur un enum — le magasin n'a pas à refuser une
+    // ligne dont il ne connaîtrait pas le genre.
+    kind: _text(collection, item, 'kind'),
+    version: Value(item['version'] is int ? item['version']! as int : 1),
+    // `null` = aucune acceptation exigée. C'est toujours le cas d'`about`.
+    lastMandatoryVersion: Value(_optionalInt(item, 'lastMandatoryVersion')),
+    sections: _legalSections(collection, item),
+    publishedAt: Value(_instant(item, 'publishedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Rouages
 // ─────────────────────────────────────────────────────────────────────────────
+
+/// Lit les sections d'un document légal, **dans l'ordre servi**.
+///
+/// L'ordre n'est pas une préférence d'affichage : un texte légal se lit en
+/// séquence et ses articles se référencent. Une entrée sans `key` exploitable
+/// est **sautée** plutôt que de coûter la page entière — la clé identifie une
+/// section à travers les éditions, une section qui n'en a pas n'est rattachable
+/// à rien.
+List<LegalSection> _legalSections(
+  String collection,
+  Map<String, Object?> item,
+) {
+  final value = item['sections'];
+  if (value is! List) throw MalformedSyncRow(collection, 'sections', value);
+
+  final sections = <LegalSection>[];
+  for (final entry in value) {
+    if (entry is! Map) continue;
+    final key = entry['key'];
+    if (key is! String) continue;
+    sections.add(
+      LegalSection(
+        key: key,
+        heading: _localizedText(entry['heading']),
+        body: _localizedText(entry['body']),
+      ),
+    );
+  }
+  return sections;
+}
+
+/// Une carte de traduction `{fr, en, ee}` **entière**, tolérante à l'absence.
+///
+/// À la différence d'[_i18nMap], elle ne lève pas : une section sans `heading`
+/// est un trou de contenu que le rendu dessine comme un trou, pas une raison de
+/// rejeter la page qui portait tout le document.
+Map<String, String> _localizedText(Object? raw) {
+  if (raw is! Map) return const {};
+  return {
+    for (final entry in raw.entries)
+      if (entry.value is String) entry.key.toString(): entry.value! as String,
+  };
+}
 
 String _text(String collection, Map<String, Object?> item, String field) {
   final value = item[field];

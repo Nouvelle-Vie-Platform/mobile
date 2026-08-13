@@ -502,5 +502,19 @@
   "drawerPrivacy": "Politique de confidentialité",
   "@drawerPrivacy": { "description": "Menu latéral : politique de confidentialité" },
   "drawerAbout": "À propos",
-  "@drawerAbout": { "description": "Menu latéral : écran « À propos » (version du binaire + présentation servie par le portail). Route distincte de /legal/:kind — ranger « À propos » sous /legal mentirait sur sa nature" }
+  "@drawerAbout": { "description": "Menu latéral : écran « À propos » (version du binaire + présentation servie par le portail). Route distincte de /legal/:kind — ranger « À propos » sous /legal mentirait sur sa nature" },
+
+  "legalFooterUpdated": "Version {version} — mise à jour le {date}",
+  "@legalFooterUpdated": {
+    "description": "Pied d'un document légal. La date est formatée CÔTÉ CLIENT (utils/event_time.dart), jamais servie en toutes lettres par le serveur : un texte pré-formaté ne se traduit pas et ne se relit pas dans le fuseau du lecteur",
+    "placeholders": {
+      "version": { "type": "int", "example": "3" },
+      "date": { "type": "String", "example": "9 mars 2026" }
+    }
+  },
+  "legalFooterVersion": "Version {version}",
+  "@legalFooterVersion": {
+    "description": "Pied d'un document légal quand le serveur n'a servi NI date de mise à jour NI date de publication. L'absence se rend comme une absence — jamais une date inventée, qui ferait foi sur un texte qu'on demande d'accepter",
+    "placeholders": { "version": { "type": "int", "example": "3" } }
+  }
 }

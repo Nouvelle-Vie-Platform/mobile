@@ -14,6 +14,7 @@ import '../screens/event_detail_screen.dart';
 import '../screens/gathering_detail_screen.dart';
 import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
+import '../screens/legal_document_screen.dart';
 import '../screens/legal_placeholder_screen.dart';
 import '../screens/live_screen.dart';
 import '../screens/media_library_screen.dart';
@@ -257,18 +258,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/notes',
         builder: (_, __) => const AppBackground(child: NotesScreen()),
       ),
-      // Les trois destinations documentaires du menu latéral. Elles existent
-      // **avant** leurs écrans (#55, #57) parce qu'une entrée de menu inerte
-      // passe pour une panne : elles rendent aujourd'hui
-      // `ContentAbsence.notSynced`, c'est-à-dire exactement ce que les écrans
-      // réels diront devant un magasin qui n'a pas encore reçu le document.
+      // Les trois destinations documentaires du menu latéral.
+      //
+      // La consultation est servie depuis #55 : `LegalDocumentScreen` lit le
+      // magasin et rend `ContentAbsence.notSynced` devant un document qui n'est
+      // pas encore arrivé — c'est-à-dire exactement ce que l'enveloppe
+      // provisoire disait déjà. `/about` attend encore #57 : son écran ne se
+      // réduit pas au document servi, il porte la version du binaire.
+      //
       // Aucune garde ici : la barrière d'acceptation (`/legal/accept`) est un
       // `redirect`, pas une route de consultation.
       GoRoute(
         name: AppRoute.legalDocument,
         path: '/legal/:kind',
         builder: (_, state) => AppBackground(
-          child: LegalPlaceholderScreen(kind: state.pathParameters['kind']!),
+          child: LegalDocumentScreen(kind: state.pathParameters['kind']!),
         ),
       ),
       GoRoute(

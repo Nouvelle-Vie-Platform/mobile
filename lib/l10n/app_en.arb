@@ -324,5 +324,8 @@
   "drawerBrandName": "Église Évangélique Nouvelle Vie",
   "drawerTerms": "Terms of use",
   "drawerPrivacy": "Privacy policy",
-  "drawerAbout": "About"
+  "drawerAbout": "About",
+
+  "legalFooterUpdated": "Version {version} — updated on {date}",
+  "legalFooterVersion": "Version {version}"
 }

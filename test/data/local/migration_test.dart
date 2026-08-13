@@ -24,15 +24,15 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('le schéma déclaré correspond au schéma v4 exporté', () async {
+  test('le schéma déclaré correspond au schéma v5 exporté', () async {
     // Le garde-fou de tous les jours : quiconque touche à une table sans
     // exporter la version correspondante casse ce test avant de casser un
     // téléphone.
-    final connection = await verifier.startAt(4);
+    final connection = await verifier.startAt(5);
     final db = AppDatabase(connection);
     addTearDown(db.close);
 
-    await verifier.migrateAndValidate(db, 4);
+    await verifier.migrateAndValidate(db, 5);
   });
 
   test('v1 → v2 : les deux tables de rassemblement apparaissent', () async {
@@ -156,6 +156,45 @@ void main() {
     expect(await db.select(db.playbackProgress).get(), isEmpty);
     // La table locale seule, elle, ne se remplira qu'à la première écoute.
     expect(await db.select(db.localPlaybackPositions).get(), isEmpty);
+  });
+
+  test('v4 → v5 : la table des documents légaux apparaît', () async {
+    final connection = await verifier.startAt(4);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 5);
+  });
+
+  test('v1 → v5 : un appareil resté en v1 rejoue les quatre paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 5);
+  });
+
+  test('v4 → v5 : le catalogue déjà téléchargé survit au palier', () async {
+    // Le palier ne fait que **créer une table** : aucun document légal
+    // n'existait avant cette version — les trois destinations du menu latéral
+    // rendaient une absence. Il n'y a donc rien à reprendre, et c'est encore
+    // le catalogue que ce test protège.
+    final schema = await verifier.schemaAt(4);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 5);
+
+    final rows = await db.select(db.teachings).get();
+    expect(rows.single.title, 'Dieu a le dernier mot');
+    // La collection naît vide : son curseur n'existe pas encore, le prochain
+    // manifeste l'annoncera `from_zero`, et le premier cycle ramènera les trois
+    // genres d'un coup — la collection n'a aucun filtre de périmètre.
+    expect(await db.select(db.legalDocuments).get(), isEmpty);
   });
 
   test('la version de schéma couvre bien toutes les versions exportées', () {
