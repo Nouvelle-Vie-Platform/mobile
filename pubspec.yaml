@@ -87,6 +87,24 @@ dependencies:
   # pendant le `build`, donc referme le tiroir à la moindre reconstruction.
   # `HomeShell` pose son propre `PopScope`.
   flutter_zoom_drawer: ^3.2.0
+  # La **version et le numéro de build du binaire installé**, affichés par
+  # l'entête d'« À propos » (#57). C'est la seule donnée de cet écran que le
+  # serveur ne peut pas servir : elle décrit l'application posée sur ce
+  # téléphone-ci, pas ce que le portail publie. Tout le reste de l'écran — la
+  # présentation, la mission, le contact — arrive par le corps servi, et reste
+  # donc corrigeable sans publier une version de plus.
+  #
+  # Plugin natif, après `flutter_secure_storage`, `drift`, `image_picker`,
+  # `flutter_zoom_drawer` et les trois du lecteur. **Aucune permission requise
+  # sur aucune plateforme**, contrairement à `image_picker` (iOS) et au lecteur
+  # (Android) : rien à ajouter à `Info.plist` ni à `AndroidManifest.xml`. Le web
+  # est couvert (`package_info_plus` y lit `version.json`), la cible reste
+  # tenue.
+  #
+  # Lu **uniquement** derrière `AppVersionReader` (`lib/data/app_version.dart`) :
+  # sous `flutter test`, un canal de plugin lève `MissingPluginException`, et
+  # aucun test d'écran n'a à connaître ce détail.
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:
