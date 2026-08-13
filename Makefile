@@ -38,7 +38,7 @@ help: ## Affiche cette aide
 	@echo "  make l10n      flutter gen-l10n"
 	@echo "  make gen       Régénère le code Drift (.g.dart)"
 	@echo "  make migrations  Exporte le schéma local d'une nouvelle version"
-	@echo "  make web-assets  Re-télécharge sqlite3.wasm + drift_worker.js"
+	@echo "  make web-assets  Re-télécharge sqlite3.wasm + drift_worker.js + hls.min.js"
 	@echo "  make clean     flutter clean"
 	@echo ""
 	@echo "URL du backend (--dart-define=API_BASE_URL) :"
@@ -91,7 +91,7 @@ migrations: ## Exporte le schéma local de la version courante (drift_schemas/)
 	dart run drift_dev make-migrations
 	dart run drift_dev schema generate drift_schemas/app_database/ test/data/local/schema/
 
-web-assets: ## Re-télécharge sqlite3.wasm + drift_worker.js aux versions de pubspec.lock
+web-assets: ## Re-télécharge les actifs web (drift/sqlite3 depuis pubspec.lock, hls.js épinglé)
 	./tool/web_assets.sh
 
 clean: ## flutter clean
