@@ -192,10 +192,12 @@ class AppLocalizationsEe extends AppLocalizations {
   String get fieldLocalBranch => 'Branche locale';
 
   @override
-  String get registerTermsPrefix => 'En créant un compte, vous acceptez nos ';
+  String get registerTermsPrefix =>
+      'Après la vérification, il vous sera demandé d\'accepter nos ';
 
   @override
-  String get registerTermsLink => 'Conditions d\'utilisation.';
+  String get registerTermsLink =>
+      'conditions d\'utilisation et notre politique de confidentialité.';
 
   @override
   String homeGreeting(String name) {
@@ -930,4 +932,39 @@ class AppLocalizationsEe extends AppLocalizations {
   String legalFooterVersion(int version) {
     return 'Version $version';
   }
+
+  @override
+  String get legalGateTitleFirst => 'Avant de commencer';
+
+  @override
+  String get legalGateTitleUpdated => 'Nos conditions ont changé';
+
+  @override
+  String get legalGateSubtitle => 'Votre accord est nécessaire pour continuer.';
+
+  @override
+  String get legalGateAcceptTerms =>
+      'J\'ai lu et j\'accepte les conditions générales d\'utilisation.';
+
+  @override
+  String get legalGateAcceptPrivacy =>
+      'J\'ai lu et j\'accepte la politique de confidentialité.';
+
+  @override
+  String get legalGateErrorNetwork =>
+      'Connexion requise pour enregistrer votre accord.';
+
+  @override
+  String get legalGateErrorUnauthorized =>
+      'Votre session a expiré. Reconnectez-vous pour enregistrer votre accord.';
+
+  @override
+  String get legalGateErrorOutdated => 'Ces conditions ont été mises à jour.';
+
+  @override
+  String get legalGateErrorServer =>
+      'Le serveur n\'a pas pu enregistrer votre accord.';
+
+  @override
+  String get legalGateReload => 'Recharger';
 }

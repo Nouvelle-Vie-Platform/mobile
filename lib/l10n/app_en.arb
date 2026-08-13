@@ -73,8 +73,8 @@
   "registerSubtitle": "Join our community.",
   "fieldPhone": "Phone",
   "fieldLocalBranch": "Local branch",
-  "registerTermsPrefix": "By creating an account, you accept our ",
-  "registerTermsLink": "Terms of use.",
+  "registerTermsPrefix": "After verification, you will be asked to accept our ",
+  "registerTermsLink": "terms of use and our privacy policy.",
 
   "homeGreeting": "Hello {name}!",
   "homeGreetingNoName": "Hello!",
@@ -327,5 +327,16 @@
   "drawerAbout": "About",
 
   "legalFooterUpdated": "Version {version} — updated on {date}",
-  "legalFooterVersion": "Version {version}"
+  "legalFooterVersion": "Version {version}",
+
+  "legalGateTitleFirst": "Before we begin",
+  "legalGateTitleUpdated": "Our terms have changed",
+  "legalGateSubtitle": "We need your agreement to continue.",
+  "legalGateAcceptTerms": "I have read and accept the terms of use.",
+  "legalGateAcceptPrivacy": "I have read and accept the privacy policy.",
+  "legalGateErrorNetwork": "A connection is required to record your agreement.",
+  "legalGateErrorUnauthorized": "Your session has expired. Sign in again to record your agreement.",
+  "legalGateErrorOutdated": "These terms have been updated.",
+  "legalGateErrorServer": "The server could not record your agreement.",
+  "legalGateReload": "Reload"
 }

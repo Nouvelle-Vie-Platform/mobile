@@ -191,10 +191,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldLocalBranch => 'Local branch';
 
   @override
-  String get registerTermsPrefix => 'By creating an account, you accept our ';
+  String get registerTermsPrefix =>
+      'After verification, you will be asked to accept our ';
 
   @override
-  String get registerTermsLink => 'Terms of use.';
+  String get registerTermsLink => 'terms of use and our privacy policy.';
 
   @override
   String homeGreeting(String name) {
@@ -929,4 +930,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String legalFooterVersion(int version) {
     return 'Version $version';
   }
+
+  @override
+  String get legalGateTitleFirst => 'Before we begin';
+
+  @override
+  String get legalGateTitleUpdated => 'Our terms have changed';
+
+  @override
+  String get legalGateSubtitle => 'We need your agreement to continue.';
+
+  @override
+  String get legalGateAcceptTerms => 'I have read and accept the terms of use.';
+
+  @override
+  String get legalGateAcceptPrivacy =>
+      'I have read and accept the privacy policy.';
+
+  @override
+  String get legalGateErrorNetwork =>
+      'A connection is required to record your agreement.';
+
+  @override
+  String get legalGateErrorUnauthorized =>
+      'Your session has expired. Sign in again to record your agreement.';
+
+  @override
+  String get legalGateErrorOutdated => 'These terms have been updated.';
+
+  @override
+  String get legalGateErrorServer =>
+      'The server could not record your agreement.';
+
+  @override
+  String get legalGateReload => 'Reload';
 }

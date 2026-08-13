@@ -19,7 +19,8 @@ const _sessionFixture = '''
     "branchId": 3,
     "status": "affiliated",
     "avatarUrl": null,
-    "profileComplete": true
+    "profileComplete": true,
+    "acceptedLegal": { "cgu": 3, "privacy": 2 }
   }
 }
 ''';
@@ -36,7 +37,8 @@ const _newUserFixture = '''
   "branchId": null,
   "status": "newcomer",
   "avatarUrl": null,
-  "profileComplete": false
+  "profileComplete": false,
+  "acceptedLegal": {}
 }
 ''';
 
@@ -76,6 +78,9 @@ void main() {
       expect(user.status, UserStatus.affiliated);
       expect(user.avatarUrl, isNull);
       expect(user.profileComplete, isTrue);
+      // Le résumé de consentement (ADR-0036) voyage avec la session : c'est ce
+      // que lit la garde de route, qui est synchrone et ne peut rien demander.
+      expect(user.acceptedLegal, {'cgu': 3, 'privacy': 2});
     });
 
     test('accepte un utilisateur au profil vierge', () {
@@ -87,6 +92,8 @@ void main() {
       expect(user.branchId, isNull);
       expect(user.status, UserStatus.newcomer);
       expect(user.profileComplete, isFalse);
+      // Compte neuf : la carte est **vide**, elle ne porte pas de zéros.
+      expect(user.acceptedLegal, isEmpty);
     });
 
     test('repli sur newcomer quand le statut est absent', () {
@@ -94,6 +101,28 @@ void main() {
 
       expect(user.status, UserStatus.newcomer);
       expect(user.profileComplete, isFalse);
+    });
+
+    test('un acceptedLegal absent se lit « rien accepté », jamais des zéros',
+        () {
+      final user = User.fromJson({'id': 'u_1'});
+
+      // Le serveur omet la clé quand il n'a pas calculé le résumé (portail
+      // admin). Le pire cas est le bon : la barrière se lève, elle ne se saute
+      // pas — et surtout la carte ne se garnit pas de `0`, qui se
+      // confondraient avec une acceptation de « version 0 ».
+      expect(user.acceptedLegal, isEmpty);
+      expect(user.acceptedLegal.containsKey('cgu'), isFalse);
+    });
+
+    test('un genre jamais accepté reste absent de la carte servie', () {
+      final user = User.fromJson({
+        'id': 'u_1',
+        'acceptedLegal': {'cgu': 4},
+      });
+
+      expect(user.acceptedLegal, {'cgu': 4});
+      expect(user.acceptedLegal['privacy'], isNull);
     });
 
     test('toJson produit exactement les clés du contrat', () {
@@ -110,6 +139,9 @@ void main() {
         'status': 'affiliated',
         'avatarUrl': null,
         'profileComplete': true,
+        // Le cache local repasse par cette forme : sans le résumé, un démarrage
+        // hors ligne rouvrirait une barrière que seul le réseau peut refermer.
+        'acceptedLegal': {'cgu': 3, 'privacy': 2},
       });
     });
 
