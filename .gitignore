@@ -96,7 +96,12 @@ coverage/
 # Éditeur
 .vscode/
 
-# Worktrees temporaires des agents Claude Code
+# Worktrees temporaires des agents Claude Code — **jamais suivis**, et retirés
+# dès que leur travail est récupéré (PR fusionnée, ou commits déjà dans main).
+# Les deux emplacements sont couverts : selon l'outil qui les crée, ils
+# atterrissent sous `.claude/` ou à la racine. Un seul des deux était ignoré, et
+# cinq worktrees sont restés visibles dans `git status` jusqu'à ce qu'on s'en
+# aperçoive — un `git add -A` de passage les aurait commités.
 .claude/worktrees/
 .worktrees/
 
