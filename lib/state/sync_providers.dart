@@ -28,6 +28,7 @@ import '../core/config/app_env.dart';
 import '../data/local/announcement_dao.dart';
 import '../data/local/app_database.dart';
 import '../data/local/gathering_dao.dart';
+import '../data/local/legal_dao.dart';
 import '../data/local/mediatheque_dao.dart';
 import '../data/local/playback_dao.dart';
 import '../data/local/sync_dao.dart';
@@ -79,6 +80,17 @@ final announcementDaoProvider = Provider<AnnouncementDao>(
 /// d'autre écrivain que le moteur de synchronisation.
 final playbackDaoProvider = Provider<PlaybackDao>(
   (ref) => ref.watch(appDatabaseProvider).playbackDao,
+);
+
+/// Les lectures du magasin, côté **documents légaux** — CGU, politique de
+/// confidentialité, « à propos » (#55). Un DAO de plus, pour les mêmes
+/// raisons : une autre collection, un autre modèle, d'autres écrans.
+///
+/// Il ne choisit aucune langue : les sections en sortent **brutes**, et c'est
+/// `LegalDocumentView.resolve` qui tranche, une fois, pour le document entier
+/// (ADR-0035).
+final legalDaoProvider = Provider<LegalDao>(
+  (ref) => ref.watch(appDatabaseProvider).legalDao,
 );
 
 /// Les deux routes du protocole, sur le `Dio` d'`ApiClient` : la requête

@@ -1,4 +1,5 @@
 import '../models/announcement_view.dart';
+import '../models/legal_document_view.dart';
 import '../models/models.dart';
 
 /// Instant passé, exprimé en UTC comme le ferait le backend.
@@ -655,6 +656,142 @@ abstract final class SampleData {
   // serveur (`GET /sync/branches`, voir `BranchRepository`). En garder une
   // copie ici, c'était un second référentiel à tenir à jour — et le risque
   // d'afficher des branches qui n'existent pas.
+
+  /// Les **documents légaux** du mode maquette, sous la forme **servie** :
+  /// sections brutes, cartes de traduction entières, corps en Markdown
+  /// restreint.
+  ///
+  /// Deux d'entre eux sont incomplets à dessein. `privacy` n'a qu'une section
+  /// sur deux traduite en éwé : c'est ce qui rend **visible en mode maquette**
+  /// la règle du repli en bloc — le document sort intégralement en français, et
+  /// non « majoritairement en éwé » (ADR-0035). `about` n'a pas de
+  /// `lastMandatoryVersion` : accepter une présentation n'a pas de sens, et le
+  /// genre n'entre jamais dans la barrière.
+  static final List<LegalDocument> legalDocuments = [
+    LegalDocument(
+      kind: LegalDocumentKind.terms,
+      version: 3,
+      lastMandatoryVersion: 3,
+      publishedAt: DateTime.utc(2026, 3, 9, 9),
+      updatedAt: DateTime.utc(2026, 3, 9, 9),
+      sections: const [
+        LegalSection(
+          key: 'objet',
+          heading: {'fr': 'Objet', 'en': 'Purpose', 'ee': 'Taɖodzinu'},
+          body: {
+            'fr': 'L\'application est éditée par l\'**Église Évangélique '
+                'Nouvelle Vie – Maison du Miracle**. Elle donne accès aux '
+                'enseignements, à l\'agenda et aux annonces de l\'église.',
+            'en': 'This app is published by **Église Évangélique Nouvelle Vie '
+                '– Maison du Miracle**.',
+            'ee': 'Sɔlemeha **Église Évangélique Nouvelle Vie – Maison du '
+                'Miracle** ye tsɔ dɔwɔna sia ɖo anyi.',
+          },
+        ),
+        LegalSection(
+          key: 'compte',
+          heading: {
+            'fr': 'Votre compte',
+            'en': 'Your account',
+            'ee': 'Wò akɔnta'
+          },
+          body: {
+            'fr': 'Vous vous engagez à :\n'
+                '- fournir des informations exactes\n'
+                '- garder votre code de connexion pour vous',
+            'en': 'You agree to:\n'
+                '- provide accurate information\n'
+                '- keep your sign-in code to yourself',
+            'ee': 'Èlɔ̃ be :\n'
+                '- nàna nyatakaka siwo le eteƒe\n'
+                '- nàdzra wò ŋkɔŋlɔdzesi ɖo na ɖokuiwò',
+          },
+        ),
+        LegalSection(
+          key: 'contact',
+          heading: {'fr': 'Contact', 'en': 'Contact', 'ee': 'Kadodo'},
+          body: {
+            'fr': 'Écrivez à '
+                '[contact@nouvelle-vie.tg](mailto:contact@nouvelle-vie.tg).',
+            'en': 'Write to '
+                '[contact@nouvelle-vie.tg](mailto:contact@nouvelle-vie.tg).',
+            'ee': 'Ŋlɔ na '
+                '[contact@nouvelle-vie.tg](mailto:contact@nouvelle-vie.tg).',
+          },
+        ),
+      ],
+    ),
+    LegalDocument(
+      kind: LegalDocumentKind.privacy,
+      version: 2,
+      lastMandatoryVersion: 2,
+      publishedAt: DateTime.utc(2026, 2, 14, 9),
+      updatedAt: DateTime.utc(2026, 2, 14, 9),
+      sections: const [
+        LegalSection(
+          key: 'donnees',
+          heading: {
+            'fr': 'Vos données',
+            'en': 'Your data',
+            'ee': 'Wò nyatakakawo',
+          },
+          body: {
+            'fr': 'Nous collectons :\n'
+                '- votre nom\n'
+                '- votre numéro de téléphone ou votre adresse e-mail\n'
+                '- votre branche de rattachement',
+            'en': 'We collect:\n'
+                '- your name\n'
+                '- your phone number or e-mail address\n'
+                '- your home branch',
+            'ee': 'Míeƒoa nu siawo nu ƒu :\n'
+                '- wò ŋkɔ\n'
+                '- wò kaƒomɔ ƒe xexlẽdzesi alo wò e-mail\n'
+                '- sɔleme si me nèle',
+          },
+        ),
+        // **Pas de traduction en éwé** : une seule absence, et tout le document
+        // bascule en français. Le mode maquette exerce ainsi la règle.
+        LegalSection(
+          key: 'conservation',
+          heading: {'fr': 'Conservation', 'en': 'Retention'},
+          body: {
+            'fr':
+                'Vos données sont conservées *trois ans* après votre dernière '
+                    'connexion, puis supprimées.',
+            'en':
+                'Your data is kept for *three years* after your last sign-in, '
+                    'then deleted.',
+          },
+        ),
+      ],
+    ),
+    LegalDocument(
+      kind: LegalDocumentKind.about,
+      version: 1,
+      publishedAt: DateTime.utc(2026, 1, 4, 9),
+      updatedAt: DateTime.utc(2026, 1, 4, 9),
+      sections: const [
+        LegalSection(
+          key: 'presentation',
+          heading: {
+            'fr': 'Notre église',
+            'en': 'Our church',
+            'ee': 'Míaƒe sɔleme',
+          },
+          body: {
+            'fr': 'L\'Église Évangélique Nouvelle Vie – Maison du Miracle '
+                'accueille chaque dimanche à 15 h au temple central de Lomé.',
+            'en':
+                'Église Évangélique Nouvelle Vie – Maison du Miracle welcomes '
+                    'you every Sunday at 3 p.m. in central Lomé.',
+            'ee': 'Église Évangélique Nouvelle Vie – Maison du Miracle xɔa '
+                'amewo Kɔsiɖagbe ɖe sia ɖe ga 15 me le Lomé.',
+          },
+        ),
+      ],
+    ),
+  ];
 
   /// Identifiants « déjà connus » : le mock renvoie `isNewUser: false` pour
   /// ceux-ci (→ accueil direct). Emails en minuscules.

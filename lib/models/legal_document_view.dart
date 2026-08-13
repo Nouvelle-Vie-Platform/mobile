@@ -98,6 +98,34 @@ class LegalSectionView {
   final String body;
 }
 
+/// Un document légal **brut**, tel que le magasin le tient : ses sections
+/// n'ont encore replié aucune langue.
+///
+/// C'est la forme qu'un double en mémoire doit porter pour appliquer **les
+/// mêmes règles de lecture** que le magasin (CLAUDE.md, « Brancher un vrai
+/// backend »). Un double qui porterait des [LegalDocumentView] tout faits
+/// court-circuiterait [resolveLegalLocale] — et la dérogation d'ADR-0035
+/// resterait invisible pendant tout le développement, ce qui est exactement le
+/// risque que l'ADR décrit.
+@immutable
+class LegalDocument {
+  const LegalDocument({
+    required this.kind,
+    required this.version,
+    required this.sections,
+    this.lastMandatoryVersion,
+    this.publishedAt,
+    this.updatedAt,
+  });
+
+  final String kind;
+  final int version;
+  final int? lastMandatoryVersion;
+  final List<LegalSection> sections;
+  final DateTime? publishedAt;
+  final DateTime? updatedAt;
+}
+
 /// **La locale d'un document légal, choisie une fois pour le document entier.**
 ///
 /// La locale n'est retenue que si TOUTES les sections la portent — `heading`
