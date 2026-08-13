@@ -1762,6 +1762,18 @@ abstract class AppLocalizations {
   /// **'À propos'**
   String get drawerAbout;
 
+  /// Entête local d'« À propos » : le nom de l'église, sous l'emblème qui porte déjà « Maison du Miracle ». Local et non servi — c'est l'identité de l'application, pas un contenu éditorial
+  ///
+  /// In fr, this message translates to:
+  /// **'Église Évangélique Nouvelle Vie'**
+  String get aboutChurchName;
+
+  /// Entête local d'« À propos » : version et build du BINAIRE INSTALLÉ. Ne vient jamais du serveur — c'est toute la raison de cet entête local, et c'est le renseignement qu'on demande à un fidèle qui signale une anomalie. Ne pas confondre avec legalFooterVersion, qui est l'édition du document servi
+  ///
+  /// In fr, this message translates to:
+  /// **'Version {version} ({build})'**
+  String aboutVersion(String version, String build);
+
   /// Pied d'un document légal. La date est formatée CÔTÉ CLIENT (utils/event_time.dart), jamais servie en toutes lettres par le serveur : un texte pré-formaté ne se traduit pas et ne se relit pas dans le fuseau du lecteur
   ///
   /// In fr, this message translates to:

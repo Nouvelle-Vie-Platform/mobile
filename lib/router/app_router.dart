@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/models.dart';
+import '../screens/about_screen.dart';
 import '../screens/agenda_screen.dart';
 import '../screens/announcement_composer_screen.dart';
 import '../screens/auth/code_screen.dart';
@@ -15,7 +16,6 @@ import '../screens/gathering_detail_screen.dart';
 import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
 import '../screens/legal_document_screen.dart';
-import '../screens/legal_placeholder_screen.dart';
 import '../screens/live_screen.dart';
 import '../screens/media_library_screen.dart';
 import '../screens/new_request_screen.dart';
@@ -262,9 +262,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       //
       // La consultation est servie depuis #55 : `LegalDocumentScreen` lit le
       // magasin et rend `ContentAbsence.notSynced` devant un document qui n'est
-      // pas encore arrivé — c'est-à-dire exactement ce que l'enveloppe
-      // provisoire disait déjà. `/about` attend encore #57 : son écran ne se
-      // réduit pas au document servi, il porte la version du binaire.
+      // pas encore arrivé. `/about` a sa **propre** route depuis #57 : son
+      // écran ne se réduit pas au document servi — il porte la version du
+      // binaire, que le serveur ne peut pas connaître, et s'affiche donc même
+      // sans document en magasin.
       //
       // Aucune garde ici : la barrière d'acceptation (`/legal/accept`) est un
       // `redirect`, pas une route de consultation.
@@ -278,9 +279,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: AppRoute.about,
         path: '/about',
-        builder: (_, __) => const AppBackground(
-          child: LegalPlaceholderScreen(kind: LegalPlaceholderScreen.about),
-        ),
+        builder: (_, __) => const AppBackground(child: AboutScreen()),
       ),
     ],
   );

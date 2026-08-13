@@ -23,9 +23,10 @@ import '../widgets/legal_document_body.dart';
 ///
 /// **Le magasin vide n'est pas une erreur.** C'est `ContentAbsence.notSynced`,
 /// rendue par `ContentAbsenceView` — la même vue que les trois autres absences,
-/// et surtout pas un écran d'absence de plus. C'est aussi ce que
-/// `LegalPlaceholderScreen` affichait avant cet écran : le provisoire
-/// préfigurait le définitif, c'était son seul mérite.
+/// et surtout pas un écran d'absence de plus. C'est aussi ce que l'enveloppe
+/// provisoire de #54 affichait avant cet écran : le provisoire préfigurait le
+/// définitif, c'était son seul mérite. Il a disparu avec #57, qui en était le
+/// dernier usage.
 ///
 /// Le chargement se rend comme l'absence, à dessein. Une lecture de magasin
 /// local se résout en quelques millisecondes : un indicateur de progression y
