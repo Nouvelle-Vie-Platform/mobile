@@ -986,3 +986,60 @@ Map<String, Object?> mixedAnnouncementsPage({String? nextCursor}) => deltaPage(
             id: '019f5a00-0000-7000-8000-000000000009',
           ),
     );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// `playback_progress` — la reprise de lecture (partition `private`)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Une progression de lecture complète.**
+///
+/// Huit clés, relevées sur
+/// `app/mediatheque/transformers/playback_progress_transformer.ts` : `id`,
+/// `userId`, `teachingId`, `positionSeconds`, `completed`, `clientCreatedAt`,
+/// `createdAt`, `updatedAt`.
+///
+/// **Aucune durée, et ce n'est pas un oubli** : le serveur n'en a nulle part —
+/// ni ici, ni sur `teachings`. Il n'a donc pas de dénominateur et **ne peut
+/// pas** décider qu'un contenu est terminé ; il stocke le `completed` que le
+/// client lui a envoyé. Le seuil est une décision application.
+///
+/// `teachingId` pointe l'enseignement de [fullTeachingPayload] — mais il
+/// pourrait tout aussi bien pointer un **rassemblement** : les deux familles
+/// sont la même table côté serveur, discriminée par `family`, et la route de
+/// rapport est la même. Le nom de la clé est celui de la colonne partagée,
+/// comme la verrue déjà connue de `gatherings.teachingTypeId`.
+const Map<String, Object?> playbackProgressPayload = {
+  'id': '019f6b00-0000-7000-8000-000000000001',
+  'userId': 'b6f0a1c2-0000-4000-8000-000000000001',
+  'teachingId': '019f2c40-0000-7000-8000-000000000001',
+  'positionSeconds': 942,
+  'completed': false,
+  'clientCreatedAt': '2026-05-24T14:00:00.000Z',
+  'createdAt': '2026-05-24T14:00:00.000Z',
+  'updatedAt': '2026-05-24T14:31:00.000Z',
+};
+
+/// **Une progression terminée.** `completed: true` est arrivé là parce qu'un
+/// client l'a décidé et envoyé, jamais parce que le serveur l'a calculé.
+const Map<String, Object?> completedPlaybackProgressPayload = {
+  'id': '019f6b00-0000-7000-8000-000000000002',
+  'userId': 'b6f0a1c2-0000-4000-8000-000000000001',
+  'teachingId': '019f2c40-0000-7000-8000-000000000002',
+  'positionSeconds': 3600,
+  'completed': true,
+  'clientCreatedAt': null,
+  'createdAt': '2026-05-20T09:00:00.000Z',
+  'updatedAt': '2026-05-20T10:00:00.000Z',
+};
+
+/// La page nominale de `playback_progress`.
+Map<String, Object?> playbackProgressPage() => deltaPage(
+      items: const [
+        playbackProgressPayload,
+        completedPlaybackProgressPayload,
+      ],
+      nextCursor: serverCursor(
+        updatedAtIso: '2026-05-24T14:31:00.000Z',
+        id: '019f6b00-0000-7000-8000-000000000001',
+      ),
+    );

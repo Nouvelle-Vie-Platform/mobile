@@ -127,6 +127,16 @@ class _PageSplit<D> {
 /// une collection élargie **contamine** ceux qui ne savent pas la lire : un
 /// concert arrivé dans `teachings` se rangerait dans les rubriques d'accueil de
 /// la médiathèque et s'y afficherait comme un message du dimanche.
+///
+/// **`playback_progress` ferme la marche** (issue #43), et c'est la première
+/// collection `private` que ce client réplique. Elle se **joint** aux deux
+/// familles de contenu et se range donc après elles, par la même règle que
+/// partout : une progression arrivée avant son enseignement n'aurait rien à
+/// quoi se raccrocher. Elle est en **lecture-depuis-la-synchro seulement** —
+/// l'application n'y écrit jamais, elle rapporte au serveur par
+/// `POST /teachings/:teachingId/progress` et attend que le flux delta ramène
+/// la ligne. Sa position à chaud vit dans `local_playback_positions`, qui n'est
+/// pas une collection et n'apparaîtra jamais ici.
 List<SyncedCollection<Object?>> syncedCollections() => [
       SyncedCollection<TeachingTypeRow>(
         key: SyncCollectionKey.teachingTypes,
@@ -188,5 +198,11 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.announcementsCollection,
         idOf: (item) => contentId(SyncCollectionKey.announcements, item),
         rowOf: announcementRowOf,
+      ),
+      SyncedCollection<PlaybackProgressRow>(
+        key: SyncCollectionKey.playbackProgress,
+        local: (dao) => dao.playbackProgressCollection,
+        idOf: (item) => contentId(SyncCollectionKey.playbackProgress, item),
+        rowOf: playbackProgressRowOf,
       ),
     ];

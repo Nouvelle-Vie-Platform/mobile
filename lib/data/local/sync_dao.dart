@@ -5,6 +5,7 @@ import 'app_database.dart';
 import 'tables/announcement_tables.dart';
 import 'tables/gathering_tables.dart';
 import 'tables/mediatheque_tables.dart';
+import 'tables/playback_tables.dart';
 import 'tables/sync_tables.dart';
 
 part 'sync_dao.g.dart';
@@ -46,6 +47,13 @@ abstract final class SyncCollectionKey {
 
   /// Les **annonces** de l'onglet Annonces (les « statuts »).
   static const String announcements = 'announcements';
+
+  /// **La reprise de lecture** — la première collection `private` que ce client
+  /// réplique (issue #43). Elle est en **lecture-depuis-la-synchro seulement** :
+  /// l'application écrit sa position à chaud dans `local_playback_positions`,
+  /// qui n'est pas une collection, et rapporte au serveur par
+  /// `POST /teachings/:teachingId/progress`. Rien de local n'entre jamais ici.
+  static const String playbackProgress = 'playback_progress';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -94,6 +102,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     OfficialAccounts,
     OfficialAccountMemberships,
     Announcements,
+    PlaybackProgress,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -140,6 +149,13 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
 
   LocalCollection<AnnouncementRow> get announcementsCollection =>
       LocalCollection._(SyncCollectionKey.announcements, announcements);
+
+  /// **La seule collection `private` de ce registre.** Elle se remplit comme
+  /// les dix autres — par le flux delta, jamais par l'application — et rien
+  /// dans ce DAO ne permet d'en retirer une ligne autrement qu'en obéissant à
+  /// une rétractation reçue du serveur.
+  LocalCollection<PlaybackProgressRow> get playbackProgressCollection =>
+      LocalCollection._(SyncCollectionKey.playbackProgress, playbackProgress);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Application d'une page
