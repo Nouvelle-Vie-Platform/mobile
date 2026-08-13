@@ -151,6 +151,7 @@ void main() {
           'status_backgrounds',
           'official_accounts',
           'official_account_memberships',
+          'legal_documents',
           'contributors',
           'branches',
           'teachings',
@@ -489,6 +490,52 @@ void main() {
         row.updatedAt!.isAtSameMomentAs(DateTime.utc(2026, 4, 5, 18)),
         isTrue,
       );
+    });
+  });
+
+  group('`legal_documents` — un référentiel de plus, sans exception', () {
+    setUp(() {
+      server
+        ..serveManifest(manifestFromZero())
+        ..serveCollection('legal_documents', legalDocumentsPage());
+    });
+
+    test('les trois genres arrivent d\'un coup : aucun filtre de périmètre',
+        () async {
+      await engineOver(['legal_documents'], limit: 200).synchronize();
+
+      final rows = await db.select(db.legalDocuments).get();
+      expect(rows.map((r) => r.kind).toSet(), {'cgu', 'privacy', 'about'});
+    });
+
+    test('les sections sont écrites entières, jamais repliées', () async {
+      // Le point qui décide de tout le reste : `resolveLegalLocale` a besoin de
+      // **voir toutes les cartes** pour trancher (ADR-0035). En figer une à
+      // l'écriture rendrait la règle inapplicable — et invisible.
+      await engineOver(['legal_documents'], limit: 200).synchronize();
+
+      final terms = await (db.select(db.legalDocuments)
+            ..where((t) => t.kind.equals('cgu')))
+          .getSingle();
+
+      expect(terms.sections.map((s) => s.key), ['objet', 'contact']);
+      expect(terms.sections.first.heading, {
+        'fr': 'Objet',
+        'en': 'Purpose',
+        'ee': 'Taɖodzinu',
+      });
+    });
+
+    test('`lastMandatoryVersion` traverse, `about` reste à nul', () async {
+      await engineOver(['legal_documents'], limit: 200).synchronize();
+
+      final byKind = {
+        for (final row in await db.select(db.legalDocuments).get())
+          row.kind: row,
+      };
+      expect(byKind['cgu']!.lastMandatoryVersion, 3);
+      expect(byKind['privacy']!.lastMandatoryVersion, 2);
+      expect(byKind['about']!.lastMandatoryVersion, isNull);
     });
   });
 

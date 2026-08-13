@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'app_database.dart';
 import 'tables/announcement_tables.dart';
 import 'tables/gathering_tables.dart';
+import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
 import 'tables/sync_tables.dart';
@@ -47,6 +48,15 @@ abstract final class SyncCollectionKey {
 
   /// Les **annonces** de l'onglet Annonces (les « statuts »).
   static const String announcements = 'announcements';
+
+  /// Les **documents légaux** — CGU, politique de confidentialité, « à
+  /// propos » (issue #55). Un **référentiel** sans aucun filtre de périmètre :
+  /// un document légal n'appartient à aucune branche, ne s'adresse à aucune
+  /// audience, et les trois genres partent aux trois lecteurs de la même
+  /// façon. Elle passe par le flux delta et non par un `GET /legal/:kind`
+  /// parce que la barrière de consentement doit afficher **hors ligne** ce
+  /// qu'elle demande d'accepter.
+  static const String legalDocuments = 'legal_documents';
 
   /// **La reprise de lecture** — la première collection `private` que ce client
   /// réplique (issue #43). Elle est en **lecture-depuis-la-synchro seulement** :
@@ -103,6 +113,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     OfficialAccountMemberships,
     Announcements,
     PlaybackProgress,
+    LegalDocuments,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -149,6 +160,13 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
 
   LocalCollection<AnnouncementRow> get announcementsCollection =>
       LocalCollection._(SyncCollectionKey.announcements, announcements);
+
+  /// **Sans tombstone** : un document légal ne se supprime pas, il s'édite. Le
+  /// serveur pose `tombstoneColumn: null` sur ce descripteur, aucune
+  /// rétractation ne voyage — et le jour où un genre cesserait d'être servi,
+  /// ce serait une migration, pas un `deleted_at`.
+  LocalCollection<LegalDocumentRow> get legalDocumentsCollection =>
+      LocalCollection._(SyncCollectionKey.legalDocuments, legalDocuments);
 
   /// **La seule collection `private` de ce registre.** Elle se remplit comme
   /// les dix autres — par le flux delta, jamais par l'application — et rien

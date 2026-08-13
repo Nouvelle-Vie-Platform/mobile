@@ -8,6 +8,7 @@ library;
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/models/legal_document_view.dart';
 
 /// Ouvre une base neuve, vide, en mémoire.
 AppDatabase openTestDatabase() => AppDatabase(NativeDatabase.memory());
@@ -187,4 +188,26 @@ TeachingsCompanion teachingRow(
       publishedAt: Value(publishedAt),
       recordedAt: Value(recordedAt),
       playlistUrl: Value(playlistUrl),
+    );
+
+/// Un **document légal**. Les sections arrivent **brutes**, cartes de
+/// traduction entières comprises : la langue se décide à la lecture et sur le
+/// document entier (`resolveLegalLocale`, ADR-0035).
+LegalDocumentsCompanion legalDocumentRow(
+  int id, {
+  String kind = 'cgu',
+  int version = 1,
+  int? lastMandatoryVersion,
+  List<LegalSection> sections = const [],
+  DateTime? publishedAt,
+  DateTime? updatedAt,
+}) =>
+    LegalDocumentsCompanion.insert(
+      id: Value(id),
+      kind: kind,
+      version: Value(version),
+      lastMandatoryVersion: Value(lastMandatoryVersion),
+      sections: sections,
+      publishedAt: Value(publishedAt),
+      updatedAt: Value(updatedAt),
     );

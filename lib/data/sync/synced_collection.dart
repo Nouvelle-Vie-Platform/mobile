@@ -128,6 +128,14 @@ class _PageSplit<D> {
 /// concert arrivé dans `teachings` se rangerait dans les rubriques d'accueil de
 /// la médiathèque et s'y afficherait comme un message du dimanche.
 ///
+/// **`legal_documents` entre parmi les référentiels** (issue #55), et non parmi
+/// les contenus : un document légal n'appartient à aucune branche, ne s'adresse
+/// à aucune audience, et ne se joint à rien. Il est rangé avec les autres
+/// référentiels pour la raison habituelle — la toute première synchronisation,
+/// où la barrière de consentement doit pouvoir se lever sur un document
+/// **déjà** arrivé. La collection n'a **pas de tombstone** : un document ne se
+/// supprime pas, il s'édite.
+///
 /// **`playback_progress` ferme la marche** (issue #43), et c'est la première
 /// collection `private` que ce client réplique. Elle se **joint** aux deux
 /// familles de contenu et se range donc après elles, par la même règle que
@@ -168,6 +176,12 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) =>
             referenceId(SyncCollectionKey.officialAccountMemberships, item),
         rowOf: officialAccountMembershipRowOf,
+      ),
+      SyncedCollection<LegalDocumentRow>(
+        key: SyncCollectionKey.legalDocuments,
+        local: (dao) => dao.legalDocumentsCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.legalDocuments, item),
+        rowOf: legalDocumentRowOf,
       ),
       SyncedCollection<ContributorRow>(
         key: SyncCollectionKey.contributors,

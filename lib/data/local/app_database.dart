@@ -1,16 +1,25 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+// Le type que porte la colonne `sections` de `legal_documents`. Il est nommé
+// **sans préfixe** par le code généré (`app_database.g.dart`, une `part` de ce
+// fichier) : sans cet import, la classe de données ne compile pas.
+import '../../models/legal_document_view.dart';
 import 'announcement_dao.dart';
 // Utilisé par le code généré (`app_database.g.dart`), qui est une `part` de ce
 // fichier : le convertisseur de carte de traduction y est instancié.
 import 'converters/i18n_map_converter.dart';
+// Idem : le convertisseur des sections d'un document légal est instancié par le
+// code généré.
+import 'converters/legal_sections_converter.dart';
 import 'gathering_dao.dart';
+import 'legal_dao.dart';
 import 'mediatheque_dao.dart';
 import 'playback_dao.dart';
 import 'sync_dao.dart';
 import 'tables/announcement_tables.dart';
 import 'tables/gathering_tables.dart';
+import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
 import 'tables/sync_tables.dart';
@@ -54,8 +63,16 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     Announcements,
     PlaybackProgress,
     LocalPlaybackPositions,
+    LegalDocuments,
   ],
-  daos: [SyncDao, MediathequeDao, GatheringDao, AnnouncementDao, PlaybackDao],
+  daos: [
+    SyncDao,
+    MediathequeDao,
+    GatheringDao,
+    AnnouncementDao,
+    PlaybackDao,
+    LegalDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Constructeur explicite — c'est celui qu'utilisent les tests, avec une base
@@ -65,11 +82,10 @@ class AppDatabase extends _$AppDatabase {
   /// Base de l'application, à l'emplacement standard de la plateforme.
   AppDatabase.defaults() : super(driftDatabase(name: kLocalDatabaseName));
 
-  /// **v4** — les deux tables de la reprise de lecture, issue #43 :
-  /// `playback_progress` (collection **répliquée**, `private`) et
-  /// `local_playback_positions` (**locale seule**, jamais synchronisée).
+  /// **v5** — `legal_documents`, issue #55 : la collection répliquée des
+  /// documents légaux (CGU, confidentialité, à propos), **référentiel**.
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -122,6 +138,19 @@ class AppDatabase extends _$AppDatabase {
           if (from < 4) {
             await m.createTable(playbackProgress);
             await m.createTable(localPlaybackPositions);
+          }
+
+          // v4 → v5 — les documents légaux (issue #55). **Une création de
+          // table, et rien d'autre** : aucun document n'existait auparavant
+          // (les trois destinations du menu latéral rendaient une absence), il
+          // n'y a donc rien à reprendre et aucune colonne existante ne bouge.
+          //
+          // La table naît vide, son curseur n'existe pas encore et le prochain
+          // manifeste l'annoncera `from_zero` : le premier cycle ramène les
+          // trois genres d'un coup — la collection n'a aucun filtre de
+          // périmètre.
+          if (from < 5) {
+            await m.createTable(legalDocuments);
           }
         },
         beforeOpen: (details) async {

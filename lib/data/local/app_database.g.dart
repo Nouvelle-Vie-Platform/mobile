@@ -7576,6 +7576,504 @@ class LocalPlaybackPositionsCompanion
   }
 }
 
+class $LegalDocumentsTable extends LegalDocuments
+    with TableInfo<$LegalDocumentsTable, LegalDocumentRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LegalDocumentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+      'kind', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _versionMeta =
+      const VerificationMeta('version');
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+      'version', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _lastMandatoryVersionMeta =
+      const VerificationMeta('lastMandatoryVersion');
+  @override
+  late final GeneratedColumn<int> lastMandatoryVersion = GeneratedColumn<int>(
+      'last_mandatory_version', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  @override
+  late final GeneratedColumnWithTypeConverter<List<LegalSection>, String>
+      sections = GeneratedColumn<String>('sections', aliasedName, false,
+              type: DriftSqlType.string, requiredDuringInsert: true)
+          .withConverter<List<LegalSection>>(
+              $LegalDocumentsTable.$convertersections);
+  static const VerificationMeta _publishedAtMeta =
+      const VerificationMeta('publishedAt');
+  @override
+  late final GeneratedColumn<DateTime> publishedAt = GeneratedColumn<DateTime>(
+      'published_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        kind,
+        version,
+        lastMandatoryVersion,
+        sections,
+        publishedAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'legal_documents';
+  @override
+  VerificationContext validateIntegrity(Insertable<LegalDocumentRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+          _kindMeta, kind.isAcceptableOrUnknown(data['kind']!, _kindMeta));
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(_versionMeta,
+          version.isAcceptableOrUnknown(data['version']!, _versionMeta));
+    }
+    if (data.containsKey('last_mandatory_version')) {
+      context.handle(
+          _lastMandatoryVersionMeta,
+          lastMandatoryVersion.isAcceptableOrUnknown(
+              data['last_mandatory_version']!, _lastMandatoryVersionMeta));
+    }
+    if (data.containsKey('published_at')) {
+      context.handle(
+          _publishedAtMeta,
+          publishedAt.isAcceptableOrUnknown(
+              data['published_at']!, _publishedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LegalDocumentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LegalDocumentRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      kind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
+      version: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}version'])!,
+      lastMandatoryVersion: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}last_mandatory_version']),
+      sections: $LegalDocumentsTable.$convertersections.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sections'])!),
+      publishedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}published_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $LegalDocumentsTable createAlias(String alias) {
+    return $LegalDocumentsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<List<LegalSection>, String> $convertersections =
+      const LegalSectionsConverter();
+}
+
+class LegalDocumentRow extends DataClass
+    implements Insertable<LegalDocumentRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// PK **SERIAL** côté serveur : un référentiel administrable ne se crée
+  /// jamais hors ligne.
+  final int id;
+
+  /// `cgu`, `privacy` ou `about`. Stocké **tel quel**, jamais en enum : le
+  /// magasin n'a pas à refuser une ligne dont il ne connaîtrait pas le genre —
+  /// il n'aurait alors ni la ligne, ni le moyen d'apprendre qu'elle existe.
+  /// C'est la lecture qui ne demande que les genres qu'un écran sait rendre.
+  final String kind;
+
+  /// Numéro d'édition courante, écrit par le serveur. S'affiche au pied du
+  /// document.
+  final int version;
+
+  /// **Plancher d'acceptation** — la version en deçà de laquelle il faut
+  /// ré-accepter. `null` = aucune acceptation exigée (c'est toujours le cas de
+  /// `about`).
+  ///
+  /// Dérivée par le serveur à l'écriture, précisément pour que le client n'ait
+  /// pas à la recalculer : un fidèle resté en v2 pendant que passaient 3
+  /// (typo), 4 (substantielle) et 5 (typo) doit être arrêté, alors même que
+  /// l'édition courante n'exige rien.
+  final int? lastMandatoryVersion;
+
+  /// Les sections **brutes**, dans l'ordre de lecture, cartes de traduction
+  /// entières comprises. La langue se décide à la lecture et **sur le document
+  /// entier** (`resolveLegalLocale`, ADR-0035).
+  final List<LegalSection> sections;
+  final DateTime? publishedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const LegalDocumentRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.kind,
+      required this.version,
+      this.lastMandatoryVersion,
+      required this.sections,
+      this.publishedAt,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['kind'] = Variable<String>(kind);
+    map['version'] = Variable<int>(version);
+    if (!nullToAbsent || lastMandatoryVersion != null) {
+      map['last_mandatory_version'] = Variable<int>(lastMandatoryVersion);
+    }
+    {
+      map['sections'] = Variable<String>(
+          $LegalDocumentsTable.$convertersections.toSql(sections));
+    }
+    if (!nullToAbsent || publishedAt != null) {
+      map['published_at'] = Variable<DateTime>(publishedAt);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  LegalDocumentsCompanion toCompanion(bool nullToAbsent) {
+    return LegalDocumentsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      kind: Value(kind),
+      version: Value(version),
+      lastMandatoryVersion: lastMandatoryVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastMandatoryVersion),
+      sections: Value(sections),
+      publishedAt: publishedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publishedAt),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory LegalDocumentRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LegalDocumentRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      version: serializer.fromJson<int>(json['version']),
+      lastMandatoryVersion:
+          serializer.fromJson<int?>(json['lastMandatoryVersion']),
+      sections: serializer.fromJson<List<LegalSection>>(json['sections']),
+      publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'kind': serializer.toJson<String>(kind),
+      'version': serializer.toJson<int>(version),
+      'lastMandatoryVersion': serializer.toJson<int?>(lastMandatoryVersion),
+      'sections': serializer.toJson<List<LegalSection>>(sections),
+      'publishedAt': serializer.toJson<DateTime?>(publishedAt),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  LegalDocumentRow copyWith(
+          {int? syncStamp,
+          int? id,
+          String? kind,
+          int? version,
+          Value<int?> lastMandatoryVersion = const Value.absent(),
+          List<LegalSection>? sections,
+          Value<DateTime?> publishedAt = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      LegalDocumentRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        kind: kind ?? this.kind,
+        version: version ?? this.version,
+        lastMandatoryVersion: lastMandatoryVersion.present
+            ? lastMandatoryVersion.value
+            : this.lastMandatoryVersion,
+        sections: sections ?? this.sections,
+        publishedAt: publishedAt.present ? publishedAt.value : this.publishedAt,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  LegalDocumentRow copyWithCompanion(LegalDocumentsCompanion data) {
+    return LegalDocumentRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      version: data.version.present ? data.version.value : this.version,
+      lastMandatoryVersion: data.lastMandatoryVersion.present
+          ? data.lastMandatoryVersion.value
+          : this.lastMandatoryVersion,
+      sections: data.sections.present ? data.sections.value : this.sections,
+      publishedAt:
+          data.publishedAt.present ? data.publishedAt.value : this.publishedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LegalDocumentRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('version: $version, ')
+          ..write('lastMandatoryVersion: $lastMandatoryVersion, ')
+          ..write('sections: $sections, ')
+          ..write('publishedAt: $publishedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, kind, version,
+      lastMandatoryVersion, sections, publishedAt, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LegalDocumentRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.version == this.version &&
+          other.lastMandatoryVersion == this.lastMandatoryVersion &&
+          other.sections == this.sections &&
+          other.publishedAt == this.publishedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LegalDocumentsCompanion extends UpdateCompanion<LegalDocumentRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String> kind;
+  final Value<int> version;
+  final Value<int?> lastMandatoryVersion;
+  final Value<List<LegalSection>> sections;
+  final Value<DateTime?> publishedAt;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const LegalDocumentsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.version = const Value.absent(),
+    this.lastMandatoryVersion = const Value.absent(),
+    this.sections = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  LegalDocumentsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required String kind,
+    this.version = const Value.absent(),
+    this.lastMandatoryVersion = const Value.absent(),
+    required List<LegalSection> sections,
+    this.publishedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : kind = Value(kind),
+        sections = Value(sections);
+  static Insertable<LegalDocumentRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? kind,
+    Expression<int>? version,
+    Expression<int>? lastMandatoryVersion,
+    Expression<String>? sections,
+    Expression<DateTime>? publishedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (version != null) 'version': version,
+      if (lastMandatoryVersion != null)
+        'last_mandatory_version': lastMandatoryVersion,
+      if (sections != null) 'sections': sections,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  LegalDocumentsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String>? kind,
+      Value<int>? version,
+      Value<int?>? lastMandatoryVersion,
+      Value<List<LegalSection>>? sections,
+      Value<DateTime?>? publishedAt,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return LegalDocumentsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      version: version ?? this.version,
+      lastMandatoryVersion: lastMandatoryVersion ?? this.lastMandatoryVersion,
+      sections: sections ?? this.sections,
+      publishedAt: publishedAt ?? this.publishedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (lastMandatoryVersion.present) {
+      map['last_mandatory_version'] = Variable<int>(lastMandatoryVersion.value);
+    }
+    if (sections.present) {
+      map['sections'] = Variable<String>(
+          $LegalDocumentsTable.$convertersections.toSql(sections.value));
+    }
+    if (publishedAt.present) {
+      map['published_at'] = Variable<DateTime>(publishedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LegalDocumentsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('version: $version, ')
+          ..write('lastMandatoryVersion: $lastMandatoryVersion, ')
+          ..write('sections: $sections, ')
+          ..write('publishedAt: $publishedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7599,6 +8097,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $PlaybackProgressTable(this);
   late final $LocalPlaybackPositionsTable localPlaybackPositions =
       $LocalPlaybackPositionsTable(this);
+  late final $LegalDocumentsTable legalDocuments = $LegalDocumentsTable(this);
   late final SyncDao syncDao = SyncDao(this as AppDatabase);
   late final MediathequeDao mediathequeDao =
       MediathequeDao(this as AppDatabase);
@@ -7606,6 +8105,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final AnnouncementDao announcementDao =
       AnnouncementDao(this as AppDatabase);
   late final PlaybackDao playbackDao = PlaybackDao(this as AppDatabase);
+  late final LegalDao legalDao = LegalDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7625,7 +8125,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         officialAccountMemberships,
         announcements,
         playbackProgress,
-        localPlaybackPositions
+        localPlaybackPositions,
+        legalDocuments
       ];
 }
 
@@ -11193,6 +11694,238 @@ typedef $$LocalPlaybackPositionsTableProcessedTableManager
         ),
         LocalPlaybackPositionRow,
         PrefetchHooks Function()>;
+typedef $$LegalDocumentsTableCreateCompanionBuilder = LegalDocumentsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required String kind,
+  Value<int> version,
+  Value<int?> lastMandatoryVersion,
+  required List<LegalSection> sections,
+  Value<DateTime?> publishedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$LegalDocumentsTableUpdateCompanionBuilder = LegalDocumentsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String> kind,
+  Value<int> version,
+  Value<int?> lastMandatoryVersion,
+  Value<List<LegalSection>> sections,
+  Value<DateTime?> publishedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$LegalDocumentsTableFilterComposer
+    extends Composer<_$AppDatabase, $LegalDocumentsTable> {
+  $$LegalDocumentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get version => $composableBuilder(
+      column: $table.version, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get lastMandatoryVersion => $composableBuilder(
+      column: $table.lastMandatoryVersion,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<List<LegalSection>, List<LegalSection>, String>
+      get sections => $composableBuilder(
+          column: $table.sections,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$LegalDocumentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LegalDocumentsTable> {
+  $$LegalDocumentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get version => $composableBuilder(
+      column: $table.version, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get lastMandatoryVersion => $composableBuilder(
+      column: $table.lastMandatoryVersion,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sections => $composableBuilder(
+      column: $table.sections, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LegalDocumentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LegalDocumentsTable> {
+  $$LegalDocumentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<int> get lastMandatoryVersion => $composableBuilder(
+      column: $table.lastMandatoryVersion, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<LegalSection>, String> get sections =>
+      $composableBuilder(column: $table.sections, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$LegalDocumentsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $LegalDocumentsTable,
+    LegalDocumentRow,
+    $$LegalDocumentsTableFilterComposer,
+    $$LegalDocumentsTableOrderingComposer,
+    $$LegalDocumentsTableAnnotationComposer,
+    $$LegalDocumentsTableCreateCompanionBuilder,
+    $$LegalDocumentsTableUpdateCompanionBuilder,
+    (
+      LegalDocumentRow,
+      BaseReferences<_$AppDatabase, $LegalDocumentsTable, LegalDocumentRow>
+    ),
+    LegalDocumentRow,
+    PrefetchHooks Function()> {
+  $$LegalDocumentsTableTableManager(
+      _$AppDatabase db, $LegalDocumentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LegalDocumentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LegalDocumentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LegalDocumentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String> kind = const Value.absent(),
+            Value<int> version = const Value.absent(),
+            Value<int?> lastMandatoryVersion = const Value.absent(),
+            Value<List<LegalSection>> sections = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              LegalDocumentsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            kind: kind,
+            version: version,
+            lastMandatoryVersion: lastMandatoryVersion,
+            sections: sections,
+            publishedAt: publishedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required String kind,
+            Value<int> version = const Value.absent(),
+            Value<int?> lastMandatoryVersion = const Value.absent(),
+            required List<LegalSection> sections,
+            Value<DateTime?> publishedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              LegalDocumentsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            kind: kind,
+            version: version,
+            lastMandatoryVersion: lastMandatoryVersion,
+            sections: sections,
+            publishedAt: publishedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LegalDocumentsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $LegalDocumentsTable,
+    LegalDocumentRow,
+    $$LegalDocumentsTableFilterComposer,
+    $$LegalDocumentsTableOrderingComposer,
+    $$LegalDocumentsTableAnnotationComposer,
+    $$LegalDocumentsTableCreateCompanionBuilder,
+    $$LegalDocumentsTableUpdateCompanionBuilder,
+    (
+      LegalDocumentRow,
+      BaseReferences<_$AppDatabase, $LegalDocumentsTable, LegalDocumentRow>
+    ),
+    LegalDocumentRow,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11230,4 +11963,6 @@ class $AppDatabaseManager {
   $$LocalPlaybackPositionsTableTableManager get localPlaybackPositions =>
       $$LocalPlaybackPositionsTableTableManager(
           _db, _db.localPlaybackPositions);
+  $$LegalDocumentsTableTableManager get legalDocuments =>
+      $$LegalDocumentsTableTableManager(_db, _db.legalDocuments);
 }

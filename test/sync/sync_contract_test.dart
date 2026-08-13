@@ -14,8 +14,8 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les dix-huit collections du registre, dans l\'ordre', () {
-      expect(kSyncCollections, hasLength(18));
+    test('les dix-neuf collections du registre, dans l\'ordre', () {
+      expect(kSyncCollections, hasLength(19));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
@@ -597,6 +597,76 @@ void main() {
       },
     );
 
+    test('legal_documents : huit clés, aucune de plus', () {
+      // Le contrat du transformer serveur, écrit noir sur blanc. Deux absences
+      // comptent plus que les huit présences — voir le test suivant.
+      for (final document in _legalDocuments) {
+        expect(document.keys.toSet(), {
+          'id',
+          'kind',
+          'version',
+          'lastMandatoryVersion',
+          'sections',
+          'publishedAt',
+          'createdAt',
+          'updatedAt',
+        });
+        expect(document['id'], isA<int>());
+        expect(document['kind'], isIn(const ['cgu', 'privacy', 'about']));
+      }
+    });
+
+    test('legal_documents : ni `publishedBy`, ni `requiresReacceptance`', () {
+      // Le second est le piège qu'ADR-0037 a écarté : il dit si *cette
+      // édition-ci* a exigé une ré-acceptation, ce qui ne répond pas à la
+      // question posée. Un fidèle resté en v2 pendant que passaient 3 (typo),
+      // 4 (substantielle) et 5 (typo) doit être arrêté, alors même que la
+      // courante n'exige rien. Le servir inviterait à recoder la règle côté
+      // mobile, et à la recoder faux.
+      for (final document in _legalDocuments) {
+        expect(
+          document.keys,
+          isNot(anyElement(
+            isIn(const ['publishedBy', 'requiresReacceptance']),
+          )),
+        );
+      }
+    });
+
+    test('legal_documents : les sections voyagent brutes, dans l\'ordre', () {
+      // Le serveur n'ose pas choisir la langue à la place du client (ADR-0023),
+      // et le client ne replie pas champ par champ (ADR-0035) : il faut donc
+      // que les cartes arrivent entières.
+      for (final document in _legalDocuments) {
+        final sections = document['sections']! as List;
+        expect(sections, isNotEmpty);
+        for (final section in sections.cast<Map<String, Object?>>()) {
+          expect(section.keys.toSet(), {'key', 'heading', 'body'});
+          expect(section['heading'], isA<Map<String, Object?>>());
+          expect((section['heading']! as Map).keys, contains('fr'));
+          expect((section['body']! as Map).keys, contains('fr'));
+        }
+      }
+    });
+
+    test('legal_documents : `about` n\'exige aucune acceptation', () {
+      // `lastMandatoryVersion` nul = pas de barrière. Accepter une présentation
+      // n'a pas de sens, et le genre n'entre jamais dans le calcul.
+      expect(aboutDocumentPayload['lastMandatoryVersion'], isNull);
+      expect(termsDocumentPayload['lastMandatoryVersion'], isA<int>());
+    });
+
+    test('legal_documents : aucune rétractation ne voyage', () {
+      // `tombstoneColumn: null` côté descripteur : un document ne se supprime
+      // pas, il s'édite.
+      for (final document in _legalDocuments) {
+        expect(document.keys, isNot(contains('deletedAt')));
+      }
+      final items =
+          (legalDocumentsPage()['items']! as List).cast<Map<String, Object?>>();
+      expect(items.where((i) => i['deletedAt'] != null), isEmpty);
+    });
+
     test('official_accounts : le nom court et l\'avatar peuvent être nuls', () {
       for (final account in _officialAccounts) {
         expect(account.keys.toSet(), {
@@ -690,6 +760,12 @@ const List<Map<String, Object?>> _statusBackgrounds = [
 const List<Map<String, Object?>> _officialAccounts = [
   officialAccountPayload,
   minimalOfficialAccountPayload,
+];
+
+const List<Map<String, Object?>> _legalDocuments = [
+  termsDocumentPayload,
+  privacyDocumentPayload,
+  aboutDocumentPayload,
 ];
 
 List<Map<String, Object?>> _collections(Map<String, Object?> manifest) =>

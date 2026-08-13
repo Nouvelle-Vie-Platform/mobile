@@ -40,10 +40,18 @@ String pick(Map<String, String> map, String locale) {
 }
 
 /// Sous-étiquette de langue d'un identifiant de locale (`fr_FR` → `fr`).
-String _language(String locale) {
+///
+/// Purement **mécanique** : elle découpe une chaîne, elle ne choisit aucune
+/// valeur et n'applique aucun repli. C'est ce qui permet à
+/// `resolveLegalLocale` (`models/legal_document_view.dart`, ADR-0035) de s'en
+/// servir sans passer par [pick] — la dérogation porte sur la **règle de
+/// repli**, pas sur la lecture d'une étiquette de locale.
+String languageSubtag(String locale) {
   final cut = locale.indexOf(RegExp('[_-]'));
   return (cut == -1 ? locale : locale.substring(0, cut)).toLowerCase();
 }
+
+String _language(String locale) => languageSubtag(locale);
 
 /// Valeur non blanche de [map] pour la langue [language], sinon `null`.
 String? _valueFor(Map<String, String> map, String language) {
