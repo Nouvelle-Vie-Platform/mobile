@@ -318,5 +318,11 @@
   "composerUpdated": "Announcement updated",
   "composerDeleted": "Announcement deleted",
   "statusEdit": "Edit announcement",
-  "statusDelete": "Delete announcement"
+  "statusDelete": "Delete announcement",
+
+  "drawerOpen": "Open menu",
+  "drawerBrandName": "Église Évangélique Nouvelle Vie",
+  "drawerTerms": "Terms of use",
+  "drawerPrivacy": "Privacy policy",
+  "drawerAbout": "About"
 }

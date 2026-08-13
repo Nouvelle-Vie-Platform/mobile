@@ -75,6 +75,18 @@ dependencies:
   # dès qu'on l'importe soi-même. C'est le successeur de `dart:html`, retiré du
   # jeu en Dart 3.12 comme `package:js`.
   web: ^1.1.1
+  # Le **menu latéral** de l'accueil (#54). Pur Dart, aucune configuration
+  # native : la cible web reste tenue, contrairement aux plugins ci-dessus.
+  #
+  # Il est pris avec `disableDragGesture: true` **sans négociation** : son geste
+  # par défaut capte le glissement horizontal sur tout l'écran principal, où
+  # vivent trois carrousels et le `PageView` de la visionneuse de statuts. Le
+  # menu s'ouvre par l'icône de l'accueil, et par elle seule.
+  #
+  # Son `androidCloseOnBackTap` n'est **pas** utilisé : il évalue sa garde
+  # pendant le `build`, donc referme le tiroir à la moindre reconstruction.
+  # `HomeShell` pose son propre `PopScope`.
+  flutter_zoom_drawer: ^3.2.0
 
 dev_dependencies:
   flutter_test:

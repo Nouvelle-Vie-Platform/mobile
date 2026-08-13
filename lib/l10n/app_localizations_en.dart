@@ -904,4 +904,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusDelete => 'Delete announcement';
+
+  @override
+  String get drawerOpen => 'Open menu';
+
+  @override
+  String get drawerBrandName => 'Église Évangélique Nouvelle Vie';
+
+  @override
+  String get drawerTerms => 'Terms of use';
+
+  @override
+  String get drawerPrivacy => 'Privacy policy';
+
+  @override
+  String get drawerAbout => 'About';
 }

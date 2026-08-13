@@ -31,6 +31,11 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   de la médiathèque » plus bas — configuration native obligatoire des deux
   côtés. **Aucun des trois ne sert sur le web** (#46) : `just_audio_web` ne joue
   rien hors Safari, et `audio_service` y est un no-op.
+- **flutter_zoom_drawer ^3.2.0** (#54) — le **menu latéral** de l'accueil. Pur
+  Dart, aucune configuration native, la cible web reste tenue. Voir « Le menu
+  latéral » plus bas : il se construit dans `HomeShell.build()`, son
+  `mainScreen` est le `Scaffold` entier, et son geste de glissement est
+  **coupé**.
 - **`web ^1.1.1`** (#46) — l'interop DOM du lecteur web, successeur de
   `dart:html` (retiré du jeu en Dart 3.12, comme `package:js`). Déjà présent en
   transitif ; déclaré parce qu'on l'importe soi-même. **Un seul fichier de
@@ -696,6 +701,41 @@ dans une liste. Une absence, elle, occupe l'écran entier.
 `HomeShell` = `IndexedStack` de 4 onglets **Accueil · Annonces · Communauté ·
 Profil** + `BottomAppBar` à encoche + **FAB central** (→ médiathèque, route
 poussée). Le FAB n'est PAS un onglet.
+
+#### Le menu latéral (#54) — `flutter_zoom_drawer`, quatre entrées
+Spécification de rendu : `docs/documents-legaux.md` §1. Quatre points qui se
+ratent en silence :
+
+1. **Le `ZoomDrawer` se construit dans `HomeShell.build()`**, jamais dans la
+   route `/home` : c'est ce qui garde `_index` en `State` **local**. Le menu le
+   change par un simple rappel — remonter l'onglet courant dans un provider
+   global est interdit (« Riverpod = état **partagé** »).
+2. **Le `mainScreen` est le `Scaffold` entier** : les quatre onglets, la barre à
+   encoche et le FAB rétrécissent ensemble. N'envelopper que `HomeScreen`
+   laisserait la barre du bas et le FAB **fixes** pendant que le contenu pivote —
+   le composant aurait l'air cassé, pas animé.
+3. **`disableDragGesture: true`, sans négociation.** Le geste par défaut capte le
+   glissement horizontal sur tout l'écran principal, où vivent trois carrousels
+   et surtout le `PageView` de la visionneuse de statuts, dont l'en-tête prévient
+   déjà que l'imbrication des gestes y est « critique ». **L'icône de l'accueil
+   est la seule ouverture** — et elle n'existe sur aucun des trois autres
+   onglets.
+4. **Quatre entrées, rien d'autre** — Accueil · CGU · Confidentialité · À propos.
+   Ni mode sombre, ni aide, ni déconnexion (l'onglet Profil les porte déjà), ni
+   entête utilisateur (`_ProfileHeader` fait cela). L'entête du menu porte la
+   **marque**.
+
+Le menu **se ferme avant toute navigation** (sinon le retour repop sur une
+coquille pivotée), et le bouton retour Android le ferme au lieu de dépiler la
+route — par un `PopScope` **du dépôt** : celui du paquet
+(`androidCloseOnBackTap`) évalue sa garde pendant le `build` et referme donc le
+tiroir à la moindre reconstruction.
+
+`/legal/:kind` et `/about` existent **avant leurs écrans** (#55, #57) : une
+entrée de menu inerte passe pour une panne. `LegalPlaceholderScreen` y rend
+`ContentAbsence.notSynced` — exactement ce que les écrans réels diront devant un
+magasin vide. Ce n'est **pas un écran d'absence de plus** : ni pictogramme, ni
+libellé, ni disposition en propre.
 
 ### Composants réutilisables clés
 - `BrandAppBar` — en-tête au dégradé bleu de marque (`gradientPrimary`), texte

@@ -1731,6 +1731,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Supprimer l\'annonce'**
   String get statusDelete;
+
+  /// Infobulle de l'icône de l'accueil qui ouvre le menu latéral. Le glissement horizontal est coupé (carrousels et visionneuse de statuts) : cette icône est la seule ouverture
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir le menu'**
+  String get drawerOpen;
+
+  /// Entête du menu latéral : le nom de l'église, sous l'emblème qui porte déjà « Maison du Miracle ». L'entête porte la marque, jamais la personne — l'entête utilisateur vit dans l'onglet Profil
+  ///
+  /// In fr, this message translates to:
+  /// **'Église Évangélique Nouvelle Vie'**
+  String get drawerBrandName;
+
+  /// Menu latéral : conditions générales d'utilisation. Abrégé, comme sur la maquette — le libellé long ne tiendrait pas sur une ligne du panneau
+  ///
+  /// In fr, this message translates to:
+  /// **'CGU'**
+  String get drawerTerms;
+
+  /// Menu latéral : politique de confidentialité
+  ///
+  /// In fr, this message translates to:
+  /// **'Politique de confidentialité'**
+  String get drawerPrivacy;
+
+  /// Menu latéral : écran « À propos » (version du binaire + présentation servie par le portail). Route distincte de /legal/:kind — ranger « À propos » sous /legal mentirait sur sa nature
+  ///
+  /// In fr, this message translates to:
+  /// **'À propos'**
+  String get drawerAbout;
 }
 
 class _AppLocalizationsDelegate
