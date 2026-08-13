@@ -172,7 +172,12 @@ TextSpan inlineMarkdownSpan(
       continue;
     }
 
-    final link = _link(rest);
+    // Un `[` précédé d'un `!` ouvre une **image** — refusée à l'écriture, et
+    // qui doit donc se rendre entière, point d'exclamation compris. Sans cette
+    // garde, `![alt](/img.png)` s'afficherait « !alt » : le seul cas où ce
+    // parseur perdait des caractères en silence.
+    final estImage = index > 0 && text[index - 1] == '!';
+    final link = estImage ? null : _link(rest);
     if (link != null) {
       flushLiteral();
       // **Aucun `GestureRecognizer`** : le lien se voit, il ne s'ouvre pas.
@@ -202,9 +207,17 @@ class _Match {
 
 /// `**gras**` ou `*italique*` en tête de [rest].
 ///
-/// Le contenu doit être non vide et la marque refermée **sur la même ligne** :
-/// un `*` orphelin en milieu de phrase (« 3 * 4 ») ne doit pas avaler le reste
-/// du paragraphe.
+/// Trois conditions, et chacune évite d'avaler du texte qui n'était pas une
+/// marque :
+///
+/// 1. le contenu est **non vide** ;
+/// 2. la marque se referme **sur la même ligne** — un `*` orphelin ne doit pas
+///    emporter le reste du paragraphe ;
+/// 3. le contenu ne **commence ni ne finit par une espace**. C'est la règle de
+///    flanquement de CommonMark, et elle sert ici un cas concret : « 3 * 4 * 5 »
+///    dans un article tarifaire doit garder ses astérisques, pas se transformer
+///    en « 3 *4* 5 ». Un texte légal qui perdrait silencieusement un caractère
+///    serait pire qu'un texte légal un peu laid.
 _Match? _delimited(String rest, String mark) {
   if (!rest.startsWith(mark)) return null;
 
@@ -214,6 +227,7 @@ _Match? _delimited(String rest, String mark) {
 
   final content = rest.substring(from, close);
   if (content.contains('\n')) return null;
+  if (content != content.trim()) return null;
 
   return _Match(content, close + mark.length);
 }
@@ -225,12 +239,21 @@ _Match? _delimited(String rest, String mark) {
 /// référence `[a][b]`, notes `[^1]`, crochets décoratifs) échoue ici et se rend
 /// littéralement, crochets compris.
 ///
-/// **Le schéma n'est pas revérifié** : le serveur ferme déjà le jeu à `http`,
-/// `https` et `mailto` à l'écriture, et un lien inerte n'exécute rien de toute
-/// façon. Le jour où les liens s'ouvriront (§7), c'est ici que la vérification
-/// devra revenir.
+/// **Le schéma est celui du validateur serveur**, `ALLOWED_LINK_SCHEMES` de
+/// `restricted_markdown.ts` : `http`, `https`, `mailto`, et rien d'autre. Ce
+/// n'est pas de la défense en profondeur — un lien inerte n'exécute rien — mais
+/// la stricte application de la règle du fichier : reconnaître **exactement**
+/// ce que le serveur admet, et rendre littéralement tout le reste. Sans cela,
+/// un `[voir](/relatif)` rejeté à l'écriture s'afficherait « voir », son URL
+/// disparue en silence.
+///
+/// Le jour où les liens s'ouvriront (§7), cette vérification est déjà là.
 _Match? _link(String rest) {
   final match = RegExp(r'^\[([^\]\n]+)\]\(([^\s()<>]+)\)').firstMatch(rest);
   if (match == null) return null;
+  if (!RegExp(r'^(?:https?://|mailto:)', caseSensitive: false)
+      .hasMatch(match.group(2)!)) {
+    return null;
+  }
   return _Match(match.group(1)!, match.group(0)!.length);
 }
