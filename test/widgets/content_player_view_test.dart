@@ -19,6 +19,7 @@ import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
+import 'package:maison_du_miracle/widgets/app_error_state.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
 import 'package:maison_du_miracle/widgets/content_player_view.dart';
 
@@ -325,6 +326,170 @@ void main() {
       await tester.pump();
       expect(player.value.isPlaying, isTrue);
       expect(player.loadCount, 2);
+    });
+  });
+
+  group('La panne en cours d\'écoute', () {
+    /// Ce que pousse le lecteur quand le réseau lâche au milieu d'un prêche :
+    /// le son avait commencé, la position est loin, et la panne arrive.
+    void interrompre(InertContentPlayer player) {
+      player.emit(
+        player.value.copyWith(
+          position: const Duration(minutes: 37),
+          duration: const Duration(minutes: 58),
+          hasStarted: true,
+          isPlaying: false,
+          error: 'réseau coupé',
+        ),
+      );
+    }
+
+    testWidgets('elle se dit « Lecture interrompue », et propose de reprendre',
+        (tester) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      await _pump(tester, player: player);
+
+      interrompre(player);
+      await tester.pump();
+
+      expect(find.text('Lecture interrompue'), findsOneWidget);
+      // Et surtout pas le message du catalogue : « Impossible de charger le
+      // contenu » parlerait d'un chargement qui a pourtant réussi.
+      expect(find.textContaining('Impossible de charger'), findsNothing);
+      // **« Reprendre », jamais « Réessayer »** : le mot doit promettre de
+      // repartir d'où on en était. Sur un prêche d'une heure, la crainte d'un
+      // retour à zéro suffit à ce que le fidèle ne touche pas au bouton.
+      expect(find.text('Reprendre'), findsOneWidget);
+      expect(find.text('Réessayer'), findsNothing);
+    });
+
+    testWidgets('le titre du prêche ne disparaît pas sous la panne', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      await _pump(tester, player: player);
+
+      interrompre(player);
+      await tester.pump();
+
+      // Basculer sur un écran d'allure différente reviendrait à déplacer le
+      // fidèle sans le lui dire — et à effacer ce qu'il était en train
+      // d'écouter.
+      expect(find.text('La foi qui déplace'), findsOneWidget);
+      expect(find.byType(Slider), findsOneWidget);
+    });
+
+    testWidgets('« Reprendre » reprend à la position, sans tout recharger', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      await _pump(tester, player: player);
+
+      interrompre(player);
+      await tester.pump();
+      await tester.tap(find.byKey(AppErrorState.retryKey));
+      await tester.pump();
+
+      expect(player.resumeCount, 1);
+      // Le contrat du mot : la tête de lecture est restée où elle était.
+      expect(player.value.position, const Duration(minutes: 37));
+      expect(player.value.hasError, isFalse);
+      expect(player.value.isPlaying, isTrue);
+      // Et ce n'est pas un nouveau chargement : c'est la même écoute.
+      expect(player.loadCount, 1);
+    });
+
+    testWidgets('un échec avant tout son dit qu\'il faut du réseau', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      await _pump(tester, player: player);
+
+      // Le manifeste n'a jamais répondu : rien n'a jamais joué. Il n'y a
+      // aucune position à défendre, donc rien à « reprendre ».
+      player.emit(player.value.copyWith(error: 'hôte injoignable'));
+      await tester.pump();
+
+      expect(find.byType(ContentAbsenceView), findsOneWidget);
+      expect(find.text('Lecture interrompue'), findsNothing);
+      expect(find.text('Reprendre'), findsNothing);
+    });
+
+    testWidgets('la panne d\'un autre contenu ne peint pas cet écran', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      await _pump(tester, player: player);
+
+      // Le lecteur est **global** : il peut porter la panne d'un contenu
+      // ouvert ailleurs, et cet écran-ci n'a rien à en dire.
+      player.emit(
+        const ContentPlayback(contentId: 'un-autre', error: 'réseau coupé'),
+      );
+      await tester.pump();
+
+      expect(find.text('Lecture interrompue'), findsNothing);
+      expect(find.byType(ContentAbsenceView), findsNothing);
+    });
+  });
+
+  group('La mise en tampon', () {
+    testWidgets('elle se pose au-dessus du visuel, sans remplacer l\'écran', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      await _pump(tester, player: player);
+
+      player.emit(
+        player.value.copyWith(
+          isBuffering: true,
+          position: const Duration(minutes: 12),
+          duration: const Duration(minutes: 58),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(ContentPlayerView.bufferingKey), findsOneWidget);
+      // Basculer sur l'état « chargement » perdrait le titre et les commandes,
+      // et ressemblerait à un redémarrage. Ce n'en est pas un : c'est une
+      // attente au milieu d'une écoute.
+      expect(find.text('La foi qui déplace'), findsOneWidget);
+      expect(find.text('12:00'), findsOneWidget);
+      expect(find.byType(Slider), findsOneWidget);
+    });
+
+    testWidgets('elle disparaît dès que le son revient', (tester) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      await _pump(tester, player: player);
+
+      player.emit(player.value.copyWith(isBuffering: true));
+      await tester.pump();
+      player.emit(player.value.copyWith(isBuffering: false));
+      await tester.pump();
+
+      expect(find.byKey(ContentPlayerView.bufferingKey), findsNothing);
+    });
+
+    testWidgets('une panne n\'est pas une attente', (tester) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      await _pump(tester, player: player);
+
+      player.emit(
+        player.value.copyWith(hasStarted: true, error: 'réseau coupé'),
+      );
+      await tester.pump();
+
+      // Un indicateur qui tourne à côté d'un bouton « Reprendre » dirait deux
+      // choses contraires.
+      expect(find.byKey(ContentPlayerView.bufferingKey), findsNothing);
     });
   });
 

@@ -94,6 +94,9 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   /// Relance la lecture du magasin après un échec.
   final VoidCallback onRetry;
 
+  /// Clé de l'indicateur de mise en tampon, pour le cibler depuis les tests.
+  static const Key bufferingKey = Key('content_player_buffering');
+
   @override
   ConsumerState<ContentPlayerView> createState() => _ContentPlayerViewState();
 }
@@ -436,7 +439,13 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
               title: widget.chromeTitle,
               onInfo: () => _showInfoSheet(context, content),
             ),
-            Expanded(child: Center(child: _Artwork(content: content))),
+            Expanded(
+              child: _PlayerStage(
+                content: content,
+                onResume: () =>
+                    unawaited(ref.read(contentPlayerProvider).resume()),
+              ),
+            ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               content.title,
@@ -621,6 +630,132 @@ class _Artwork extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.85),
         ),
       );
+}
+
+/// **Ce que montre le grand espace central du lecteur** — quatre réponses, et
+/// aucune n'est un écran de remplacement.
+///
+/// Elles sortent toutes de la **valeur du lecteur**, jamais d'un état mémorisé
+/// dans un widget : la notification et l'écran verrouillé pilotent le même
+/// lecteur, et le chien de garde peut rouvrir une source sans que personne
+/// n'ait rien touché.
+enum _Stage {
+  /// Le visuel du contenu — le cas normal.
+  artwork,
+
+  /// **La mise en tampon**, qui n'est ni un chargement d'écran ni une panne :
+  /// un indicateur **par-dessus** le visuel. Basculer sur l'état « chargement »
+  /// effacerait le titre et les commandes, et ressemblerait à un redémarrage
+  /// au milieu d'une écoute.
+  buffering,
+
+  /// **La panne en cours d'écoute** : le son avait commencé, il y a une
+  /// position à défendre, et donc quelque chose à *reprendre*.
+  interrupted,
+
+  /// **La panne d'une ouverture qui n'a jamais joué** : rien n'a commencé,
+  /// il n'y a rien à reprendre, et ce qui manque est du réseau.
+  needsNetwork;
+
+  /// **La distinction se déduit de l'échec lui-même.**
+  ///
+  /// Pas d'un test de connectivité : `connectivity_plus` répond « connecté »
+  /// derrière un portail captif — un hôtel, un wifi d'église mal configuré —
+  /// c'est-à-dire exactement quand sa réponse compterait. Il n'est pas dans
+  /// `pubspec.yaml`, et cette ligne-ci est la raison.
+  static _Stage of(ContentPlayback playback, String contentId) {
+    // Le lecteur est **global** : il porte peut-être la panne d'un contenu
+    // ouvert ailleurs, et cet écran-ci n'a rien à en dire.
+    if (playback.contentId != contentId) return _Stage.artwork;
+    if (playback.hasError) {
+      return playback.hasStarted ? _Stage.interrupted : _Stage.needsNetwork;
+    }
+    return playback.isBuffering ? _Stage.buffering : _Stage.artwork;
+  }
+}
+
+/// Le grand espace central du lecteur, seul abonné aux pannes et au tampon.
+///
+/// Abonné **par `select` sur un [_Stage]**, comme [_ProgressLine] l'est à la
+/// position : la valeur du lecteur bat plusieurs fois par seconde, et lire
+/// l'état de la panne plus haut reconstruirait le dégradé, le `Hero` et
+/// l'image au même rythme.
+class _PlayerStage extends ConsumerWidget {
+  const _PlayerStage({required this.content, required this.onResume});
+
+  final ContentView content;
+
+  /// Reprend **à la position atteinte** — ce que le mot « Reprendre » promet.
+  final VoidCallback onResume;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stage = ref.watch(
+      contentPlaybackProvider.select((p) => _Stage.of(p, content.id)),
+    );
+    final l10n = context.l10n;
+
+    return switch (stage) {
+      _Stage.artwork => Center(child: _Artwork(content: content)),
+      _Stage.buffering => Stack(
+          fit: StackFit.expand,
+          children: [
+            Center(child: _Artwork(content: content)),
+            const Center(child: _BufferingBadge()),
+          ],
+        ),
+      // `AppErrorState` est le seul état du dépôt qui porte une action — mais
+      // **pas avec ses textes** : `stateErrorMessage` dit « Impossible de
+      // charger le contenu », ce qui parle du catalogue. Ici le contenu est
+      // bien arrivé, c'est le son qui s'est tu.
+      _Stage.interrupted => _room(
+          AppErrorState(
+            title: l10n.playerErrorTitle,
+            message: l10n.playerErrorMessage,
+            retryLabel: l10n.playerErrorRetry,
+            onRetry: onResume,
+          ),
+        ),
+      // Le libellé « il faut du réseau » est celui des quatre absences, écrit
+      // une fois pour toutes : on ne réécrit pas une phrase ici.
+      _Stage.needsNetwork => ContentAbsenceView(
+          absence: ContentAbsence.offlineMedia,
+          onDark: true,
+          onBack: () => context.pop(),
+        ),
+    };
+  }
+
+  /// Laisse la carte respirer sans jamais déborder : le lecteur garde son
+  /// titre et ses commandes, l'espace central est donc étroit sur un petit
+  /// écran.
+  static Widget _room(Widget child) =>
+      Center(child: SingleChildScrollView(child: child));
+}
+
+/// L'indicateur de mise en tampon : un disque sombre, posé **sur** le visuel.
+///
+/// Discret et sans texte : ce n'est pas une nouvelle qu'on annonce, c'est le
+/// signe que ça travaille.
+class _BufferingBadge extends StatelessWidget {
+  const _BufferingBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: ContentPlayerView.bufferingKey,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.35),
+        shape: BoxShape.circle,
+      ),
+      child: const SizedBox(
+        width: 26,
+        height: 26,
+        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+      ),
+    );
+  }
 }
 
 /// Bloc de contrôles : progression, actions et lecture/pause.
