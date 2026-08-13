@@ -42,6 +42,7 @@ class ContentPlayback {
     this.isPlaying = false,
     this.isBuffering = false,
     this.isCompleted = false,
+    this.hasStarted = false,
     this.error,
   });
 
@@ -68,6 +69,32 @@ class ContentPlayback {
 
   /// Vrai lorsque le média est arrivé à son terme.
   final bool isCompleted;
+
+  /// **Vrai dès que ce média a été prêt à jouer au moins une fois.**
+  ///
+  /// C'est ce champ, et lui seul, qui départage les deux phrases que l'écran
+  /// peut dire d'un échec :
+  ///
+  /// - faux — le son n'a **jamais** commencé : il n'y a rien à reprendre, et
+  ///   ce qui manque est du réseau ;
+  /// - vrai — le son avait commencé : c'est une **lecture interrompue**, et il
+  ///   y a une position à défendre.
+  ///
+  /// Il existe parce qu'aucun autre champ ne sait le dire. [isBuffering] est
+  /// posé à vrai **dès le chargement**, avant le moindre aller-retour réseau :
+  /// s'en servir ferait passer toute première ouverture ratée pour une lecture
+  /// interrompue. [position] ne bouge pas davantage pendant les premières
+  /// secondes d'un flux HLS, et [duration] peut ne jamais arriver sur iOS.
+  ///
+  /// Il **survit à la panne** — c'est tout son intérêt — et ne se remet à faux
+  /// qu'au chargement d'un autre contenu, qui construit une valeur neuve.
+  ///
+  /// **La distinction se déduit ainsi de l'échec lui-même, et jamais d'un test
+  /// de connectivité.** `connectivity_plus` répond « connecté » derrière un
+  /// portail captif — un hôtel, un wifi d'église mal configuré — c'est-à-dire
+  /// exactement quand sa réponse compterait. Il n'est pas dans `pubspec.yaml`,
+  /// et cette phrase-ci est la raison.
+  final bool hasStarted;
 
   /// La panne, ou `null`.
   ///
@@ -113,6 +140,7 @@ class ContentPlayback {
     bool? isPlaying,
     bool? isBuffering,
     bool? isCompleted,
+    bool? hasStarted,
     Object? error,
   }) {
     return ContentPlayback(
@@ -122,6 +150,7 @@ class ContentPlayback {
       isPlaying: isPlaying ?? this.isPlaying,
       isBuffering: isBuffering ?? this.isBuffering,
       isCompleted: isCompleted ?? this.isCompleted,
+      hasStarted: hasStarted ?? this.hasStarted,
       error: error ?? this.error,
     );
   }
@@ -135,6 +164,7 @@ class ContentPlayback {
         other.isPlaying == isPlaying &&
         other.isBuffering == isBuffering &&
         other.isCompleted == isCompleted &&
+        other.hasStarted == hasStarted &&
         other.error == error;
   }
 
@@ -146,6 +176,7 @@ class ContentPlayback {
         isPlaying,
         isBuffering,
         isCompleted,
+        hasStarted,
         error,
       );
 
@@ -153,7 +184,32 @@ class ContentPlayback {
   String toString() =>
       'ContentPlayback(contentId: $contentId, position: $position, '
       'duration: $duration, isPlaying: $isPlaying, isBuffering: $isBuffering, '
-      'isCompleted: $isCompleted, error: $error)';
+      'isCompleted: $isCompleted, hasStarted: $hasStarted, error: $error)';
+}
+
+/// **La demande de chargement d'un contenu**, retenue telle quelle par les
+/// lecteurs.
+///
+/// Elle existe pour une seule raison : **pouvoir rouvrir la même source sans
+/// redemander quoi que ce soit à l'écran.** C'est ce dont ont besoin les deux
+/// chemins de récupération de ce lot — la reprise après une panne
+/// ([ContentPlayer.resume]) et le rechargement du chien de garde — dont aucun
+/// n'a d'écran devant lui au moment où il agit.
+@immutable
+class ContentRequest {
+  const ContentRequest({
+    required this.contentId,
+    required this.url,
+    required this.title,
+    this.author,
+    this.artUrl,
+  });
+
+  final String contentId;
+  final String url;
+  final String title;
+  final String? author;
+  final String? artUrl;
 }
 
 /// **Lecteur d'un contenu de médiathèque.**
@@ -191,6 +247,16 @@ abstract interface class ContentPlayer
 
   /// Démarre ou reprend la lecture.
   void play();
+
+  /// **Repart d'une panne, à la position où le son s'est arrêté.**
+  ///
+  /// C'est ce que promet le bouton « Reprendre », et la promesse est le
+  /// contrat : jamais un retour au début. Sans média chargé, ne fait rien —
+  /// il n'y a alors rien à reprendre, et l'écran dit autre chose.
+  ///
+  /// Asynchrone comme [load], et pour la même raison : rouvrir un flux HLS
+  /// peut échouer, et l'échec doit avoir un endroit où se dire.
+  Future<void> resume();
 
   /// Suspend la lecture en figeant la position.
   void pause();
@@ -246,6 +312,15 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   @visibleForTesting
   int loadCount = 0;
 
+  /// Nombre de reprises demandées — y compris celles qui n'avaient rien à
+  /// reprendre, pour qu'un test puisse constater que le bouton a bien parlé au
+  /// lecteur.
+  @visibleForTesting
+  int resumeCount = 0;
+
+  /// Ce qui est tenu, et qu'une reprise rouvrirait. `null` après un [stop].
+  ContentRequest? _request;
+
   /// Pose un état arbitraire, sans lecture réelle.
   ///
   /// C'est le pinceau des tests d'écran : une durée connue, une mise en tampon,
@@ -269,6 +344,13 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     loadedUrl = url;
     loadedTitle = title;
     loadCount++;
+    _request = ContentRequest(
+      contentId: contentId,
+      url: url,
+      title: title,
+      author: author,
+      artUrl: artUrl,
+    );
     // Valeur **neuve** et non `copyWith` : c'est le seul moyen d'effacer une
     // durée, une fin atteinte ou une panne héritées du contenu précédent.
     value = ContentPlayback(contentId: contentId);
@@ -278,6 +360,28 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   void play() {
     if (_disposed || value.isPlaying) return;
     value = value.copyWith(isPlaying: true);
+  }
+
+  /// Reprend **à la position atteinte**, panne effacée.
+  ///
+  /// Valeur neuve et non `copyWith` : c'est le seul moyen d'effacer la panne
+  /// et la fin atteinte. Ce que le double ne feint pas, parce que ce n'est pas
+  /// à lui de le décider, c'est *comment* la source se rouvre — le raccourci
+  /// ou le repli explicite appartiennent aux implémentations réelles.
+  @override
+  Future<void> resume() async {
+    if (_disposed) return;
+    resumeCount++;
+    final request = _request;
+    if (request == null) return;
+    value = ContentPlayback(
+      contentId: request.contentId,
+      position: value.position,
+      duration: value.duration,
+      isPlaying: true,
+      isBuffering: true,
+      hasStarted: value.hasStarted,
+    );
   }
 
   @override
@@ -299,6 +403,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     // que fait `ContentAudioHandler.stop()` avec `mediaItem.add(null)`.
     loadedUrl = null;
     loadedTitle = null;
+    _request = null;
     value = const ContentPlayback();
   }
 

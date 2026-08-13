@@ -113,9 +113,17 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
   /// Efface la fin atteinte : reprendre après la fin d'un enseignement est un
   /// geste courant, et laisser `isCompleted` à vrai figerait l'écran sur son
   /// rendu de fin pendant que la lecture avance.
+  ///
+  /// Pose [ContentPlayback.hasStarted] : ce média a joué, une panne ultérieure
+  /// est donc une **interruption** et non un manque de réseau.
   void markRendering() {
     _emit(
-      value.copyWith(isPlaying: true, isBuffering: false, isCompleted: false),
+      value.copyWith(
+        isPlaying: true,
+        isBuffering: false,
+        isCompleted: false,
+        hasStarted: true,
+      ),
     );
   }
 
@@ -127,7 +135,13 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
   void markWaiting() => _emit(value.copyWith(isBuffering: true));
 
   /// `canplay` / `seeked` — il y a de quoi jouer.
-  void markReady() => _emit(value.copyWith(isBuffering: false));
+  ///
+  /// Suffit à poser [ContentPlayback.hasStarted] : le média est **prêt à
+  /// sortir du son**, c'est le seuil qui départage « il faut du réseau » de
+  /// « lecture interrompue ». Attendre `playing` laisserait passer pour un
+  /// manque de réseau une panne survenue entre les deux.
+  void markReady() =>
+      _emit(value.copyWith(isBuffering: false, hasStarted: true));
 
   /// `pause` — la lecture est suspendue, la position reste.
   ///
@@ -154,6 +168,33 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
 
   /// Le média est relâché : la valeur repart à vide.
   void clear() => _emit(const ContentPlayback());
+
+  /// **Prépare une reprise et rend la position à restaurer** — `null` quand il
+  /// n'y a rien à reprendre.
+  ///
+  /// Le web n'a pas le raccourci de `just_audio` (aucun lecteur inactif ne
+  /// capture la source) : reprendre y est **toujours** une réouverture. La
+  /// décision reste ici, la réouverture est un câble.
+  ///
+  /// Valeur neuve et non `copyWith` : c'est le seul moyen d'effacer la panne
+  /// et la fin atteinte. Tout le reste tient — position, durée, et le fait que
+  /// le son avait commencé.
+  Duration? beginResume() {
+    final contentId = value.contentId;
+    if (contentId == null) return null;
+    final at = value.position;
+    _emit(
+      ContentPlayback(
+        contentId: contentId,
+        position: at,
+        duration: value.duration,
+        isPlaying: true,
+        isBuffering: true,
+        hasStarted: value.hasStarted,
+      ),
+    );
+    return at;
+  }
 
   /// **Le déplacement de la tête de lecture**, borné au média chargé.
   ///
