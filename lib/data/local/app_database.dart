@@ -7,10 +7,12 @@ import 'announcement_dao.dart';
 import 'converters/i18n_map_converter.dart';
 import 'gathering_dao.dart';
 import 'mediatheque_dao.dart';
+import 'playback_dao.dart';
 import 'sync_dao.dart';
 import 'tables/announcement_tables.dart';
 import 'tables/gathering_tables.dart';
 import 'tables/mediatheque_tables.dart';
+import 'tables/playback_tables.dart';
 import 'tables/sync_tables.dart';
 
 part 'app_database.g.dart';
@@ -50,8 +52,10 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     OfficialAccounts,
     OfficialAccountMemberships,
     Announcements,
+    PlaybackProgress,
+    LocalPlaybackPositions,
   ],
-  daos: [SyncDao, MediathequeDao, GatheringDao, AnnouncementDao],
+  daos: [SyncDao, MediathequeDao, GatheringDao, AnnouncementDao, PlaybackDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Constructeur explicite — c'est celui qu'utilisent les tests, avec une base
@@ -61,11 +65,11 @@ class AppDatabase extends _$AppDatabase {
   /// Base de l'application, à l'emplacement standard de la plateforme.
   AppDatabase.defaults() : super(driftDatabase(name: kLocalDatabaseName));
 
-  /// **v3** — les quatre tables des annonces (`status_backgrounds`,
-  /// `official_accounts`, `official_account_memberships`, `announcements`)
-  /// entrent au magasin, issue #35.
+  /// **v4** — les deux tables de la reprise de lecture, issue #43 :
+  /// `playback_progress` (collection **répliquée**, `private`) et
+  /// `local_playback_positions` (**locale seule**, jamais synchronisée).
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -101,6 +105,23 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(officialAccounts);
             await m.createTable(officialAccountMemberships);
             await m.createTable(announcements);
+          }
+
+          // v3 → v4 — la reprise de lecture (issue #43). **Deux créations de
+          // table, et rien d'autre** : aucune position n'existait auparavant
+          // (zéro occurrence de `playback_progress` dans l'application), il n'y
+          // a donc rien à reprendre et aucune colonne existante ne bouge.
+          //
+          // `playback_progress` naît vide, son curseur n'existe pas encore et
+          // le prochain manifeste l'annoncera `from_zero` : le premier cycle
+          // ramène **toute** la progression du fidèle, y compris celle
+          // accumulée sur un autre appareil avant cette version.
+          //
+          // `local_playback_positions` naît vide et le reste jusqu'à la
+          // première écoute — elle n'est alimentée que par le lecteur.
+          if (from < 4) {
+            await m.createTable(playbackProgress);
+            await m.createTable(localPlaybackPositions);
           }
         },
         beforeOpen: (details) async {

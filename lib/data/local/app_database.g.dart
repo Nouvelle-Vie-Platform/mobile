@@ -6722,6 +6722,860 @@ class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
   }
 }
 
+class $PlaybackProgressTable extends PlaybackProgress
+    with TableInfo<$PlaybackProgressTable, PlaybackProgressRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlaybackProgressTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+      'user_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _teachingIdMeta =
+      const VerificationMeta('teachingId');
+  @override
+  late final GeneratedColumn<String> teachingId = GeneratedColumn<String>(
+      'teaching_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _positionSecondsMeta =
+      const VerificationMeta('positionSeconds');
+  @override
+  late final GeneratedColumn<int> positionSeconds = GeneratedColumn<int>(
+      'position_seconds', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _completedMeta =
+      const VerificationMeta('completed');
+  @override
+  late final GeneratedColumn<bool> completed = GeneratedColumn<bool>(
+      'completed', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("completed" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _clientCreatedAtMeta =
+      const VerificationMeta('clientCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientCreatedAt =
+      GeneratedColumn<DateTime>('client_created_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        userId,
+        teachingId,
+        positionSeconds,
+        completed,
+        clientCreatedAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'playback_progress';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<PlaybackProgressRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
+    }
+    if (data.containsKey('teaching_id')) {
+      context.handle(
+          _teachingIdMeta,
+          teachingId.isAcceptableOrUnknown(
+              data['teaching_id']!, _teachingIdMeta));
+    } else if (isInserting) {
+      context.missing(_teachingIdMeta);
+    }
+    if (data.containsKey('position_seconds')) {
+      context.handle(
+          _positionSecondsMeta,
+          positionSeconds.isAcceptableOrUnknown(
+              data['position_seconds']!, _positionSecondsMeta));
+    } else if (isInserting) {
+      context.missing(_positionSecondsMeta);
+    }
+    if (data.containsKey('completed')) {
+      context.handle(_completedMeta,
+          completed.isAcceptableOrUnknown(data['completed']!, _completedMeta));
+    }
+    if (data.containsKey('client_created_at')) {
+      context.handle(
+          _clientCreatedAtMeta,
+          clientCreatedAt.isAcceptableOrUnknown(
+              data['client_created_at']!, _clientCreatedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PlaybackProgressRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PlaybackProgressRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      userId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_id']),
+      teachingId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}teaching_id'])!,
+      positionSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position_seconds'])!,
+      completed: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}completed'])!,
+      clientCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_created_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $PlaybackProgressTable createAlias(String alias) {
+    return $PlaybackProgressTable(attachedDatabase, alias);
+  }
+}
+
+class PlaybackProgressRow extends DataClass
+    implements Insertable<PlaybackProgressRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// UUIDv7 **fabriqué par le client** et conservé par le serveur à l'insert
+  /// (ADR-0001/0018). C'est ce qui rend le rapport rejouable : un rejeu retombe
+  /// sur la même ligne au lieu d'en créer une seconde.
+  final String id;
+
+  /// Porteur de la progression — moi, par construction : la collection est
+  /// `private` et son `scopeFilter` est `user_id = soi`. Stocké pour le
+  /// diagnostic, jamais pour filtrer.
+  final String? userId;
+
+  /// **Entier… non : chaîne nue, et sans clé étrangère.** Le contenu écouté,
+  /// enseignement ou rassemblement. La jointure est tolérante et se fait à la
+  /// lecture ; la cible n'a pas à exister.
+  final String teachingId;
+
+  /// Position de reprise, **en secondes**. C'est la seule unité du contrat
+  /// serveur (`vine.number().min(0)`), et la convertir en `Duration` appartient
+  /// à la lecture.
+  final int positionSeconds;
+
+  /// Décidé par le **client** et stocké tel quel par le serveur. Voir l'en-tête
+  /// de cette classe : sans durée, le serveur ne peut rien en dire.
+  final bool completed;
+
+  /// Instant de création **côté client**, quand le client en fournit un.
+  final DateTime? clientCreatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const PlaybackProgressRow(
+      {required this.syncStamp,
+      required this.id,
+      this.userId,
+      required this.teachingId,
+      required this.positionSeconds,
+      required this.completed,
+      this.clientCreatedAt,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
+    map['teaching_id'] = Variable<String>(teachingId);
+    map['position_seconds'] = Variable<int>(positionSeconds);
+    map['completed'] = Variable<bool>(completed);
+    if (!nullToAbsent || clientCreatedAt != null) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  PlaybackProgressCompanion toCompanion(bool nullToAbsent) {
+    return PlaybackProgressCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      userId:
+          userId == null && nullToAbsent ? const Value.absent() : Value(userId),
+      teachingId: Value(teachingId),
+      positionSeconds: Value(positionSeconds),
+      completed: Value(completed),
+      clientCreatedAt: clientCreatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientCreatedAt),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory PlaybackProgressRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PlaybackProgressRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String?>(json['userId']),
+      teachingId: serializer.fromJson<String>(json['teachingId']),
+      positionSeconds: serializer.fromJson<int>(json['positionSeconds']),
+      completed: serializer.fromJson<bool>(json['completed']),
+      clientCreatedAt: serializer.fromJson<DateTime?>(json['clientCreatedAt']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String?>(userId),
+      'teachingId': serializer.toJson<String>(teachingId),
+      'positionSeconds': serializer.toJson<int>(positionSeconds),
+      'completed': serializer.toJson<bool>(completed),
+      'clientCreatedAt': serializer.toJson<DateTime?>(clientCreatedAt),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  PlaybackProgressRow copyWith(
+          {int? syncStamp,
+          String? id,
+          Value<String?> userId = const Value.absent(),
+          String? teachingId,
+          int? positionSeconds,
+          bool? completed,
+          Value<DateTime?> clientCreatedAt = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      PlaybackProgressRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        userId: userId.present ? userId.value : this.userId,
+        teachingId: teachingId ?? this.teachingId,
+        positionSeconds: positionSeconds ?? this.positionSeconds,
+        completed: completed ?? this.completed,
+        clientCreatedAt: clientCreatedAt.present
+            ? clientCreatedAt.value
+            : this.clientCreatedAt,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  PlaybackProgressRow copyWithCompanion(PlaybackProgressCompanion data) {
+    return PlaybackProgressRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      teachingId:
+          data.teachingId.present ? data.teachingId.value : this.teachingId,
+      positionSeconds: data.positionSeconds.present
+          ? data.positionSeconds.value
+          : this.positionSeconds,
+      completed: data.completed.present ? data.completed.value : this.completed,
+      clientCreatedAt: data.clientCreatedAt.present
+          ? data.clientCreatedAt.value
+          : this.clientCreatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlaybackProgressRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('teachingId: $teachingId, ')
+          ..write('positionSeconds: $positionSeconds, ')
+          ..write('completed: $completed, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, userId, teachingId,
+      positionSeconds, completed, clientCreatedAt, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PlaybackProgressRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.teachingId == this.teachingId &&
+          other.positionSeconds == this.positionSeconds &&
+          other.completed == this.completed &&
+          other.clientCreatedAt == this.clientCreatedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PlaybackProgressCompanion extends UpdateCompanion<PlaybackProgressRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String?> userId;
+  final Value<String> teachingId;
+  final Value<int> positionSeconds;
+  final Value<bool> completed;
+  final Value<DateTime?> clientCreatedAt;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const PlaybackProgressCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.teachingId = const Value.absent(),
+    this.positionSeconds = const Value.absent(),
+    this.completed = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PlaybackProgressCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    this.userId = const Value.absent(),
+    required String teachingId,
+    required int positionSeconds,
+    this.completed = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        teachingId = Value(teachingId),
+        positionSeconds = Value(positionSeconds);
+  static Insertable<PlaybackProgressRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? teachingId,
+    Expression<int>? positionSeconds,
+    Expression<bool>? completed,
+    Expression<DateTime>? clientCreatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (teachingId != null) 'teaching_id': teachingId,
+      if (positionSeconds != null) 'position_seconds': positionSeconds,
+      if (completed != null) 'completed': completed,
+      if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PlaybackProgressCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String?>? userId,
+      Value<String>? teachingId,
+      Value<int>? positionSeconds,
+      Value<bool>? completed,
+      Value<DateTime?>? clientCreatedAt,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return PlaybackProgressCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      teachingId: teachingId ?? this.teachingId,
+      positionSeconds: positionSeconds ?? this.positionSeconds,
+      completed: completed ?? this.completed,
+      clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (teachingId.present) {
+      map['teaching_id'] = Variable<String>(teachingId.value);
+    }
+    if (positionSeconds.present) {
+      map['position_seconds'] = Variable<int>(positionSeconds.value);
+    }
+    if (completed.present) {
+      map['completed'] = Variable<bool>(completed.value);
+    }
+    if (clientCreatedAt.present) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlaybackProgressCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('teachingId: $teachingId, ')
+          ..write('positionSeconds: $positionSeconds, ')
+          ..write('completed: $completed, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalPlaybackPositionsTable extends LocalPlaybackPositions
+    with TableInfo<$LocalPlaybackPositionsTable, LocalPlaybackPositionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalPlaybackPositionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _contentIdMeta =
+      const VerificationMeta('contentId');
+  @override
+  late final GeneratedColumn<String> contentId = GeneratedColumn<String>(
+      'content_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _progressIdMeta =
+      const VerificationMeta('progressId');
+  @override
+  late final GeneratedColumn<String> progressId = GeneratedColumn<String>(
+      'progress_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _positionSecondsMeta =
+      const VerificationMeta('positionSeconds');
+  @override
+  late final GeneratedColumn<int> positionSeconds = GeneratedColumn<int>(
+      'position_seconds', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _completedMeta =
+      const VerificationMeta('completed');
+  @override
+  late final GeneratedColumn<bool> completed = GeneratedColumn<bool>(
+      'completed', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("completed" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [contentId, progressId, positionSeconds, completed, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_playback_positions';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalPlaybackPositionRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('content_id')) {
+      context.handle(_contentIdMeta,
+          contentId.isAcceptableOrUnknown(data['content_id']!, _contentIdMeta));
+    } else if (isInserting) {
+      context.missing(_contentIdMeta);
+    }
+    if (data.containsKey('progress_id')) {
+      context.handle(
+          _progressIdMeta,
+          progressId.isAcceptableOrUnknown(
+              data['progress_id']!, _progressIdMeta));
+    } else if (isInserting) {
+      context.missing(_progressIdMeta);
+    }
+    if (data.containsKey('position_seconds')) {
+      context.handle(
+          _positionSecondsMeta,
+          positionSeconds.isAcceptableOrUnknown(
+              data['position_seconds']!, _positionSecondsMeta));
+    } else if (isInserting) {
+      context.missing(_positionSecondsMeta);
+    }
+    if (data.containsKey('completed')) {
+      context.handle(_completedMeta,
+          completed.isAcceptableOrUnknown(data['completed']!, _completedMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {contentId};
+  @override
+  LocalPlaybackPositionRow map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalPlaybackPositionRow(
+      contentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}content_id'])!,
+      progressId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}progress_id'])!,
+      positionSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position_seconds'])!,
+      completed: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}completed'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $LocalPlaybackPositionsTable createAlias(String alias) {
+    return $LocalPlaybackPositionsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalPlaybackPositionRow extends DataClass
+    implements Insertable<LocalPlaybackPositionRow> {
+  /// Le contenu écouté — enseignement ou rassemblement, la table ne les
+  /// distingue pas : l'identifiant est un UUID et les deux familles partagent
+  /// la même route de rapport.
+  final String contentId;
+
+  /// **L'UUIDv7 sous lequel ce contenu est rapporté.**
+  ///
+  /// Frappé par ce client la première fois qu'il rapporte ce contenu, puis
+  /// réutilisé — c'est ce qui fait de chaque rapport suivant un rejeu, donc un
+  /// `UPDATE` sans doublon. Quand la synchronisation ramène la ligne serveur,
+  /// c'est **son** `id` qui fait autorité (voir `PlaybackDao.resumeFor`) : une
+  /// progression née sur un autre appareil a déjà son identité.
+  final String progressId;
+
+  /// Même unité que la collection répliquée, pour que la résolution des deux
+  /// sources n'ait aucune conversion à faire.
+  final int positionSeconds;
+  final bool completed;
+
+  /// Horloge **de l'appareil**, et c'est ce qui la départage de la ligne
+  /// répliquée, dont l'`updatedAt` vient du serveur. Deux horloges comparées :
+  /// voir la réserve écrite dans `PlaybackDao.resumeFor`.
+  final DateTime updatedAt;
+  const LocalPlaybackPositionRow(
+      {required this.contentId,
+      required this.progressId,
+      required this.positionSeconds,
+      required this.completed,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['content_id'] = Variable<String>(contentId);
+    map['progress_id'] = Variable<String>(progressId);
+    map['position_seconds'] = Variable<int>(positionSeconds);
+    map['completed'] = Variable<bool>(completed);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  LocalPlaybackPositionsCompanion toCompanion(bool nullToAbsent) {
+    return LocalPlaybackPositionsCompanion(
+      contentId: Value(contentId),
+      progressId: Value(progressId),
+      positionSeconds: Value(positionSeconds),
+      completed: Value(completed),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory LocalPlaybackPositionRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalPlaybackPositionRow(
+      contentId: serializer.fromJson<String>(json['contentId']),
+      progressId: serializer.fromJson<String>(json['progressId']),
+      positionSeconds: serializer.fromJson<int>(json['positionSeconds']),
+      completed: serializer.fromJson<bool>(json['completed']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'contentId': serializer.toJson<String>(contentId),
+      'progressId': serializer.toJson<String>(progressId),
+      'positionSeconds': serializer.toJson<int>(positionSeconds),
+      'completed': serializer.toJson<bool>(completed),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  LocalPlaybackPositionRow copyWith(
+          {String? contentId,
+          String? progressId,
+          int? positionSeconds,
+          bool? completed,
+          DateTime? updatedAt}) =>
+      LocalPlaybackPositionRow(
+        contentId: contentId ?? this.contentId,
+        progressId: progressId ?? this.progressId,
+        positionSeconds: positionSeconds ?? this.positionSeconds,
+        completed: completed ?? this.completed,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  LocalPlaybackPositionRow copyWithCompanion(
+      LocalPlaybackPositionsCompanion data) {
+    return LocalPlaybackPositionRow(
+      contentId: data.contentId.present ? data.contentId.value : this.contentId,
+      progressId:
+          data.progressId.present ? data.progressId.value : this.progressId,
+      positionSeconds: data.positionSeconds.present
+          ? data.positionSeconds.value
+          : this.positionSeconds,
+      completed: data.completed.present ? data.completed.value : this.completed,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPlaybackPositionRow(')
+          ..write('contentId: $contentId, ')
+          ..write('progressId: $progressId, ')
+          ..write('positionSeconds: $positionSeconds, ')
+          ..write('completed: $completed, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(contentId, progressId, positionSeconds, completed, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalPlaybackPositionRow &&
+          other.contentId == this.contentId &&
+          other.progressId == this.progressId &&
+          other.positionSeconds == this.positionSeconds &&
+          other.completed == this.completed &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LocalPlaybackPositionsCompanion
+    extends UpdateCompanion<LocalPlaybackPositionRow> {
+  final Value<String> contentId;
+  final Value<String> progressId;
+  final Value<int> positionSeconds;
+  final Value<bool> completed;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const LocalPlaybackPositionsCompanion({
+    this.contentId = const Value.absent(),
+    this.progressId = const Value.absent(),
+    this.positionSeconds = const Value.absent(),
+    this.completed = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalPlaybackPositionsCompanion.insert({
+    required String contentId,
+    required String progressId,
+    required int positionSeconds,
+    this.completed = const Value.absent(),
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : contentId = Value(contentId),
+        progressId = Value(progressId),
+        positionSeconds = Value(positionSeconds),
+        updatedAt = Value(updatedAt);
+  static Insertable<LocalPlaybackPositionRow> custom({
+    Expression<String>? contentId,
+    Expression<String>? progressId,
+    Expression<int>? positionSeconds,
+    Expression<bool>? completed,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (contentId != null) 'content_id': contentId,
+      if (progressId != null) 'progress_id': progressId,
+      if (positionSeconds != null) 'position_seconds': positionSeconds,
+      if (completed != null) 'completed': completed,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalPlaybackPositionsCompanion copyWith(
+      {Value<String>? contentId,
+      Value<String>? progressId,
+      Value<int>? positionSeconds,
+      Value<bool>? completed,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return LocalPlaybackPositionsCompanion(
+      contentId: contentId ?? this.contentId,
+      progressId: progressId ?? this.progressId,
+      positionSeconds: positionSeconds ?? this.positionSeconds,
+      completed: completed ?? this.completed,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (contentId.present) {
+      map['content_id'] = Variable<String>(contentId.value);
+    }
+    if (progressId.present) {
+      map['progress_id'] = Variable<String>(progressId.value);
+    }
+    if (positionSeconds.present) {
+      map['position_seconds'] = Variable<int>(positionSeconds.value);
+    }
+    if (completed.present) {
+      map['completed'] = Variable<bool>(completed.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPlaybackPositionsCompanion(')
+          ..write('contentId: $contentId, ')
+          ..write('progressId: $progressId, ')
+          ..write('positionSeconds: $positionSeconds, ')
+          ..write('completed: $completed, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6741,12 +7595,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $OfficialAccountMembershipsTable officialAccountMemberships =
       $OfficialAccountMembershipsTable(this);
   late final $AnnouncementsTable announcements = $AnnouncementsTable(this);
+  late final $PlaybackProgressTable playbackProgress =
+      $PlaybackProgressTable(this);
+  late final $LocalPlaybackPositionsTable localPlaybackPositions =
+      $LocalPlaybackPositionsTable(this);
   late final SyncDao syncDao = SyncDao(this as AppDatabase);
   late final MediathequeDao mediathequeDao =
       MediathequeDao(this as AppDatabase);
   late final GatheringDao gatheringDao = GatheringDao(this as AppDatabase);
   late final AnnouncementDao announcementDao =
       AnnouncementDao(this as AppDatabase);
+  late final PlaybackDao playbackDao = PlaybackDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6764,7 +7623,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         statusBackgrounds,
         officialAccounts,
         officialAccountMemberships,
-        announcements
+        announcements,
+        playbackProgress,
+        localPlaybackPositions
       ];
 }
 
@@ -9912,6 +10773,426 @@ typedef $$AnnouncementsTableProcessedTableManager = ProcessedTableManager<
     ),
     AnnouncementRow,
     PrefetchHooks Function()>;
+typedef $$PlaybackProgressTableCreateCompanionBuilder
+    = PlaybackProgressCompanion Function({
+  Value<int> syncStamp,
+  required String id,
+  Value<String?> userId,
+  required String teachingId,
+  required int positionSeconds,
+  Value<bool> completed,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$PlaybackProgressTableUpdateCompanionBuilder
+    = PlaybackProgressCompanion Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String?> userId,
+  Value<String> teachingId,
+  Value<int> positionSeconds,
+  Value<bool> completed,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$PlaybackProgressTableFilterComposer
+    extends Composer<_$AppDatabase, $PlaybackProgressTable> {
+  $$PlaybackProgressTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get positionSeconds => $composableBuilder(
+      column: $table.positionSeconds,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get completed => $composableBuilder(
+      column: $table.completed, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$PlaybackProgressTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlaybackProgressTable> {
+  $$PlaybackProgressTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get positionSeconds => $composableBuilder(
+      column: $table.positionSeconds,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get completed => $composableBuilder(
+      column: $table.completed, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PlaybackProgressTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlaybackProgressTable> {
+  $$PlaybackProgressTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => column);
+
+  GeneratedColumn<int> get positionSeconds => $composableBuilder(
+      column: $table.positionSeconds, builder: (column) => column);
+
+  GeneratedColumn<bool> get completed =>
+      $composableBuilder(column: $table.completed, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$PlaybackProgressTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PlaybackProgressTable,
+    PlaybackProgressRow,
+    $$PlaybackProgressTableFilterComposer,
+    $$PlaybackProgressTableOrderingComposer,
+    $$PlaybackProgressTableAnnotationComposer,
+    $$PlaybackProgressTableCreateCompanionBuilder,
+    $$PlaybackProgressTableUpdateCompanionBuilder,
+    (
+      PlaybackProgressRow,
+      BaseReferences<_$AppDatabase, $PlaybackProgressTable, PlaybackProgressRow>
+    ),
+    PlaybackProgressRow,
+    PrefetchHooks Function()> {
+  $$PlaybackProgressTableTableManager(
+      _$AppDatabase db, $PlaybackProgressTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PlaybackProgressTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PlaybackProgressTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PlaybackProgressTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String?> userId = const Value.absent(),
+            Value<String> teachingId = const Value.absent(),
+            Value<int> positionSeconds = const Value.absent(),
+            Value<bool> completed = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PlaybackProgressCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            userId: userId,
+            teachingId: teachingId,
+            positionSeconds: positionSeconds,
+            completed: completed,
+            clientCreatedAt: clientCreatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            Value<String?> userId = const Value.absent(),
+            required String teachingId,
+            required int positionSeconds,
+            Value<bool> completed = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PlaybackProgressCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            userId: userId,
+            teachingId: teachingId,
+            positionSeconds: positionSeconds,
+            completed: completed,
+            clientCreatedAt: clientCreatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PlaybackProgressTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PlaybackProgressTable,
+    PlaybackProgressRow,
+    $$PlaybackProgressTableFilterComposer,
+    $$PlaybackProgressTableOrderingComposer,
+    $$PlaybackProgressTableAnnotationComposer,
+    $$PlaybackProgressTableCreateCompanionBuilder,
+    $$PlaybackProgressTableUpdateCompanionBuilder,
+    (
+      PlaybackProgressRow,
+      BaseReferences<_$AppDatabase, $PlaybackProgressTable, PlaybackProgressRow>
+    ),
+    PlaybackProgressRow,
+    PrefetchHooks Function()>;
+typedef $$LocalPlaybackPositionsTableCreateCompanionBuilder
+    = LocalPlaybackPositionsCompanion Function({
+  required String contentId,
+  required String progressId,
+  required int positionSeconds,
+  Value<bool> completed,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$LocalPlaybackPositionsTableUpdateCompanionBuilder
+    = LocalPlaybackPositionsCompanion Function({
+  Value<String> contentId,
+  Value<String> progressId,
+  Value<int> positionSeconds,
+  Value<bool> completed,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$LocalPlaybackPositionsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalPlaybackPositionsTable> {
+  $$LocalPlaybackPositionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get contentId => $composableBuilder(
+      column: $table.contentId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get progressId => $composableBuilder(
+      column: $table.progressId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get positionSeconds => $composableBuilder(
+      column: $table.positionSeconds,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get completed => $composableBuilder(
+      column: $table.completed, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalPlaybackPositionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalPlaybackPositionsTable> {
+  $$LocalPlaybackPositionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get contentId => $composableBuilder(
+      column: $table.contentId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get progressId => $composableBuilder(
+      column: $table.progressId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get positionSeconds => $composableBuilder(
+      column: $table.positionSeconds,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get completed => $composableBuilder(
+      column: $table.completed, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalPlaybackPositionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalPlaybackPositionsTable> {
+  $$LocalPlaybackPositionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get contentId =>
+      $composableBuilder(column: $table.contentId, builder: (column) => column);
+
+  GeneratedColumn<String> get progressId => $composableBuilder(
+      column: $table.progressId, builder: (column) => column);
+
+  GeneratedColumn<int> get positionSeconds => $composableBuilder(
+      column: $table.positionSeconds, builder: (column) => column);
+
+  GeneratedColumn<bool> get completed =>
+      $composableBuilder(column: $table.completed, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$LocalPlaybackPositionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $LocalPlaybackPositionsTable,
+    LocalPlaybackPositionRow,
+    $$LocalPlaybackPositionsTableFilterComposer,
+    $$LocalPlaybackPositionsTableOrderingComposer,
+    $$LocalPlaybackPositionsTableAnnotationComposer,
+    $$LocalPlaybackPositionsTableCreateCompanionBuilder,
+    $$LocalPlaybackPositionsTableUpdateCompanionBuilder,
+    (
+      LocalPlaybackPositionRow,
+      BaseReferences<_$AppDatabase, $LocalPlaybackPositionsTable,
+          LocalPlaybackPositionRow>
+    ),
+    LocalPlaybackPositionRow,
+    PrefetchHooks Function()> {
+  $$LocalPlaybackPositionsTableTableManager(
+      _$AppDatabase db, $LocalPlaybackPositionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalPlaybackPositionsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalPlaybackPositionsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalPlaybackPositionsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> contentId = const Value.absent(),
+            Value<String> progressId = const Value.absent(),
+            Value<int> positionSeconds = const Value.absent(),
+            Value<bool> completed = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalPlaybackPositionsCompanion(
+            contentId: contentId,
+            progressId: progressId,
+            positionSeconds: positionSeconds,
+            completed: completed,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String contentId,
+            required String progressId,
+            required int positionSeconds,
+            Value<bool> completed = const Value.absent(),
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalPlaybackPositionsCompanion.insert(
+            contentId: contentId,
+            progressId: progressId,
+            positionSeconds: positionSeconds,
+            completed: completed,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalPlaybackPositionsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $LocalPlaybackPositionsTable,
+        LocalPlaybackPositionRow,
+        $$LocalPlaybackPositionsTableFilterComposer,
+        $$LocalPlaybackPositionsTableOrderingComposer,
+        $$LocalPlaybackPositionsTableAnnotationComposer,
+        $$LocalPlaybackPositionsTableCreateCompanionBuilder,
+        $$LocalPlaybackPositionsTableUpdateCompanionBuilder,
+        (
+          LocalPlaybackPositionRow,
+          BaseReferences<_$AppDatabase, $LocalPlaybackPositionsTable,
+              LocalPlaybackPositionRow>
+        ),
+        LocalPlaybackPositionRow,
+        PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9944,4 +11225,9 @@ class $AppDatabaseManager {
               _db, _db.officialAccountMemberships);
   $$AnnouncementsTableTableManager get announcements =>
       $$AnnouncementsTableTableManager(_db, _db.announcements);
+  $$PlaybackProgressTableTableManager get playbackProgress =>
+      $$PlaybackProgressTableTableManager(_db, _db.playbackProgress);
+  $$LocalPlaybackPositionsTableTableManager get localPlaybackPositions =>
+      $$LocalPlaybackPositionsTableTableManager(
+          _db, _db.localPlaybackPositions);
 }
