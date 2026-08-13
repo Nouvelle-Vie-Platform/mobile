@@ -59,7 +59,19 @@ import '../widgets/section_header.dart';
 /// - **Pas d'enseignement, pas de section.** Le magasin l'applique déjà et
 ///   l'écran n'ajoute aucune section de son cru.
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.onMenuTap});
+
+  /// Ouverture du **menu latéral**, remontée à la coquille : le tiroir se
+  /// construit dans `HomeShell.build()` (c'est ce qui garde l'onglet courant en
+  /// `State` local), l'accueil n'en connaît que le déclencheur.
+  ///
+  /// Nul lorsque l'écran est monté seul — dans les tests, par exemple. L'icône
+  /// reste alors visible mais inerte : elle l'était depuis l'origine, et un
+  /// `IconButton` sans `onPressed` se grise de lui-même.
+  final VoidCallback? onMenuTap;
+
+  /// Clé de l'icône du menu, pour l'ouvrir depuis les tests.
+  static const Key menuButtonKey = Key('home_menu_button');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -128,7 +140,11 @@ class HomeScreen extends ConsumerWidget {
           top: 0,
           left: 0,
           right: 0,
-          child: _WavyHeader(name: user?.firstName, height: headerHeight),
+          child: _WavyHeader(
+            name: user?.firstName,
+            height: headerHeight,
+            onMenuTap: onMenuTap,
+          ),
         ),
       ],
     );
@@ -141,9 +157,14 @@ const double _headerBodyHeight = 274;
 
 /// En-tête « plein écran » au dégradé bleu→teal, découpé en vague à sa base.
 class _WavyHeader extends StatelessWidget {
-  const _WavyHeader({required this.name, required this.height});
+  const _WavyHeader({
+    required this.name,
+    required this.height,
+    required this.onMenuTap,
+  });
   final String? name;
   final double height;
+  final VoidCallback? onMenuTap;
 
   @override
   Widget build(BuildContext context) {
@@ -219,11 +240,35 @@ class _WavyHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(Icons.menu, color: Colors.white, size: 28),
-                        _NotificationBell(),
+                        // L'icône était **décorative depuis l'origine** : un
+                        // `Icon` nu, sans `onTap`. Elle est désormais l'unique
+                        // ouverture du menu latéral — le glissement horizontal
+                        // y est coupé.
+                        IconButton(
+                          key: HomeScreen.menuButtonKey,
+                          onPressed: onMenuTap,
+                          tooltip: context.l10n.drawerOpen,
+                          // La hauteur de l'en-tête est **fixe** (le contenu
+                          // qui défile dessous s'en décale) : la cible tactile
+                          // par défaut d'un `IconButton`, 48 px, la ferait
+                          // déborder de 10 px. Elle s'élargit donc
+                          // horizontalement, où il y a de la place, et reste
+                          // calée à gauche pour que l'icône ne bouge pas d'un
+                          // pixel par rapport à la maquette.
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(
+                              width: 44, height: 28),
+                          alignment: Alignment.centerLeft,
+                          style: IconButton.styleFrom(
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          icon: const Icon(Icons.menu,
+                              color: Colors.white, size: 28),
+                        ),
+                        const _NotificationBell(),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xxl),

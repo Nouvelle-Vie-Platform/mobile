@@ -14,6 +14,7 @@ import '../screens/event_detail_screen.dart';
 import '../screens/gathering_detail_screen.dart';
 import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
+import '../screens/legal_placeholder_screen.dart';
 import '../screens/live_screen.dart';
 import '../screens/media_library_screen.dart';
 import '../screens/new_request_screen.dart';
@@ -45,6 +46,12 @@ abstract final class AppRoute {
   static const newRequest = 'new-request';
   static const donations = 'donations';
   static const notes = 'notes';
+
+  /// Document légal en **consultation** — `kind ∈ {cgu, privacy}`.
+  /// « À propos » a sa propre route : le ranger sous `/legal/` mentirait sur sa
+  /// nature, et l'écran ne se réduit pas au document.
+  static const legalDocument = 'legal';
+  static const about = 'about';
 
   /// Composeur d'annonce, en **création**.
   static const announcementCompose = 'announcement-compose';
@@ -249,6 +256,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.notes,
         path: '/notes',
         builder: (_, __) => const AppBackground(child: NotesScreen()),
+      ),
+      // Les trois destinations documentaires du menu latéral. Elles existent
+      // **avant** leurs écrans (#55, #57) parce qu'une entrée de menu inerte
+      // passe pour une panne : elles rendent aujourd'hui
+      // `ContentAbsence.notSynced`, c'est-à-dire exactement ce que les écrans
+      // réels diront devant un magasin qui n'a pas encore reçu le document.
+      // Aucune garde ici : la barrière d'acceptation (`/legal/accept`) est un
+      // `redirect`, pas une route de consultation.
+      GoRoute(
+        name: AppRoute.legalDocument,
+        path: '/legal/:kind',
+        builder: (_, state) => AppBackground(
+          child: LegalPlaceholderScreen(kind: state.pathParameters['kind']!),
+        ),
+      ),
+      GoRoute(
+        name: AppRoute.about,
+        path: '/about',
+        builder: (_, __) => const AppBackground(
+          child: LegalPlaceholderScreen(kind: LegalPlaceholderScreen.about),
+        ),
       ),
     ],
   );

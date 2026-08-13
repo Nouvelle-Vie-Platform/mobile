@@ -491,5 +491,16 @@
   "statusEdit": "Modifier l'annonce",
   "@statusEdit": { "description": "Visionneuse : action de modification du statut affiché. N'existe que si ce statut appartient à l'un de mes comptes officiels" },
   "statusDelete": "Supprimer l'annonce",
-  "@statusDelete": { "description": "Visionneuse : action de suppression du statut affiché" }
+  "@statusDelete": { "description": "Visionneuse : action de suppression du statut affiché" },
+
+  "drawerOpen": "Ouvrir le menu",
+  "@drawerOpen": { "description": "Infobulle de l'icône de l'accueil qui ouvre le menu latéral. Le glissement horizontal est coupé (carrousels et visionneuse de statuts) : cette icône est la seule ouverture" },
+  "drawerBrandName": "Église Évangélique Nouvelle Vie",
+  "@drawerBrandName": { "description": "Entête du menu latéral : le nom de l'église, sous l'emblème qui porte déjà « Maison du Miracle ». L'entête porte la marque, jamais la personne — l'entête utilisateur vit dans l'onglet Profil" },
+  "drawerTerms": "CGU",
+  "@drawerTerms": { "description": "Menu latéral : conditions générales d'utilisation. Abrégé, comme sur la maquette — le libellé long ne tiendrait pas sur une ligne du panneau" },
+  "drawerPrivacy": "Politique de confidentialité",
+  "@drawerPrivacy": { "description": "Menu latéral : politique de confidentialité" },
+  "drawerAbout": "À propos",
+  "@drawerAbout": { "description": "Menu latéral : écran « À propos » (version du binaire + présentation servie par le portail). Route distincte de /legal/:kind — ranger « À propos » sous /legal mentirait sur sa nature" }
 }

@@ -908,4 +908,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get statusDelete => 'Supprimer l\'annonce';
+
+  @override
+  String get drawerOpen => 'Ouvrir le menu';
+
+  @override
+  String get drawerBrandName => 'Église Évangélique Nouvelle Vie';
+
+  @override
+  String get drawerTerms => 'CGU';
+
+  @override
+  String get drawerPrivacy => 'Politique de confidentialité';
+
+  @override
+  String get drawerAbout => 'À propos';
 }
