@@ -22,6 +22,12 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   uniquement derrière `StatusImagePicker` (`lib/data/pickers/`). iOS exige
   `NSPhotoLibraryUsageDescription` dans `ios/Runner/Info.plist` : sans elle, le
   système **tue** l'application à l'ouverture du sélecteur.
+- **just_audio ^0.10 + audio_service ^0.18 + audio_session ^0.2** (#39) — le
+  lecteur de la médiathèque. `audio_service` est pris **en direct** :
+  `just_audio_background` ne permet pas de choisir les boutons de la
+  notification, et « −30 s / +30 s » est une exigence produit. Voir « Le lecteur
+  de la médiathèque » plus bas — configuration native obligatoire des deux
+  côtés.
 
 ## Commandes
 ```bash
@@ -73,6 +79,57 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
   - `local/` — **le magasin local Drift**, voir ci-dessous.
   - `pickers/status_image_picker.dart` — le choix d'une image de fond, derrière
     une abstraction (les tests injectent un sélecteur inerte).
+  - `players/` — les lecteurs, derrière une abstraction. Voir ci-dessous.
+
+### Le lecteur de la médiathèque (`lib/data/players/`) — #39
+`ContentPlayer` / `ContentPlayback` : le contrat, et la valeur immuable que
+l'UI observe. Trois implémentations sont prévues derrière lui, et **aucun écran
+ne sait laquelle tourne** — c'est le provider qui choisit :
+
+- `JustAudioContentPlayer` (+ `ContentAudioHandler`) — la réelle, mobile. **Le
+  seul fichier de `lib/` qui importe `just_audio`**, et un test de source le
+  vérifie (`test/data/content_player_test.dart`), comme le garde-fou « jamais
+  de polling » du moteur de synchronisation ;
+- `InertContentPlayer` — celle des tests, et le **défaut** du provider :
+  aucune minuterie, aucun canal de plugin, la position ne bouge pas d'elle-même ;
+- le web (`hls.js` par interop JS, **sans** `just_audio`) — pas encore écrite.
+
+**Le lecteur ne peut pas vivre dans un widget.** Sous `flutter test`, un
+`AudioPlayer` se construit, mais `setUrl` et `dispose` lèvent
+`MissingPluginException`, et `AudioService.init()` produit une **erreur
+asynchrone non rattrapée** qui traverse le `try/catch` qui l'entoure et fait
+rougir des tests qui n'ont rien demandé.
+
+**`audio_service` en direct, pas `just_audio_background`** : celui-ci n'expose
+que des intervalles et ne permet pas de **choisir les boutons** de la
+notification, or « −30 s / +30 s » est une exigence produit. Le pas unique est
+`kContentSkipInterval`, lu par le handler *et* par l'`AudioServiceConfig`.
+
+Cinq points qui se ratent en silence :
+
+1. **`contentPlayerProvider` n'est pas `autoDispose`** : la lecture doit
+   survivre au `context.pop()`, et un second `AudioPlayer` fait lever le
+   service audio.
+2. **La position émet plusieurs fois par seconde** : passer par
+   `contentPlaybackProvider.select((p) => …)`, jamais par la valeur entière.
+3. **`ContentPlayback.duration` est nullable** : en HLS elle arrive après le
+   manifeste et, sur iOS, peut ne jamais arriver. `progress` rend `null` et non
+   `0` — une barre indéterminée, pas une lecture figée au début.
+4. **`androidStopForegroundOnPause: false`** dans `main()` : le défaut `true`
+   lève `ForegroundServiceStartNotAllowedException` à la reprise sur
+   Android 12+, c'est-à-dire au geste le plus banal d'un fidèle.
+5. **La session audio se configure APRÈS `AudioService.init()`**, en profil
+   `speech()` — les plugins audio s'écrasent mutuellement, et le profil
+   « musique » baisse le volume à chaque instruction du GPS.
+
+Configuration native : Android exige quatre permissions (dont
+`POST_NOTIFICATIONS`, **demandée à l'exécution** par un canal de méthode vers
+`MainActivity` — `audio_service` ne la demande pas et son manifeste est vide),
+le service `mediaPlayback`, le `MediaButtonReceiver`, et `MainActivity extends
+AudioServiceActivity`. iOS exige `UIBackgroundModes: audio` — et **surtout pas**
+`NSAppTransportSecurity` : l'URL HLS est HTTPS publique, et
+`NSAllowsArbitraryLoads` déclencherait une justification à l'App Review pour
+rien.
 
 ### Le **modèle de lecture** de la médiathèque (`lib/models/content_view.dart`)
 `ContentView` / `SectionView` : ce qu'un écran affiche, et rien de plus. Les

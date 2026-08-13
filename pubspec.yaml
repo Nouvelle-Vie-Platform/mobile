@@ -43,6 +43,27 @@ dependencies:
   # V7 et non V4 : l'identifiant porte son instant de création, donc trie dans
   # l'ordre d'écriture — c'est la convention d'identifiant de tout ce serveur.
   uuid: ^4.5.1
+  # Le lecteur de la médiathèque (#39). Trois dépendances, une par rôle :
+  #
+  # - `just_audio` — le moteur HLS. **Un seul fichier du dépôt l'importe**
+  #   (`lib/data/players/just_audio_content_player.dart`) : tout le reste ne
+  #   connaît que `ContentPlayer`. Sous `flutter test`, `setUrl` et `dispose`
+  #   lèvent `MissingPluginException` — d'où l'implémentation inerte.
+  # - `audio_service` — la notification, l'écran verrouillé et le service de
+  #   premier plan Android. En dépendance **directe** et non via
+  #   `just_audio_background` : celui-ci n'expose que des intervalles, jamais le
+  #   **choix des boutons**, et les reculs « −30 s / +30 s » sont une exigence
+  #   produit (décision de #39). Le remplacer après coup réécrirait
+  #   l'initialisation et le handler, pas seulement l'habillage.
+  # - `audio_session` — le profil de session. `speech()` et non le défaut
+  #   « musique », qui baisse le volume à chaque instruction du GPS.
+  #
+  # Android exige un service de premier plan déclaré et quatre permissions ;
+  # iOS exige `UIBackgroundModes: audio`. Voir `AndroidManifest.xml` et
+  # `Info.plist`.
+  just_audio: ^0.10.6
+  audio_service: ^0.18.19
+  audio_session: ^0.2.4
 
 dev_dependencies:
   flutter_test:

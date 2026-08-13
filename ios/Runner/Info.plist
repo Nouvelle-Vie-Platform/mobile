@@ -54,6 +54,17 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Lecture d'un enseignement en arrière-plan (#39) : sans ce mode, iOS
+	     suspend le processus dès que l'écran se verrouille, et le son s'arrête
+	     au milieu d'un prêche.
+	     **Aucun `NSAppTransportSecurity` ici, et ce n'est pas un oubli** : le
+	     serveur exige `HLS_PUBLIC_BASE_URL` et sert une URL HTTPS absolue.
+	     `NSAllowsArbitraryLoads` déclencherait une justification à l'App Review
+	     pour un besoin qui n'existe pas. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
