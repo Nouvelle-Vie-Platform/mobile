@@ -38,9 +38,11 @@ import '../helpers/playback_doubles.dart';
 /// Rassemblements de test **sans image** : `flutter test` répond 400 à tout
 /// accès réseau.
 ///
-/// Avec `playlistUrl`, en revanche : depuis #40 c'est elle que le lecteur
-/// charge, et un rassemblement qui n'en porte pas décrit un contenu publié
-/// **sans média** — un cas réel, mais pas celui que ce fichier vérifie.
+/// Avec `playlistUrl`, **sauf le dernier** : depuis #40 c'est elle que le
+/// lecteur charge, et un rassemblement qui n'en porte pas décrit un contenu
+/// publié **sans média**. La branche « média absent » (#41) vaut pour les deux
+/// familles — le lecteur ne connaît aucune famille —, et le troisième est là
+/// pour le prouver sur celle-ci.
 final _gatherings = [
   Teaching(
     id: '019f3a10-0000-7000-8000-000000000001',
@@ -59,6 +61,15 @@ final _gatherings = [
     recordedAt: DateTime.utc(2026, 4, 20),
     publishedAt: DateTime.utc(2026, 4, 21),
     playlistUrl: 'https://exemple.test/convention/master.m3u8',
+  ),
+  Teaching(
+    id: '019f3a10-0000-7000-8000-000000000003',
+    title: 'Croisade de la moisson',
+    author: 'Évangéliste Paul',
+    teachingTypeId: 13,
+    recordedAt: DateTime.utc(2026, 4, 12),
+    publishedAt: DateTime.utc(2026, 4, 13),
+    // **Gardé sans média, délibérément** — voir le commentaire ci-dessus.
   ),
 ];
 
@@ -295,6 +306,33 @@ void main() {
       expect(find.text('Nuit de gloire'), findsOneWidget);
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
       expect(find.byIcon(Icons.pause), findsNothing);
+    });
+  });
+
+  group('Publié sans média', () {
+    testWidgets('la branche « média absent » vaut aussi pour cette famille',
+        (tester) async {
+      final router = await _pumpApp(tester);
+      router.goNamed(
+        AppRoute.gatheringDetail,
+        pathParameters: {'id': _gatherings[2].id},
+      );
+      await _settle(tester);
+
+      expect(tester.takeException(), isNull);
+      // Le lecteur ne connaît aucune famille : le même cadre, le même surtitre
+      // qu'ailleurs, et la même déclaration d'attente.
+      expect(find.byType(GatheringDetailScreen), findsOneWidget);
+      expect(find.text('RASSEMBLEMENT'), findsOneWidget);
+      expect(find.byType(ContentAbsenceView), findsOneWidget);
+      expect(find.text('Enregistrement à venir'), findsOneWidget);
+      expect(find.byType(Slider), findsNothing);
+      // Et ce n'est pas « contenu retiré » : rien n'a été supprimé.
+      expect(
+        find.text('Ce rassemblement n\'est plus disponible'),
+        findsNothing,
+      );
+      expect(find.byIcon(ContentAbsence.retracted.icon), findsNothing);
     });
   });
 

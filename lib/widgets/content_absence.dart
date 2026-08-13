@@ -16,10 +16,11 @@ import 'app_button.dart';
 ///
 /// Le type existe pour que ces quatre réponses soient **écrites au même
 /// endroit** et rendues par le même widget ([ContentAbsenceView]) : chaque
-/// variante n'apporte qu'un pictogramme et deux libellés. Seule [retracted]
-/// est câblée aujourd'hui (écran de détail d'un enseignement) ; les trois
-/// autres arrivent avec le magasin local et le lecteur média, et n'auront rien
-/// de nouveau à dessiner.
+/// variante n'apporte qu'un pictogramme et deux libellés. Deux sont câblées
+/// aujourd'hui, toutes deux dans `ContentPlayerView` — [retracted] (un
+/// identifiant qui ne résout plus rien) et [noMedia] (un contenu publié sans
+/// `playlistUrl`) ; les deux autres restent à câbler, et n'auront rien de
+/// nouveau à dessiner.
 ///
 /// Ce n'est **pas** un état d'erreur : `AppErrorState` (teinté, avec bouton
 /// « Réessayer ») dit « je n'ai pas pu charger ». Ici, le chargement a réussi
@@ -43,6 +44,11 @@ enum ContentAbsence {
   /// **Pas encore de média.** Le contenu existe et est publié, mais son fichier
   /// audio/vidéo n'est pas encore attaché (enregistrement en cours de montage).
   /// Les métadonnées s'affichent, la lecture non.
+  ///
+  /// Un état **courant**, pas un résidu : la portée de publication du serveur
+  /// ne teste que `published_at`. Rendue avec la **couleur du contenu** — il
+  /// existe, seul son enregistrement manque —, là où [retracted] retombe sur la
+  /// couleur de repli, la donnée ayant disparu.
   noMedia,
 
   /// **Média indisponible hors ligne.** Le média existe et n'a pas été

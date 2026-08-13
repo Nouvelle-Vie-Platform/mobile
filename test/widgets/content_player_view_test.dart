@@ -35,6 +35,19 @@ const _view = TeachingView(
   playlistUrl: _url,
 );
 
+/// **Publié sans média** (issue #41) — un état courant, et non un résidu : la
+/// portée de publication du serveur ne teste aujourd'hui que `published_at`.
+///
+/// Sa couleur n'est **pas** celle de la marque, et c'est délibéré : elle est ce
+/// qui distingue à l'écran « le contenu existe, seul son enregistrement
+/// manque » d'une rétractation, où la couleur est perdue avec la donnée.
+const _sansMedia = TeachingView(
+  id: _id,
+  title: 'Publié sans fichier',
+  color: 0xFF8C2233,
+  authorName: 'Pasteur Samuel',
+);
+
 /// Le contenu **piloté par le test** : les quatre états de l'`AsyncValue` se
 /// posent à la main, y compris le retour à « chargement » que rien d'autre ne
 /// sait reproduire à volonté.
@@ -105,20 +118,75 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
 
-      await _pump(
-        tester,
-        player: player,
-        content: const TeachingView(
-          id: _id,
-          title: 'Publié sans fichier',
-          color: 0xFF223B8C,
-        ),
-      );
+      await _pump(tester, player: player, content: _sansMedia);
 
-      // L'écran d'absence dédié est l'affaire de #41 ; ce qui compte ici est
-      // qu'aucune URL nulle ne soit poussée dans le lecteur.
+      // Aucune URL nulle ne part dans le lecteur, et rien ne joue.
       expect(player.loadCount, 0);
       expect(player.value.isPlaying, isFalse);
+    });
+  });
+
+  group('Publié sans média', () {
+    testWidgets('« Enregistrement à venir », dans le cadre du lecteur', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+
+      await _pump(tester, player: player, content: _sansMedia);
+
+      // Le même échafaudage que la lecture : le surtitre est là, le fidèle
+      // n'a pas été déplacé, et il a une porte de sortie.
+      expect(find.text('ENSEIGNEMENT'), findsOneWidget);
+      expect(find.byType(ContentAbsenceView), findsOneWidget);
+      expect(find.byKey(ContentAbsenceView.backKey), findsOneWidget);
+      // Le libellé existant convient tel quel : il dit une attente.
+      expect(find.text('Enregistrement à venir'), findsOneWidget);
+      expect(find.byIcon(ContentAbsence.noMedia.icon), findsOneWidget);
+      // Aucune commande : il n'y a rien à piloter.
+      expect(find.byType(Slider), findsNothing);
+      expect(find.byIcon(Icons.pause), findsNothing);
+      expect(find.byIcon(Icons.play_arrow), findsNothing);
+    });
+
+    testWidgets('« pas encore disponible » n\'est pas « contenu retiré »', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+
+      await _pump(tester, player: player, content: _sansMedia);
+
+      // Réutiliser `retracted` ferait croire à une suppression : le fidèle
+      // cesserait d'attendre un enregistrement qui arrive.
+      expect(
+          find.text('Cet enseignement n\'est plus disponible'), findsNothing);
+      expect(find.byIcon(ContentAbsence.retracted.icon), findsNothing);
+    });
+
+    testWidgets('la couleur reste celle du contenu', (tester) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+
+      await _pump(tester, player: player, content: _sansMedia);
+
+      // L'inverse exact de la rétractation, qui retombe sur le bleu de marque
+      // faute de contenu d'où tirer une teinte. Ici le contenu est là, son
+      // habillage aussi ; seul son enregistrement manque.
+      expect(_scaffoldBase(tester), const Color(0xFF8C2233));
+    });
+
+    testWidgets('la rétractation, elle, retombe sur la couleur de repli', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      final container = await _pump(tester, player: player);
+
+      container.read(_contentProvider.notifier).set(const AsyncData(null));
+      await tester.pump();
+
+      expect(_scaffoldBase(tester), const Color(kBrandFallbackColor));
     });
   });
 
@@ -406,6 +474,22 @@ void main() {
       expect(reporter.reports.last.completed, isTrue);
     });
   });
+}
+
+/// La couleur d'où part le dégradé du cadre du lecteur.
+///
+/// Elle n'est lisible que là : le cadre est privé au fichier de production, et
+/// c'est bien ce qu'on veut vérifier — la teinte que porte l'écran, pas la
+/// valeur qu'on lui a passée.
+Color _scaffoldBase(WidgetTester tester) {
+  final gradient = tester
+      .widgetList<Container>(find.byType(Container))
+      .map((container) => container.decoration)
+      .whereType<BoxDecoration>()
+      .map((decoration) => decoration.gradient)
+      .whereType<LinearGradient>()
+      .first;
+  return gradient.colors.first;
 }
 
 /// Monte le lecteur seul, sur un contenu piloté par le test.

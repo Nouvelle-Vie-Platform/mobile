@@ -603,6 +603,17 @@ l'écran qu'il avait ouvert (il croirait à un bug), on **ne fige pas** la
 dernière copie connue (ça ment), la lecture en cours **s'arrête**, et il y a
 toujours une porte de sortie.
 
+Deux sont câblées, toutes deux dans `ContentPlayerView` : `retracted` quand
+l'identifiant ne résout plus rien, et `noMedia` quand `playlistUrl` est nul
+(#41). **`noMedia` n'est pas une branche défensive** : la portée de publication
+du serveur ne teste aujourd'hui que `published_at` (ADR-0034 vit sur une branche
+serveur non fusionnée), un contenu publié sans média est donc un état courant.
+Elle est rendue **avec la couleur du contenu**, là où `retracted` retombe sur le
+bleu de marque — le contenu existe, son habillage aussi ; seul son
+enregistrement manque. Et **jamais `retracted` à sa place** : « pas encore
+disponible » n'est pas « contenu retiré », et confondre les deux ferait croire à
+une suppression.
+
 À ne pas confondre avec les états de liste : `AppErrorState` (teinté,
 « Réessayer ») dit « je n'ai pas pu charger » ; `AppEmptyState` est une carte
 dans une liste. Une absence, elle, occupe l'écran entier.

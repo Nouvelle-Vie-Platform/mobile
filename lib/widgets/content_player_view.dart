@@ -41,7 +41,7 @@ const _fallbackBase = Color(kBrandFallbackColor);
 /// c'est pourquoi ils vivent ici plutôt que dans les deux écrans, où ils
 /// auraient été écrits deux fois.
 ///
-/// Quatre situations, et elles sont distinctes :
+/// Cinq situations, et elles sont distinctes :
 ///
 /// - **chargement** — le cadre du lecteur, sans son contenu. Aucun titre
 ///   d'emprunt, aucune couleur devinée ;
@@ -51,11 +51,13 @@ const _fallbackBase = Color(kBrandFallbackColor);
 /// - **identifiant qui ne résout plus rien** — l'écran **reste ouvert** et
 ///   bascule sur [ContentAbsence.retracted] : on n'éjecte pas quelqu'un en
 ///   pleine lecture, et on ne fige pas une copie qui mentirait ;
+/// - **contenu publié sans média** (`playlistUrl` nul) —
+///   [ContentAbsence.noMedia], **avec la couleur du contenu** : ce n'est pas un
+///   retrait, c'est une attente ;
 /// - **contenu trouvé** — le lecteur.
 ///
-/// Les trois premières partagent le même cadre ([_PlayerScaffold]) : basculer
-/// sur un écran d'allure différente reviendrait à déplacer le fidèle sans le lui
-/// dire.
+/// Toutes partagent le même cadre ([_PlayerScaffold]) : basculer sur un écran
+/// d'allure différente reviendrait à déplacer le fidèle sans le lui dire.
 ///
 /// **Une rétractation reçue pendant l'écoute arrête le son**, et pas seulement
 /// l'affichage. C'est la disparition de la valeur qui le déclenche, jamais un
@@ -185,9 +187,12 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     return ref.watch(widget.content).when(
           loading: () => _buildLoading(context),
           error: (_, __) => _buildError(context),
-          data: (content) => content == null
-              ? _buildAbsent(context)
-              : _buildPlayer(context, content),
+          data: (content) => switch (content) {
+            null => _buildAbsent(context),
+            final found when found.playlistUrl == null =>
+              _buildNoMedia(context, found),
+            final found => _buildPlayer(context, found),
+          },
         );
   }
 
@@ -253,6 +258,41 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     );
   }
 
+  /// **Publié sans média** : le contenu est là, son enregistrement n'y est pas
+  /// encore. Même cadre, même surtitre, [ContentAbsence.noMedia] à la place du
+  /// lecteur — et surtout **pas** [ContentAbsence.retracted] : « pas encore
+  /// disponible » n'est pas « contenu retiré », et confondre les deux ferait
+  /// cesser d'attendre un enregistrement qui arrive.
+  ///
+  /// **La couleur est celle du contenu**, et c'est ce qui distingue cet écran
+  /// du précédent : là-bas la donnée a disparu, sa teinte avec elle, d'où le
+  /// bleu de repli ; ici le contenu existe, son habillage aussi. Les
+  /// métadonnées restent consultables pour la même raison.
+  ///
+  /// Ce n'est pas une branche défensive. La portée de publication du serveur ne
+  /// teste aujourd'hui que `published_at` : un contenu publié sans média est un
+  /// état courant, et il le restera sur tout appareil déjà synchronisé.
+  Widget _buildNoMedia(BuildContext context, ContentView content) {
+    return _PlayerScaffold(
+      base: Color(content.color),
+      child: Column(
+        children: [
+          _PlayerTopBar(
+            title: widget.chromeTitle,
+            onInfo: () => _showInfoSheet(context, content),
+          ),
+          Expanded(
+            child: ContentAbsenceView(
+              absence: ContentAbsence.noMedia,
+              onDark: true,
+              onBack: () => context.pop(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ───────────────────────────────────────────────────────────────────────────
   // Le pilotage du lecteur
   // ───────────────────────────────────────────────────────────────────────────
@@ -282,9 +322,9 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
   /// qu'ouvrir la fiche d'un prêche est, ici, l'acte d'aller l'écouter.
   Future<void> _open(ContentView content) async {
     final url = content.playlistUrl;
-    // Publié sans média : rien à charger. La déclaration d'absence dédiée
-    // (`ContentAbsence.noMedia`) est l'affaire du ticket suivant ; ce qui
-    // compte ici est qu'aucune URL nulle ne parte dans le lecteur.
+    // Publié sans média : rien à charger. `_buildNoMedia` le dit à l'écran ;
+    // cette garde-ci tient l'autre moitié — aucune URL nulle ne part dans le
+    // lecteur, y compris par le geste explicite de `_togglePlayback`.
     if (url == null) return;
 
     final player = ref.read(contentPlayerProvider);
