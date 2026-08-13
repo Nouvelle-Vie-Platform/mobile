@@ -182,7 +182,8 @@ void main() {
       expect(player.value.position, const Duration(minutes: 10));
     });
 
-    test('stop relâche le média', () async {
+    test('stop relâche le média **et** vide ce que le système affiche',
+        () async {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
 
@@ -191,6 +192,12 @@ void main() {
       player.stop();
 
       expect(player.value, const ContentPlayback());
+      // La moitié qui se rate en silence : un contenu retiré pendant l'écoute
+      // dont le titre resterait affiché sur l'écran verrouillé, avec ses
+      // commandes. L'implémentation réelle vide son `MediaItem` ; celle-ci vide
+      // ce qui en tient lieu.
+      expect(player.loadedTitle, isNull);
+      expect(player.loadedUrl, isNull);
     });
 
     test('notifie ses auditeurs à chaque changement, et seulement alors',
