@@ -28,6 +28,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
 import 'content_player.dart';
+import 'playback_watchdog.dart';
 
 /// **Le pilote du média, côté système.**
 ///
@@ -209,9 +210,23 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   /// [stop] : il n'y a alors plus rien à reprendre.
   ContentRequest? _request;
 
+  /// **Le chien de garde du décrochage silencieux — c'est ici qu'il compte.**
+  ///
+  /// Sur iOS, un décrochage réseau ne remonte aucune erreur et il n'y a pas de
+  /// reconnexion native : sans lui, un prêche d'une heure s'arrête au bout de
+  /// dix minutes, définitivement, et rien n'en portera jamais la trace.
+  late final PlaybackWatchdog _watchdog = PlaybackWatchdog(
+    onStalled: (at) {
+      final request = _request;
+      if (request == null) return;
+      unawaited(_reopenAt(request, at));
+    },
+  );
+
   void _emit(ContentPlayback playback) {
     if (_disposed) return;
     value = playback;
+    _watchdog.observe(playback);
   }
 
   @override
@@ -276,6 +291,12 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
       unawaited(_handler.play());
       return;
     }
+    await _reopenAt(request, at);
+  }
+
+  /// Rouvre la source à [at] et repart — le geste commun au repli de [resume]
+  /// et au chien de garde.
+  Future<void> _reopenAt(ContentRequest request, Duration at) async {
     await _open(request, at: at);
     if (_disposed) return;
     unawaited(_handler.play());
@@ -332,6 +353,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    _watchdog.dispose();
     for (final subscription in _subscriptions) {
       unawaited(subscription.cancel());
     }

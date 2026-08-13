@@ -1,6 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/players/media_element_playback.dart';
+import 'package:maison_du_miracle/data/players/playback_watchdog.dart';
+
+/// Ce que fait `HlsContentPlayer` à sa construction, sans le DOM : armer le
+/// chien de garde sur sa propre réouverture de source.
+///
+/// La classe nue, elle, ne l'arme pas — sans quoi chacun des tests ci-dessus
+/// laisserait une minuterie en suspens.
+class _WatchedPlayback extends MediaElementPlayback {
+  _WatchedPlayback() {
+    armStallWatchdog(reopened.add);
+  }
+
+  final List<Duration> reopened = [];
+}
 
 /// **La part vérifiable du lecteur web.**
 ///
@@ -329,6 +343,53 @@ void main() {
     test('sans rien de chargé, il n\'y a rien à reprendre', () {
       expect(playback.beginResume(), isNull);
       expect(playback.value, const ContentPlayback());
+    });
+  });
+
+  group('MediaElementPlayback — le chien de garde', () {
+    testWidgets('la classe nue ne pose aucune minuterie', (tester) async {
+      // Ce qui protège les vingt tests ci-dessus : une minuterie posée d'office
+      // les ferait tous rougir sur « pending timer ».
+      final playback = MediaElementPlayback();
+      addTearDown(playback.dispose);
+      playback.startLoading('c1');
+      playback.markPlayRequested();
+
+      await tester.pump(kPlaybackStallTimeout * 3);
+    });
+
+    testWidgets('une position figée en tampon rouvre la source', (
+      tester,
+    ) async {
+      final playback = _WatchedPlayback();
+      addTearDown(playback.dispose);
+
+      playback.startLoading('c1');
+      playback.markRendering();
+      playback.updatePosition(2214);
+      // `waiting` : le média s'est arrêté faute de données. Sur iOS, plus rien
+      // n'arrivera jamais — ni segment, ni erreur.
+      playback.markWaiting();
+
+      await tester.pump(kPlaybackStallTimeout + const Duration(seconds: 1));
+
+      expect(playback.reopened, [const Duration(seconds: 2214)]);
+    });
+
+    testWidgets('une lecture qui avance n\'est jamais rouverte', (
+      tester,
+    ) async {
+      final playback = _WatchedPlayback();
+      addTearDown(playback.dispose);
+
+      playback.startLoading('c1');
+      playback.markRendering();
+      for (var second = 1; second <= 60; second++) {
+        playback.updatePosition(second.toDouble());
+        await tester.pump(const Duration(seconds: 1));
+      }
+
+      expect(playback.reopened, isEmpty);
     });
   });
 

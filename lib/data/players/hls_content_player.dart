@@ -40,6 +40,14 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
   /// tenir l'élément qu'ils pilotent. En production, le lecteur crée le sien.
   HlsContentPlayer({web.HTMLAudioElement? element})
       : _audio = element ?? web.HTMLAudioElement() {
+    // **Le chien de garde du décrochage silencieux.** Il existe pour iOS, où
+    // rien ne remonte ; il vaut ici aussi — `hls.js` abandonne après ses
+    // propres réessais, et Safari partage le moteur natif de l'iPhone.
+    armStallWatchdog((at) {
+      final request = _request;
+      if (request == null) return;
+      _reopenAt(request, at);
+    });
     // `auto` et non `metadata` : un enseignement s'écoute d'un bout à l'autre,
     // et le tampon d'avance est ce qui absorbe une connexion irrégulière.
     _audio.preload = 'auto';

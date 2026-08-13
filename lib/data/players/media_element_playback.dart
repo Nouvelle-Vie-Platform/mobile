@@ -15,6 +15,7 @@ library;
 import 'package:flutter/foundation.dart';
 
 import 'content_player.dart';
+import 'playback_watchdog.dart';
 
 /// **Une panne de lecture web**, portée telle quelle par
 /// [ContentPlayback.error].
@@ -57,6 +58,30 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
   MediaElementPlayback() : super(const ContentPlayback());
 
   bool _disposed = false;
+
+  /// Le chien de garde, `null` tant que personne ne l'a armé.
+  ///
+  /// **Désarmé par défaut, et c'est délibéré** : cette classe nue n'a aucune
+  /// source à rouvrir, et une minuterie qu'elle poserait d'elle-même ferait
+  /// rougir sur « pending timer » tous les tests qui l'instancient pour
+  /// vérifier une traduction d'événement. C'est l'implémentation qui sait
+  /// rouvrir une source qui l'arme — voir [armStallWatchdog].
+  PlaybackWatchdog? _watchdog;
+
+  /// **Arme le chien de garde du décrochage silencieux.**
+  ///
+  /// [reopen] reçoit la position figée et doit rouvrir la source à cet
+  /// endroit. Appelé par [HlsContentPlayer] à sa construction ; [timeout] n'est
+  /// là que pour les tests, la valeur de production étant unique
+  /// ([kPlaybackStallTimeout]).
+  @protected
+  void armStallWatchdog(
+    void Function(Duration at) reopen, {
+    Duration timeout = kPlaybackStallTimeout,
+  }) {
+    _watchdog?.dispose();
+    _watchdog = PlaybackWatchdog(onStalled: reopen, timeout: timeout);
+  }
 
   /// Vrai après [dispose] : toutes les entrées deviennent alors sans effet.
   ///
@@ -215,12 +240,18 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
   void _emit(ContentPlayback playback) {
     if (_disposed) return;
     value = playback;
+    // Le chien de garde se nourrit de **toutes** les émissions, y compris
+    // celles qui le désarment : c'est la position figée en tampon qu'il guette,
+    // et elle n'arrive que par là.
+    _watchdog?.observe(playback);
   }
 
   @override
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    _watchdog?.dispose();
+    _watchdog = null;
     super.dispose();
   }
 
