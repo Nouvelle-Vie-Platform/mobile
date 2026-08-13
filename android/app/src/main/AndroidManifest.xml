@@ -1,4 +1,19 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Lecture d'un enseignement en arrière-plan (#39). Le manifeste
+         d'`audio_service` est **vide** : tout ce qui suit est à la charge de
+         l'application, rien n'est fusionné automatiquement. -->
+    <!-- Garder le processeur éveillé pendant qu'un prêche joue, écran éteint. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- Le service de premier plan, et son type depuis Android 14. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
+    <!-- Android 13+. C'est une permission **d'exécution** : la déclarer ici ne
+         suffit pas, et `audio_service` ne la demande pas. Sans la demande faite
+         par l'application (voir `MainActivity.kt` et
+         `playback_notifications.dart`), la notification de lecture
+         n'apparaît jamais — silencieusement. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="maison_du_miracle"
         android:name="${applicationName}"
@@ -25,6 +40,30 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Le service de lecture d'`audio_service`. `MainActivity` étend
+             `AudioServiceActivity` (elle partage le `FlutterEngine` du
+             service) : l'activité garde donc son propre nom ici, et c'est le
+             `.kt` qui fait le lien. -->
+        <service
+            android:name="com.ryanheise.audioservice.AudioService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <!-- Boutons du casque, de la voiture et des montres. -->
+        <receiver
+            android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
