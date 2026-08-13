@@ -95,12 +95,19 @@ final mandatoryLegalVersionsProvider = Provider<Map<String, int>>((ref) {
 /// une case par entrée. Si seule la politique a changé, il y a une entrée, donc
 /// une case et un document.
 final pendingLegalAcceptancesProvider = Provider<List<String>>((ref) {
+  // **Les planchers d'abord, et sans condition** — y compris quand personne
+  // n'est connecté. L'ordre de ces deux lignes est le seul endroit de ce
+  // fichier où l'on peut se tromper en silence : un `return` anticipé sur
+  // l'utilisateur nul laisserait ce provider sans dépendance vers le magasin
+  // pendant tout le démarrage (la session s'ouvre après), et rien ne le
+  // rebrancherait — la barrière n'apparaîtrait qu'à la navigation suivante.
+  final mandatory = ref.watch(mandatoryLegalVersionsProvider);
   final user = ref.watch(authProvider).user;
   // Personne de connecté : la question ne se pose pas. Elle se posera à la
   // seconde où une session s'ouvrira, avec le résumé que le serveur y aura mis.
   if (user == null) return const [];
   return pendingLegalAcceptances(
-    mandatory: ref.watch(mandatoryLegalVersionsProvider),
+    mandatory: mandatory,
     accepted: user.acceptedLegal,
   );
 });
