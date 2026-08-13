@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
@@ -17,6 +19,7 @@ import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
+import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
 
@@ -31,6 +34,10 @@ import 'package:maison_du_miracle/widgets/content_absence.dart';
 
 /// Rassemblements de test **sans image** : `flutter test` répond 400 à tout
 /// accès réseau.
+///
+/// Avec `playlistUrl`, en revanche : depuis #40 c'est elle que le lecteur
+/// charge, et un rassemblement qui n'en porte pas décrit un contenu publié
+/// **sans média** — un cas réel, mais pas celui que ce fichier vérifie.
 final _gatherings = [
   Teaching(
     id: '019f3a10-0000-7000-8000-000000000001',
@@ -39,6 +46,7 @@ final _gatherings = [
     teachingTypeId: 11,
     recordedAt: DateTime.utc(2026, 5, 2),
     publishedAt: DateTime.utc(2026, 5, 3),
+    playlistUrl: 'https://exemple.test/nuit-de-gloire/master.m3u8',
   ),
   Teaching(
     id: '019f3a10-0000-7000-8000-000000000002',
@@ -47,6 +55,7 @@ final _gatherings = [
     teachingTypeId: 12,
     recordedAt: DateTime.utc(2026, 4, 20),
     publishedAt: DateTime.utc(2026, 4, 21),
+    playlistUrl: 'https://exemple.test/convention/master.m3u8',
   ),
 ];
 
@@ -119,6 +128,7 @@ class _FakeGatherings implements GatheringRepository {
         locale: locale,
         contributorName: gathering.author,
         teachingTypeId: gathering.teachingTypeId,
+        playlistUrl: gathering.playlistUrl,
         publishedAt: gathering.publishedAt,
         recordedAt: gathering.recordedAt,
       );
@@ -317,8 +327,16 @@ Future<GoRouter> _pumpApp(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
+  // Magasin **en mémoire** : l'écran de lecture ouvre un enregistreur de
+  // progression (#43), qui lit et écrit son `PlaybackDao` sans passer par un
+  // repository. Sans cette surcharge, le test ouvrirait un fichier de base sur
+  // la machine — quand il ne lèverait pas, faute de canal de plugin.
+  final database = AppDatabase(NativeDatabase.memory());
+  addTearDown(database.close);
+
   final container = ProviderContainer.test(
     overrides: [
+      appDatabaseProvider.overrideWithValue(database),
       authRepositoryProvider.overrideWithValue(_SignedInAuthRepository()),
       branchRepositoryProvider
           .overrideWithValue(const InMemoryBranchRepository()),

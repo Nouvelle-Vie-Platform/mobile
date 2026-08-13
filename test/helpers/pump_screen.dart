@@ -1,7 +1,9 @@
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
@@ -12,6 +14,7 @@ import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
+import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 
 /// Monte un écran isolé dans un environnement minimal (ProviderScope + thème).
@@ -46,6 +49,14 @@ import 'package:maison_du_miracle/theme/app_theme.dart';
 /// oublier : `HomeShell` monte les quatre onglets dans un `IndexedStack`, donc
 /// la visionneuse de statuts vit dès qu'un test monte la coquille — et
 /// ouvrirait le magasin Drift sans que le test parle jamais d'annonces.
+///
+/// Le magasin lui-même est posé **en mémoire**, et non simplement contourné :
+/// tous les chemins ne passent pas par un repository. La reprise de lecture
+/// (#43), branchée sur le lecteur par #40, lit et écrit son `PlaybackDao` en
+/// direct — un écran de lecture ouvrirait donc un fichier de base sur la
+/// machine de test, et sur un harnais sans canal de plugin il n'en ouvrirait
+/// même pas : il lèverait. Une base en mémoire ne coûte rien tant que personne
+/// ne l'interroge (Drift ouvre à la première requête).
 Future<void> pumpScreen(
   WidgetTester tester,
   Widget screen, {
@@ -54,9 +65,13 @@ Future<void> pumpScreen(
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
 }) async {
+  final database = AppDatabase(NativeDatabase.memory());
+  addTearDown(database.close);
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        appDatabaseProvider.overrideWithValue(database),
         authRepositoryProvider.overrideWithValue(InMemoryAuthRepository()),
         branchRepositoryProvider
             .overrideWithValue(const InMemoryBranchRepository()),
