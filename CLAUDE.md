@@ -16,8 +16,10 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   a des implémentations natives — et Drift la retire pour de bon : il embarque
   `sqlite3` en natif, et sur le web il exige `web/sqlite3.wasm` et
   `web/drift_worker.js`, **versionnés dans le dépôt** et appariés à
-  `pubspec.lock`. Après toute montée de version de `drift` ou `sqlite3` :
-  `make web-assets`. Voir `web/WEB_ASSETS.md`.
+  `pubspec.lock`. Le lecteur de la médiathèque y ajoute `web/hls.min.js` (#46),
+  versionné de la même façon mais épinglé dans `tool/web_assets.sh` — `hls.js`
+  n'est pas un paquet Dart. Après toute montée de `drift`, `sqlite3` ou
+  `hls.js` : `make web-assets`. Voir `web/WEB_ASSETS.md`. **Aucun CDN.**
 - **image_picker ^1.2.3** (#36) — dépôt d'image du composeur d'annonces. Lu
   uniquement derrière `StatusImagePicker` (`lib/data/pickers/`). iOS exige
   `NSPhotoLibraryUsageDescription` dans `ios/Runner/Info.plist` : sans elle, le
@@ -27,7 +29,12 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   `just_audio_background` ne permet pas de choisir les boutons de la
   notification, et « −30 s / +30 s » est une exigence produit. Voir « Le lecteur
   de la médiathèque » plus bas — configuration native obligatoire des deux
-  côtés.
+  côtés. **Aucun des trois ne sert sur le web** (#46) : `just_audio_web` ne joue
+  rien hors Safari, et `audio_service` y est un no-op.
+- **`web ^1.1.1`** (#46) — l'interop DOM du lecteur web, successeur de
+  `dart:html` (retiré du jeu en Dart 3.12, comme `package:js`). Déjà présent en
+  transitif ; déclaré parce qu'on l'importe soi-même. **Un seul fichier de
+  `lib/` l'importe**, `hls_content_player.dart`.
 
 ## Commandes
 ```bash
@@ -39,7 +46,8 @@ flutter gen-l10n             # OBLIGATOIRE après toute édition d'un .arb
 dart format lib/ test/       # formatage (CI le vérifie)
 make gen                     # OBLIGATOIRE après tout changement de table Drift
 make migrations              # + après un changement de schemaVersion
-make web-assets              # après une montée de drift / sqlite3
+make web-assets              # après une montée de drift / sqlite3 / hls.js
+make hls-probe               # prouve dans Chrome que le lecteur web joue (réseau requis)
 ```
 La CI (`.github/workflows/flutter-ci.yml`) lance format + analyze + test.
 **Elle ne lance pas `build_runner`** : les `.g.dart` et `drift_schemas/` sont
@@ -81,10 +89,10 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
     une abstraction (les tests injectent un sélecteur inerte).
   - `players/` — les lecteurs, derrière une abstraction. Voir ci-dessous.
 
-### Le lecteur de la médiathèque (`lib/data/players/`) — #39
+### Le lecteur de la médiathèque (`lib/data/players/`) — #39, #46
 `ContentPlayer` / `ContentPlayback` : le contrat, et la valeur immuable que
-l'UI observe. Trois implémentations sont prévues derrière lui, et **aucun écran
-ne sait laquelle tourne** — c'est le provider qui choisit :
+l'UI observe. **Trois** implémentations vivent derrière lui, et **aucun écran ne
+sait laquelle tourne** — c'est `main.dart` qui choisit, par `kIsWeb` :
 
 - `JustAudioContentPlayer` (+ `ContentAudioHandler`) — la réelle, mobile. **Le
   seul fichier de `lib/` qui importe `just_audio`**, et un test de source le
@@ -92,7 +100,8 @@ ne sait laquelle tourne** — c'est le provider qui choisit :
   de polling » du moteur de synchronisation ;
 - `InertContentPlayer` — celle des tests, et le **défaut** du provider :
   aucune minuterie, aucun canal de plugin, la position ne bouge pas d'elle-même ;
-- le web (`hls.js` par interop JS, **sans** `just_audio`) — pas encore écrite.
+- `HlsContentPlayer` — celle du **web** (#46) : `hls.js` par interop JS, **sans
+  aucun des trois paquets audio**. Voir « Le lecteur web » juste après.
 
 **Le lecteur ne peut pas vivre dans un widget.** Sous `flutter test`, un
 `AudioPlayer` se construit, mais `setUrl` et `dispose` lèvent
@@ -103,7 +112,8 @@ rougir des tests qui n'ont rien demandé.
 **`audio_service` en direct, pas `just_audio_background`** : celui-ci n'expose
 que des intervalles et ne permet pas de **choisir les boutons** de la
 notification, or « −30 s / +30 s » est une exigence produit. Le pas unique est
-`kContentSkipInterval`, lu par le handler *et* par l'`AudioServiceConfig`.
+`kContentSkipInterval`, lu par le handler *et* par l'`AudioServiceConfig` *et*
+par l'écran — donc aussi sur le web, où il n'y a que l'écran.
 
 Cinq points qui se ratent en silence :
 
@@ -121,6 +131,44 @@ Cinq points qui se ratent en silence :
 5. **La session audio se configure APRÈS `AudioService.init()`**, en profil
    `speech()` — les plugins audio s'écrasent mutuellement, et le profil
    « musique » baisse le volume à chaque instruction du GPS.
+
+#### Le lecteur **web** (`hls_content_player.dart`) — #46
+`just_audio_web` pose l'URL `.m3u8` dans un `<audio>` **sans lecteur HLS** : sa
+classe de source HLS est une sous-classe vide. Chrome répond
+`MEDIA_ERR_SRC_NOT_SUPPORTED` et rejette `play()` — l'application tourne et ne
+joue rien. Le correctif amont n'a jamais été fusionné (issue ouverte depuis
+2020) ; on ne met pas un fork non maintenu sur le chemin critique de l'écoute.
+
+Cinq points qui se ratent en silence, eux aussi :
+
+1. **Ne jamais interroger `canPlayType` en premier.** Chrome répond `"maybe"` à
+   `canPlayType('application/vnd.apple.mpegurl')` et échoue quand même — mesuré,
+   pas supposé. L'ordre est celui que `hls.js` documente : `Hls.isSupported()`
+   d'abord (il teste `MediaSource`), le natif seulement en repli, pour Safari
+   iOS. **Aucun reniflage d'agent utilisateur.**
+2. **`main()` n'appelle pas `AudioService.init()` sur le web** : notification et
+   écran verrouillé n'y existent pas. Un échec de démarrage du lecteur web ne
+   doit jamais empêcher l'application de s'ouvrir — même `try` que sur mobile.
+3. **Deux fichiers, une porte.** Les décisions vivent dans
+   `media_element_playback.dart`, qui ne connaît **ni le DOM ni
+   `dart:js_interop`** et se teste donc sous `flutter test` ;
+   `hls_content_player.dart` n'a que des câbles et n'est **jamais compilé pour
+   la VM** — `web_content_player.dart` est l'import conditionnel qui l'isole
+   (`if (dart.library.js_interop)`). Sans cette porte, `flutter test` et les
+   builds mobiles ne compileraient plus.
+4. **`duration` d'un `<audio>` vaut `NaN`** avant les métadonnées et `Infinity`
+   sur un flux live : les deux restent `null`, jamais `0`. Et une durée
+   redevenue `NaN` (détachement de source) **n'efface pas** la durée connue.
+5. **`load` rend la main dès la source attachée**, sans attendre les
+   métadonnées : attendre `loadedmetadata` donnerait un `Future` qui ne se
+   résout jamais si le manifeste ne répond pas. Les pannes arrivent par
+   `value.error`, comme sur mobile.
+
+Ce que `flutter test` ne peut pas dire — que `hls.js` se charge et qu'un `.m3u8`
+avance — se prouve par **`make hls-probe`** : un point d'entrée web jetable
+(`tool/hls_probe/`) qui pilote le vrai lecteur contre un flux HLS public dans un
+Chrome sans tête. À relancer après toute montée de version de `hls.js`. Ce n'est
+pas un test : réseau et Chrome requis, jamais en CI.
 
 Configuration native : Android exige quatre permissions (dont
 `POST_NOTIFICATIONS`, **demandée à l'exécution** par un canal de méthode vers

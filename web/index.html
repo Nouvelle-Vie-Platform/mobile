@@ -31,6 +31,21 @@
 
   <title>maison_du_miracle</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    hls.js — le lecteur HLS du web, sans lequel la médiathèque est muette hors
+    Safari (voir web/WEB_ASSETS.md et lib/data/players/hls_content_player.dart).
+
+    Servi depuis le dépôt et JAMAIS depuis un CDN, pour la même raison que
+    sqlite3.wasm : une dépendance réseau tierce au démarrage est une panne de
+    plus, et un point de confiance de plus.
+
+    `defer` : le script s'exécute avant DOMContentLoaded, donc bien avant qu'un
+    fidèle n'ouvre un enseignement, sans retarder le premier rendu de 617 ko.
+    S'il manquait, HlsContentPlayer se rabattrait sur `<audio src>` et la panne
+    remonterait à l'écran en MEDIA_ERR_SRC_NOT_SUPPORTED — pas en silence.
+  -->
+  <script src="hls.min.js" defer></script>
 </head>
 <body>
   <!--
