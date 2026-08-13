@@ -6,7 +6,6 @@ import 'package:maison_du_miracle/core/config/app_env.dart';
 import 'package:maison_du_miracle/core/network/api_client.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
-import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/legal_repository.dart';
@@ -14,7 +13,6 @@ import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart'
 import 'package:maison_du_miracle/data/repositories/store_legal_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/models/legal_document_view.dart';
-import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/legal_acceptance_screen.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
@@ -29,6 +27,7 @@ import 'package:maison_du_miracle/theme/app_theme.dart';
 import '../data/local/local_database_fixtures.dart';
 import '../helpers/fake_sync_server.dart';
 import '../helpers/playback_doubles.dart';
+import '../helpers/signed_in_auth.dart';
 import '../helpers/sync_fixtures.dart';
 
 /// **La barrière de consentement se lève-t-elle vraiment quand il le faut, et
@@ -75,7 +74,7 @@ void main() {
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         authRepositoryProvider
-            .overrideWithValue(_SignedInAuthRepository(accepted: accepted)),
+            .overrideWithValue(SignedInAuthRepository(accepted: accepted)),
       ],
     );
     addTearDown(container.dispose);
@@ -231,7 +230,7 @@ void main() {
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         authRepositoryProvider
-            .overrideWithValue(_SignedInAuthRepository(accepted: const {})),
+            .overrideWithValue(SignedInAuthRepository(accepted: const {})),
         branchRepositoryProvider
             .overrideWithValue(const InMemoryBranchRepository()),
         playbackProgressReporterProvider
@@ -340,61 +339,3 @@ final List<LegalDocument> _requiredDocuments = [
     ],
   ),
 ];
-
-/// Une session déjà ouverte, dont on choisit le résumé d'acceptation.
-class _SignedInAuthRepository implements AuthRepository {
-  _SignedInAuthRepository({required Map<String, int> accepted})
-      : _user = User(
-          id: 'u_1',
-          firstName: 'Jean',
-          status: UserStatus.affiliated,
-          profileComplete: true,
-          acceptedLegal: accepted,
-        );
-
-  User _user;
-
-  @override
-  Future<User?> cachedUser() async => _user;
-
-  @override
-  Future<User?> currentUser() async => _user;
-
-  @override
-  Future<void> rememberUser(User user) async => _user = user;
-
-  @override
-  Future<void> forgetSession() async {}
-
-  @override
-  Future<void> signOut() async {}
-
-  @override
-  Future<void> requestCode({
-    required String identifier,
-    required IdentifierChannel channel,
-  }) async {}
-
-  @override
-  Future<Session> verifyCode({
-    required String identifier,
-    required String code,
-  }) =>
-      throw UnimplementedError();
-
-  @override
-  Future<Session> signInWithGoogle() => throw UnimplementedError();
-
-  @override
-  Future<Session> signInWithApple() => throw UnimplementedError();
-
-  @override
-  Future<User> updateProfile({
-    UserTitle? title,
-    String? firstName,
-    String? lastName,
-    int? branchId,
-    UserStatus? status,
-  }) =>
-      throw UnimplementedError();
-}
