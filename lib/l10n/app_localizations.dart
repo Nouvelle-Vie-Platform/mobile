@@ -1330,16 +1330,16 @@ abstract class AppLocalizations {
   /// **'L\'enregistrement n\'est pas encore en ligne. Revenez d\'ici quelques jours.'**
   String get absenceNoMediaMessage;
 
-  /// Absence « média indisponible hors ligne » (ContentAbsence.offlineMedia) : le média existe mais n'a pas été téléchargé et l'appareil est hors ligne. La seule des quatre qui se résout en retrouvant du réseau. Pas encore câblé
+  /// Absence « écoute impossible hors ligne » (ContentAbsence.offlineMedia) : le média existe, l'appareil est hors ligne. La seule des quatre qui se résout en retrouvant du réseau. NE JAMAIS y remettre de téléchargement : la médiathèque s'écoute EN LIGNE SEULEMENT (docs/mediatheque-en-ligne.md), le catalogue est hors ligne, le son ne l'est pas. Pas encore câblé
   ///
   /// In fr, this message translates to:
-  /// **'Indisponible hors ligne'**
+  /// **'Écoute impossible hors ligne'**
   String get absenceOfflineMediaTitle;
 
-  /// Explication de l'absence « média indisponible hors ligne » : dit l'action qui débloque
+  /// Explication de l'absence « écoute impossible hors ligne » : dit la règle (l'écoute passe par le réseau) puis l'action qui débloque. La formulation précédente — « cet enregistrement n'a pas été téléchargé » — présupposait une fonction de téléchargement qui n'existe pas et n'est pas prévue, et envoyait le fidèle chercher un bouton introuvable
   ///
   /// In fr, this message translates to:
-  /// **'Cet enregistrement n\'a pas été téléchargé. Reconnectez-vous à internet pour l\'écouter.'**
+  /// **'La médiathèque s\'écoute en ligne. Reconnectez-vous à internet pour lancer la lecture.'**
   String get absenceOfflineMediaMessage;
 
   /// Action commune aux quatre absences (ContentAbsenceView) : rend la main sans éjecter le fidèle de l'écran qu'il avait ouvert

@@ -690,11 +690,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'The recording isn\'t online yet. Check back in a few days.';
 
   @override
-  String get absenceOfflineMediaTitle => 'Unavailable offline';
+  String get absenceOfflineMediaTitle => 'Can\'t listen offline';
 
   @override
   String get absenceOfflineMediaMessage =>
-      'This recording hasn\'t been downloaded. Reconnect to the internet to listen.';
+      'The media library plays online. Reconnect to the internet to start playback.';
 
   @override
   String get absenceBack => 'Back';

@@ -64,6 +64,10 @@ void main() {
       // le repli coloré qui s'affiche, exactement comme hors ligne.
       // `final` et non `const` : les dates ne sont pas constructibles en
       // constante.
+      //
+      // **Avec `playlistUrl`** : sans elle, l'écran bascule sur la branche
+      // « média absent » (#41) et n'affiche plus de titre. Ce qu'on veut ici
+      // est le lecteur rempli, pas l'absence — elle a ses propres tests.
       final teaching = Teaching(
         id: '01940000-0000-7000-8000-00000000cafe',
         title: 'Enseignement de test',
@@ -72,6 +76,7 @@ void main() {
         teachingTypeId: 1,
         recordedAt: DateTime.utc(2026, 4, 12),
         publishedAt: DateTime.utc(2026, 4, 12, 8),
+        playlistUrl: 'https://exemple.test/enseignement-de-test/master.m3u8',
       );
       // L'écran ne reçoit qu'un identifiant : la donnée vient du provider.
       await pumpScreen(

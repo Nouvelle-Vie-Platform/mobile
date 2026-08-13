@@ -593,8 +593,11 @@ Trois raisons, dans l'ordre d'importance :
 Un contenu ouvert peut n'avoir rien à montrer pour quatre raisons distinctes,
 qui se ressemblent à l'écran et répondent à des questions différentes :
 `retracted` (retiré, définitif), `notSynced` (pas encore reçu par le magasin
-local), `noMedia` (publié, fichier pas encore attaché), `offlineMedia` (média
-non téléchargé, appareil hors ligne). `ContentAbsence` porte les quatre textes,
+local), `noMedia` (publié, fichier pas encore attaché), `offlineMedia`
+(appareil hors ligne — le média existe, mais **la médiathèque s'écoute en ligne
+seulement**, `docs/mediatheque-en-ligne.md` ; il n'y a pas de téléchargement, et
+son libellé ne doit **jamais** en promettre un). `ContentAbsence` porte les
+quatre textes,
 `ContentAbsenceView` les rend toutes — **ne pas écrire un écran d'absence de
 plus**, ajouter une variante.
 
@@ -602,6 +605,17 @@ Partis pris valables pour les quatre : on **n'éjecte pas** l'utilisateur de
 l'écran qu'il avait ouvert (il croirait à un bug), on **ne fige pas** la
 dernière copie connue (ça ment), la lecture en cours **s'arrête**, et il y a
 toujours une porte de sortie.
+
+Deux sont câblées, toutes deux dans `ContentPlayerView` : `retracted` quand
+l'identifiant ne résout plus rien, et `noMedia` quand `playlistUrl` est nul
+(#41). **`noMedia` n'est pas une branche défensive** : la portée de publication
+du serveur ne teste aujourd'hui que `published_at` (ADR-0034 vit sur une branche
+serveur non fusionnée), un contenu publié sans média est donc un état courant.
+Elle est rendue **avec la couleur du contenu**, là où `retracted` retombe sur le
+bleu de marque — le contenu existe, son habillage aussi ; seul son
+enregistrement manque. Et **jamais `retracted` à sa place** : « pas encore
+disponible » n'est pas « contenu retiré », et confondre les deux ferait croire à
+une suppression.
 
 À ne pas confondre avec les états de liste : `AppErrorState` (teinté,
 « Réessayer ») dit « je n'ai pas pu charger » ; `AppEmptyState` est une carte

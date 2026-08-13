@@ -32,10 +32,10 @@ import '../helpers/playback_doubles.dart';
 /// **Avec `playlistUrl`, sauf le dernier**, et les deux moitiés de cette phrase
 /// sont voulues. Depuis #40 le lecteur charge cette URL : une fixture qui n'en
 /// porte pas décrit un enseignement **publié sans média**, ce qui est un cas
-/// réel — mais qui basculera tout l'écran sur la branche « média absent » du
-/// ticket suivant (#41). Les deux premiers en ont donc une, pour que les
-/// assertions de lecture portent bien sur la lecture ; le troisième la garde
-/// exprès, et c'est lui qui deviendra le cas de test de cette branche-là.
+/// réel — et qui bascule tout l'écran sur la branche « média absent » (#41).
+/// Les deux premiers en ont donc une, pour que les assertions de lecture
+/// portent bien sur la lecture ; le troisième s'en passe exprès, et c'est lui
+/// le cas de test de cette branche-là.
 final _teachings = [
   Teaching(
     id: '01940000-0000-7000-8000-000000000001',
@@ -210,17 +210,19 @@ void main() {
         (tester) async {
       final router = await _pumpApp(tester);
 
-      // Le troisième : c'est ce qui distingue « celui qu'on a demandé » de
-      // l'ancien repli `.first`.
+      // Le **deuxième** : c'est ce qui distingue « celui qu'on a demandé » de
+      // l'ancien repli `.first`. Le troisième ne conviendrait plus ici — il
+      // est publié sans média, et son écran n'affiche donc aucun titre à
+      // comparer (voir « Publié sans média » plus bas).
       router.pushNamed(
         AppRoute.teachingDetail,
-        pathParameters: {'id': _teachings[2].id},
+        pathParameters: {'id': _teachings[1].id},
       );
       await _settle(tester);
 
       expect(tester.takeException(), isNull);
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
-      expect(find.text('Le dernier de la liste'), findsOneWidget);
+      expect(find.text('Celui du milieu'), findsOneWidget);
       expect(find.text('Le premier de la liste'), findsNothing);
     });
 
@@ -364,6 +366,42 @@ void main() {
       expect(find.text('Celui du milieu'), findsOneWidget);
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
       expect(find.byIcon(Icons.pause), findsNothing);
+    });
+  });
+
+  group('Publié sans média', () {
+    testWidgets('l\'écran dit « Enregistrement à venir »', (tester) async {
+      // Un contenu publié sans média est un état **courant** : la portée de
+      // publication du serveur ne teste aujourd'hui que `published_at`.
+      final repository = _FakeMediatheque(_teachings);
+      addTearDown(repository.dispose);
+
+      await _pumpDetail(tester, _container(repository), _teachings[2].id);
+
+      expect(tester.takeException(), isNull);
+      // Le cadre du lecteur, le surtitre, la porte de sortie : on n'éjecte
+      // personne et on ne le déplace pas.
+      expect(find.byType(TeachingDetailScreen), findsOneWidget);
+      expect(find.text('ENSEIGNEMENT'), findsOneWidget);
+      expect(find.byType(ContentAbsenceView), findsOneWidget);
+      expect(find.byKey(ContentAbsenceView.backKey), findsOneWidget);
+      expect(find.text('Enregistrement à venir'), findsOneWidget);
+      // Rien à piloter : aucune commande de lecture.
+      expect(find.byType(Slider), findsNothing);
+      expect(find.byIcon(Icons.pause), findsNothing);
+    });
+
+    testWidgets('ce n\'est pas « contenu retiré »', (tester) async {
+      final repository = _FakeMediatheque(_teachings);
+      addTearDown(repository.dispose);
+
+      await _pumpDetail(tester, _container(repository), _teachings[2].id);
+
+      // Confondre les deux ferait croire à une suppression, et le fidèle
+      // cesserait d'attendre un enregistrement qui arrive.
+      expect(
+          find.text('Cet enseignement n\'est plus disponible'), findsNothing);
+      expect(find.byIcon(ContentAbsence.retracted.icon), findsNothing);
     });
   });
 
