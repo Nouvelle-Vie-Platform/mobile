@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
 
@@ -221,5 +223,37 @@ void main() {
       expect(() => player.play(), returnsNormally);
       expect(() => player.seek(Duration.zero), returnsNormally);
     });
+  });
+
+  test('la couture tient : un seul fichier de `lib/` importe just_audio', () {
+    // Garde-fou de **source**, sur le modèle de « jamais de polling »
+    // (`sync_scheduler_test.dart`). Un `import 'package:just_audio/…'` glissé
+    // dans un écran ne casserait aucun test de comportement — il rendrait la
+    // suite rouge le jour où quelqu'un instancie un `AudioPlayer` dans un
+    // `State`, et rendrait impossible la troisième implémentation (le web par
+    // `hls.js`), qui est tout l'intérêt de cette couture.
+    final sources = Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.dart'));
+
+    expect(sources, isNotEmpty);
+    final coupables = <String>[];
+    for (final source in sources) {
+      // Les commentaires de documentation **parlent** de `just_audio`, ils ne
+      // l'importent pas.
+      final code = source
+          .readAsLinesSync()
+          .where((line) => !line.trimLeft().startsWith('///'))
+          .join('\n');
+      if (code.contains('package:just_audio/')) coupables.add(source.path);
+    }
+
+    expect(
+      coupables,
+      ['lib/data/players/just_audio_content_player.dart'],
+      reason: 'seule l\'implémentation réelle connaît le moteur ; tout le '
+          'reste du dépôt ne connaît que ContentPlayer',
+    );
   });
 }
