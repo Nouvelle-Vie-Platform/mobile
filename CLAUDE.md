@@ -36,6 +36,15 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   latéral » plus bas : il se construit dans `HomeShell.build()`, son
   `mainScreen` est le `Scaffold` entier, et son geste de glissement est
   **coupé**.
+- **package_info_plus ^9.0.1** (#57) — la **version et le build du binaire
+  installé**, dans « À propos ». Plugin natif, après `flutter_secure_storage`,
+  `drift`, `image_picker`, `flutter_zoom_drawer` et les trois du lecteur, mais
+  le seul qui **n'exige aucune permission sur aucune plateforme** :
+  rien à ajouter à `Info.plist` ni à `AndroidManifest.xml` (manifeste Android
+  du greffon vide, `PrivacyInfo.xcprivacy` embarqué côté iOS). Le web est
+  couvert. Lu **uniquement** derrière `AppVersionReader`
+  (`lib/data/app_version.dart`), et voir « À propos » plus bas : sous
+  `flutter test`, un canal de plugin lève `MissingPluginException`.
 - **`web ^1.1.1`** (#46) — l'interop DOM du lecteur web, successeur de
   `dart:html` (retiré du jeu en Dart 3.12, comme `package:js`). Déjà présent en
   transitif ; déclaré parce qu'on l'importe soi-même. **Un seul fichier de
@@ -98,6 +107,9 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
   - `local/` — **le magasin local Drift**, voir ci-dessous.
   - `pickers/status_image_picker.dart` — le choix d'une image de fond, derrière
     une abstraction (les tests injectent un sélecteur inerte).
+  - `app_version.dart` — `AppVersionReader` : la version et le build du binaire,
+    derrière une abstraction pour la même raison (#57). L'implémentation réelle
+    ne lève **jamais** ; l'inconnu se rend en `null`.
   - `players/` — les lecteurs, derrière une abstraction. Voir ci-dessous.
 
 ### Le lecteur de la médiathèque (`lib/data/players/`) — #39, #46
@@ -447,6 +459,9 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `test/state/cold_start_test.dart` parcourt la chaîne entière — sans lui,
     une rupture entre synchronisation et magasin donnerait une application
     **muette**, pas une erreur : un magasin vide ne se plaint pas.
+  - `app_version_providers.dart` : `appVersionReaderProvider` (à surcharger par
+    un `FixedAppVersionReader` dans les tests d'écran) et `appVersionProvider`
+    — `FutureProvider`, `retry: _noAutomaticRetry`. Voir « À propos ».
   - `theme_provider.dart` : `themeModeProvider` (Notifier) + `isDarkModeActive`.
 
 ### L'onglet Annonces — trois responsabilités que le serveur ne prend pas
@@ -751,11 +766,38 @@ tiroir à la moindre reconstruction.
 
 `/legal/:kind` est servie depuis #55 par `LegalDocumentScreen` : `BrandAppBar`,
 `LegalDocumentBody` dans un `ListView`, et `ContentAbsence.notSynced` devant un
-magasin qui n'a pas encore reçu le document. `/about` attend encore #57 et garde
-`LegalPlaceholderScreen` — son écran ne se réduit pas au document servi, il
-porte la version du binaire. Ce provisoire n'est **pas un écran d'absence de
-plus** : ni pictogramme, ni libellé, ni disposition en propre. Il disparaît avec
-#57.
+magasin qui n'a pas encore reçu le document. L'enveloppe provisoire de #54
+(`LegalPlaceholderScreen`) a disparu avec #57, qui en était le dernier usage.
+
+#### « À propos » (#57) — `/about`, entête local et corps servi
+Spécification de rendu : `docs/documents-legaux.md` §5. Quatre points, et
+l'écran entier tient dedans :
+
+1. **Une route distincte de `/legal/:kind`, délibérément.** Ranger « À propos »
+   sous `/legal/` mentirait sur sa nature — ni contrat ni politique — et
+   l'écran ne se réduit de toute façon pas au document servi.
+2. **Le partage local / servi tient à une chose** : le numéro de version décrit
+   le **binaire installé**, le serveur ne peut pas le connaître. C'est toute la
+   raison de l'entête local (emblème, nom de l'église, version et build). Tout
+   ce qui doit rester corrigeable **sans publier une version de l'application**
+   — présentation, mission, contact — vit au portail et arrive par le corps
+   servi, rendu par `LegalDocumentBody` en genre `about`.
+3. **Magasin sans document `about` → l'entête s'affiche quand même.** Seul le
+   corps manque, et il manque en silence : **aucune `ContentAbsenceView` ici**,
+   contrairement à `LegalDocumentScreen`. C'est le seul des trois écrans
+   documentaires qui ait quelque chose à montrer sans le serveur — « pas de
+   contenu, pas de section », jamais « pas de contenu, pas d'écran ».
+4. **`about` n'entre jamais dans la barrière** (#56) : pas de case, pas de
+   version exigée, pas de `requires_reacceptance`.
+
+La version se lit derrière `AppVersionReader` (`lib/data/app_version.dart`,
+`appVersionProvider`), jamais `PackageInfo` en direct. Deux raisons qui se
+ratent en silence : sous `flutter test` le canal de plugin n'existe pas — d'où
+l'implémentation réelle qui **rattrape et rend `null`** au lieu de laisser
+remonter `MissingPluginException`, et `FixedAppVersionReader` pour les tests
+d'écran ; et le provider **ne réessaie pas** (`retry`), un binaire ne changeant
+pas de version pendant qu'il tourne. Version inconnaissable → **la ligne
+disparaît**, jamais « Version inconnue » : ça ressemblerait à une donnée.
 
 #### La barrière de consentement (#56) — `/legal/accept`, ADR-0036
 Spécification : `docs/documents-legaux.md` §4. **Une garde de route, pas une

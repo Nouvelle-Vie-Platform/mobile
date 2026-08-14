@@ -506,6 +506,17 @@
   "drawerAbout": "À propos",
   "@drawerAbout": { "description": "Menu latéral : écran « À propos » (version du binaire + présentation servie par le portail). Route distincte de /legal/:kind — ranger « À propos » sous /legal mentirait sur sa nature" },
 
+  "aboutChurchName": "Église Évangélique Nouvelle Vie",
+  "@aboutChurchName": { "description": "Entête local d'« À propos » : le nom de l'église, sous l'emblème qui porte déjà « Maison du Miracle ». Local et non servi — c'est l'identité de l'application, pas un contenu éditorial" },
+  "aboutVersion": "Version {version} ({build})",
+  "@aboutVersion": {
+    "description": "Entête local d'« À propos » : version et build du BINAIRE INSTALLÉ. Ne vient jamais du serveur — c'est toute la raison de cet entête local, et c'est le renseignement qu'on demande à un fidèle qui signale une anomalie. Ne pas confondre avec legalFooterVersion, qui est l'édition du document servi",
+    "placeholders": {
+      "version": { "type": "String", "example": "1.0.0" },
+      "build": { "type": "String", "example": "1" }
+    }
+  },
+
   "legalFooterUpdated": "Version {version} — mise à jour le {date}",
   "@legalFooterUpdated": {
     "description": "Pied d'un document légal. La date est formatée CÔTÉ CLIENT (utils/event_time.dart), jamais servie en toutes lettres par le serveur : un texte pré-formaté ne se traduit pas et ne se relit pas dans le fuseau du lecteur",

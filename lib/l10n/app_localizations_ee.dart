@@ -924,6 +924,14 @@ class AppLocalizationsEe extends AppLocalizations {
   String get drawerAbout => 'À propos';
 
   @override
+  String get aboutChurchName => 'Église Évangélique Nouvelle Vie';
+
+  @override
+  String aboutVersion(String version, String build) {
+    return 'Version $version ($build)';
+  }
+
+  @override
   String legalFooterUpdated(int version, String date) {
     return 'Version $version — mise à jour le $date';
   }

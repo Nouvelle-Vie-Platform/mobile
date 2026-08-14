@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_zoom_drawer/flutter_zoom_drawer.dart';
 import 'package:go_router/go_router.dart';
 
+import '../models/legal_document_view.dart';
 import '../router/app_router.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_bottom_nav.dart';
@@ -9,7 +10,6 @@ import '../widgets/app_drawer_menu.dart';
 import 'announcements_screen.dart';
 import 'groups_screen.dart';
 import 'home_screen.dart';
-import 'legal_placeholder_screen.dart';
 import 'profile_screen.dart';
 
 /// Conteneur principal : onglets en [IndexedStack], barre à encoche et FAB
@@ -180,11 +180,11 @@ class _HomeShellState extends State<HomeShell> {
           onHome: _goHome,
           onTerms: () => _openDocument(
             AppRoute.legalDocument,
-            kind: LegalPlaceholderScreen.terms,
+            kind: LegalDocumentKind.terms,
           ),
           onPrivacy: () => _openDocument(
             AppRoute.legalDocument,
-            kind: LegalPlaceholderScreen.privacy,
+            kind: LegalDocumentKind.privacy,
           ),
           onAbout: () => _openDocument(AppRoute.about),
         ),
