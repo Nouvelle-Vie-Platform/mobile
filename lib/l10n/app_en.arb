@@ -203,6 +203,7 @@
   "fieldYourName": "Your first name",
   "fieldYourBranch": "Your branch",
   "branchImNew": "I'm new",
+  "branchMotherChurch": "Mother Church",
   "branchesEmpty": "No branch to select yet.",
   "branchesUnavailable": "Branch list unavailable. You can pick one later.",
   "actionLater": "Later",

@@ -53,18 +53,37 @@ class HttpBranchRepository implements BranchRepository {
 /// Implémentation de démonstration, servie **uniquement** quand
 /// `AppEnv.useBackend` est faux (mode maquette, sans backend).
 ///
-/// Sa liste imite l'état réel du serveur — une seule branche, l'église mère —
-/// pour que la maquette ne promette pas une UI que la production n'a pas.
+/// Sa liste imite l'état réel du serveur — les **neuf** assemblées de l'EENV,
+/// telles que `03_branch_seeder` les pose — pour que la maquette ne promette
+/// pas une UI que la production n'a pas, et ne cache pas non plus celle qu'elle
+/// a : avec une seule branche, le sélecteur ne montrait jamais un vrai choix,
+/// ni son défilement, ni la longueur réelle des libellés.
+///
+/// Seule l'Église Mère porte des coordonnées — c'est aussi le cas en base, les
+/// huit autres les ont à `null` et le portail permet de les saisir.
 class InMemoryBranchRepository implements BranchRepository {
   const InMemoryBranchRepository();
+
+  static const String _church = 'Eglise Evangélique Nouvelle Vie';
 
   static const List<Branch> _branches = [
     Branch(
       id: 1,
-      name: 'Eglise Evangélique Nouvelle Vie Lomé',
-      address: 'Lomé',
+      name: '$_church Lomé',
+      city: 'Lomé',
+      address: 'Nyekonakpoè Togbato, Lomé',
       isMotherChurch: true,
     ),
+    Branch(id: 2, name: '$_church Kpalimé', city: 'Kpalimé'),
+    Branch(id: 3, name: '$_church Tsévié', city: 'Tsévié'),
+    Branch(id: 4, name: '$_church Atakpamé', city: 'Atakpamé'),
+    Branch(id: 5, name: '$_church Lavié', city: 'Lavié'),
+    Branch(id: 6, name: '$_church Dachta', city: 'Dachta'),
+    Branch(id: 7, name: '$_church Blakpa', city: 'Blakpa'),
+    Branch(id: 8, name: '$_church Fongbé', city: 'Fongbé'),
+    // La seule hors du Togo — elle existe ici pour que la maquette montre que
+    // la liste n'est pas nationale.
+    Branch(id: 9, name: '$_church Accra', city: 'Accra'),
   ];
 
   @override

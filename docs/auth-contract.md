@@ -50,11 +50,35 @@ class Session {
 
 class Branch {
   final int id;                // SERIAL côté serveur
-  final String name;
+  final String name;           // composé par le serveur : église + ville
+  final String? city;          // la ville seule, servie EN PLUS de `name`
   final String? address;
   final bool isMotherChurch;
 }
 ```
+
+### Le nom d'une branche : composé par le serveur, raccourci par le client
+
+`branches.name` ne porte plus, en base, que **l'église** — la même valeur pour les neuf branches ;
+c'est `city` qui les distingue. Le serveur recompose donc `name` à la sérialisation
+(« Eglise Evangélique Nouvelle Vie Lomé ») **et** envoie `city` à côté, sans que le contrat mobile
+ait bougé.
+
+Le client s'en sert à deux endroits, différemment :
+
+| écran | affiche | pourquoi |
+| --- | --- | --- |
+| sélecteur de branche (`ProfileFormScreen`, `ProfileSetupSheet`) | `city` — « Lomé · Église Mère » | l'écran dit déjà « Votre branche » ; répéter le nom de l'église sur neuf lignes pousse la ville hors de l'écran |
+| en-tête de l'onglet Profil | `name` entier | on y lit sa fiche d'identité, pas une liste où l'on choisit |
+
+La règle vit **une seule fois**, dans `utils/branch_label.dart` (`branchSelectionLabel`,
+`branchesForSelection`) — le pendant mobile de `branch_display.ts`. Deux points qui s'y rattrapent :
+`city` est **nullable** (le portail permet de la vider) et le libellé se replie alors sur `name` ;
+et l'**ordre** vient du client, jamais de `/sync/branches`, dont le curseur `(updated_at, id)`
+répond à « qu'est-ce qui a changé » et se réordonne dès qu'un administrateur corrige une branche.
+
+**Ne jamais découper `name`** pour en retirer le nom de l'église : `city` existe précisément pour
+éviter ça, et un découpage survivrait mal au jour où l'église se renomme.
 
 **Affichage du nom** : `title` et le nom sont stockés **séparément** et recomposés à l'affichage —
 `Frère Jean`, `Frère Jean Kossi` quand `lastName` existe. Ne jamais concaténer en base.
@@ -205,7 +229,9 @@ l'utilisateur connecté sur son appareil.
   recréeraient tous un compte le jour où le téléphone redeviendra le canal par défaut.
 - **ObjectBox** : introduit au jalon synchro (où il porte une douzaine d'entités), pas ici pour un seul
   objet. Il ne supporte pas Flutter Web — l'abandon de cette cible se décidera à ce moment-là.
-- **`Branch.city`** : n'existe pas encore côté serveur. La puce affiche `name` seul en attendant.
+- **`Branch.city`** : *résolu.* Le serveur le sert depuis le découpage `name` / `city`
+  (`BranchTransformer`), et le sélecteur affiche **la ville seule** — voir « Le nom d'une branche »
+  ci-dessous.
 
 ## Décisions figées
 

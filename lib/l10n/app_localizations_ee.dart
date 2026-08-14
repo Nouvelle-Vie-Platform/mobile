@@ -547,6 +547,9 @@ class AppLocalizationsEe extends AppLocalizations {
   String get branchImNew => 'Je suis nouveau';
 
   @override
+  String get branchMotherChurch => 'Église Mère';
+
+  @override
   String get branchesEmpty => 'Aucune branche à sélectionner pour le moment.';
 
   @override

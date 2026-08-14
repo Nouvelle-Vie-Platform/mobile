@@ -1078,6 +1078,12 @@ abstract class AppLocalizations {
   /// **'Je suis nouveau'**
   String get branchImNew;
 
+  /// Mention suffixée à la branche isMotherChurch dans le sélecteur, qui la place en tête de liste
+  ///
+  /// In fr, this message translates to:
+  /// **'Église Mère'**
+  String get branchMotherChurch;
+
   /// Le référentiel /sync/branches ne renvoie aucune branche
   ///
   /// In fr, this message translates to:

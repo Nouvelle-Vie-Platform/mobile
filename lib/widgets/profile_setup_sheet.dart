@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../utils/branch_label.dart';
 import 'app_button.dart';
 import 'branch_list_status.dart';
 
@@ -230,7 +231,10 @@ class _ProfileSetupSheetState extends ConsumerState<_ProfileSetupSheet> {
     // Référentiel serveur : chargement, liste vide ou échec réseau laissent
     // l'étape utilisable — « Je suis nouveau » ne dépend d'aucune branche.
     final branchesAsync = ref.watch(branchesProvider);
-    final branches = branchesAsync.value ?? const <Branch>[];
+    // L'ordre vient de l'utilitaire, pas du serveur : `/sync/branches` est un
+    // flux delta, son ordre répond à « qu'est-ce qui a changé ».
+    final branches =
+        branchesForSelection(branchesAsync.value ?? const <Branch>[], l);
     return Column(
       key: const ValueKey('branch'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +249,9 @@ class _ProfileSetupSheetState extends ConsumerState<_ProfileSetupSheet> {
         const SizedBox(height: AppSpacing.lg),
         for (final branch in branches) ...[
           _BranchTile(
-            label: branch.name,
+            // La ville seule — même règle que `ProfileFormScreen`, écrite une
+            // seule fois (voir utils/branch_label.dart).
+            label: branchSelectionLabel(branch, l),
             selected: !_isNewMember && _branchId == branch.id,
             onTap: () => setState(() {
               _branchId = branch.id;

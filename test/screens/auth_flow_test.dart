@@ -59,14 +59,19 @@ void main() {
       // Civilité rendue par l10n (jamais de chaîne en dur dans le modèle).
       expect(find.text('Frère'), findsOneWidget);
       expect(find.text('Sœur'), findsOneWidget);
-      // Puce de branche : le nom seul, tel que le sert le référentiel
-      // (`GET /sync/branches` en production). `Branch.city` n'existe pas côté
-      // serveur, et le nom réel porte déjà la ville.
-      expect(find.text('Eglise Evangélique Nouvelle Vie Lomé'), findsOneWidget);
+      // Puce de branche : **la ville seule**. Le référentiel sert `city` à côté
+      // du nom composé (`GET /sync/branches`), et l'écran dit déjà « Votre
+      // branche » — répéter le nom de l'église sur chaque ligne pousserait la
+      // seule information utile hors de l'écran.
+      expect(find.text('Lomé · Église Mère'), findsOneWidget);
+      expect(find.text('Kpalimé'), findsOneWidget);
       expect(
-        find.textContaining('Eglise Evangélique Nouvelle Vie Lomé ·'),
+        find.textContaining('Eglise Evangélique Nouvelle Vie'),
         findsNothing,
       );
+      // L'adresse n'entre jamais dans le libellé (régression 84bb6c6) : Lomé
+      // est la seule branche qui en porte une.
+      expect(find.textContaining('Nyekonakpoè'), findsNothing);
       expect(find.text('Je suis nouveau'), findsOneWidget);
     });
   });
