@@ -98,12 +98,26 @@ void main() {
     await expectLater(repository.branches(), throwsA(isA<DioException>()));
   });
 
-  test('le mock sert la seule branche existante', () async {
+  test('le mock sert les neuf assemblées, comme la production', () async {
     const mock = InMemoryBranchRepository();
 
     final branches = await mock.branches();
 
-    expect(branches, hasLength(1));
-    expect(branches.single.isMotherChurch, isTrue);
+    // `03_branch_seeder` en pose neuf ; une maquette à une seule ligne ne
+    // montrerait jamais ce que le sélecteur fait vraiment.
+    expect(branches, hasLength(9));
+    expect(branches.where((b) => b.isMotherChurch), hasLength(1));
+
+    // Chacune porte sa ville : c'est elle que le sélecteur affiche, et sans
+    // elle la maquette tomberait sur le repli sans qu'on s'en aperçoive.
+    expect(branches.every((b) => b.city != null), isTrue);
+    expect(branches.map((b) => b.city), contains('Accra'));
+
+    // Seule l'Église Mère a des coordonnées — en base aussi, les huit autres
+    // les ont à `null` et le portail permet de les saisir.
+    expect(
+      branches.where((b) => b.address != null).single.city,
+      'Lomé',
+    );
   });
 }

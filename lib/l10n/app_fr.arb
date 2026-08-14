@@ -260,6 +260,8 @@
   "@fieldYourBranch": { "description": "Libellé du sélecteur de branche" },
   "branchImNew": "Je suis nouveau",
   "@branchImNew": { "description": "Option : pas encore rattaché à une branche" },
+  "branchMotherChurch": "Église Mère",
+  "@branchMotherChurch": { "description": "Mention suffixée à la branche isMotherChurch dans le sélecteur, qui la place en tête de liste" },
   "branchesEmpty": "Aucune branche à sélectionner pour le moment.",
   "@branchesEmpty": { "description": "Le référentiel /sync/branches ne renvoie aucune branche" },
   "branchesUnavailable": "Liste des branches indisponible. Tu pourras la choisir plus tard.",

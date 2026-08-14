@@ -47,6 +47,7 @@ const _branchFixture = '''
 {
   "id": 1,
   "name": "Église Mère – Lomé",
+  "city": "Lomé",
   "address": "Boulevard du 13 Janvier, Lomé",
   "isMotherChurch": true,
   "email": "contact@maisondumiracle.tg",
@@ -185,15 +186,21 @@ void main() {
 
       expect(branch.id, 1);
       expect(branch.name, 'Église Mère – Lomé');
+      // `city` arrive **en plus** du nom composé : c'est elle que le sélecteur
+      // affiche, sans jamais découper `name` (`utils/branch_label.dart`).
+      expect(branch.city, 'Lomé');
       expect(branch.address, 'Boulevard du 13 Janvier, Lomé');
       expect(branch.isMotherChurch, isTrue);
     });
 
-    test('isMotherChurch vaut false par défaut', () {
+    test('isMotherChurch vaut false par défaut, et `city` peut manquer', () {
       final branch = Branch.fromJson({'id': 2, 'name': 'Bethel – Agoè'});
 
       expect(branch.isMotherChurch, isFalse);
       expect(branch.address, isNull);
+      // Le serveur autorise une branche sans ville ; le libellé se replie
+      // alors sur le nom composé plutôt que de rendre une ligne vide.
+      expect(branch.city, isNull);
     });
 
     test('un id de branche se compare directement au branchId du user', () {

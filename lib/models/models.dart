@@ -610,13 +610,28 @@ class Branch {
   const Branch({
     required this.id,
     required this.name,
+    this.city,
     this.address,
     this.isMotherChurch = false,
   });
 
   /// SERIAL côté serveur : se compare directement à `User.branchId`.
   final int id;
+
+  /// Le nom **composé** — l'église plus la ville, « Eglise Evangélique Nouvelle
+  /// Vie Lomé ». C'est le serveur qui le compose ([branchDisplayName]) : la
+  /// colonne `name` ne porte plus que l'église, la même valeur pour toutes les
+  /// branches.
   final String name;
+
+  /// La ville seule, « Lomé » — servie **en plus** de [name] par
+  /// `GET /sync/branches`.
+  ///
+  /// `null` = la branche n'en a pas ; [name] retombe alors sur l'église seule.
+  /// L'affichage court se compose par `branchSelectionLabel`
+  /// (`utils/branch_label.dart`), jamais en découpant [name].
+  final String? city;
+
   final String? address;
 
   /// Église mère (une seule dans le référentiel).
@@ -625,6 +640,7 @@ class Branch {
   factory Branch.fromJson(Map<String, dynamic> json) => Branch(
         id: (json['id'] as num).toInt(),
         name: json['name'] as String,
+        city: json['city'] as String?,
         address: json['address'] as String?,
         isMotherChurch: json['isMotherChurch'] as bool? ?? false,
       );
@@ -632,6 +648,7 @@ class Branch {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+        'city': city,
         'address': address,
         'isMotherChurch': isMotherChurch,
       };

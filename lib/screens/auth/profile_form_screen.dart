@@ -9,6 +9,7 @@ import '../../state/auth_providers.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
+import '../../utils/branch_label.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_text_field.dart';
@@ -131,7 +132,10 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
     // avoir échoué. Aucun de ces cas ne doit empêcher d'enregistrer un profil —
     // d'où la liste repliée sur « vide » et le message d'état sous la liste.
     final branchesAsync = ref.watch(branchesProvider);
-    final branches = branchesAsync.value ?? const <Branch>[];
+    // L'ordre vient de l'utilitaire, pas du serveur : `/sync/branches` est un
+    // flux delta, son ordre répond à « qu'est-ce qui a changé ».
+    final branches =
+        branchesForSelection(branchesAsync.value ?? const <Branch>[], l);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -204,9 +208,11 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                     Text(l.fieldYourBranch, style: AppTypography.bodyStrong),
                     for (final branch in branches)
                       RadioOptionTile(
-                        // `Branch.city` n'existe pas côté serveur : on
-                        // affiche le nom seul (voir docs/auth-contract.md).
-                        label: branch.name,
+                        // La ville seule — l'écran dit déjà « Votre branche »,
+                        // et répéter le nom de l'église sur chaque ligne
+                        // pousserait la seule information utile hors de
+                        // l'écran (voir utils/branch_label.dart).
+                        label: branchSelectionLabel(branch, l),
                         selected: !_isNewSelected && _branchId == branch.id,
                         onTap: () => _selectBranch(branch.id),
                       ),
