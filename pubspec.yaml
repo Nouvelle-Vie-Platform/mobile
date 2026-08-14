@@ -17,7 +17,7 @@ dependencies:
     sdk: flutter
   intl: any
   dio: ^5.8.0
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^10.3.1
   drift: 2.34.0
   drift_flutter: ^0.3.1
   # Dépôt d'image du composeur d'annonces (#36). Un plugin natif de plus, après

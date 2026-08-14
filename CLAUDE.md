@@ -20,6 +20,20 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   versionné de la même façon mais épinglé dans `tool/web_assets.sh` — `hls.js`
   n'est pas un paquet Dart. Après toute montée de `drift`, `sqlite3` ou
   `hls.js` : `make web-assets`. Voir `web/WEB_ASSETS.md`. **Aucun CDN.**
+- **`flutter_secure_storage ^10.3.1`** — le coffre du **token d'accès**
+  (`ApiClient`), et rien d'autre qui compte : sous ADR-0020 il n'y a pas de mot
+  de passe, le token *est* la session, et le seul moyen d'en obtenir un est un
+  OTP. Le stocker en clair rendrait un vol de fichier — sauvegarde iTunes,
+  appareil rooté — équivalent à un accès au compte **sans OTP**. `UserCache` s'y
+  appuie aussi, mais pour du non-secret et par accident historique (voir son
+  en-tête) ; ce cache-là a vocation à rejoindre Drift.
+
+  **La v10 a mis fin à CocoaPods dans ce dépôt** (voir plus bas). Ne pas monter
+  en **v11** aujourd'hui : son module Android code en dur `compileSdk = 37`, or
+  Google a renommé ses plateformes en versions mineures (`android-36.1`,
+  `android-37.0`) et il n'existe plus de paquet `platforms;android-37` — AGP
+  cherche un répertoire qui ne peut pas exister. La v11 exige par ailleurs
+  `minSdk 24`, déjà pris.
 - **image_picker ^1.2.3** (#36) — dépôt d'image du composeur d'annonces. Lu
   uniquement derrière `StatusImagePicker` (`lib/data/pickers/`). iOS exige
   `NSPhotoLibraryUsageDescription` dans `ios/Runner/Info.plist` : sans elle, le
@@ -163,10 +177,16 @@ sans quoi elle refera l'enquête, et pourrait « corriger » en retirant
 sur iOS. Aucun décodage logiciel, aucun greffon JS — c'est le web, sans
 `just_audio`, qui est le cas particulier.
 
-**Les cibles de déploiement ont de la marge** : le projet est à `minSdk 23`
+**Les cibles de déploiement ont de la marge** : le projet est à `minSdk 24`
 (Android) et `IPHONEOS_DEPLOYMENT_TARGET 13.0` (iOS), contre 19 et 12 exigés
 par la pile audio. Rien n'a eu à bouger pour l'ajouter, et rien n'a à bouger
 pour la faire évoluer.
+
+`minSdk` valait 23 jusqu'à la montée de `flutter_secure_storage` en v10. Ce 23
+était une portée **nominale** : Flutter 3.35 a relevé son propre minimum à 24
+(`FlutterExtension.minSdkVersion = 24`), ce qui rend API 23 invérifiable sous
+toute version supportée — on annonçait un support qu'aucune chaîne d'outils ne
+pouvait éprouver, et Gradle en avertissait à chaque build.
 
 Cinq points qui se ratent en silence :
 
@@ -953,6 +973,41 @@ repli**, pas sur la lecture d'une étiquette.
 - **Ne PAS ajouter de trailer `Co-Authored-By`** (commits attribués à l'auteur).
 - **Ne pas pousser à la place de l'utilisateur** : il fait `git push` lui-même
   (souvent `git push --force-with-lease`, la branche distante ayant divergé).
+
+## iOS : **plus de CocoaPods**, tout passe par Swift Package Manager
+
+`ios/` n'a **ni `Podfile`, ni `Podfile.lock`, ni `Pods/`**, et c'est un état à
+tenir. Les huit plugins iOS sont des Swift Packages ; le dernier qui ne l'était
+pas, `flutter_secure_storage`, l'est devenu en v10 (implémentation fédérée
+`flutter_secure_storage_darwin`, qui porte un `Package.swift`). Flutter le
+confirme de lui-même au build — *« All plugins found for ios are Swift
+Packages »* — et le `pod install` a disparu du cycle.
+
+Ce qui a été retiré, dans cet ordre : `pod deintegrate`, suppression du
+`Podfile` et du `Podfile.lock`, retrait des deux `#include?` de
+`Pods/Target Support Files/…` dans `ios/Flutter/Debug.xcconfig` et
+`Release.xcconfig`, et de la `FileRef` vers `Pods/Pods.xcodeproj` dans
+`ios/Runner.xcworkspace/contents.xcworkspacedata`.
+
+**Ajouter un plugin qui n'a pas de `Package.swift` ressusciterait CocoaPods**
+pour tout le projet — Flutter régénère alors un `Podfile`. Vérifier avant :
+`find $(dart pub cache list … )` ou, plus simplement, lire l'avertissement du
+premier `flutter build ios` (« The following plugins do not support Swift
+Package Manager »). Ce n'est pas un interdit, c'est un coût à décider.
+
+### Les deux pannes CocoaPods qu'on a connues, pour mémoire
+
+Elles ne peuvent plus arriver ici, mais le même diagnostic sert ailleurs :
+
+- **« The sandbox is not in sync with the Podfile.lock »** — le contrôle Xcode
+  est un `diff` entre `ios/Podfile.lock` et `ios/Pods/Manifest.lock`. Un
+  `Manifest.lock` **absent** le fait échouer, et un `Pods/` à moitié écrit
+  suffit. Remède : `rm -rf ios/Pods ios/.symlinks && flutter pub get && (cd ios
+  && pod install)`.
+- **`Unicode Normalization not appropriate for ASCII-8BIT`** — CocoaPods 1.17
+  sur le Ruby 4.0 de Homebrew, lancé depuis un shell sans locale UTF-8. Ne
+  touche pas `flutter build`, qui pose la locale lui-même. Remède si on appelle
+  `pod` à la main : `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install`.
 
 ## Environnement (cette machine)
 - **Android** : **OpenJDK 21** installé (`brew install openjdk@21`) et configuré

@@ -19,10 +19,15 @@ android {
         applicationId = "com.maisondumiracle.maison_du_miracle"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        // Portée maximale : Android 6.0 (API 23), plancher autorisé par Flutter
-        // 3.44 (en dessous, le build échoue). Note : < 24 déclenche un simple
-        // avertissement Gradle. Passer à 24 (Android 7.0) pour un build sans warning.
-        minSdk = 23
+        // Android 7.0 (API 24) — le défaut de Flutter 3.44
+        // (`FlutterExtension.minSdkVersion = 24`), et non plus 23.
+        //
+        // Le 23 précédent était une portée **nominale** : Flutter 3.35 a relevé
+        // son propre minimum à 24, ce qui rend API 23 invérifiable sous toute
+        // version de Flutter supportée — on annonçait un support qu'aucune
+        // chaîne d'outils ne pouvait éprouver. `flutter_secure_storage` v11
+        // l'exige par ailleurs (son chemin AES-CBC pour API 21-22 a disparu).
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
