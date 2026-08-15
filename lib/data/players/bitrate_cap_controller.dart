@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../models/media_preferences.dart';
 import 'content_player.dart';
 
 /// **Applique le plafond de débit au lecteur**, en tenant le cliquet.
@@ -29,17 +30,22 @@ import 'content_player.dart';
 class BitrateCapController {
   BitrateCapController({
     required ContentPlayer player,
+    required Stream<MediaQuality> qualities,
     required Stream<int?> targets,
   })  : _player = player,
+        _qualities = qualities,
         _targets = targets {
+    _qualitySubscription = _qualities.listen(_onQuality);
     _subscription = _targets.listen(_onTarget);
     _player.addListener(_onPlayback);
     _contentId = _player.value.contentId;
   }
 
   final ContentPlayer _player;
+  final Stream<MediaQuality> _qualities;
   final Stream<int?> _targets;
   late final StreamSubscription<int?> _subscription;
+  late final StreamSubscription<MediaQuality> _qualitySubscription;
 
   /// Le plafond le plus bas vu depuis l'ouverture du contenu courant.
   ///
@@ -80,7 +86,21 @@ class BitrateCapController {
     _player.setBitrateCap(_floor);
   }
 
+  /// **Le palier choisi passe par l'URL, pas par le plafond**, et c'est ce qui
+  /// fait exister le réglage sur Android : `setPreferredPeakBitRate` y est reçu
+  /// et ignoré, alors qu'une liste de lecture de rendu n'est qu'une URL.
+  ///
+  /// Seuls les trois paliers **explicites** s'y prêtent. `auto` garde le
+  /// master : brider l'URL y interdirait toute adaptation, alors que c'est
+  /// précisément ce que ce mode promet en wifi.
+  void _onQuality(MediaQuality quality) {
+    _player.setPreferredVariant(
+      quality == MediaQuality.auto ? null : quality.key,
+    );
+  }
+
   void dispose() {
+    unawaited(_qualitySubscription.cancel());
     unawaited(_subscription.cancel());
     _player.removeListener(_onPlayback);
   }

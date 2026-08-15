@@ -662,12 +662,30 @@ produit explicite, pas un oubli :
 | --- | --- |
 | écoute, iOS | ✅ `AVPlayer.preferredPeakBitRate` |
 | écoute, web | ✅ `hls.js`, `autoLevelCapping` |
-| écoute, **Android** | ❌ `just_audio` reçoit l'appel et **ne fait rien** (`AudioPlayer.java`, `case "setPreferredPeakBitRate"` → `success` vide). ExoPlayer sait le faire, le greffon ne l'expose pas |
+| écoute, **Android** | ✅ **par l'URL**, pas par le plafond — voir ci-dessous |
 | direct | ❌ `LiveScreen` n'a pas de lecteur |
 | téléchargement | ❌ n'existe pas, et c'est un **refus documenté** (`docs/mediatheque-en-ligne.md` §2) |
 
 Les trois se règlent et s'enregistrent quand même : le jour où la fonction
 existera, la préférence sera déjà là.
+
+**Deux leviers, et le second existe pour Android.** `setPreferredPeakBitRate`
+est reçu et **ignoré** par `just_audio` côté Android (`AudioPlayer.java`,
+`case "setPreferredPeakBitRate"` → `success` vide) ; ExoPlayer saurait le faire,
+le greffon ne l'expose pas. Le contournement ne dépend d'aucun greffon : le
+transcodeur écrit, à côté de `master.m3u8`, **une liste de lecture par rendu**
+(`low/index.m3u8`, `mid/index.m3u8`, `high/index.m3u8`), et `RustfsStorage`
+publie tout le dossier. Charger l'une d'elles **au lieu** du master, c'est
+choisir la qualité par l'URL — ce qui marche sur les trois plateformes.
+
+- **palier explicite** → URL de rendu (`variantPlaylistUrl`), partout ;
+- **`auto`** → master + plafond de débit, donc iOS et web seulement. Brider
+  l'URL y interdirait l'adaptation, ce que ce mode promet justement en wifi.
+
+`MediaQuality.key` reprend **mot pour mot** les noms de `RENDITIONS[].name` du
+serveur : les désaccorder donnerait un 404. Et la dérivation **échoue du bon
+côté** — une URL qui ne finit pas par `/master.m3u8` est rendue intacte, donc le
+pire cas est « pas de bridage », jamais « plus de lecture ».
 
 Quatre points qui se ratent en silence :
 

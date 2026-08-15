@@ -184,7 +184,8 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
   }
 
   /// Attache une source à l'élément, par `hls.js` ou en natif.
-  void _attach(String url) {
+  void _attach(String rawUrl) {
+    final url = variantPlaylistUrl(rawUrl, _variant);
     if (_useHlsJs) {
       final engine = _HlsEngine();
       // Seules les pannes **fatales** remontent : `hls.js` se remet seul des
@@ -242,6 +243,17 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
   /// oublie `autoLevelCapping` quand on lui donne une nouvelle source, et une
   /// reprise après panne rouvre justement la source.
   int? _cap;
+
+  /// Palier choisi par l'URL — voir `variantPlaylistUrl`. Sur le web il double
+  /// `autoLevelCapping` ; il existe surtout pour Android, où rien d'autre ne
+  /// marche, et le contrat doit rester le même partout.
+  String? _variant;
+
+  @override
+  void setPreferredVariant(String? variant) {
+    if (isDisposed) return;
+    _variant = variant;
+  }
 
   @override
   void setBitrateCap(int? bitsPerSecond) {

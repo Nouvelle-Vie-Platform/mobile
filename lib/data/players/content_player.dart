@@ -227,6 +227,32 @@ class ContentRequest {
 /// `load` est le seul membre asynchrone : ouvrir un flux HLS **peut échouer**,
 /// et l'appelant a le droit d'attendre le verdict. Les commandes de transport,
 /// elles, ne se guettent pas — leur effet se lit dans [value].
+/// **L'URL d'un palier précis du catalogue HLS**, dérivée de celle du master.
+///
+/// Le transcodeur écrit, à côté de `master.m3u8`, un dossier par rendu avec sa
+/// propre liste de lecture — `low/index.m3u8`, `mid/index.m3u8`,
+/// `high/index.m3u8` — et le stockage les publie tous
+/// (`streaming-service/app/transcodes/services/ffmpeg_transcoder.ts`,
+/// `RustfsStorage.uploadDirectory`). Charger l'un d'eux **au lieu** du master,
+/// c'est choisir la qualité par l'URL, ce qui marche sur les trois plateformes —
+/// **Android compris**, où aucun greffon n'expose de plafond de débit.
+///
+/// [variant] doit être un nom de rendu du serveur (`RENDITIONS[].name`), ce que
+/// `MediaQuality.key` reprend mot pour mot. `null` rend l'URL inchangée.
+///
+/// **La panne va dans le sens sûr** : si l'URL ne se termine pas par
+/// `/master.m3u8` — layout serveur différent, URL déjà résolue, ingestion par
+/// URL externe — on rend l'originale telle quelle. Le pire cas est alors « pas
+/// de bridage », jamais « plus de lecture ». C'est ce qui rend cette dérivation
+/// acceptable malgré ce qu'elle suppose du serveur.
+String variantPlaylistUrl(String masterUrl, String? variant) {
+  if (variant == null) return masterUrl;
+  const suffix = '/master.m3u8';
+  if (!masterUrl.endsWith(suffix)) return masterUrl;
+  final base = masterUrl.substring(0, masterUrl.length - suffix.length);
+  return '$base/$variant/index.m3u8';
+}
+
 abstract interface class ContentPlayer
     implements ValueListenable<ContentPlayback> {
   /// Charge un contenu et remet la lecture à zéro.
@@ -281,6 +307,22 @@ abstract interface class ContentPlayer
   /// La valeur ne survit pas à un [load] sur les implémentations qui rouvrent
   /// une source : l'appelant la repose, et `ContentPlayerView` s'en charge.
   void setBitrateCap(int? bitsPerSecond);
+
+  /// **Choisit le palier par l'URL**, pour la prochaine ouverture.
+  ///
+  /// C'est le seul levier de qualité qui fonctionne sur **Android** : ni
+  /// `just_audio` ni ExoPlayer n'y exposent de plafond de débit
+  /// (`setPreferredPeakBitRate` y est reçu et ignoré). Charger directement la
+  /// liste de lecture d'un rendu contourne la question — voir
+  /// [variantPlaylistUrl].
+  ///
+  /// **Sans effet sur la lecture en cours** : changer de palier demanderait de
+  /// rouvrir la source, donc une coupure. Le réglage s'applique au contenu
+  /// suivant, ce qui est déjà le comportement attendu d'un panneau de
+  /// préférences.
+  ///
+  /// `null` = le master, donc l'adaptation automatique.
+  void setPreferredVariant(String? variant);
 
   /// Relâche le média : la valeur repart à vide, la notification disparaît.
   ///
@@ -423,6 +465,15 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   void setBitrateCap(int? bitsPerSecond) {
     if (_disposed) return;
     bitrateCap = bitsPerSecond;
+  }
+
+  /// Dernier palier demandé, **relu par les tests**.
+  String? preferredVariant;
+
+  @override
+  void setPreferredVariant(String? variant) {
+    if (_disposed) return;
+    preferredVariant = variant;
   }
 
   @override

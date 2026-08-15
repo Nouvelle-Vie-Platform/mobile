@@ -306,7 +306,11 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   Future<void> _open(ContentRequest request, {Duration? at}) async {
     try {
       await _handler.open(
-        url: request.url,
+        // **Le palier se choisit ici, par l'URL.** Sur Android c'est le seul
+        // levier qui existe ; sur les autres plateformes il double le plafond
+        // de débit, sans le contredire — un rendu unique ne laisse rien à
+        // adapter au-dessus.
+        url: variantPlaylistUrl(request.url, _variant),
         at: at,
         item: MediaItem(
           // L'identifiant du contenu, pas l'URL : c'est lui qui désigne un
@@ -361,6 +365,17 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     unawaited(
       _handler.player.setPreferredPeakBitRate((bitsPerSecond ?? 0).toDouble()),
     );
+  }
+
+  /// **Le seul levier de qualité qui morde sur Android.** Le plafond de débit
+  /// y est ignoré par le greffon ; charger directement la liste de lecture d'un
+  /// rendu ne dépend, elle, que de l'URL.
+  String? _variant;
+
+  @override
+  void setPreferredVariant(String? variant) {
+    if (_disposed) return;
+    _variant = variant;
   }
 
   @override

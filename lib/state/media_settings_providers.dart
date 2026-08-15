@@ -65,6 +65,17 @@ final mediaPreferencesProvider = StreamProvider<MediaPreferences>(
   retry: _noAutomaticRetry,
 );
 
+/// **Le palier d'écoute choisi**, sans le réseau.
+///
+/// Distinct de [streamingBitrateTargetProvider] : celui-ci dit ce que le fidèle
+/// a **choisi**, celui-là ce que le choix et le réseau **imposent**. Le premier
+/// se traduit en URL de rendu (le seul levier qui morde sur Android), le second
+/// en plafond de débit (iOS et web).
+final streamingQualityProvider = Provider<MediaQuality>((ref) {
+  return ref.watch(mediaPreferencesProvider).value?.of(MediaUsage.streaming) ??
+      MediaQuality.auto;
+});
+
 /// **Le plafond que le réglage et le réseau appellent**, en bits par seconde.
 /// `null` = aucun plafond.
 ///

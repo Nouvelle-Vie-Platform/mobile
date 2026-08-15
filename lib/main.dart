@@ -10,6 +10,7 @@ import 'app.dart';
 import 'core/network/api_client.dart';
 import 'data/players/bitrate_cap_controller.dart';
 import 'data/players/content_player.dart';
+import 'models/media_preferences.dart';
 import 'data/players/just_audio_content_player.dart';
 import 'data/players/playback_notifications.dart';
 import 'data/players/web_content_player.dart';
@@ -67,7 +68,17 @@ Future<void> main() async {
       (_, next) => targets.add(next),
       fireImmediately: true,
     );
-    BitrateCapController(player: player, targets: targets.stream);
+    final qualities = StreamController<MediaQuality>();
+    container.listen<MediaQuality>(
+      streamingQualityProvider,
+      (_, next) => qualities.add(next),
+      fireImmediately: true,
+    );
+    BitrateCapController(
+      player: player,
+      qualities: qualities.stream,
+      targets: targets.stream,
+    );
   }
 
   runApp(
