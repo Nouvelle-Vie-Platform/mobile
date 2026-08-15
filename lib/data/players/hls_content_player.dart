@@ -201,6 +201,8 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
       engine.loadSource(url);
       engine.attachMedia(_audio);
       _engine = engine;
+      // Le plafond survit à la réouverture — voir `_cap`.
+      _applyCap();
     } else {
       _audio.src = url;
       _audio.load();
@@ -234,6 +236,48 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
   void seek(Duration position) {
     if (isDisposed) return;
     _audio.currentTime = seekTo(position);
+  }
+
+  /// Dernier plafond demandé, **rejoué après chaque attache** : `hls.js`
+  /// oublie `autoLevelCapping` quand on lui donne une nouvelle source, et une
+  /// reprise après panne rouvre justement la source.
+  int? _cap;
+
+  @override
+  void setBitrateCap(int? bitsPerSecond) {
+    if (isDisposed) return;
+    _cap = bitsPerSecond;
+    _applyCap();
+  }
+
+  /// Traduit un débit en **indice de rendu**, seule chose que `hls.js`
+  /// comprenne.
+  ///
+  /// On garde le rendu le plus haut qui reste **sous** le plafond, et si aucun
+  /// n'y tient on garde le plus bas : un plafond inatteignable ne doit pas
+  /// couper le son, il doit laisser jouer ce qu'il y a de plus économe.
+  ///
+  /// Sans effet tant que le manifeste n'est pas analysé — `levels` est alors
+  /// vide. C'est pour cela que le plafond est mémorisé et rejoué : l'écran le
+  /// pose souvent avant que le manifeste ne soit revenu.
+  void _applyCap() {
+    final engine = _engine;
+    if (engine == null) return;
+    final cap = _cap;
+    if (cap == null) {
+      engine.autoLevelCapping = -1;
+      return;
+    }
+    final levels = engine.levels.toDart;
+    if (levels.isEmpty) return;
+    var best = 0;
+    for (var i = 0; i < levels.length; i++) {
+      if (levels[i].bitrate <= cap &&
+          levels[i].bitrate >= levels[best].bitrate) {
+        best = i;
+      }
+    }
+    engine.autoLevelCapping = best;
   }
 
   @override
@@ -299,11 +343,25 @@ extension type _HlsEngine._(JSObject _) implements JSObject {
 
   external void loadSource(String url);
   external void attachMedia(web.HTMLMediaElement media);
+
+  /// Les rendus annoncés par le manifeste maître, dans l'ordre du fichier.
+  /// Vide tant que le manifeste n'est pas analysé.
+  external JSArray<_HlsLevel> get levels;
+
+  /// **Indice** du rendu le plus haut que l'adaptation automatique a le droit
+  /// de choisir. `-1` = aucun plafond. C'est un indice, pas un débit : d'où la
+  /// traduction dans `setBitrateCap`.
+  external set autoLevelCapping(int index);
   external void on(String event, JSFunction listener);
   external void destroy();
 }
 
 /// La charge utile d'un événement d'erreur de `hls.js`.
+/// Un rendu du manifeste maître — on n'en lit que le débit.
+extension type _HlsLevel._(JSObject _) implements JSObject {
+  external int get bitrate;
+}
+
 extension type _HlsErrorData._(JSObject _) implements JSObject {
   /// Vrai quand la lecture ne peut pas se poursuivre. Les autres pannes sont
   /// rattrapées par la bibliothèque elle-même.

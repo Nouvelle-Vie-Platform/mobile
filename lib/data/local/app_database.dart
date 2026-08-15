@@ -16,12 +16,14 @@ import 'gathering_dao.dart';
 import 'legal_dao.dart';
 import 'mediatheque_dao.dart';
 import 'playback_dao.dart';
+import 'settings_dao.dart';
 import 'sync_dao.dart';
 import 'tables/announcement_tables.dart';
 import 'tables/gathering_tables.dart';
 import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
+import 'tables/settings_tables.dart';
 import 'tables/sync_tables.dart';
 
 part 'app_database.g.dart';
@@ -64,6 +66,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     PlaybackProgress,
     LocalPlaybackPositions,
     LegalDocuments,
+    AppSettings,
   ],
   daos: [
     SyncDao,
@@ -72,6 +75,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     AnnouncementDao,
     PlaybackDao,
     LegalDao,
+    SettingsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -89,8 +93,12 @@ class AppDatabase extends _$AppDatabase {
   /// d'un désaccord avec le contrat serveur qui faisait lever la
   /// désérialisation sur chaque ligne, et **coupait le cycle de
   /// synchronisation** avant les six collections suivantes.
+  ///
+  /// **v7** — `app_settings`, la table des réglages **locaux seuls** (qualité
+  /// d'écoute, de direct, de téléchargement). Aucune collection du protocole ne
+  /// la touche.
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -182,6 +190,18 @@ class AppDatabase extends _$AppDatabase {
                 .go();
           }
 
+          // v6 → v7 — les réglages média. **Une création de table, et rien
+          // d'autre** : aucun réglage n'existait auparavant (le dépôt n'avait
+          // aucun mécanisme de persistance de préférence — le mode sombre
+          // lui-même se perd à chaque lancement), donc rien à reprendre.
+          //
+          // La table naît **vide et le reste** jusqu'au premier choix : une
+          // ligne écrite d'office serait indiscernable d'une décision du
+          // fidèle, et changer le défaut dans une version suivante ne
+          // toucherait plus personne. L'absence de ligne *est* le défaut.
+          if (from < 7) {
+            await m.createTable(appSettings);
+          }
         },
         beforeOpen: (details) async {
           // La ligne d'état global doit exister avant la première allocation de

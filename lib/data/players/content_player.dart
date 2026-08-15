@@ -264,6 +264,24 @@ abstract interface class ContentPlayer
   /// Déplace la tête de lecture (bornée par [ContentPlayback.clampPosition]).
   void seek(Duration position);
 
+  /// **Plafonne le débit** que la sélection adaptative HLS a le droit de
+  /// choisir, en bits par seconde. `null` = aucun plafond.
+  ///
+  /// Se pose **à tout moment**, y compris en pleine lecture : c'est ce qui fait
+  /// tomber la qualité quand le fidèle sort de l'église et que son téléphone
+  /// bascule du wifi vers les données mobiles. L'effet arrive au segment
+  /// suivant (~6 s côté serveur), sans interruption du son — c'est le
+  /// mécanisme normal de HLS, pas une réouverture.
+  ///
+  /// **Un plafond, pas un choix de piste.** On ne demande jamais un rendu
+  /// précis : on interdit d'aller au-dessus, et le lecteur prend le meilleur
+  /// qui reste. Un plafond plus bas que le rendu le plus bas disponible ne
+  /// coupe donc pas le son, il laisse simplement ce rendu-là jouer.
+  ///
+  /// La valeur ne survit pas à un [load] sur les implémentations qui rouvrent
+  /// une source : l'appelant la repose, et `ContentPlayerView` s'en charge.
+  void setBitrateCap(int? bitsPerSecond);
+
   /// Relâche le média : la valeur repart à vide, la notification disparaît.
   ///
   /// À distinguer de [dispose] — après `stop`, le lecteur peut encore charger.
@@ -394,6 +412,17 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   void seek(Duration position) {
     if (_disposed) return;
     value = value.copyWith(position: value.clampPosition(position));
+  }
+
+  /// Le dernier plafond posé, **relu par les tests**. Le lecteur inerte ne
+  /// décode rien : il n'a rien à brider, il enregistre — ce qui suffit à
+  /// vérifier que la règle du mode automatique arrive bien jusqu'ici.
+  int? bitrateCap;
+
+  @override
+  void setBitrateCap(int? bitsPerSecond) {
+    if (_disposed) return;
+    bitrateCap = bitsPerSecond;
   }
 
   @override

@@ -341,6 +341,28 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     unawaited(_handler.seek(value.clampPosition(position)));
   }
 
+  /// **Le plafond ne mord que sur iOS et macOS**, et c'est une limite du
+  /// greffon, pas un oubli d'ici : `just_audio` documente
+  /// `setPreferredPeakBitRate` comme « iOS/macOS », et son implémentation
+  /// Android reçoit l'appel pour répondre `success` **sans rien faire**
+  /// (`AudioPlayer.java`, `case "setPreferredPeakBitRate"`). ExoPlayer sait
+  /// pourtant le faire (`TrackSelectionParameters.setMaxAudioBitrate`), mais
+  /// le greffon ne l'expose pas.
+  ///
+  /// Conséquence à connaître avant de croire le réglage universel : sur
+  /// Android, la qualité d'écoute est **enregistrée et sans effet**, comme le
+  /// direct et le téléchargement. Sur iOS et sur le web, elle agit.
+  ///
+  /// `0` est la valeur « aucun plafond » d'`AVPlayer` — pas `-1`, et pas
+  /// `null`.
+  @override
+  void setBitrateCap(int? bitsPerSecond) {
+    if (_disposed) return;
+    unawaited(
+      _handler.player.setPreferredPeakBitRate((bitsPerSecond ?? 0).toDouble()),
+    );
+  }
+
   @override
   void stop() {
     if (_disposed) return;

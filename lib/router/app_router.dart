@@ -18,6 +18,7 @@ import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
 import '../screens/legal_acceptance_screen.dart';
 import '../screens/legal_document_screen.dart';
+import '../screens/media_settings_screen.dart';
 import '../screens/live_screen.dart';
 import '../screens/media_library_screen.dart';
 import '../screens/new_request_screen.dart';
@@ -39,6 +40,7 @@ abstract final class AppRoute {
   static const authCode = 'auth-code';
   static const profileEdit = 'profile-edit';
   static const profileDelete = 'profile-delete';
+  static const mediaSettings = 'media-settings';
   static const home = 'home';
   static const media = 'media';
   static const live = 'live';
@@ -193,6 +195,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.profileDelete,
         path: '/profile/delete',
         builder: (_, __) => const AppBackground(child: DeleteAccountScreen()),
+      ),
+      // Réglages média — poussée depuis le Profil, où elle a remplacé
+      // l'hexagone des dons.
+      GoRoute(
+        name: AppRoute.mediaSettings,
+        path: '/settings/media',
+        builder: (_, __) => const AppBackground(child: MediaSettingsScreen()),
       ),
       GoRoute(
         name: AppRoute.home,

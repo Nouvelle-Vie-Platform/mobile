@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
@@ -13,6 +14,7 @@ import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
+import 'package:maison_du_miracle/state/media_settings_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
@@ -88,6 +90,11 @@ Future<void> pumpScreen(
         appDatabaseProvider.overrideWithValue(db),
         playbackProgressReporterProvider
             .overrideWithValue(FakePlaybackProgressReporter()),
+        // Le transport réseau est posé **figé**, pour la raison qui vaut déjà
+        // pour le rapporteur : son implémentation réelle ouvre un canal de
+        // plugin, absent du harnais, et y laisse une minuterie qui fait rougir
+        // au teardown des tests n'ayant jamais parlé de réseau.
+        networkTransportProvider.overrideWithValue(FixedNetworkTransport()),
         authRepositoryProvider
             .overrideWithValue(auth ?? InMemoryAuthRepository()),
         branchRepositoryProvider

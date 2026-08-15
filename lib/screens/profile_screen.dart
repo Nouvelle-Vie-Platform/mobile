@@ -316,11 +316,18 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                 ),
                 Expanded(
+                  // **Les dons ont cédé cette place**, et la route
+                  // `/donations` n'a plus aucun lien dans l'application : elle
+                  // reste déclarée mais devient injoignable. C'est assumé — cet
+                  // écran fait 106 lignes et il n'y a aucun moyen de paiement
+                  // derrière ; il reviendra quand il en aura un. Le noter ici
+                  // plutôt que de laisser quelqu'un retrouver une route morte
+                  // sans savoir si c'est un oubli.
                   child: _BadgeShortcut(
-                    icon: Icons.volunteer_activism,
-                    label: l.navDonations,
-                    color: AppColors.danger,
-                    onTap: () => context.pushNamed(AppRoute.donations),
+                    icon: Icons.tune,
+                    label: l.mediaSettings,
+                    color: AppColors.secondary,
+                    onTap: () => context.pushNamed(AppRoute.mediaSettings),
                   ),
                 ),
               ],

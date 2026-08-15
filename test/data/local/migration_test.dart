@@ -24,15 +24,15 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('le schéma déclaré correspond au schéma v6 exporté', () async {
+  test('le schéma déclaré correspond au schéma v7 exporté', () async {
     // Le garde-fou de tous les jours : quiconque touche à une table sans
     // exporter la version correspondante casse ce test avant de casser un
     // téléphone.
-    final connection = await verifier.startAt(6);
+    final connection = await verifier.startAt(7);
     final db = AppDatabase(connection);
     addTearDown(db.close);
 
-    await verifier.migrateAndValidate(db, 6);
+    await verifier.migrateAndValidate(db, 7);
   });
 
   test('v1 → v2 : les deux tables de rassemblement apparaissent', () async {
@@ -257,6 +257,33 @@ void main() {
       reason: 'sans effacement du curseur, la collection ne serait jamais '
           're-tirée et la table resterait vide pour toujours',
     );
+  });
+
+  test('v6 → v7 : la table des réglages apparaît, et naît vide', () async {
+    // Le palier ne fait que **créer une table**. Elle reste vide jusqu'au
+    // premier choix : l'absence de ligne *est* le défaut, et une valeur écrite
+    // d'office serait indiscernable d'une décision du fidèle.
+    final schema = await verifier.schemaAt(6);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 7);
+
+    expect((await db.select(db.teachings).get()).single.title,
+        'Dieu a le dernier mot');
+    expect(await db.select(db.appSettings).get(), isEmpty);
+  });
+
+  test('v1 → v7 : un appareil resté en v1 rejoue les six paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 7);
   });
 
   test('la version de schéma couvre bien toutes les versions exportées', () {
