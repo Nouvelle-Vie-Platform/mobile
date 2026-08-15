@@ -6,7 +6,6 @@ import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
 import '../router/app_router.dart';
 import '../state/auth_providers.dart';
-import '../state/theme_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -14,6 +13,7 @@ import '../theme/app_typography.dart';
 import '../widgets/app_avatar.dart';
 import '../widgets/menu_tile.dart';
 import '../widgets/profile_completion_banner.dart';
+import '../widgets/theme_choice_tile.dart';
 
 /// Onglet « Profil » : en-tête de marque (avatar, rôle, branche, statistiques,
 /// badges) surmontant une feuille de réglages.
@@ -28,8 +28,6 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final palette = context.palette;
-    final mode = ref.watch(themeModeProvider);
-    final dark = isDarkModeActive(mode, context);
 
     final user = ref.watch(authProvider).user;
     // Le référentiel sert seulement à mettre un nom sur `user.branchId` : tant
@@ -97,21 +95,7 @@ class ProfileScreen extends ConsumerWidget {
                 // Deux chemins vers la même page, à un écran d'écart, se
                 // remarquent comme un doublon. La liste ne porte donc que des
                 // **réglages**, ce qui la rend homogène.
-                MenuTile(
-                  icon: Icons.dark_mode_outlined,
-                  label: l.darkMode,
-                  showChevron: false,
-                  onTap: () => ref
-                      .read(themeModeProvider.notifier)
-                      .toggle(platformIsDark: dark),
-                  trailing: Switch.adaptive(
-                    value: dark,
-                    onChanged: (_) => ref
-                        .read(themeModeProvider.notifier)
-                        .toggle(platformIsDark: dark),
-                    activeTrackColor: AppColors.secondary,
-                  ),
-                ),
+                const ThemeChoiceTile(),
                 _divider,
                 MenuTile(
                   icon: Icons.help_outline,

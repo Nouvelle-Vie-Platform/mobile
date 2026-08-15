@@ -1072,6 +1072,60 @@ abstract class AppLocalizations {
   /// **'≈ {mb} Mo par heure · chaque nuance, au prix fort.'**
   String mediaQualityImpactHigh(int mb);
 
+  /// No description provided for @themeSectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparence'**
+  String get themeSectionTitle;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In fr, this message translates to:
+  /// **'Clair'**
+  String get themeLight;
+
+  /// Position du sélecteur d'apparence : suit le réglage DU TÉLÉPHONE. À distinguer de « Auto », qui suit une règle horaire de l'application
+  ///
+  /// In fr, this message translates to:
+  /// **'Système'**
+  String get themeSystem;
+
+  /// Position du sélecteur d'apparence : règle horaire de l'application, réglable. Ne suit PAS le téléphone
+  ///
+  /// In fr, this message translates to:
+  /// **'Auto'**
+  String get themeAuto;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sombre'**
+  String get themeDark;
+
+  /// No description provided for @themeAutoHoursTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heures de bascule'**
+  String get themeAutoHoursTitle;
+
+  /// No description provided for @themeDarkFrom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passe en sombre à'**
+  String get themeDarkFrom;
+
+  /// No description provided for @themeLightFrom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revient au clair à'**
+  String get themeLightFrom;
+
+  /// Résumé de la règle horaire, affiché sous le sélecteur en mode Auto
+  ///
+  /// In fr, this message translates to:
+  /// **'Sombre de {dark} à {light}.'**
+  String themeAutoHint(String dark, String light);
+
   /// No description provided for @logout.
   ///
   /// In fr, this message translates to:

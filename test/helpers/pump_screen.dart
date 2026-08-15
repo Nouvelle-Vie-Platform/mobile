@@ -16,7 +16,9 @@ import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
+import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
+import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
@@ -79,6 +81,7 @@ Future<void> pumpRouter(
   List<Override> overrides = const [],
   AppDatabase? database,
   AuthRepository? auth,
+  ThemePreferences? theme,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -86,7 +89,7 @@ Future<void> pumpRouter(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        ..._commonOverrides(db, auth: auth),
+        ..._commonOverrides(db, auth: auth, theme: theme),
         ...overrides,
       ],
       child: MaterialApp.router(
@@ -107,6 +110,7 @@ Future<void> pumpRouter(
 List<Override> _commonOverrides(
   AppDatabase db, {
   AuthRepository? auth,
+  ThemePreferences? theme,
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
@@ -116,6 +120,13 @@ List<Override> _commonOverrides(
       playbackProgressReporterProvider
           .overrideWithValue(FakePlaybackProgressReporter()),
       networkTransportProvider.overrideWithValue(FixedNetworkTransport()),
+      // Les réglages d'apparence sont posés **par un flux nu**, et pour la
+      // raison la plus coûteuse de ce dépôt : lus depuis le magasin, ils
+      // ouvrent un flux Drift, et un flux Drift attendu sous l'horloge factice
+      // du harnais fige le montage — processus à 0 % de CPU jusqu'à expiration.
+      // L'onglet Profil les lit, donc tout test qui monte la coquille les lit.
+      themePreferencesProvider.overrideWith(
+          (ref) => Stream.value(theme ?? const ThemePreferences())),
       authRepositoryProvider
           .overrideWithValue(auth ?? InMemoryAuthRepository()),
       branchRepositoryProvider
@@ -137,6 +148,7 @@ Future<void> pumpScreen(
   AnnouncementRepository? announcements,
   AppDatabase? database,
   AuthRepository? auth,
+  ThemePreferences? theme,
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
   // ci-dessus : Riverpod 3 refuse deux surcharges du même provider. [database]
@@ -152,6 +164,7 @@ Future<void> pumpScreen(
         ..._commonOverrides(
           db,
           auth: auth,
+          theme: theme,
           mediatheque: mediatheque,
           gatherings: gatherings,
           announcements: announcements,

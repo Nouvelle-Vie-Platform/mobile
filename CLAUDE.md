@@ -514,7 +514,11 @@ pas un accusé de réception : il ne devient jamais le curseur local.
   - `app_version_providers.dart` : `appVersionReaderProvider` (à surcharger par
     un `FixedAppVersionReader` dans les tests d'écran) et `appVersionProvider`
     — `FutureProvider`, `retry: _noAutomaticRetry`. Voir « À propos ».
-  - `theme_provider.dart` : `themeModeProvider` (Notifier) + `isDarkModeActive`.
+  - `theme_provider.dart` : `themePreferencesProvider` (lecture du magasin),
+    `nowProvider` (**l'horloge, injectable** — sans elle la règle horaire serait
+    intestable), `themeModeProvider` (le `ThemeMode` résolu) et
+    `isDarkModeActive`. `settingsDaoProvider` y vit aussi : les réglages
+    d'apparence et les réglages média partagent la même table.
 
 ### L'onglet Annonces — trois responsabilités que le serveur ne prend pas
 Le mur de statuts est peint par le magasin (#35), comme la médiathèque. Sa
@@ -730,6 +734,41 @@ Quatre points qui se ratent en silence :
 reçoit pas. Une préférence de débit décrit *le forfait de cet appareil-ci*, pas
 la personne. Elle vit donc dans le fichier de base — et part avec lui à la
 suppression de compte, sans qu'on ait rien à écrire.
+
+### L'apparence — quatre positions, dont une **maison**
+`Clair · Système · Auto · Sombre`, persistées dans `app_settings` (aucune
+migration : la table est clé/valeur, c'est pour cela qu'elle l'est). Le thème se
+perdait à chaque lancement avant cela — `themeModeProvider` n'était qu'un état
+en mémoire.
+
+**`Système` et `Auto` se ressemblent et ne font pas la même chose**, et c'est le
+piège du réglage : `Système` suit le téléphone, `Auto` suit une **règle horaire
+de l'application** que le téléphone ignore. Les deux peuvent donc se contredire
+— un téléphone jamais programmé restera clair la nuit sous `Système`. C'est
+pourquoi le résumé « Sombre de 19:00 à 06:00 » s'affiche sous le sélecteur en
+mode `Auto` : sans lui, rien ne les distingue à l'œil.
+
+Quatre points qui se ratent en silence :
+
+1. **La règle accepte les deux sens.** « Sombre entre `darkFrom` et
+   `lightFrom` », en passant minuit si besoin : `19:00 → 06:00` est le cas
+   courant, `06:00 → 19:00` est un réglage **valide** pour qui veille la nuit.
+   Ce n'est pas un cas particulier, c'est la même comparaison retournée. Deux
+   heures **identiques** donnent un intervalle vide, donc toujours clair —
+   `Sombre` existe déjà en un geste pour l'autre besoin.
+2. **Une minuterie unique, armée sur la prochaine bascule**, jamais un sondage.
+   Elle se réveille une fois par bascule et se réarme ; rien ne tourne entre
+   deux. Elle porte **une seconde de marge** : sans elle, un réveil au dernier
+   instant *avant* l'heure ne verrait rien changer et se réarmerait sur un délai
+   nul — une boucle serrée jusqu'à la seconde suivante.
+3. **Doublée d'une réévaluation au retour au premier plan.** Ce n'est pas une
+   ceinture de plus : un téléphone en veille ne garantit rien à ses minuteries,
+   et le cas visé est exactement celui-là — l'app ouverte pendant le culte du
+   soir, l'écran éteint puis rallumé.
+4. **`themePreferencesProvider` est surchargé par `pumpScreen`.** Il lit un flux
+   Drift, et l'onglet Profil le lit : tout test montant la coquille ouvrirait
+   donc ce flux. Voir le paragraphe sur les flux Drift sous horloge factice, qui
+   a déjà coûté deux enquêtes.
 
 ### La suppression de compte (`DELETE /auth/me`)
 Exigence d'entrée à l'App Store (5.1.1(v)) : une app qui crée des comptes doit

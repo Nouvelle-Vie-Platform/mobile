@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/media_preferences.dart';
 import '../state/media_settings_providers.dart';
+import '../state/theme_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';

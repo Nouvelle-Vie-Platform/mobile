@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../models/media_preferences.dart';
+import '../../models/theme_preferences.dart';
 import 'app_database.dart';
 import 'tables/settings_tables.dart';
 
@@ -40,12 +41,49 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
-  /// Pose la qualité d'un usage. Écrase la valeur précédente s'il y en avait
-  /// une — le réglage n'a pas d'historique.
-  Future<void> setMediaQuality(MediaUsage usage, MediaQuality quality) {
+  /// Les réglages d'**apparence**, recomposés à chaque changement.
+  ///
+  /// Trois clés dans la même table clé/valeur que les réglages média : le
+  /// choix, et les deux heures de la règle `auto`. Aucune migration n'a été
+  /// nécessaire — c'est précisément ce pour quoi cette table est clé/valeur.
+  ///
+  /// Comme ailleurs, **une ligne absente n'est pas une erreur** : c'est le cas
+  /// normal d'une installation neuve, et chaque `parse` rend alors le défaut.
+  Stream<ThemePreferences> watchThemePreferences() {
+    return select(appSettings).watch().map((rows) {
+      final byKey = {for (final row in rows) row.key: row.value};
+      return ThemePreferences(
+        choice: ThemeChoice.parse(byKey[_themeChoiceKey]),
+        darkFrom:
+            DayTime.parse(byKey[_darkFromKey], fallback: kDefaultDarkFrom),
+        lightFrom:
+            DayTime.parse(byKey[_lightFromKey], fallback: kDefaultLightFrom),
+      );
+    });
+  }
+
+  Future<void> setThemeChoice(ThemeChoice choice) =>
+      _put(_themeChoiceKey, choice.key);
+
+  Future<void> setDarkFrom(DayTime time) => _put(_darkFromKey, time.key);
+
+  Future<void> setLightFrom(DayTime time) => _put(_lightFromKey, time.key);
+
+  Future<void> _put(String key, String value) {
     return into(appSettings).insert(
-      AppSettingsCompanion.insert(key: usage.key, value: quality.key),
+      AppSettingsCompanion.insert(key: key, value: value),
       mode: InsertMode.insertOrReplace,
     );
   }
+
+  /// Les clés sont **stables** : les renommer basculerait silencieusement tous
+  /// les appareils installés sur le défaut.
+  static const String _themeChoiceKey = 'theme_choice';
+  static const String _darkFromKey = 'theme_dark_from';
+  static const String _lightFromKey = 'theme_light_from';
+
+  /// Pose la qualité d'un usage. Écrase la valeur précédente s'il y en avait
+  /// une — le réglage n'a pas d'historique.
+  Future<void> setMediaQuality(MediaUsage usage, MediaQuality quality) =>
+      _put(usage.key, quality.key);
 }

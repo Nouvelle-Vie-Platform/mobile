@@ -555,6 +555,35 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get themeSectionTitle => 'Apparence';
+
+  @override
+  String get themeLight => 'Clair';
+
+  @override
+  String get themeSystem => 'Système';
+
+  @override
+  String get themeAuto => 'Auto';
+
+  @override
+  String get themeDark => 'Sombre';
+
+  @override
+  String get themeAutoHoursTitle => 'Heures de bascule';
+
+  @override
+  String get themeDarkFrom => 'Passe en sombre à';
+
+  @override
+  String get themeLightFrom => 'Revient au clair à';
+
+  @override
+  String themeAutoHint(String dark, String light) {
+    return 'Sombre de $dark à $light.';
+  }
+
+  @override
   String get logout => 'Se déconnecter';
 
   @override

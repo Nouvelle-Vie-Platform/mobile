@@ -2,20 +2,16 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/local/settings_dao.dart';
+import 'theme_provider.dart';
 import '../data/network/network_transport.dart';
 import '../models/media_preferences.dart';
-import 'sync_providers.dart';
 
 /// Pas de réessai automatique, pour la raison des autres lectures de magasin :
 /// une lecture locale qui échoue ne réussira pas mieux à la seconde tentative.
 Duration? _noAutomaticRetry(int retryCount, Object error) => null;
 
-/// Le DAO des réglages locaux.
-final settingsDaoProvider = Provider<SettingsDao>(
-  (ref) => ref.watch(appDatabaseProvider).settingsDao,
-);
-
+// `settingsDaoProvider` vit dans `theme_provider.dart` : les deux familles de
+// réglages partagent la même table, et donc le même DAO.
 /// **Le type de transport courant.** À surcharger par un
 /// [FixedNetworkTransport] dans les tests : l'implémentation réelle ouvre un
 /// canal de plugin, absent du harnais.
