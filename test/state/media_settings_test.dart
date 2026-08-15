@@ -102,7 +102,7 @@ void main() {
     });
   });
 
-  group('Le cliquet du plafond', () {
+  group('Le plafond visé — une dérivation pure', () {
     late AppDatabase db;
     late FixedNetworkTransport transport;
     late ProviderContainer container;
@@ -123,60 +123,46 @@ void main() {
       });
     });
 
-    /// Amorce les abonnements et laisse les premiers événements passer.
     Future<void> settle() async {
-      container.listen(streamingBitrateCapProvider, (_, __) {});
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
     }
 
-    test('en wifi, aucun plafond', () async {
-      await settle();
-      expect(container.read(streamingBitrateCapProvider), isNull);
-    });
-
-    test('la bascule vers le cellulaire fait tomber le plafond', () async {
-      await settle();
-      transport.emit(true);
-      await Future<void>.delayed(Duration.zero);
-
-      // Le fidèle sort de l'église au milieu d'un prêche d'une heure : c'est
-      // exactement la facture que le réglage doit éviter.
-      expect(container.read(streamingBitrateCapProvider), 64000);
-    });
-
-    test('le retour au wifi ne fait PAS remonter la qualité en cours',
-        () async {
+    test('un abonné ne provoque pas de reconstruction sans fin', () async {
+      // **Le test qui garde la porte.** La version précédente de ce provider
+      // mutait un champ depuis son `build` ; couplée à un `ref.listen`, elle
+      // faisait tourner le montage de l'écran de lecture jusqu'à expiration.
+      // On compte donc les émissions : une poignée, jamais une avalanche.
+      var emissions = 0;
+      container.listen(streamingBitrateTargetProvider, (_, __) => emissions++);
       await settle();
       transport.emit(true);
-      await Future<void>.delayed(Duration.zero);
+      await settle();
       transport.emit(false);
-      await Future<void>.delayed(Duration.zero);
+      await settle();
 
-      // Remonter coûterait une remise en tampon au milieu d'un prêche, et une
-      // interruption vaut plus cher qu'un peu d'aigu.
       expect(
-        container.read(streamingBitrateCapProvider),
-        64000,
-        reason:
-            'le cliquet ne se relâche qu\'à l\'ouverture du contenu suivant',
+        emissions,
+        lessThan(10),
+        reason: 'deux changements de réseau ne peuvent pas produire dix '
+            'émissions — au-delà, le provider se reconstruit lui-même',
       );
     });
 
-    test('release() relâche le cliquet — sinon le bridage serait à vie',
-        () async {
+    test('en wifi aucun plafond, en cellulaire 64k', () async {
+      container.listen(streamingBitrateTargetProvider, (_, __) {});
       await settle();
+      expect(container.read(streamingBitrateTargetProvider), isNull);
+
       transport.emit(true);
-      await Future<void>.delayed(Duration.zero);
+      await settle();
+      expect(container.read(streamingBitrateTargetProvider), 64000);
+
+      // La dérivation est **pure** : elle remonte aussi. C'est le widget qui
+      // pose le cliquet, parce qu'il ne vaut que pour l'écoute en cours.
       transport.emit(false);
-      await Future<void>.delayed(Duration.zero);
-
-      container.read(streamingBitrateCapProvider.notifier).release();
-      await Future<void>.delayed(Duration.zero);
-
-      // Sans cela, une seule écoute en données mobiles briderait le fidèle chez
-      // lui, sur son wifi, jusqu'au redémarrage de l'application.
-      expect(container.read(streamingBitrateCapProvider), isNull);
+      await settle();
+      expect(container.read(streamingBitrateTargetProvider), isNull);
     });
   });
 }

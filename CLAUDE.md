@@ -686,6 +686,17 @@ Quatre points qui se ratent en silence :
    dos de qui l'a choisi serait le pire ressenti possible pour un réglage.
 4. **Le plafond se repose après chaque `load`** : les implémentations qui
    rouvrent une source l'oublient en même temps qu'elles la remplacent.
+5. **Il s'applique depuis `BitrateCapController`, câblé dans `main.dart`, et
+   jamais depuis `ContentPlayerView`.** Ce n'est pas un choix esthétique : c'est
+   ce qui a été essayé d'abord, et dès que l'écran de lecture touchait la chaîne
+   des réglages, son montage sous `flutter test` se bloquait — processus à
+   **0 % de CPU pendant dix minutes**, donc une attente de ressource et non une
+   boucle. Le poser dans `main()` le sort du chemin des tests d'écran, que le
+   harnais n'exécute jamais. Cela ne déroge qu'en apparence à
+   « `ContentPlayerView` est le seul endroit qui pilote le lecteur » : cette
+   règle vise le **transport** — jouer, pause, déplacement, arrêt — pour que
+   deux endroits ne se disputent pas la lecture ; un plafond ne fait que
+   contraindre la qualité, sans effet audible immédiat.
 
 **Ce n'est pas une collection synchronisée** : le serveur ne la sert pas, ne la
 reçoit pas. Une préférence de débit décrit *le forfait de cet appareil-ci*, pas

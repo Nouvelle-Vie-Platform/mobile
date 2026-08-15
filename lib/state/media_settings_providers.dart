@@ -65,61 +65,26 @@ final mediaPreferencesProvider = StreamProvider<MediaPreferences>(
   retry: _noAutomaticRetry,
 );
 
-/// **Le plafond effectif de l'écoute**, en bits par seconde. `null` = aucun.
+/// **Le plafond que le réglage et le réseau appellent**, en bits par seconde.
+/// `null` = aucun plafond.
+///
+/// **Une dérivation pure, et rien d'autre.** La version précédente était un
+/// `Notifier` qui portait le cliquet et **mutait un champ depuis son `build`** ;
+/// couplé au `ref.listen` du widget de lecture, cela faisait tourner le montage
+/// de l'écran jusqu'à l'expiration du test, dix minutes plus tard. Un `build` de
+/// provider ne doit rien changer d'autre que sa valeur de retour.
+///
+/// Le cliquet — le plafond descend en cours d'écoute, ne remonte pas — vit
+/// désormais dans le `State` de `ContentPlayerView`, ce qui est sa vraie nature :
+/// il ne vaut que pour la session d'écoute en cours, et `CLAUDE.md` réserve
+/// Riverpod à l'état **partagé**.
 ///
 /// C'est le seul des trois usages qui aboutisse à quelque chose : le direct n'a
 /// pas de lecteur et le téléchargement n'existe pas.
-///
-/// **Asymétrique, et c'est le cœur du réglage.** Le plafond descend dès que le
-/// téléphone bascule en données mobiles — c'est la facture qu'on voulait
-/// éviter, et l'effet arrive au segment suivant, sans coupure. Il **ne remonte
-/// pas** en revanche au retour du wifi tant que le contenu courant joue :
-/// remonter coûterait une remise en tampon au milieu d'un prêche, et une
-/// interruption vaut plus cher qu'un peu d'aigu. La remontée se fait donc au
-/// contenu suivant, quand `ContentPlayerView` repose le plafond après `load`.
-///
-/// Le cliquet vit ici, dans un `Notifier`, et non dans le lecteur : c'est une
-/// règle de préférence, pas une propriété du média, et les trois
-/// implémentations de `ContentPlayer` n'ont pas à la connaître chacune de leur
-/// côté.
-final streamingBitrateCapProvider =
-    NotifierProvider<StreamingBitrateCap, int?>(StreamingBitrateCap.new);
-
-class StreamingBitrateCap extends Notifier<int?> {
-  /// Le plafond le plus bas vu depuis le dernier [release] — le cliquet.
-  int? _floor;
-
-  /// Le plafond que le réglage et le réseau **appellent** en ce moment, cliquet
-  /// mis à part. Retenu pour que [release] puisse y revenir sans relancer
-  /// `build`.
-  int? _target;
-
-  @override
-  int? build() {
-    final quality =
-        ref.watch(mediaPreferencesProvider).value?.of(MediaUsage.streaming) ??
-            MediaQuality.auto;
-    final onCellular = ref.watch(onCellularProvider).value ?? false;
-
-    _target = effectiveBitrateCap(quality, onCellular: onCellular);
-    // `null` (aucun plafond) est le plus **haut** de tous : il ne peut jamais
-    // gagner contre un plancher déjà posé.
-    if (_floor == null) return _floor = _target;
-    if (_target == null) return _floor;
-    return _floor = _target! < _floor! ? _target : _floor;
-  }
-
-  /// Relâche le cliquet — à l'ouverture d'un contenu, jamais pendant.
-  ///
-  /// Sans cela, un fidèle qui a écouté une fois en données mobiles resterait
-  /// bridé chez lui, sur son wifi, jusqu'au redémarrage de l'application.
-  ///
-  /// **Écrit `state` directement, sans `invalidateSelf()`.** L'invalidation
-  /// reconstruisait le notifier depuis un appel venu du widget, qui l'écoute :
-  /// le rebond entre les deux faisait tourner le montage de l'écran de lecture
-  /// jusqu'à l'expiration du test, dix minutes plus tard.
-  void release() {
-    _floor = _target;
-    if (state != _target) state = _target;
-  }
-}
+final streamingBitrateTargetProvider = Provider<int?>((ref) {
+  final quality =
+      ref.watch(mediaPreferencesProvider).value?.of(MediaUsage.streaming) ??
+          MediaQuality.auto;
+  final onCellular = ref.watch(onCellularProvider).value ?? false;
+  return effectiveBitrateCap(quality, onCellular: onCellular);
+});

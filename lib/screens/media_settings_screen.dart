@@ -19,8 +19,9 @@ import '../widgets/brand_app_bar.dart';
 /// avant d'y toucher :
 ///
 /// - **l'écoute** agit sur **iOS** (`AVPlayer.preferredPeakBitRate`) et sur le
-///   **web** (`hls.js`, `autoLevelCapping`). Sur **Android**, `just_audio`
-///   reçoit l'appel et ne fait rien : le réglage est enregistré, sans effet ;
+///   **web** (`hls.js`, `autoLevelCapping`), par `BitrateCapController`, câblé
+///   dans `main.dart`. Sur **Android**, `just_audio` reçoit l'appel et ne fait
+///   rien : le réglage est enregistré, sans effet ;
 /// - **le direct** n'a pas de lecteur — `LiveScreen` affiche une vignette
 ///   décorative et un compteur de spectateurs en dur ;
 /// - **le téléchargement** n'existe pas, et `docs/mediatheque-en-ligne.md` §2
