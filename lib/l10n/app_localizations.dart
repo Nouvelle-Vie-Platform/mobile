@@ -796,6 +796,54 @@ abstract class AppLocalizations {
   /// **'Supprimer'**
   String get downloadDeleteConfirmAction;
 
+  /// Page Téléchargements : état d'un téléchargement en file, pas encore démarré par le moteur natif
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get downloadStateQueued;
+
+  /// Premier hexagone du Profil (F12) : mène à la page Téléchargements (/downloads)
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargements'**
+  String get profileDownloads;
+
+  /// Titre de la page Téléchargements (F13)
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargements'**
+  String get downloadsTitle;
+
+  /// Page Téléchargements : titre de l'état vide (rien n'a été téléchargé sur cet appareil)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun téléchargement'**
+  String get downloadsEmptyTitle;
+
+  /// Page Téléchargements : explication sous le titre de l'état vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Les enseignements que vous téléchargez pour les écouter hors ligne apparaîtront ici.'**
+  String get downloadsEmptyMessage;
+
+  /// Page Téléchargements : espace disque total occupé par les téléchargements (F13). {size} est un nombre déjà formaté en Mo
+  ///
+  /// In fr, this message translates to:
+  /// **'{size} Mo utilisés'**
+  String downloadsStorageUsed(String size);
+
+  /// Page Téléchargements : taille d'un téléchargement complété, affichée à côté de « Téléchargé ». {size} est un nombre déjà formaté en Mo
+  ///
+  /// In fr, this message translates to:
+  /// **'{size} Mo'**
+  String downloadSize(String size);
+
+  /// Page Téléchargements : titre de repli quand l'enseignement d'un téléchargement n'est pas (ou plus) dans le magasin local
+  ///
+  /// In fr, this message translates to:
+  /// **'Enseignement téléchargé'**
+  String get downloadsUnknownTitle;
+
   /// No description provided for @agendaSeeAll.
   ///
   /// In fr, this message translates to:

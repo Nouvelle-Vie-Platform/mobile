@@ -12,6 +12,7 @@ import '../screens/auth/profile_form_screen.dart';
 import '../screens/auth/welcome_screen.dart';
 import '../screens/delete_account_screen.dart';
 import '../screens/donations_screen.dart';
+import '../screens/downloads_screen.dart';
 import '../screens/event_detail_screen.dart';
 import '../screens/gathering_detail_screen.dart';
 import '../screens/group_chat_screen.dart';
@@ -45,6 +46,7 @@ abstract final class AppRoute {
   static const profileEdit = 'profile-edit';
   static const profileDelete = 'profile-delete';
   static const mediaSettings = 'media-settings';
+  static const downloads = 'downloads';
   static const home = 'home';
   static const media = 'media';
   static const live = 'live';
@@ -210,6 +212,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.mediaSettings,
         path: '/settings/media',
         builder: (_, __) => const AppBackground(child: MediaSettingsScreen()),
+      ),
+      // Page Téléchargements — poussée depuis le Profil, où elle a pris la
+      // place de l'hexagone « Ma branche » (#193, F12). L'écran observe le
+      // magasin `downloads` ; il ne reçoit aucun argument.
+      GoRoute(
+        name: AppRoute.downloads,
+        path: '/downloads',
+        builder: (_, __) => const AppBackground(child: DownloadsScreen()),
       ),
       GoRoute(
         name: AppRoute.home,

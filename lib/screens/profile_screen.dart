@@ -280,11 +280,16 @@ class _ProfileHeader extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
+                  // **Le premier hexagone mène à la page Téléchargements**
+                  // (#193, F12) — il ouvrait « Ma branche » sur un `onTap` vide.
+                  // Seul celui-ci change : le nom de branche de l'en-tête et les
+                  // trois autres hexagones (Notes, Agenda, Qualité) sont
+                  // inchangés.
                   child: _BadgeShortcut(
-                    icon: Icons.account_balance,
-                    label: l.profileMyBranch,
+                    icon: Icons.download_rounded,
+                    label: l.profileDownloads,
                     color: AppColors.primary,
-                    onTap: () {},
+                    onTap: () => context.pushNamed(AppRoute.downloads),
                   ),
                 ),
                 Expanded(

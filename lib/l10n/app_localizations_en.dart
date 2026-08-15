@@ -401,6 +401,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadDeleteConfirmAction => 'Delete';
 
   @override
+  String get downloadStateQueued => 'Queued';
+
+  @override
+  String get profileDownloads => 'Downloads';
+
+  @override
+  String get downloadsTitle => 'Downloads';
+
+  @override
+  String get downloadsEmptyTitle => 'No downloads';
+
+  @override
+  String get downloadsEmptyMessage =>
+      'Teachings you download to listen offline will show up here.';
+
+  @override
+  String downloadsStorageUsed(String size) {
+    return '$size MB used';
+  }
+
+  @override
+  String downloadSize(String size) {
+    return '$size MB';
+  }
+
+  @override
+  String get downloadsUnknownTitle => 'Downloaded teaching';
+
+  @override
   String get agendaSeeAll => 'See full agenda';
 
   @override

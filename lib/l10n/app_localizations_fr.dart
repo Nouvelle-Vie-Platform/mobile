@@ -404,6 +404,35 @@ class AppLocalizationsFr extends AppLocalizations {
   String get downloadDeleteConfirmAction => 'Supprimer';
 
   @override
+  String get downloadStateQueued => 'En attente';
+
+  @override
+  String get profileDownloads => 'Téléchargements';
+
+  @override
+  String get downloadsTitle => 'Téléchargements';
+
+  @override
+  String get downloadsEmptyTitle => 'Aucun téléchargement';
+
+  @override
+  String get downloadsEmptyMessage =>
+      'Les enseignements que vous téléchargez pour les écouter hors ligne apparaîtront ici.';
+
+  @override
+  String downloadsStorageUsed(String size) {
+    return '$size Mo utilisés';
+  }
+
+  @override
+  String downloadSize(String size) {
+    return '$size Mo';
+  }
+
+  @override
+  String get downloadsUnknownTitle => 'Enseignement téléchargé';
+
+  @override
   String get agendaSeeAll => 'Voir tout l\'agenda';
 
   @override
