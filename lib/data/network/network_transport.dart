@@ -70,6 +70,69 @@ class ConnectivityNetworkTransport implements NetworkTransport {
   }
 }
 
+/// **Y a-t-il un tuyau, quel qu'il soit ?** — une question *différente* de
+/// [NetworkTransport], et surtout *différente* de « y a-t-il internet ».
+///
+/// Le dépôt refuse `connectivity_plus` pour trancher « y a-t-il internet » :
+/// derrière un portail captif — un hôtel, un wifi d'église mal configuré — il
+/// répond « connecté », c'est-à-dire précisément quand sa réponse compterait, et
+/// la panne d'écoute se déduit donc de l'échec lui-même
+/// (`ContentPlayback.hasStarted`, et l'en-tête de [NetworkTransport]).
+/// **Ce n'est pas cette question-ci.** « Hors ligne » veut dire ici que l'OS ne
+/// rapporte **aucun transport** (mode avion, radios coupées) : l'OS y répond en
+/// local, sans aller-retour, et aucun portail captif ne peut le tromper.
+///
+/// Un seul décideur s'en sert — le routage offline-first d'un **partiel**
+/// (#191, F11) : un fichier tronqué n'est servi que **hors ligne** ; en ligne on
+/// préfère le HLS complet. La décision est robuste à l'imprécision du paquet : un
+/// portail captif lu « en ligne » route simplement vers le HLS, dont l'échec est
+/// déjà raconté par le lecteur (`_Stage.needsNetwork`) — jamais on ne prétend
+/// être certain d'avoir internet. C'est ce qui rend cet usage acceptable là où
+/// [NetworkTransport] refuse d'aller.
+///
+/// C'est ce que ce fichier anticipait : « si un second consommateur apparaît et
+/// qu'il a besoin de savoir s'il y a du réseau, ce n'est pas dans
+/// [NetworkTransport] qu'il faut l'ajouter ». Le voici, à côté, et non dedans.
+abstract interface class NetworkStatus {
+  /// `true` quand l'OS ne rapporte **aucun** transport réseau.
+  Future<bool> isOffline();
+}
+
+/// L'implémentation réelle, sur `connectivity_plus` — comme
+/// [ConnectivityNetworkTransport], et rangée dans le **même** fichier pour que
+/// « le seul fichier du dépôt qui importe `connectivity_plus` » reste vrai.
+class ConnectivityNetworkStatus implements NetworkStatus {
+  ConnectivityNetworkStatus([Connectivity? connectivity])
+      : _connectivity = connectivity ?? Connectivity();
+
+  final Connectivity _connectivity;
+
+  @override
+  Future<bool> isOffline() async {
+    try {
+      final results = await _connectivity.checkConnectivity();
+      return results.isEmpty ||
+          results.every((r) => r == ConnectivityResult.none);
+    } on Object catch (_) {
+      // Canal de plugin absent (test, plateforme incomplète) ou hoquet : on
+      // répond **en ligne**, donc « préférer le HLS ». Le doute ne penche jamais
+      // vers « hors ligne » : un faux « hors ligne » servirait un fichier
+      // tronqué alors qu'un flux entier était disponible.
+      return false;
+    }
+  }
+}
+
+/// État réseau **figé**, pour les tests et le double de maquette.
+class FixedNetworkStatus implements NetworkStatus {
+  const FixedNetworkStatus({bool offline = false}) : _offline = offline;
+
+  final bool _offline;
+
+  @override
+  Future<bool> isOffline() async => _offline;
+}
+
 /// Transport **figé**, pour les tests et pour le double de maquette.
 ///
 /// Aucun canal de plugin, aucune minuterie : c'est ce qui permet de vérifier la

@@ -7,14 +7,18 @@
 /// tant que le lecteur était feint.
 library;
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/local/tables/download_tables.dart';
+import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
+import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
@@ -639,6 +643,102 @@ void main() {
       expect(reporter.reports.last.completed, isTrue);
     });
   });
+
+  group('Le routage offline-first (#191)', () {
+    const localPath = '/data/downloads/$_id.mid.aac';
+
+    Future<AppDatabase> dbWithDownload({
+      required DownloadState state,
+      String? path = localPath,
+      int bytesReceived = 500,
+      int bytesTotal = 500,
+    }) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await db.downloadsDao.upsert(
+        DownloadsCompanion.insert(
+          contentType: 'teaching',
+          contentId: _id,
+          quality: 'mid',
+          state: Value(state),
+          localPath: Value(path),
+          bytesReceived: Value(bytesReceived),
+          bytesTotal: Value(bytesTotal),
+          createdAt: DateTime.utc(2026, 8, 15),
+        ),
+      );
+      return db;
+    }
+
+    testWidgets('un complet est joué depuis le disque, pas en HLS', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      final db = await dbWithDownload(state: DownloadState.complete);
+
+      await _pump(tester, player: player, database: db);
+
+      // La copie sur le disque prend le pas sur le `playlistUrl`.
+      expect(player.loadedFilePath, localPath);
+      expect(player.loadCount, 1);
+      expect(player.value.isPlaying, isTrue);
+    });
+
+    testWidgets('un partiel hors ligne est joué depuis le disque', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      final db = await dbWithDownload(
+        state: DownloadState.paused,
+        bytesReceived: 120,
+      );
+
+      await _pump(
+        tester,
+        player: player,
+        database: db,
+        networkStatus: const FixedNetworkStatus(offline: true),
+      );
+
+      expect(player.loadedFilePath, localPath);
+    });
+
+    testWidgets('un partiel en ligne retombe sur le HLS complet', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      final db = await dbWithDownload(
+        state: DownloadState.paused,
+        bytesReceived: 120,
+      );
+
+      await _pump(
+        tester,
+        player: player,
+        database: db,
+        networkStatus: const FixedNetworkStatus(),
+      );
+
+      // On ne sert pas un tronqué quand on peut streamer en entier (F11).
+      expect(player.loadedFilePath, isNull);
+      expect(player.loadedUrl, _url);
+    });
+
+    testWidgets('sans téléchargement, le HLS reste le repli exact', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+
+      await _pump(tester, player: player);
+
+      expect(player.loadedFilePath, isNull);
+      expect(player.loadedUrl, _url);
+    });
+  });
 }
 
 /// La couleur d'où part le dégradé du cadre du lecteur.
@@ -666,6 +766,7 @@ Future<ProviderContainer> _pump(
   ContentView? content,
   AppDatabase? database,
   FakePlaybackProgressReporter? reporter,
+  NetworkStatus? networkStatus,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -676,6 +777,8 @@ Future<ProviderContainer> _pump(
       contentPlayerProvider.overrideWithValue(player),
       playbackProgressReporterProvider
           .overrideWithValue(reporter ?? FakePlaybackProgressReporter()),
+      if (networkStatus != null)
+        networkStatusProvider.overrideWithValue(networkStatus),
     ],
   );
   // Posé **avant** le montage : l'écran doit trouver son contenu dès le premier

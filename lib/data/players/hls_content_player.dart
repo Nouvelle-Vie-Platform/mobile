@@ -130,6 +130,10 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     required String title,
     String? author,
     String? artUrl,
+    // Le téléchargement hors ligne (#191) est **mobile seul** : le web n'a pas
+    // de fichier local, [localFilePath] y est donc toujours nul et ignoré. Le
+    // paramètre n'existe que pour satisfaire le contrat [ContentPlayer].
+    String? localFilePath,
   }) async {
     if (isDisposed) return;
     _releaseSource();

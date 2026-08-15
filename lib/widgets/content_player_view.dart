@@ -13,6 +13,7 @@ import '../data/repositories/playback_progress_recorder.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/content_view.dart';
 import '../router/app_router.dart';
+import '../state/downloads_providers.dart';
 import '../state/playback_progress_providers.dart';
 import '../state/player_providers.dart';
 import '../theme/app_palette.dart';
@@ -339,9 +340,19 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     // contenu mis en pause depuis la notification doit le rester.
     if (player.value.contentId == content.id) return;
 
+    // **Le point de résolution offline-first** (#191, F10/F11) : local complet
+    // partout, local partiel hors ligne, HLS sinon. C'est le seul endroit qui
+    // décide — `url` (le `playlistUrl` brut) n'est plus lu directement pour
+    // trancher, il n'est plus que le repli HLS que le résolveur peut rendre.
+    final resolution = await ref
+        .read(downloadResolverProvider)
+        .resolve(contentId: content.id, hlsUrl: url);
+    if (!mounted) return;
+
     await player.load(
       contentId: content.id,
       url: url,
+      localFilePath: resolution.localFilePath,
       title: content.title,
       author: content.authorName,
       artUrl: content.landscapeOrPortrait,

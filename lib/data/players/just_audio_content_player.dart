@@ -82,14 +82,24 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
   /// alors une seconde du tout début du prêche avant d'être ramené où il en
   /// était. C'est le chemin du repli de [JustAudioContentPlayer.resume] et
   /// celui du chien de garde.
+  /// [filePath] est la source **offline-first** (#191) : quand il est fourni, on
+  /// joue le fichier local par `setFilePath` plutôt que le HLS par `setUrl`.
+  /// Un partiel (AAC-ADTS tronqué) s'arrête proprement à l'EOF des octets reçus
+  /// — ExoPlayer et AVPlayer terminent en `completed`, sans boucle de tampon
+  /// (Spike 1, F11) —, donc le chien de garde du décrochage ne s'arme pas.
   Future<void> open({
-    required String url,
     required MediaItem item,
+    String? url,
+    String? filePath,
     Duration? at,
   }) async {
     _failure = null;
     mediaItem.add(item);
-    await _player.setUrl(url, initialPosition: at);
+    if (filePath != null) {
+      await _player.setFilePath(filePath, initialPosition: at);
+    } else {
+      await _player.setUrl(url!, initialPosition: at);
+    }
   }
 
   @override
@@ -236,6 +246,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     required String title,
     String? author,
     String? artUrl,
+    String? localFilePath,
   }) async {
     if (_disposed) return;
     final request = ContentRequest(
@@ -244,6 +255,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
       title: title,
       author: author,
       artUrl: artUrl,
+      filePath: localFilePath,
     );
     _request = request;
     // Valeur **neuve** : durée, fin atteinte et panne du contenu précédent
@@ -305,12 +317,19 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   /// Ouvre (ou rouvre) la source, éventuellement à une position.
   Future<void> _open(ContentRequest request, {Duration? at}) async {
     try {
+      // **Fichier local (#191) : on le joue verbatim.** Une copie sur le disque
+      // est une rendition unique et concrète — le choix de palier par l'URL
+      // ([variantPlaylistUrl]) ne la concerne pas, et un partiel s'y arrête
+      // proprement à l'EOF. Sinon, le HLS d'avant, avec son palier.
+      final filePath = request.filePath;
       await _handler.open(
         // **Le palier se choisit ici, par l'URL.** Sur Android c'est le seul
         // levier qui existe ; sur les autres plateformes il double le plafond
         // de débit, sans le contredire — un rendu unique ne laisse rien à
         // adapter au-dessus.
-        url: variantPlaylistUrl(request.url, _variant),
+        url:
+            filePath == null ? variantPlaylistUrl(request.url, _variant) : null,
+        filePath: filePath,
         at: at,
         item: MediaItem(
           // L'identifiant du contenu, pas l'URL : c'est lui qui désigne un

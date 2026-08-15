@@ -13,8 +13,10 @@ import '../data/downloads/background_downloader_backend.dart';
 import '../data/downloads/disk_space.dart';
 import '../data/downloads/download_backend.dart';
 import '../data/downloads/download_manager.dart';
+import '../data/downloads/download_resolver.dart';
 import '../data/local/app_database.dart';
 import '../data/local/downloads_dao.dart';
+import '../data/network/network_transport.dart';
 import '../models/media_preferences.dart';
 import 'media_settings_providers.dart';
 import 'sync_providers.dart';
@@ -75,6 +77,28 @@ final downloadManagerProvider = Provider<DownloadManager>((ref) {
   ref.onDispose(manager.dispose);
   return manager;
 });
+
+/// **L'état réseau du routage offline-first** (#191) — « y a-t-il un tuyau ? »,
+/// pas « y a-t-il internet ». À surcharger par un [FixedNetworkStatus] dans les
+/// tests : l'implémentation réelle ouvre un canal de plugin, absent du harnais.
+/// Voir [NetworkStatus] pour pourquoi cette question-ci est légitime là où
+/// [NetworkTransport] refuse de trancher « y a-t-il internet ».
+final networkStatusProvider = Provider<NetworkStatus>(
+  (ref) => ConnectivityNetworkStatus(),
+);
+
+/// **Le point de résolution unique de la lecture** (#191, F10/F11).
+///
+/// L'écran de lecture le lit au lieu de `playlistUrl` en brut : il tranche entre
+/// le fichier local (complet partout, partiel hors ligne) et le HLS. C'est un
+/// service sans état, reconstruit à la demande — il ne fait que lire le magasin
+/// et l'état réseau.
+final downloadResolverProvider = Provider<DownloadResolver>(
+  (ref) => DownloadResolver(
+    dao: ref.watch(downloadsDaoProvider),
+    network: ref.watch(networkStatusProvider),
+  ),
+);
 
 /// **La qualité de téléchargement choisie** (réglage média, défaut `mid`, F6).
 ///

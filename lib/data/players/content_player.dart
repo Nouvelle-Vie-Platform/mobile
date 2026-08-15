@@ -203,6 +203,7 @@ class ContentRequest {
     required this.title,
     this.author,
     this.artUrl,
+    this.filePath,
   });
 
   final String contentId;
@@ -210,6 +211,15 @@ class ContentRequest {
   final String title;
   final String? author;
   final String? artUrl;
+
+  /// **Le fichier local à jouer**, quand la résolution offline-first (#191) a
+  /// choisi la copie sur le disque plutôt que le HLS. `null` → on joue [url].
+  ///
+  /// Il est retenu ici pour la même raison que le reste : une réouverture — la
+  /// reprise après panne, le chien de garde — doit rejouer **la même source**,
+  /// sans redemander à l'écran. Un fichier local rouvre le fichier ; le HLS
+  /// rouvre [url].
+  final String? filePath;
 }
 
 /// **Lecteur d'un contenu de médiathèque.**
@@ -261,6 +271,15 @@ abstract interface class ContentPlayer
   /// système affiche dans la notification et sur l'écran verrouillé. [artUrl]
   /// est la pochette, absente quand le contenu n'a pas de visuel.
   ///
+  /// **[localFilePath] est la source offline-first** (#191, F10/F11) : quand la
+  /// résolution a choisi la copie sur le disque, on **joue ce fichier** et non
+  /// [url]. Un fichier local est une rendition unique et concrète : le choix de
+  /// palier par l'URL ([setPreferredVariant]) ne s'y applique pas. Pour un
+  /// fichier **partiel** (AAC-ADTS tronqué), la lecture s'arrête proprement à
+  /// l'EOF des octets reçus — on ne « s'étend » pas en direct. [url] reste passé
+  /// comme **repli HLS** et locator de réouverture ; `null` → on joue [url],
+  /// c'est-à-dire le comportement d'avant #191.
+  ///
   /// Charger **ne démarre pas** la lecture : ouvrir un enseignement ne doit pas
   /// faire sortir du son dans une salle de culte.
   Future<void> load({
@@ -269,6 +288,7 @@ abstract interface class ContentPlayer
     required String title,
     String? author,
     String? artUrl,
+    String? localFilePath,
   });
 
   /// Démarre ou reprend la lecture.
@@ -356,6 +376,13 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   @visibleForTesting
   String? loadedUrl;
 
+  /// Le **fichier local** actuellement tenu, quand la résolution offline-first
+  /// (#191) a choisi le disque plutôt que le HLS. `null` en HLS et après un
+  /// [stop] — c'est ce qui laisse un test constater vers quelle source l'écran a
+  /// routé, à défaut de la jouer.
+  @visibleForTesting
+  String? loadedFilePath;
+
   /// Titre **actuellement affiché par le système** : la notification, l'écran
   /// verrouillé.
   ///
@@ -399,9 +426,11 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     required String title,
     String? author,
     String? artUrl,
+    String? localFilePath,
   }) async {
     if (_disposed) return;
     loadedUrl = url;
+    loadedFilePath = localFilePath;
     loadedTitle = title;
     loadCount++;
     _request = ContentRequest(
@@ -410,6 +439,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
       title: title,
       author: author,
       artUrl: artUrl,
+      filePath: localFilePath,
     );
     // Valeur **neuve** et non `copyWith` : c'est le seul moyen d'effacer une
     // durée, une fin atteinte ou une panne héritées du contenu précédent.
@@ -482,6 +512,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     // Le média est relâché **et** ce que le système affiche est vidé — c'est ce
     // que fait `ContentAudioHandler.stop()` avec `mediaItem.add(null)`.
     loadedUrl = null;
+    loadedFilePath = null;
     loadedTitle = null;
     _request = null;
     value = const ContentPlayback();
