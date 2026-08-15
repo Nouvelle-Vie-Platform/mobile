@@ -6,7 +6,12 @@ import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 
 /// Variantes de bouton issues de la section « Boutons » du design.
-enum AppButtonVariant { primary, secondary, accent, outline, ghost }
+/// La variante `danger` existe pour les actions **irréversibles**, et pour
+/// elles seules — aujourd'hui la seule est la suppression de compte. Elle a été
+/// ajoutée plutôt que d'habiller un bouton au cas par cas dans l'écran : le
+/// rouge d'un bouton qui efface pour toujours ne doit pas dépendre de qui l'a
+/// écrit. `MenuTile` porte déjà la même notion (`destructive`).
+enum AppButtonVariant { primary, secondary, accent, outline, ghost, danger }
 
 /// Bouton réutilisable couvrant toutes les variantes et états du design
 /// (Normal / Disabled). La couleur du texte et du fond s'adapte à la variante.
@@ -110,6 +115,11 @@ class AppButton extends StatelessWidget {
       case AppButtonVariant.secondary:
         return const _ButtonStyle(
           background: AppColors.secondary,
+          foreground: AppColors.textOnPrimary,
+        );
+      case AppButtonVariant.danger:
+        return const _ButtonStyle(
+          background: AppColors.danger,
           foreground: AppColors.textOnPrimary,
         );
       case AppButtonVariant.accent:

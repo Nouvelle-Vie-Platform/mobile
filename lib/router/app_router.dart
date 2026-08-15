@@ -10,6 +10,7 @@ import '../screens/auth/code_screen.dart';
 import '../screens/auth/identifier_screen.dart';
 import '../screens/auth/profile_form_screen.dart';
 import '../screens/auth/welcome_screen.dart';
+import '../screens/delete_account_screen.dart';
 import '../screens/donations_screen.dart';
 import '../screens/event_detail_screen.dart';
 import '../screens/gathering_detail_screen.dart';
@@ -37,6 +38,7 @@ abstract final class AppRoute {
   static const authIdentifier = 'auth-identifier';
   static const authCode = 'auth-code';
   static const profileEdit = 'profile-edit';
+  static const profileDelete = 'profile-delete';
   static const home = 'home';
   static const media = 'media';
   static const live = 'live';
@@ -183,6 +185,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.profileEdit,
         path: '/profile/edit',
         builder: (_, __) => const AppBackground(child: ProfileFormScreen()),
+      ),
+      // Suppression de compte — **une route et non un dialogue**, exigence
+      // App Store 5.1.1(v). Déclarée après `/profile/edit` : go_router essaie
+      // les routes dans l'ordre, et les deux chemins ne se recouvrent pas.
+      GoRoute(
+        name: AppRoute.profileDelete,
+        path: '/profile/delete',
+        builder: (_, __) => const AppBackground(child: DeleteAccountScreen()),
       ),
       GoRoute(
         name: AppRoute.home,

@@ -20,6 +20,10 @@ import '../widgets/profile_completion_banner.dart';
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
+  /// Clé de l'entrée « Supprimer mon compte », pour la cibler depuis les tests
+  /// sans dépendre de son libellé.
+  static const Key deleteAccountKey = Key('profile_delete_account');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -122,6 +126,19 @@ class ProfileScreen extends ConsumerWidget {
                   // Confirmation puis déconnexion : le `redirect` du routeur
                   // renvoie ensuite vers `/auth` (pas de navigation manuelle).
                   onTap: () => _confirmSignOut(context, ref),
+                ),
+                // **Séparée de la déconnexion**, et pas seulement rangée en
+                // dessous : les deux sont destructives à l'œil, mais l'une se
+                // rejoue en saisissant un code et l'autre n'a pas de retour.
+                // L'espace vide est ce qui empêche le pouce de glisser de l'une
+                // à l'autre. Elle ouvre un écran — jamais un dialogue.
+                const SizedBox(height: AppSpacing.lg),
+                MenuTile(
+                  key: ProfileScreen.deleteAccountKey,
+                  icon: Icons.person_remove_outlined,
+                  label: l.deleteAccount,
+                  destructive: true,
+                  onTap: () => context.pushNamed(AppRoute.profileDelete),
                 ),
               ],
             ),

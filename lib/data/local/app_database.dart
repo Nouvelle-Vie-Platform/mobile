@@ -192,6 +192,41 @@ class AppDatabase extends _$AppDatabase {
         },
       );
 
+  /// **Vide le magasin entier**, puis le remet dans l'état d'une base neuve.
+  ///
+  /// Une seule chose l'appelle, et une seule doit l'appeler : la **suppression
+  /// de compte**. Ce n'est pas un utilitaire de confort — c'est la contrepartie
+  /// locale d'un effacement serveur.
+  ///
+  /// Trois choses qui se ratent en silence :
+  ///
+  /// 1. **Les curseurs partent avec les lignes.** Garder un curseur sur une
+  ///    table vidée est le trou permanent que l'invariant central du magasin
+  ///    interdit : le manifeste répondrait « rien de neuf » et la collection ne
+  ///    se remplirait plus jamais. Effacer les deux ensemble fait annoncer
+  ///    `from_zero` au compte suivant.
+  /// 2. **La progression d'écoute est une collection répliquée**, et le
+  ///    garde-fou de source interdit de la nommer dans un `delete`. On boucle
+  ///    donc sur `allTables`, ce qui est aussi la manière dont le moteur écrit
+  ///    lui-même (`delete(collection.table)`) — la table n'est jamais nommée.
+  /// 3. **On ne supprime pas le fichier.** Sur le web il n'y en a pas — la base
+  ///    vit dans le navigateur (`sqlite3.wasm`) —, et fermer puis rouvrir
+  ///    l'instance laisserait les DAO déjà distribués pointer sur une base
+  ///    close. Vider en une transaction donne le même résultat sur les trois
+  ///    cibles, sans toucher au cycle de vie de l'objet.
+  ///
+  /// La ligne d'état global est reposée : elle doit exister avant la première
+  /// allocation de jeton d'écriture, donc avant la première page appliquée au
+  /// compte suivant.
+  Future<void> eraseEverything() async {
+    await transaction(() async {
+      for (final table in allTables) {
+        await delete(table).go();
+      }
+      await _ensureGlobalStateRow();
+    });
+  }
+
   Future<void> _ensureGlobalStateRow() async {
     await into(syncState).insert(
       const SyncStateCompanion(id: Value(kSyncStateRowId)),

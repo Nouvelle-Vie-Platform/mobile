@@ -71,17 +71,25 @@ Future<void> pumpScreen(
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
+  AppDatabase? database,
+  AuthRepository? auth,
 }) async {
-  final database = AppDatabase(NativeDatabase.memory());
-  addTearDown(database.close);
+  // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
+  // ci-dessus : Riverpod 3 refuse deux surcharges du même provider. [database]
+  // existe pour les tests qui doivent **relire** le magasin après coup — la
+  // suppression de compte le vide, et on ne peut le vérifier que sur
+  // l'instance que l'écran a réellement utilisée.
+  final db = database ?? AppDatabase(NativeDatabase.memory());
+  if (database == null) addTearDown(db.close);
 
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        appDatabaseProvider.overrideWithValue(database),
+        appDatabaseProvider.overrideWithValue(db),
         playbackProgressReporterProvider
             .overrideWithValue(FakePlaybackProgressReporter()),
-        authRepositoryProvider.overrideWithValue(InMemoryAuthRepository()),
+        authRepositoryProvider
+            .overrideWithValue(auth ?? InMemoryAuthRepository()),
         branchRepositoryProvider
             .overrideWithValue(const InMemoryBranchRepository()),
         mediathequeRepositoryProvider

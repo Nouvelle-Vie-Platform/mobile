@@ -107,6 +107,29 @@ abstract interface class AuthRepository {
   Future<void> forgetSession();
 
   Future<void> signOut();
+
+  /// **Supprime définitivement le compte** (`DELETE /auth/me`).
+  ///
+  /// Exigence d'entrée à l'App Store (règle 5.1.1(v)) : une application qui
+  /// permet de créer un compte doit permettre de le supprimer **depuis
+  /// l'application**. Le Bearer désigne le compte — il n'existe aucune forme de
+  /// cette requête qui puisse en désigner un autre.
+  ///
+  /// Rend la main **sans avoir rien effacé localement** : c'est l'appelant qui
+  /// enchaîne, parce que l'effacement local ne concerne pas que la session (le
+  /// magasin Drift porte la progression d'écoute du fidèle). Voir
+  /// `AuthNotifier.deleteAccount`.
+  ///
+  /// **Un `401` compte comme un succès.** Le serveur révoque tous les tokens
+  /// dans la transaction de suppression : un second appel — ou un appel dont le
+  /// token venait d'expirer — reçoit `401` et il n'existe pas d'état
+  /// « déjà supprimé » à distinguer. Dans les deux cas il n'y a plus de session,
+  /// et effacer localement est la bonne suite.
+  ///
+  /// Lève en revanche sur une panne réseau ou un `5xx` : le compte est alors
+  /// **toujours vivant**, et effacer le téléphone laisserait quelqu'un
+  /// convaincu d'avoir disparu alors que son compte existe encore.
+  Future<void> deleteAccount();
 }
 
 /// Implémentation factice (phase C) : **aucun réseau, aucun plugin**.
@@ -267,6 +290,15 @@ class InMemoryAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async {
+    await Future<void>.delayed(_lookup);
+    _user = null;
+  }
+
+  /// En maquette, supprimer revient à oublier : il n'y a ni serveur à prévenir
+  /// ni donnée persistée à reprendre. Le double **réussit** plutôt que de lever
+  /// — l'écran de suppression doit pouvoir se parcourir sans backend.
+  @override
+  Future<void> deleteAccount() async {
     await Future<void>.delayed(_lookup);
     _user = null;
   }
