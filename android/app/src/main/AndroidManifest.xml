@@ -8,6 +8,13 @@
     <!-- Le service de premier plan, et son type depuis Android 14. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
+    <!-- Le téléchargement offline des enseignements (#190). `background_downloader`
+         télécharge en tâche de fond via un service de premier plan de type
+         `dataSync` (déclaré dans le manifeste du greffon, fusionné ici) : depuis
+         Android 14, ce type exige sa propre permission. `FOREGROUND_SERVICE`
+         ci-dessus et `POST_NOTIFICATIONS` ci-dessous (notification de
+         progression) sont déjà là pour le lecteur — le greffon les réutilise. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <!-- Android 13+. C'est une permission **d'exécution** : la déclarer ici ne
          suffit pas, et `audio_service` ne la demande pas. Sans la demande faite
          par l'application (voir `MainActivity.kt` et

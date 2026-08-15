@@ -348,10 +348,10 @@ Map<String, Object?> emptyPageKeepingCursor(String incomingCursor) =>
 Map<String, Object?> emptyPageFromZero() => deltaPage();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Lignes `teachings` — 18 clés, `camelCase`
+// Lignes `teachings` — 19 clés, `camelCase` (dont `download`, ADR-0038)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// **Un enseignement complet.** Dix-huit clés, ni une de plus ni une de moins.
+/// **Un enseignement complet.** Dix-neuf clés, ni une de plus ni une de moins.
 ///
 /// Il n'y a **ni `family`, ni `deletedAt`, ni durée, ni `mimeType`** : la
 /// famille filtre côté serveur (un rassemblement ne voyage pas dans cette
@@ -376,6 +376,29 @@ const Map<String, Object?> fullTeachingPayload = {
   'isLive': false,
   'isFullService': true,
   'playlistUrl': 'https://media.example.org/hls/019f2c40/master.m3u8',
+  // **Le contrat de téléchargement hors ligne** (ADR-0038), relevé sur
+  // `app/mediatheque/support/download_info.ts` : `{ version, duration,
+  // renditions: { low:{url,bytes}, mid:…, high:… } }`. Additif à `playlistUrl`,
+  // servi par le **même** transformer (donc pour les deux familles). Les `.aac`
+  // sont versionnés par `transcodeId` = `version`.
+  'download': {
+    'version': '019f2c40-aac-0001',
+    'duration': 3600,
+    'renditions': {
+      'low': {
+        'url': 'https://media.example.org/dl/019f2c40-aac-0001/low.aac',
+        'bytes': 28800000,
+      },
+      'mid': {
+        'url': 'https://media.example.org/dl/019f2c40-aac-0001/mid.aac',
+        'bytes': 57600000,
+      },
+      'high': {
+        'url': 'https://media.example.org/dl/019f2c40-aac-0001/high.aac',
+        'bytes': 86400000,
+      },
+    },
+  },
   'imageLandscapeUrl': '/uploads/teachings/019f2c40-landscape.webp',
   'imagePortraitUrl': '/uploads/teachings/019f2c40-portrait.webp',
   'publishedAt': '2026-04-05T18:00:00.000Z',
@@ -403,6 +426,9 @@ const Map<String, Object?> teachingWithoutPlaylistPayload = {
   'isLive': true,
   'isFullService': false,
   'playlistUrl': null,
+  // Pas de média, donc **pas téléchargeable** : `download` nul, comme le fonds
+  // ancien jamais re-transcodé (ADR-0038). Le mobile le lit « pas de fichier ».
+  'download': null,
   'imageLandscapeUrl': '/uploads/teachings/019f2c41-landscape.webp',
   'imagePortraitUrl': '/uploads/teachings/019f2c41-portrait.webp',
   'publishedAt': '2026-04-12T09:00:00.000Z',
@@ -433,6 +459,10 @@ const Map<String, Object?> teachingWithoutColorPayload = {
   'isLive': false,
   'isFullService': false,
   'playlistUrl': 'https://media.example.org/hls/019f2c42/master.m3u8',
+  // Un enseignement en ligne **pas encore téléchargeable** (fonds ancien, HLS
+  // mais pas de `.aac`) : `playlistUrl` non nul, `download` nul. Le
+  // téléchargeable est additif — il n'accompagne pas forcément le HLS.
+  'download': null,
   'imageLandscapeUrl': '/uploads/teachings/019f2c42-landscape.webp',
   'imagePortraitUrl': '/uploads/teachings/019f2c42-portrait.webp',
   'publishedAt': '2026-04-19T18:30:00.000Z',
@@ -658,7 +688,7 @@ Map<String, Object?> branchesPage() => deltaPage(
 // Lignes des rassemblements — issue serveur #133
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// **Un rassemblement complet.** Les mêmes dix-huit clés qu'un enseignement, et
+/// **Un rassemblement complet.** Les mêmes dix-neuf clés qu'un enseignement, et
 /// ce n'est pas une coïncidence : les deux familles vivent dans la même table
 /// côté serveur et passent par le **même transformer**
 /// (`teaching_family_collection.ts`).
@@ -689,6 +719,10 @@ const Map<String, Object?> fullGatheringPayload = {
   'isLive': false,
   'isFullService': false,
   'playlistUrl': 'https://media.example.org/hls/019f3a10/master.m3u8',
+  // Le **même** transformer sert la clé pour les deux familles (ADR-0038), mais
+  // les rassemblements ne sont **pas** téléchargeables en v1 : `download` nul.
+  // Le mobile ne le parse d'ailleurs pas côté `gatherings` (hors périmètre).
+  'download': null,
   'imageLandscapeUrl': '/uploads/teachings/019f3a10-landscape.webp',
   'imagePortraitUrl': '/uploads/teachings/019f3a10-portrait.webp',
   'publishedAt': '2026-05-03T20:00:00.000Z',
@@ -712,6 +746,8 @@ const Map<String, Object?> gatheringWithoutColorPayload = {
   'isLive': false,
   'isFullService': false,
   'playlistUrl': null,
+  // Rassemblement non téléchargeable (v1) : `download` nul, comme partout.
+  'download': null,
   'imageLandscapeUrl': '/uploads/teachings/019f3a11-landscape.webp',
   'imagePortraitUrl': null,
   'publishedAt': '2026-05-10T08:00:00.000Z',

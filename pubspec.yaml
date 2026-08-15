@@ -139,6 +139,28 @@ dependencies:
   # `MediaSaver` (`lib/data/media/`) — les tests posent un enregistreur inerte,
   # sans canal de plugin, comme `image_picker` derrière `StatusImagePicker`.
   gal: ^2.3.3
+  # **Le moteur de téléchargement en tâche de fond** (#190) — les enseignements
+  # écoutables hors ligne. Choisi pour ce qu'aucun `dio` + fichier ne donne : un
+  # transfert qui **survit à la mise en arrière-plan et au kill de l'app**
+  # (F7), reprenable par `Range`, avec contrainte réseau (wifi par défaut, F8) et
+  # notification de progression native.
+  #
+  # Plugin natif, après les autres. **Un seul fichier du dépôt l'importe**
+  # (`lib/data/downloads/background_downloader_backend.dart`) : tout le reste ne
+  # connaît que `DownloadBackend` (`lib/data/downloads/download_backend.dart`),
+  # exactement comme `just_audio` derrière `ContentPlayer`. Sous `flutter test`,
+  # ses canaux natifs lèvent — d'où l'abstraction et son double `Fake`.
+  #
+  # Configuration native :
+  # - **iOS** — le plugin télécharge via `URLSession` en arrière-plan ; le mode
+  #   `UIBackgroundModes: audio` déjà présent pour le lecteur **ne suffit pas** au
+  #   transfert seul, mais le plugin s'appuie sur sa propre `URLSession`
+  #   « background » sans exiger d'entrée `UIBackgroundModes` supplémentaire
+  #   (contrairement à `fetch`/`processing`). Rien à ajouter à `Info.plist`.
+  # - **Android** — notification de progression : `POST_NOTIFICATIONS` (API 33+,
+  #   déjà demandée à l'exécution pour le lecteur) et le service de premier plan
+  #   `dataSync` du plugin, déclarés dans `AndroidManifest.xml`.
+  background_downloader: ^9.2.0
 
 dev_dependencies:
   flutter_test:

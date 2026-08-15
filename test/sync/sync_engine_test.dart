@@ -470,6 +470,37 @@ void main() {
       expect(sansMedia.isLive, isTrue);
     });
 
+    test('le contrat `download` est stocké entier, ou nul si absent', () async {
+      await engineOver(['teachings']).synchronize();
+
+      // L'enseignement complet porte son contrat de téléchargement (ADR-0038) :
+      // version, durée, et une rendition par qualité avec url + bytes — les
+      // tailles que le moteur de téléchargement connaîtra **hors ligne**.
+      final full = await (db.select(db.teachings)
+            ..where((t) => t.id.equals(fullTeachingPayload['id']! as String)))
+          .getSingle();
+      final download = full.download;
+      expect(download, isNotNull);
+      expect(download!.version, '019f2c40-aac-0001');
+      expect(download.durationSeconds, 3600);
+      expect(download.renditions.keys.toSet(), {'low', 'mid', 'high'});
+      expect(download.renditions['mid']!.bytes, 57600000);
+      expect(
+        download.renditions['high']!.url,
+        endsWith('/high.aac'),
+      );
+
+      // Un enseignement sans `.aac` : `download` nul, « pas téléchargeable » —
+      // et ça ne casse pas la page (le champ est tolérant, additif).
+      final sansMedia = await (db.select(db.teachings)
+            ..where(
+              (t) =>
+                  t.id.equals(teachingWithoutPlaylistPayload['id']! as String),
+            ))
+          .getSingle();
+      expect(sansMedia.download, isNull);
+    });
+
     test('les instants sont analysés, jamais comparés comme des chaînes',
         () async {
       await engineOver(['teachings']).synchronize();

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../models/teaching_download.dart';
 import 'app_database.dart';
 import 'tables/mediatheque_tables.dart';
 
@@ -198,5 +199,19 @@ class MediathequeDao extends DatabaseAccessor<AppDatabase>
         type: row.readTableOrNull(teachingTypes),
       ),
     );
+  }
+
+  /// **Le contrat de téléchargement d'un enseignement** (`teachings.download`,
+  /// ADR-0038), ou `null` s'il n'est pas téléchargeable / pas connu.
+  ///
+  /// C'est la **source de vérité** des URLs et des tailles, connue **hors
+  /// ligne** : le `DownloadManager` s'en sert pour lancer un téléchargement et
+  /// pour le ré-enqueuer à la réconciliation, sans jamais toucher au réseau. En
+  /// `Future` et non en `Stream` : le moteur la lit au moment d'agir, il n'a pas
+  /// à l'observer.
+  Future<TeachingDownload?> downloadFor(String contentId) async {
+    final row = await (select(teachings)..where((t) => t.id.equals(contentId)))
+        .getSingleOrNull();
+    return row?.download;
   }
 }

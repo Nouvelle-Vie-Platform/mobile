@@ -22,6 +22,7 @@ library;
 import 'package:drift/drift.dart';
 
 import '../converters/i18n_map_converter.dart';
+import '../converters/teaching_download_converter.dart';
 
 /// Jeton d'écriture porté par **toute** ligne d'une collection répliquée.
 ///
@@ -180,6 +181,23 @@ class Teachings extends Table with SyncedRow {
   /// URL HLS publique. **Peut être nulle** : un enseignement existe avant son
   /// média, et c'est une absence à dessiner, pas un cas impossible.
   TextColumn get playlistUrl => text().nullable()();
+
+  /// **Le contrat de téléchargement hors ligne** (ADR-0038) : version du
+  /// transcode, durée, et par qualité `{url, bytes}`. Stocké **entier**, tel que
+  /// le serveur l'envoie, dans une colonne JSON — même arbitrage que les cartes
+  /// de traduction (ADR-0023) : ajouter une qualité ne doit pas coûter une
+  /// migration.
+  ///
+  /// **Peut être nulle**, et se pose atomiquement **avec** [playlistUrl] : un
+  /// enseignement du fonds ancien (jamais re-transcodé) n'a pas de `.aac` et son
+  /// absence se lit « pas téléchargeable » sans mentir. Le téléchargeable est
+  /// **additif** — il ne conditionne pas la visibilité ni l'écoute en ligne.
+  ///
+  /// C'est cette colonne qui donne au moteur de téléchargement les URLs et les
+  /// tailles **hors ligne** ; `download.version` distingue une révision d'un
+  /// retrait (ADR-0039).
+  TextColumn get download =>
+      text().map(const TeachingDownloadConverter()).nullable()();
 
   /// URL **relative** (`/uploads/teachings/….jpg`) : l'hôte de l'API change
   /// d'un environnement à l'autre, la résolution appartient au client.

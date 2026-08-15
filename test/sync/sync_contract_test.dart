@@ -164,7 +164,11 @@ void main() {
   });
 
   group('GET /sync/teachings — la ligne', () {
-    /// Les dix-huit clés d'un enseignement, en `camelCase`.
+    /// Les dix-neuf clés d'un enseignement, en `camelCase`.
+    ///
+    /// **La dix-neuvième est `download`** (ADR-0038, issue #188) : le contrat de
+    /// téléchargement hors ligne, additif à `playlistUrl` et servi par le même
+    /// transformer. Il vaut `null` tant que l'enseignement n'a pas de `.aac`.
     const keys = [
       'id',
       'ownerId',
@@ -176,6 +180,7 @@ void main() {
       'isLive',
       'isFullService',
       'playlistUrl',
+      'download',
       'imageLandscapeUrl',
       'imagePortraitUrl',
       'publishedAt',
@@ -186,11 +191,37 @@ void main() {
       'color',
     ];
 
-    test('dix-huit clés, ni une de plus', () {
-      expect(keys, hasLength(18));
+    test('dix-neuf clés, ni une de plus', () {
+      expect(keys, hasLength(19));
       for (final teaching in _teachings) {
         expect(teaching.keys.toSet(), keys.toSet());
       }
+    });
+
+    test('`download` porte version, durée et une rendition par qualité', () {
+      // Relevé sur `download_info.ts` : `{ version, duration, renditions }`,
+      // chaque rendition `{ url, bytes }`. C'est ce qui donne au client les URLs
+      // et les tailles **hors ligne** (pourcentage, reprise `Range`, pré-check
+      // disque) sans jamais toucher au réseau.
+      final download = fullTeachingPayload['download']! as Map<String, Object?>;
+      expect(download['version'], isA<String>());
+      expect(download['duration'], isA<int>());
+      final renditions = download['renditions']! as Map<String, Object?>;
+      expect(renditions.keys.toSet(), {'low', 'mid', 'high'});
+      for (final entry in renditions.values) {
+        final rendition = entry! as Map<String, Object?>;
+        expect(rendition['url'], isA<String>());
+        expect(rendition['bytes'], isA<int>());
+      }
+    });
+
+    test('`download` peut être nul : un enseignement n\'est pas téléchargeable',
+        () {
+      // Fonds ancien jamais re-transcodé, ou média HLS sans `.aac` : le
+      // téléchargeable est **additif**, il n'accompagne pas forcément le HLS.
+      expect(teachingWithoutPlaylistPayload['download'], isNull);
+      expect(teachingWithoutColorPayload['download'], isNull);
+      expect(fullTeachingPayload['download'], isNotNull);
     });
 
     test('ni `family`, ni `deletedAt`, ni durée, ni `mimeType`', () {
@@ -358,7 +389,7 @@ void main() {
       // tombe ici plutôt qu'à l'écran.
       for (final gathering in _gatherings) {
         expect(gathering.keys.toSet(), fullTeachingPayload.keys.toSet());
-        expect(gathering.keys, hasLength(18));
+        expect(gathering.keys, hasLength(19));
       }
     });
 
@@ -419,7 +450,7 @@ void main() {
           .cast<Map<String, Object?>>();
 
       expect(items.where((i) => i.length == 2), hasLength(1));
-      expect(items.where((i) => i.length == 18), hasLength(2));
+      expect(items.where((i) => i.length == 19), hasLength(2));
       expect(items.last.keys.toSet(), {'id', 'deletedAt'});
     });
   });
@@ -459,7 +490,7 @@ void main() {
           (mixedTeachingsPage()['items']! as List).cast<Map<String, Object?>>();
 
       expect(items.where((i) => i.length == 2), hasLength(2));
-      expect(items.where((i) => i.length == 18), hasLength(3));
+      expect(items.where((i) => i.length == 19), hasLength(3));
     });
 
     test('une rétractation est en dernière position', () {

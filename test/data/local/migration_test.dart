@@ -286,6 +286,49 @@ void main() {
     await verifier.migrateAndValidate(db, 7);
   });
 
+  test('v7 → v8 : la table downloads apparaît et teachings gagne `download`',
+      () async {
+    final connection = await verifier.startAt(7);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 8);
+  });
+
+  test('v1 → v8 : un appareil resté en v1 rejoue les sept paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 8);
+  });
+
+  test('v7 → v8 : le catalogue survit, `download` naît nul, downloads vide',
+      () async {
+    // Deux changements **additifs** (#190) : `downloads` naît (locale seule) et
+    // `teachings.download` s'ajoute, nullable. Aucune ligne n'est réécrite —
+    // c'est le catalogue hors ligne du fidèle, la pièce qui se corrige le plus
+    // mal une fois publiée.
+    final schema = await verifier.schemaAt(7);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 8);
+
+    final teaching = (await db.select(db.teachings).get()).single;
+    expect(teaching.title, 'Dieu a le dernier mot');
+    // La colonne ajoutée est nulle sur une ligne écrite avant la migration :
+    // « pas téléchargeable », jusqu'à ce qu'un cycle ramène son `download`.
+    expect(teaching.download, isNull);
+    // La table locale seule naît vide et le reste jusqu'au premier
+    // téléchargement — elle n'est alimentée que par le moteur, jamais la synchro.
+    expect(await db.select(db.downloads).get(), isEmpty);
+  });
+
   test('la version de schéma couvre bien toutes les versions exportées', () {
     final db = openTestDatabase();
     addTearDown(db.close);
