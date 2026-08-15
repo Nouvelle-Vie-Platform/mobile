@@ -11,21 +11,25 @@ void main() {
   late InertContentPlayer player;
   late StreamController<int?> targets;
   late StreamController<MediaQuality> qualities;
+  late StreamController<bool> cellular;
   late BitrateCapController controller;
 
   setUp(() {
     player = InertContentPlayer();
     targets = StreamController<int?>();
     qualities = StreamController<MediaQuality>();
+    cellular = StreamController<bool>();
     controller = BitrateCapController(
       player: player,
       qualities: qualities.stream,
+      onCellular: cellular.stream,
       targets: targets.stream,
     );
     addTearDown(() async {
       controller.dispose();
       await targets.close();
       await qualities.close();
+      await cellular.close();
       player.dispose();
     });
   });
@@ -45,6 +49,11 @@ void main() {
     await Future<void>.delayed(Duration.zero);
   }
 
+  Future<void> network({required bool onCellular}) async {
+    cellular.add(onCellular);
+    await Future<void>.delayed(Duration.zero);
+  }
+
   group('Le palier par l\'URL — le seul levier qui morde sur Android', () {
     test('un palier explicite devient un nom de rendu', () async {
       await choose(MediaQuality.low);
@@ -54,13 +63,36 @@ void main() {
       expect(player.preferredVariant, 'high');
     });
 
-    test('« Automatique » garde le master', () async {
+    test('« Automatique » garde le master en wifi', () async {
       await choose(MediaQuality.high);
       await choose(MediaQuality.auto);
+      await network(onCellular: false);
 
       // Brider l'URL en mode automatique interdirait toute adaptation, alors
       // que c'est précisément ce que ce mode promet en wifi.
       expect(player.preferredVariant, isNull);
+    });
+
+    test('« Automatique » prend le rendu `low` en données mobiles', () async {
+      await choose(MediaQuality.auto);
+      await network(onCellular: true);
+
+      // **C'est ce qui ferme le trou Android** : le plafond de débit y est
+      // ignoré, l'URL non. Sur iOS et le web le plafond fait déjà le travail,
+      // et ce rendu ne le contredit pas.
+      expect(player.preferredVariant, 'low');
+
+      await network(onCellular: false);
+      expect(player.preferredVariant, isNull);
+    });
+
+    test('un palier explicite ignore le réseau', () async {
+      await choose(MediaQuality.high);
+      await network(onCellular: true);
+
+      // L'avoir choisi est une décision qu'on ne corrige pas dans le dos de
+      // qui l'a prise.
+      expect(player.preferredVariant, 'high');
     });
 
     test('l\'URL dérivée pointe la liste de lecture du rendu', () {

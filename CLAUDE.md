@@ -678,9 +678,19 @@ transcodeur écrit, à côté de `master.m3u8`, **une liste de lecture par rendu
 publie tout le dossier. Charger l'une d'elles **au lieu** du master, c'est
 choisir la qualité par l'URL — ce qui marche sur les trois plateformes.
 
-- **palier explicite** → URL de rendu (`variantPlaylistUrl`), partout ;
-- **`auto`** → master + plafond de débit, donc iOS et web seulement. Brider
-  l'URL y interdirait l'adaptation, ce que ce mode promet justement en wifi.
+- **palier explicite** → URL de rendu (`variantPlaylistUrl`), partout et quel
+  que soit le réseau : l'avoir choisi est une décision qu'on ne corrige pas dans
+  le dos de qui l'a prise ;
+- **`auto` en wifi** → master, donc adaptation libre — c'est ce que ce mode
+  promet ;
+- **`auto` en données mobiles** → rendu `low` **par l'URL**, ce qui donne à
+  Android l'économie que son plafond ignoré ne sait pas lui donner. Sur iOS et
+  le web le plafond fait déjà le travail et ce rendu ne le contredit pas.
+
+**Le seul cas qu'Android ne couvre toujours pas** : un prêche ouvert en wifi et
+poursuivi en marchant. L'URL se choisit à l'ouverture ; suivre la bascule
+demanderait de rouvrir la source, donc de couper le son. Sur iOS et le web, le
+plafond s'en charge sans coupure.
 
 `MediaQuality.key` reprend **mot pour mot** les noms de `RENDITIONS[].name` du
 serveur : les désaccorder donnerait un 404. Et la dérivation **échoue du bon

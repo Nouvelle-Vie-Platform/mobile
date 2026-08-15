@@ -74,9 +74,16 @@ Future<void> main() async {
       (_, next) => qualities.add(next),
       fireImmediately: true,
     );
+    final cellular = StreamController<bool>();
+    container.listen<bool>(
+      onCellularProvider.select((v) => v.value ?? false),
+      (_, next) => cellular.add(next),
+      fireImmediately: true,
+    );
     BitrateCapController(
       player: player,
       qualities: qualities.stream,
+      onCellular: cellular.stream,
       targets: targets.stream,
     );
   }
