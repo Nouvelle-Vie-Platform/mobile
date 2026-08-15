@@ -120,6 +120,8 @@ flutter:
 
   assets:
     - assets/animations/colombe.webp
+    - assets/images/brand_logo.webp
+    - assets/images/brand_logo_inverse.webp
     - assets/images/welcome_bg.webp
     - assets/images/rameau_or.webp
     - assets/images/home_header_church.webp

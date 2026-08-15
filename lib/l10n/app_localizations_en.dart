@@ -448,6 +448,110 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpSupport => 'Help & Support';
 
   @override
+  String get deleteAccount => 'Delete my account';
+
+  @override
+  String get deleteAccountTitle => 'Delete my account';
+
+  @override
+  String get deleteAccountLead =>
+      'This is permanent. It cannot be undone, and nobody at the church can undo it for you.';
+
+  @override
+  String get deleteAccountErasedTitle => 'What is erased';
+
+  @override
+  String get deleteAccountErasedIdentity =>
+      'Your identity: name, title, email, phone.';
+
+  @override
+  String get deleteAccountErasedNotes => 'Your spiritual notes.';
+
+  @override
+  String get deleteAccountErasedProgress =>
+      'Your listening progress, on this device and the others.';
+
+  @override
+  String get deleteAccountKeptTitle => 'What stays, without your name';
+
+  @override
+  String get deleteAccountKeptMessages =>
+      'Your group messages stay readable, detached from you.';
+
+  @override
+  String get deleteAccountKeptPrayers =>
+      'Prayers others carried with you do not vanish from the wall.';
+
+  @override
+  String get deleteAccountReuse =>
+      'Your email becomes free again: you may sign up later, but it will be a brand new account with nothing of this one.';
+
+  @override
+  String get deleteAccountConfirmCheckbox => 'I understand this is permanent.';
+
+  @override
+  String get deleteAccountAction => 'Delete permanently';
+
+  @override
+  String get deleteAccountErrorNetwork =>
+      'Cannot delete: no network. Your account is untouched.';
+
+  @override
+  String get deleteAccountErrorServer =>
+      'The server could not process the request. Your account is untouched, try again.';
+
+  @override
+  String get mediaSettings => 'Quality & data';
+
+  @override
+  String get mediaSettingsTitle => 'Quality & data';
+
+  @override
+  String get mediaSettingsLead =>
+      'These settings change nothing on the church network. They protect your data plan when you are out.';
+
+  @override
+  String get mediaSettingsStreaming => 'Listening to a teaching';
+
+  @override
+  String get mediaSettingsLive => 'Live';
+
+  @override
+  String get mediaSettingsDownload => 'Download';
+
+  @override
+  String get mediaQualityAuto => 'Automatic';
+
+  @override
+  String get mediaQualityLow => 'Data saver';
+
+  @override
+  String get mediaQualityMid => 'Standard';
+
+  @override
+  String get mediaQualityHigh => 'High';
+
+  @override
+  String mediaQualityImpactAuto(int mb) {
+    return '≈ $mb MB per hour on mobile data, better quality on wifi.';
+  }
+
+  @override
+  String mediaQualityImpactLow(int mb) {
+    return '≈ $mb MB per hour · fine for preaching, the choir loses depth.';
+  }
+
+  @override
+  String mediaQualityImpactMid(int mb) {
+    return '≈ $mb MB per hour · worship regains its fullness.';
+  }
+
+  @override
+  String mediaQualityImpactHigh(int mb) {
+    return '≈ $mb MB per hour · every nuance, at full price.';
+  }
+
+  @override
   String get logout => 'Log out';
 
   @override
@@ -911,9 +1015,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get drawerOpen => 'Open menu';
-
-  @override
-  String get drawerBrandName => 'Église Évangélique Nouvelle Vie';
 
   @override
   String get drawerTerms => 'Terms of use';

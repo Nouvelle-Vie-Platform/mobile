@@ -104,18 +104,17 @@ class _LocalHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final palette = context.palette;
-    // `BrandLogo` se dessine en blanc par défaut (fond bleu du menu latéral).
-    // Ici le fond suit le thème : navy sur clair, blanc sur sombre.
-    final onLight = Theme.of(context).brightness == Brightness.light;
     final version = ref.watch(appVersionProvider).value;
 
     return Column(
       children: [
         const SizedBox(height: AppSpacing.lg),
-        BrandLogo(size: 132, onLight: onLight),
+        const BrandLogo(size: 132),
         const SizedBox(height: AppSpacing.md),
-        // `BrandLogo` porte déjà le mot-symbole « Maison du Miracle » : le nom
-        // complet de l'église le complète, il ne le répète pas.
+        // Le bandeau de l'emblème porte « Maison du Miracle », mais illisible à
+        // cette taille : le nom complet en dessous n'est pas une répétition,
+        // c'est ce qui le rend lisible — et ce qui autorise l'emblème à rester
+        // décoratif pour un lecteur d'écran.
         Text(
           l10n.aboutChurchName,
           textAlign: TextAlign.center,

@@ -450,6 +450,111 @@ class AppLocalizationsFr extends AppLocalizations {
   String get helpSupport => 'Aide & Support';
 
   @override
+  String get deleteAccount => 'Supprimer mon compte';
+
+  @override
+  String get deleteAccountTitle => 'Supprimer mon compte';
+
+  @override
+  String get deleteAccountLead =>
+      'Cette action est définitive. Elle ne peut pas être annulée, et personne à l\'église ne peut la défaire pour vous.';
+
+  @override
+  String get deleteAccountErasedTitle => 'Ce qui est effacé';
+
+  @override
+  String get deleteAccountErasedIdentity =>
+      'Votre identité : nom, civilité, email, téléphone.';
+
+  @override
+  String get deleteAccountErasedNotes => 'Vos notes spirituelles.';
+
+  @override
+  String get deleteAccountErasedProgress =>
+      'Votre progression d\'écoute, sur cet appareil et sur les autres.';
+
+  @override
+  String get deleteAccountKeptTitle => 'Ce qui reste, sans votre nom';
+
+  @override
+  String get deleteAccountKeptMessages =>
+      'Vos messages dans les groupes restent lisibles, détachés de vous.';
+
+  @override
+  String get deleteAccountKeptPrayers =>
+      'Les prières que d\'autres ont portées avec vous ne disparaissent pas du mur.';
+
+  @override
+  String get deleteAccountReuse =>
+      'Votre email redevient libre : vous pourrez vous réinscrire, mais ce sera un compte entièrement neuf, sans rien de celui-ci.';
+
+  @override
+  String get deleteAccountConfirmCheckbox =>
+      'Je comprends que cette action est définitive.';
+
+  @override
+  String get deleteAccountAction => 'Supprimer définitivement';
+
+  @override
+  String get deleteAccountErrorNetwork =>
+      'Suppression impossible : pas de réseau. Votre compte est intact.';
+
+  @override
+  String get deleteAccountErrorServer =>
+      'Le serveur n\'a pas pu traiter la demande. Votre compte est intact, réessayez.';
+
+  @override
+  String get mediaSettings => 'Qualité & données';
+
+  @override
+  String get mediaSettingsTitle => 'Qualité & données';
+
+  @override
+  String get mediaSettingsLead =>
+      'Ces réglages ne changent rien à ce que vous entendez sur le réseau de l\'église. Ils protègent votre forfait quand vous êtes dehors.';
+
+  @override
+  String get mediaSettingsStreaming => 'Écoute d\'un enseignement';
+
+  @override
+  String get mediaSettingsLive => 'Direct';
+
+  @override
+  String get mediaSettingsDownload => 'Téléchargement';
+
+  @override
+  String get mediaQualityAuto => 'Automatique';
+
+  @override
+  String get mediaQualityLow => 'Économie';
+
+  @override
+  String get mediaQualityMid => 'Standard';
+
+  @override
+  String get mediaQualityHigh => 'Haute';
+
+  @override
+  String mediaQualityImpactAuto(int mb) {
+    return '≈ $mb Mo par heure en données mobiles, meilleure qualité en wifi.';
+  }
+
+  @override
+  String mediaQualityImpactLow(int mb) {
+    return '≈ $mb Mo par heure · suffisant pour la prédication, la chorale y perd.';
+  }
+
+  @override
+  String mediaQualityImpactMid(int mb) {
+    return '≈ $mb Mo par heure · la louange retrouve son ampleur.';
+  }
+
+  @override
+  String mediaQualityImpactHigh(int mb) {
+    return '≈ $mb Mo par heure · chaque nuance, au prix fort.';
+  }
+
+  @override
   String get logout => 'Se déconnecter';
 
   @override
@@ -916,9 +1021,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get drawerOpen => 'Ouvrir le menu';
-
-  @override
-  String get drawerBrandName => 'Église Évangélique Nouvelle Vie';
 
   @override
   String get drawerTerms => 'CGU';

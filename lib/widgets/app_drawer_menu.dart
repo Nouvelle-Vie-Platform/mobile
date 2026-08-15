@@ -101,32 +101,44 @@ class AppDrawerMenu extends StatelessWidget {
   }
 }
 
-/// Entête de marque : l'emblème de l'église et son nom.
+/// Entête de marque : l'emblème de l'église, en filigrane.
+///
+/// **Rien d'autre.** Le nom complet de l'église y figurait, il a été retiré : le
+/// panneau n'a que quatre entrées, ce sont elles qu'on vient y lire, et un
+/// bloc de marque qui les concurrence à l'ouverture leur vole la première
+/// seconde. L'emblème reste, effacé — il situe le panneau sans se disputer
+/// l'attention.
 class _BrandHeader extends StatelessWidget {
   const _BrandHeader();
 
+  /// Assez présent pour se reconnaître, assez effacé pour ne pas se lire.
+  static const double _opacity = 0.68;
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // `BrandLogo` porte déjà le mot-symbole « Maison du Miracle » : le
-          // nom complet de l'église le complète, il ne le répète pas.
-          const BrandLogo(size: 96),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            context.l10n.drawerBrandName,
-            style: AppTypography.bodyStrong.copyWith(color: Colors.white),
-          ),
-        ],
-      ),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      // **La variante inversée, et pas l'originale** : le panneau est peint au
+      // bleu de marque, et le disque blanc plein de la pièce d'origine y ferait
+      // une tache. Ici le disque est évidé — le dégradé du panneau passe au
+      // travers, derrière la colombe.
+      child: BrandLogo.inverse(size: 120, opacity: _opacity),
     );
   }
 }
 
-/// Une ligne du menu. L'entrée courante porte la barre d'accent à gauche.
+/// Une ligne du menu.
+///
+/// **L'entrée courante se signale par sa seule clarté** — blanc franc contre
+/// blanc très atténué, et gras contre demi-gras. La barre d'accent jaune qui
+/// tenait ce rôle a été retirée : dans un panneau de quatre lignes, un liseré de
+/// 4 px est un signal faible qu'il fallait aller chercher, et il introduisait la
+/// seule touche de jaune d'un écran qui n'en a nulle part ailleurs. L'écart de
+/// clarté, lui, se voit sans être cherché.
+///
+/// L'alignement n'a pas bougé pour autant : la barre occupait 4 px suivis de
+/// `AppSpacing.md`, soit exactement les `AppSpacing.lg` de marge que porte
+/// désormais la ligne — et que porte déjà l'emblème au-dessus.
 class _DrawerEntry extends StatelessWidget {
   const _DrawerEntry({
     super.key,
@@ -143,26 +155,17 @@ class _DrawerEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = current ? Colors.white : Colors.white.withValues(alpha: 0.82);
+    final color = current ? Colors.white : Colors.white.withValues(alpha: 0.55);
 
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.md,
+          horizontal: AppSpacing.lg,
+        ),
         child: Row(
           children: [
-            // Barre d'accent de l'entrée courante. Elle occupe la place même
-            // quand elle ne se voit pas : sans cela les libellés se
-            // décaleraient d'une entrée à l'autre.
-            Container(
-              width: 4,
-              height: 24,
-              decoration: BoxDecoration(
-                color: current ? AppColors.accent : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
             Icon(icon, size: 22, color: color),
             const SizedBox(width: AppSpacing.md),
             Expanded(

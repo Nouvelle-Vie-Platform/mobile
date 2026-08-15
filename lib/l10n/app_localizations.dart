@@ -898,6 +898,180 @@ abstract class AppLocalizations {
   /// **'Aide & Support'**
   String get helpSupport;
 
+  /// Profil : entrée qui ouvre l'écran de suppression de compte. Exigence App Store 5.1.1(v) — supprimer son compte doit être possible DANS l'app
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get deleteAccountTitle;
+
+  /// Écran de suppression : la phrase d'ouverture. Dit « définitif » avant toute liste, parce que c'est la seule chose à retenir si on ne lit pas la suite
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action est définitive. Elle ne peut pas être annulée, et personne à l\'église ne peut la défaire pour vous.'**
+  String get deleteAccountLead;
+
+  /// No description provided for @deleteAccountErasedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce qui est effacé'**
+  String get deleteAccountErasedTitle;
+
+  /// No description provided for @deleteAccountErasedIdentity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre identité : nom, civilité, email, téléphone.'**
+  String get deleteAccountErasedIdentity;
+
+  /// No description provided for @deleteAccountErasedNotes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos notes spirituelles.'**
+  String get deleteAccountErasedNotes;
+
+  /// No description provided for @deleteAccountErasedProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre progression d\'écoute, sur cet appareil et sur les autres.'**
+  String get deleteAccountErasedProgress;
+
+  /// No description provided for @deleteAccountKeptTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce qui reste, sans votre nom'**
+  String get deleteAccountKeptTitle;
+
+  /// No description provided for @deleteAccountKeptMessages.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos messages dans les groupes restent lisibles, détachés de vous.'**
+  String get deleteAccountKeptMessages;
+
+  /// No description provided for @deleteAccountKeptPrayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les prières que d\'autres ont portées avec vous ne disparaissent pas du mur.'**
+  String get deleteAccountKeptPrayers;
+
+  /// Écran de suppression : l'email libéré permet une réinscription, mais sur un compte NEUF — le dire évite qu'on croie pouvoir « revenir » à son historique
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre email redevient libre : vous pourrez vous réinscrire, mais ce sera un compte entièrement neuf, sans rien de celui-ci.'**
+  String get deleteAccountReuse;
+
+  /// No description provided for @deleteAccountConfirmCheckbox.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je comprends que cette action est définitive.'**
+  String get deleteAccountConfirmCheckbox;
+
+  /// No description provided for @deleteAccountAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer définitivement'**
+  String get deleteAccountAction;
+
+  /// Écran de suppression, panne réseau. Insiste sur « votre compte est intact » : sans cette phrase, on croit avoir à moitié réussi
+  ///
+  /// In fr, this message translates to:
+  /// **'Suppression impossible : pas de réseau. Votre compte est intact.'**
+  String get deleteAccountErrorNetwork;
+
+  /// No description provided for @deleteAccountErrorServer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le serveur n\'a pas pu traiter la demande. Votre compte est intact, réessayez.'**
+  String get deleteAccountErrorServer;
+
+  /// No description provided for @mediaSettings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Qualité & données'**
+  String get mediaSettings;
+
+  /// No description provided for @mediaSettingsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Qualité & données'**
+  String get mediaSettingsTitle;
+
+  /// Panneau qualité : dit d'emblée que le réglage vise le forfait mobile, pas la qualité en général
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces réglages ne changent rien à ce que vous entendez sur le réseau de l\'église. Ils protègent votre forfait quand vous êtes dehors.'**
+  String get mediaSettingsLead;
+
+  /// No description provided for @mediaSettingsStreaming.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écoute d\'un enseignement'**
+  String get mediaSettingsStreaming;
+
+  /// No description provided for @mediaSettingsLive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Direct'**
+  String get mediaSettingsLive;
+
+  /// No description provided for @mediaSettingsDownload.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargement'**
+  String get mediaSettingsDownload;
+
+  /// No description provided for @mediaQualityAuto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Automatique'**
+  String get mediaQualityAuto;
+
+  /// No description provided for @mediaQualityLow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Économie'**
+  String get mediaQualityLow;
+
+  /// No description provided for @mediaQualityMid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Standard'**
+  String get mediaQualityMid;
+
+  /// No description provided for @mediaQualityHigh.
+  ///
+  /// In fr, this message translates to:
+  /// **'Haute'**
+  String get mediaQualityHigh;
+
+  /// Phrase d'impact du mode automatique. Annonce le coût du PIRE cas (données mobiles) — c'est celui contre lequel on se protège
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure en données mobiles, meilleure qualité en wifi.'**
+  String mediaQualityImpactAuto(int mb);
+
+  /// Phrase d'impact du palier 64k. Dit aussi ce qu'on perd : le chiffre seul ferait choisir à l'aveugle
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure · suffisant pour la prédication, la chorale y perd.'**
+  String mediaQualityImpactLow(int mb);
+
+  /// No description provided for @mediaQualityImpactMid.
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure · la louange retrouve son ampleur.'**
+  String mediaQualityImpactMid(int mb);
+
+  /// No description provided for @mediaQualityImpactHigh.
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure · chaque nuance, au prix fort.'**
+  String mediaQualityImpactHigh(int mb);
+
   /// No description provided for @logout.
   ///
   /// In fr, this message translates to:
@@ -1743,12 +1917,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Ouvrir le menu'**
   String get drawerOpen;
-
-  /// Entête du menu latéral : le nom de l'église, sous l'emblème qui porte déjà « Maison du Miracle ». L'entête porte la marque, jamais la personne — l'entête utilisateur vit dans l'onglet Profil
-  ///
-  /// In fr, this message translates to:
-  /// **'Église Évangélique Nouvelle Vie'**
-  String get drawerBrandName;
 
   /// Menu latéral : conditions générales d'utilisation. Abrégé, comme sur la maquette — le libellé long ne tiendrait pas sur une ligne du panneau
   ///
