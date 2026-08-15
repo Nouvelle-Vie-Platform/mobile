@@ -43,6 +43,9 @@ class MediaSettingsScreen extends ConsumerWidget {
   static Key optionKey(MediaUsage usage, MediaQuality quality) =>
       Key('media_${usage.key}_${quality.key}');
 
+  /// Le toggle « Télécharger en données mobiles » (F8).
+  static const Key downloadOnCellularKey = Key('media_download_on_cellular');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -75,7 +78,71 @@ class MediaSettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
           ],
+          // **Le réseau autorisé pour les téléchargements** (F8), distinct des
+          // qualités : un booléen, pas un palier. Rangé juste sous la section
+          // « Téléchargement », qui est la dernière du panneau.
+          _DownloadOnCellularToggle(
+            value: preferences.downloadOnCellular,
+            onChanged: (allowed) =>
+                ref.read(settingsDaoProvider).setDownloadOnCellular(allowed),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+/// L'interrupteur « Télécharger en données mobiles » (F8).
+///
+/// Défaut **désactivé** (wifi seulement) : le sous-titre dit le pourquoi, comme
+/// les phrases d'impact des paliers de qualité — un réglage réseau se choisit en
+/// connaissant ce qu'il coûte.
+class _DownloadOnCellularToggle extends StatelessWidget {
+  const _DownloadOnCellularToggle({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final palette = context.palette;
+
+    return AppCard(
+      padding: EdgeInsets.zero,
+      // La carte peint son propre fond ; un `ListTile` peint le sien sur le
+      // Material le plus proche. Sans ce Material transparent intermédiaire,
+      // Flutter avertit que l'encre du switch serait masquée.
+      child: Material(
+        type: MaterialType.transparency,
+        child: SwitchListTile(
+          key: MediaSettingsScreen.downloadOnCellularKey,
+          value: value,
+          onChanged: onChanged,
+          activeThumbColor: AppColors.primary,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
+          title: Text(
+            l.mediaSettingsDownloadOnCellular,
+            style: AppTypography.body.copyWith(
+              color: palette.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              l.mediaSettingsDownloadOnCellularSubtitle,
+              style:
+                  AppTypography.caption.copyWith(color: palette.textSecondary),
+            ),
+          ),
+        ),
       ),
     );
   }

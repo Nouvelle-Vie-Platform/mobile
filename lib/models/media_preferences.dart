@@ -77,18 +77,26 @@ enum MediaQuality {
   }
 }
 
-/// L'état des trois réglages, tel qu'un écran le lit.
+/// L'état des réglages média, tel qu'un écran le lit.
 @immutable
 class MediaPreferences {
   const MediaPreferences({
     this.streaming = MediaQuality.auto,
     this.live = MediaQuality.auto,
     this.download = MediaQuality.auto,
+    this.downloadOnCellular = false,
   });
 
   final MediaQuality streaming;
   final MediaQuality live;
   final MediaQuality download;
+
+  /// **Télécharger en données mobiles** (F8). Un booléen, distinct des trois
+  /// qualités : il ne dit rien du débit, seulement du **réseau autorisé** pour
+  /// les téléchargements. Défaut **`false`** — wifi seulement, pour ne pas
+  /// consommer le forfait d'un fidèle sans qu'il l'ait choisi. C'est cette
+  /// valeur qui alimente `DownloadManager.mobileDataAllowed`.
+  final bool downloadOnCellular;
 
   MediaQuality of(MediaUsage usage) => switch (usage) {
         MediaUsage.streaming => streaming,
@@ -101,10 +109,12 @@ class MediaPreferences {
       other is MediaPreferences &&
       other.streaming == streaming &&
       other.live == live &&
-      other.download == download;
+      other.download == download &&
+      other.downloadOnCellular == downloadOnCellular;
 
   @override
-  int get hashCode => Object.hash(streaming, live, download);
+  int get hashCode =>
+      Object.hash(streaming, live, download, downloadOnCellular);
 }
 
 /// Le plafond **effectif**, une fois le transport connu.

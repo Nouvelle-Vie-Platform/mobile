@@ -14,6 +14,7 @@ import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart'
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
+import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
 import 'package:maison_du_miracle/models/theme_preferences.dart';
@@ -127,6 +128,15 @@ List<Override> _commonOverrides(
       // L'onglet Profil les lit, donc tout test qui monte la coquille les lit.
       themePreferencesProvider.overrideWith(
           (ref) => Stream.value(theme ?? const ThemePreferences())),
+      // Le bouton de téléchargement de `ContentPlayerView` (#192) observe ce
+      // flux Drift, et un écran de lecture le monte donc dès qu'il offre le
+      // téléchargement (l'enseignement). Posé **par un flux nu**, exactement
+      // comme les réglages d'apparence et pour la même raison : un flux Drift
+      // attendu sous l'horloge factice du harnais fige le montage — 0 % de CPU
+      // jusqu'à expiration. Les tests qui veulent le vrai magasin surchargent
+      // eux-mêmes ce provider (voir `test/widgets/content_download_button_test`).
+      downloadForContentProvider
+          .overrideWith((ref, contentId) => Stream.value(null)),
       authRepositoryProvider
           .overrideWithValue(auth ?? InMemoryAuthRepository()),
       branchRepositoryProvider

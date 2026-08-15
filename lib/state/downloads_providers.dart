@@ -20,6 +20,7 @@ import '../data/network/network_transport.dart';
 import '../models/media_preferences.dart';
 import 'media_settings_providers.dart';
 import 'sync_providers.dart';
+import 'theme_provider.dart';
 
 /// Pas de réessai automatique, comme les autres lectures de magasin : une
 /// lecture locale qui échoue ne réussira pas mieux à la seconde tentative.
@@ -68,10 +69,11 @@ final downloadManagerProvider = Provider<DownloadManager>((ref) {
     // La source de vérité des URLs/tailles, connue hors ligne (ADR-0038).
     metadataFor: (contentId) =>
         ref.read(mediathequeDaoProvider).downloadFor(contentId),
-    // **Le futur toggle « données mobiles »** (#192/#193). Tant qu'il n'existe
-    // pas, on reste **wifi par défaut** (F8) : le réglage média `download` ne
-    // dit rien du réseau autorisé, seulement de la qualité.
-    mobileDataAllowed: () async => false,
+    // **Le toggle « données mobiles »** (#192, F8), branché sur le réglage
+    // média persistant. Lu **à la demande** (une lecture ponctuelle, jamais un
+    // flux) au moment de lancer ou de reprendre : le moteur consulte l'état
+    // courant, il ne s'y abonne pas. Absent = wifi seulement, le défaut sûr.
+    mobileDataAllowed: () => ref.read(settingsDaoProvider).downloadOnCellular(),
   );
   manager.start();
   ref.onDispose(manager.dispose);

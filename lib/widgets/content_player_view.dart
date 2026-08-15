@@ -8,6 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:go_router/go_router.dart';
 
+import '../data/downloads/download_manager.dart';
+import '../data/local/app_database.dart';
+import '../data/local/tables/download_tables.dart';
 import '../data/players/content_player.dart';
 import '../data/repositories/playback_progress_recorder.dart';
 import '../l10n/l10n_extension.dart';
@@ -72,6 +75,7 @@ class ContentPlayerView extends ConsumerStatefulWidget {
     required this.retractedTitle,
     required this.retractedMessage,
     required this.onRetry,
+    this.downloadContentType,
   });
 
   /// **Le provider du contenu**, et non sa valeur.
@@ -97,8 +101,21 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   /// Relance la lecture du magasin après un échec.
   final VoidCallback onRetry;
 
+  /// **Le type de contenu à télécharger**, ou `null` pour ne pas offrir le
+  /// téléchargement.
+  ///
+  /// Non nul (`'teaching'`) sur l'écran d'un enseignement : le bouton
+  /// **Télécharger** à 5 états paraît (#192). Nul sur un rassemblement : la v1
+  /// est **enseignements seuls** (PRD, portée v1), et le socle reste agnostique
+  /// au type — brancher les rassemblements ensuite ne demandera que de passer
+  /// leur type ici. C'est aussi la valeur écrite dans `downloads.contentType`.
+  final String? downloadContentType;
+
   /// Clé de l'indicateur de mise en tampon, pour le cibler depuis les tests.
   static const Key bufferingKey = Key('content_player_buffering');
+
+  /// Clé du bouton de téléchargement, pour le cibler depuis les tests.
+  static const Key downloadButtonKey = Key('content_player_download');
 
   @override
   ConsumerState<ContentPlayerView> createState() => _ContentPlayerViewState();
@@ -545,6 +562,16 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
               onPlayPause: () => _togglePlayback(content),
               onLike: () => setState(() => _liked = !_liked),
               onNotes: () => context.pushNamed(AppRoute.notes),
+              // Le bouton **Télécharger** (#192) — seulement là où le
+              // téléchargement est offert (un enseignement). Il observe le
+              // magasin, jamais le moteur : ses cinq états sortent de la ligne
+              // `downloads`.
+              downloadButton: widget.downloadContentType == null
+                  ? null
+                  : _DownloadButton(
+                      contentId: content.id,
+                      contentType: widget.downloadContentType!,
+                    ),
             ),
             const SizedBox(height: AppSpacing.xl),
           ],
@@ -826,6 +853,7 @@ class _Controls extends StatelessWidget {
     required this.onPlayPause,
     required this.onLike,
     required this.onNotes,
+    this.downloadButton,
   });
 
   final bool liked;
@@ -838,6 +866,10 @@ class _Controls extends StatelessWidget {
   final VoidCallback onPlayPause;
   final VoidCallback onLike;
   final VoidCallback onNotes;
+
+  /// Le bouton de téléchargement, ou `null` quand le contenu ne s'offre pas au
+  /// téléchargement (un rassemblement, en v1).
+  final Widget? downloadButton;
 
   @override
   Widget build(BuildContext context) {
@@ -866,6 +898,10 @@ class _Controls extends StatelessWidget {
               icon: Icons.edit_note_rounded,
               onPressed: onNotes,
             ),
+            if (downloadButton != null) ...[
+              const SizedBox(width: AppSpacing.md),
+              downloadButton!,
+            ],
           ],
         ),
       ],
@@ -1036,6 +1072,199 @@ class _GlassCircleButton extends StatelessWidget {
       child: IconButton(
         icon: Icon(icon, color: Colors.white, size: 22),
         onPressed: onPressed,
+      ),
+    );
+  }
+}
+
+/// **Le bouton Télécharger de la fiche** (#192, F5/F6) — cinq états, pilotés
+/// par la ligne `downloads` du contenu.
+///
+/// Il **observe le magasin** ([downloadForContentProvider]) et ne touche jamais
+/// au moteur autrement que par ses primitives ([DownloadManager.download],
+/// `pause`, `resume`, `cancel`) : le magasin peint, le réseau jamais (ADR-0026).
+/// L'état éphémère (la confirmation de suppression) vit dans une feuille native,
+/// pas dans Riverpod — `CLAUDE.md` réserve Riverpod à l'état **partagé**.
+///
+/// Le mapping état → contrôle → geste :
+///
+/// - **aucune ligne** → *Télécharger* → lance ([DownloadManager.download], la
+///   qualité venant de [downloadQualityProvider], F6) ;
+/// - **`queued` / `running`** → anneau de progression + % → met en pause ;
+/// - **`paused`** → *Reprendre* → reprend ;
+/// - **`waitingWifi`** → *en attente de wifi* → retente (reste en attente tant
+///   que l'appareil est sur cellulaire et le wifi-only actif, F8) ;
+/// - **`complete` / `outdated`** → *Téléchargé* → menu **Supprimer**, avec
+///   confirmation (F14 : on jette un contenu prêt) ;
+/// - **`failed`** → *Réessayer* → relance (le moteur écrase l'échec).
+///
+/// `outdated` (révision côté serveur, ADR-0039) se lit ici comme un complété :
+/// la copie locale reste écoutable, et le badge « mise à jour » est le périmètre
+/// de #194.
+class _DownloadButton extends ConsumerWidget {
+  const _DownloadButton({required this.contentId, required this.contentType});
+
+  final String contentId;
+  final String contentType;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final row = ref.watch(downloadForContentProvider(contentId)).value;
+    final state = row?.state;
+
+    // Aucune ligne (jamais téléchargé), ou une lecture de magasin qui a échoué :
+    // dans les deux cas, l'offre est « télécharger ». Un échec de lecture locale
+    // ne doit pas laisser un bouton mort.
+    if (row == null || state == null) {
+      return _glass(
+        icon: Icons.download_outlined,
+        semantics: l10n.actionDownload,
+        onTap: () => _start(ref),
+      );
+    }
+
+    return switch (state) {
+      DownloadState.queued ||
+      DownloadState.running =>
+        _progress(context, ref, row),
+      DownloadState.paused => _glass(
+          icon: Icons.download,
+          semantics: l10n.downloadActionResume,
+          onTap: () => ref.read(downloadManagerProvider).resume(contentId),
+        ),
+      DownloadState.waitingWifi => _glass(
+          icon: Icons.wifi_off_rounded,
+          semantics: l10n.downloadStateWaitingWifi,
+          onTap: () => ref.read(downloadManagerProvider).resume(contentId),
+        ),
+      // `outdated` (révision, ADR-0039) se lit comme un complété : la copie
+      // reste écoutable ; le badge « mise à jour » est #194.
+      DownloadState.complete || DownloadState.outdated => _glass(
+          icon: Icons.download_done_rounded,
+          semantics: l10n.downloadStateComplete,
+          onTap: () => _confirmDelete(context, ref),
+        ),
+      DownloadState.failed => _glass(
+          icon: Icons.refresh_rounded,
+          semantics: l10n.downloadActionRetry,
+          onTap: () => _start(ref),
+        ),
+    };
+  }
+
+  /// Lance (ou relance) le téléchargement à la qualité choisie (F6). La
+  /// métadonnée est résolue par le moteur lui-même — l'écran ne porte qu'un
+  /// identifiant.
+  void _start(WidgetRef ref) {
+    unawaited(
+      ref.read(downloadManagerProvider).download(
+            contentId: contentId,
+            contentType: contentType,
+            quality: ref.read(downloadQualityProvider),
+          ),
+    );
+  }
+
+  /// L'anneau de progression et son pourcentage. Tap = pause.
+  ///
+  /// Total inconnu (aucun octet attendu encore) ⇒ anneau **indéterminé** plutôt
+  /// qu'un `0 %` qui se lirait comme un blocage.
+  Widget _progress(BuildContext context, WidgetRef ref, DownloadRow row) {
+    final l10n = context.l10n;
+    final total = row.bytesTotal;
+    final fraction =
+        total > 0 ? (row.bytesReceived / total).clamp(0.0, 1.0) : null;
+    final percent = fraction == null ? null : (fraction * 100).round();
+
+    return Semantics(
+      button: true,
+      label: l10n.downloadStateDownloading,
+      child: InkResponse(
+        key: ContentPlayerView.downloadButtonKey,
+        onTap: () =>
+            unawaited(ref.read(downloadManagerProvider).pause(contentId)),
+        radius: 28,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                value: fraction,
+                strokeWidth: 2.5,
+                color: Colors.white,
+                backgroundColor: Colors.white.withValues(alpha: 0.2),
+              ),
+              if (percent != null)
+                Text(
+                  '$percent',
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                )
+              else
+                const Icon(Icons.pause, color: Colors.white, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Confirme avant de jeter un contenu prêt (F14) : c'est la seule suppression
+  /// qui demande une confirmation, et le menu du bouton en est le seul chemin
+  /// ici (la page Téléchargements est #193).
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.downloadDeleteConfirmTitle),
+        content: Text(l10n.downloadDeleteConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.downloadDeleteConfirmAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) {
+      await ref.read(downloadManagerProvider).cancel(contentId);
+    }
+  }
+
+  /// Le bouton circulaire translucide commun aux états non-progression, avec sa
+  /// clé de test et son étiquette d'accessibilité.
+  Widget _glass({
+    required IconData icon,
+    required String semantics,
+    required VoidCallback onTap,
+  }) {
+    return Semantics(
+      button: true,
+      label: semantics,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.15),
+          shape: BoxShape.circle,
+        ),
+        child: IconButton(
+          key: ContentPlayerView.downloadButtonKey,
+          icon: Icon(icon, color: Colors.white, size: 22),
+          tooltip: semantics,
+          onPressed: onTap,
+        ),
       ),
     );
   }

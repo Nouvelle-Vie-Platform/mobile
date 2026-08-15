@@ -1,4 +1,5 @@
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart' show SwitchListTile;
 import 'package:flutter/widgets.dart' show Size;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
@@ -109,6 +110,44 @@ void main() {
       expect(find.textContaining('29'), findsWidgets);
       expect(find.textContaining('58'), findsWidgets);
       expect(find.textContaining('86'), findsWidgets);
+    });
+  });
+
+  group('Télécharger en données mobiles (F8)', () {
+    testWidgets('le toggle est présent et désactivé par défaut',
+        (tester) async {
+      await pump(tester);
+
+      final toggle = tester.widget<SwitchListTile>(
+        find.byKey(MediaSettingsScreen.downloadOnCellularKey),
+      );
+      // Défaut wifi seulement : le forfait n'est pas consommé sans choix.
+      expect(toggle.value, isFalse);
+    });
+
+    testWidgets('la coche reflète le réglage enregistré', (tester) async {
+      await pump(
+        tester,
+        preferences: const MediaPreferences(downloadOnCellular: true),
+      );
+
+      final toggle = tester.widget<SwitchListTile>(
+        find.byKey(MediaSettingsScreen.downloadOnCellularKey),
+      );
+      expect(toggle.value, isTrue);
+    });
+
+    testWidgets('l\'activer écrit le réglage dans le magasin', (tester) async {
+      await pump(tester);
+
+      await tester.tap(find.byKey(MediaSettingsScreen.downloadOnCellularKey));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final stored = await tester.runAsync(
+        () => database.settingsDao.downloadOnCellular(),
+      );
+      expect(stored, isTrue);
     });
   });
 }

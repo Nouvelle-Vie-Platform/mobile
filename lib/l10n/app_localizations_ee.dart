@@ -362,6 +362,48 @@ class AppLocalizationsEe extends AppLocalizations {
   String get actionDownloadAudio => 'Télécharger l\'audio';
 
   @override
+  String get downloadStateDownloading => 'Téléchargement en cours';
+
+  @override
+  String downloadProgressPercent(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get downloadStatePaused => 'En pause';
+
+  @override
+  String get downloadStateWaitingWifi => 'En attente de wifi';
+
+  @override
+  String get downloadStateComplete => 'Téléchargé';
+
+  @override
+  String get downloadStateFailed => 'Échec du téléchargement';
+
+  @override
+  String get downloadActionPause => 'Mettre en pause';
+
+  @override
+  String get downloadActionResume => 'Reprendre le téléchargement';
+
+  @override
+  String get downloadActionRetry => 'Réessayer le téléchargement';
+
+  @override
+  String get downloadActionDelete => 'Supprimer le téléchargement';
+
+  @override
+  String get downloadDeleteConfirmTitle => 'Supprimer le téléchargement ?';
+
+  @override
+  String get downloadDeleteConfirmMessage =>
+      'Le fichier sera effacé de cet appareil. Vous pourrez le télécharger de nouveau plus tard.';
+
+  @override
+  String get downloadDeleteConfirmAction => 'Supprimer';
+
+  @override
   String get agendaSeeAll => 'Voir tout l\'agenda';
 
   @override
@@ -573,6 +615,14 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get mediaSettingsDownload => 'Téléchargement';
+
+  @override
+  String get mediaSettingsDownloadOnCellular =>
+      'Télécharger en données mobiles';
+
+  @override
+  String get mediaSettingsDownloadOnCellularSubtitle =>
+      'Par défaut, les téléchargements attendent le wifi pour préserver votre forfait.';
 
   @override
   String get mediaQualityAuto => 'Automatique';

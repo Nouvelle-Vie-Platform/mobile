@@ -359,6 +359,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionDownloadAudio => 'Download audio';
 
   @override
+  String get downloadStateDownloading => 'Downloading';
+
+  @override
+  String downloadProgressPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get downloadStatePaused => 'Paused';
+
+  @override
+  String get downloadStateWaitingWifi => 'Waiting for Wi-Fi';
+
+  @override
+  String get downloadStateComplete => 'Downloaded';
+
+  @override
+  String get downloadStateFailed => 'Download failed';
+
+  @override
+  String get downloadActionPause => 'Pause';
+
+  @override
+  String get downloadActionResume => 'Resume download';
+
+  @override
+  String get downloadActionRetry => 'Retry download';
+
+  @override
+  String get downloadActionDelete => 'Delete download';
+
+  @override
+  String get downloadDeleteConfirmTitle => 'Delete this download?';
+
+  @override
+  String get downloadDeleteConfirmMessage =>
+      'The file will be removed from this device. You can download it again later.';
+
+  @override
+  String get downloadDeleteConfirmAction => 'Delete';
+
+  @override
   String get agendaSeeAll => 'See full agenda';
 
   @override
@@ -569,6 +611,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mediaSettingsDownload => 'Download';
+
+  @override
+  String get mediaSettingsDownloadOnCellular => 'Download on mobile data';
+
+  @override
+  String get mediaSettingsDownloadOnCellularSubtitle =>
+      'By default, downloads wait for Wi-Fi to protect your data plan.';
 
   @override
   String get mediaQualityAuto => 'Automatic';

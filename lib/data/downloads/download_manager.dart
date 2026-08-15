@@ -93,18 +93,27 @@ class DownloadManager {
   /// une qualité absente se replient sur un palier concret disponible — un
   /// fichier `.aac` a toujours une qualité, jamais « automatique ».
   ///
+  /// [metadata] est **facultatif** : quand un écran lance depuis un simple
+  /// identifiant (le bouton de la fiche, #192), il ne le porte pas, et le moteur
+  /// le résout lui-même par [metadataFor] — la même source que la
+  /// réconciliation, connue hors ligne (ADR-0038). Un enseignement sans contrat
+  /// de téléchargement n'écrit rien : rien à télécharger, pas de bouton mort.
+  ///
   /// Un contenu **déjà complet** n'est pas retéléchargé. Un échec ou un état en
   /// cours est **écrasé** — relancer est le geste normal de « réessayer ».
   Future<void> download({
     required String contentId,
     required String contentType,
     required MediaQuality quality,
-    required TeachingDownload metadata,
+    TeachingDownload? metadata,
   }) async {
     final existing = await _dao.forContent(contentId);
     if (existing != null && existing.state == DownloadState.complete) return;
 
-    final resolved = _resolveRendition(quality, metadata);
+    final resolvedMetadata = metadata ?? await _metadataFor(contentId);
+    if (resolvedMetadata == null) return; // aucun contrat, rien à télécharger.
+
+    final resolved = _resolveRendition(quality, resolvedMetadata);
     if (resolved == null) return; // rien de téléchargeable, rien à écrire.
     final (chosenQuality, rendition) = resolved;
 
@@ -119,7 +128,7 @@ class DownloadManager {
           quality: chosenQuality.key,
           state: const Value(DownloadState.failed),
           bytesTotal: Value(rendition.bytes),
-          versionId: Value(metadata.version),
+          versionId: Value(resolvedMetadata.version),
           createdAt: _now(),
           failureReason: const Value(kDownloadFailureInsufficientSpace),
         ),
@@ -138,7 +147,7 @@ class DownloadManager {
         quality: chosenQuality.key,
         state: Value(held ? DownloadState.waitingWifi : DownloadState.queued),
         bytesTotal: Value(rendition.bytes),
-        versionId: Value(metadata.version),
+        versionId: Value(resolvedMetadata.version),
         taskId: Value(taskId),
         createdAt: _now(),
       ),

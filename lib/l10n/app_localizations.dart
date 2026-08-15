@@ -718,6 +718,84 @@ abstract class AppLocalizations {
   /// **'Télécharger l\'audio'**
   String get actionDownloadAudio;
 
+  /// Bouton de téléchargement, état en cours : accessibilité de l'anneau de progression. Le pourcentage s'affiche à côté
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargement en cours'**
+  String get downloadStateDownloading;
+
+  /// Pourcentage de progression d'un téléchargement en cours
+  ///
+  /// In fr, this message translates to:
+  /// **'{percent} %'**
+  String downloadProgressPercent(int percent);
+
+  /// No description provided for @downloadStatePaused.
+  ///
+  /// In fr, this message translates to:
+  /// **'En pause'**
+  String get downloadStatePaused;
+
+  /// Bouton de téléchargement : wifi seulement actif et l'appareil est en données mobiles (F8)
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente de wifi'**
+  String get downloadStateWaitingWifi;
+
+  /// No description provided for @downloadStateComplete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargé'**
+  String get downloadStateComplete;
+
+  /// No description provided for @downloadStateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec du téléchargement'**
+  String get downloadStateFailed;
+
+  /// No description provided for @downloadActionPause.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre en pause'**
+  String get downloadActionPause;
+
+  /// No description provided for @downloadActionResume.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprendre le téléchargement'**
+  String get downloadActionResume;
+
+  /// No description provided for @downloadActionRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer le téléchargement'**
+  String get downloadActionRetry;
+
+  /// No description provided for @downloadActionDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le téléchargement'**
+  String get downloadActionDelete;
+
+  /// No description provided for @downloadDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le téléchargement ?'**
+  String get downloadDeleteConfirmTitle;
+
+  /// Confirmation avant de supprimer un téléchargement COMPLET (F14) : on jette un contenu prêt à écouter hors ligne
+  ///
+  /// In fr, this message translates to:
+  /// **'Le fichier sera effacé de cet appareil. Vous pourrez le télécharger de nouveau plus tard.'**
+  String get downloadDeleteConfirmMessage;
+
+  /// No description provided for @downloadDeleteConfirmAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get downloadDeleteConfirmAction;
+
   /// No description provided for @agendaSeeAll.
   ///
   /// In fr, this message translates to:
@@ -1101,6 +1179,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Téléchargement'**
   String get mediaSettingsDownload;
+
+  /// No description provided for @mediaSettingsDownloadOnCellular.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger en données mobiles'**
+  String get mediaSettingsDownloadOnCellular;
+
+  /// Sous-titre du toggle données mobiles des téléchargements (F8). Dit le défaut wifi-seulement et pourquoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Par défaut, les téléchargements attendent le wifi pour préserver votre forfait.'**
+  String get mediaSettingsDownloadOnCellularSubtitle;
 
   /// No description provided for @mediaQualityAuto.
   ///

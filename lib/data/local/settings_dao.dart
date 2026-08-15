@@ -31,14 +31,28 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   /// serait indiscernable d'un choix, et changer le défaut dans une version
   /// suivante ne toucherait plus personne.
   Stream<MediaPreferences> watchMediaPreferences() {
-    return select(appSettings).watch().map((rows) {
-      final byKey = {for (final row in rows) row.key: row.value};
-      return MediaPreferences(
-        streaming: MediaQuality.parse(byKey[MediaUsage.streaming.key]),
-        live: MediaQuality.parse(byKey[MediaUsage.live.key]),
-        download: MediaQuality.parse(byKey[MediaUsage.download.key]),
-      );
-    });
+    return select(appSettings).watch().map(_mediaPreferencesFrom);
+  }
+
+  MediaPreferences _mediaPreferencesFrom(List<AppSettingRow> rows) {
+    final byKey = {for (final row in rows) row.key: row.value};
+    return MediaPreferences(
+      streaming: MediaQuality.parse(byKey[MediaUsage.streaming.key]),
+      live: MediaQuality.parse(byKey[MediaUsage.live.key]),
+      download: MediaQuality.parse(byKey[MediaUsage.download.key]),
+      // Absent = wifi seulement (F8), le défaut sûr. Seul `'true'` autorise le
+      // cellulaire : toute autre valeur (base bricolée) retombe côté prudent.
+      downloadOnCellular: byKey[_downloadOnCellularKey] == 'true',
+    );
+  }
+
+  /// La contrainte réseau des téléchargements, en une lecture **ponctuelle** —
+  /// pas un flux : `DownloadManager.mobileDataAllowed` la consulte au moment de
+  /// lancer ou reprendre, et un flux Drift jamais refermé n'a pas sa place dans
+  /// ce chemin. Absent = `false` (wifi seulement, F8).
+  Future<bool> downloadOnCellular() async {
+    return _mediaPreferencesFrom(await select(appSettings).get())
+        .downloadOnCellular;
   }
 
   /// Les réglages d'**apparence**, recomposés à chaque changement.
@@ -82,8 +96,17 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   static const String _darkFromKey = 'theme_dark_from';
   static const String _lightFromKey = 'theme_light_from';
 
+  /// La clé du toggle « données mobiles » des téléchargements. Distincte des
+  /// clés d'usage (`download` porte la **qualité**) : le réseau autorisé et le
+  /// débit sont deux réglages, pas un.
+  static const String _downloadOnCellularKey = 'download_on_cellular';
+
   /// Pose la qualité d'un usage. Écrase la valeur précédente s'il y en avait
   /// une — le réglage n'a pas d'historique.
   Future<void> setMediaQuality(MediaUsage usage, MediaQuality quality) =>
       _put(usage.key, quality.key);
+
+  /// Autorise (ou non) les téléchargements en données mobiles (F8).
+  Future<void> setDownloadOnCellular(bool allowed) =>
+      _put(_downloadOnCellularKey, allowed ? 'true' : 'false');
 }
