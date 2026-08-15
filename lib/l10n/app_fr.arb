@@ -220,7 +220,7 @@
   "deleteAccountErrorNetwork": "Suppression impossible : pas de réseau. Votre compte est intact.",
   "@deleteAccountErrorNetwork": { "description": "Écran de suppression, panne réseau. Insiste sur « votre compte est intact » : sans cette phrase, on croit avoir à moitié réussi" },
   "deleteAccountErrorServer": "Le serveur n'a pas pu traiter la demande. Votre compte est intact, réessayez.",
-  "mediaSettings": "Qualité & données",
+  "mediaSettings": "Qualité",
   "mediaSettingsTitle": "Qualité & données",
   "mediaSettingsLead": "Ces réglages ne changent rien à ce que vous entendez sur le réseau de l'église. Ils protègent votre forfait quand vous êtes dehors.",
   "@mediaSettingsLead": {"description": "Panneau qualité : dit d'emblée que le réglage vise le forfait mobile, pas la qualité en général"},
@@ -249,8 +249,6 @@
   "themeAutoHoursTitle": "Heures de bascule",
   "themeDarkFrom": "Passe en sombre à",
   "themeLightFrom": "Revient au clair à",
-  "themeAutoHint": "Sombre de {dark} à {light}.",
-  "@themeAutoHint": {"description": "Résumé de la règle horaire, affiché sous le sélecteur en mode Auto", "placeholders": {"dark": {"type": "String"}, "light": {"type": "String"}}},
   "logout": "Se déconnecter",
 
   "donationsAppBarTitle": "Dons & Offrandes",

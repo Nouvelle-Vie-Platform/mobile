@@ -501,7 +501,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server could not process the request. Your account is untouched, try again.';
 
   @override
-  String get mediaSettings => 'Quality & data';
+  String get mediaSettings => 'Quality';
 
   @override
   String get mediaSettingsTitle => 'Quality & data';
@@ -574,11 +574,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeLightFrom => 'Back to light at';
-
-  @override
-  String themeAutoHint(String dark, String light) {
-    return 'Dark from $dark to $light.';
-  }
 
   @override
   String get logout => 'Log out';

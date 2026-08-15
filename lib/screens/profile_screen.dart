@@ -13,7 +13,7 @@ import '../theme/app_typography.dart';
 import '../widgets/app_avatar.dart';
 import '../widgets/menu_tile.dart';
 import '../widgets/profile_completion_banner.dart';
-import '../widgets/theme_choice_tile.dart';
+import '../widgets/theme_sheet.dart';
 
 /// Onglet « Profil » : en-tête de marque (avatar, rôle, branche, statistiques,
 /// badges) surmontant une feuille de réglages.
@@ -23,6 +23,9 @@ class ProfileScreen extends ConsumerWidget {
   /// Clé de l'entrée « Supprimer mon compte », pour la cibler depuis les tests
   /// sans dépendre de son libellé.
   static const Key deleteAccountKey = Key('profile_delete_account');
+
+  /// Clé du bouton d'apparence de l'en-tête, qui ouvre la feuille.
+  static const Key themeButtonKey = Key('profile_theme_button');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -95,8 +98,6 @@ class ProfileScreen extends ConsumerWidget {
                 // Deux chemins vers la même page, à un écran d'écart, se
                 // remarquent comme un doublon. La liste ne porte donc que des
                 // **réglages**, ce qui la rend homogène.
-                const ThemeChoiceTile(),
-                _divider,
                 MenuTile(
                   icon: Icons.help_outline,
                   label: l.helpSupport,
@@ -158,9 +159,6 @@ class ProfileScreen extends ConsumerWidget {
       await ref.read(authProvider.notifier).signOut();
     }
   }
-
-  static const _divider =
-      Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg);
 }
 
 /// En-tête de profil au dégradé de marque : barre, avatar + nom + rôle,
@@ -196,11 +194,17 @@ class _ProfileHeader extends StatelessWidget {
               children: [
                 Text(l.navProfile,
                     style: AppTypography.h2.copyWith(color: Colors.white)),
+                // **Le cercle mi-plein, et non un soleil ou une lune.** Ce
+                // bouton **ouvre un panneau**, il ne bascule pas : afficher
+                // l'état courant sur un bouton qui ne le change pas ferait
+                // presser la lune en s'attendant à passer en clair. En mode
+                // `Auto` elle donnerait de surcroît à croire qu'on a choisi
+                // « Sombre ».
                 IconButton(
-                  icon:
-                      const Icon(Icons.settings_outlined, color: Colors.white),
-                  tooltip: l.settings,
-                  onPressed: () {},
+                  key: ProfileScreen.themeButtonKey,
+                  icon: const Icon(Icons.brightness_6, color: Colors.white),
+                  tooltip: l.themeSectionTitle,
+                  onPressed: () => showThemeSheet(context),
                 ),
               ],
             ),

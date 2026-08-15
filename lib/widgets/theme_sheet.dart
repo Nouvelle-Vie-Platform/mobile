@@ -10,39 +10,45 @@ import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 
-/// **Le réglage d'apparence**, dans la liste du Profil.
+/// **Le réglage d'apparence**, dans une feuille modale ouverte depuis l'icône de
+/// l'en-tête du Profil.
 ///
-/// Un bloc et non une ligne : quatre positions, un engrenage et deux heures ne
-/// tiennent pas dans un `MenuTile` à interrupteur. Il reste **sur place**
-/// plutôt que d'ouvrir un écran — on juge des couleurs sur l'écran qu'on
-/// regarde, et basculer en sombre est le geste le plus fréquent des trois.
+/// **La feuille ne se ferme pas quand on choisit**, et c'est la décision qui
+/// gouverne le reste. Elle vit dans le `MaterialApp` : changer le mode la
+/// **repeint elle-même**, donc on voit le résultat sous ses doigts et on peut
+/// comparer les quatre positions. Une feuille qui se refermerait obligerait à
+/// rouvrir pour comparer, c'est-à-dire pour faire ce qu'on était venu faire.
 ///
-/// **Quatre positions, dont deux qui se ressemblent.** « Système » suit le
-/// réglage du téléphone ; « Auto » suit une règle horaire de l'application, que
-/// le téléphone ignore. Elles peuvent donc se contredire, et c'est pour cela que
-/// le résumé « Sombre de 19:00 à 06:00 » s'affiche sous le sélecteur en mode
-/// Auto : sans lui, rien ne distinguerait les deux à l'œil.
+/// **Aucun engrenage interne.** Il en existait un tant que ce réglage vivait
+/// dans une ligne de la liste du Profil, où deux heures de plus ne tenaient pas.
+/// La feuille lève cette contrainte : les heures s'affichent dès que `Auto` est
+/// choisi, et le résumé « Sombre de 19:00 à 06:00 » disparaît avec le repli —
+/// deux lignes modifiables le disent mieux qu'une phrase.
 ///
-/// **L'engrenage n'apparaît qu'en Auto**, et ne fait que déplier les deux
-/// heures. Un engrenage visible en permanence promettrait des réglages qui
-/// n'existent pas pour les trois autres positions.
-class ThemeChoiceTile extends ConsumerStatefulWidget {
-  const ThemeChoiceTile({super.key});
+/// **`Système` et `Auto` se ressemblent et ne font pas la même chose** :
+/// `Système` suit le téléphone, `Auto` suit une règle horaire de l'application
+/// que le téléphone ignore. Les deux heures affichées sous `Auto` sont ce qui
+/// les distingue à l'œil.
+Future<void> showThemeSheet(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    // Le contenu grandit de deux lignes quand `Auto` est choisi : sans cela la
+    // feuille garderait sa hauteur initiale et rognerait les heures.
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => const ThemeSheet(),
+  );
+}
 
-  /// Clés de test : une par position, plus l'engrenage et les deux heures.
+class ThemeSheet extends ConsumerWidget {
+  const ThemeSheet({super.key});
+
+  /// Clés de test : une par position, plus les deux heures.
   static Key segmentKey(ThemeChoice choice) => Key('theme_${choice.key}');
-  static const Key gearKey = Key('theme_gear');
   static const Key darkFromKey = Key('theme_dark_from');
   static const Key lightFromKey = Key('theme_light_from');
 
-  @override
-  ConsumerState<ThemeChoiceTile> createState() => _ThemeChoiceTileState();
-}
-
-class _ThemeChoiceTileState extends ConsumerState<ThemeChoiceTile> {
-  bool _hoursOpen = false;
-
-  IconData _icon(ThemeChoice choice) => switch (choice) {
+  static IconData iconOf(ThemeChoice choice) => switch (choice) {
         ThemeChoice.light => Icons.light_mode_outlined,
         // Un téléphone pour « suit l'appareil », une horloge pour « suit
         // l'heure » : c'est le seul couple d'icônes qui sépare les deux sans
@@ -52,96 +58,79 @@ class _ThemeChoiceTileState extends ConsumerState<ThemeChoiceTile> {
         ThemeChoice.dark => Icons.dark_mode_outlined,
       };
 
-  String _label(AppLocalizations l, ThemeChoice choice) => switch (choice) {
+  static String labelOf(AppLocalizations l, ThemeChoice choice) =>
+      switch (choice) {
         ThemeChoice.light => l.themeLight,
         ThemeChoice.system => l.themeSystem,
         ThemeChoice.auto => l.themeAuto,
         ThemeChoice.dark => l.themeDark,
       };
 
-  Future<void> _pick(DayTime current, {required bool dark}) async {
+  Future<void> _pick(
+    BuildContext context,
+    WidgetRef ref,
+    DayTime current, {
+    required bool dark,
+  }) async {
     final picked = await showTimePicker(
       context: context,
       initialTime: current.toTimeOfDay(),
     );
-    if (picked == null || !mounted) return;
+    if (picked == null) return;
     final dao = ref.read(settingsDaoProvider);
     final time = DayTime.fromTimeOfDay(picked);
     await (dark ? dao.setDarkFrom(time) : dao.setLightFrom(time));
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final palette = context.palette;
     final preferences =
         ref.watch(themePreferencesProvider).value ?? const ThemePreferences();
     final isAuto = preferences.choice == ThemeChoice.auto;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.dark_mode_outlined,
-                  size: 22, color: palette.textSecondary),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Text(
-                  l.themeSectionTitle,
-                  style:
-                      AppTypography.body.copyWith(color: palette.textPrimary),
-                ),
-              ),
-              // L'engrenage n'existe qu'en Auto — voir l'en-tête.
-              if (isAuto)
-                IconButton(
-                  key: ThemeChoiceTile.gearKey,
-                  icon: const Icon(Icons.tune, size: 20),
-                  color: _hoursOpen ? AppColors.primary : palette.textSecondary,
-                  tooltip: l.themeAutoHoursTitle,
-                  onPressed: () => setState(() => _hoursOpen = !_hoursOpen),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _Segments(
-            selected: preferences.choice,
-            icon: _icon,
-            label: (choice) => _label(l, choice),
-            onSelect: (choice) =>
-                ref.read(settingsDaoProvider).setThemeChoice(choice),
-          ),
-          if (isAuto) ...[
-            const SizedBox(height: AppSpacing.sm),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.xl,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              l.themeAutoHint(
-                  preferences.darkFrom.key, preferences.lightFrom.key),
-              style:
-                  AppTypography.caption.copyWith(color: palette.textSecondary),
+              l.themeSectionTitle,
+              style: AppTypography.h5.copyWith(color: palette.textPrimary),
             ),
+            const SizedBox(height: AppSpacing.lg),
+            _Segments(
+              selected: preferences.choice,
+              onSelect: (choice) =>
+                  ref.read(settingsDaoProvider).setThemeChoice(choice),
+            ),
+            if (isAuto) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _HourRow(
+                key: darkFromKey,
+                label: l.themeDarkFrom,
+                time: preferences.darkFrom,
+                onTap: () =>
+                    _pick(context, ref, preferences.darkFrom, dark: true),
+              ),
+              _HourRow(
+                key: lightFromKey,
+                label: l.themeLightFrom,
+                time: preferences.lightFrom,
+                onTap: () =>
+                    _pick(context, ref, preferences.lightFrom, dark: false),
+              ),
+            ],
           ],
-          if (isAuto && _hoursOpen) ...[
-            const SizedBox(height: AppSpacing.sm),
-            _HourRow(
-              key: ThemeChoiceTile.darkFromKey,
-              label: l.themeDarkFrom,
-              time: preferences.darkFrom,
-              onTap: () => _pick(preferences.darkFrom, dark: true),
-            ),
-            _HourRow(
-              key: ThemeChoiceTile.lightFromKey,
-              label: l.themeLightFrom,
-              time: preferences.lightFrom,
-              onTap: () => _pick(preferences.lightFrom, dark: false),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -149,20 +138,14 @@ class _ThemeChoiceTileState extends ConsumerState<ThemeChoiceTile> {
 
 /// Le contrôle segmenté : quatre pastilles à icône et libellé.
 class _Segments extends StatelessWidget {
-  const _Segments({
-    required this.selected,
-    required this.icon,
-    required this.label,
-    required this.onSelect,
-  });
+  const _Segments({required this.selected, required this.onSelect});
 
   final ThemeChoice selected;
-  final IconData Function(ThemeChoice) icon;
-  final String Function(ThemeChoice) label;
   final ValueChanged<ThemeChoice> onSelect;
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final palette = context.palette;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -174,9 +157,9 @@ class _Segments extends StatelessWidget {
           for (final choice in ThemeChoice.values)
             Expanded(
               child: _Segment(
-                key: ThemeChoiceTile.segmentKey(choice),
-                icon: icon(choice),
-                label: label(choice),
+                key: ThemeSheet.segmentKey(choice),
+                icon: ThemeSheet.iconOf(choice),
+                label: ThemeSheet.labelOf(l, choice),
                 selected: choice == selected,
                 onTap: () => onSelect(choice),
               ),
@@ -220,7 +203,7 @@ class _Segment extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: tint),
+            Icon(icon, size: 20, color: tint),
             const SizedBox(height: 2),
             // `FittedBox` : « Système » est plus long que les trois autres, et
             // quatre segments sur un écran étroit ne laissent pas de marge.
@@ -259,14 +242,13 @@ class _HourRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 label,
-                style:
-                    AppTypography.body.copyWith(color: palette.textSecondary),
+                style: AppTypography.body.copyWith(color: palette.textPrimary),
               ),
             ),
             Text(

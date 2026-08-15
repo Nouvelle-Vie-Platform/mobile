@@ -991,7 +991,7 @@ abstract class AppLocalizations {
   /// No description provided for @mediaSettings.
   ///
   /// In fr, this message translates to:
-  /// **'Qualité & données'**
+  /// **'Qualité'**
   String get mediaSettings;
 
   /// No description provided for @mediaSettingsTitle.
@@ -1119,12 +1119,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Revient au clair à'**
   String get themeLightFrom;
-
-  /// Résumé de la règle horaire, affiché sous le sélecteur en mode Auto
-  ///
-  /// In fr, this message translates to:
-  /// **'Sombre de {dark} à {light}.'**
-  String themeAutoHint(String dark, String light);
 
   /// No description provided for @logout.
   ///

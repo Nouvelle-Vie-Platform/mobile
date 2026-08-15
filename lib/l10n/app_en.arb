@@ -180,7 +180,7 @@
   "deleteAccountAction": "Delete permanently",
   "deleteAccountErrorNetwork": "Cannot delete: no network. Your account is untouched.",
   "deleteAccountErrorServer": "The server could not process the request. Your account is untouched, try again.",
-  "mediaSettings": "Quality & data",
+  "mediaSettings": "Quality",
   "mediaSettingsTitle": "Quality & data",
   "mediaSettingsLead": "These settings change nothing on the church network. They protect your data plan when you are out.",
   "mediaSettingsStreaming": "Listening to a teaching",
@@ -202,7 +202,6 @@
   "themeAutoHoursTitle": "Switch times",
   "themeDarkFrom": "Goes dark at",
   "themeLightFrom": "Back to light at",
-  "themeAutoHint": "Dark from {dark} to {light}.",
   "logout": "Log out",
 
   "donationsAppBarTitle": "Donations & Offerings",

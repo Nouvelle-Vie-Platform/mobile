@@ -741,6 +741,26 @@ migration : la table est clé/valeur, c'est pour cela qu'elle l'est). Le thème 
 perdait à chaque lancement avant cela — `themeModeProvider` n'était qu'un état
 en mémoire.
 
+**Le réglage vit dans une feuille modale** (`showThemeSheet`), ouverte par
+l'icône `brightness_6` de l'en-tête du Profil — et **là seulement**. Trois
+conséquences à connaître :
+
+- **L'icône est neutre, jamais un soleil ou une lune.** Elle *ouvre un panneau*,
+  elle ne bascule pas : afficher l'état courant sur un bouton qui ne le change
+  pas ferait presser la lune en s'attendant à passer en clair, et en mode `Auto`
+  elle donnerait à croire qu'on a choisi « Sombre ».
+- **La feuille ne se ferme pas quand on choisit.** Elle vit dans le
+  `MaterialApp`, donc changer le mode la repeint elle-même : on compare les
+  quatre positions sous ses doigts. Se refermer obligerait à rouvrir pour faire
+  ce qu'on était venu faire.
+- **Aucun engrenage interne.** Il n'existait que tant que ce réglage occupait une
+  ligne de liste, où deux heures de plus ne tenaient pas. En feuille, les heures
+  s'affichent dès que `Auto` est choisi.
+
+Le coût assumé : un réglage rangé derrière une icône d'en-tête se trouve moins
+bien qu'une ligne de liste qu'on parcourt. `brightness_6` est ce qui limite le
+risque — c'est le glyphe que les gens associent à ce réglage.
+
 **`Système` et `Auto` se ressemblent et ne font pas la même chose**, et c'est le
 piège du réglage : `Système` suit le téléphone, `Auto` suit une **règle horaire
 de l'application** que le téléphone ignore. Les deux peuvent donc se contredire

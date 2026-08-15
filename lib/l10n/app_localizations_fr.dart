@@ -504,7 +504,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le serveur n\'a pas pu traiter la demande. Votre compte est intact, réessayez.';
 
   @override
-  String get mediaSettings => 'Qualité & données';
+  String get mediaSettings => 'Qualité';
 
   @override
   String get mediaSettingsTitle => 'Qualité & données';
@@ -577,11 +577,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get themeLightFrom => 'Revient au clair à';
-
-  @override
-  String themeAutoHint(String dark, String light) {
-    return 'Sombre de $dark à $light.';
-  }
 
   @override
   String get logout => 'Se déconnecter';

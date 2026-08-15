@@ -5,7 +5,6 @@ import 'package:maison_du_miracle/screens/groups_screen.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/screens/media_library_screen.dart';
 import 'package:maison_du_miracle/screens/profile_screen.dart';
-import 'package:maison_du_miracle/widgets/theme_choice_tile.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
 
 import '../helpers/pump_screen.dart';
@@ -45,10 +44,10 @@ void main() {
     testWidgets('ProfileScreen se monte', (tester) async {
       await pumpScreen(tester, const Scaffold(body: ProfileScreen()));
       expect(find.byType(ProfileScreen), findsOneWidget);
-      // Le réglage d'apparence a remplacé l'interrupteur « Mode sombre » par un
-      // bloc à quatre positions ; on vérifie sa présence, pas son ancien
-      // libellé.
-      expect(find.byType(ThemeChoiceTile), findsOneWidget);
+      // Le réglage d'apparence a quitté la liste : il vit derrière l'icône de
+      // l'en-tête, qui ouvre une feuille. On vérifie donc le bouton, pas un
+      // libellé de liste qui n'existe plus.
+      expect(find.byKey(ProfileScreen.themeButtonKey), findsOneWidget);
     });
   });
 }
