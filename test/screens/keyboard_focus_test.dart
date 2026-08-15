@@ -62,7 +62,8 @@ void main() {
       // ouvrir de connexion de saisie.
       await pumpScreen(tester, const IdentifierScreen());
 
-      for (final field in tester.widgetList<TextField>(find.byType(TextField))) {
+      for (final field
+          in tester.widgetList<TextField>(find.byType(TextField))) {
         expect(field.readOnly, isFalse);
         expect(field.enabled, isNot(false));
         expect(field.keyboardType, isNot(TextInputType.none));

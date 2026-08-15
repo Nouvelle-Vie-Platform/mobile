@@ -91,12 +91,12 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                 ],
-                MenuTile(
-                  icon: Icons.edit_outlined,
-                  label: l.profileEditAction,
-                  onTap: () => context.goNamed(AppRoute.profileEdit),
-                ),
-                _divider,
+                // **Pas d'entrée « Modifier mon profil » ici**, et c'est un
+                // retrait délibéré : le bouton du bandeau bleu ouvre le même
+                // écran, collé au nom et à la branche qu'il sert à corriger.
+                // Deux chemins vers la même page, à un écran d'écart, se
+                // remarquent comme un doublon. La liste ne porte donc que des
+                // **réglages**, ce qui la rend homogène.
                 MenuTile(
                   icon: Icons.dark_mode_outlined,
                   label: l.darkMode,
@@ -346,7 +346,12 @@ class _EditButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.goNamed(AppRoute.profileEdit),
+      // **`push` et non `go`** : `go` remplace la route, donc il n'y
+      // aurait rien à dépiler — ni flèche de retour dans la barre, ni
+      // retour possible vers l'onglet Profil au sortir du formulaire.
+      // Empilée, la coquille reste montée dessous et son onglet courant,
+      // qui est du `State` local, n'est jamais réinitialisé.
+      onTap: () => context.pushNamed(AppRoute.profileEdit),
       child: Container(
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg, vertical: AppSpacing.sm),

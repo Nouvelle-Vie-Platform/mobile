@@ -72,11 +72,19 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
     super.dispose();
   }
 
-  /// Retour après save ou skip :
-  /// - complétion → accueil ;
-  /// - édition → retour arrière si possible, sinon accueil.
+  /// Retour après enregistrement ou renoncement.
+  ///
+  /// **La décision se prend sur `canPop()` seul**, jamais sur le mode. Elle
+  /// s'est longtemps prise sur `_editMode`, et cela avait une conséquence que
+  /// personne ne voyait : celui qui **complète** son profil depuis la bannière
+  /// de l'onglet Profil n'est pas en mode édition, et se retrouvait donc jeté
+  /// sur l'accueil alors qu'il venait du Profil.
+  ///
+  /// `canPop()` répond exactement à la question qui compte — « suis-je arrivé
+  /// ici par-dessus quelque chose ? » — et couvre aussi l'ouverture directe par
+  /// URL sur le web, où il n'y a effectivement rien derrière.
   void _navigateAfter() {
-    if (_editMode && context.canPop()) {
+    if (context.canPop()) {
       context.pop();
     } else {
       context.goNamed(AppRoute.home);
@@ -234,7 +242,11 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
               ),
               const SizedBox(height: AppSpacing.sm),
               AppButton(
-                label: l.actionLater,
+                // **« Annuler » en édition, « Plus tard » à la complétion.**
+                // On ne remet pas à plus tard une modification : « Plus tard »
+                // promet un rappel qui n'existe que pour un profil incomplet,
+                // où la bannière reproposera.
+                label: _editMode ? l.actionCancel : l.actionLater,
                 variant: AppButtonVariant.ghost,
                 onPressed: _saving ? null : _navigateAfter,
               ),

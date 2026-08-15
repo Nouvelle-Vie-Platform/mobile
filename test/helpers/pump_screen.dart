@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
@@ -66,6 +67,67 @@ import 'playback_doubles.dart';
 /// Le **rapporteur de progression** est posé muet pour la raison qui vaut déjà
 /// pour l'auth : son implémentation par défaut est HTTP dès que
 /// `AppEnv.useBackend` est vrai — et il l'est hors surcharge.
+/// Monte un **routeur** plutôt qu'un écran isolé, dans le même environnement.
+///
+/// Nécessaire dès qu'un test porte sur la navigation : `context.pop()` et
+/// `context.canPop()` sont les extensions de **go_router**, qui consultent sa
+/// pile à lui. Un test bâti sur un `Navigator.push` nu passerait à côté de ce
+/// que fait réellement l'application.
+Future<void> pumpRouter(
+  WidgetTester tester,
+  GoRouter router, {
+  List<Override> overrides = const [],
+  AppDatabase? database,
+  AuthRepository? auth,
+}) async {
+  final db = database ?? AppDatabase(NativeDatabase.memory());
+  if (database == null) addTearDown(db.close);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        ..._commonOverrides(db, auth: auth),
+        ...overrides,
+      ],
+      child: MaterialApp.router(
+        theme: AppTheme.light,
+        locale: const Locale('fr'),
+        localizationsDelegates: appLocalizationsDelegates,
+        supportedLocales: appSupportedLocales,
+        routerConfig: router,
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
+}
+
+/// Les surcharges que tout montage partage — voir l'en-tête pour le pourquoi
+/// de chacune.
+List<Override> _commonOverrides(
+  AppDatabase db, {
+  AuthRepository? auth,
+  MediathequeRepository? mediatheque,
+  GatheringRepository? gatherings,
+  AnnouncementRepository? announcements,
+}) =>
+    [
+      appDatabaseProvider.overrideWithValue(db),
+      playbackProgressReporterProvider
+          .overrideWithValue(FakePlaybackProgressReporter()),
+      networkTransportProvider.overrideWithValue(FixedNetworkTransport()),
+      authRepositoryProvider
+          .overrideWithValue(auth ?? InMemoryAuthRepository()),
+      branchRepositoryProvider
+          .overrideWithValue(const InMemoryBranchRepository()),
+      mediathequeRepositoryProvider
+          .overrideWithValue(mediatheque ?? InMemoryMediathequeRepository()),
+      gatheringRepositoryProvider
+          .overrideWithValue(gatherings ?? InMemoryGatheringRepository()),
+      announcementRepositoryProvider
+          .overrideWithValue(announcements ?? InMemoryAnnouncementRepository()),
+    ];
+
 Future<void> pumpScreen(
   WidgetTester tester,
   Widget screen, {
@@ -87,24 +149,12 @@ Future<void> pumpScreen(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        appDatabaseProvider.overrideWithValue(db),
-        playbackProgressReporterProvider
-            .overrideWithValue(FakePlaybackProgressReporter()),
-        // Le transport réseau est posé **figé**, pour la raison qui vaut déjà
-        // pour le rapporteur : son implémentation réelle ouvre un canal de
-        // plugin, absent du harnais, et y laisse une minuterie qui fait rougir
-        // au teardown des tests n'ayant jamais parlé de réseau.
-        networkTransportProvider.overrideWithValue(FixedNetworkTransport()),
-        authRepositoryProvider
-            .overrideWithValue(auth ?? InMemoryAuthRepository()),
-        branchRepositoryProvider
-            .overrideWithValue(const InMemoryBranchRepository()),
-        mediathequeRepositoryProvider
-            .overrideWithValue(mediatheque ?? InMemoryMediathequeRepository()),
-        gatheringRepositoryProvider
-            .overrideWithValue(gatherings ?? InMemoryGatheringRepository()),
-        announcementRepositoryProvider.overrideWithValue(
-          announcements ?? InMemoryAnnouncementRepository(),
+        ..._commonOverrides(
+          db,
+          auth: auth,
+          mediatheque: mediatheque,
+          gatherings: gatherings,
+          announcements: announcements,
         ),
         ...overrides,
       ],

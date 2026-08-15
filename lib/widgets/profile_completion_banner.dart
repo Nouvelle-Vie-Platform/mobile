@@ -82,7 +82,10 @@ class ProfileCompletionBanner extends ConsumerWidget {
           Align(
             alignment: Alignment.centerRight,
             child: FilledButton(
-              onPressed: () => context.goNamed(AppRoute.profileEdit),
+              // `push` et non `go` : voir `ProfileScreen`. Sans cela, celui qui
+              // complète son profil depuis cette bannière ne revient pas au
+              // Profil mais atterrit sur l'accueil.
+              onPressed: () => context.pushNamed(AppRoute.profileEdit),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
