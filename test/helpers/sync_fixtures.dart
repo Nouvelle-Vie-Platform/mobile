@@ -802,7 +802,14 @@ Map<String, Object?> gatheringTypesPage() => deltaPage(
 /// la version installée — sur un mur de statuts, ça se voit.
 const Map<String, Object?> brandStatusBackgroundPayload = {
   'id': 1,
-  'label': 'Bleu de marque',
+  // **Carte de traduction**, comme le serveur la sert (`jsonb`, ADR-0023, sur
+  // le patron de `teaching_types.label`). Ce fixture a porté une chaîne nue
+  // jusqu'à la v6 du schéma, et c'est ce qui a rendu le bug invisible : le
+  // client la lisait en `_text`, tout passait ici, et **chaque** ligne réelle
+  // faisait lever — ce qui coupait le cycle de synchronisation avant les six
+  // collections rangées après celle-ci. Un fixture qui ment sur la forme du
+  // contrat ne teste plus le contrat.
+  'label': {'fr': 'Bleu de marque'},
   'baseColor': '#223B8C',
   'topColor': '#2E4CAE',
   'bottomColor': '#16265C',
@@ -818,7 +825,7 @@ const Map<String, Object?> brandStatusBackgroundPayload = {
 /// illisible, et personne ne s'en aperçoit avant les utilisateurs.
 const Map<String, Object?> lightStatusBackgroundPayload = {
   'id': 2,
-  'label': 'Or accent',
+  'label': {'fr': 'Or accent'},
   'baseColor': '#F8D05E',
   'topColor': '#FBE08F',
   'bottomColor': '#D6A92F',
@@ -838,7 +845,7 @@ const Map<String, Object?> lightStatusBackgroundPayload = {
 /// parfaitement valides.
 const Map<String, Object?> retiredStatusBackgroundPayload = {
   'id': 3,
-  'label': 'Nuit profonde',
+  'label': {'fr': 'Nuit profonde'},
   'baseColor': '#0C1422',
   'topColor': '#16223A',
   'bottomColor': '#050810',

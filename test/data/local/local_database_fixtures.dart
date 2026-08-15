@@ -90,7 +90,8 @@ GatheringsCompanion gatheringRow(
 /// serveur (ADR-0030) : le magasin les stocke bruts, le client peint.
 StatusBackgroundsCompanion statusBackgroundRow(
   int id, {
-  String label = 'Bleu de marque',
+  /// Carte de traduction entière, comme le serveur la sert (`jsonb`, ADR-0023).
+  Map<String, String> label = const {'fr': 'Bleu de marque'},
   String baseColor = '#223B8C',
   String topColor = '#2E4CAE',
   String bottomColor = '#16265C',

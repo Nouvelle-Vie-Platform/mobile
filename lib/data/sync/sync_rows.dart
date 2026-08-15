@@ -246,7 +246,10 @@ StatusBackgroundsCompanion statusBackgroundRowOf(Map<String, Object?> item) {
   const collection = 'status_backgrounds';
   return StatusBackgroundsCompanion.insert(
     id: Value(referenceId(collection, item)),
-    label: _text(collection, item, 'label'),
+    // Carte de traduction, comme `teaching_types.label` : le serveur la déclare
+    // en `jsonb` (ADR-0023). La lire en `_text` faisait lever sur **chaque**
+    // ligne, et le cycle mourait là, avant les documents légaux.
+    label: _i18nMap(collection, item, 'label'),
     baseColor: _text(collection, item, 'baseColor'),
     topColor: _text(collection, item, 'topColor'),
     bottomColor: _text(collection, item, 'bottomColor'),

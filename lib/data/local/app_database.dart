@@ -84,8 +84,13 @@ class AppDatabase extends _$AppDatabase {
 
   /// **v5** — `legal_documents`, issue #55 : la collection répliquée des
   /// documents légaux (CGU, confidentialité, à propos), **référentiel**.
+  ///
+  /// **v6** — `status_backgrounds.label` en carte de traduction. Correction
+  /// d'un désaccord avec le contrat serveur qui faisait lever la
+  /// désérialisation sur chaque ligne, et **coupait le cycle de
+  /// synchronisation** avant les six collections suivantes.
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -152,6 +157,31 @@ class AppDatabase extends _$AppDatabase {
           if (from < 5) {
             await m.createTable(legalDocuments);
           }
+
+          // v5 → v6 — `status_backgrounds.label` passe en **carte de
+          // traduction**, pour rejoindre ce que le serveur déclare depuis
+          // toujours (`jsonb`, ADR-0023). La colonne reste du texte côté SQLite,
+          // seul son contenu change de forme : rien à altérer, tout à re-tirer.
+          //
+          // **On efface la table ET son curseur**, dans cet ordre de pensée : un
+          // libellé nu (« Bleu de marque ») ne se décode pas en carte, et le
+          // convertisseur, tolérant par choix, rendrait une carte **vide** sans
+          // se plaindre — le sélecteur de fonds afficherait des pastilles sans
+          // nom, indéfiniment. Effacer le curseur est ce qui fait annoncer la
+          // collection `from_zero` au manifeste suivant ; l'oublier laisserait
+          // une table vide qu'aucun cycle ne viendrait remplir.
+          //
+          // Le coût est nul : ce référentiel n'a jamais pu s'écrire. `_text`
+          // levait sur chaque ligne servie, donc aucune page n'a jamais été
+          // appliquée et aucun curseur n'a jamais été posé. On efface par
+          // rigueur, pas par nécessité.
+          if (from < 6) {
+            await delete(statusBackgrounds).go();
+            await (delete(syncCursors)
+                  ..where((c) => c.collection.equals('status_backgrounds')))
+                .go();
+          }
+
         },
         beforeOpen: (details) async {
           // La ligne d'état global doit exister avant la première allocation de

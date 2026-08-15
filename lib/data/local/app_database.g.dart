@@ -4592,11 +4592,12 @@ class $StatusBackgroundsTable extends StatusBackgrounds
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
       'id', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _labelMeta = const VerificationMeta('label');
   @override
-  late final GeneratedColumn<String> label = GeneratedColumn<String>(
-      'label', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+  late final GeneratedColumnWithTypeConverter<Map<String, String>, String>
+      label = GeneratedColumn<String>('label', aliasedName, false,
+              type: DriftSqlType.string, requiredDuringInsert: true)
+          .withConverter<Map<String, String>>(
+              $StatusBackgroundsTable.$converterlabel);
   static const VerificationMeta _baseColorMeta =
       const VerificationMeta('baseColor');
   @override
@@ -4682,12 +4683,6 @@ class $StatusBackgroundsTable extends StatusBackgrounds
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('label')) {
-      context.handle(
-          _labelMeta, label.isAcceptableOrUnknown(data['label']!, _labelMeta));
-    } else if (isInserting) {
-      context.missing(_labelMeta);
-    }
     if (data.containsKey('base_color')) {
       context.handle(_baseColorMeta,
           baseColor.isAcceptableOrUnknown(data['base_color']!, _baseColorMeta));
@@ -4743,8 +4738,9 @@ class $StatusBackgroundsTable extends StatusBackgrounds
           .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      label: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}label'])!,
+      label: $StatusBackgroundsTable.$converterlabel.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label'])!),
       baseColor: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}base_color'])!,
       topColor: attachedDatabase.typeMapping
@@ -4768,6 +4764,9 @@ class $StatusBackgroundsTable extends StatusBackgrounds
   $StatusBackgroundsTable createAlias(String alias) {
     return $StatusBackgroundsTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<Map<String, String>, String> $converterlabel =
+      const I18nMapConverter();
 }
 
 class StatusBackgroundRow extends DataClass
@@ -4781,9 +4780,20 @@ class StatusBackgroundRow extends DataClass
   final int syncStamp;
   final int id;
 
-  /// Libellé **monolingue** du fond, tel que l'administrateur l'a nommé. Ce
-  /// n'est pas un texte d'interface : il ne sert qu'au sélecteur de composition.
-  final String label;
+  /// Carte de traduction **entière** `{fr, en, ee}` — jamais la langue retenue,
+  /// exactement comme `teaching_types.label`. Le repli se fait à la lecture, via
+  /// `utils/i18n_text.dart` → `pick`.
+  ///
+  /// Elle a été **monolingue par erreur** jusqu'à la v6 du schéma, et cette
+  /// erreur-là ne coûtait pas un libellé : le serveur déclare la colonne en
+  /// `jsonb` (ADR-0023, sur le patron de `teaching_types`), donc chaque ligne
+  /// servie faisait lever `_text` — ce qui **coupait le cycle de
+  /// synchronisation entier**, et avec lui toutes les collections rangées après
+  /// `status_backgrounds` dans le registre : documents légaux, intervenants,
+  /// enseignements, rassemblements, annonces. Le libellé du sélecteur de fonds
+  /// est ce qu'il y a de plus anodin dans cette table ; il tenait l'application
+  /// muette.
+  final Map<String, String> label;
 
   /// Teinte de référence du fond (`#RRGGBB`).
   final String baseColor;
@@ -4822,7 +4832,10 @@ class StatusBackgroundRow extends DataClass
     final map = <String, Expression>{};
     map['sync_stamp'] = Variable<int>(syncStamp);
     map['id'] = Variable<int>(id);
-    map['label'] = Variable<String>(label);
+    {
+      map['label'] = Variable<String>(
+          $StatusBackgroundsTable.$converterlabel.toSql(label));
+    }
     map['base_color'] = Variable<String>(baseColor);
     map['top_color'] = Variable<String>(topColor);
     map['bottom_color'] = Variable<String>(bottomColor);
@@ -4864,7 +4877,7 @@ class StatusBackgroundRow extends DataClass
     return StatusBackgroundRow(
       syncStamp: serializer.fromJson<int>(json['syncStamp']),
       id: serializer.fromJson<int>(json['id']),
-      label: serializer.fromJson<String>(json['label']),
+      label: serializer.fromJson<Map<String, String>>(json['label']),
       baseColor: serializer.fromJson<String>(json['baseColor']),
       topColor: serializer.fromJson<String>(json['topColor']),
       bottomColor: serializer.fromJson<String>(json['bottomColor']),
@@ -4881,7 +4894,7 @@ class StatusBackgroundRow extends DataClass
     return <String, dynamic>{
       'syncStamp': serializer.toJson<int>(syncStamp),
       'id': serializer.toJson<int>(id),
-      'label': serializer.toJson<String>(label),
+      'label': serializer.toJson<Map<String, String>>(label),
       'baseColor': serializer.toJson<String>(baseColor),
       'topColor': serializer.toJson<String>(topColor),
       'bottomColor': serializer.toJson<String>(bottomColor),
@@ -4896,7 +4909,7 @@ class StatusBackgroundRow extends DataClass
   StatusBackgroundRow copyWith(
           {int? syncStamp,
           int? id,
-          String? label,
+          Map<String, String>? label,
           String? baseColor,
           String? topColor,
           String? bottomColor,
@@ -4976,7 +4989,7 @@ class StatusBackgroundRow extends DataClass
 class StatusBackgroundsCompanion extends UpdateCompanion<StatusBackgroundRow> {
   final Value<int> syncStamp;
   final Value<int> id;
-  final Value<String> label;
+  final Value<Map<String, String>> label;
   final Value<String> baseColor;
   final Value<String> topColor;
   final Value<String> bottomColor;
@@ -5001,7 +5014,7 @@ class StatusBackgroundsCompanion extends UpdateCompanion<StatusBackgroundRow> {
   StatusBackgroundsCompanion.insert({
     this.syncStamp = const Value.absent(),
     this.id = const Value.absent(),
-    required String label,
+    required Map<String, String> label,
     required String baseColor,
     required String topColor,
     required String bottomColor,
@@ -5046,7 +5059,7 @@ class StatusBackgroundsCompanion extends UpdateCompanion<StatusBackgroundRow> {
   StatusBackgroundsCompanion copyWith(
       {Value<int>? syncStamp,
       Value<int>? id,
-      Value<String>? label,
+      Value<Map<String, String>>? label,
       Value<String>? baseColor,
       Value<String>? topColor,
       Value<String>? bottomColor,
@@ -5080,7 +5093,8 @@ class StatusBackgroundsCompanion extends UpdateCompanion<StatusBackgroundRow> {
       map['id'] = Variable<int>(id.value);
     }
     if (label.present) {
-      map['label'] = Variable<String>(label.value);
+      map['label'] = Variable<String>(
+          $StatusBackgroundsTable.$converterlabel.toSql(label.value));
     }
     if (baseColor.present) {
       map['base_color'] = Variable<String>(baseColor.value);
@@ -10273,7 +10287,7 @@ typedef $$StatusBackgroundsTableCreateCompanionBuilder
     = StatusBackgroundsCompanion Function({
   Value<int> syncStamp,
   Value<int> id,
-  required String label,
+  required Map<String, String> label,
   required String baseColor,
   required String topColor,
   required String bottomColor,
@@ -10287,7 +10301,7 @@ typedef $$StatusBackgroundsTableUpdateCompanionBuilder
     = StatusBackgroundsCompanion Function({
   Value<int> syncStamp,
   Value<int> id,
-  Value<String> label,
+  Value<Map<String, String>> label,
   Value<String> baseColor,
   Value<String> topColor,
   Value<String> bottomColor,
@@ -10313,8 +10327,11 @@ class $$StatusBackgroundsTableFilterComposer
   ColumnFilters<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get label => $composableBuilder(
-      column: $table.label, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<Map<String, String>, Map<String, String>,
+          String>
+      get label => $composableBuilder(
+          column: $table.label,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<String> get baseColor => $composableBuilder(
       column: $table.baseColor, builder: (column) => ColumnFilters(column));
@@ -10399,7 +10416,7 @@ class $$StatusBackgroundsTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get label =>
+  GeneratedColumnWithTypeConverter<Map<String, String>, String> get label =>
       $composableBuilder(column: $table.label, builder: (column) => column);
 
   GeneratedColumn<String> get baseColor =>
@@ -10458,7 +10475,7 @@ class $$StatusBackgroundsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> syncStamp = const Value.absent(),
             Value<int> id = const Value.absent(),
-            Value<String> label = const Value.absent(),
+            Value<Map<String, String>> label = const Value.absent(),
             Value<String> baseColor = const Value.absent(),
             Value<String> topColor = const Value.absent(),
             Value<String> bottomColor = const Value.absent(),
@@ -10484,7 +10501,7 @@ class $$StatusBackgroundsTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> syncStamp = const Value.absent(),
             Value<int> id = const Value.absent(),
-            required String label,
+            required Map<String, String> label,
             required String baseColor,
             required String topColor,
             required String bottomColor,
