@@ -42,8 +42,10 @@ Trois points, chacun pour une raison distincte :
 
 1. **Le `mainScreen` est le `Scaffold` entier.** Les quatre onglets, la barre à encoche et le FAB
    rétrécissent ensemble — c'est le rendu attendu du composant. N'envelopper que `HomeScreen`
-   laisserait la barre du bas et le FAB **fixes** pendant que le contenu pivote au-dessus : le
-   composant aurait l'air cassé, pas animé.
+   laisserait la barre du bas et le FAB **fixes** pendant que le contenu s'écarte au-dessus : le
+   composant aurait l'air cassé, pas animé. Le `mainScreen` **repeint `AppBackground`** : celui de
+   la route est peint *avant* le tiroir, qui recouvre l'écran de son `menuBackgroundColor`. Et
+   `angle: 0` — la coquille glisse et rétrécit, elle ne s'incline pas.
 2. **Construit dans `build()` et non dans la route**, pour que `_index` reste un `State` local. Le
    menu le change par un simple rappel. `CLAUDE.md` interdit de remonter l'onglet courant dans un
    provider global — « Riverpod = état **partagé** » — et l'onglet est de l'état de coquille.
@@ -73,25 +75,36 @@ affordance n'a jamais existé.
 
 ```
 ┌──────────────────────┐
-│      [logo]          │   fond : AppColors.gradientPrimary
-│   Église Évangélique │   (le même que BrandAppBar)
-│      Nouvelle Vie    │
-│   Maison du Miracle  │
+│  [emblème]           │   fond : AppColors.gradientPrimary
+│  120 px, opacité .68 │   (le même que BrandAppBar)
+│  BrandLogo.inverse   │
 │                      │
-│ ▍ 🏠  Accueil        │ ← entrée courante : barre d'accent
-│   📄  CGU            │   (AppColors.accent, 4 px, r=2)
-│   🔒  Politique de   │
-│       confidentialité│
-│   ℹ️   À propos       │
+│  🏠  Accueil         │ ← entrée courante : blanc franc, gras
+│  📄  CGU             │   les autres : blanc à .55, demi-gras
+│  🔒  Politique de    │
+│      confidentialité │
+│  ℹ️   À propos        │
 └──────────────────────┘
 ```
+
+**L'entête ne porte que l'emblème**, à demi effacé — ni le nom de l'église, qui y figurait, ni rien
+d'autre. Un bloc de marque qui concurrence quatre entrées leur vole la première seconde. Et c'est la
+variante **inversée** de l'emblème (structure blanche, disque évidé, textes bleus) : la pièce
+d'origine poserait un disque blanc plein qui ferait tache sur le dégradé.
+
+**L'entrée courante se signale par sa seule clarté.** La barre d'accent jaune de 4 px qui tenait ce
+rôle a été retirée : dans un panneau de quatre lignes, c'est un signal faible qu'il faut aller
+chercher, et c'était la seule touche de jaune d'un écran qui n'en a nulle part ailleurs. L'écart de
+clarté, lui, se voit sans être cherché. L'alignement n'a pas bougé : la barre occupait 4 px suivis
+d'un `AppSpacing.md`, soit exactement le `AppSpacing.lg` de marge que porte désormais la ligne — et
+que porte déjà l'emblème au-dessus.
 
 **Quatre entrées, rien d'autre.** Pas de mode sombre, pas d'aide, pas de déconnexion : l'onglet
 Profil les porte déjà (`profile_screen.dart`), et les dupliquer laisserait le fidèle chercher lequel
 des deux ouvrir pour se déconnecter.
 
 Pas d'entête utilisateur non plus — `_ProfileHeader` fait exactement cela dans l'onglet Profil.
-L'entête du menu porte la **marque**, pas la personne.
+L'emblème porte la **marque**, pas la personne.
 
 Tous les libellés via `context.l10n`. L'icône reste `Icons.menu`, désormais dans un `IconButton`
 avec `tooltip`.
