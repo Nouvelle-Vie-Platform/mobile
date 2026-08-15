@@ -30,6 +30,15 @@ import '../widgets/brand_app_bar.dart';
 /// produit. Le jour où l'un des deux derniers existera, la préférence sera déjà
 /// là et il n'y aura rien à changer ici.
 ///
+/// **Cet écran n'a pas de test de widget, et c'est un trou connu.** Celui qui
+/// existait bloquait le harnais indéfiniment — le montage ne rendait jamais la
+/// main, quelle que soit la forme du test — et une suite inutilisable coûte plus
+/// cher qu'un test manquant. Le modèle, le magasin et la règle du mode
+/// automatique restent couverts par `test/state/media_settings_test.dart` ; ce
+/// qui manque est la vérification que toucher une ligne écrit bien le réglage.
+/// À reprendre avec le branchement du plafond sur le lecteur, qui bloquait de
+/// la même façon.
+///
 /// **Les chiffres ne s'inventent pas.** Les Mo par heure viennent des débits de
 /// `MediaQuality`, eux-mêmes recopiés de l'échelle du transcodeur. Écrire une
 /// valeur en dur dans une traduction la ferait mentir à la première fois qu'on
