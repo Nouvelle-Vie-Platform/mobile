@@ -24,7 +24,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get navAnnouncements => 'Annonces';
 
   @override
-  String get navGroups => 'Hawo';
+  String get navGroups => 'Dzeɖoɖowo';
 
   @override
   String get navProfile => 'Profil';
@@ -264,19 +264,60 @@ class AppLocalizationsEe extends AppLocalizations {
   }
 
   @override
-  String get groupsTitle => 'Nye hawo';
-
-  @override
   String get groupsDiscoverMore => 'Découvrir plus de groupes';
 
   @override
-  String get communityTitle => 'Communauté';
+  String get communityTitle => 'Échanges';
 
   @override
-  String get communityTabInbox => 'Inbox';
+  String get echangesDiscover => 'Groupes à rejoindre';
 
   @override
-  String get communityTabRequests => 'Requêtes';
+  String echangesHostedBy(String name) {
+    return 'Animé par $name';
+  }
+
+  @override
+  String get requestsTitle => 'Requêtes';
+
+  @override
+  String get requestsEmptyTitle => 'Aucune requête';
+
+  @override
+  String get requestsEmpty => 'Vos requêtes et suggestions apparaîtront ici.';
+
+  @override
+  String get requestsAdd => 'Nouvelle requête';
+
+  @override
+  String get memberMessage => 'Message';
+
+  @override
+  String get memberProfileSubtitle => 'Membre de la communauté';
+
+  @override
+  String get groupInfoAbout => 'Description';
+
+  @override
+  String get groupInfoSharedMedia => 'Médias partagés';
+
+  @override
+  String get mediaSaved => 'Image enregistrée dans vos photos';
+
+  @override
+  String get mediaSaveErrorPermission =>
+      'Accès aux photos refusé. Autorisez-le dans les réglages.';
+
+  @override
+  String get mediaSaveErrorNetwork =>
+      'Échec du téléchargement. Vérifiez votre connexion.';
+
+  @override
+  String get mediaSaveErrorUnsupported =>
+      'Enregistrement indisponible sur cet appareil.';
+
+  @override
+  String get mediaSaveError => 'Impossible d\'enregistrer l\'image.';
 
   @override
   String groupMembers(int count) {
@@ -379,6 +420,17 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get prayersNewRequest => 'Nouvelle requête';
+
+  @override
+  String prayerRequestPraying(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count membres en prière',
+      one: '$count membre en prière',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get newRequestAppBarTitle => 'Nouvelle requête';

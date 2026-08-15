@@ -33,12 +33,13 @@ void main() {
       expect(find.text('Médiathèque'), findsOneWidget);
     });
 
-    testWidgets('GroupsScreen (Communauté) se monte avec ses onglets',
-        (tester) async {
+    testWidgets('GroupsScreen (Échanges) se monte', (tester) async {
       await pumpScreen(tester, const Scaffold(body: GroupsScreen()));
       expect(find.byType(GroupsScreen), findsOneWidget);
-      expect(find.text('Communauté'), findsOneWidget);
-      expect(find.text('Inbox'), findsOneWidget);
+      // Le hub porte le titre « Échanges » dans son bandeau ; les onglets
+      // pilules (« Inbox »…) ont disparu.
+      expect(find.text('Échanges'), findsWidgets);
+      expect(find.text('Inbox'), findsNothing);
     });
 
     testWidgets('ProfileScreen se monte', (tester) async {

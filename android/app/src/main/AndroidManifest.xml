@@ -14,6 +14,11 @@
          `playback_notifications.dart`), la notification de lecture
          n'apparaît jamais — silencieusement. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Enregistrer un média partagé dans la galerie (gal). Nécessaire seulement
+         jusqu'à Android 9 (API 28) : dès API 29 le MediaStore n'exige plus
+         d'autorisation d'écriture. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
     <application
         android:label="maison_du_miracle"
         android:name="${applicationName}"

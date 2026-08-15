@@ -31,6 +31,10 @@
 	     du sélecteur — ce n'est pas un refus poli, c'est un plantage. -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choisissez une image pour illustrer l'annonce que vous publiez au nom de votre compte officiel.</string>
+	<!-- Ajout seul à la photothèque : enregistrer un média partagé dans une
+	     discussion (gal). Distincte de la clé de lecture ci-dessus. -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Enregistrez dans vos photos les médias partagés dans vos échanges.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

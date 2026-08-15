@@ -10,9 +10,21 @@ import '../helpers/pump_screen.dart';
 /// Faux repository renvoyant des données contrôlées par le test.
 class _FakeRepository implements ChurchRepository {
   @override
-  List<CommunityGroup> groups() => const [
-        CommunityGroup(name: 'Groupe de Test', members: 3),
+  List<CommunityGroup> groups() => const [];
+
+  @override
+  List<Conversation> conversations() => const [
+        Conversation(
+          id: 'conv-test',
+          kind: ConversationKind.group,
+          name: 'Groupe de Test',
+          lastMessagePreview: 'Bonjour',
+          time: '10:00',
+        ),
       ];
+
+  @override
+  List<DiscoverGroup> groupsToJoin() => const [];
 
   @override
   List<PrayerRequest> prayers() => const [];
@@ -21,7 +33,7 @@ class _FakeRepository implements ChurchRepository {
   List<SpiritualNote> notes() => const [];
 
   @override
-  List<ChatMessage> chatFor(CommunityGroup group) => const [];
+  List<ChatMessage> chatFor(Conversation conversation) => const [];
 }
 
 void main() {

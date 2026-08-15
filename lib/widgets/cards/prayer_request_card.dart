@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n_extension.dart';
 import '../../models/models.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
@@ -45,7 +46,7 @@ class PrayerRequestCard extends StatelessWidget {
             children: [
               IconText(
                 icon: Icons.volunteer_activism_outlined,
-                label: '${request.prayingCount} membres en prière',
+                label: context.l10n.prayerRequestPraying(request.prayingCount),
                 color: AppColors.secondary,
               ),
               Text(request.age,

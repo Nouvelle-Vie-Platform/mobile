@@ -24,7 +24,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navAnnouncements => 'Announcements';
 
   @override
-  String get navGroups => 'Groups';
+  String get navGroups => 'Chats';
 
   @override
   String get navProfile => 'Profile';
@@ -262,19 +262,59 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get groupsTitle => 'My groups';
-
-  @override
   String get groupsDiscoverMore => 'Discover more groups';
 
   @override
-  String get communityTitle => 'Community';
+  String get communityTitle => 'Chats';
 
   @override
-  String get communityTabInbox => 'Inbox';
+  String get echangesDiscover => 'Groups to join';
 
   @override
-  String get communityTabRequests => 'Requests';
+  String echangesHostedBy(String name) {
+    return 'Hosted by $name';
+  }
+
+  @override
+  String get requestsTitle => 'Requests';
+
+  @override
+  String get requestsEmptyTitle => 'No requests yet';
+
+  @override
+  String get requestsEmpty => 'Your requests and suggestions will appear here.';
+
+  @override
+  String get requestsAdd => 'New request';
+
+  @override
+  String get memberMessage => 'Message';
+
+  @override
+  String get memberProfileSubtitle => 'Community member';
+
+  @override
+  String get groupInfoAbout => 'Description';
+
+  @override
+  String get groupInfoSharedMedia => 'Shared media';
+
+  @override
+  String get mediaSaved => 'Image saved to your photos';
+
+  @override
+  String get mediaSaveErrorPermission =>
+      'Photos access denied. Allow it in Settings.';
+
+  @override
+  String get mediaSaveErrorNetwork => 'Download failed. Check your connection.';
+
+  @override
+  String get mediaSaveErrorUnsupported =>
+      'Saving isn\'t available on this device.';
+
+  @override
+  String get mediaSaveError => 'Couldn\'t save the image.';
 
   @override
   String groupMembers(int count) {
@@ -377,6 +417,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get prayersNewRequest => 'New request';
+
+  @override
+  String prayerRequestPraying(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members praying',
+      one: '$count member praying',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get newRequestAppBarTitle => 'New request';

@@ -130,10 +130,10 @@ abstract class AppLocalizations {
   /// **'Annonces'**
   String get navAnnouncements;
 
-  /// No description provided for @navGroups.
+  /// Bottom nav + titre du hub de conversations « Échanges » (ex-« Groupes »). Une seule clé : l'onglet pilule a disparu, elle ne sert plus que la barre de nav et le titre de la page
   ///
   /// In fr, this message translates to:
-  /// **'Groupes'**
+  /// **'Échanges'**
   String get navGroups;
 
   /// No description provided for @navProfile.
@@ -544,35 +544,107 @@ abstract class AppLocalizations {
   /// **'{count} messages'**
   String seriesMessagesCount(int count);
 
-  /// No description provided for @groupsTitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Mes groupes'**
-  String get groupsTitle;
-
   /// No description provided for @groupsDiscoverMore.
   ///
   /// In fr, this message translates to:
   /// **'Découvrir plus de groupes'**
   String get groupsDiscoverMore;
 
-  /// No description provided for @communityTitle.
+  /// Titre affiché en tête du hub « Échanges » (dans le bandeau diagonal). Même mot que navGroups, clé distincte : l'un titre la page, l'autre la barre de nav
   ///
   /// In fr, this message translates to:
-  /// **'Communauté'**
+  /// **'Échanges'**
   String get communityTitle;
 
-  /// No description provided for @communityTabInbox.
+  /// Hub Échanges : en-tête de la rangée horizontale de découverte (groupes à rejoindre), distincte de la liste des conversations
   ///
   /// In fr, this message translates to:
-  /// **'Inbox'**
-  String get communityTabInbox;
+  /// **'Groupes à rejoindre'**
+  String get echangesDiscover;
 
-  /// No description provided for @communityTabRequests.
+  /// Hub Échanges : sous-titre d'une carte de groupe à rejoindre — l'animateur du groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Animé par {name}'**
+  String echangesHostedBy(String name);
+
+  /// Titre de l'écran Requêtes, ouvert par le bouton en haut à droite du hub Échanges (et tooltip de ce bouton)
   ///
   /// In fr, this message translates to:
   /// **'Requêtes'**
-  String get communityTabRequests;
+  String get requestsTitle;
+
+  /// Écran Requêtes : titre de l'état vide (aucune requête envoyée pour l'instant)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune requête'**
+  String get requestsEmptyTitle;
+
+  /// Écran Requêtes : explication de l'état vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos requêtes et suggestions apparaîtront ici.'**
+  String get requestsEmpty;
+
+  /// Écran Requêtes : bouton d'ajout, ouvre le formulaire existant de nouvelle requête
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle requête'**
+  String get requestsAdd;
+
+  /// Écran profil-membre : bouton qui démarre une conversation directe avec ce membre
+  ///
+  /// In fr, this message translates to:
+  /// **'Message'**
+  String get memberMessage;
+
+  /// Fiche membre : statut sous le nom
+  ///
+  /// In fr, this message translates to:
+  /// **'Membre de la communauté'**
+  String get memberProfileSubtitle;
+
+  /// Fiche de groupe : intitulé de la section description
+  ///
+  /// In fr, this message translates to:
+  /// **'Description'**
+  String get groupInfoAbout;
+
+  /// Fiche de groupe : intitulé de la section des médias partagés
+  ///
+  /// In fr, this message translates to:
+  /// **'Médias partagés'**
+  String get groupInfoSharedMedia;
+
+  /// Visionneuse : confirmation d'enregistrement d'un média
+  ///
+  /// In fr, this message translates to:
+  /// **'Image enregistrée dans vos photos'**
+  String get mediaSaved;
+
+  /// Visionneuse : permission galerie refusée
+  ///
+  /// In fr, this message translates to:
+  /// **'Accès aux photos refusé. Autorisez-le dans les réglages.'**
+  String get mediaSaveErrorPermission;
+
+  /// Visionneuse : panne réseau au téléchargement
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec du téléchargement. Vérifiez votre connexion.'**
+  String get mediaSaveErrorNetwork;
+
+  /// Visionneuse : plateforme non supportée (web)
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement indisponible sur cet appareil.'**
+  String get mediaSaveErrorUnsupported;
+
+  /// Visionneuse : échec d'enregistrement inattendu
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer l\'image.'**
+  String get mediaSaveError;
 
   /// No description provided for @groupMembers.
   ///
@@ -759,6 +831,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Nouvelle requête'**
   String get prayersNewRequest;
+
+  /// Carte de requête de prière : nombre de membres qui prient. Remplace une chaîne codée en dur (prayer_request_card.dart)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} membre en prière} other{{count} membres en prière}}'**
+  String prayerRequestPraying(int count);
 
   /// No description provided for @newRequestAppBarTitle.
   ///

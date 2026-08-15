@@ -128,6 +128,18 @@ dependencies:
   # plugin.
   connectivity_plus: ^7.3.1
 
+  # Enregistrement d'un média partagé dans la galerie Photos (visionneuse des
+  # échanges). Choisi pour son support **Swift Package Manager** (pas de retour
+  # de CocoaPods) et son API save-only. Les octets sont d'abord récupérés via
+  # `dio`, puis remis à `Gal.putImageBytes`.
+  #
+  # Permissions : iOS exige `NSPhotoLibraryAddUsageDescription` (ajout seul) dans
+  # `Info.plist` ; Android déclare `WRITE_EXTERNAL_STORAGE` (maxSdkVersion 29).
+  # **Pas de support web** : l'appel est gardé par `kIsWeb` derrière
+  # `MediaSaver` (`lib/data/media/`) — les tests posent un enregistreur inerte,
+  # sans canal de plugin, comme `image_picker` derrière `StatusImagePicker`.
+  gal: ^2.3.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
