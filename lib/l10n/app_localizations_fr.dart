@@ -433,6 +433,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get downloadsUnknownTitle => 'Enseignement téléchargé';
 
   @override
+  String get downloadUpdateAvailable => 'Mise à jour disponible';
+
+  @override
+  String get downloadActionUpdate => 'Mettre à jour';
+
+  @override
+  String downloadPurgeNotice(String title) {
+    return '« $title » a été retiré par la médiathèque et supprimé de vos téléchargements.';
+  }
+
+  @override
+  String get downloadPurgeNoticeUnnamed =>
+      'Un enseignement a été retiré par la médiathèque et supprimé de vos téléchargements.';
+
+  @override
+  String get downloadPurgeDismiss => 'Ignorer';
+
+  @override
   String get agendaSeeAll => 'Voir tout l\'agenda';
 
   @override

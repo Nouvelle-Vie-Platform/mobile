@@ -128,21 +128,83 @@ class _Body extends StatelessWidget {
   }
 }
 
-/// **L'emplacement du bandeau de notification de purge** (#194, F16).
+/// **Le bandeau de notification de purge** (#194, F16).
 ///
-/// Le contenu — « tel enseignement a été retiré, sa copie locale supprimée » —
-/// appartient au cycle de vie serveur ↔ copie locale (#194), qui détectera la
-/// rétractation et posera le message. Ce widget est le **point d'accroche**
-/// prévu par le PRD (F13) : aujourd'hui il ne rend rien, il tient la place dans
-/// l'arbre pour que #194 n'ait qu'à le remplir.
-class _PurgeBanner extends StatelessWidget {
+/// À réception d'une **rétractation** (ADR-0025), le cycle de vie
+/// (`DownloadLifecycle`) purge la copie locale et dépose une notification. Ce
+/// bandeau les **observe** ([downloadNotificationsProvider]) et en rend une par
+/// entrée, chacune rejetable (le fidèle l'a vue). Le titre vient de la ligne
+/// purgée, dénormalisé au téléchargement — la source ayant disparu du magasin,
+/// c'est la seule façon de **nommer** ce qui a été supprimé.
+class _PurgeBanner extends ConsumerWidget {
   const _PurgeBanner();
 
+  /// Clé d'une notification, pour la cibler depuis les tests.
+  static Key noticeKey(int id) => Key('purge_notice_$id');
+
   @override
-  Widget build(BuildContext context) {
-    // TODO(#194): afficher la notification de purge (fichier + tâche + ligne
-    // supprimés à réception d'une rétractation) quand le cycle de vie l'écrira.
-    return const SizedBox.shrink();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notices = ref.watch(downloadNotificationsProvider).value ?? const [];
+    if (notices.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        for (final notice in notices) _PurgeNotice(notice: notice),
+        const SizedBox(height: AppSpacing.md),
+      ],
+    );
+  }
+}
+
+/// Une entrée du bandeau de purge : le message nommé (ou générique) et un bouton
+/// pour la rejeter.
+class _PurgeNotice extends ConsumerWidget {
+  const _PurgeNotice({required this.notice});
+
+  final DownloadNotificationRow notice;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final palette = context.palette;
+    final title = notice.title;
+    final message = title == null
+        ? l.downloadPurgeNoticeUnnamed
+        : l.downloadPurgeNotice(title);
+
+    return Container(
+      key: _PurgeBanner.noticeKey(notice.id),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.sm,
+        AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: palette.surfaceAlt,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(Icons.info_outline, size: 20, color: palette.textSecondary),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTypography.caption.copyWith(color: palette.textPrimary),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.close, size: 18, color: palette.textSecondary),
+            tooltip: l.downloadPurgeDismiss,
+            onPressed: () =>
+                ref.read(downloadNotificationsDaoProvider).dismiss(notice.id),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -255,6 +317,14 @@ class _DownloadItem extends ConsumerWidget {
             value: 'retry',
             child: Text(l.downloadActionRetry),
           ),
+        // Périmé → « Mettre à jour » relance le téléchargement sur la nouvelle
+        // version (F15) : `download()` réécrit `versionId`/`title` et repasse
+        // complété une fois la nouvelle copie reçue.
+        if (row.state == DownloadState.outdated)
+          PopupMenuItem<String>(
+            value: 'update',
+            child: Text(l.downloadActionUpdate),
+          ),
         PopupMenuItem<String>(
           value: 'delete',
           child: Text(l.downloadActionDelete),
@@ -263,6 +333,7 @@ class _DownloadItem extends ConsumerWidget {
       onSelected: (value) async {
         switch (value) {
           case 'retry':
+          case 'update':
             _retry(ref);
           case 'delete':
             if (await _requestDelete(context)) _delete(ref);
@@ -373,10 +444,21 @@ class _StateLine extends StatelessWidget {
         // « Téléchargé » + la taille sur le disque. Le total attendu fait foi ;
         // à défaut, les octets reçus.
         final bytes = row.bytesTotal > 0 ? row.bytesTotal : row.bytesReceived;
-        return _text(
+        final line = _text(
           '${l.downloadStateComplete} · '
           '${l.downloadSize(_formatMegabytes(context, bytes))}',
           palette,
+        );
+        // Périmé (révision serveur, ADR-0039) : la copie reste écoutable, mais on
+        // signale la mise à jour disponible (F15). Le fichier n'est jamais purgé.
+        if (row.state != DownloadState.outdated) return line;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            line,
+            const SizedBox(height: 4),
+            _UpdateBadge(),
+          ],
         );
       case DownloadState.failed:
         return _text(l.downloadStateFailed, palette, danger: true);
@@ -388,6 +470,37 @@ class _StateLine extends StatelessWidget {
       value,
       style: AppTypography.caption.copyWith(
         color: danger ? AppColors.danger : palette.textSecondary,
+      ),
+    );
+  }
+}
+
+/// Le badge « mise à jour disponible » d'un téléchargement périmé (#194, F15).
+class _UpdateBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.system_update_alt,
+              size: 12, color: AppColors.primary),
+          const SizedBox(width: 4),
+          Text(
+            l.downloadUpdateAvailable,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

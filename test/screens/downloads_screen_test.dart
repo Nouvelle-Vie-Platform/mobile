@@ -12,13 +12,16 @@ library;
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/downloads/disk_space.dart';
 import 'package:maison_du_miracle/data/downloads/download_manager.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/local/tables/download_tables.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
+import 'package:maison_du_miracle/models/media_preferences.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
+import 'package:maison_du_miracle/models/teaching_download.dart';
 import 'package:maison_du_miracle/screens/downloads_screen.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
@@ -58,16 +61,20 @@ Future<void> pumpDownloads(
   Map<String, TeachingView> titles = const {},
   DownloadManager? manager,
   AppDatabase? database,
+  List<DownloadNotificationRow> notifications = const [],
+  List<Override> extraOverrides = const [],
 }) {
   return pumpScreen(
     tester,
     const DownloadsScreen(),
     database: database,
+    notifications: notifications,
     overrides: [
       downloadsListProvider.overrideWith((ref) => Stream.value(rows)),
       downloadsStorageUsageProvider.overrideWith((ref) => Stream.value(usage)),
       teachingByIdProvider.overrideWith((ref, id) => Stream.value(titles[id])),
       if (manager != null) downloadManagerProvider.overrideWithValue(manager),
+      ...extraOverrides,
     ],
   );
 }
@@ -141,6 +148,150 @@ void main() {
 
       expect(find.byType(AppEmptyState), findsOneWidget);
       expect(find.text('Aucun téléchargement'), findsOneWidget);
+    });
+  });
+
+  group('Le badge « mise à jour disponible » (#194, F15)', () {
+    testWidgets('un item périmé affiche le badge et propose la mise à jour',
+        (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final backend = FakeDownloadBackend();
+      addTearDown(backend.dispose);
+      // Le magasin connaît le contrat de téléchargement : « Mettre à jour »
+      // relance vraiment un enqueue.
+      final manager = DownloadManager(
+        dao: db.downloadsDao,
+        backend: backend,
+        diskSpace: const FixedDiskSpace(1000000),
+        network: FixedNetworkTransport(),
+        metadataFor: (id) async => const TeachingDownload(
+          version: 'v2',
+          durationSeconds: 3600,
+          renditions: {
+            'mid': DownloadRendition(url: 'https://x/mid.aac', bytes: 200),
+          },
+        ),
+        mobileDataAllowed: () async => true,
+        newTaskId: () => 'task-9',
+        now: () => DateTime.utc(2026, 8, 15),
+      );
+      manager.start();
+      addTearDown(manager.dispose);
+
+      await db.downloadsDao.upsert(
+        DownloadsCompanion.insert(
+          contentType: 'teaching',
+          contentId: _id,
+          quality: 'mid',
+          state: const Value(DownloadState.outdated),
+          bytesTotal: const Value(200),
+          versionId: const Value('v1'),
+          taskId: const Value('task-1'),
+          createdAt: DateTime.utc(2026, 8, 15),
+        ),
+      );
+      final row = (await db.downloadsDao.forContent(_id))!;
+
+      await pumpDownloads(
+        tester,
+        rows: [row],
+        titles: {_id: _view()},
+        manager: manager,
+        database: db,
+        // « Mettre à jour » lit la qualité choisie : posée par une valeur nue
+        // pour ne pas ouvrir un flux Drift (`mediaPreferences`) sous l'horloge
+        // factice, qui figerait le montage.
+        extraOverrides: [
+          downloadQualityProvider.overrideWithValue(MediaQuality.mid),
+        ],
+      );
+
+      // Le badge est visible sur l'item périmé.
+      expect(find.text('Mise à jour disponible'), findsOneWidget);
+
+      // Le menu propose « Mettre à jour », qui relance le téléchargement.
+      await tester.tap(find.byKey(DownloadsScreen.menuKey(_id)));
+      await tester.pumpAndSettle();
+      expect(find.text('Mettre à jour'), findsOneWidget);
+
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Mettre à jour'));
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+
+      expect(backend.enqueued, hasLength(1),
+          reason: 'la mise à jour re-télécharge la nouvelle version');
+      expect(backend.enqueued.single.url, 'https://x/mid.aac');
+    });
+  });
+
+  group('Le bandeau de purge (#194, F16)', () {
+    testWidgets('rend la notification nommée', (tester) async {
+      await pumpDownloads(
+        tester,
+        rows: const [],
+        notifications: [
+          DownloadNotificationRow(
+            id: 1,
+            contentId: 'gone',
+            title: 'Le pardon',
+            createdAt: DateTime.utc(2026, 8, 15),
+          ),
+        ],
+      );
+
+      expect(
+        find.textContaining('« Le pardon » a été retiré par la médiathèque'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('sans titre connu, un message générique', (tester) async {
+      await pumpDownloads(
+        tester,
+        rows: const [],
+        notifications: [
+          DownloadNotificationRow(
+            id: 2,
+            contentId: 'gone',
+            createdAt: DateTime.utc(2026, 8, 15),
+          ),
+        ],
+      );
+
+      expect(
+        find.textContaining('Un enseignement a été retiré'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('rejeter une notification la supprime du magasin',
+        (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await db.downloadNotificationsDao.add(
+        contentId: 'gone',
+        title: 'Le pardon',
+        createdAt: DateTime.utc(2026, 8, 15),
+      );
+      final notice = (await db.downloadNotificationsDao.all()).single;
+
+      await pumpDownloads(
+        tester,
+        rows: const [],
+        database: db,
+        notifications: [notice],
+      );
+
+      await tester.runAsync(() async {
+        await tester.tap(find.byTooltip('Ignorer'));
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+
+      expect(await db.downloadNotificationsDao.all(), isEmpty);
     });
   });
 

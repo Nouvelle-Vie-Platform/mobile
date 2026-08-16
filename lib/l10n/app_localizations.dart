@@ -844,6 +844,36 @@ abstract class AppLocalizations {
   /// **'Enseignement téléchargé'**
   String get downloadsUnknownTitle;
 
+  /// Badge sur un téléchargement périmé (#194, F15) : le média a été révisé côté serveur. La copie locale reste écoutable ; un tap « Mettre à jour » la remplace
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise à jour disponible'**
+  String get downloadUpdateAvailable;
+
+  /// Action sur un téléchargement périmé (#194, F15) : re-télécharge la nouvelle version du média
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour'**
+  String get downloadActionUpdate;
+
+  /// Bandeau de la page Téléchargements (#194, F16) : un enseignement retiré côté serveur a vu sa copie locale purgée. {title} est le titre de l'enseignement
+  ///
+  /// In fr, this message translates to:
+  /// **'« {title} » a été retiré par la médiathèque et supprimé de vos téléchargements.'**
+  String downloadPurgeNotice(String title);
+
+  /// Bandeau de purge (#194, F16), repli quand le titre de l'enseignement retiré n'est pas connu (téléchargement d'avant la dénormalisation)
+  ///
+  /// In fr, this message translates to:
+  /// **'Un enseignement a été retiré par la médiathèque et supprimé de vos téléchargements.'**
+  String get downloadPurgeNoticeUnnamed;
+
+  /// Bandeau de purge : rejeter une notification de purge (le fidèle l'a vue)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ignorer'**
+  String get downloadPurgeDismiss;
+
   /// No description provided for @agendaSeeAll.
   ///
   /// In fr, this message translates to:

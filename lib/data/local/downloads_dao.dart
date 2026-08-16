@@ -21,7 +21,7 @@ part 'downloads_dao.g.dart';
 /// Un DAO par domaine, comme les autres. Il ne joint rien : les métadonnées de
 /// contenu (titre, image, `download.version` courant) vivent dans `teachings`,
 /// et la jointure d'affichage se fait à la lecture, côté écran (#193).
-@DriftAccessor(tables: [Downloads])
+@DriftAccessor(tables: [Downloads, DownloadTitles])
 class DownloadsDao extends DatabaseAccessor<AppDatabase>
     with _$DownloadsDaoMixin {
   DownloadsDao(super.db);
@@ -117,11 +117,81 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  /// Efface la ligne d'un contenu. Un geste **normal** ici (annulation, purge) :
-  /// la table est locale seule. La suppression du fichier physique est du
-  /// ressort du `DownloadManager`, qui l'appelle après avoir effacé les octets.
-  Future<void> removeForContent(String contentId) {
-    return (delete(downloads)..where((t) => t.contentId.equals(contentId)))
+  /// Efface la ligne d'un contenu **et son titre dénormalisé**. Un geste
+  /// **normal** ici (annulation, purge) : la table est locale seule. La
+  /// suppression du fichier physique est du ressort du `DownloadManager`, qui
+  /// l'appelle après avoir effacé les octets.
+  Future<void> removeForContent(String contentId) async {
+    await (delete(downloads)..where((t) => t.contentId.equals(contentId))).go();
+    await (delete(downloadTitles)..where((t) => t.contentId.equals(contentId)))
         .go();
+  }
+
+  /// **Dénormalise le titre** d'un contenu au moment du téléchargement (#194) :
+  /// il survivra à la disparition de l'enseignement (retrait) pour nommer la
+  /// notification de purge. Remplace le titre précédent s'il y en avait un.
+  Future<void> setTitle(String contentId, String? title) {
+    return into(downloadTitles).insert(
+      DownloadTitlesCompanion.insert(
+        contentId: contentId,
+        title: Value(title),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  /// Le titre dénormalisé d'un contenu, ou `null` — lu par le cycle de vie au
+  /// moment de purger, quand l'enseignement a déjà quitté le magasin.
+  Future<String?> titleFor(String contentId) async {
+    final row = await (select(downloadTitles)
+          ..where((t) => t.contentId.equals(contentId)))
+        .getSingleOrNull();
+    return row?.title;
+  }
+}
+
+/// **Le magasin des notifications de purge** (#194, F16) — locale seule.
+///
+/// Le cycle de vie (`DownloadLifecycle`) y **écrit** une entrée quand il purge
+/// une copie locale à la suite d'un retrait serveur ; la page Téléchargements
+/// l'**observe** et la rend dans son bandeau. Rejeter une notification, c'est
+/// supprimer sa ligne — elle ne repassera pas (la rétractation qui l'a produite
+/// concernait un `download` désormais purgé).
+@DriftAccessor(tables: [DownloadNotifications])
+class DownloadNotificationsDao extends DatabaseAccessor<AppDatabase>
+    with _$DownloadNotificationsDaoMixin {
+  DownloadNotificationsDao(super.db);
+
+  /// **Toutes les notifications**, de la plus récente à la plus ancienne. Le
+  /// bandeau de la page Téléchargements observe ce flux.
+  Stream<List<DownloadNotificationRow>> watchAll() {
+    return (select(downloadNotifications)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  /// Toutes les notifications en `Future` — pour les tests.
+  Future<List<DownloadNotificationRow>> all() =>
+      select(downloadNotifications).get();
+
+  /// Dépose une notification de purge — le cycle de vie l'appelle **avant** de
+  /// purger la ligne `downloads`, tant que son titre est encore lisible.
+  Future<void> add({
+    required String contentId,
+    String? title,
+    required DateTime createdAt,
+  }) {
+    return into(downloadNotifications).insert(
+      DownloadNotificationsCompanion.insert(
+        contentId: contentId,
+        title: Value(title),
+        createdAt: createdAt,
+      ),
+    );
+  }
+
+  /// **Rejette** une notification : le fidèle l'a vue. Elle ne repassera pas.
+  Future<void> dismiss(int id) {
+    return (delete(downloadNotifications)..where((t) => t.id.equals(id))).go();
   }
 }

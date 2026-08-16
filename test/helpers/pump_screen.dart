@@ -115,6 +115,7 @@ List<Override> _commonOverrides(
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
+  List<DownloadNotificationRow> notifications = const [],
 }) =>
     [
       appDatabaseProvider.overrideWithValue(db),
@@ -137,6 +138,12 @@ List<Override> _commonOverrides(
       // eux-mêmes ce provider (voir `test/widgets/content_download_button_test`).
       downloadForContentProvider
           .overrideWith((ref, contentId) => Stream.value(null)),
+      // Le bandeau de purge de la page Téléchargements (#194) observe ce flux
+      // Drift. Posé **par un flux nu** pour la même raison que les autres : un
+      // flux Drift attendu sous l'horloge factice du harnais fige le montage.
+      // Les tests qui veulent le vrai magasin surchargent eux-mêmes.
+      downloadNotificationsProvider
+          .overrideWith((ref) => Stream.value(notifications)),
       authRepositoryProvider
           .overrideWithValue(auth ?? InMemoryAuthRepository()),
       branchRepositoryProvider
@@ -159,6 +166,7 @@ Future<void> pumpScreen(
   AppDatabase? database,
   AuthRepository? auth,
   ThemePreferences? theme,
+  List<DownloadNotificationRow> notifications = const [],
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
   // ci-dessus : Riverpod 3 refuse deux surcharges du même provider. [database]
@@ -178,6 +186,7 @@ Future<void> pumpScreen(
           mediatheque: mediatheque,
           gatherings: gatherings,
           announcements: announcements,
+          notifications: notifications,
         ),
         ...overrides,
       ],

@@ -19,6 +19,7 @@ import '../router/app_router.dart';
 import '../state/downloads_providers.dart';
 import '../state/playback_progress_providers.dart';
 import '../state/player_providers.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -1094,13 +1095,14 @@ class _GlassCircleButton extends StatelessWidget {
 /// - **`paused`** → *Reprendre* → reprend ;
 /// - **`waitingWifi`** → *en attente de wifi* → retente (reste en attente tant
 ///   que l'appareil est sur cellulaire et le wifi-only actif, F8) ;
-/// - **`complete` / `outdated`** → *Téléchargé* → menu **Supprimer**, avec
-///   confirmation (F14 : on jette un contenu prêt) ;
+/// - **`complete`** → *Téléchargé* → menu **Supprimer**, avec confirmation
+///   (F14 : on jette un contenu prêt) ;
+/// - **`outdated`** → *Téléchargé* + pastille de mise à jour → feuille
+///   **Mettre à jour / Supprimer** (F15, #194) ;
 /// - **`failed`** → *Réessayer* → relance (le moteur écrase l'échec).
 ///
-/// `outdated` (révision côté serveur, ADR-0039) se lit ici comme un complété :
-/// la copie locale reste écoutable, et le badge « mise à jour » est le périmètre
-/// de #194.
+/// `outdated` (révision côté serveur, ADR-0039) reste écoutable : la copie n'est
+/// jamais purgée, on propose seulement de la remplacer.
 class _DownloadButton extends ConsumerWidget {
   const _DownloadButton({required this.contentId, required this.contentType});
 
@@ -1138,13 +1140,15 @@ class _DownloadButton extends ConsumerWidget {
           semantics: l10n.downloadStateWaitingWifi,
           onTap: () => ref.read(downloadManagerProvider).resume(contentId),
         ),
-      // `outdated` (révision, ADR-0039) se lit comme un complété : la copie
-      // reste écoutable ; le badge « mise à jour » est #194.
-      DownloadState.complete || DownloadState.outdated => _glass(
+      DownloadState.complete => _glass(
           icon: Icons.download_done_rounded,
           semantics: l10n.downloadStateComplete,
           onTap: () => _confirmDelete(context, ref),
         ),
+      // `outdated` (révision, ADR-0039) : la copie reste écoutable, mais on
+      // signale la mise à jour disponible (F15). Un pastille sur le bouton, et
+      // un tap qui propose de mettre à jour (re-télécharge) ou de supprimer.
+      DownloadState.outdated => _outdated(context, ref),
       DownloadState.failed => _glass(
           icon: Icons.refresh_rounded,
           semantics: l10n.downloadActionRetry,
@@ -1240,6 +1244,68 @@ class _DownloadButton extends ConsumerWidget {
     if (confirmed ?? false) {
       await ref.read(downloadManagerProvider).cancel(contentId);
     }
+  }
+
+  /// Le bouton d'un téléchargement **périmé** (révision, ADR-0039) : le glyphe
+  /// « téléchargé » coiffé d'une pastille de mise à jour, et un tap qui propose
+  /// de **mettre à jour** (re-télécharge la nouvelle version, F15) ou de
+  /// **supprimer** — la copie reste écoutable en attendant.
+  Widget _outdated(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _glass(
+          icon: Icons.download_done_rounded,
+          semantics: l10n.downloadUpdateAvailable,
+          onTap: () => _outdatedMenu(context, ref),
+        ),
+        Positioned(
+          top: 2,
+          right: 2,
+          child: Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// La feuille d'actions d'un périmé : mettre à jour ou supprimer.
+  Future<void> _outdatedMenu(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    return showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.system_update_alt),
+              title: Text(l10n.downloadActionUpdate),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _start(ref); // re-télécharge la nouvelle version.
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: Text(l10n.downloadActionDelete),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _confirmDelete(context, ref);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// Le bouton circulaire translucide commun aux états non-progression, avec sa

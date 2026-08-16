@@ -49,6 +49,7 @@ class DownloadManager {
     required DiskSpace diskSpace,
     required NetworkTransport network,
     required Future<TeachingDownload?> Function(String contentId) metadataFor,
+    Future<String?> Function(String contentId)? titleFor,
     Future<bool> Function()? mobileDataAllowed,
     String Function()? newTaskId,
     DateTime Function()? now,
@@ -57,6 +58,9 @@ class DownloadManager {
         _diskSpace = diskSpace,
         _network = network,
         _metadataFor = metadataFor,
+        // Le titre à **dénormaliser** sur la ligne (#194), pour nommer une copie
+        // purgée après retrait. Absent ⇒ pas de titre, notification générique.
+        _titleFor = titleFor ?? ((_) async => null),
         // Défaut **wifi-only** (F8) : sans réglage « données mobiles » (le
         // toggle est #192/#193), la contrainte penche du côté sûr — on ne
         // consomme pas le forfait d'un fidèle sans qu'il l'ait choisi.
@@ -69,6 +73,7 @@ class DownloadManager {
   final DiskSpace _diskSpace;
   final NetworkTransport _network;
   final Future<TeachingDownload?> Function(String contentId) _metadataFor;
+  final Future<String?> Function(String contentId) _titleFor;
   final Future<bool> Function() _mobileDataAllowed;
   final String Function() _newTaskId;
   final DateTime Function() _now;
@@ -116,6 +121,13 @@ class DownloadManager {
     final resolved = _resolveRendition(quality, resolvedMetadata);
     if (resolved == null) return; // rien de téléchargeable, rien à écrire.
     final (chosenQuality, rendition) = resolved;
+
+    // Le titre dénormalisé (#194) : lu ici, tant que l'enseignement est dans le
+    // magasin, pour pouvoir nommer sa copie si elle est purgée plus tard. Gardé
+    // dans sa table sœur `download_titles`, il survit à la disparition de la
+    // source. On préserve un titre déjà connu si le magasin ne le rend plus.
+    final title = await _titleFor(contentId) ?? await _dao.titleFor(contentId);
+    await _dao.setTitle(contentId, title);
 
     // Pré-check espace (F9). Inconnu ⇒ on laisse passer (fail-open, cf.
     // [DiskSpace]) ; le disque plein en cours se rattrape en échec + partiel.
@@ -225,6 +237,12 @@ class DownloadManager {
     await _dao.removeForContent(contentId);
   }
 
+  /// **Purge** une copie locale à la suite d'un **retrait** serveur
+  /// (rétractation, ADR-0025) : mécaniquement identique à [cancel] — tâche +
+  /// fichier + ligne —, nommée à part parce que son déclencheur est le cycle de
+  /// vie (`DownloadLifecycle`), pas un geste du fidèle.
+  Future<void> purge(String contentId) => cancel(contentId);
+
   /// **Réconcilie** la table avec le moteur natif — au démarrage et au retour
   /// au premier plan.
   ///
@@ -238,6 +256,11 @@ class DownloadManager {
     for (final row in rows) {
       if (row.state == DownloadState.complete) continue;
       if (row.state == DownloadState.failed) continue;
+      // Un **complété périmé** (révision, ADR-0039) : le fichier est entier et
+      // écoutable, on le garde tel quel. Ce n'est pas un inachevé à reprendre —
+      // sans cette garde, la reprise le re-téléchargerait dans le dos du fidèle,
+      // exactement ce que « mise à jour disponible » lui laisse décider.
+      if (row.state == DownloadState.outdated) continue;
       final taskId = row.taskId;
       if (taskId != null && active.contains(taskId)) continue;
       await _reEnqueue(row);

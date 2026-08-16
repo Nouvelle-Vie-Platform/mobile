@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/downloads/background_downloader_backend.dart';
 import '../data/downloads/disk_space.dart';
 import '../data/downloads/download_backend.dart';
+import '../data/downloads/download_lifecycle.dart';
 import '../data/downloads/download_manager.dart';
 import '../data/downloads/download_resolver.dart';
 import '../data/local/app_database.dart';
@@ -30,6 +31,12 @@ Duration? _noAutomaticRetry(int retryCount, Object error) => null;
 /// est locale seule). À surcharger dans les tests via [appDatabaseProvider].
 final downloadsDaoProvider = Provider<DownloadsDao>(
   (ref) => ref.watch(appDatabaseProvider).downloadsDao,
+);
+
+/// Le DAO des **notifications de purge** (#194, F16) — locale seule. À
+/// surcharger dans les tests via [appDatabaseProvider].
+final downloadNotificationsDaoProvider = Provider<DownloadNotificationsDao>(
+  (ref) => ref.watch(appDatabaseProvider).downloadNotificationsDao,
 );
 
 /// **Le moteur de transfert en tâche de fond**, derrière son abstraction.
@@ -69,6 +76,11 @@ final downloadManagerProvider = Provider<DownloadManager>((ref) {
     // La source de vérité des URLs/tailles, connue hors ligne (ADR-0038).
     metadataFor: (contentId) =>
         ref.read(mediathequeDaoProvider).downloadFor(contentId),
+    // Le titre à **dénormaliser** sur la ligne au moment du téléchargement
+    // (#194), pour nommer une copie purgée après un retrait (l'enseignement
+    // aura alors quitté le magasin).
+    titleFor: (contentId) =>
+        ref.read(mediathequeDaoProvider).titleFor(contentId),
     // **Le toggle « données mobiles »** (#192, F8), branché sur le réglage
     // média persistant. Lu **à la demande** (une lecture ponctuelle, jamais un
     // flux) au moment de lancer ou de reprendre : le moteur consulte l'état
@@ -78,6 +90,25 @@ final downloadManagerProvider = Provider<DownloadManager>((ref) {
   manager.start();
   ref.onDispose(manager.dispose);
   return manager;
+});
+
+/// **Le cycle de vie serveur ↔ copie locale** (#194) — révision → `outdated`,
+/// retrait → purge + notification.
+///
+/// Sans état, reconstruit à la demande. Son `reconcile()` est branché **après
+/// une sync réussie** et au démarrage / retour au premier plan (`app.dart`,
+/// via `SyncScheduler.onCycleSucceeded`). Il ne monte aucun flux : ses lectures
+/// sont ponctuelles, donc sûres sous l'horloge factice des tests.
+final downloadLifecycleProvider = Provider<DownloadLifecycle>((ref) {
+  return DownloadLifecycle(
+    dao: ref.watch(downloadsDaoProvider),
+    notifications: ref.watch(downloadNotificationsDaoProvider),
+    manager: ref.watch(downloadManagerProvider),
+    // L'état du magasin **après** la sync fait foi (ADR-0026) : retrait = ligne
+    // absente, révision = version changée. Lu à la demande, jamais observé.
+    syncStateFor: (contentId) =>
+        ref.read(mediathequeDaoProvider).syncStateFor(contentId),
+  );
 });
 
 /// **L'état réseau du routage offline-first** (#191) — « y a-t-il un tuyau ? »,
@@ -128,5 +159,12 @@ final downloadForContentProvider = StreamProvider.family<DownloadRow?, String>(
 /// **L'espace total occupé** par les téléchargements, en octets (page #193).
 final downloadsStorageUsageProvider = StreamProvider<int>(
   (ref) => ref.watch(downloadsDaoProvider).watchStorageUsage(),
+  retry: _noAutomaticRetry,
+);
+
+/// **Les notifications de purge**, observées depuis le magasin (bandeau #194).
+final downloadNotificationsProvider =
+    StreamProvider<List<DownloadNotificationRow>>(
+  (ref) => ref.watch(downloadNotificationsDaoProvider).watchAll(),
   retry: _noAutomaticRetry,
 );

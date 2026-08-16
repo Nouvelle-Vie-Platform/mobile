@@ -115,3 +115,76 @@ class Downloads extends Table {
   @override
   Set<Column<Object>> get primaryKey => {contentId};
 }
+
+/// **Le titre dénormalisé d'un contenu téléchargé** (#194), table locale seule
+/// (v8→v9).
+///
+/// La table `downloads` ne porte aucune clé étrangère vers `teachings`
+/// (ADR-0026, règle 4), et son titre s'y **joint** normalement à la lecture.
+/// Mais un **retrait** (rétractation `{id, deletedAt}`, ADR-0025) fait
+/// disparaître l'enseignement du magasin : le join ne rend plus rien, et la
+/// notification de purge (F16) ne pourrait plus **nommer** ce qui vient d'être
+/// supprimé. On recopie donc le titre au `download()`, ici, pour le garder
+/// disponible après la disparition de la source.
+///
+/// **Pourquoi une table et non une colonne sur `downloads`** : `downloads` naît
+/// en v8 par `createTable`, qui emploie toujours la forme **courante** de la
+/// table. Lui ajouter une colonne en v9 la ferait apparaître dès le palier v8
+/// (le binaire courant crée la table à jour) — une colonne surnuméraire que le
+/// vérificateur de schéma refuse contre le schéma v8 gelé, et un `addColumn`
+/// v9 qui doublonne sur un appareil venu d'avant v8. Une **table** neuve est
+/// purement additive : le vérificateur l'ignore aux versions antérieures.
+///
+/// Nettoyée avec la ligne `downloads` correspondante ([DownloadsDao.removeForContent]).
+@DataClassName('DownloadTitleRow')
+class DownloadTitles extends Table {
+  @override
+  String get tableName => 'download_titles';
+
+  /// L'UUID du contenu — la même identité que dans `downloads`.
+  TextColumn get contentId => text()();
+
+  /// Le titre à afficher. Nullable : un enseignement sans titre connu au moment
+  /// du téléchargement le laisse à `NULL`, et la notification se replie alors
+  /// sur une phrase générique.
+  TextColumn get title => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {contentId};
+}
+
+/// **Les notifications de purge** (#194, F16), table locale seule (v8→v9).
+///
+/// Quand un enseignement est **retiré** côté serveur (rétractation, ADR-0025),
+/// le cycle de vie purge sa copie locale — fichier, tâche, ligne `downloads` —
+/// et dépose ici une notification que la page Téléchargements affiche
+/// (« X a été retiré par la médiathèque et supprimé de vos téléchargements »).
+///
+/// Elle **survit** jusqu'à ce que le fidèle la voie et la rejette : la
+/// rétractation ne repasse pas (le download qui la déclenchait a disparu), donc
+/// rien ne la re-poserait si on l'oubliait entre deux lancements. Rejeter =
+/// supprimer la ligne.
+///
+/// Locale seule, jamais synchronisée — comme `downloads` et
+/// `local_playback_positions`, et pour la même raison : une purge est un fait
+/// **de cet appareil**, pas une donnée du serveur (la notification est un
+/// confort client, pas un contrat, ADR-0039).
+@DataClassName('DownloadNotificationRow')
+class DownloadNotifications extends Table {
+  @override
+  String get tableName => 'download_notifications';
+
+  /// Clé technique auto-incrémentée : une notification n'a pas d'identité
+  /// métier, et le même contenu pourrait être retiré, re-téléchargé, re-retiré.
+  IntColumn get id => integer().autoIncrement()();
+
+  /// L'UUID de l'enseignement retiré — la même identité que dans `downloads`.
+  TextColumn get contentId => text()();
+
+  /// Le titre à afficher, recopié de la ligne `downloads` purgée. Nullable : un
+  /// téléchargement d'avant la dénormalisation (v8) n'en portait pas ; l'écran
+  /// se replie alors sur une phrase générique.
+  TextColumn get title => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime()();
+}

@@ -13,6 +13,7 @@
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/local/tables/download_tables.dart';
 
 import 'local_database_fixtures.dart';
 import 'schema/schema.dart';
@@ -327,6 +328,51 @@ void main() {
     // La table locale seule naît vide et le reste jusqu'au premier
     // téléchargement — elle n'est alimentée que par le moteur, jamais la synchro.
     expect(await db.select(db.downloads).get(), isEmpty);
+  });
+
+  test(
+      'v8 → v9 : les tables download_titles et download_notifications naissent',
+      () async {
+    final connection = await verifier.startAt(8);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 9);
+  });
+
+  test('v1 → v9 : un appareil resté en v1 rejoue les huit paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 9);
+  });
+
+  test(
+      'v8 → v9 : les téléchargements survivent, les deux tables naissent vides',
+      () async {
+    // Deux créations de table **additives** (#194) : `download_titles` et
+    // `download_notifications`. Aucune ligne `downloads` n'est réécrite — c'est
+    // un fichier réel sur l'appareil du fidèle.
+    final schema = await verifier.schemaAt(8);
+    schema.rawDatabase.execute(
+      "INSERT INTO downloads (content_type, content_id, quality, state, "
+      "bytes_received, bytes_total, created_at) "
+      "VALUES ('teaching', 't-1', 'mid', 'complete', 200, 200, 1000)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 9);
+
+    final download = (await db.select(db.downloads).get()).single;
+    expect(download.contentId, 't-1');
+    expect(download.state, DownloadState.complete);
+    // Les deux tables locales seules naissent vides : `download_titles` se
+    // remplit au prochain téléchargement, `download_notifications` au premier
+    // retrait d'un enseignement téléchargé.
+    expect(await db.select(db.downloadTitles).get(), isEmpty);
+    expect(await db.select(db.downloadNotifications).get(), isEmpty);
   });
 
   test('la version de schéma couvre bien toutes les versions exportées', () {

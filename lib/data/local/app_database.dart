@@ -77,6 +77,8 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     LegalDocuments,
     AppSettings,
     Downloads,
+    DownloadTitles,
+    DownloadNotifications,
   ],
   daos: [
     SyncDao,
@@ -87,6 +89,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     LegalDao,
     SettingsDao,
     DownloadsDao,
+    DownloadNotificationsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -114,8 +117,17 @@ class AppDatabase extends _$AppDatabase {
   /// jamais synchronisée), et une colonne `download` **ajoutée** à `teachings`
   /// (le contrat `{version, duration, renditions}` que la sync ramène). Deux
   /// changements **additifs** : rien du catalogue déjà téléchargé ne bouge.
+  ///
+  /// **v9** — le cycle de vie serveur ↔ copie locale (#194, ADR-0039/0025).
+  /// **Deux tables locales seules, purement additives** : `download_titles` (le
+  /// titre dénormalisé au téléchargement, pour **nommer** un enseignement retiré
+  /// dont la source a disparu du magasin) et `download_notifications` (les avis
+  /// de purge affichés dans la page Téléchargements). Des **tables** et non une
+  /// colonne sur `downloads` : `createTable` emploie la forme courante, donc une
+  /// colonne apparaîtrait dès le palier v8 et se heurterait au schéma v8 gelé
+  /// (voir `download_titles`). Rien du catalogue déjà téléchargé ne bouge.
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -250,6 +262,28 @@ class AppDatabase extends _$AppDatabase {
           if (from < 8 && to >= 8) {
             await m.createTable(downloads);
             await m.addColumn(teachings, teachings.download);
+          }
+
+          // v8 → v9 — le cycle de vie de la copie téléchargée (#194). **Deux
+          // créations de table, et rien d'autre** :
+          //
+          // 1. `download_titles` : le titre dénormalisé au téléchargement, pour
+          //    **nommer** une copie purgée après un retrait (l'enseignement a
+          //    alors quitté le magasin, le join ne rend plus rien).
+          // 2. `download_notifications` : les avis de purge affichés dans la
+          //    page Téléchargements.
+          //
+          // **Des tables, pas une colonne sur `downloads`** : `createTable`
+          // emploie la forme courante de la table, donc une colonne ajoutée à
+          // `downloads` apparaîtrait dès le palier v8 (v1→v8 crée la table à
+          // jour) — colonne surnuméraire refusée contre le schéma v8 gelé, et
+          // `addColumn` v9 doublonnant sur un appareil venu d'avant v8. Une
+          // table neuve est purement additive : le vérificateur l'ignore aux
+          // versions antérieures, d'où le simple `if (from < 9)`, comme les
+          // paliers qui ne créaient que des tables (v2 à v5, v7).
+          if (from < 9) {
+            await m.createTable(downloadTitles);
+            await m.createTable(downloadNotifications);
           }
         },
         beforeOpen: (details) async {

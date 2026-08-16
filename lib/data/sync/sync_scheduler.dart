@@ -47,6 +47,20 @@ class SyncScheduler with WidgetsBindingObserver {
   /// propage pas.
   Object? lastFailure;
 
+  /// **Appelé après chaque cycle réussi**, avant que le rapport ne revienne à
+  /// l'appelant. `null` par défaut — le socle de synchronisation n'en dépend
+  /// pas.
+  ///
+  /// C'est le point d'accroche du **cycle de vie des téléchargements** (#194) :
+  /// `app.dart` y branche la réconciliation (révision → `outdated`, retrait →
+  /// purge + notification) et la reprise des téléchargements inachevés, pour
+  /// qu'elles suivent les trois déclencheurs — ouverture, retour au premier
+  /// plan, tirer-pour-rafraîchir — sans les recâbler chacun. Un échec de ce
+  /// travail n'échoue **pas** le cycle : il est avalé comme le reste (le magasin
+  /// garde ce qu'il avait), retenu par [lastFailure] seulement si la sync
+  /// elle-même a échoué.
+  Future<void> Function(SyncReport report)? onCycleSucceeded;
+
   /// Un cycle est en cours.
   bool get isRunning => _inFlight != null;
 
@@ -91,6 +105,17 @@ class SyncScheduler with WidgetsBindingObserver {
     try {
       final report = await _synchronize();
       lastFailure = null;
+      // Le travail post-sync (cycle de vie des téléchargements, #194) tourne
+      // **après** un cycle réussi. Il ne fait pas échouer le cycle : une purge
+      // ou un badge raté laisse le magasin en l'état, comme une sync ratée.
+      final after = onCycleSucceeded;
+      if (after != null) {
+        try {
+          await after(report);
+        } catch (_) {
+          // Avalé : ce n'est pas une panne de synchronisation.
+        }
+      }
       return report;
     } catch (error) {
       lastFailure = error;

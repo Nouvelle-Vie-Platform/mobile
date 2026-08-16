@@ -9,6 +9,7 @@ import 'l10n/app_localizations.dart';
 import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
 import 'state/auth_providers.dart';
+import 'state/downloads_providers.dart';
 import 'state/locale_providers.dart';
 import 'state/sync_providers.dart';
 import 'state/theme_provider.dart';
@@ -49,9 +50,29 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
     if (AppEnv.useBackend) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+        final scheduler = ref.read(syncSchedulerProvider);
+        // **Le cycle de vie des téléchargements** (#194) suit chaque cycle
+        // réussi — donc les trois déclencheurs d'ADR-0017 d'un seul câblage :
+        //
+        // - `DownloadLifecycle.reconcile()` : révision → « mise à jour
+        //   disponible » (`outdated`), retrait → purge + notification. Il
+        //   s'appuie sur l'état du magasin **après** la sync (ADR-0026).
+        // - `DownloadManager.reconcile()` : reprend par `Range` les
+        //   téléchargements inachevés qu'une application tuée a laissés (#190,
+        //   laissé non câblé par le socle). Après le cycle de vie, pour ne pas
+        //   ré-enqueuer une ligne qu'un retrait vient de purger.
+        //
+        // Les providers sont lus **paresseusement** ici, à chaque cycle réussi :
+        // le moteur de transfert (canaux natifs) n'est instancié qu'une fois la
+        // première synchronisation passée. Un échec est avalé par le
+        // planificateur — ce n'est pas une panne de synchronisation.
+        scheduler.onCycleSucceeded = (_) async {
+          await ref.read(downloadLifecycleProvider).reconcile();
+          await ref.read(downloadManagerProvider).reconcile();
+        };
         // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
         // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.
-        unawaited(ref.read(syncSchedulerProvider).start());
+        unawaited(scheduler.start());
       });
     }
   }

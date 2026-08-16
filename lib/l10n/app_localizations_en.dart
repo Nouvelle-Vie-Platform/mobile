@@ -430,6 +430,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadsUnknownTitle => 'Downloaded teaching';
 
   @override
+  String get downloadUpdateAvailable => 'Update available';
+
+  @override
+  String get downloadActionUpdate => 'Update';
+
+  @override
+  String downloadPurgeNotice(String title) {
+    return '“$title” was removed by the library and deleted from your downloads.';
+  }
+
+  @override
+  String get downloadPurgeNoticeUnnamed =>
+      'A teaching was removed by the library and deleted from your downloads.';
+
+  @override
+  String get downloadPurgeDismiss => 'Dismiss';
+
+  @override
   String get agendaSeeAll => 'See full agenda';
 
   @override
