@@ -59,7 +59,8 @@ class CommunityHeader extends StatelessWidget {
               IconButton(
                 onPressed: onRequests,
                 tooltip: context.l10n.requestsTitle,
-                icon: const Icon(Icons.assignment_outlined, color: Colors.white),
+                icon:
+                    const Icon(Icons.assignment_outlined, color: Colors.white),
               ),
             ],
           ),

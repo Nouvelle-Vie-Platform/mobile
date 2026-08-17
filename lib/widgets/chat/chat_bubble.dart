@@ -43,7 +43,10 @@ class ChatBubble extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!mine) ...[
+          // Ligne d'auteur **seulement si un nom existe** : au réel, le mobile
+          // n'a pas de source de nom de membre (ADR-0029), et « auteur retiré »
+          // n'a pas de nom non plus — pas de ligne vide, pas d'« inconnu ».
+          if (!mine && message.author.isNotEmpty) ...[
             GestureDetector(
               onTap: onAuthorTap,
               child: Text(

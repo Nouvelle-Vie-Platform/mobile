@@ -330,6 +330,63 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get joinGroupOpen => 'Rejoindre';
+
+  @override
+  String get joinGroupRequest => 'Demander à rejoindre';
+
+  @override
+  String get joinGroupPending => 'En attente';
+
+  @override
+  String get groupLeave => 'Quitter le groupe';
+
+  @override
+  String get groupJoined => 'Vous avez rejoint le groupe.';
+
+  @override
+  String get groupRequestSent => 'Demande envoyée.';
+
+  @override
+  String get groupActionError => 'Action impossible pour le moment.';
+
+  @override
+  String get echangesEmpty => 'Aucune conversation pour l\'instant.';
+
+  @override
+  String get echangesError => 'Impossible de charger vos échanges.';
+
+  @override
+  String get groupBroadcastBanner =>
+      'Seuls les responsables publient dans ce groupe.';
+
+  @override
+  String get groupWriteLockedBanner =>
+      'L\'écriture est temporairement restreinte aux responsables.';
+
+  @override
+  String get groupDeactivatedBanner =>
+      'Ce groupe est archivé, en lecture seule.';
+
+  @override
+  String get groupJoinRequestsTitle => 'Demandes d\'adhésion';
+
+  @override
+  String get groupApprove => 'Approuver';
+
+  @override
+  String get groupReject => 'Refuser';
+
+  @override
+  String get institutionGroupsTitle => 'Ses groupes';
+
+  @override
+  String get institutionOfficialAccount => 'Compte officiel';
+
+  @override
+  String get institutionContributor => 'Intervenant';
+
+  @override
   String get chatMessageHint => 'Votre message...';
 
   @override

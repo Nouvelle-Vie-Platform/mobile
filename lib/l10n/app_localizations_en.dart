@@ -327,6 +327,61 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get joinGroupOpen => 'Join';
+
+  @override
+  String get joinGroupRequest => 'Request to join';
+
+  @override
+  String get joinGroupPending => 'Pending';
+
+  @override
+  String get groupLeave => 'Leave group';
+
+  @override
+  String get groupJoined => 'You joined the group.';
+
+  @override
+  String get groupRequestSent => 'Request sent.';
+
+  @override
+  String get groupActionError => 'Action failed for now.';
+
+  @override
+  String get echangesEmpty => 'No conversations yet.';
+
+  @override
+  String get echangesError => 'Couldn\'t load your chats.';
+
+  @override
+  String get groupBroadcastBanner => 'Only leaders post in this group.';
+
+  @override
+  String get groupWriteLockedBanner =>
+      'Writing is temporarily restricted to leaders.';
+
+  @override
+  String get groupDeactivatedBanner => 'This group is archived, read-only.';
+
+  @override
+  String get groupJoinRequestsTitle => 'Join requests';
+
+  @override
+  String get groupApprove => 'Approve';
+
+  @override
+  String get groupReject => 'Decline';
+
+  @override
+  String get institutionGroupsTitle => 'Its groups';
+
+  @override
+  String get institutionOfficialAccount => 'Official account';
+
+  @override
+  String get institutionContributor => 'Contributor';
+
+  @override
   String get chatMessageHint => 'Your message...';
 
   @override

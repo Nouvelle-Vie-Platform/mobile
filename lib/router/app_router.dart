@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,6 +17,7 @@ import '../screens/event_detail_screen.dart';
 import '../screens/gathering_detail_screen.dart';
 import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
+import '../screens/institution_profile_screen.dart';
 import '../screens/legal_acceptance_screen.dart';
 import '../screens/legal_document_screen.dart';
 import '../screens/media_settings_screen.dart';
@@ -35,6 +36,7 @@ import '../state/auth_providers.dart';
 import '../state/legal_providers.dart';
 import '../state/repository_providers.dart';
 import '../widgets/app_background.dart';
+import '../widgets/content_absence.dart';
 
 /// Noms des routes nommées (à utiliser avec `context.goNamed` / `pushNamed`).
 abstract final class AppRoute {
@@ -54,6 +56,7 @@ abstract final class AppRoute {
   static const gatheringDetail = 'gathering';
   static const groupChat = 'group-chat';
   static const groupInfo = 'group-info';
+  static const institutionProfile = 'institution-profile';
   static const mediaViewer = 'media-viewer';
   static const memberProfile = 'member-profile';
   static const requests = 'requests';
@@ -297,12 +300,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.groupChat,
         path: '/group-chat',
         builder: (_, state) {
-          // Domaine encore fictif : la conversation ciblée voyage par `extra`,
-          // avec repli sur la première en cas d'accès direct (legacy assumé —
-          // voir docs/refonte-echanges.md §5). Au branchement, ce sera un
-          // identifiant en `pathParameter`, résolu depuis le provider.
-          final conversation = state.extra as Conversation? ??
-              ref.read(conversationsProvider).first;
+          // La conversation ciblée (réelle, sourcée du magasin) voyage par
+          // `extra`. L'écran **relit** ensuite le groupe par identifiant pour
+          // tenir ses politiques à jour. Accès direct sans `extra` (rare) →
+          // absence, plutôt qu'un plantage sur liste vide.
+          final conversation = state.extra;
+          if (conversation is! Conversation) {
+            return const AppBackground(
+              child: Scaffold(
+                body: ContentAbsenceView(absence: ContentAbsence.notSynced),
+              ),
+            );
+          }
           return AppBackground(
             child: GroupChatScreen(conversation: conversation),
           );
@@ -312,11 +321,38 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.groupInfo,
         path: '/group-info',
         builder: (_, state) {
-          // Domaine fictif : la conversation-groupe voyage par `extra`, repli
-          // sur la première conversation en cas d'accès direct.
-          final conversation = state.extra as Conversation? ??
-              ref.read(conversationsProvider).first;
-          return AppBackground(child: GroupInfoScreen(group: conversation));
+          // L'**identifiant** du groupe voyage par `extra` ; l'écran résout la
+          // donnée dans la source de vérité (jamais une copie figée).
+          final id = state.extra;
+          if (id is! String) {
+            return const AppBackground(
+              child: Scaffold(
+                body: ContentAbsenceView(absence: ContentAbsence.notSynced),
+              ),
+            );
+          }
+          return AppBackground(child: GroupInfoScreen(groupId: id));
+        },
+      ),
+      // Fiche d'institution (décision D23) : compte officiel ou intervenant.
+      // `kind` et `id` en paramètres de chemin — désignable de l'extérieur
+      // (deep link, en-tête propriétaire d'un groupe).
+      GoRoute(
+        name: AppRoute.institutionProfile,
+        path: '/institution/:kind/:id',
+        builder: (_, state) {
+          final kind = parseInstitutionKind(state.pathParameters['kind']);
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          if (kind == null || id == null) {
+            return const AppBackground(
+              child: Scaffold(
+                body: ContentAbsenceView(absence: ContentAbsence.notSynced),
+              ),
+            );
+          }
+          return AppBackground(
+            child: InstitutionProfileScreen(kind: kind, id: id),
+          );
         },
       ),
       GoRoute(
@@ -335,10 +371,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.memberProfile,
         path: '/member-profile',
         builder: (_, state) {
-          // Profil-membre léger et fictif : le nom voyage par `extra`, repli sur
-          // le premier animateur d'un groupe à rejoindre en cas d'accès direct.
-          final name = state.extra as String? ??
-              ref.read(groupsToJoinProvider).first.host;
+          // Profil-membre léger et fictif : le nom voyage par `extra`. Accès
+          // direct sans nom → chaîne vide (l'écran reste stable).
+          final name = state.extra as String? ?? '';
           return AppBackground(child: MemberProfileScreen(memberName: name));
         },
       ),

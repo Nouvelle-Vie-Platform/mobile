@@ -658,6 +658,114 @@ abstract class AppLocalizations {
   /// **'{count} membres • {role}'**
   String groupMembersWithRole(int count, String role);
 
+  /// Carte de découverte : bouton pour rejoindre librement un groupe ouvert
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoindre'**
+  String get joinGroupOpen;
+
+  /// Carte de découverte : bouton pour demander à rejoindre un groupe sur validation
+  ///
+  /// In fr, this message translates to:
+  /// **'Demander à rejoindre'**
+  String get joinGroupRequest;
+
+  /// Carte de découverte / fiche : une demande d'adhésion a été envoyée et attend une validation
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get joinGroupPending;
+
+  /// Fiche de groupe : action pour quitter le groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter le groupe'**
+  String get groupLeave;
+
+  /// Confirmation après avoir rejoint un groupe ouvert
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez rejoint le groupe.'**
+  String get groupJoined;
+
+  /// Confirmation après avoir demandé à rejoindre un groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande envoyée.'**
+  String get groupRequestSent;
+
+  /// Échec d'une action d'adhésion/écriture de groupe (réseau ou refus serveur)
+  ///
+  /// In fr, this message translates to:
+  /// **'Action impossible pour le moment.'**
+  String get groupActionError;
+
+  /// Hub Échanges : état vide de la liste des conversations
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune conversation pour l\'instant.'**
+  String get echangesEmpty;
+
+  /// Hub Échanges : état d'erreur de lecture du magasin
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos échanges.'**
+  String get echangesError;
+
+  /// Bandeau lecture seule : groupe en diffusion (post_policy=admins), l'utilisateur n'est pas responsable
+  ///
+  /// In fr, this message translates to:
+  /// **'Seuls les responsables publient dans ce groupe.'**
+  String get groupBroadcastBanner;
+
+  /// Bandeau lecture seule : verrou d'écriture temporaire actif
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'écriture est temporairement restreinte aux responsables.'**
+  String get groupWriteLockedBanner;
+
+  /// Bandeau lecture seule : groupe désactivé (archive)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce groupe est archivé, en lecture seule.'**
+  String get groupDeactivatedBanner;
+
+  /// Fiche de groupe : titre de la section des demandes d'adhésion à valider (responsables)
+  ///
+  /// In fr, this message translates to:
+  /// **'Demandes d\'adhésion'**
+  String get groupJoinRequestsTitle;
+
+  /// Fiche de groupe : approuver une demande d'adhésion
+  ///
+  /// In fr, this message translates to:
+  /// **'Approuver'**
+  String get groupApprove;
+
+  /// Fiche de groupe : refuser une demande d'adhésion
+  ///
+  /// In fr, this message translates to:
+  /// **'Refuser'**
+  String get groupReject;
+
+  /// Fiche d'institution : titre de la section listant les groupes de l'institution
+  ///
+  /// In fr, this message translates to:
+  /// **'Ses groupes'**
+  String get institutionGroupsTitle;
+
+  /// Fiche d'institution : sous-titre pour un compte officiel d'église
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte officiel'**
+  String get institutionOfficialAccount;
+
+  /// Fiche d'institution : sous-titre pour un intervenant
+  ///
+  /// In fr, this message translates to:
+  /// **'Intervenant'**
+  String get institutionContributor;
+
   /// No description provided for @chatMessageHint.
   ///
   /// In fr, this message translates to:
