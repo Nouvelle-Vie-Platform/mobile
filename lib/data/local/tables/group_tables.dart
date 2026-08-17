@@ -64,8 +64,9 @@ class Groups extends Table with SyncedRow {
   TextColumn get ownerKind => text()();
 
   /// Propriétaire **humain**, `null` pour un groupe institutionnel (décision
-  /// D4 : une institution n'a pas de chef humain). Entier ? Non — un `users.id`
-  /// est un UUID, donc une chaîne.
+  /// D4 : une institution n'a pas de chef humain). Un `users.id` est un UUID,
+  /// donc une chaîne. **Alimentée par la clé JSON `ownerId`** du serveur
+  /// (contrat §7 arrêté) — seul le mapping de clé diffère du nom de colonne.
   TextColumn get ownerUserId => text().nullable()();
 
   /// Propriétaire **compte officiel** — entier nu, sans clé étrangère vers

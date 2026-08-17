@@ -62,7 +62,7 @@ void main() {
       'id': 'g-mine',
       'name': 'Chorale',
       'ownerKind': 'user',
-      'ownerUserId': 'owner-1',
+      'ownerId': 'owner-1',
       'joinPolicy': 'open',
     });
     await putGroup({
@@ -76,7 +76,7 @@ void main() {
       'id': 'g-private',
       'name': 'Comité',
       'ownerKind': 'user',
-      'ownerUserId': 'owner-2',
+      'ownerId': 'owner-2',
       'joinPolicy': 'invite_only',
     });
     await putMembership({
@@ -102,7 +102,7 @@ void main() {
       'id': 'g-open',
       'name': 'Jeunesse',
       'ownerKind': 'user',
-      'ownerUserId': 'o',
+      'ownerId': 'o',
       'joinPolicy': 'request',
     });
     await putJoinRequest({

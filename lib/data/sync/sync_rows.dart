@@ -450,7 +450,10 @@ GroupsCompanion groupRowOf(Map<String, Object?> item) {
     // Stocké tel quel, jamais refermé sur un enum : une valeur inconnue se
     // replie à l'affichage plutôt que de coûter la page.
     ownerKind: _text(collection, item, 'ownerKind'),
-    ownerUserId: Value(_optionalText(item, 'ownerUserId')),
+    // **Le serveur émet la clé `ownerId`** (propriétaire humain, uuid|null), pas
+    // `ownerUserId` — contrat §7 arrêté. On la range dans la colonne
+    // `ownerUserId` du magasin : seul le mapping de clé diffère du nom de colonne.
+    ownerUserId: Value(_optionalText(item, 'ownerId')),
     // Entiers nus, sans clé étrangère : la cible d'institution n'a pas à être
     // déjà arrivée.
     ownerOfficialAccountId: Value(_optionalInt(item, 'ownerOfficialAccountId')),

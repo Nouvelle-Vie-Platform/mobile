@@ -24,11 +24,13 @@ import 'group_messaging.dart';
 /// **La réponse n'est pas lue.** Le message / l'appartenance / la demande revient
 /// par le flux delta au prochain cycle de synchronisation.
 ///
-/// ⚠️ **Contrat DOCUMENTÉ, endpoints partiellement à réconcilier** avec l'agent
-/// serveur : `POST /groups/:id/messages`, `/join`, `/leave` sont figés
-/// (`docs/human/groups.md`) ; `join-requests` (création + approve/reject) sont
-/// **dérivés** du PRD `messagerie-groupes-officiels.md` (décision D12, table
-/// `group_join_requests`) et sont l'hypothèse la plus fragile de ce lot.
+/// **Noms d'endpoints ARRÊTÉS** (contrat §7 du PRD
+/// `messagerie-groupes-officiels.md`, réconciliation serveur ↔ mobile) :
+/// `POST /groups/:id/messages`, `/join`, `/leave` (`docs/human/groups.md`) ; et
+/// `POST /groups/:id/join-requests` (**pluriel** — le serveur a renommé son
+/// `…/join-request`) pour créer une demande, `…/join-requests/:requestId/approve`
+/// et `…/reject` pour la valider/refuser (autorisation par **rôle de groupe**,
+/// leader/modérateur, pas le RBAC staff).
 class HttpGroupMessaging implements GroupMessaging {
   HttpGroupMessaging({ApiClient? client})
       : _client = (client ?? ApiClient.instance).dio;
