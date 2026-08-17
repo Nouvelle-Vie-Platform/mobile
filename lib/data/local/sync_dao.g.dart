@@ -23,6 +23,11 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
   $PlaybackProgressTable get playbackProgress =>
       attachedDatabase.playbackProgress;
   $LegalDocumentsTable get legalDocuments => attachedDatabase.legalDocuments;
+  $GroupsTable get groups => attachedDatabase.groups;
+  $GroupMembersTable get groupMembers => attachedDatabase.groupMembers;
+  $GroupMessagesTable get groupMessages => attachedDatabase.groupMessages;
+  $GroupJoinRequestsTable get groupJoinRequests =>
+      attachedDatabase.groupJoinRequests;
   SyncDaoManager get managers => SyncDaoManager(this);
 }
 
@@ -66,4 +71,13 @@ class SyncDaoManager {
   $$LegalDocumentsTableTableManager get legalDocuments =>
       $$LegalDocumentsTableTableManager(
           _db.attachedDatabase, _db.legalDocuments);
+  $$GroupsTableTableManager get groups =>
+      $$GroupsTableTableManager(_db.attachedDatabase, _db.groups);
+  $$GroupMembersTableTableManager get groupMembers =>
+      $$GroupMembersTableTableManager(_db.attachedDatabase, _db.groupMembers);
+  $$GroupMessagesTableTableManager get groupMessages =>
+      $$GroupMessagesTableTableManager(_db.attachedDatabase, _db.groupMessages);
+  $$GroupJoinRequestsTableTableManager get groupJoinRequests =>
+      $$GroupJoinRequestsTableTableManager(
+          _db.attachedDatabase, _db.groupJoinRequests);
 }

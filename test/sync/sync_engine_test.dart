@@ -158,6 +158,12 @@ void main() {
           'gatherings',
           'announcements',
           'playback_progress',
+          // La messagerie de groupe : le groupe (référentiel de son domaine)
+          // précède ses messages et appartenances.
+          'groups',
+          'group_members',
+          'group_messages',
+          'group_join_requests',
         ],
         reason: 'ça ne supprime pas la fenêtre où un enseignement arrive sans '
             'son intervenant — la jointure de lecture reste tolérante pour '

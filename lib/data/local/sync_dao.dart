@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'app_database.dart';
 import 'tables/announcement_tables.dart';
 import 'tables/gathering_tables.dart';
+import 'tables/group_tables.dart';
 import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
@@ -64,6 +65,23 @@ abstract final class SyncCollectionKey {
   /// qui n'est pas une collection, et rapporte au serveur par
   /// `POST /teachings/:teachingId/progress`. Rien de local n'entre jamais ici.
   static const String playbackProgress = 'playback_progress';
+
+  /// Les **groupes** — espaces de discussion (partition `branch`). Le serveur ne
+  /// remonte à un non-membre que les publics dans sa portée (décision D13) : le
+  /// client n'a aucun filtre de portée à recalculer.
+  static const String groups = 'groups';
+
+  /// **Mes appartenances** aux groupes — scoppée sur l'acteur, comme
+  /// `official_account_memberships`. Sépare l'inbox de la découverte.
+  static const String groupMembers = 'group_members';
+
+  /// Les **messages** — contenu à curseur, avec tombstone (ADR-0017). L'origine
+  /// se lit sur `(authorId, isSystem)`, jamais sur `authorId` seul (ADR-0032).
+  static const String groupMessages = 'group_messages';
+
+  /// La **file d'adhésion** — ma demande en attente, et (si j'administre) celles
+  /// à valider (décision D12).
+  static const String groupJoinRequests = 'group_join_requests';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -114,6 +132,10 @@ const String _kSyncStampColumn = 'sync_stamp';
     Announcements,
     PlaybackProgress,
     LegalDocuments,
+    Groups,
+    GroupMembers,
+    GroupMessages,
+    GroupJoinRequests,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -174,6 +196,21 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// une rétractation reçue du serveur.
   LocalCollection<PlaybackProgressRow> get playbackProgressCollection =>
       LocalCollection._(SyncCollectionKey.playbackProgress, playbackProgress);
+
+  LocalCollection<GroupRow> get groupsCollection =>
+      LocalCollection._(SyncCollectionKey.groups, groups);
+
+  LocalCollection<GroupMemberRow> get groupMembersCollection =>
+      LocalCollection._(SyncCollectionKey.groupMembers, groupMembers);
+
+  LocalCollection<GroupMessageRow> get groupMessagesCollection =>
+      LocalCollection._(SyncCollectionKey.groupMessages, groupMessages);
+
+  LocalCollection<GroupJoinRequestRow> get groupJoinRequestsCollection =>
+      LocalCollection._(
+        SyncCollectionKey.groupJoinRequests,
+        groupJoinRequests,
+      );
 
   // ───────────────────────────────────────────────────────────────────────────
   // Application d'une page

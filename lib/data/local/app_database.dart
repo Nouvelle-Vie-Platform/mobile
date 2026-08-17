@@ -21,6 +21,7 @@ import 'downloads_dao.dart';
 // code généré.
 import 'converters/legal_sections_converter.dart';
 import 'gathering_dao.dart';
+import 'group_dao.dart';
 import 'legal_dao.dart';
 import 'mediatheque_dao.dart';
 import 'playback_dao.dart';
@@ -29,6 +30,7 @@ import 'sync_dao.dart';
 import 'tables/announcement_tables.dart';
 import 'tables/download_tables.dart';
 import 'tables/gathering_tables.dart';
+import 'tables/group_tables.dart';
 import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
@@ -79,6 +81,10 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     Downloads,
     DownloadTitles,
     DownloadNotifications,
+    Groups,
+    GroupMembers,
+    GroupMessages,
+    GroupJoinRequests,
   ],
   daos: [
     SyncDao,
@@ -90,6 +96,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     SettingsDao,
     DownloadsDao,
     DownloadNotificationsDao,
+    GroupDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -126,8 +133,16 @@ class AppDatabase extends _$AppDatabase {
   /// colonne sur `downloads` : `createTable` emploie la forme courante, donc une
   /// colonne apparaîtrait dès le palier v8 et se heurterait au schéma v8 gelé
   /// (voir `download_titles`). Rien du catalogue déjà téléchargé ne bouge.
+  ///
+  /// **v10** — la messagerie de groupe réelle (groupes officiels). **Quatre
+  /// créations de table, et rien d'autre** : `groups`, `group_members`,
+  /// `group_messages`, `group_join_requests`. La messagerie était jusqu'ici
+  /// peinte par `SampleData` (aucune donnée locale à reprendre), aucune colonne
+  /// existante ne bouge. Les quatre tables naissent vides et le premier cycle de
+  /// synchronisation les remplit — leurs curseurs n'existent pas encore, le
+  /// manifeste les annoncera `from_zero`. Purement additif : `if (from < 10)`.
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -284,6 +299,20 @@ class AppDatabase extends _$AppDatabase {
           if (from < 9) {
             await m.createTable(downloadTitles);
             await m.createTable(downloadNotifications);
+          }
+
+          // v9 → v10 — la messagerie de groupe réelle. **Quatre créations de
+          // table, et rien d'autre** : la messagerie était peinte par
+          // `SampleData`, il n'y a aucune donnée locale à reprendre et aucune
+          // colonne existante ne bouge. Les quatre tables naissent vides et le
+          // premier cycle les remplit — leurs curseurs n'existent pas encore, le
+          // manifeste les annoncera `from_zero`. Purement additif, d'où le
+          // simple `if (from < 10)`.
+          if (from < 10) {
+            await m.createTable(groups);
+            await m.createTable(groupMembers);
+            await m.createTable(groupMessages);
+            await m.createTable(groupJoinRequests);
           }
         },
         beforeOpen: (details) async {
