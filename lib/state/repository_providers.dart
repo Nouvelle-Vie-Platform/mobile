@@ -35,15 +35,11 @@ final groupsProvider = Provider<List<CommunityGroup>>(
   (ref) => ref.watch(churchRepositoryProvider).groups(),
 );
 
-/// Conversations du hub « Échanges » (groupes + messages privés mêlés).
-final conversationsProvider = Provider<List<Conversation>>(
-  (ref) => ref.watch(churchRepositoryProvider).conversations(),
-);
-
-/// Groupes **à rejoindre** de la rangée de découverte.
-final groupsToJoinProvider = Provider<List<DiscoverGroup>>(
-  (ref) => ref.watch(churchRepositoryProvider).groupsToJoin(),
-);
+/// **La messagerie de groupe a migré vers le réel** : `conversationsProvider`,
+/// `groupsToJoinProvider` et `chatProvider` vivent désormais dans
+/// `state/group_providers.dart`, adossés au magasin (`StreamProvider`,
+/// `AsyncValue`). Ce qui reste ici est encore fictif : groupes (agrégat), prières
+/// et notes.
 
 /// Requêtes de prière.
 final prayersProvider = Provider<List<PrayerRequest>>(
@@ -53,10 +49,4 @@ final prayersProvider = Provider<List<PrayerRequest>>(
 /// Notes spirituelles.
 final notesProvider = Provider<List<SpiritualNote>>(
   (ref) => ref.watch(churchRepositoryProvider).notes(),
-);
-
-/// Messages d'une conversation (paramétré par la conversation ciblée).
-final chatProvider = Provider.family<List<ChatMessage>, Conversation>(
-  (ref, conversation) =>
-      ref.watch(churchRepositoryProvider).chatFor(conversation),
 );

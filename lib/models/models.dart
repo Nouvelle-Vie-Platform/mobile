@@ -374,6 +374,141 @@ class CommunityGroup {
 /// tuile (avatar de groupe vs. de personne) et jamais à trier.
 enum ConversationKind { group, direct }
 
+/// **Nature du propriétaire d'un groupe** (décision D3, propriétaire polymorphe).
+///
+/// Un groupe appartient à **exactement un** parmi `{ user, compte officiel,
+/// intervenant }`. [user] = groupe d'un fidèle (le cas historique) ;
+/// [officialAccount] / [contributor] = groupe **institutionnel**, sans chef
+/// humain (décision D4). Stocké en chaîne côté magasin, replié ici.
+enum GroupOwnerKind {
+  user,
+  officialAccount,
+  contributor;
+
+  /// `user` | `official_account` | `contributor` → l'enum ; toute autre valeur
+  /// (ou l'absence) se replie sur [user], le cas le plus bénin.
+  static GroupOwnerKind parse(String? raw) => switch (raw) {
+        'official_account' => GroupOwnerKind.officialAccount,
+        'contributor' => GroupOwnerKind.contributor,
+        _ => GroupOwnerKind.user,
+      };
+
+  bool get isInstitution => this != GroupOwnerKind.user;
+}
+
+/// Slug d'URL d'une institution (segment de la route `/institution/:kind/:id`).
+String institutionKindSlug(GroupOwnerKind kind) =>
+    kind == GroupOwnerKind.contributor ? 'contributor' : 'official_account';
+
+/// Lit le slug d'URL en [GroupOwnerKind] institutionnel ; `null` si inconnu.
+GroupOwnerKind? parseInstitutionKind(String? slug) => switch (slug) {
+      'official_account' => GroupOwnerKind.officialAccount,
+      'contributor' => GroupOwnerKind.contributor,
+      _ => null,
+    };
+
+/// **Politique d'accès d'un groupe** (décision D11, `join_policy` à trois états).
+///
+/// [open] = public, entrée libre ; [request] = public, sur validation (valeur
+/// **nouvelle**) ; [inviteOnly] = privé, caché. La découverte ne liste que
+/// `open` ∪ `request` ; `invite_only` n'est jamais listé.
+enum GroupJoinPolicy {
+  open,
+  request,
+  inviteOnly;
+
+  static GroupJoinPolicy parse(String? raw) => switch (raw) {
+        'open' => GroupJoinPolicy.open,
+        'request' => GroupJoinPolicy.request,
+        _ => GroupJoinPolicy.inviteOnly,
+      };
+}
+
+/// **Régime d'écriture d'un groupe** (décision D14, `post_policy`).
+///
+/// [all] = discussion (tout membre écrit) ; [admins] = **diffusion** (seuls
+/// leaders/modérateurs publient, les membres lisent).
+enum GroupPostPolicy {
+  all,
+  admins;
+
+  static GroupPostPolicy parse(String? raw) =>
+      raw == 'admins' ? GroupPostPolicy.admins : GroupPostPolicy.all;
+}
+
+/// **Rôle d'un membre dans un groupe** (`group_members.role`).
+enum GroupRole {
+  leader,
+  moderator,
+  member;
+
+  static GroupRole? parse(String? raw) => switch (raw) {
+        'leader' => GroupRole.leader,
+        'moderator' => GroupRole.moderator,
+        'member' => GroupRole.member,
+        _ => null,
+      };
+
+  /// Leaders et modérateurs modèrent : ils écrivent en diffusion et sous verrou,
+  /// et valident les demandes d'adhésion.
+  bool get canModerate =>
+      this == GroupRole.leader || this == GroupRole.moderator;
+}
+
+/// Une **demande d'adhésion** à valider par les admins d'un groupe (décision
+/// D12). Le mobile n'a pas de source de nom de fidèle (ADR-0029) : la validation
+/// s'affiche par identifiant, à réconcilier quand un nom voyagera.
+@immutable
+class GroupJoinRequest {
+  const GroupJoinRequest({
+    required this.id,
+    required this.userId,
+    this.createdAt,
+  });
+
+  /// SERIAL côté serveur — passé aux endpoints approve/reject.
+  final int id;
+  final String userId;
+  final DateTime? createdAt;
+}
+
+/// **Pourquoi un groupe est en lecture seule pour moi** — choisit le bandeau.
+///
+/// [broadcast] = diffusion (`post_policy = admins`), je ne suis pas admin ;
+/// [writeLocked] = verrou d'écriture temporaire (décision D15) ; [deactivated] =
+/// groupe désactivé (décision D18, archive) ; [notMember] = je n'en suis pas
+/// membre (fiche consultée avant de rejoindre).
+enum GroupReadOnlyReason { broadcast, writeLocked, deactivated, notMember }
+
+/// **L'identité d'une institution** propriétaire d'un groupe (compte officiel ou
+/// intervenant) — la fiche dédiée (décision D23), alimentée par les collections
+/// déjà répliquées `official_accounts` / `contributors`.
+///
+/// Distincte de la fiche **membre** : une institution a un logo, une description
+/// et **ses** groupes/annonces, pas un statut de fidèle. [avatarUrl] est
+/// **relative** au serveur d'API (à résoudre par `utils/media_url.dart`).
+@immutable
+class InstitutionProfile {
+  const InstitutionProfile({
+    required this.kind,
+    required this.id,
+    required this.name,
+    this.description,
+    this.avatarUrl,
+  });
+
+  /// [GroupOwnerKind.officialAccount] ou [GroupOwnerKind.contributor] — jamais
+  /// [GroupOwnerKind.user] (un fidèle a une fiche membre).
+  final GroupOwnerKind kind;
+
+  /// SERIAL de l'institution (`official_accounts.id` ou `contributors.id`).
+  final int id;
+
+  final String name;
+  final String? description;
+  final String? avatarUrl;
+}
+
 /// Une conversation du hub « Échanges » — **modèle de maquette**, fictif et
 /// synchrone (alimenté par `SampleData`, comme [ChatMessage]).
 ///
@@ -397,11 +532,76 @@ class Conversation {
     this.members = const [],
     this.description,
     this.sharedMedia = const [],
+    this.role,
+    this.joinPolicy,
+    this.postPolicy = GroupPostPolicy.all,
+    this.isWriteLocked = false,
+    this.isActive = true,
+    this.ownerKind = GroupOwnerKind.user,
+    this.institution,
+    this.memberCount,
   });
 
   final String id;
   final ConversationKind kind;
   final String name;
+
+  /// **Mon rôle** dans le groupe, `null` si c'est une discussion directe ou si
+  /// je n'en suis pas membre. Décide de l'accès au composeur en diffusion / sous
+  /// verrou, et à l'UI de validation des demandes.
+  final GroupRole? role;
+
+  /// Politique d'accès du groupe (`null` pour une discussion directe).
+  final GroupJoinPolicy? joinPolicy;
+
+  /// Régime d'écriture (décision D14).
+  final GroupPostPolicy postPolicy;
+
+  /// Verrou d'écriture temporaire (décision D15).
+  final bool isWriteLocked;
+
+  /// `false` = groupe désactivé — lecture seule (décision D18).
+  final bool isActive;
+
+  /// Nature du propriétaire (décision D3).
+  final GroupOwnerKind ownerKind;
+
+  /// L'identité de l'**institution** propriétaire, `null` pour un groupe `user`
+  /// ou tant que la collection d'institution ne l'a pas encore livrée. Sert
+  /// l'en-tête propriétaire du détail de groupe (décision D23 → tap = fiche).
+  final InstitutionProfile? institution;
+
+  /// Effectif servi par le serveur, `null` si inconnu.
+  final int? memberCount;
+
+  /// **Puis-je écrire dans ce groupe ?** Un membre écrit toujours en régime
+  /// `all` sans verrou ; en diffusion (`admins`) **ou** sous verrou, seuls les
+  /// admins écrivent. Un groupe désactivé est en lecture seule pour tous.
+  ///
+  /// **Un confort d'affichage, jamais une autorisation** : le serveur revérifie
+  /// à chaque envoi (un membre rétrogradé verra encore le composeur et recevra
+  /// un 403).
+  bool get canPost {
+    if (kind == ConversationKind.direct) return true;
+    if (!isActive) return false;
+    final admin = role?.canModerate ?? false;
+    if (isWriteLocked) return admin;
+    if (postPolicy == GroupPostPolicy.admins) return admin;
+    return role != null;
+  }
+
+  /// La raison, s'il y en a une, pour laquelle le composeur est masqué — pour
+  /// choisir le bon bandeau de lecture seule. `null` = je peux écrire.
+  GroupReadOnlyReason? get readOnlyReason {
+    if (canPost) return null;
+    if (kind == ConversationKind.direct) return null;
+    if (!isActive) return GroupReadOnlyReason.deactivated;
+    if (isWriteLocked) return GroupReadOnlyReason.writeLocked;
+    if (postPolicy == GroupPostPolicy.admins) {
+      return GroupReadOnlyReason.broadcast;
+    }
+    return GroupReadOnlyReason.notMember;
+  }
 
   /// URL d'avatar, `null` = repli sur les initiales ([AppAvatar]).
   final String? avatarUrl;
@@ -439,16 +639,28 @@ class DiscoverGroup {
     required this.name,
     required this.host,
     this.imageUrl,
+    this.joinPolicy = GroupJoinPolicy.open,
+    this.pendingRequest = false,
   });
 
   final String id;
   final String name;
 
-  /// Nom de l'animateur du groupe.
+  /// Nom de l'animateur du groupe. **Modèle de maquette** : au réel, le mobile
+  /// n'a pas de collection d'utilisateurs (ADR-0029) ; pour un groupe
+  /// institutionnel c'est le nom de l'institution, sinon vide.
   final String host;
 
   /// Visuel de couverture, `null` = repli coloré.
   final String? imageUrl;
+
+  /// [GroupJoinPolicy.open] → « Rejoindre » (immédiat) ;
+  /// [GroupJoinPolicy.request] → « Demander à rejoindre » (validation).
+  final GroupJoinPolicy joinPolicy;
+
+  /// `true` = j'ai déjà une demande en attente sur ce groupe `request` → l'UI
+  /// affiche « En attente » au lieu du bouton.
+  final bool pendingRequest;
 }
 
 class PrayerRequest {
@@ -512,13 +724,23 @@ class ChatMessage {
     required this.time,
     required this.mine,
     this.system = false,
+    this.authorRemoved = false,
   });
 
   final String author;
   final String text;
   final String time;
   final bool mine;
+
+  /// `true` = **message système** (`isSystem` serveur) : bannière centrée, pas
+  /// de bulle. Décidé sur le couple `(authorId, isSystem)`, jamais sur
+  /// `authorId` seul (ADR-0032).
   final bool system;
+
+  /// `true` = **auteur retiré** (`authorId == null && isSystem == false`) :
+  /// compte supprimé, le message reste mais n'est **pas** un message système.
+  /// Une bulle, sans nom d'auteur — jamais centrée en gris comme une annonce.
+  final bool authorRemoved;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
