@@ -10,10 +10,14 @@ import 'package:maison_du_miracle/data/repositories/announcement_repository.dart
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
+import 'package:maison_du_miracle/data/repositories/group_repository.dart';
+import 'package:maison_du_miracle/data/repositories/in_memory_group_repository.dart';
+import 'package:maison_du_miracle/data/repositories/inert_group_messaging.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
+import 'package:maison_du_miracle/state/group_providers.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
@@ -83,6 +87,7 @@ Future<void> pumpRouter(
   AppDatabase? database,
   AuthRepository? auth,
   ThemePreferences? theme,
+  GroupRepository? groupRepository,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -90,7 +95,12 @@ Future<void> pumpRouter(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        ..._commonOverrides(db, auth: auth, theme: theme),
+        ..._commonOverrides(
+          db,
+          auth: auth,
+          theme: theme,
+          groupRepository: groupRepository,
+        ),
         ...overrides,
       ],
       child: MaterialApp.router(
@@ -115,6 +125,7 @@ List<Override> _commonOverrides(
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
+  GroupRepository? groupRepository,
   List<DownloadNotificationRow> notifications = const [],
 }) =>
     [
@@ -154,6 +165,17 @@ List<Override> _commonOverrides(
           .overrideWithValue(gatherings ?? InMemoryGatheringRepository()),
       announcementRepositoryProvider
           .overrideWithValue(announcements ?? InMemoryAnnouncementRepository()),
+      // La messagerie de groupe lit le **magasin Drift** (flux `.watch()`), qui
+      // fige le montage sous l'horloge factice du harnais — la même panne que
+      // les réglages d'apparence et le bouton de téléchargement. Le double en
+      // mémoire rend des flux **nus** (`Stream.value`), qui ne figent rien ; et
+      // `HomeShell` monte l'onglet Échanges dans son `IndexedStack`, donc tout
+      // test qui monte la coquille ouvrirait ces flux sans parler de groupes.
+      groupRepositoryProvider.overrideWithValue(
+          groupRepository ?? const InMemoryGroupRepository()),
+      // L'écriture est HTTP dès que `AppEnv.useBackend` est vrai (il l'est hors
+      // surcharge) : posée inerte pour qu'un envoi ne parte pas sur une socket.
+      groupMessagingProvider.overrideWithValue(const InertGroupMessaging()),
     ];
 
 Future<void> pumpScreen(
@@ -163,6 +185,7 @@ Future<void> pumpScreen(
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
+  GroupRepository? groupRepository,
   AppDatabase? database,
   AuthRepository? auth,
   ThemePreferences? theme,
@@ -186,6 +209,7 @@ Future<void> pumpScreen(
           mediatheque: mediatheque,
           gatherings: gatherings,
           announcements: announcements,
+          groupRepository: groupRepository,
           notifications: notifications,
         ),
         ...overrides,

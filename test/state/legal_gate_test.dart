@@ -8,6 +8,8 @@ import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
+import 'package:maison_du_miracle/data/repositories/in_memory_group_repository.dart';
+import 'package:maison_du_miracle/data/repositories/inert_group_messaging.dart';
 import 'package:maison_du_miracle/data/repositories/legal_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/data/repositories/store_legal_repository.dart';
@@ -18,6 +20,7 @@ import 'package:maison_du_miracle/screens/legal_acceptance_screen.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
+import 'package:maison_du_miracle/state/group_providers.dart';
 import 'package:maison_du_miracle/state/legal_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
@@ -241,6 +244,14 @@ void main() {
             .overrideWithValue(InMemoryGatheringRepository()),
         announcementRepositoryProvider
             .overrideWithValue(InMemoryAnnouncementRepository()),
+        // La messagerie de groupe lit le magasin Drift (flux `.watch()`) et
+        // dépend de la session : le laisser réel figerait le montage sous
+        // l'horloge factice et cascaderait un rebuild quand l'acceptation change
+        // l'`authProvider`. Le double en mémoire rend des flux nus, comme les
+        // trois repositories ci-dessus. `HomeShell` monte l'onglet Échanges.
+        groupRepositoryProvider
+            .overrideWithValue(const InMemoryGroupRepository()),
+        groupMessagingProvider.overrideWithValue(const InertGroupMessaging()),
         // Le seul double du chemin de la barrière : il porte les mêmes
         // planchers que la fixture serveur, sans dépendre d'un cycle de
         // synchronisation à horloge simulée (voir l'en-tête de
