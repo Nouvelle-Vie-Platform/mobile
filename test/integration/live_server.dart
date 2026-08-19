@@ -132,6 +132,45 @@ class LiveServer {
     return (verified as Map)['token'] as String;
   }
 
+  /// `GET /auth/me` — l'identité de l'acteur, dont son `id` (uuid), cible d'un DM.
+  Future<String> me(String token) async {
+    final body = await _get('/auth/me', token);
+    final user = (body as Map)['user'] ?? body;
+    return (user as Map)['id'] as String;
+  }
+
+  /// `PUT /auth/profile` — pose un nom, pour que la collection `profiles` porte un
+  /// `displayName` (« Prénom Nom ») plutôt qu'un nul.
+  Future<void> setName(
+    String token, {
+    required String firstName,
+    required String lastName,
+  }) async {
+    await _put('/auth/profile', {
+      'firstName': firstName,
+      'lastName': lastName,
+    }, token);
+  }
+
+  /// `POST /groups/direct/:targetUserId/messages` — envoi direct (DM 1-à-1),
+  /// création paresseuse du fil. Rend le message autoritaire du serveur.
+  Future<Map<String, Object?>> sendDirect(
+    String token,
+    String targetUserId,
+    String body, {
+    String? clientMessageId,
+  }) async {
+    final sent = await _post(
+      '/groups/direct/$targetUserId/messages',
+      {
+        'body': body,
+        if (clientMessageId != null) 'clientMessageId': clientMessageId,
+      },
+      token,
+    );
+    return (sent as Map).cast<String, Object?>();
+  }
+
   // ── Le geste qui déplace le périmètre ────────────────────────────────────
 
   /// `PUT /auth/profile` — la réponse à la question de la Home Branch.
