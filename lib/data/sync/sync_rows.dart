@@ -24,7 +24,9 @@ library;
 import 'package:drift/drift.dart';
 
 import '../../models/legal_document_view.dart';
+import '../../models/teaching_download.dart';
 import '../local/app_database.dart';
+import '../local/converters/teaching_download_converter.dart';
 
 /// Une ligne du flux qui ne porte pas ce que sa collection exige.
 ///
@@ -151,6 +153,9 @@ TeachingsCompanion teachingRowOf(Map<String, Object?> item) {
     // Nul = l'enseignement précède son média. Une absence à dessiner, pas un
     // cas impossible.
     playlistUrl: Value(_optionalText(item, 'playlistUrl')),
+    // Le contrat de téléchargement hors ligne (ADR-0038). Nul = fonds ancien,
+    // « pas téléchargeable ». Additif à `playlistUrl`, il se pose en même temps.
+    download: Value(_teachingDownload(item, 'download')),
     // Relatives : la résolution contre la base d'API appartient au client.
     imageLandscapeUrl: Value(_optionalText(item, 'imageLandscapeUrl')),
     imagePortraitUrl: Value(_optionalText(item, 'imagePortraitUrl')),
@@ -164,6 +169,21 @@ TeachingsCompanion teachingRowOf(Map<String, Object?> item) {
     // termine à la lecture (`TeachingWithRefs.color`).
     color: Value(_optionalText(item, 'color')),
   );
+}
+
+/// Le contrat de téléchargement (ADR-0038), ou `null` s'il est absent.
+///
+/// **Tolérant, à dessein.** À la différence des champs obligatoires, un
+/// `download` mal formé ne coûte **pas** la page : il se lit « pas
+/// téléchargeable » (aucune rendition), exactement comme son absence. Le
+/// téléchargeable est additif — un enseignement s'écoute en ligne sans lui, et
+/// rejeter la page entière parce qu'un objet accessoire est bancal punirait le
+/// contenu principal. `null` explicite (fonds ancien) reste `null` ; seul un
+/// objet présent est décodé, par le même lecteur que le convertisseur SQLite.
+TeachingDownload? _teachingDownload(Map<String, Object?> item, String field) {
+  final value = item[field];
+  if (value == null) return null;
+  return TeachingDownloadConverter.decodeMap(value);
 }
 
 /// `GET /sync/gathering_types` — la rubrique de **rassemblement**.
@@ -246,7 +266,10 @@ StatusBackgroundsCompanion statusBackgroundRowOf(Map<String, Object?> item) {
   const collection = 'status_backgrounds';
   return StatusBackgroundsCompanion.insert(
     id: Value(referenceId(collection, item)),
-    label: _text(collection, item, 'label'),
+    // Carte de traduction, comme `teaching_types.label` : le serveur la déclare
+    // en `jsonb` (ADR-0023). La lire en `_text` faisait lever sur **chaque**
+    // ligne, et le cycle mourait là, avant les documents légaux.
+    label: _i18nMap(collection, item, 'label'),
     baseColor: _text(collection, item, 'baseColor'),
     topColor: _text(collection, item, 'topColor'),
     bottomColor: _text(collection, item, 'bottomColor'),

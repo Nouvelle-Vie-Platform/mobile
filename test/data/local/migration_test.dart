@@ -13,6 +13,7 @@
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/local/tables/download_tables.dart';
 
 import 'local_database_fixtures.dart';
 import 'schema/schema.dart';
@@ -24,15 +25,15 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('le schéma déclaré correspond au schéma v5 exporté', () async {
+  test('le schéma déclaré correspond au schéma v7 exporté', () async {
     // Le garde-fou de tous les jours : quiconque touche à une table sans
     // exporter la version correspondante casse ce test avant de casser un
     // téléphone.
-    final connection = await verifier.startAt(5);
+    final connection = await verifier.startAt(7);
     final db = AppDatabase(connection);
     addTearDown(db.close);
 
-    await verifier.migrateAndValidate(db, 5);
+    await verifier.migrateAndValidate(db, 7);
   });
 
   test('v1 → v2 : les deux tables de rassemblement apparaissent', () async {
@@ -195,6 +196,183 @@ void main() {
     // manifeste l'annoncera `from_zero`, et le premier cycle ramènera les trois
     // genres d'un coup — la collection n'a aucun filtre de périmètre.
     expect(await db.select(db.legalDocuments).get(), isEmpty);
+  });
+
+  test('v5 → v6 : le palier passe, et vide les fonds de statut', () async {
+    final connection = await verifier.startAt(5);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 6);
+  });
+
+  test('v1 → v6 : un appareil resté en v1 rejoue les cinq paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 6);
+  });
+
+  test('v5 → v6 : le catalogue survit, le fond et son curseur partent',
+      () async {
+    // Le palier ne crée rien : il **efface** `status_backgrounds` et son
+    // curseur, parce que le libellé y était stocké en chaîne nue et qu'il passe
+    // en carte de traduction. Un libellé nu ne se décode pas en carte, et le
+    // convertisseur — tolérant par choix — rendrait une carte **vide** sans se
+    // plaindre : le sélecteur de fonds afficherait des pastilles sans nom,
+    // indéfiniment.
+    //
+    // Effacer le curseur est ce qui fait annoncer la collection `from_zero` au
+    // manifeste suivant. L'oublier laisserait une table vide qu'aucun cycle ne
+    // viendrait remplir — le pire des deux mondes.
+    final schema = await verifier.schemaAt(5);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+    schema.rawDatabase.execute(
+      "INSERT INTO status_backgrounds (id, label, base_color, top_color, "
+      "bottom_color, ink, position, is_active, sync_stamp) "
+      "VALUES (1, 'Bleu de marque', '#223B8C', '#2E4CAE', '#16265C', 'light', "
+      "1, 1, 1)",
+    );
+    schema.rawDatabase.execute(
+      "INSERT INTO sync_cursors (collection, cursor, synced_at) "
+      "VALUES ('status_backgrounds', 'un-curseur-opaque', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 6);
+
+    // Le catalogue, lui, ne bouge pas : le palier ne vise qu'une table.
+    final teachings = await db.select(db.teachings).get();
+    expect(teachings.single.title, 'Dieu a le dernier mot');
+
+    expect(await db.select(db.statusBackgrounds).get(), isEmpty);
+    final cursors = await db.select(db.syncCursors).get();
+    expect(
+      cursors.where((c) => c.collection == 'status_backgrounds'),
+      isEmpty,
+      reason: 'sans effacement du curseur, la collection ne serait jamais '
+          're-tirée et la table resterait vide pour toujours',
+    );
+  });
+
+  test('v6 → v7 : la table des réglages apparaît, et naît vide', () async {
+    // Le palier ne fait que **créer une table**. Elle reste vide jusqu'au
+    // premier choix : l'absence de ligne *est* le défaut, et une valeur écrite
+    // d'office serait indiscernable d'une décision du fidèle.
+    final schema = await verifier.schemaAt(6);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 7);
+
+    expect((await db.select(db.teachings).get()).single.title,
+        'Dieu a le dernier mot');
+    expect(await db.select(db.appSettings).get(), isEmpty);
+  });
+
+  test('v1 → v7 : un appareil resté en v1 rejoue les six paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 7);
+  });
+
+  test('v7 → v8 : la table downloads apparaît et teachings gagne `download`',
+      () async {
+    final connection = await verifier.startAt(7);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 8);
+  });
+
+  test('v1 → v8 : un appareil resté en v1 rejoue les sept paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 8);
+  });
+
+  test('v7 → v8 : le catalogue survit, `download` naît nul, downloads vide',
+      () async {
+    // Deux changements **additifs** (#190) : `downloads` naît (locale seule) et
+    // `teachings.download` s'ajoute, nullable. Aucune ligne n'est réécrite —
+    // c'est le catalogue hors ligne du fidèle, la pièce qui se corrige le plus
+    // mal une fois publiée.
+    final schema = await verifier.schemaAt(7);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 8);
+
+    final teaching = (await db.select(db.teachings).get()).single;
+    expect(teaching.title, 'Dieu a le dernier mot');
+    // La colonne ajoutée est nulle sur une ligne écrite avant la migration :
+    // « pas téléchargeable », jusqu'à ce qu'un cycle ramène son `download`.
+    expect(teaching.download, isNull);
+    // La table locale seule naît vide et le reste jusqu'au premier
+    // téléchargement — elle n'est alimentée que par le moteur, jamais la synchro.
+    expect(await db.select(db.downloads).get(), isEmpty);
+  });
+
+  test(
+      'v8 → v9 : les tables download_titles et download_notifications naissent',
+      () async {
+    final connection = await verifier.startAt(8);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 9);
+  });
+
+  test('v1 → v9 : un appareil resté en v1 rejoue les huit paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 9);
+  });
+
+  test(
+      'v8 → v9 : les téléchargements survivent, les deux tables naissent vides',
+      () async {
+    // Deux créations de table **additives** (#194) : `download_titles` et
+    // `download_notifications`. Aucune ligne `downloads` n'est réécrite — c'est
+    // un fichier réel sur l'appareil du fidèle.
+    final schema = await verifier.schemaAt(8);
+    schema.rawDatabase.execute(
+      "INSERT INTO downloads (content_type, content_id, quality, state, "
+      "bytes_received, bytes_total, created_at) "
+      "VALUES ('teaching', 't-1', 'mid', 'complete', 200, 200, 1000)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 9);
+
+    final download = (await db.select(db.downloads).get()).single;
+    expect(download.contentId, 't-1');
+    expect(download.state, DownloadState.complete);
+    // Les deux tables locales seules naissent vides : `download_titles` se
+    // remplit au prochain téléchargement, `download_notifications` au premier
+    // retrait d'un enseignement téléchargé.
+    expect(await db.select(db.downloadTitles).get(), isEmpty);
+    expect(await db.select(db.downloadNotifications).get(), isEmpty);
   });
 
   test('la version de schéma couvre bien toutes les versions exportées', () {

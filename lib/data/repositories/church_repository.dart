@@ -16,11 +16,19 @@ import '../sample_data.dart';
 /// **rétrécit à chaque domaine branché**, jusqu'à disparaître.
 abstract interface class ChurchRepository {
   List<CommunityGroup> groups();
+
+  /// Les conversations du hub « Échanges » (groupes + messages privés mêlés,
+  /// triées par récence).
+  List<Conversation> conversations();
+
+  /// Les groupes **à rejoindre** de la rangée de découverte.
+  List<DiscoverGroup> groupsToJoin();
+
   List<PrayerRequest> prayers();
   List<SpiritualNote> notes();
 
-  /// Messages de la discussion d'un groupe donné.
-  List<ChatMessage> chatFor(CommunityGroup group);
+  /// Messages d'une conversation donnée.
+  List<ChatMessage> chatFor(Conversation conversation);
 }
 
 /// Implémentation en mémoire adossée aux [SampleData] (maquettes).
@@ -34,11 +42,17 @@ class InMemoryChurchRepository implements ChurchRepository {
   List<CommunityGroup> groups() => SampleData.groups;
 
   @override
+  List<Conversation> conversations() => SampleData.conversations;
+
+  @override
+  List<DiscoverGroup> groupsToJoin() => SampleData.groupsToJoin;
+
+  @override
   List<PrayerRequest> prayers() => SampleData.prayers;
 
   @override
   List<SpiritualNote> notes() => SampleData.notes;
 
   @override
-  List<ChatMessage> chatFor(CommunityGroup group) => SampleData.chat;
+  List<ChatMessage> chatFor(Conversation conversation) => SampleData.chat;
 }

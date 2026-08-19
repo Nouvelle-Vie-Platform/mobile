@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../../models/announcement_draft.dart';
+import '../../utils/i18n_text.dart';
 import '../../models/announcement_view.dart';
 import '../local/announcement_dao.dart';
 import 'announcement_repository.dart';
@@ -37,7 +38,8 @@ class StoreAnnouncementRepository implements AnnouncementRepository {
   /// chargement à composer, au lieu d'une fenêtre où le sélecteur de compte est
   /// prêt et celui des teintes encore vide.
   @override
-  Stream<ComposerOptions> composerOptions() => _combineLatest(
+  Stream<ComposerOptions> composerOptions({required String locale}) =>
+      _combineLatest(
         _dao.myAccounts().watch(),
         _dao.composableBackgrounds().watch(),
         (accounts, backgrounds) => ComposerOptions(
@@ -74,7 +76,10 @@ class StoreAnnouncementRepository implements AnnouncementRepository {
                 .map(
                   (entry) => StatusBackgroundOption(
                     id: entry.row.id,
-                    label: entry.row.label,
+                    // `pick` et rien d'autre : le magasin porte la carte
+                    // entière, l'unique autorité du repli de langue est
+                    // `utils/i18n_text.dart` (ADR-0023).
+                    label: pick(entry.row.label, locale),
                     backdrop: entry.backdrop!,
                   ),
                 ),

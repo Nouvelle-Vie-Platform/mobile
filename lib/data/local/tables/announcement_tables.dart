@@ -28,6 +28,7 @@ library;
 
 import 'package:drift/drift.dart';
 
+import '../converters/i18n_map_converter.dart';
 import 'mediatheque_tables.dart';
 
 /// Collection `status_backgrounds` — le **référentiel partagé des fonds** de
@@ -54,9 +55,20 @@ class StatusBackgrounds extends Table with SyncedRow {
 
   IntColumn get id => integer()();
 
-  /// Libellé **monolingue** du fond, tel que l'administrateur l'a nommé. Ce
-  /// n'est pas un texte d'interface : il ne sert qu'au sélecteur de composition.
-  TextColumn get label => text()();
+  /// Carte de traduction **entière** `{fr, en, ee}` — jamais la langue retenue,
+  /// exactement comme `teaching_types.label`. Le repli se fait à la lecture, via
+  /// `utils/i18n_text.dart` → `pick`.
+  ///
+  /// Elle a été **monolingue par erreur** jusqu'à la v6 du schéma, et cette
+  /// erreur-là ne coûtait pas un libellé : le serveur déclare la colonne en
+  /// `jsonb` (ADR-0023, sur le patron de `teaching_types`), donc chaque ligne
+  /// servie faisait lever `_text` — ce qui **coupait le cycle de
+  /// synchronisation entier**, et avec lui toutes les collections rangées après
+  /// `status_backgrounds` dans le registre : documents légaux, intervenants,
+  /// enseignements, rassemblements, annonces. Le libellé du sélecteur de fonds
+  /// est ce qu'il y a de plus anodin dans cette table ; il tenait l'application
+  /// muette.
+  TextColumn get label => text().map(const I18nMapConverter())();
 
   /// Teinte de référence du fond (`#RRGGBB`).
   TextColumn get baseColor => text()();

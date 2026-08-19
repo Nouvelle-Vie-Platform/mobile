@@ -366,6 +366,91 @@ class CommunityGroup {
   final String? role;
 }
 
+/// Nature d'une [Conversation] du hub « Échanges ».
+///
+/// [group] = discussion à plusieurs (un groupe communautaire) ; [direct] = tête
+/// à tête (message privé). Le hub mélange les deux dans une **seule liste à
+/// plat**, sans les séparer — le discriminant ne sert qu'à l'habillage de la
+/// tuile (avatar de groupe vs. de personne) et jamais à trier.
+enum ConversationKind { group, direct }
+
+/// Une conversation du hub « Échanges » — **modèle de maquette**, fictif et
+/// synchrone (alimenté par `SampleData`, comme [ChatMessage]).
+///
+/// C'est l'unité de la liste d'inbox : groupes et messages privés y sont
+/// mélangés et triés par récence. [lastMessagePreview] et [time] sont **déjà
+/// résolus** (le serveur ne sert pas de texte pré-formaté ; ici il n'y a pas de
+/// serveur), à l'image de `ChatMessage.time`.
+///
+/// Au branchement, ce modèle recevra l'origine réelle de la conversation et un
+/// identifiant serveur ; aujourd'hui l'[id] est une chaîne écrite en dur dans la
+/// fixture, stable d'un lancement à l'autre.
+@immutable
+class Conversation {
+  const Conversation({
+    required this.id,
+    required this.kind,
+    required this.name,
+    required this.lastMessagePreview,
+    required this.time,
+    this.avatarUrl,
+    this.members = const [],
+    this.description,
+    this.sharedMedia = const [],
+  });
+
+  final String id;
+  final ConversationKind kind;
+  final String name;
+
+  /// URL d'avatar, `null` = repli sur les initiales ([AppAvatar]).
+  final String? avatarUrl;
+
+  /// Aperçu déjà tronqué du dernier message échangé.
+  final String lastMessagePreview;
+
+  /// Horodatage **déjà formaté** du dernier message (ex. « 10:38 »).
+  final String time;
+
+  /// Noms des membres — renseigné pour un [ConversationKind.group], vide pour un
+  /// message direct. **Modèle de maquette** : au branchement, le mobile n'aura
+  /// aucune collection d'utilisateurs (ADR-0029) et cette liste viendra d'une
+  /// autre source. Sert à peupler la liste des membres ouverte depuis le titre.
+  final List<String> members;
+
+  /// Description du groupe, affichée dans la fiche (façon Telegram). `null` pour
+  /// un message direct ou un groupe sans présentation.
+  final String? description;
+
+  /// URLs des médias partagés, aperçus dans la fiche du groupe. **Maquette**.
+  final List<String> sharedMedia;
+}
+
+/// Un groupe **à rejoindre** proposé dans la rangée de découverte du hub
+/// « Échanges » — **modèle de maquette**, distinct des [Conversation].
+///
+/// Il ne porte que ce que la carte de découverte affiche : un visuel, un nom et
+/// l'animateur. Volontairement séparé de [Conversation] : découvrir un groupe et
+/// discuter dedans sont deux gestes, et la maquette les range en deux rangées.
+@immutable
+class DiscoverGroup {
+  const DiscoverGroup({
+    required this.id,
+    required this.name,
+    required this.host,
+    this.imageUrl,
+  });
+
+  final String id;
+  final String name;
+
+  /// Nom de l'animateur du groupe.
+  final String host;
+
+  /// Visuel de couverture, `null` = repli coloré.
+  final String? imageUrl;
+}
+
 class PrayerRequest {
   const PrayerRequest({
     required this.title,

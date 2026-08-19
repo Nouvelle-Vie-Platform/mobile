@@ -24,7 +24,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navAnnouncements => 'Announcements';
 
   @override
-  String get navGroups => 'Groups';
+  String get navGroups => 'Chats';
 
   @override
   String get navProfile => 'Profile';
@@ -262,19 +262,59 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get groupsTitle => 'My groups';
-
-  @override
   String get groupsDiscoverMore => 'Discover more groups';
 
   @override
-  String get communityTitle => 'Community';
+  String get communityTitle => 'Chats';
 
   @override
-  String get communityTabInbox => 'Inbox';
+  String get echangesDiscover => 'Groups to join';
 
   @override
-  String get communityTabRequests => 'Requests';
+  String echangesHostedBy(String name) {
+    return 'Hosted by $name';
+  }
+
+  @override
+  String get requestsTitle => 'Requests';
+
+  @override
+  String get requestsEmptyTitle => 'No requests yet';
+
+  @override
+  String get requestsEmpty => 'Your requests and suggestions will appear here.';
+
+  @override
+  String get requestsAdd => 'New request';
+
+  @override
+  String get memberMessage => 'Message';
+
+  @override
+  String get memberProfileSubtitle => 'Community member';
+
+  @override
+  String get groupInfoAbout => 'Description';
+
+  @override
+  String get groupInfoSharedMedia => 'Shared media';
+
+  @override
+  String get mediaSaved => 'Image saved to your photos';
+
+  @override
+  String get mediaSaveErrorPermission =>
+      'Photos access denied. Allow it in Settings.';
+
+  @override
+  String get mediaSaveErrorNetwork => 'Download failed. Check your connection.';
+
+  @override
+  String get mediaSaveErrorUnsupported =>
+      'Saving isn\'t available on this device.';
+
+  @override
+  String get mediaSaveError => 'Couldn\'t save the image.';
 
   @override
   String groupMembers(int count) {
@@ -317,6 +357,95 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionDownloadAudio => 'Download audio';
+
+  @override
+  String get downloadStateDownloading => 'Downloading';
+
+  @override
+  String downloadProgressPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get downloadStatePaused => 'Paused';
+
+  @override
+  String get downloadStateWaitingWifi => 'Waiting for Wi-Fi';
+
+  @override
+  String get downloadStateComplete => 'Downloaded';
+
+  @override
+  String get downloadStateFailed => 'Download failed';
+
+  @override
+  String get downloadActionPause => 'Pause';
+
+  @override
+  String get downloadActionResume => 'Resume download';
+
+  @override
+  String get downloadActionRetry => 'Retry download';
+
+  @override
+  String get downloadActionDelete => 'Delete download';
+
+  @override
+  String get downloadDeleteConfirmTitle => 'Delete this download?';
+
+  @override
+  String get downloadDeleteConfirmMessage =>
+      'The file will be removed from this device. You can download it again later.';
+
+  @override
+  String get downloadDeleteConfirmAction => 'Delete';
+
+  @override
+  String get downloadStateQueued => 'Queued';
+
+  @override
+  String get profileDownloads => 'Downloads';
+
+  @override
+  String get downloadsTitle => 'Downloads';
+
+  @override
+  String get downloadsEmptyTitle => 'No downloads';
+
+  @override
+  String get downloadsEmptyMessage =>
+      'Teachings you download to listen offline will show up here.';
+
+  @override
+  String downloadsStorageUsed(String size) {
+    return '$size MB used';
+  }
+
+  @override
+  String downloadSize(String size) {
+    return '$size MB';
+  }
+
+  @override
+  String get downloadsUnknownTitle => 'Downloaded teaching';
+
+  @override
+  String get downloadUpdateAvailable => 'Update available';
+
+  @override
+  String get downloadActionUpdate => 'Update';
+
+  @override
+  String downloadPurgeNotice(String title) {
+    return '“$title” was removed by the library and deleted from your downloads.';
+  }
+
+  @override
+  String get downloadPurgeNoticeUnnamed =>
+      'A teaching was removed by the library and deleted from your downloads.';
+
+  @override
+  String get downloadPurgeDismiss => 'Dismiss';
 
   @override
   String get agendaSeeAll => 'See full agenda';
@@ -377,6 +506,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get prayersNewRequest => 'New request';
+
+  @override
+  String prayerRequestPraying(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members praying',
+      one: '$count member praying',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get newRequestAppBarTitle => 'New request';
@@ -446,6 +586,141 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get helpSupport => 'Help & Support';
+
+  @override
+  String get deleteAccount => 'Delete my account';
+
+  @override
+  String get deleteAccountTitle => 'Delete my account';
+
+  @override
+  String get deleteAccountLead =>
+      'This is permanent. It cannot be undone, and nobody at the church can undo it for you.';
+
+  @override
+  String get deleteAccountErasedTitle => 'What is erased';
+
+  @override
+  String get deleteAccountErasedIdentity =>
+      'Your identity: name, title, email, phone.';
+
+  @override
+  String get deleteAccountErasedNotes => 'Your spiritual notes.';
+
+  @override
+  String get deleteAccountErasedProgress =>
+      'Your listening progress, on this device and the others.';
+
+  @override
+  String get deleteAccountKeptTitle => 'What stays, without your name';
+
+  @override
+  String get deleteAccountKeptMessages =>
+      'Your group messages stay readable, detached from you.';
+
+  @override
+  String get deleteAccountKeptPrayers =>
+      'Prayers others carried with you do not vanish from the wall.';
+
+  @override
+  String get deleteAccountReuse =>
+      'Your email becomes free again: you may sign up later, but it will be a brand new account with nothing of this one.';
+
+  @override
+  String get deleteAccountConfirmCheckbox => 'I understand this is permanent.';
+
+  @override
+  String get deleteAccountAction => 'Delete permanently';
+
+  @override
+  String get deleteAccountErrorNetwork =>
+      'Cannot delete: no network. Your account is untouched.';
+
+  @override
+  String get deleteAccountErrorServer =>
+      'The server could not process the request. Your account is untouched, try again.';
+
+  @override
+  String get mediaSettings => 'Quality';
+
+  @override
+  String get mediaSettingsTitle => 'Quality & data';
+
+  @override
+  String get mediaSettingsLead =>
+      'These settings change nothing on the church network. They protect your data plan when you are out.';
+
+  @override
+  String get mediaSettingsStreaming => 'Listening to a teaching';
+
+  @override
+  String get mediaSettingsLive => 'Live';
+
+  @override
+  String get mediaSettingsDownload => 'Download';
+
+  @override
+  String get mediaSettingsDownloadOnCellular => 'Download on mobile data';
+
+  @override
+  String get mediaSettingsDownloadOnCellularSubtitle =>
+      'By default, downloads wait for Wi-Fi to protect your data plan.';
+
+  @override
+  String get mediaQualityAuto => 'Automatic';
+
+  @override
+  String get mediaQualityLow => 'Data saver';
+
+  @override
+  String get mediaQualityMid => 'Standard';
+
+  @override
+  String get mediaQualityHigh => 'High';
+
+  @override
+  String mediaQualityImpactAuto(int mb) {
+    return '≈ $mb MB per hour on mobile data, better quality on wifi.';
+  }
+
+  @override
+  String mediaQualityImpactLow(int mb) {
+    return '≈ $mb MB per hour · fine for preaching, the choir loses depth.';
+  }
+
+  @override
+  String mediaQualityImpactMid(int mb) {
+    return '≈ $mb MB per hour · worship regains its fullness.';
+  }
+
+  @override
+  String mediaQualityImpactHigh(int mb) {
+    return '≈ $mb MB per hour · every nuance, at full price.';
+  }
+
+  @override
+  String get themeSectionTitle => 'Appearance';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeAuto => 'Auto';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get themeAutoHoursTitle => 'Switch times';
+
+  @override
+  String get themeDarkFrom => 'Goes dark at';
+
+  @override
+  String get themeLightFrom => 'Back to light at';
 
   @override
   String get logout => 'Log out';
@@ -911,9 +1186,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get drawerOpen => 'Open menu';
-
-  @override
-  String get drawerBrandName => 'Église Évangélique Nouvelle Vie';
 
   @override
   String get drawerTerms => 'Terms of use';

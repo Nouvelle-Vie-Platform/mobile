@@ -41,7 +41,7 @@ void main() {
         b.insert(db.statusBackgrounds, statusBackgroundRow(5));
       });
 
-      final options = await repository.composerOptions().first;
+      final options = await repository.composerOptions(locale: 'fr').first;
 
       // Le même repli que l'en-tête du mur : un membre doit reconnaître dans le
       // sélecteur la signature qu'il verra ensuite sur son statut.
@@ -62,7 +62,7 @@ void main() {
             statusBackgroundRow(9, topColor: 'pas-une-couleur'),
           );
 
-      final options = await repository.composerOptions().first;
+      final options = await repository.composerOptions(locale: 'fr').first;
 
       expect(options.backgrounds, isEmpty);
     });
@@ -70,7 +70,7 @@ void main() {
     test('le flux ré-émet quand la synchronisation ajoute un fond', () async {
       final emissions = <int>[];
       final subscription = repository
-          .composerOptions()
+          .composerOptions(locale: 'fr')
           .listen((options) => emissions.add(options.backgrounds.length));
       addTearDown(subscription.cancel);
       await pumpEventQueue();

@@ -1,0 +1,135 @@
+import 'dart:async';
+
+import '../../models/media_preferences.dart';
+import 'content_player.dart';
+
+/// **Applique le plafond de débit au lecteur**, en tenant le cliquet.
+///
+/// Un objet de politique, pas un widget, et c'est la décision centrale de ce
+/// fichier.
+///
+/// **Pourquoi pas dans `ContentPlayerView`.** C'est ce qui a été essayé
+/// d'abord, et c'est ce qui a coûté le plus cher : dès que l'écran de lecture
+/// touchait la chaîne des réglages, son montage sous `flutter test` se bloquait
+/// — processus à **0 % de CPU pendant dix minutes**, donc une attente de
+/// ressource et non une boucle, avant expiration. La cause tient au flux Drift
+/// de `app_settings` ouvert sous l'horloge factice du harnais ; peu importe le
+/// détail, la leçon est qu'un écran n'a pas à ouvrir un flux de magasin pour
+/// **contraindre** le lecteur.
+///
+/// Cela déroge en apparence à « `ContentPlayerView` est le seul endroit qui
+/// pilote le lecteur » (`CLAUDE.md`). La règle vise le **transport** — jouer,
+/// mettre en pause, se déplacer, arrêter — pour que deux endroits ne se
+/// disputent pas la lecture. Le plafond ne fait rien de tout cela : il n'a
+/// aucun effet audible immédiat, il interdit seulement à l'adaptation HLS de
+/// monter au-dessus d'un débit. Aucun conflit possible avec l'écran.
+///
+/// Câblé une fois dans `main.dart`, donc **jamais instancié par un test
+/// d'écran**. Il se teste seul, avec un lecteur inerte et un `StreamController`
+/// nu : ni magasin, ni widget, ni horloge factice.
+class BitrateCapController {
+  BitrateCapController({
+    required ContentPlayer player,
+    required Stream<MediaQuality> qualities,
+    required Stream<bool> onCellular,
+    required Stream<int?> targets,
+  })  : _player = player,
+        _qualities = qualities,
+        _onCellular = onCellular,
+        _targets = targets {
+    _qualitySubscription = _qualities.listen((quality) {
+      _quality = quality;
+      _applyVariant();
+    });
+    _cellularSubscription = _onCellular.listen((cellular) {
+      _cellular = cellular;
+      _applyVariant();
+    });
+    _subscription = _targets.listen(_onTarget);
+    _player.addListener(_onPlayback);
+    _contentId = _player.value.contentId;
+  }
+
+  final ContentPlayer _player;
+  final Stream<MediaQuality> _qualities;
+  final Stream<bool> _onCellular;
+  final Stream<int?> _targets;
+  late final StreamSubscription<int?> _subscription;
+  late final StreamSubscription<MediaQuality> _qualitySubscription;
+  late final StreamSubscription<bool> _cellularSubscription;
+
+  MediaQuality _quality = MediaQuality.auto;
+  bool _cellular = false;
+
+  /// Le plafond le plus bas vu depuis l'ouverture du contenu courant.
+  ///
+  /// **Le cliquet.** Il descend quand le téléphone bascule en données
+  /// mobiles — c'est la facture qu'on veut éviter, et l'effet arrive au segment
+  /// suivant, sans coupure. Il **ne remonte pas** au retour du wifi tant que ce
+  /// contenu joue : remonter coûterait une remise en tampon au milieu d'un
+  /// prêche, et une interruption vaut plus cher qu'un peu d'aigu.
+  int? _floor;
+
+  /// Dernier plafond visé par le réglage et le réseau, cliquet mis à part.
+  int? _target;
+
+  /// Le contenu sur lequel le cliquet courant porte.
+  String? _contentId;
+
+  void _onTarget(int? target) {
+    _target = target;
+    if (target != null && (_floor == null || target < _floor!)) {
+      _floor = target;
+    }
+    _player.setBitrateCap(_floor);
+  }
+
+  /// **Le changement de contenu relâche le cliquet**, et c'est le seul moment
+  /// qui le relâche.
+  ///
+  /// Sans cela, un fidèle qui a écouté une fois en données mobiles resterait
+  /// bridé chez lui, sur son wifi, jusqu'au redémarrage de l'application.
+  ///
+  /// On repose aussi le plafond parce que les implémentations qui **rouvrent
+  /// une source** l'oublient en même temps qu'elles la remplacent.
+  void _onPlayback() {
+    final id = _player.value.contentId;
+    if (id == _contentId) return;
+    _contentId = id;
+    _floor = _target;
+    _player.setBitrateCap(_floor);
+  }
+
+  /// **Le palier passe par l'URL, pas par le plafond**, et c'est ce qui fait
+  /// exister le réglage sur Android : `setPreferredPeakBitRate` y est reçu et
+  /// ignoré, alors qu'une liste de lecture de rendu n'est qu'une URL.
+  ///
+  /// Un palier **explicite** donne son rendu, partout et quel que soit le
+  /// réseau — l'avoir choisi est une décision qu'on ne corrige pas dans le dos
+  /// de qui l'a prise.
+  ///
+  /// **`auto` dépend du réseau, et c'est ce qui ferme le trou Android.** En
+  /// wifi il garde le master : brider l'URL y interdirait l'adaptation, ce que
+  /// ce mode promet justement. En données mobiles il prend le rendu `low`, ce
+  /// qui donne à Android l'économie que son plafond de débit ne sait pas lui
+  /// donner. Sur iOS et sur le web, le plafond fait déjà le travail et ce rendu
+  /// ne le contredit pas — un rendu unique ne laisse rien à adapter au-dessus.
+  ///
+  /// **Sans effet sur la lecture en cours** : l'URL se choisit à l'ouverture.
+  /// Il reste donc un cas où Android ne suit pas — un prêche commencé en wifi,
+  /// écouté en marchant — que seul le plafond couvre, et qui demanderait une
+  /// réouverture, donc une coupure.
+  void _applyVariant() {
+    final variant = _quality == MediaQuality.auto
+        ? (_cellular ? MediaQuality.low.key : null)
+        : _quality.key;
+    _player.setPreferredVariant(variant);
+  }
+
+  void dispose() {
+    unawaited(_qualitySubscription.cancel());
+    unawaited(_cellularSubscription.cancel());
+    unawaited(_subscription.cancel());
+    _player.removeListener(_onPlayback);
+  }
+}

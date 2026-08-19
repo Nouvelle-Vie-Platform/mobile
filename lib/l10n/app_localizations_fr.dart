@@ -24,7 +24,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navAnnouncements => 'Annonces';
 
   @override
-  String get navGroups => 'Groupes';
+  String get navGroups => 'Échanges';
 
   @override
   String get navProfile => 'Profil';
@@ -264,19 +264,60 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get groupsTitle => 'Mes groupes';
-
-  @override
   String get groupsDiscoverMore => 'Découvrir plus de groupes';
 
   @override
-  String get communityTitle => 'Communauté';
+  String get communityTitle => 'Échanges';
 
   @override
-  String get communityTabInbox => 'Inbox';
+  String get echangesDiscover => 'Groupes à rejoindre';
 
   @override
-  String get communityTabRequests => 'Requêtes';
+  String echangesHostedBy(String name) {
+    return 'Animé par $name';
+  }
+
+  @override
+  String get requestsTitle => 'Requêtes';
+
+  @override
+  String get requestsEmptyTitle => 'Aucune requête';
+
+  @override
+  String get requestsEmpty => 'Vos requêtes et suggestions apparaîtront ici.';
+
+  @override
+  String get requestsAdd => 'Nouvelle requête';
+
+  @override
+  String get memberMessage => 'Message';
+
+  @override
+  String get memberProfileSubtitle => 'Membre de la communauté';
+
+  @override
+  String get groupInfoAbout => 'Description';
+
+  @override
+  String get groupInfoSharedMedia => 'Médias partagés';
+
+  @override
+  String get mediaSaved => 'Image enregistrée dans vos photos';
+
+  @override
+  String get mediaSaveErrorPermission =>
+      'Accès aux photos refusé. Autorisez-le dans les réglages.';
+
+  @override
+  String get mediaSaveErrorNetwork =>
+      'Échec du téléchargement. Vérifiez votre connexion.';
+
+  @override
+  String get mediaSaveErrorUnsupported =>
+      'Enregistrement indisponible sur cet appareil.';
+
+  @override
+  String get mediaSaveError => 'Impossible d\'enregistrer l\'image.';
 
   @override
   String groupMembers(int count) {
@@ -319,6 +360,95 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get actionDownloadAudio => 'Télécharger l\'audio';
+
+  @override
+  String get downloadStateDownloading => 'Téléchargement en cours';
+
+  @override
+  String downloadProgressPercent(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get downloadStatePaused => 'En pause';
+
+  @override
+  String get downloadStateWaitingWifi => 'En attente de wifi';
+
+  @override
+  String get downloadStateComplete => 'Téléchargé';
+
+  @override
+  String get downloadStateFailed => 'Échec du téléchargement';
+
+  @override
+  String get downloadActionPause => 'Mettre en pause';
+
+  @override
+  String get downloadActionResume => 'Reprendre le téléchargement';
+
+  @override
+  String get downloadActionRetry => 'Réessayer le téléchargement';
+
+  @override
+  String get downloadActionDelete => 'Supprimer le téléchargement';
+
+  @override
+  String get downloadDeleteConfirmTitle => 'Supprimer le téléchargement ?';
+
+  @override
+  String get downloadDeleteConfirmMessage =>
+      'Le fichier sera effacé de cet appareil. Vous pourrez le télécharger de nouveau plus tard.';
+
+  @override
+  String get downloadDeleteConfirmAction => 'Supprimer';
+
+  @override
+  String get downloadStateQueued => 'En attente';
+
+  @override
+  String get profileDownloads => 'Téléchargements';
+
+  @override
+  String get downloadsTitle => 'Téléchargements';
+
+  @override
+  String get downloadsEmptyTitle => 'Aucun téléchargement';
+
+  @override
+  String get downloadsEmptyMessage =>
+      'Les enseignements que vous téléchargez pour les écouter hors ligne apparaîtront ici.';
+
+  @override
+  String downloadsStorageUsed(String size) {
+    return '$size Mo utilisés';
+  }
+
+  @override
+  String downloadSize(String size) {
+    return '$size Mo';
+  }
+
+  @override
+  String get downloadsUnknownTitle => 'Enseignement téléchargé';
+
+  @override
+  String get downloadUpdateAvailable => 'Mise à jour disponible';
+
+  @override
+  String get downloadActionUpdate => 'Mettre à jour';
+
+  @override
+  String downloadPurgeNotice(String title) {
+    return '« $title » a été retiré par la médiathèque et supprimé de vos téléchargements.';
+  }
+
+  @override
+  String get downloadPurgeNoticeUnnamed =>
+      'Un enseignement a été retiré par la médiathèque et supprimé de vos téléchargements.';
+
+  @override
+  String get downloadPurgeDismiss => 'Ignorer';
 
   @override
   String get agendaSeeAll => 'Voir tout l\'agenda';
@@ -379,6 +509,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get prayersNewRequest => 'Nouvelle requête';
+
+  @override
+  String prayerRequestPraying(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count membres en prière',
+      one: '$count membre en prière',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get newRequestAppBarTitle => 'Nouvelle requête';
@@ -448,6 +589,143 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get helpSupport => 'Aide & Support';
+
+  @override
+  String get deleteAccount => 'Supprimer mon compte';
+
+  @override
+  String get deleteAccountTitle => 'Supprimer mon compte';
+
+  @override
+  String get deleteAccountLead =>
+      'Cette action est définitive. Elle ne peut pas être annulée, et personne à l\'église ne peut la défaire pour vous.';
+
+  @override
+  String get deleteAccountErasedTitle => 'Ce qui est effacé';
+
+  @override
+  String get deleteAccountErasedIdentity =>
+      'Votre identité : nom, civilité, email, téléphone.';
+
+  @override
+  String get deleteAccountErasedNotes => 'Vos notes spirituelles.';
+
+  @override
+  String get deleteAccountErasedProgress =>
+      'Votre progression d\'écoute, sur cet appareil et sur les autres.';
+
+  @override
+  String get deleteAccountKeptTitle => 'Ce qui reste, sans votre nom';
+
+  @override
+  String get deleteAccountKeptMessages =>
+      'Vos messages dans les groupes restent lisibles, détachés de vous.';
+
+  @override
+  String get deleteAccountKeptPrayers =>
+      'Les prières que d\'autres ont portées avec vous ne disparaissent pas du mur.';
+
+  @override
+  String get deleteAccountReuse =>
+      'Votre email redevient libre : vous pourrez vous réinscrire, mais ce sera un compte entièrement neuf, sans rien de celui-ci.';
+
+  @override
+  String get deleteAccountConfirmCheckbox =>
+      'Je comprends que cette action est définitive.';
+
+  @override
+  String get deleteAccountAction => 'Supprimer définitivement';
+
+  @override
+  String get deleteAccountErrorNetwork =>
+      'Suppression impossible : pas de réseau. Votre compte est intact.';
+
+  @override
+  String get deleteAccountErrorServer =>
+      'Le serveur n\'a pas pu traiter la demande. Votre compte est intact, réessayez.';
+
+  @override
+  String get mediaSettings => 'Qualité';
+
+  @override
+  String get mediaSettingsTitle => 'Qualité & données';
+
+  @override
+  String get mediaSettingsLead =>
+      'Ces réglages ne changent rien à ce que vous entendez sur le réseau de l\'église. Ils protègent votre forfait quand vous êtes dehors.';
+
+  @override
+  String get mediaSettingsStreaming => 'Écoute d\'un enseignement';
+
+  @override
+  String get mediaSettingsLive => 'Direct';
+
+  @override
+  String get mediaSettingsDownload => 'Téléchargement';
+
+  @override
+  String get mediaSettingsDownloadOnCellular =>
+      'Télécharger en données mobiles';
+
+  @override
+  String get mediaSettingsDownloadOnCellularSubtitle =>
+      'Par défaut, les téléchargements attendent le wifi pour préserver votre forfait.';
+
+  @override
+  String get mediaQualityAuto => 'Automatique';
+
+  @override
+  String get mediaQualityLow => 'Économie';
+
+  @override
+  String get mediaQualityMid => 'Standard';
+
+  @override
+  String get mediaQualityHigh => 'Haute';
+
+  @override
+  String mediaQualityImpactAuto(int mb) {
+    return '≈ $mb Mo par heure en données mobiles, meilleure qualité en wifi.';
+  }
+
+  @override
+  String mediaQualityImpactLow(int mb) {
+    return '≈ $mb Mo par heure · suffisant pour la prédication, la chorale y perd.';
+  }
+
+  @override
+  String mediaQualityImpactMid(int mb) {
+    return '≈ $mb Mo par heure · la louange retrouve son ampleur.';
+  }
+
+  @override
+  String mediaQualityImpactHigh(int mb) {
+    return '≈ $mb Mo par heure · chaque nuance, au prix fort.';
+  }
+
+  @override
+  String get themeSectionTitle => 'Apparence';
+
+  @override
+  String get themeLight => 'Clair';
+
+  @override
+  String get themeSystem => 'Système';
+
+  @override
+  String get themeAuto => 'Auto';
+
+  @override
+  String get themeDark => 'Sombre';
+
+  @override
+  String get themeAutoHoursTitle => 'Heures de bascule';
+
+  @override
+  String get themeDarkFrom => 'Passe en sombre à';
+
+  @override
+  String get themeLightFrom => 'Revient au clair à';
 
   @override
   String get logout => 'Se déconnecter';
@@ -916,9 +1194,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get drawerOpen => 'Ouvrir le menu';
-
-  @override
-  String get drawerBrandName => 'Église Évangélique Nouvelle Vie';
 
   @override
   String get drawerTerms => 'CGU';

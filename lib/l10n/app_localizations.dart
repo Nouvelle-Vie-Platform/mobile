@@ -130,10 +130,10 @@ abstract class AppLocalizations {
   /// **'Annonces'**
   String get navAnnouncements;
 
-  /// No description provided for @navGroups.
+  /// Bottom nav + titre du hub de conversations « Échanges » (ex-« Groupes »). Une seule clé : l'onglet pilule a disparu, elle ne sert plus que la barre de nav et le titre de la page
   ///
   /// In fr, this message translates to:
-  /// **'Groupes'**
+  /// **'Échanges'**
   String get navGroups;
 
   /// No description provided for @navProfile.
@@ -544,35 +544,107 @@ abstract class AppLocalizations {
   /// **'{count} messages'**
   String seriesMessagesCount(int count);
 
-  /// No description provided for @groupsTitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Mes groupes'**
-  String get groupsTitle;
-
   /// No description provided for @groupsDiscoverMore.
   ///
   /// In fr, this message translates to:
   /// **'Découvrir plus de groupes'**
   String get groupsDiscoverMore;
 
-  /// No description provided for @communityTitle.
+  /// Titre affiché en tête du hub « Échanges » (dans le bandeau diagonal). Même mot que navGroups, clé distincte : l'un titre la page, l'autre la barre de nav
   ///
   /// In fr, this message translates to:
-  /// **'Communauté'**
+  /// **'Échanges'**
   String get communityTitle;
 
-  /// No description provided for @communityTabInbox.
+  /// Hub Échanges : en-tête de la rangée horizontale de découverte (groupes à rejoindre), distincte de la liste des conversations
   ///
   /// In fr, this message translates to:
-  /// **'Inbox'**
-  String get communityTabInbox;
+  /// **'Groupes à rejoindre'**
+  String get echangesDiscover;
 
-  /// No description provided for @communityTabRequests.
+  /// Hub Échanges : sous-titre d'une carte de groupe à rejoindre — l'animateur du groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Animé par {name}'**
+  String echangesHostedBy(String name);
+
+  /// Titre de l'écran Requêtes, ouvert par le bouton en haut à droite du hub Échanges (et tooltip de ce bouton)
   ///
   /// In fr, this message translates to:
   /// **'Requêtes'**
-  String get communityTabRequests;
+  String get requestsTitle;
+
+  /// Écran Requêtes : titre de l'état vide (aucune requête envoyée pour l'instant)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune requête'**
+  String get requestsEmptyTitle;
+
+  /// Écran Requêtes : explication de l'état vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos requêtes et suggestions apparaîtront ici.'**
+  String get requestsEmpty;
+
+  /// Écran Requêtes : bouton d'ajout, ouvre le formulaire existant de nouvelle requête
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle requête'**
+  String get requestsAdd;
+
+  /// Écran profil-membre : bouton qui démarre une conversation directe avec ce membre
+  ///
+  /// In fr, this message translates to:
+  /// **'Message'**
+  String get memberMessage;
+
+  /// Fiche membre : statut sous le nom
+  ///
+  /// In fr, this message translates to:
+  /// **'Membre de la communauté'**
+  String get memberProfileSubtitle;
+
+  /// Fiche de groupe : intitulé de la section description
+  ///
+  /// In fr, this message translates to:
+  /// **'Description'**
+  String get groupInfoAbout;
+
+  /// Fiche de groupe : intitulé de la section des médias partagés
+  ///
+  /// In fr, this message translates to:
+  /// **'Médias partagés'**
+  String get groupInfoSharedMedia;
+
+  /// Visionneuse : confirmation d'enregistrement d'un média
+  ///
+  /// In fr, this message translates to:
+  /// **'Image enregistrée dans vos photos'**
+  String get mediaSaved;
+
+  /// Visionneuse : permission galerie refusée
+  ///
+  /// In fr, this message translates to:
+  /// **'Accès aux photos refusé. Autorisez-le dans les réglages.'**
+  String get mediaSaveErrorPermission;
+
+  /// Visionneuse : panne réseau au téléchargement
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec du téléchargement. Vérifiez votre connexion.'**
+  String get mediaSaveErrorNetwork;
+
+  /// Visionneuse : plateforme non supportée (web)
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement indisponible sur cet appareil.'**
+  String get mediaSaveErrorUnsupported;
+
+  /// Visionneuse : échec d'enregistrement inattendu
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer l\'image.'**
+  String get mediaSaveError;
 
   /// No description provided for @groupMembers.
   ///
@@ -645,6 +717,162 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Télécharger l\'audio'**
   String get actionDownloadAudio;
+
+  /// Bouton de téléchargement, état en cours : accessibilité de l'anneau de progression. Le pourcentage s'affiche à côté
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargement en cours'**
+  String get downloadStateDownloading;
+
+  /// Pourcentage de progression d'un téléchargement en cours
+  ///
+  /// In fr, this message translates to:
+  /// **'{percent} %'**
+  String downloadProgressPercent(int percent);
+
+  /// No description provided for @downloadStatePaused.
+  ///
+  /// In fr, this message translates to:
+  /// **'En pause'**
+  String get downloadStatePaused;
+
+  /// Bouton de téléchargement : wifi seulement actif et l'appareil est en données mobiles (F8)
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente de wifi'**
+  String get downloadStateWaitingWifi;
+
+  /// No description provided for @downloadStateComplete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargé'**
+  String get downloadStateComplete;
+
+  /// No description provided for @downloadStateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec du téléchargement'**
+  String get downloadStateFailed;
+
+  /// No description provided for @downloadActionPause.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre en pause'**
+  String get downloadActionPause;
+
+  /// No description provided for @downloadActionResume.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprendre le téléchargement'**
+  String get downloadActionResume;
+
+  /// No description provided for @downloadActionRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer le téléchargement'**
+  String get downloadActionRetry;
+
+  /// No description provided for @downloadActionDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le téléchargement'**
+  String get downloadActionDelete;
+
+  /// No description provided for @downloadDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le téléchargement ?'**
+  String get downloadDeleteConfirmTitle;
+
+  /// Confirmation avant de supprimer un téléchargement COMPLET (F14) : on jette un contenu prêt à écouter hors ligne
+  ///
+  /// In fr, this message translates to:
+  /// **'Le fichier sera effacé de cet appareil. Vous pourrez le télécharger de nouveau plus tard.'**
+  String get downloadDeleteConfirmMessage;
+
+  /// No description provided for @downloadDeleteConfirmAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get downloadDeleteConfirmAction;
+
+  /// Page Téléchargements : état d'un téléchargement en file, pas encore démarré par le moteur natif
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get downloadStateQueued;
+
+  /// Premier hexagone du Profil (F12) : mène à la page Téléchargements (/downloads)
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargements'**
+  String get profileDownloads;
+
+  /// Titre de la page Téléchargements (F13)
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargements'**
+  String get downloadsTitle;
+
+  /// Page Téléchargements : titre de l'état vide (rien n'a été téléchargé sur cet appareil)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun téléchargement'**
+  String get downloadsEmptyTitle;
+
+  /// Page Téléchargements : explication sous le titre de l'état vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Les enseignements que vous téléchargez pour les écouter hors ligne apparaîtront ici.'**
+  String get downloadsEmptyMessage;
+
+  /// Page Téléchargements : espace disque total occupé par les téléchargements (F13). {size} est un nombre déjà formaté en Mo
+  ///
+  /// In fr, this message translates to:
+  /// **'{size} Mo utilisés'**
+  String downloadsStorageUsed(String size);
+
+  /// Page Téléchargements : taille d'un téléchargement complété, affichée à côté de « Téléchargé ». {size} est un nombre déjà formaté en Mo
+  ///
+  /// In fr, this message translates to:
+  /// **'{size} Mo'**
+  String downloadSize(String size);
+
+  /// Page Téléchargements : titre de repli quand l'enseignement d'un téléchargement n'est pas (ou plus) dans le magasin local
+  ///
+  /// In fr, this message translates to:
+  /// **'Enseignement téléchargé'**
+  String get downloadsUnknownTitle;
+
+  /// Badge sur un téléchargement périmé (#194, F15) : le média a été révisé côté serveur. La copie locale reste écoutable ; un tap « Mettre à jour » la remplace
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise à jour disponible'**
+  String get downloadUpdateAvailable;
+
+  /// Action sur un téléchargement périmé (#194, F15) : re-télécharge la nouvelle version du média
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour'**
+  String get downloadActionUpdate;
+
+  /// Bandeau de la page Téléchargements (#194, F16) : un enseignement retiré côté serveur a vu sa copie locale purgée. {title} est le titre de l'enseignement
+  ///
+  /// In fr, this message translates to:
+  /// **'« {title} » a été retiré par la médiathèque et supprimé de vos téléchargements.'**
+  String downloadPurgeNotice(String title);
+
+  /// Bandeau de purge (#194, F16), repli quand le titre de l'enseignement retiré n'est pas connu (téléchargement d'avant la dénormalisation)
+  ///
+  /// In fr, this message translates to:
+  /// **'Un enseignement a été retiré par la médiathèque et supprimé de vos téléchargements.'**
+  String get downloadPurgeNoticeUnnamed;
+
+  /// Bandeau de purge : rejeter une notification de purge (le fidèle l'a vue)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ignorer'**
+  String get downloadPurgeDismiss;
 
   /// No description provided for @agendaSeeAll.
   ///
@@ -759,6 +987,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Nouvelle requête'**
   String get prayersNewRequest;
+
+  /// Carte de requête de prière : nombre de membres qui prient. Remplace une chaîne codée en dur (prayer_request_card.dart)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} membre en prière} other{{count} membres en prière}}'**
+  String prayerRequestPraying(int count);
 
   /// No description provided for @newRequestAppBarTitle.
   ///
@@ -897,6 +1131,240 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Aide & Support'**
   String get helpSupport;
+
+  /// Profil : entrée qui ouvre l'écran de suppression de compte. Exigence App Store 5.1.1(v) — supprimer son compte doit être possible DANS l'app
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get deleteAccountTitle;
+
+  /// Écran de suppression : la phrase d'ouverture. Dit « définitif » avant toute liste, parce que c'est la seule chose à retenir si on ne lit pas la suite
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action est définitive. Elle ne peut pas être annulée, et personne à l\'église ne peut la défaire pour vous.'**
+  String get deleteAccountLead;
+
+  /// No description provided for @deleteAccountErasedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce qui est effacé'**
+  String get deleteAccountErasedTitle;
+
+  /// No description provided for @deleteAccountErasedIdentity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre identité : nom, civilité, email, téléphone.'**
+  String get deleteAccountErasedIdentity;
+
+  /// No description provided for @deleteAccountErasedNotes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos notes spirituelles.'**
+  String get deleteAccountErasedNotes;
+
+  /// No description provided for @deleteAccountErasedProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre progression d\'écoute, sur cet appareil et sur les autres.'**
+  String get deleteAccountErasedProgress;
+
+  /// No description provided for @deleteAccountKeptTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce qui reste, sans votre nom'**
+  String get deleteAccountKeptTitle;
+
+  /// No description provided for @deleteAccountKeptMessages.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos messages dans les groupes restent lisibles, détachés de vous.'**
+  String get deleteAccountKeptMessages;
+
+  /// No description provided for @deleteAccountKeptPrayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les prières que d\'autres ont portées avec vous ne disparaissent pas du mur.'**
+  String get deleteAccountKeptPrayers;
+
+  /// Écran de suppression : l'email libéré permet une réinscription, mais sur un compte NEUF — le dire évite qu'on croie pouvoir « revenir » à son historique
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre email redevient libre : vous pourrez vous réinscrire, mais ce sera un compte entièrement neuf, sans rien de celui-ci.'**
+  String get deleteAccountReuse;
+
+  /// No description provided for @deleteAccountConfirmCheckbox.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je comprends que cette action est définitive.'**
+  String get deleteAccountConfirmCheckbox;
+
+  /// No description provided for @deleteAccountAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer définitivement'**
+  String get deleteAccountAction;
+
+  /// Écran de suppression, panne réseau. Insiste sur « votre compte est intact » : sans cette phrase, on croit avoir à moitié réussi
+  ///
+  /// In fr, this message translates to:
+  /// **'Suppression impossible : pas de réseau. Votre compte est intact.'**
+  String get deleteAccountErrorNetwork;
+
+  /// No description provided for @deleteAccountErrorServer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le serveur n\'a pas pu traiter la demande. Votre compte est intact, réessayez.'**
+  String get deleteAccountErrorServer;
+
+  /// No description provided for @mediaSettings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Qualité'**
+  String get mediaSettings;
+
+  /// No description provided for @mediaSettingsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Qualité & données'**
+  String get mediaSettingsTitle;
+
+  /// Panneau qualité : dit d'emblée que le réglage vise le forfait mobile, pas la qualité en général
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces réglages ne changent rien à ce que vous entendez sur le réseau de l\'église. Ils protègent votre forfait quand vous êtes dehors.'**
+  String get mediaSettingsLead;
+
+  /// No description provided for @mediaSettingsStreaming.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écoute d\'un enseignement'**
+  String get mediaSettingsStreaming;
+
+  /// No description provided for @mediaSettingsLive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Direct'**
+  String get mediaSettingsLive;
+
+  /// No description provided for @mediaSettingsDownload.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargement'**
+  String get mediaSettingsDownload;
+
+  /// No description provided for @mediaSettingsDownloadOnCellular.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger en données mobiles'**
+  String get mediaSettingsDownloadOnCellular;
+
+  /// Sous-titre du toggle données mobiles des téléchargements (F8). Dit le défaut wifi-seulement et pourquoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Par défaut, les téléchargements attendent le wifi pour préserver votre forfait.'**
+  String get mediaSettingsDownloadOnCellularSubtitle;
+
+  /// No description provided for @mediaQualityAuto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Automatique'**
+  String get mediaQualityAuto;
+
+  /// No description provided for @mediaQualityLow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Économie'**
+  String get mediaQualityLow;
+
+  /// No description provided for @mediaQualityMid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Standard'**
+  String get mediaQualityMid;
+
+  /// No description provided for @mediaQualityHigh.
+  ///
+  /// In fr, this message translates to:
+  /// **'Haute'**
+  String get mediaQualityHigh;
+
+  /// Phrase d'impact du mode automatique. Annonce le coût du PIRE cas (données mobiles) — c'est celui contre lequel on se protège
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure en données mobiles, meilleure qualité en wifi.'**
+  String mediaQualityImpactAuto(int mb);
+
+  /// Phrase d'impact du palier 64k. Dit aussi ce qu'on perd : le chiffre seul ferait choisir à l'aveugle
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure · suffisant pour la prédication, la chorale y perd.'**
+  String mediaQualityImpactLow(int mb);
+
+  /// No description provided for @mediaQualityImpactMid.
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure · la louange retrouve son ampleur.'**
+  String mediaQualityImpactMid(int mb);
+
+  /// No description provided for @mediaQualityImpactHigh.
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure · chaque nuance, au prix fort.'**
+  String mediaQualityImpactHigh(int mb);
+
+  /// No description provided for @themeSectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparence'**
+  String get themeSectionTitle;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In fr, this message translates to:
+  /// **'Clair'**
+  String get themeLight;
+
+  /// Position du sélecteur d'apparence : suit le réglage DU TÉLÉPHONE. À distinguer de « Auto », qui suit une règle horaire de l'application
+  ///
+  /// In fr, this message translates to:
+  /// **'Système'**
+  String get themeSystem;
+
+  /// Position du sélecteur d'apparence : règle horaire de l'application, réglable. Ne suit PAS le téléphone
+  ///
+  /// In fr, this message translates to:
+  /// **'Auto'**
+  String get themeAuto;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sombre'**
+  String get themeDark;
+
+  /// No description provided for @themeAutoHoursTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heures de bascule'**
+  String get themeAutoHoursTitle;
+
+  /// No description provided for @themeDarkFrom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passe en sombre à'**
+  String get themeDarkFrom;
+
+  /// No description provided for @themeLightFrom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revient au clair à'**
+  String get themeLightFrom;
 
   /// No description provided for @logout.
   ///
@@ -1743,12 +2211,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Ouvrir le menu'**
   String get drawerOpen;
-
-  /// Entête du menu latéral : le nom de l'église, sous l'emblème qui porte déjà « Maison du Miracle ». L'entête porte la marque, jamais la personne — l'entête utilisateur vit dans l'onglet Profil
-  ///
-  /// In fr, this message translates to:
-  /// **'Église Évangélique Nouvelle Vie'**
-  String get drawerBrandName;
 
   /// Menu latéral : conditions générales d'utilisation. Abrégé, comme sur la maquette — le libellé long ne tiendrait pas sur une ligne du panneau
   ///

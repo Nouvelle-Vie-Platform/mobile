@@ -12,9 +12,13 @@ import '../app_avatar.dart';
 /// - Reçu : aligné à gauche, fond clair, avatar + nom de l'auteur.
 /// - Envoyé : aligné à droite, fond secondaire, heure + accusé de lecture.
 class ChatBubble extends StatelessWidget {
-  const ChatBubble({super.key, required this.message});
+  const ChatBubble({super.key, required this.message, this.onAuthorTap});
 
   final ChatMessage message;
+
+  /// Tap sur l'auteur (avatar + nom) d'un message **reçu** — ouvre son profil,
+  /// d'où l'on peut lui répondre en privé. `null` = non interactif.
+  final VoidCallback? onAuthorTap;
 
   @override
   Widget build(BuildContext context) {
@@ -40,10 +44,13 @@ class ChatBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!mine) ...[
-            Text(
-              message.author,
-              style: AppTypography.caption.copyWith(
-                  color: palette.primary, fontWeight: FontWeight.w700),
+            GestureDetector(
+              onTap: onAuthorTap,
+              child: Text(
+                message.author,
+                style: AppTypography.caption.copyWith(
+                    color: palette.primary, fontWeight: FontWeight.w700),
+              ),
             ),
             const SizedBox(height: 2),
           ],
@@ -88,7 +95,10 @@ class ChatBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!mine) ...[
-            AppAvatar(name: message.author, size: 32),
+            GestureDetector(
+              onTap: onAuthorTap,
+              child: AppAvatar(name: message.author, size: 32),
+            ),
             const SizedBox(width: AppSpacing.sm),
           ],
           Flexible(child: bubble),

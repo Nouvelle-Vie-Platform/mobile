@@ -88,11 +88,11 @@ void main() {
       expect(find.text(teaching.title), findsOneWidget);
     });
 
-    testWidgets('GroupChatScreen affiche le groupe reçu', (tester) async {
-      final group = SampleData.groups.first;
-      await pumpScreen(tester, GroupChatScreen(group: group));
+    testWidgets('GroupChatScreen affiche la conversation reçue', (tester) async {
+      final conversation = SampleData.conversations.first;
+      await pumpScreen(tester, GroupChatScreen(conversation: conversation));
       expect(find.byType(GroupChatScreen), findsOneWidget);
-      expect(find.text(group.name), findsOneWidget);
+      expect(find.text(conversation.name), findsOneWidget);
     });
   });
 }

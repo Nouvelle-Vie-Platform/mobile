@@ -22,7 +22,7 @@ class NavItem {
 /// Barre de navigation inférieure avec **encoche** pour le bouton d'action
 /// central (FAB), géré au niveau de [Scaffold] par la coquille.
 ///
-/// Disposition « Accueil · Médias · (encoche) · Groupes · Profil ».
+/// Disposition « Accueil · Annonces · (encoche) · Échanges · Profil ».
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
@@ -37,7 +37,7 @@ class AppBottomNav extends StatelessWidget {
   /// Onglets affichés. Si `null`, on utilise les onglets par défaut localisés.
   final List<NavItem>? items;
 
-  /// Onglets par défaut « Accueil · Médias · Groupes · Profil ».
+  /// Onglets par défaut « Accueil · Annonces · Échanges · Profil ».
   static List<NavItem> defaultItems(BuildContext context) => [
         NavItem(
           icon: Icons.home_outlined,
@@ -50,8 +50,8 @@ class AppBottomNav extends StatelessWidget {
           label: context.l10n.navAnnouncements,
         ),
         NavItem(
-          icon: Icons.groups_outlined,
-          activeIcon: Icons.groups,
+          icon: Icons.forum_outlined,
+          activeIcon: Icons.forum,
           label: context.l10n.navGroups,
         ),
         NavItem(

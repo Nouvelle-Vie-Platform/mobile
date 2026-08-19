@@ -4,10 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
+import '../data/local/app_database.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/branch_repository.dart';
 import '../data/repositories/http_auth_repository.dart';
 import '../models/models.dart';
+import 'sync_providers.dart';
 
 /// Fournit l'implémentation courante de [AuthRepository].
 ///
@@ -65,6 +67,12 @@ class AuthState {
 /// l'[AuthState] consommé par les écrans et les gardes du routeur.
 class AuthController extends Notifier<AuthState> {
   AuthRepository get _repo => ref.read(authRepositoryProvider);
+
+  /// Lu **paresseusement**, jamais observé : seule la suppression de compte en
+  /// a besoin, et `ref.watch` ferait dépendre tout l'état d'authentification du
+  /// magasin — donc ouvrirait la base au démarrage, avant même de savoir s'il y
+  /// a une session (Drift n'ouvre qu'à la première requête).
+  AppDatabase get _database => ref.read(appDatabaseProvider);
 
   @override
   AuthState build() {
@@ -209,6 +217,28 @@ class AuthController extends Notifier<AuthState> {
   /// Déconnecte l'utilisateur.
   Future<void> signOut() async {
     await _repo.signOut();
+    state = const AuthState(status: AuthStatus.unauthenticated);
+  }
+
+  /// **Supprime le compte, puis efface tout ce qui en restait sur l'appareil.**
+  ///
+  /// L'ordre n'est pas négociable : **le serveur d'abord**. Une panne réseau
+  /// laisse le compte vivant, et vider le téléphone laisserait quelqu'un
+  /// convaincu d'avoir disparu alors qu'il est toujours inscrit — l'exception
+  /// remonte donc à l'écran, qui garde la main.
+  ///
+  /// Le magasin local vient **ensuite**, et il est aussi important que la
+  /// session : `signOut()` ne l'a jamais touché, ce qui est défendable pour une
+  /// déconnexion (on reprend son catalogue en revenant) et ne l'est pas ici. Le
+  /// serveur a effacé la progression d'écoute, donc il n'enverra jamais de
+  /// rétraction pour la retirer d'ici — et l'email libéré permet de créer un
+  /// compte **neuf** dans la minute, sur ce téléphone-ci. Sans cet effacement,
+  /// la personne suivante reprendrait un prêche là où la précédente s'était
+  /// arrêtée.
+  Future<void> deleteAccount() async {
+    await _repo.deleteAccount();
+    await _database.eraseEverything();
+    await _repo.forgetSession();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 }

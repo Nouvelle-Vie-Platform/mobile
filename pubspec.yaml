@@ -105,6 +105,62 @@ dependencies:
   # sous `flutter test`, un canal de plugin lève `MissingPluginException`, et
   # aucun test d'écran n'a à connaître ce détail.
   package_info_plus: ^9.0.1
+  # **Le type de transport**, et rien d'autre : wifi ou données mobiles. C'est
+  # ce qui permet au réglage « Automatique » de la qualité d'écoute de plafonner
+  # le débit hors wifi (`NetworkTransport`, `lib/data/network/`).
+  #
+  # `CLAUDE.md` écarte ce paquet ailleurs, et la réserve **reste valable là où
+  # elle a été écrite** : pour savoir si l'appareil a vraiment internet, il ment
+  # — il répond « connecté » derrière un portail captif, c'est-à-dire exactement
+  # quand sa réponse compterait. La panne d'écoute se déduit donc toujours de
+  # l'échec lui-même, jamais d'ici.
+  #
+  # Lire *par quel tuyau* on passe est une autre question, et il y est fiable :
+  # c'est l'OS qui le dit, sans aller-retour réseau. **Aucune permission** n'est
+  # requise, ni sur iOS ni sur Android (Android déclare `ACCESS_NETWORK_STATE`
+  # dans le manifeste du greffon, sans invite utilisateur). Le web est couvert,
+  # en mode dégradé : le navigateur ne distingue pas toujours wifi et cellulaire
+  # et rend `unknown` — traité comme « pas de données mobiles », donc sans
+  # bridage, ce qui est le bon défaut sur un ordinateur.
+  #
+  # Lu **uniquement** derrière `NetworkTransport`, comme `image_picker` derrière
+  # `StatusImagePicker` : les tests posent un transport figé, sans canal de
+  # plugin.
+  connectivity_plus: ^7.3.1
+
+  # Enregistrement d'un média partagé dans la galerie Photos (visionneuse des
+  # échanges). Choisi pour son support **Swift Package Manager** (pas de retour
+  # de CocoaPods) et son API save-only. Les octets sont d'abord récupérés via
+  # `dio`, puis remis à `Gal.putImageBytes`.
+  #
+  # Permissions : iOS exige `NSPhotoLibraryAddUsageDescription` (ajout seul) dans
+  # `Info.plist` ; Android déclare `WRITE_EXTERNAL_STORAGE` (maxSdkVersion 29).
+  # **Pas de support web** : l'appel est gardé par `kIsWeb` derrière
+  # `MediaSaver` (`lib/data/media/`) — les tests posent un enregistreur inerte,
+  # sans canal de plugin, comme `image_picker` derrière `StatusImagePicker`.
+  gal: ^2.3.3
+  # **Le moteur de téléchargement en tâche de fond** (#190) — les enseignements
+  # écoutables hors ligne. Choisi pour ce qu'aucun `dio` + fichier ne donne : un
+  # transfert qui **survit à la mise en arrière-plan et au kill de l'app**
+  # (F7), reprenable par `Range`, avec contrainte réseau (wifi par défaut, F8) et
+  # notification de progression native.
+  #
+  # Plugin natif, après les autres. **Un seul fichier du dépôt l'importe**
+  # (`lib/data/downloads/background_downloader_backend.dart`) : tout le reste ne
+  # connaît que `DownloadBackend` (`lib/data/downloads/download_backend.dart`),
+  # exactement comme `just_audio` derrière `ContentPlayer`. Sous `flutter test`,
+  # ses canaux natifs lèvent — d'où l'abstraction et son double `Fake`.
+  #
+  # Configuration native :
+  # - **iOS** — le plugin télécharge via `URLSession` en arrière-plan ; le mode
+  #   `UIBackgroundModes: audio` déjà présent pour le lecteur **ne suffit pas** au
+  #   transfert seul, mais le plugin s'appuie sur sa propre `URLSession`
+  #   « background » sans exiger d'entrée `UIBackgroundModes` supplémentaire
+  #   (contrairement à `fetch`/`processing`). Rien à ajouter à `Info.plist`.
+  # - **Android** — notification de progression : `POST_NOTIFICATIONS` (API 33+,
+  #   déjà demandée à l'exécution pour le lecteur) et le service de premier plan
+  #   `dataSync` du plugin, déclarés dans `AndroidManifest.xml`.
+  background_downloader: ^9.2.0
 
 dev_dependencies:
   flutter_test:
@@ -120,6 +176,8 @@ flutter:
 
   assets:
     - assets/animations/colombe.webp
+    - assets/images/brand_logo.webp
+    - assets/images/brand_logo_inverse.webp
     - assets/images/welcome_bg.webp
     - assets/images/rameau_or.webp
     - assets/images/home_header_church.webp

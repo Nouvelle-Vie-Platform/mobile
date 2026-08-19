@@ -35,6 +35,16 @@ final groupsProvider = Provider<List<CommunityGroup>>(
   (ref) => ref.watch(churchRepositoryProvider).groups(),
 );
 
+/// Conversations du hub « Échanges » (groupes + messages privés mêlés).
+final conversationsProvider = Provider<List<Conversation>>(
+  (ref) => ref.watch(churchRepositoryProvider).conversations(),
+);
+
+/// Groupes **à rejoindre** de la rangée de découverte.
+final groupsToJoinProvider = Provider<List<DiscoverGroup>>(
+  (ref) => ref.watch(churchRepositoryProvider).groupsToJoin(),
+);
+
 /// Requêtes de prière.
 final prayersProvider = Provider<List<PrayerRequest>>(
   (ref) => ref.watch(churchRepositoryProvider).prayers(),
@@ -45,7 +55,8 @@ final notesProvider = Provider<List<SpiritualNote>>(
   (ref) => ref.watch(churchRepositoryProvider).notes(),
 );
 
-/// Messages de discussion d'un groupe (paramétré par le groupe ciblé).
-final chatProvider = Provider.family<List<ChatMessage>, CommunityGroup>(
-  (ref, group) => ref.watch(churchRepositoryProvider).chatFor(group),
+/// Messages d'une conversation (paramétré par la conversation ciblée).
+final chatProvider = Provider.family<List<ChatMessage>, Conversation>(
+  (ref, conversation) =>
+      ref.watch(churchRepositoryProvider).chatFor(conversation),
 );

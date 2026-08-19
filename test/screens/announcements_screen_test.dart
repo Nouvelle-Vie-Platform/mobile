@@ -46,7 +46,8 @@ class _FakeRepository implements AnnouncementRepository {
   Stream<bool> canCompose() => Stream.value(member);
 
   @override
-  Stream<ComposerOptions> composerOptions() => Stream.value(options);
+  Stream<ComposerOptions> composerOptions({required String locale}) =>
+      Stream.value(options);
 
   @override
   Stream<AnnouncementDraft?> draftOf(String id) => Stream.value(null);

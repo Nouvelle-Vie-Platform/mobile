@@ -47,7 +47,11 @@ abstract interface class AnnouncementRepository {
   /// (ADR-0031). Ouvrir le formulaire sur un appel REST le rendrait dépendant du
   /// réseau **à l'ouverture**, dans une application locale d'abord, et ferait
   /// attendre un sélecteur de teintes qui est déjà dans la poche.
-  Stream<ComposerOptions> composerOptions();
+  ///
+  /// [locale] sert au seul libellé des fonds, que le magasin stocke en carte de
+  /// traduction entière (ADR-0023) : le repli se fait ici, à la lecture, jamais
+  /// à l'écriture.
+  Stream<ComposerOptions> composerOptions({required String locale});
 
   /// **L'annonce [id] telle qu'on la modifie** — identifiants bruts, pas valeurs
   /// résolues. `null` = elle n'est plus dans le magasin.
@@ -90,8 +94,12 @@ class InMemoryAnnouncementRepository implements AnnouncementRepository {
   @override
   Stream<bool> canCompose() => Stream.value(member);
 
+  /// Le double porte des libellés déjà choisis : [locale] ne lui sert à rien,
+  /// et c'est normal — la carte de traduction est une forme de **magasin**, pas
+  /// de maquette.
   @override
-  Stream<ComposerOptions> composerOptions() => Stream.value(options);
+  Stream<ComposerOptions> composerOptions({required String locale}) =>
+      Stream.value(options);
 
   /// Le double n'a **aucune valeur brute** à rendre : `SampleData` porte des
   /// modèles de lecture, pas des lignes de magasin. Rendre `null` plutôt que de

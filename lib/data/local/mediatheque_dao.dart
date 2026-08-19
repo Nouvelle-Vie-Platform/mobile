@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../models/teaching_download.dart';
 import 'app_database.dart';
 import 'tables/mediatheque_tables.dart';
 
@@ -199,4 +200,57 @@ class MediathequeDao extends DatabaseAccessor<AppDatabase>
       ),
     );
   }
+
+  /// **Le contrat de téléchargement d'un enseignement** (`teachings.download`,
+  /// ADR-0038), ou `null` s'il n'est pas téléchargeable / pas connu.
+  ///
+  /// C'est la **source de vérité** des URLs et des tailles, connue **hors
+  /// ligne** : le `DownloadManager` s'en sert pour lancer un téléchargement et
+  /// pour le ré-enqueuer à la réconciliation, sans jamais toucher au réseau. En
+  /// `Future` et non en `Stream` : le moteur la lit au moment d'agir, il n'a pas
+  /// à l'observer.
+  Future<TeachingDownload?> downloadFor(String contentId) async {
+    final row = await (select(teachings)..where((t) => t.id.equals(contentId)))
+        .getSingleOrNull();
+    return row?.download;
+  }
+
+  /// **Le titre d'un enseignement**, ou `null` s'il n'est pas dans le magasin.
+  ///
+  /// Le `DownloadManager` le lit au moment du `download()` pour le
+  /// **dénormaliser** sur la ligne `downloads` (#194) : après un retrait,
+  /// l'enseignement quitte le magasin et la notification de purge n'aurait plus
+  /// de quoi le nommer.
+  Future<String?> titleFor(String contentId) async {
+    final row = await (select(teachings)..where((t) => t.id.equals(contentId)))
+        .getSingleOrNull();
+    return row?.title;
+  }
+
+  /// **L'état serveur d'un enseignement téléchargé**, lu APRÈS une sync pour le
+  /// cycle de vie (#194) — ou `null` si l'enseignement **n'est plus dans le
+  /// magasin**.
+  ///
+  /// Le magasin est autoritaire (ADR-0026) : on s'appuie sur ce qu'il contient
+  /// après réconciliation, jamais sur le delta brut. `null` signifie donc
+  /// « retiré » (rétractation, ADR-0025) → purge. Une version de téléchargement
+  /// différente de celle stockée signifie « révisé » (ADR-0039) → `outdated`.
+  Future<TeachingSyncState?> syncStateFor(String contentId) async {
+    final row = await (select(teachings)..where((t) => t.id.equals(contentId)))
+        .getSingleOrNull();
+    if (row == null) return null;
+    return TeachingSyncState(downloadVersion: row.download?.version);
+  }
+}
+
+/// Ce que le magasin sait d'un enseignement téléchargé après une sync, pour
+/// trancher **révision** vs **rien** (le retrait, lui, se lit à l'absence de la
+/// ligne — voir [MediathequeDao.syncStateFor]).
+@immutable
+class TeachingSyncState {
+  const TeachingSyncState({required this.downloadVersion});
+
+  /// La version courante du contrat de téléchargement (`download.version`), ou
+  /// `null` si l'enseignement n'est pas / plus téléchargeable.
+  final String? downloadVersion;
 }

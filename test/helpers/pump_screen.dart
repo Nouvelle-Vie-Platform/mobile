@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
@@ -12,8 +14,12 @@ import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart'
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
+import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
+import 'package:maison_du_miracle/state/media_settings_providers.dart';
+import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
+import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
@@ -64,6 +70,92 @@ import 'playback_doubles.dart';
 /// Le **rapporteur de progression** est posé muet pour la raison qui vaut déjà
 /// pour l'auth : son implémentation par défaut est HTTP dès que
 /// `AppEnv.useBackend` est vrai — et il l'est hors surcharge.
+/// Monte un **routeur** plutôt qu'un écran isolé, dans le même environnement.
+///
+/// Nécessaire dès qu'un test porte sur la navigation : `context.pop()` et
+/// `context.canPop()` sont les extensions de **go_router**, qui consultent sa
+/// pile à lui. Un test bâti sur un `Navigator.push` nu passerait à côté de ce
+/// que fait réellement l'application.
+Future<void> pumpRouter(
+  WidgetTester tester,
+  GoRouter router, {
+  List<Override> overrides = const [],
+  AppDatabase? database,
+  AuthRepository? auth,
+  ThemePreferences? theme,
+}) async {
+  final db = database ?? AppDatabase(NativeDatabase.memory());
+  if (database == null) addTearDown(db.close);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        ..._commonOverrides(db, auth: auth, theme: theme),
+        ...overrides,
+      ],
+      child: MaterialApp.router(
+        theme: AppTheme.light,
+        locale: const Locale('fr'),
+        localizationsDelegates: appLocalizationsDelegates,
+        supportedLocales: appSupportedLocales,
+        routerConfig: router,
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
+}
+
+/// Les surcharges que tout montage partage — voir l'en-tête pour le pourquoi
+/// de chacune.
+List<Override> _commonOverrides(
+  AppDatabase db, {
+  AuthRepository? auth,
+  ThemePreferences? theme,
+  MediathequeRepository? mediatheque,
+  GatheringRepository? gatherings,
+  AnnouncementRepository? announcements,
+  List<DownloadNotificationRow> notifications = const [],
+}) =>
+    [
+      appDatabaseProvider.overrideWithValue(db),
+      playbackProgressReporterProvider
+          .overrideWithValue(FakePlaybackProgressReporter()),
+      networkTransportProvider.overrideWithValue(FixedNetworkTransport()),
+      // Les réglages d'apparence sont posés **par un flux nu**, et pour la
+      // raison la plus coûteuse de ce dépôt : lus depuis le magasin, ils
+      // ouvrent un flux Drift, et un flux Drift attendu sous l'horloge factice
+      // du harnais fige le montage — processus à 0 % de CPU jusqu'à expiration.
+      // L'onglet Profil les lit, donc tout test qui monte la coquille les lit.
+      themePreferencesProvider.overrideWith(
+          (ref) => Stream.value(theme ?? const ThemePreferences())),
+      // Le bouton de téléchargement de `ContentPlayerView` (#192) observe ce
+      // flux Drift, et un écran de lecture le monte donc dès qu'il offre le
+      // téléchargement (l'enseignement). Posé **par un flux nu**, exactement
+      // comme les réglages d'apparence et pour la même raison : un flux Drift
+      // attendu sous l'horloge factice du harnais fige le montage — 0 % de CPU
+      // jusqu'à expiration. Les tests qui veulent le vrai magasin surchargent
+      // eux-mêmes ce provider (voir `test/widgets/content_download_button_test`).
+      downloadForContentProvider
+          .overrideWith((ref, contentId) => Stream.value(null)),
+      // Le bandeau de purge de la page Téléchargements (#194) observe ce flux
+      // Drift. Posé **par un flux nu** pour la même raison que les autres : un
+      // flux Drift attendu sous l'horloge factice du harnais fige le montage.
+      // Les tests qui veulent le vrai magasin surchargent eux-mêmes.
+      downloadNotificationsProvider
+          .overrideWith((ref) => Stream.value(notifications)),
+      authRepositoryProvider
+          .overrideWithValue(auth ?? InMemoryAuthRepository()),
+      branchRepositoryProvider
+          .overrideWithValue(const InMemoryBranchRepository()),
+      mediathequeRepositoryProvider
+          .overrideWithValue(mediatheque ?? InMemoryMediathequeRepository()),
+      gatheringRepositoryProvider
+          .overrideWithValue(gatherings ?? InMemoryGatheringRepository()),
+      announcementRepositoryProvider
+          .overrideWithValue(announcements ?? InMemoryAnnouncementRepository()),
+    ];
+
 Future<void> pumpScreen(
   WidgetTester tester,
   Widget screen, {
@@ -71,25 +163,30 @@ Future<void> pumpScreen(
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
+  AppDatabase? database,
+  AuthRepository? auth,
+  ThemePreferences? theme,
+  List<DownloadNotificationRow> notifications = const [],
 }) async {
-  final database = AppDatabase(NativeDatabase.memory());
-  addTearDown(database.close);
+  // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
+  // ci-dessus : Riverpod 3 refuse deux surcharges du même provider. [database]
+  // existe pour les tests qui doivent **relire** le magasin après coup — la
+  // suppression de compte le vide, et on ne peut le vérifier que sur
+  // l'instance que l'écran a réellement utilisée.
+  final db = database ?? AppDatabase(NativeDatabase.memory());
+  if (database == null) addTearDown(db.close);
 
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        appDatabaseProvider.overrideWithValue(database),
-        playbackProgressReporterProvider
-            .overrideWithValue(FakePlaybackProgressReporter()),
-        authRepositoryProvider.overrideWithValue(InMemoryAuthRepository()),
-        branchRepositoryProvider
-            .overrideWithValue(const InMemoryBranchRepository()),
-        mediathequeRepositoryProvider
-            .overrideWithValue(mediatheque ?? InMemoryMediathequeRepository()),
-        gatheringRepositoryProvider
-            .overrideWithValue(gatherings ?? InMemoryGatheringRepository()),
-        announcementRepositoryProvider.overrideWithValue(
-          announcements ?? InMemoryAnnouncementRepository(),
+        ..._commonOverrides(
+          db,
+          auth: auth,
+          theme: theme,
+          mediatheque: mediatheque,
+          gatherings: gatherings,
+          announcements: announcements,
+          notifications: notifications,
         ),
         ...overrides,
       ],

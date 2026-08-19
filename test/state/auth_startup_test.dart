@@ -29,6 +29,11 @@ class _ScriptedAuthRepository implements AuthRepository {
     cached = user;
   }
 
+  /// Le double ne supprime rien : aucun test de ce fichier n'exerce la
+  /// suppression de compte, il n'a qu'à satisfaire le contrat.
+  @override
+  Future<void> deleteAccount() async {}
+
   @override
   Future<void> forgetSession() async {
     forgetCalls++;

@@ -210,8 +210,11 @@ class StatusBackgroundOption {
 
   final int id;
 
-  /// Libellé **monolingue**, tel que l'administrateur l'a nommé au portail. Ce
-  /// n'est pas un texte d'interface : il ne passe pas par `context.l10n`.
+  /// Libellé du fond, **déjà replié** dans la langue de contenu. Le magasin en
+  /// porte la carte `{fr, en, ee}` entière — le portail est bilingue et un
+  /// administrateur anglophone nomme ses teintes en anglais ; c'est le
+  /// repository qui choisit, par `pick`. Ce n'est pas pour autant un texte
+  /// d'interface : il ne passe jamais par `context.l10n`.
   final String label;
 
   /// Les trois arrêts et l'encre, **dérivés par le serveur** (ADR-0030). La

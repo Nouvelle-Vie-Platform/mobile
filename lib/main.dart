@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
@@ -6,10 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'core/network/api_client.dart';
+import 'data/players/bitrate_cap_controller.dart';
 import 'data/players/content_player.dart';
+import 'models/media_preferences.dart';
 import 'data/players/just_audio_content_player.dart';
 import 'data/players/playback_notifications.dart';
 import 'data/players/web_content_player.dart';
+import 'state/media_settings_providers.dart';
 import 'state/player_providers.dart';
 
 /// **Le seul chemin qui monte un lecteur réel** — et le seul endroit du dépôt
@@ -33,11 +38,59 @@ Future<void> main() async {
 
   final player = await _startPlayback();
 
+  // Le conteneur est construit ici plutôt que par `ProviderScope` seul : c'est
+  // ce qui permet de brancher le plafond de débit **hors de l'arbre de
+  // widgets**, sur le lecteur réel. `UncontrolledProviderScope` le rend ensuite
+  // à l'application, qui n'en sait rien.
+  final container = ProviderContainer(
+    overrides: [
+      if (player != null) contentPlayerProvider.overrideWithValue(player),
+    ],
+  );
+
+  // **La qualité d'écoute atteint le lecteur ici, et nulle part ailleurs.**
+  //
+  // Ce câblage a d'abord été tenté dans `ContentPlayerView` : dès que l'écran
+  // de lecture touchait la chaîne des réglages, son montage sous `flutter test`
+  // se bloquait — processus à 0 % de CPU pendant dix minutes, donc une attente
+  // de ressource, avant expiration. Le poser ici le sort définitivement du
+  // chemin des tests d'écran : `main()` n'est jamais exécuté par le harnais.
+  //
+  // Sans lecteur réel (web sans HLS, plateforme non supportée), il n'y a rien à
+  // plafonner et on ne branche rien.
+  if (player != null) {
+    // Un `StreamController` **non diffusé** : il tamponne, donc la valeur posée
+    // par `fireImmediately` n'est pas perdue alors que le contrôleur ne s'y
+    // abonne qu'à la ligne suivante.
+    final targets = StreamController<int?>();
+    container.listen<int?>(
+      streamingBitrateTargetProvider,
+      (_, next) => targets.add(next),
+      fireImmediately: true,
+    );
+    final qualities = StreamController<MediaQuality>();
+    container.listen<MediaQuality>(
+      streamingQualityProvider,
+      (_, next) => qualities.add(next),
+      fireImmediately: true,
+    );
+    final cellular = StreamController<bool>();
+    container.listen<bool>(
+      onCellularProvider.select((v) => v.value ?? false),
+      (_, next) => cellular.add(next),
+      fireImmediately: true,
+    );
+    BitrateCapController(
+      player: player,
+      qualities: qualities.stream,
+      onCellular: cellular.stream,
+      targets: targets.stream,
+    );
+  }
+
   runApp(
-    ProviderScope(
-      overrides: [
-        if (player != null) contentPlayerProvider.overrideWithValue(player),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const MaisonDuMiracleApp(),
     ),
   );

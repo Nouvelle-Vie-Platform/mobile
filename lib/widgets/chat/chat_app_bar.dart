@@ -17,6 +17,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.subtitle,
     this.online = true,
     this.onBack,
+    this.onTitleTap,
     this.actions,
   });
 
@@ -24,6 +25,10 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? subtitle;
   final bool online;
   final VoidCallback? onBack;
+
+  /// Tap sur le titre (nom + sous-titre) — ouvre p.ex. la liste des membres d'un
+  /// groupe. `null` = titre non interactif (message direct).
+  final VoidCallback? onTitleTap;
   final List<Widget>? actions;
 
   @override
@@ -52,25 +57,28 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           _AvatarWithStatus(name: title, online: online),
         ],
       ),
-      title: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.h5.copyWith(color: Colors.white),
-          ),
-          if (subtitle != null)
+      title: InkWell(
+        onTap: onTitleTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              subtitle!,
+              title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.caption
-                  .copyWith(color: Colors.white.withValues(alpha: 0.85)),
+              style: AppTypography.h5.copyWith(color: Colors.white),
             ),
-        ],
+            if (subtitle != null)
+              Text(
+                subtitle!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption
+                    .copyWith(color: Colors.white.withValues(alpha: 0.85)),
+              ),
+          ],
+        ),
       ),
       actions: actions,
     );

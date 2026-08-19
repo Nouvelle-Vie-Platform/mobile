@@ -211,6 +211,25 @@ class HttpAuthRepository implements AuthRepository {
       await forgetSession();
     }
   }
+
+  /// `DELETE /auth/me` — aucun paramètre, aucun corps : le Bearer désigne le
+  /// compte, et c'est ce qui rend cette route incapable de supprimer autrui.
+  ///
+  /// **N'efface rien localement.** Le magasin Drift et la session sont la
+  /// responsabilité de l'appelant, qui n'y touche qu'après le succès.
+  @override
+  Future<void> deleteAccount() async {
+    try {
+      await _client.delete<void>('/auth/me');
+    } on DioException catch (e) {
+      // Le serveur révoque tous les tokens dans la transaction : un second
+      // appel — ou un token qui venait d'expirer — reçoit `401`, et il n'y a
+      // pas d'état « déjà supprimé » à distinguer. Plus de session dans les
+      // deux cas : l'appelant peut effacer.
+      if (e.response?.statusCode == 401) return;
+      throw mapAuthError(e);
+    }
+  }
 }
 
 // ── Mapping des erreurs ────────────────────────────────────────────────────

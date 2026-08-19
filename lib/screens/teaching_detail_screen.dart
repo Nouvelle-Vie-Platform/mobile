@@ -37,6 +37,9 @@ class TeachingDetailScreen extends ConsumerWidget {
       retractedTitle: context.l10n.teachingRetractedTitle,
       retractedMessage: context.l10n.teachingRetractedMessage,
       onRetry: () => ref.invalidate(provider),
+      // La v1 est **enseignements seuls** (PRD) : seul cet écran offre le
+      // téléchargement. `'teaching'` est aussi ce qu'écrit `downloads.contentType`.
+      downloadContentType: 'teaching',
     );
   }
 }

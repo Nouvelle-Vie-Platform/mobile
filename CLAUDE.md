@@ -48,8 +48,8 @@ dépôt. Le respecter prime sur les habitudes par défaut.
 - **flutter_zoom_drawer ^3.2.0** (#54) — le **menu latéral** de l'accueil. Pur
   Dart, aucune configuration native, la cible web reste tenue. Voir « Le menu
   latéral » plus bas : il se construit dans `HomeShell.build()`, son
-  `mainScreen` est le `Scaffold` entier, et son geste de glissement est
-  **coupé**.
+  `mainScreen` est le `Scaffold` entier **et repeint `AppBackground`**, son
+  inclinaison est à **zéro**, et son geste de glissement est **coupé**.
 - **package_info_plus ^9.0.1** (#57) — la **version et le build du binaire
   installé**, dans « À propos ». Plugin natif, après `flutter_secure_storage`,
   `drift`, `image_picker`, `flutter_zoom_drawer` et les trois du lecteur, mais
@@ -59,6 +59,21 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   couvert. Lu **uniquement** derrière `AppVersionReader`
   (`lib/data/app_version.dart`), et voir « À propos » plus bas : sous
   `flutter test`, un canal de plugin lève `MissingPluginException`.
+- **connectivity_plus ^7.3.1** — le **type de transport** (wifi / données
+  mobiles), et rien d'autre. Il alimente le seul mode « Automatique » de la
+  qualité d'écoute : plafond à 64 kbps hors wifi.
+
+  **La réserve écrite plus bas reste valable là où elle a été écrite**, et il ne
+  faut pas la lire comme une contradiction : pour savoir si l'appareil a
+  vraiment *internet*, ce paquet ment — il répond « connecté » derrière un
+  portail captif, c'est-à-dire exactement quand sa réponse compterait. La panne
+  d'écoute continue donc de se déduire de l'échec lui-même. Lire *par quel
+  tuyau* on passe est une autre question, et il y est fiable : c'est l'OS qui
+  répond, sans aller-retour réseau. **Aucune permission** sur aucune
+  plateforme ; le web est couvert en mode dégradé (le navigateur rend souvent
+  `unknown`, traité comme « pas de cellulaire », donc sans bridage — le bon
+  défaut sur un ordinateur). Lu **uniquement** derrière `NetworkTransport`
+  (`lib/data/network/`).
 - **`web ^1.1.1`** (#46) — l'interop DOM du lecteur web, successeur de
   `dart:html` (retiré du jeu en Dart 3.12, comme `package:js`). Déjà présent en
   transitif ; déclaré parce qu'on l'importe soi-même. **Un seul fichier de
@@ -426,6 +441,23 @@ qu'elle remplit. Le réseau ne peint jamais.
 6. **Un `404` de collection n'est pas fatal** : collection sautée, synchro
    poursuivie.
 
+**Le corollaire de la règle 6 est le piège le plus coûteux du moteur, et il a
+déjà mordu.** Le `404` est la *seule* erreur non fatale : toute autre remonte et
+**coupe le cycle**, donc toutes les collections rangées **après** la fautive
+dans `synced_collection.dart`. Et `SyncScheduler` la range dans `lastFailure`
+que personne ne lit — l'application reste muette, exactement comme un magasin
+vide. Un désaccord d'une seule clé sur une seule ligne suffit : `status_backgrounds.label`
+était lu en `_text` alors que le serveur le sert en `jsonb` (ADR-0023), ce qui a
+tenu **six collections** hors du magasin — documents légaux, intervenants,
+branches, enseignements, rassemblements, annonces — sans un seul message
+d'erreur, et sans qu'aucun test rougisse : le fixture portait la mauvaise forme.
+Deux réflexes en découlent. D'abord, devant un écran vide, **regarder
+`SyncScheduler.lastFailure` avant de soupçonner la donnée** — un `print` dans
+son `catch` donne la réponse en une exécution. Ensuite, **un fixture de
+`sync_fixtures.dart` se relève dans le code du serveur, jamais dans le code du
+client** : un fixture qui recopie l'hypothèse du client ne teste plus rien
+(l'en-tête du fichier donne la source de chaque forme, colonne par colonne).
+
 Déclenchement : **ouverture, foreground, tirer-pour-rafraîchir**. *Jamais de
 polling* — aucun `Timer` dans `lib/data/sync/`, et un test le vérifie.
 Le curseur du manifeste (`current_cursor`) est la **borne haute du périmètre**,
@@ -482,7 +514,11 @@ pas un accusé de réception : il ne devient jamais le curseur local.
   - `app_version_providers.dart` : `appVersionReaderProvider` (à surcharger par
     un `FixedAppVersionReader` dans les tests d'écran) et `appVersionProvider`
     — `FutureProvider`, `retry: _noAutomaticRetry`. Voir « À propos ».
-  - `theme_provider.dart` : `themeModeProvider` (Notifier) + `isDarkModeActive`.
+  - `theme_provider.dart` : `themePreferencesProvider` (lecture du magasin),
+    `nowProvider` (**l'horloge, injectable** — sans elle la règle horaire serait
+    intestable), `themeModeProvider` (le `ThemeMode` résolu) et
+    `isDarkModeActive`. `settingsDaoProvider` y vit aussi : les réglages
+    d'apparence et les réglages média partagent la même table.
 
 ### L'onglet Annonces — trois responsabilités que le serveur ne prend pas
 Le mur de statuts est peint par le magasin (#35), comme la médiathèque. Sa
@@ -615,6 +651,168 @@ produit ; et qu'un **rassemblement** rapporte par la même route (`teachings` et
 `gatherings` sont la même table serveur, discriminée par `family`) est démontré
 par le code serveur mais **prouvé par aucun test serveur** — à faire épingler
 (PRD `miracle-house-server#151`).
+
+### Les réglages média (`app_settings`, schéma v7)
+Trois usages réglables — écoute, direct, téléchargement — sur quatre paliers :
+`auto` (défaut), `low` 64k, `mid` 128k, `high` 192k. Les trois débits sont
+**recopiés de l'échelle du transcodeur** (`streaming-service/app/transcodes/
+support/hls.ts`) ; en ajouter un ici sans l'ajouter là-bas donnerait un plafond
+qu'aucun rendu ne peut satisfaire.
+
+**Ce que le panneau montre est plus large que ce qu'il fait**, et c'est un choix
+produit explicite, pas un oubli :
+
+| réglage | effet réel |
+| --- | --- |
+| écoute, iOS | ✅ `AVPlayer.preferredPeakBitRate` |
+| écoute, web | ✅ `hls.js`, `autoLevelCapping` |
+| écoute, **Android** | ✅ **par l'URL**, pas par le plafond — voir ci-dessous |
+| direct | ❌ `LiveScreen` n'a pas de lecteur |
+| téléchargement | ❌ n'existe pas, et c'est un **refus documenté** (`docs/mediatheque-en-ligne.md` §2) |
+
+Les trois se règlent et s'enregistrent quand même : le jour où la fonction
+existera, la préférence sera déjà là.
+
+**Deux leviers, et le second existe pour Android.** `setPreferredPeakBitRate`
+est reçu et **ignoré** par `just_audio` côté Android (`AudioPlayer.java`,
+`case "setPreferredPeakBitRate"` → `success` vide) ; ExoPlayer saurait le faire,
+le greffon ne l'expose pas. Le contournement ne dépend d'aucun greffon : le
+transcodeur écrit, à côté de `master.m3u8`, **une liste de lecture par rendu**
+(`low/index.m3u8`, `mid/index.m3u8`, `high/index.m3u8`), et `RustfsStorage`
+publie tout le dossier. Charger l'une d'elles **au lieu** du master, c'est
+choisir la qualité par l'URL — ce qui marche sur les trois plateformes.
+
+- **palier explicite** → URL de rendu (`variantPlaylistUrl`), partout et quel
+  que soit le réseau : l'avoir choisi est une décision qu'on ne corrige pas dans
+  le dos de qui l'a prise ;
+- **`auto` en wifi** → master, donc adaptation libre — c'est ce que ce mode
+  promet ;
+- **`auto` en données mobiles** → rendu `low` **par l'URL**, ce qui donne à
+  Android l'économie que son plafond ignoré ne sait pas lui donner. Sur iOS et
+  le web le plafond fait déjà le travail et ce rendu ne le contredit pas.
+
+**Le seul cas qu'Android ne couvre toujours pas** : un prêche ouvert en wifi et
+poursuivi en marchant. L'URL se choisit à l'ouverture ; suivre la bascule
+demanderait de rouvrir la source, donc de couper le son. Sur iOS et le web, le
+plafond s'en charge sans coupure.
+
+`MediaQuality.key` reprend **mot pour mot** les noms de `RENDITIONS[].name` du
+serveur : les désaccorder donnerait un 404. Et la dérivation **échoue du bon
+côté** — une URL qui ne finit pas par `/master.m3u8` est rendue intacte, donc le
+pire cas est « pas de bridage », jamais « plus de lecture ».
+
+Quatre points qui se ratent en silence :
+
+1. **La table naît vide et le reste** jusqu'au premier choix. L'absence de ligne
+   *est* le défaut : une valeur écrite d'office serait indiscernable d'une
+   décision du fidèle, et changer le défaut plus tard ne toucherait plus
+   personne.
+2. **Le mode automatique est asymétrique.** Le plafond **descend** dès la
+   bascule vers les données mobiles — l'effet arrive au segment suivant (~6 s),
+   sans réouverture donc sans coupure. Il **ne remonte pas** au retour du wifi
+   tant que le contenu joue : remonter coûterait une remise en tampon au milieu
+   d'un prêche. Le cliquet vit dans `StreamingBitrateCap`, et
+   `ContentPlayerView` le relâche à l'ouverture du contenu suivant — l'oublier
+   briderait à vie quelqu'un qui a écouté une fois dehors.
+3. **Un palier choisi s'applique partout**, réseau compris. Le corriger dans le
+   dos de qui l'a choisi serait le pire ressenti possible pour un réglage.
+4. **Le plafond se repose après chaque `load`** : les implémentations qui
+   rouvrent une source l'oublient en même temps qu'elles la remplacent.
+5. **Il s'applique depuis `BitrateCapController`, câblé dans `main.dart`, et
+   jamais depuis `ContentPlayerView`.** Ce n'est pas un choix esthétique : c'est
+   ce qui a été essayé d'abord, et dès que l'écran de lecture touchait la chaîne
+   des réglages, son montage sous `flutter test` se bloquait — processus à
+   **0 % de CPU pendant dix minutes**, donc une attente de ressource et non une
+   boucle. Le poser dans `main()` le sort du chemin des tests d'écran, que le
+   harnais n'exécute jamais. Cela ne déroge qu'en apparence à
+   « `ContentPlayerView` est le seul endroit qui pilote le lecteur » : cette
+   règle vise le **transport** — jouer, pause, déplacement, arrêt — pour que
+   deux endroits ne se disputent pas la lecture ; un plafond ne fait que
+   contraindre la qualité, sans effet audible immédiat.
+
+**Ce n'est pas une collection synchronisée** : le serveur ne la sert pas, ne la
+reçoit pas. Une préférence de débit décrit *le forfait de cet appareil-ci*, pas
+la personne. Elle vit donc dans le fichier de base — et part avec lui à la
+suppression de compte, sans qu'on ait rien à écrire.
+
+### L'apparence — quatre positions, dont une **maison**
+`Clair · Système · Auto · Sombre`, persistées dans `app_settings` (aucune
+migration : la table est clé/valeur, c'est pour cela qu'elle l'est). Le thème se
+perdait à chaque lancement avant cela — `themeModeProvider` n'était qu'un état
+en mémoire.
+
+**Le réglage vit dans une feuille modale** (`showThemeSheet`), ouverte par
+l'icône `brightness_6` de l'en-tête du Profil — et **là seulement**. Trois
+conséquences à connaître :
+
+- **L'icône est neutre, jamais un soleil ou une lune.** Elle *ouvre un panneau*,
+  elle ne bascule pas : afficher l'état courant sur un bouton qui ne le change
+  pas ferait presser la lune en s'attendant à passer en clair, et en mode `Auto`
+  elle donnerait à croire qu'on a choisi « Sombre ».
+- **La feuille ne se ferme pas quand on choisit.** Elle vit dans le
+  `MaterialApp`, donc changer le mode la repeint elle-même : on compare les
+  quatre positions sous ses doigts. Se refermer obligerait à rouvrir pour faire
+  ce qu'on était venu faire.
+- **Aucun engrenage interne.** Il n'existait que tant que ce réglage occupait une
+  ligne de liste, où deux heures de plus ne tenaient pas. En feuille, les heures
+  s'affichent dès que `Auto` est choisi.
+
+Le coût assumé : un réglage rangé derrière une icône d'en-tête se trouve moins
+bien qu'une ligne de liste qu'on parcourt. `brightness_6` est ce qui limite le
+risque — c'est le glyphe que les gens associent à ce réglage.
+
+**`Système` et `Auto` se ressemblent et ne font pas la même chose**, et c'est le
+piège du réglage : `Système` suit le téléphone, `Auto` suit une **règle horaire
+de l'application** que le téléphone ignore. Les deux peuvent donc se contredire
+— un téléphone jamais programmé restera clair la nuit sous `Système`. C'est
+pourquoi le résumé « Sombre de 19:00 à 06:00 » s'affiche sous le sélecteur en
+mode `Auto` : sans lui, rien ne les distingue à l'œil.
+
+Quatre points qui se ratent en silence :
+
+1. **La règle accepte les deux sens.** « Sombre entre `darkFrom` et
+   `lightFrom` », en passant minuit si besoin : `19:00 → 06:00` est le cas
+   courant, `06:00 → 19:00` est un réglage **valide** pour qui veille la nuit.
+   Ce n'est pas un cas particulier, c'est la même comparaison retournée. Deux
+   heures **identiques** donnent un intervalle vide, donc toujours clair —
+   `Sombre` existe déjà en un geste pour l'autre besoin.
+2. **Une minuterie unique, armée sur la prochaine bascule**, jamais un sondage.
+   Elle se réveille une fois par bascule et se réarme ; rien ne tourne entre
+   deux. Elle porte **une seconde de marge** : sans elle, un réveil au dernier
+   instant *avant* l'heure ne verrait rien changer et se réarmerait sur un délai
+   nul — une boucle serrée jusqu'à la seconde suivante.
+3. **Doublée d'une réévaluation au retour au premier plan.** Ce n'est pas une
+   ceinture de plus : un téléphone en veille ne garantit rien à ses minuteries,
+   et le cas visé est exactement celui-là — l'app ouverte pendant le culte du
+   soir, l'écran éteint puis rallumé.
+4. **`themePreferencesProvider` est surchargé par `pumpScreen`.** Il lit un flux
+   Drift, et l'onglet Profil le lit : tout test montant la coquille ouvrirait
+   donc ce flux. Voir le paragraphe sur les flux Drift sous horloge factice, qui
+   a déjà coûté deux enquêtes.
+
+### La suppression de compte (`DELETE /auth/me`)
+Exigence d'entrée à l'App Store (5.1.1(v)) : une app qui crée des comptes doit
+permettre de les supprimer **dans l'app**. Écran dédié `/profile/delete`, jamais
+un dialogue — la déconnexion se confirme deux lignes plus haut dans la même
+liste, et donner la même apparence aux deux ferait de la ressemblance un piège.
+
+**L'ordre serveur-puis-local n'est pas négociable** (`AuthController.deleteAccount`) :
+une panne réseau laisse le compte vivant et l'écran garde la main. Vider le
+téléphone d'abord laisserait quelqu'un convaincu d'avoir disparu alors qu'il est
+toujours inscrit.
+
+**Un `401` compte comme un succès** : le serveur révoque tous les tokens dans sa
+transaction, et il n'existe pas d'état « déjà supprimé » à distinguer.
+
+**`AppDatabase.eraseEverything()` est la contrepartie locale, et elle est
+obligatoire.** `signOut()` n'a jamais touché au magasin — défendable pour une
+déconnexion, faux ici : le serveur a effacé la progression d'écoute, il
+n'enverra donc **jamais** de rétraction pour la retirer d'ici, et l'email libéré
+permet de créer un compte **neuf** dans la minute sur ce téléphone-ci. Sans cet
+effacement, la personne suivante reprendrait un prêche là où la précédente
+s'était arrêtée. La méthode boucle sur `allTables` — elle ne **nomme** donc pas
+`playbackProgress`, ce que le garde-fou de source interdit — et n'efface pas le
+fichier : sur le web il n'y en a pas.
 
 ### La messagerie de groupe — l'origine se lit sur `(authorId, isSystem)`
 **Encore fictive** (`ChatMessage`, `chatProvider`, `InMemoryChurchRepository`) :
@@ -756,7 +954,7 @@ Profil** + `BottomAppBar` à encoche + **FAB central** (→ médiathèque, route
 poussée). Le FAB n'est PAS un onglet.
 
 #### Le menu latéral (#54) — `flutter_zoom_drawer`, quatre entrées
-Spécification de rendu : `docs/documents-legaux.md` §1. Quatre points qui se
+Spécification de rendu : `docs/documents-legaux.md` §1. Six points qui se
 ratent en silence :
 
 1. **Le `ZoomDrawer` se construit dans `HomeShell.build()`**, jamais dans la
@@ -765,21 +963,40 @@ ratent en silence :
    global est interdit (« Riverpod = état **partagé** »).
 2. **Le `mainScreen` est le `Scaffold` entier** : les quatre onglets, la barre à
    encoche et le FAB rétrécissent ensemble. N'envelopper que `HomeScreen`
-   laisserait la barre du bas et le FAB **fixes** pendant que le contenu pivote —
-   le composant aurait l'air cassé, pas animé.
-3. **`disableDragGesture: true`, sans négociation.** Le geste par défaut capte le
+   laisserait la barre du bas et le FAB **fixes** pendant que le contenu
+   s'écarte — le composant aurait l'air cassé, pas animé.
+3. **Le `mainScreen` repeint `AppBackground`, et il n'a pas le choix.** Celui
+   posé par la route est *parent* du `ZoomDrawer`, donc peint **avant** lui,
+   alors que le tiroir recouvre l'écran entier d'un
+   `ColoredBox(menuBackgroundColor)` avant de poser l'écran principal — dont les
+   `Scaffold` sont transparents dans tout le dépôt. Sans ce second fond, le
+   dégradé de l'application est intégralement masqué et tout ce que le contenu
+   ne peint pas opaquement laisse voir le bleu de marque.
+4. **`angle: 0`** — le défaut du paquet (`-12°`) pivote la coquille entière
+   autour de son bord gauche. On garde le rétrécissement et le glissement, on
+   retire l'inclinaison. Zéro se propage aux deux couches d'ombre
+   (`StyleDefaultWidget` teste `angle == 0`), qui partiraient sinon à −8° et −4°.
+   **Piège du paquet, à connaître avant de toucher à `showShadow`** : dans
+   `_applyDefaultStyle`, translation, rotation, rayon et marge sont tous
+   multipliés par la valeur d'animation — **l'échelle ne l'est pas**. Les deux
+   couches d'ombre restent donc à 0,9 et 0,95 **tiroir fermé**. Elles ne se
+   voient que parce que le point 3 les recouvre ; le retirer les fait
+   réapparaître en bandeau sur les bords.
+5. **`disableDragGesture: true`, sans négociation.** Le geste par défaut capte le
    glissement horizontal sur tout l'écran principal, où vivent trois carrousels
    et surtout le `PageView` de la visionneuse de statuts, dont l'en-tête prévient
    déjà que l'imbrication des gestes y est « critique ». **L'icône de l'accueil
    est la seule ouverture** — et elle n'existe sur aucun des trois autres
    onglets.
-4. **Quatre entrées, rien d'autre** — Accueil · CGU · Confidentialité · À propos.
+6. **Quatre entrées, rien d'autre** — Accueil · CGU · Confidentialité · À propos.
    Ni mode sombre, ni aide, ni déconnexion (l'onglet Profil les porte déjà), ni
    entête utilisateur (`_ProfileHeader` fait cela). L'entête du menu porte la
-   **marque**.
+   **marque**, et rien qu'elle : l'emblème seul (`BrandLogo.inverse`, à demi
+   effacé), sans le nom de l'église qui y figurait — un bloc de marque qui
+   concurrence quatre entrées leur vole la première seconde.
 
 Le menu **se ferme avant toute navigation** (sinon le retour repop sur une
-coquille pivotée), et le bouton retour Android le ferme au lieu de dépiler la
+coquille rétrécie), et le bouton retour Android le ferme au lieu de dépiler la
 route — par un `PopScope` **du dépôt** : celui du paquet
 (`androidCloseOnBackTap`) évalue sa garde pendant le `build` et referme donc le
 tiroir à la moindre reconstruction.

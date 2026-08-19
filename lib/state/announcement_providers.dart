@@ -8,6 +8,7 @@ import '../data/repositories/http_announcement_composer.dart';
 import '../data/repositories/store_announcement_repository.dart';
 import '../models/announcement_draft.dart';
 import '../models/announcement_view.dart';
+import 'locale_providers.dart';
 import 'sync_providers.dart';
 
 /// Politique de réessai des providers d'annonce : **aucun réessai
@@ -89,7 +90,9 @@ final announcementComposerProvider = Provider<AnnouncementComposer>(
 /// du réseau *à l'ouverture*, et ferait attendre un sélecteur de teintes qui est
 /// déjà dans la poche.
 final composerOptionsProvider = StreamProvider<ComposerOptions>(
-  (ref) => ref.watch(announcementRepositoryProvider).composerOptions(),
+  (ref) => ref.watch(announcementRepositoryProvider).composerOptions(
+        locale: ref.watch(contentLocaleProvider),
+      ),
   retry: _noAutomaticRetry,
 );
 

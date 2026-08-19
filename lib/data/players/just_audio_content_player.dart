@@ -82,14 +82,24 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
   /// alors une seconde du tout début du prêche avant d'être ramené où il en
   /// était. C'est le chemin du repli de [JustAudioContentPlayer.resume] et
   /// celui du chien de garde.
+  /// [filePath] est la source **offline-first** (#191) : quand il est fourni, on
+  /// joue le fichier local par `setFilePath` plutôt que le HLS par `setUrl`.
+  /// Un partiel (AAC-ADTS tronqué) s'arrête proprement à l'EOF des octets reçus
+  /// — ExoPlayer et AVPlayer terminent en `completed`, sans boucle de tampon
+  /// (Spike 1, F11) —, donc le chien de garde du décrochage ne s'arme pas.
   Future<void> open({
-    required String url,
     required MediaItem item,
+    String? url,
+    String? filePath,
     Duration? at,
   }) async {
     _failure = null;
     mediaItem.add(item);
-    await _player.setUrl(url, initialPosition: at);
+    if (filePath != null) {
+      await _player.setFilePath(filePath, initialPosition: at);
+    } else {
+      await _player.setUrl(url!, initialPosition: at);
+    }
   }
 
   @override
@@ -236,6 +246,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     required String title,
     String? author,
     String? artUrl,
+    String? localFilePath,
   }) async {
     if (_disposed) return;
     final request = ContentRequest(
@@ -244,6 +255,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
       title: title,
       author: author,
       artUrl: artUrl,
+      filePath: localFilePath,
     );
     _request = request;
     // Valeur **neuve** : durée, fin atteinte et panne du contenu précédent
@@ -305,8 +317,19 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   /// Ouvre (ou rouvre) la source, éventuellement à une position.
   Future<void> _open(ContentRequest request, {Duration? at}) async {
     try {
+      // **Fichier local (#191) : on le joue verbatim.** Une copie sur le disque
+      // est une rendition unique et concrète — le choix de palier par l'URL
+      // ([variantPlaylistUrl]) ne la concerne pas, et un partiel s'y arrête
+      // proprement à l'EOF. Sinon, le HLS d'avant, avec son palier.
+      final filePath = request.filePath;
       await _handler.open(
-        url: request.url,
+        // **Le palier se choisit ici, par l'URL.** Sur Android c'est le seul
+        // levier qui existe ; sur les autres plateformes il double le plafond
+        // de débit, sans le contredire — un rendu unique ne laisse rien à
+        // adapter au-dessus.
+        url:
+            filePath == null ? variantPlaylistUrl(request.url, _variant) : null,
+        filePath: filePath,
         at: at,
         item: MediaItem(
           // L'identifiant du contenu, pas l'URL : c'est lui qui désigne un
@@ -339,6 +362,39 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   void seek(Duration position) {
     if (_disposed) return;
     unawaited(_handler.seek(value.clampPosition(position)));
+  }
+
+  /// **Le plafond ne mord que sur iOS et macOS**, et c'est une limite du
+  /// greffon, pas un oubli d'ici : `just_audio` documente
+  /// `setPreferredPeakBitRate` comme « iOS/macOS », et son implémentation
+  /// Android reçoit l'appel pour répondre `success` **sans rien faire**
+  /// (`AudioPlayer.java`, `case "setPreferredPeakBitRate"`). ExoPlayer sait
+  /// pourtant le faire (`TrackSelectionParameters.setMaxAudioBitrate`), mais
+  /// le greffon ne l'expose pas.
+  ///
+  /// Conséquence à connaître avant de croire le réglage universel : sur
+  /// Android, la qualité d'écoute est **enregistrée et sans effet**, comme le
+  /// direct et le téléchargement. Sur iOS et sur le web, elle agit.
+  ///
+  /// `0` est la valeur « aucun plafond » d'`AVPlayer` — pas `-1`, et pas
+  /// `null`.
+  @override
+  void setBitrateCap(int? bitsPerSecond) {
+    if (_disposed) return;
+    unawaited(
+      _handler.player.setPreferredPeakBitRate((bitsPerSecond ?? 0).toDouble()),
+    );
+  }
+
+  /// **Le seul levier de qualité qui morde sur Android.** Le plafond de débit
+  /// y est ignoré par le greffon ; charger directement la liste de lecture d'un
+  /// rendu ne dépend, elle, que de l'URL.
+  String? _variant;
+
+  @override
+  void setPreferredVariant(String? variant) {
+    if (_disposed) return;
+    _variant = variant;
   }
 
   @override

@@ -10,18 +10,25 @@ import '../screens/auth/code_screen.dart';
 import '../screens/auth/identifier_screen.dart';
 import '../screens/auth/profile_form_screen.dart';
 import '../screens/auth/welcome_screen.dart';
+import '../screens/delete_account_screen.dart';
 import '../screens/donations_screen.dart';
+import '../screens/downloads_screen.dart';
 import '../screens/event_detail_screen.dart';
 import '../screens/gathering_detail_screen.dart';
 import '../screens/group_chat_screen.dart';
 import '../screens/home_shell.dart';
 import '../screens/legal_acceptance_screen.dart';
 import '../screens/legal_document_screen.dart';
+import '../screens/media_settings_screen.dart';
 import '../screens/live_screen.dart';
 import '../screens/media_library_screen.dart';
+import '../screens/member_profile_screen.dart';
 import '../screens/new_request_screen.dart';
 import '../screens/notes_screen.dart';
+import '../screens/group_info_screen.dart';
+import '../screens/media_viewer_screen.dart';
 import '../screens/prayer_requests_screen.dart';
+import '../screens/requests_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/teaching_detail_screen.dart';
 import '../state/auth_providers.dart';
@@ -37,12 +44,19 @@ abstract final class AppRoute {
   static const authIdentifier = 'auth-identifier';
   static const authCode = 'auth-code';
   static const profileEdit = 'profile-edit';
+  static const profileDelete = 'profile-delete';
+  static const mediaSettings = 'media-settings';
+  static const downloads = 'downloads';
   static const home = 'home';
   static const media = 'media';
   static const live = 'live';
   static const teachingDetail = 'teaching';
   static const gatheringDetail = 'gathering';
   static const groupChat = 'group-chat';
+  static const groupInfo = 'group-info';
+  static const mediaViewer = 'media-viewer';
+  static const memberProfile = 'member-profile';
+  static const requests = 'requests';
   static const agenda = 'agenda';
   static const eventDetail = 'event';
   static const prayers = 'prayers';
@@ -184,6 +198,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile/edit',
         builder: (_, __) => const AppBackground(child: ProfileFormScreen()),
       ),
+      // Suppression de compte — **une route et non un dialogue**, exigence
+      // App Store 5.1.1(v). Déclarée après `/profile/edit` : go_router essaie
+      // les routes dans l'ordre, et les deux chemins ne se recouvrent pas.
+      GoRoute(
+        name: AppRoute.profileDelete,
+        path: '/profile/delete',
+        builder: (_, __) => const AppBackground(child: DeleteAccountScreen()),
+      ),
+      // Réglages média — poussée depuis le Profil, où elle a remplacé
+      // l'hexagone des dons.
+      GoRoute(
+        name: AppRoute.mediaSettings,
+        path: '/settings/media',
+        builder: (_, __) => const AppBackground(child: MediaSettingsScreen()),
+      ),
+      // Page Téléchargements — poussée depuis le Profil, où elle a pris la
+      // place de l'hexagone « Ma branche » (#193, F12). L'écran observe le
+      // magasin `downloads` ; il ne reçoit aucun argument.
+      GoRoute(
+        name: AppRoute.downloads,
+        path: '/downloads',
+        builder: (_, __) => const AppBackground(child: DownloadsScreen()),
+      ),
       GoRoute(
         name: AppRoute.home,
         path: '/home',
@@ -260,10 +297,55 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.groupChat,
         path: '/group-chat',
         builder: (_, state) {
-          final group =
-              state.extra as CommunityGroup? ?? ref.read(groupsProvider).first;
-          return AppBackground(child: GroupChatScreen(group: group));
+          // Domaine encore fictif : la conversation ciblée voyage par `extra`,
+          // avec repli sur la première en cas d'accès direct (legacy assumé —
+          // voir docs/refonte-echanges.md §5). Au branchement, ce sera un
+          // identifiant en `pathParameter`, résolu depuis le provider.
+          final conversation = state.extra as Conversation? ??
+              ref.read(conversationsProvider).first;
+          return AppBackground(
+            child: GroupChatScreen(conversation: conversation),
+          );
         },
+      ),
+      GoRoute(
+        name: AppRoute.groupInfo,
+        path: '/group-info',
+        builder: (_, state) {
+          // Domaine fictif : la conversation-groupe voyage par `extra`, repli
+          // sur la première conversation en cas d'accès direct.
+          final conversation = state.extra as Conversation? ??
+              ref.read(conversationsProvider).first;
+          return AppBackground(child: GroupInfoScreen(group: conversation));
+        },
+      ),
+      GoRoute(
+        name: AppRoute.mediaViewer,
+        path: '/media-viewer',
+        builder: (_, state) {
+          final args = state.extra as MediaViewerArgs? ??
+              const MediaViewerArgs(urls: [], index: 0);
+          // `onDownload` sera branché une fois le mécanisme de téléchargement
+          // choisi (plugin d'enregistrement galerie / partage). Tant qu'il est
+          // nul, la visionneuse ouvre les médias sans bouton télécharger.
+          return MediaViewerScreen(args: args);
+        },
+      ),
+      GoRoute(
+        name: AppRoute.memberProfile,
+        path: '/member-profile',
+        builder: (_, state) {
+          // Profil-membre léger et fictif : le nom voyage par `extra`, repli sur
+          // le premier animateur d'un groupe à rejoindre en cas d'accès direct.
+          final name = state.extra as String? ??
+              ref.read(groupsToJoinProvider).first.host;
+          return AppBackground(child: MemberProfileScreen(memberName: name));
+        },
+      ),
+      GoRoute(
+        name: AppRoute.requests,
+        path: '/requests',
+        builder: (_, __) => const AppBackground(child: RequestsScreen()),
       ),
       GoRoute(
         name: AppRoute.agenda,

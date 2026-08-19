@@ -203,6 +203,7 @@ class ContentRequest {
     required this.title,
     this.author,
     this.artUrl,
+    this.filePath,
   });
 
   final String contentId;
@@ -210,6 +211,15 @@ class ContentRequest {
   final String title;
   final String? author;
   final String? artUrl;
+
+  /// **Le fichier local à jouer**, quand la résolution offline-first (#191) a
+  /// choisi la copie sur le disque plutôt que le HLS. `null` → on joue [url].
+  ///
+  /// Il est retenu ici pour la même raison que le reste : une réouverture — la
+  /// reprise après panne, le chien de garde — doit rejouer **la même source**,
+  /// sans redemander à l'écran. Un fichier local rouvre le fichier ; le HLS
+  /// rouvre [url].
+  final String? filePath;
 }
 
 /// **Lecteur d'un contenu de médiathèque.**
@@ -227,6 +237,32 @@ class ContentRequest {
 /// `load` est le seul membre asynchrone : ouvrir un flux HLS **peut échouer**,
 /// et l'appelant a le droit d'attendre le verdict. Les commandes de transport,
 /// elles, ne se guettent pas — leur effet se lit dans [value].
+/// **L'URL d'un palier précis du catalogue HLS**, dérivée de celle du master.
+///
+/// Le transcodeur écrit, à côté de `master.m3u8`, un dossier par rendu avec sa
+/// propre liste de lecture — `low/index.m3u8`, `mid/index.m3u8`,
+/// `high/index.m3u8` — et le stockage les publie tous
+/// (`streaming-service/app/transcodes/services/ffmpeg_transcoder.ts`,
+/// `RustfsStorage.uploadDirectory`). Charger l'un d'eux **au lieu** du master,
+/// c'est choisir la qualité par l'URL, ce qui marche sur les trois plateformes —
+/// **Android compris**, où aucun greffon n'expose de plafond de débit.
+///
+/// [variant] doit être un nom de rendu du serveur (`RENDITIONS[].name`), ce que
+/// `MediaQuality.key` reprend mot pour mot. `null` rend l'URL inchangée.
+///
+/// **La panne va dans le sens sûr** : si l'URL ne se termine pas par
+/// `/master.m3u8` — layout serveur différent, URL déjà résolue, ingestion par
+/// URL externe — on rend l'originale telle quelle. Le pire cas est alors « pas
+/// de bridage », jamais « plus de lecture ». C'est ce qui rend cette dérivation
+/// acceptable malgré ce qu'elle suppose du serveur.
+String variantPlaylistUrl(String masterUrl, String? variant) {
+  if (variant == null) return masterUrl;
+  const suffix = '/master.m3u8';
+  if (!masterUrl.endsWith(suffix)) return masterUrl;
+  final base = masterUrl.substring(0, masterUrl.length - suffix.length);
+  return '$base/$variant/index.m3u8';
+}
+
 abstract interface class ContentPlayer
     implements ValueListenable<ContentPlayback> {
   /// Charge un contenu et remet la lecture à zéro.
@@ -234,6 +270,15 @@ abstract interface class ContentPlayer
   /// [title] et [author] ne sont pas décoratifs : ce sont les lignes que le
   /// système affiche dans la notification et sur l'écran verrouillé. [artUrl]
   /// est la pochette, absente quand le contenu n'a pas de visuel.
+  ///
+  /// **[localFilePath] est la source offline-first** (#191, F10/F11) : quand la
+  /// résolution a choisi la copie sur le disque, on **joue ce fichier** et non
+  /// [url]. Un fichier local est une rendition unique et concrète : le choix de
+  /// palier par l'URL ([setPreferredVariant]) ne s'y applique pas. Pour un
+  /// fichier **partiel** (AAC-ADTS tronqué), la lecture s'arrête proprement à
+  /// l'EOF des octets reçus — on ne « s'étend » pas en direct. [url] reste passé
+  /// comme **repli HLS** et locator de réouverture ; `null` → on joue [url],
+  /// c'est-à-dire le comportement d'avant #191.
   ///
   /// Charger **ne démarre pas** la lecture : ouvrir un enseignement ne doit pas
   /// faire sortir du son dans une salle de culte.
@@ -243,6 +288,7 @@ abstract interface class ContentPlayer
     required String title,
     String? author,
     String? artUrl,
+    String? localFilePath,
   });
 
   /// Démarre ou reprend la lecture.
@@ -263,6 +309,40 @@ abstract interface class ContentPlayer
 
   /// Déplace la tête de lecture (bornée par [ContentPlayback.clampPosition]).
   void seek(Duration position);
+
+  /// **Plafonne le débit** que la sélection adaptative HLS a le droit de
+  /// choisir, en bits par seconde. `null` = aucun plafond.
+  ///
+  /// Se pose **à tout moment**, y compris en pleine lecture : c'est ce qui fait
+  /// tomber la qualité quand le fidèle sort de l'église et que son téléphone
+  /// bascule du wifi vers les données mobiles. L'effet arrive au segment
+  /// suivant (~6 s côté serveur), sans interruption du son — c'est le
+  /// mécanisme normal de HLS, pas une réouverture.
+  ///
+  /// **Un plafond, pas un choix de piste.** On ne demande jamais un rendu
+  /// précis : on interdit d'aller au-dessus, et le lecteur prend le meilleur
+  /// qui reste. Un plafond plus bas que le rendu le plus bas disponible ne
+  /// coupe donc pas le son, il laisse simplement ce rendu-là jouer.
+  ///
+  /// La valeur ne survit pas à un [load] sur les implémentations qui rouvrent
+  /// une source : l'appelant la repose, et `ContentPlayerView` s'en charge.
+  void setBitrateCap(int? bitsPerSecond);
+
+  /// **Choisit le palier par l'URL**, pour la prochaine ouverture.
+  ///
+  /// C'est le seul levier de qualité qui fonctionne sur **Android** : ni
+  /// `just_audio` ni ExoPlayer n'y exposent de plafond de débit
+  /// (`setPreferredPeakBitRate` y est reçu et ignoré). Charger directement la
+  /// liste de lecture d'un rendu contourne la question — voir
+  /// [variantPlaylistUrl].
+  ///
+  /// **Sans effet sur la lecture en cours** : changer de palier demanderait de
+  /// rouvrir la source, donc une coupure. Le réglage s'applique au contenu
+  /// suivant, ce qui est déjà le comportement attendu d'un panneau de
+  /// préférences.
+  ///
+  /// `null` = le master, donc l'adaptation automatique.
+  void setPreferredVariant(String? variant);
 
   /// Relâche le média : la valeur repart à vide, la notification disparaît.
   ///
@@ -295,6 +375,13 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   /// qu'on aurait joué, à défaut de le jouer. `null` après un [stop].
   @visibleForTesting
   String? loadedUrl;
+
+  /// Le **fichier local** actuellement tenu, quand la résolution offline-first
+  /// (#191) a choisi le disque plutôt que le HLS. `null` en HLS et après un
+  /// [stop] — c'est ce qui laisse un test constater vers quelle source l'écran a
+  /// routé, à défaut de la jouer.
+  @visibleForTesting
+  String? loadedFilePath;
 
   /// Titre **actuellement affiché par le système** : la notification, l'écran
   /// verrouillé.
@@ -339,9 +426,11 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     required String title,
     String? author,
     String? artUrl,
+    String? localFilePath,
   }) async {
     if (_disposed) return;
     loadedUrl = url;
+    loadedFilePath = localFilePath;
     loadedTitle = title;
     loadCount++;
     _request = ContentRequest(
@@ -350,6 +439,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
       title: title,
       author: author,
       artUrl: artUrl,
+      filePath: localFilePath,
     );
     // Valeur **neuve** et non `copyWith` : c'est le seul moyen d'effacer une
     // durée, une fin atteinte ou une panne héritées du contenu précédent.
@@ -396,12 +486,33 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     value = value.copyWith(position: value.clampPosition(position));
   }
 
+  /// Le dernier plafond posé, **relu par les tests**. Le lecteur inerte ne
+  /// décode rien : il n'a rien à brider, il enregistre — ce qui suffit à
+  /// vérifier que la règle du mode automatique arrive bien jusqu'ici.
+  int? bitrateCap;
+
+  @override
+  void setBitrateCap(int? bitsPerSecond) {
+    if (_disposed) return;
+    bitrateCap = bitsPerSecond;
+  }
+
+  /// Dernier palier demandé, **relu par les tests**.
+  String? preferredVariant;
+
+  @override
+  void setPreferredVariant(String? variant) {
+    if (_disposed) return;
+    preferredVariant = variant;
+  }
+
   @override
   void stop() {
     if (_disposed) return;
     // Le média est relâché **et** ce que le système affiche est vidé — c'est ce
     // que fait `ContentAudioHandler.stop()` avec `mediaItem.add(null)`.
     loadedUrl = null;
+    loadedFilePath = null;
     loadedTitle = null;
     _request = null;
     value = const ContentPlayback();

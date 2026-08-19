@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../models/legal_document_view.dart';
 import '../router/app_router.dart';
 import '../theme/app_colors.dart';
+import '../widgets/app_background.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_drawer_menu.dart';
 import 'announcements_screen.dart';
@@ -26,10 +27,10 @@ import 'profile_screen.dart';
 /// de l'état de coquille.
 ///
 /// **Le `mainScreen` est le [Scaffold] entier.** Les quatre onglets, la barre à
-/// encoche et le FAB rétrécissent et pivotent ensemble : c'est le rendu attendu
+/// encoche et le FAB rétrécissent et glissent ensemble : c'est le rendu attendu
 /// du composant. N'envelopper que [HomeScreen] laisserait la barre du bas et le
-/// FAB **fixes** pendant que le contenu pivote au-dessus — le composant aurait
-/// l'air cassé, pas animé.
+/// FAB **fixes** pendant que le contenu s'écarte au-dessus — le composant
+/// aurait l'air cassé, pas animé.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -108,7 +109,7 @@ class _HomeShellState extends State<HomeShell> {
 
   /// Ouvre une destination documentaire. **Le tiroir se ferme d'abord** : sans
   /// cela, le `context.pop()` de l'écran poussé ramènerait sur une coquille
-  /// encore rétrécie et pivotée.
+  /// encore rétrécie et décalée.
   void _openDocument(String routeName, {String? kind}) {
     _drawer.close?.call();
     context.pushNamed(
@@ -188,7 +189,18 @@ class _HomeShellState extends State<HomeShell> {
           ),
           onAbout: () => _openDocument(AppRoute.about),
         ),
-        mainScreen: main,
+        // **Le fond est repeint ICI, à l'intérieur du tiroir.** Celui posé par
+        // la route (`AppBackground(child: HomeShell())`) est *au-dessus* du
+        // `ZoomDrawer` dans l'arbre, donc *dessous* à la peinture : le tiroir
+        // recouvre l'écran entier d'un `ColoredBox(menuBackgroundColor)` avant
+        // de poser l'écran principal, et les `Scaffold` du dépôt sont
+        // transparents. Sans ce second fond, tout ce que le contenu ne peint
+        // pas opaquement laissait voir le bleu de marque — et les deux couches
+        // d'ombre de `showShadow`, qui restent à l'échelle 0,9 et 0,95 même
+        // tiroir fermé (leur `scale` n'est pas multiplié par la valeur
+        // d'animation, contrairement à toutes les autres), le blanchissaient de
+        // 77 % en s'arrêtant à 351 et 370,5 px sur 390.
+        mainScreen: AppBackground(child: main),
         // **Sans négociation.** Le geste par défaut capte le glissement
         // horizontal sur tout l'écran principal, où vivent trois carrousels et
         // surtout le `PageView` de la visionneuse de statuts — dont l'en-tête
@@ -201,8 +213,16 @@ class _HomeShellState extends State<HomeShell> {
         // déjà les touchers de l'écran principal quand il est ouvert, sans
         // cela le seul recours serait le bouton retour.
         mainScreenTapClose: true,
-        // Le fond qui apparaît derrière la coquille pivotée : sans lui, les
-        // coins dégagés par la rotation laisseraient voir du blanc.
+        // **Aucune inclinaison.** Le défaut du paquet est `-12°`, et il pivote
+        // la coquille entière autour de son bord gauche — un effet de vitrine
+        // qui jure avec la sobriété du reste. On garde le rétrécissement et le
+        // glissement, on retire le seul degré de liberté qui déformait le
+        // contenu. Zéro se propage : `StyleDefaultWidget` teste `angle == 0`
+        // pour ne pas décaler non plus les deux couches d'ombre (sinon elles
+        // partiraient à −8° et −4°).
+        angle: 0,
+        // Le fond qui apparaît derrière la coquille rétrécie : sans lui, la
+        // marge dégagée par le zoom laisserait voir du blanc.
         menuBackgroundColor: AppColors.primary,
         showShadow: true,
       ),
