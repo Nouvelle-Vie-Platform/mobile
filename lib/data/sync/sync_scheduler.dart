@@ -16,8 +16,34 @@ import 'package:flutter/widgets.dart';
 import 'sync_engine.dart';
 
 /// Ce qui a déclenché un cycle. Diagnostic seulement — le moteur fait la même
-/// chose dans les trois cas.
-enum SyncTrigger { appStart, foreground, pullToRefresh }
+/// chose dans tous les cas.
+enum SyncTrigger {
+  /// **Ouverture de l'application.**
+  appStart,
+
+  /// **Retour au premier plan.**
+  foreground,
+
+  /// **Tirer-pour-rafraîchir.**
+  pullToRefresh,
+
+  /// **Un événement temps-réel (SSE Transmit) est arrivé** sur un canal
+  /// `groups/{id}` auquel on est abonné — décision D1 de
+  /// `docs/temps-reel-sse.md`.
+  ///
+  /// Le SSE **déclenche une sync**, il ne peint jamais le message (ADR-0026) :
+  /// le message arrive ensuite par le flux delta comme d'habitude. C'est le
+  /// `RealtimeService` (hors de ce moteur) qui possède le client Transmit,
+  /// coalesce les événements rapprochés et appelle [SyncScheduler.trigger] avec
+  /// cette raison.
+  ///
+  /// **C'est un cycle de plus, jamais un polling.** Le garde-fou « aucun
+  /// `Timer` dans `lib/data/sync/` » reste vrai : la minuterie de coalescing vit
+  /// dans le service, pas ici. Le corps de [SyncScheduler.trigger] et du moteur
+  /// ne change pas — un événement rejoint le cycle en vol s'il y en a un, comme
+  /// les trois autres.
+  realtime,
+}
 
 /// Sérialise les déclenchements et écoute le cycle de vie de l'application.
 ///

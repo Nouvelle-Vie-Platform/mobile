@@ -145,6 +145,28 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
     );
   }
 
+  /// **Les identifiants de mes groupes** — les `group_id` distincts où je porte
+  /// une appartenance, filtrés sur **moi** (`myUserId`).
+  ///
+  /// Écouté en `Stream` (`.watch()`) par le `RealtimeService` pour le
+  /// **réabonnement réactif** du temps-réel (D2/D7 de `docs/temps-reel-sse.md`) :
+  /// à chaque changement de `group_members` — un DM qui naît, un groupe
+  /// rejoint/quitté — le service diffe cet ensemble et (dés)abonne les canaux
+  /// `groups/{id}` correspondants. Un DM **est** une ligne `groups`, donc ce même
+  /// flux couvre groupes **et** DM d'un coup (canal commun `groups/{id}`).
+  ///
+  /// On ne rend **que** les identifiants : c'est tout ce qu'il faut pour nommer un
+  /// canal, et le service ne peint rien (D1). `distinct` par prudence (une seule
+  /// ligne est la mienne par groupe de toute façon). Sans session (`myUserId`
+  /// nul), la sentinelle vide ne matche aucun uuid → aucun abonnement.
+  Selectable<String> watchMyGroupIds(String? myUserId) {
+    final me = myUserId ?? '';
+    final query = selectOnly(groupMembers, distinct: true)
+      ..addColumns([groupMembers.groupId])
+      ..where(groupMembers.userId.equals(me));
+    return query.map((row) => row.read(groupMembers.groupId)!);
+  }
+
   /// **Les groupes à rejoindre** : actifs, publics (`open`|`request`), dont je ne
   /// suis pas membre. La portée de branche est déjà tenue par le serveur.
   ///
