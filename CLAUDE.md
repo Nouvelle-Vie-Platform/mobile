@@ -76,8 +76,11 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   (`lib/data/network/`).
 - **`web ^1.1.1`** (#46) — l'interop DOM du lecteur web, successeur de
   `dart:html` (retiré du jeu en Dart 3.12, comme `package:js`). Déjà présent en
-  transitif ; déclaré parce qu'on l'importe soi-même. **Un seul fichier de
-  `lib/` l'importe**, `hls_content_player.dart`.
+  transitif ; déclaré parce qu'on l'importe soi-même. **Deux fichiers de `lib/`
+  l'importent**, tous deux derrière une porte d'import conditionnel (jamais
+  compilés pour la VM) : `hls_content_player.dart` (lecteur web, #46) et
+  `web_transmit_client.dart` (client SSE web du temps-réel — `fetch` porte le
+  Bearer, `EventSource` ne le permet pas, voir « Le temps-réel des messages »).
 
 ## Commandes
 ```bash
