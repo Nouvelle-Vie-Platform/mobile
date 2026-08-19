@@ -96,8 +96,16 @@ class Groups extends Table with SyncedRow {
   /// inbox pour ses membres.
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
-  /// Effectif, servi par le serveur (décision : la liste des membres ne voyage
-  /// pas — pas de collection `users`, ADR-0029 — mais le compte, oui).
+  /// `true` = **conversation directe (DM 1-à-1)** — PRD `messagerie-directe.md`.
+  /// Le « groupe » est alors un fil privé à 2 : la lecture le range en
+  /// [ConversationKind.direct], titre = l'autre membre (jointure `profiles`),
+  /// jamais montré en découverte. Servi par le serveur, stocké tel quel.
+  BoolColumn get isDirect => boolean().withDefault(const Constant(false))();
+
+  /// Effectif des membres **actifs**, servi par le serveur. Le **détail** des
+  /// membres voyage désormais (roster via `group_members` + noms via
+  /// `profiles`, PRD `messagerie-directe.md`) — mais le compte reste servi tel
+  /// quel, il n'est pas recalculé à la lecture.
   IntColumn get memberCount => integer().nullable()();
 
   DateTimeColumn get createdAt => dateTime().nullable()();
@@ -107,14 +115,18 @@ class Groups extends Table with SyncedRow {
   Set<Column<Object>> get primaryKey => {id};
 }
 
-/// Collection `group_members` — **mes** appartenances aux groupes, et rien
-/// d'autre (partition `private`, tombstones par `deletedAt`).
+/// Collection `group_members` — le **roster de mes groupes** (partition
+/// `private`, tombstones par `deletedAt`).
 ///
-/// Scoppée sur l'acteur par le serveur : une ligne ici est **mon** appartenance,
-/// avec **mon** rôle. Quitter un groupe la fait quitter le magasin (rétractation
-/// `deletedAt`). Un **confort d'affichage, jamais une autorisation** : le
-/// serveur revérifie à chaque écriture (un membre rétrogradé dont le téléphone
-/// n'a pas synchronisé verra encore le composeur et recevra un 403).
+/// Depuis les DM (PRD `messagerie-directe.md` D12) le serveur sert **toutes** les
+/// appartenances des groupes dont je suis membre actif — la mienne **et** celles
+/// de mes co-membres —, jamais le roster d'un groupe où je ne suis pas. Deux
+/// usages : la **liste des membres** d'un groupe (jointe à `profiles` pour le
+/// nom), et la **résolution d'un DM** par l'`userId` du correspondant (« le
+/// groupe direct dont les membres sont {moi, lui} »). Ma propre ligne voyage
+/// toujours, active ou tombstonée — c'est ce qui fait arriver mon départ jusqu'à
+/// mon appareil. Un **confort d'affichage, jamais une autorisation** : le serveur
+/// revérifie à chaque écriture.
 @DataClassName('GroupMemberRow')
 class GroupMembers extends Table with SyncedRow {
   @override

@@ -32,6 +32,14 @@ class InMemoryGroupRepository implements GroupRepository {
       Stream.value(SampleData.chat);
 
   @override
+  Stream<List<GroupMemberView>> members(String groupId) =>
+      Stream.value(const []);
+
+  @override
+  Stream<Conversation?> directConversationWith(String otherUserId) =>
+      Stream.value(null);
+
+  @override
   Stream<List<GroupJoinRequest>> pendingRequests(String groupId) =>
       const Stream.empty();
 

@@ -219,6 +219,18 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) => contentId(SyncCollectionKey.playbackProgress, item),
         rowOf: playbackProgressRowOf,
       ),
+      // Les **profils** des gens que je côtoie (PRD `messagerie-directe.md`) —
+      // rangés **avant** les groupes et leurs membres : un membre arrivé avant
+      // son profil s'afficherait par ses initiales, un titre de DM resterait nu.
+      // La jointure de lecture reste tolérante (un membre sans profil s'affiche
+      // quand même), mais l'ordre supprime le cas fréquent de la première
+      // synchronisation. Sans tombstone : un profil ne se rétracte pas.
+      SyncedCollection<ProfileRow>(
+        key: SyncCollectionKey.profiles,
+        local: (dao) => dao.profilesCollection,
+        idOf: (item) => contentId(SyncCollectionKey.profiles, item),
+        rowOf: profileRowOf,
+      ),
       // La messagerie de groupe. Le **groupe** précède ses **messages** et ses
       // **appartenances** par la règle habituelle « référentiels avant contenu »
       // — un message ou une appartenance arrivé avant son groupe n'aurait rien à

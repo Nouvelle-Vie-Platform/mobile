@@ -52,6 +52,20 @@ class HttpGroupMessaging implements GroupMessaging {
       });
 
   @override
+  Future<void> sendDirect(
+    String targetUserId, {
+    required String body,
+    String? clientMessageId,
+    DateTime? clientCreatedAt,
+  }) =>
+      _post('/groups/direct/$targetUserId/messages', <String, Object?>{
+        'body': body,
+        if (clientMessageId != null) 'clientMessageId': clientMessageId,
+        if (clientCreatedAt != null)
+          'clientCreatedAt': clientCreatedAt.toUtc().toIso8601String(),
+      });
+
+  @override
   Future<void> join(String groupId) => _post('/groups/$groupId/join', null);
 
   @override

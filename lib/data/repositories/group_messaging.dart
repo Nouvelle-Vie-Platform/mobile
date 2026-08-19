@@ -80,6 +80,18 @@ abstract interface class GroupMessaging {
     DateTime? clientCreatedAt,
   });
 
+  /// `POST /groups/direct/:targetUserId/messages` — envoyer un message **direct**
+  /// (DM 1-à-1, PRD `messagerie-directe.md`). **Création paresseuse** : ce premier
+  /// envoi ouvre (ou récupère) le fil direct côté serveur ; le groupe et le
+  /// message reviennent par la synchronisation. Idempotence identique à
+  /// [sendMessage] ([clientMessageId], [clientCreatedAt]).
+  Future<void> sendDirect(
+    String targetUserId, {
+    required String body,
+    String? clientMessageId,
+    DateTime? clientCreatedAt,
+  });
+
   /// `POST /groups/:id/join` — rejoindre librement un groupe `open`.
   Future<void> join(String groupId);
 

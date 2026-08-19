@@ -34,6 +34,15 @@ abstract interface class GroupRepository {
   /// Les **messages** d'un groupe, l'origine résolue sur `(authorId, isSystem)`.
   Stream<List<ChatMessage>> messages(String groupId);
 
+  /// La **liste des membres** d'un groupe (nom via `profiles`, rôle) — PRD
+  /// `messagerie-directe.md` D12. Point d'entrée d'un DM (tap → fiche → Message).
+  Stream<List<GroupMemberView>> members(String groupId);
+
+  /// Le **DM avec un utilisateur**, résolu par son `userId` — `null` tant que le
+  /// fil n'existe pas (création paresseuse au premier message). L'écran de DM
+  /// écoute ce flux et se rebranche sur l'`id` réel dès qu'il apparaît.
+  Stream<Conversation?> directConversationWith(String otherUserId);
+
   /// Les **demandes d'adhésion en attente** d'un groupe, à valider.
   Stream<List<GroupJoinRequest>> pendingRequests(String groupId);
 
@@ -58,7 +67,7 @@ class StoreGroupRepository implements GroupRepository {
 
   @override
   Stream<List<Conversation>> conversations() => _combineLatest(
-        _dao.watchMyGroups().watch(),
+        _dao.watchMyGroups(currentUserId).watch(),
         _dao.latestMessages().watch(),
         (mine, messages) {
           final lastByGroup = <String, GroupMessageRow>{};
@@ -74,6 +83,8 @@ class StoreGroupRepository implements GroupRepository {
                   g.group,
                   g.membership,
                   lastByGroup[g.group.id],
+                  peerUserId: g.peerUserId,
+                  peer: g.peerProfile,
                 ),
                 activity: lastByGroup[g.group.id]?.createdAt,
               ),
@@ -94,7 +105,7 @@ class StoreGroupRepository implements GroupRepository {
 
   @override
   Stream<List<DiscoverGroup>> groupsToJoin() => _combineLatest(
-        _dao.discoverableGroups().watch(),
+        _dao.discoverableGroups(currentUserId).watch(),
         _dao.pendingRequestGroupIds().watch(),
         (rows, pendingIds) {
           final pending = pendingIds.toSet();
@@ -115,7 +126,7 @@ class StoreGroupRepository implements GroupRepository {
 
   @override
   Stream<Conversation?> group(String groupId) =>
-      _dao.watchGroup(groupId).watchSingleOrNull().map(
+      _dao.watchGroup(groupId, currentUserId).watchSingleOrNull().map(
             (row) => row == null
                 ? null
                 : _conversationFrom(
@@ -124,7 +135,30 @@ class StoreGroupRepository implements GroupRepository {
                     null,
                     ownerAccount: row.ownerAccount,
                     ownerContributor: row.ownerContributor,
+                    peerUserId: row.peerUserId,
+                    peer: row.peerProfile,
                   ),
+          );
+
+  @override
+  Stream<List<GroupMemberView>> members(String groupId) =>
+      _dao.watchGroupMembers(groupId).watch().map(
+            (rows) => List<GroupMemberView>.unmodifiable(
+              rows.map(
+                (e) => GroupMemberView(
+                  userId: e.membership.userId,
+                  name: e.profile?.displayName ?? '',
+                  avatarUrl: resolveMediaUrl(e.profile?.avatarUrl),
+                  role: GroupRole.parse(e.membership.role),
+                ),
+              ),
+            ),
+          );
+
+  @override
+  Stream<Conversation?> directConversationWith(String otherUserId) =>
+      _dao.directGroupWith(currentUserId, otherUserId).watchSingleOrNull().map(
+            (row) => row == null ? null : _conversationFrom(row, null, null),
           );
 
   @override
@@ -193,7 +227,25 @@ class StoreGroupRepository implements GroupRepository {
     GroupMessageRow? last, {
     OfficialAccountRow? ownerAccount,
     ContributorRow? ownerContributor,
+    String? peerUserId,
+    ProfileRow? peer,
   }) {
+    // **Un DM se rend comme une conversation directe** (PRD `messagerie-directe`)
+    // : titre et avatar = l'autre membre (jointure `profiles`), pas d'institution,
+    // pas de rôle. Le nom peut être vide tant que le profil n'est pas arrivé — le
+    // rendu retombe alors sur les initiales, jamais sur un libellé inventé.
+    if (group.isDirect) {
+      return Conversation(
+        id: group.id,
+        kind: ConversationKind.direct,
+        name: peer?.displayName ?? '',
+        avatarUrl: resolveMediaUrl(peer?.avatarUrl),
+        lastMessagePreview: last?.body ?? '',
+        time: last?.createdAt == null ? '' : _clock(last!.createdAt!),
+        isActive: group.isActive,
+        peerUserId: peerUserId ?? peer?.id,
+      );
+    }
     final ownerKind = GroupOwnerKind.parse(group.ownerKind);
     final institution = _institutionOf(
       ownerKind,

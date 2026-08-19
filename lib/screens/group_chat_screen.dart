@@ -51,13 +51,31 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
     final seed = widget.conversation;
     final isGroup = seed.kind == ConversationKind.group;
 
+    // **DM** : le fil est adressé par l'`userId` du pair. On le résout dans le
+    // magasin (`directConversationProvider`) — `null` tant que rien n'est écrit
+    // (création paresseuse). Après le premier envoi + sync, il apparaît et
+    // l'écran se rebranche sur son `id` réel, sans que rien ne bouge à l'écran.
+    final directUserId = isGroup ? null : seed.peerUserId;
+    final resolvedDirect = directUserId == null
+        ? null
+        : ref.watch(directConversationProvider(directUserId)).asData?.value;
+
     // Relire le groupe dans la source de vérité (politiques, rôle, existence).
-    // Repli sur l'amorce tant que le flux n'a pas émis.
+    // Pour un DM, la source est le fil direct résolu ; repli sur l'amorce.
     final live = isGroup
         ? ref.watch(groupByIdProvider(seed.id)).asData?.value ?? seed
-        : seed;
+        : (resolvedDirect ?? seed);
 
-    final messages = ref.watch(groupMessagesProvider(seed.id));
+    // L'identifiant du fil dont on lit les messages : le groupe pour un groupe,
+    // le fil direct résolu pour un DM. `null` tant qu'un DM naissant n'existe pas
+    // → aucun message (état vide), et surtout aucun `GET /groups//messages`.
+    final chatId = isGroup
+        ? seed.id
+        : (resolvedDirect?.id ?? (seed.id.isNotEmpty ? seed.id : null));
+
+    final messages = chatId == null
+        ? const AsyncValue<List<ChatMessage>>.data(<ChatMessage>[])
+        : ref.watch(groupMessagesProvider(chatId));
 
     return Scaffold(
       appBar: ChatAppBar(
@@ -67,7 +85,15 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
             : null,
         onTitleTap: () => isGroup
             ? context.pushNamed(AppRoute.groupInfo, extra: live.id)
-            : context.pushNamed(AppRoute.memberProfile, extra: live.name),
+            : (directUserId == null
+                ? null
+                : context.pushNamed(
+                    AppRoute.memberProfile,
+                    extra: GroupMemberView(
+                      userId: directUserId,
+                      name: live.name,
+                    ),
+                  )),
         actions: [
           IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
         ],
@@ -93,15 +119,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
                     if (m.system)
                       ChatInfoBanner(text: m.text)
                     else
-                      ChatBubble(
-                        message: m,
-                        onAuthorTap: isGroup && !m.mine && m.author.isNotEmpty
-                            ? () => context.pushNamed(
-                                  AppRoute.memberProfile,
-                                  extra: m.author,
-                                )
-                            : null,
-                      ),
+                      // La bulle ne porte pas de nom d'auteur (le nom se lit dans
+                      // la liste des membres, pas sur chaque message) : pas de tap
+                      // vers une fiche depuis une bulle de groupe.
+                      ChatBubble(message: m),
                 ],
               ),
             ),
@@ -127,13 +148,26 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
     final l = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     final messaging = ref.read(groupMessagingProvider);
+    final seed = widget.conversation;
     try {
-      await messaging.sendMessage(
-        widget.conversation.id,
-        body: body,
-        clientMessageId: const Uuid().v4(),
-        clientCreatedAt: DateTime.now().toUtc(),
-      );
+      if (seed.kind == ConversationKind.direct) {
+        // DM : **toujours** adressé par l'`userId` du pair (`sendDirect` est
+        // idempotent et get-or-create) — inutile de connaître l'`id` du fil, y
+        // compris pour le tout premier message qui le crée.
+        await messaging.sendDirect(
+          seed.peerUserId!,
+          body: body,
+          clientMessageId: const Uuid().v4(),
+          clientCreatedAt: DateTime.now().toUtc(),
+        );
+      } else {
+        await messaging.sendMessage(
+          seed.id,
+          body: body,
+          clientMessageId: const Uuid().v4(),
+          clientCreatedAt: DateTime.now().toUtc(),
+        );
+      }
       await ref.read(pullToRefreshProvider)();
     } on GroupWriteException {
       messenger.showSnackBar(SnackBar(content: Text(l.groupActionError)));

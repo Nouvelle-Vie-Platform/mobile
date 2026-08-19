@@ -159,4 +159,92 @@ void main() {
     expect(byText['auteur parti']!.authorRemoved, isTrue);
     expect(byText['auteur parti']!.mine, isFalse);
   });
+
+  // ── Messagerie directe (DM 1-à-1, PRD `messagerie-directe.md`) ──────────────
+
+  Future<void> putProfile(Map<String, Object?> json) => db.syncDao.applyPage(
+        db.syncDao.profilesCollection,
+        upserts: [profileRowOf(json)],
+        cursor: 'p',
+      );
+
+  // Amorce un DM entre `me` et `other` : groupe `is_direct`, les deux
+  // appartenances (le roster voyage désormais), et le profil de l'autre.
+  Future<void> seedDirect({required String other, String? otherName}) async {
+    await putGroup({
+      'id': 'dm-1',
+      'name': '',
+      'ownerKind': 'user',
+      'ownerId': me,
+      'joinPolicy': 'invite_only',
+      'isDirect': true,
+    });
+    await putMembership(
+        {'id': 1, 'groupId': 'dm-1', 'userId': me, 'role': 'member'});
+    await putMembership(
+        {'id': 2, 'groupId': 'dm-1', 'userId': other, 'role': 'member'});
+    if (otherName != null) {
+      await putProfile({'id': other, 'displayName': otherName});
+    }
+  }
+
+  test('un DM se lit en kind=direct, titré par le profil de l\'autre', () async {
+    await seedDirect(other: 'user-bob', otherName: 'Bob Mensah');
+
+    final inbox = await repo.conversations().first;
+    expect(inbox, hasLength(1));
+    final dm = inbox.single;
+    expect(dm.kind, ConversationKind.direct);
+    expect(dm.name, 'Bob Mensah');
+    expect(dm.peerUserId, 'user-bob');
+  });
+
+  test('un DM sans profil encore synchronisé : titre vide, mais pair connu',
+      () async {
+    await seedDirect(other: 'user-bob'); // pas de profil
+
+    final dm = (await repo.conversations().first).single;
+    expect(dm.kind, ConversationKind.direct);
+    expect(dm.name, '');
+    // Le pair reste connu (roster), donc le fil reste adressable/rouvrable.
+    expect(dm.peerUserId, 'user-bob');
+  });
+
+  test('directConversationWith résout le fil direct par userId', () async {
+    await seedDirect(other: 'user-bob', otherName: 'Bob');
+
+    expect((await repo.directConversationWith('user-bob').first)?.id, 'dm-1');
+    // Aucun fil avec un inconnu.
+    expect(await repo.directConversationWith('user-x').first, isNull);
+  });
+
+  test('members() = le roster, nommé par profiles, scopé au groupe', () async {
+    await putGroup({
+      'id': 'g',
+      'name': 'Chorale',
+      'ownerKind': 'user',
+      'ownerId': me,
+      'joinPolicy': 'open',
+    });
+    await putMembership(
+        {'id': 1, 'groupId': 'g', 'userId': me, 'role': 'leader'});
+    await putMembership(
+        {'id': 2, 'groupId': 'g', 'userId': 'user-bob', 'role': 'member'});
+    await putProfile({'id': 'user-bob', 'displayName': 'Bob Mensah'});
+    // Un membre d'un AUTRE groupe ne doit pas fuiter dans cette liste.
+    await putMembership(
+        {'id': 3, 'groupId': 'autre', 'userId': 'user-zoe', 'role': 'member'});
+
+    final members = await repo.members('g').first;
+    expect(members.map((m) => m.userId).toSet(), {me, 'user-bob'});
+    final bob = members.firstWhere((m) => m.userId == 'user-bob');
+    expect(bob.name, 'Bob Mensah');
+    expect(bob.role, GroupRole.member);
+  });
+
+  test('un DM n\'apparaît jamais dans la découverte', () async {
+    await seedDirect(other: 'user-bob', otherName: 'Bob');
+    final discover = await repo.groupsToJoin().first;
+    expect(discover.where((g) => g.id == 'dm-1'), isEmpty);
+  });
 }

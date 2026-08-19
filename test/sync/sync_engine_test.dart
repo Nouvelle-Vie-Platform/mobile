@@ -158,6 +158,10 @@ void main() {
           'gatherings',
           'announcements',
           'playback_progress',
+          // Les profils (noms des gens que je côtoie) précèdent la messagerie :
+          // un membre ou un titre de DM arrivé avant son profil s'afficherait par
+          // ses initiales.
+          'profiles',
           // La messagerie de groupe : le groupe (référentiel de son domaine)
           // précède ses messages et appartenances.
           'groups',

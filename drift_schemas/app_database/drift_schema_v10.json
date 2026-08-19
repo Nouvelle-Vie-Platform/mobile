@@ -2269,6 +2269,20 @@
             "dsl_features": []
           },
           {
+            "name": "is_direct",
+            "getter_name": "isDirect",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"is_direct\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"is_direct\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
             "name": "member_count",
             "getter_name": "memberCount",
             "moor_type": "int",
@@ -2591,6 +2605,83 @@
           "id"
         ]
       }
+    },
+    {
+      "id": 24,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "profiles",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "sync_stamp",
+            "getter_name": "syncStamp",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "display_name",
+            "getter_name": "displayName",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "avatar_url",
+            "getter_name": "avatarUrl",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "updated_at",
+            "getter_name": "updatedAt",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "id"
+        ]
+      }
     }
   ],
   "fixed_sql": [
@@ -2779,7 +2870,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"groups\" (\"sync_stamp\" INTEGER NOT NULL DEFAULT 0, \"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NULL, \"owner_kind\" TEXT NOT NULL, \"owner_user_id\" TEXT NULL, \"owner_official_account_id\" INTEGER NULL, \"owner_contributor_id\" INTEGER NULL, \"join_policy\" TEXT NOT NULL, \"post_policy\" TEXT NOT NULL DEFAULT 'all', \"is_write_locked\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_write_locked\" IN (0, 1)), \"is_active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_active\" IN (0, 1)), \"member_count\" INTEGER NULL, \"created_at\" INTEGER NULL, \"updated_at\" INTEGER NULL, PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"groups\" (\"sync_stamp\" INTEGER NOT NULL DEFAULT 0, \"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NULL, \"owner_kind\" TEXT NOT NULL, \"owner_user_id\" TEXT NULL, \"owner_official_account_id\" INTEGER NULL, \"owner_contributor_id\" INTEGER NULL, \"join_policy\" TEXT NOT NULL, \"post_policy\" TEXT NOT NULL DEFAULT 'all', \"is_write_locked\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_write_locked\" IN (0, 1)), \"is_active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_active\" IN (0, 1)), \"is_direct\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_direct\" IN (0, 1)), \"member_count\" INTEGER NULL, \"created_at\" INTEGER NULL, \"updated_at\" INTEGER NULL, PRIMARY KEY (\"id\"));"
         }
       ]
     },
@@ -2807,6 +2898,15 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"group_join_requests\" (\"sync_stamp\" INTEGER NOT NULL DEFAULT 0, \"id\" INTEGER NOT NULL, \"group_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"status\" TEXT NOT NULL, \"created_at\" INTEGER NULL, \"updated_at\" INTEGER NULL, PRIMARY KEY (\"id\"));"
+        }
+      ]
+    },
+    {
+      "name": "profiles",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"profiles\" (\"sync_stamp\" INTEGER NOT NULL DEFAULT 0, \"id\" TEXT NOT NULL, \"display_name\" TEXT NULL, \"avatar_url\" TEXT NULL, \"created_at\" INTEGER NULL, \"updated_at\" INTEGER NULL, PRIMARY KEY (\"id\"));"
         }
       ]
     }

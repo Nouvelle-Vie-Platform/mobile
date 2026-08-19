@@ -8,6 +8,7 @@ import 'tables/group_tables.dart';
 import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
+import 'tables/profile_tables.dart';
 import 'tables/sync_tables.dart';
 
 part 'sync_dao.g.dart';
@@ -82,6 +83,12 @@ abstract final class SyncCollectionKey {
   /// La **file d'adhésion** — ma demande en attente, et (si j'administre) celles
   /// à valider (décision D12).
   static const String groupJoinRequests = 'group_join_requests';
+
+  /// Les **profils** des gens que je côtoie (PRD `messagerie-directe.md`) — la
+  /// projection `{id, displayName, avatarUrl}` de `users` qui donne un nom à
+  /// chaque `userId` (liste des membres, titre d'un DM). Scope relationnel côté
+  /// serveur (mes groupes + mes DM), jamais un annuaire.
+  static const String profiles = 'profiles';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -136,6 +143,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     GroupMembers,
     GroupMessages,
     GroupJoinRequests,
+    Profiles,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -211,6 +219,9 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
         SyncCollectionKey.groupJoinRequests,
         groupJoinRequests,
       );
+
+  LocalCollection<ProfileRow> get profilesCollection =>
+      LocalCollection._(SyncCollectionKey.profiles, profiles);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Application d'une page

@@ -540,11 +540,17 @@ class Conversation {
     this.ownerKind = GroupOwnerKind.user,
     this.institution,
     this.memberCount,
+    this.peerUserId,
   });
 
   final String id;
   final ConversationKind kind;
   final String name;
+
+  /// L'`userId` du correspondant d'un **DM** ([ConversationKind.direct]) — ce qui
+  /// permet de rouvrir le fil depuis la liste et d'ouvrir sa fiche membre. `null`
+  /// pour un groupe.
+  final String? peerUserId;
 
   /// **Mon rôle** dans le groupe, `null` si c'est une discussion directe ou si
   /// je n'en suis pas membre. Décide de l'accès au composeur en diffusion / sous
@@ -624,6 +630,34 @@ class Conversation {
 
   /// URLs des médias partagés, aperçus dans la fiche du groupe. **Maquette**.
   final List<String> sharedMedia;
+}
+
+/// Un **membre d'un groupe** — la ligne de la liste des membres (PRD
+/// `messagerie-directe.md` D12). Porte le **vrai `userId`** (d'où part un DM),
+/// le nom résolu (`profiles`) et le rôle. Au réel, plus rien de fictif.
+@immutable
+class GroupMemberView {
+  const GroupMemberView({
+    required this.userId,
+    required this.name,
+    this.avatarUrl,
+    this.role,
+  });
+
+  /// L'identité de l'utilisateur (`users.id`) — la cible d'un DM.
+  final String userId;
+
+  /// Nom d'affichage (`profiles.displayName`), vide si le profil n'est pas
+  /// encore synchronisé → repli initiales par [AppAvatar].
+  final String name;
+
+  /// URL d'avatar déjà résolue, `null` = repli initiales.
+  final String? avatarUrl;
+
+  /// Rôle dans le groupe (`leader` | `moderator` | `member`), `null` hors
+  /// contexte de groupe (ex. le pair d'un DM, dont la fiche n'affiche pas de
+  /// rôle).
+  final GroupRole? role;
 }
 
 /// Un groupe **à rejoindre** proposé dans la rangée de découverte du hub

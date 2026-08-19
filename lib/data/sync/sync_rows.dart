@@ -462,7 +462,27 @@ GroupsCompanion groupRowOf(Map<String, Object?> item) {
     postPolicy: Value(_optionalText(item, 'postPolicy') ?? 'all'),
     isWriteLocked: Value(item['isWriteLocked'] == true),
     isActive: Value(item['isActive'] != false),
+    // DM (PRD `messagerie-directe.md`) : le serveur émet `isDirect`. Absent d'un
+    // vieux payload → `false` (vrai groupe), le défaut de la colonne.
+    isDirect: Value(item['isDirect'] == true),
     memberCount: Value(_optionalInt(item, 'memberCount')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/profiles` — le **profil** (nom, avatar) d'un utilisateur que je
+/// côtoie (PRD `messagerie-directe.md` D8/D9). Projection minimale de `users`,
+/// scoppée côté serveur sur mes groupes ∪ mes DM.
+ProfilesCompanion profileRowOf(Map<String, Object?> item) {
+  const collection = 'profiles';
+  return ProfilesCompanion.insert(
+    id: contentId(collection, item),
+    // Déjà résolu par le serveur (« Prénom Nom », à défaut le titre, à défaut
+    // `null`). `null` se replie sur les initiales au rendu — jamais un libellé
+    // inventé.
+    displayName: Value(_optionalText(item, 'displayName')),
+    avatarUrl: Value(_optionalText(item, 'avatarUrl')),
     createdAt: Value(_instant(item, 'createdAt')),
     updatedAt: Value(_instant(item, 'updatedAt')),
   );

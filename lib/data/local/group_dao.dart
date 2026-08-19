@@ -4,19 +4,47 @@ import 'app_database.dart';
 import 'tables/announcement_tables.dart';
 import 'tables/group_tables.dart';
 import 'tables/mediatheque_tables.dart';
+import 'tables/profile_tables.dart';
 
 part 'group_dao.g.dart';
 
 /// Un groupe dont **je suis membre**, et mon rôle dedans.
 ///
-/// L'unité de l'**inbox** : la présence d'une ligne `group_members` (scoppée sur
-/// moi par le serveur) est exactement ce qui range un groupe ici plutôt qu'en
-/// découverte.
+/// L'unité de l'**inbox** : une ligne `group_members` portant **mon** `userId`
+/// est exactement ce qui range un groupe ici plutôt qu'en découverte. Depuis les
+/// DM, `group_members` porte le roster complet — la requête filtre donc sur moi
+/// pour ne rendre que **mon** appartenance (une ligne par groupe, mon rôle).
+///
+/// [peerProfile] n'est renseigné que pour un **DM** (`group.isDirect`) : c'est le
+/// profil de l'**autre** membre, d'où le fil tire son titre et son avatar. `null`
+/// pour un vrai groupe, ou tant que le profil n'est pas encore synchronisé.
 class MyGroup {
-  const MyGroup({required this.group, required this.membership});
+  const MyGroup({
+    required this.group,
+    required this.membership,
+    this.peerUserId,
+    this.peerProfile,
+  });
 
   final GroupRow group;
   final GroupMemberRow membership;
+
+  /// L'`userId` de l'autre membre d'un DM — présent dès que le roster est là,
+  /// **même si son profil ne l'est pas encore** (d'où un champ distinct de
+  /// [peerProfile]). C'est la cible pour rouvrir le DM depuis la liste.
+  final String? peerUserId;
+  final ProfileRow? peerProfile;
+}
+
+/// Une ligne de la **liste des membres** d'un groupe : l'appartenance (avec son
+/// rôle) et le profil joint (nom, avatar), `null` tant qu'il n'est pas arrivé —
+/// la jointure est **tolérante**, un membre sans profil s'affiche par ses
+/// initiales plutôt que de disparaître.
+class GroupMemberEntry {
+  const GroupMemberEntry({required this.membership, this.profile});
+
+  final GroupMemberRow membership;
+  final ProfileRow? profile;
 }
 
 /// Un groupe **et son identité de propriétaire**, résolue par jointure.
@@ -32,6 +60,8 @@ class GroupWithOwner {
     this.membership,
     this.ownerAccount,
     this.ownerContributor,
+    this.peerUserId,
+    this.peerProfile,
   });
 
   final GroupRow group;
@@ -42,6 +72,12 @@ class GroupWithOwner {
 
   final OfficialAccountRow? ownerAccount;
   final ContributorRow? ownerContributor;
+
+  /// L'`userId` de l'autre membre d'un DM (présent même sans son profil).
+  final String? peerUserId;
+
+  /// Le profil de l'**autre** membre — seulement pour un DM (`group.isDirect`).
+  final ProfileRow? peerProfile;
 }
 
 /// **Les lectures du magasin, côté messagerie de groupe.**
@@ -60,6 +96,7 @@ class GroupWithOwner {
     GroupJoinRequests,
     OfficialAccounts,
     Contributors,
+    Profiles,
   ],
 )
 class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
@@ -71,12 +108,28 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
   /// Trié par activité récente (approximée par `updatedAt` du groupe) ; le
   /// repository réordonne ensuite sur l'horodatage du dernier message, qu'il a
   /// sous la main.
-  Selectable<MyGroup> watchMyGroups() {
+  Selectable<MyGroup> watchMyGroups(String? myUserId) {
+    // `group_members` porte désormais le roster : on filtre sur MOI pour ne
+    // garder que mon appartenance (une ligne par groupe, mon rôle). Sans session
+    // (`myUserId` nul), la sentinelle vide ne matche aucun uuid → inbox vide.
+    final me = myUserId ?? '';
+    // Le pair d'un DM : l'autre membre, joint seulement si `groups.is_direct`
+    // (la condition dans le ON évite toute multiplication sur un vrai groupe).
+    final peer = alias(groupMembers, 'peer');
+    final peerProfile = alias(profiles, 'peer_profile');
     final query = select(groups).join([
       innerJoin(
         groupMembers,
-        groupMembers.groupId.equalsExp(groups.id),
+        groupMembers.groupId.equalsExp(groups.id) &
+            groupMembers.userId.equals(me),
       ),
+      leftOuterJoin(
+        peer,
+        peer.groupId.equalsExp(groups.id) &
+            peer.userId.equals(me).not() &
+            groups.isDirect.equals(true),
+      ),
+      leftOuterJoin(peerProfile, peerProfile.id.equalsExp(peer.userId)),
     ])
       ..orderBy([
         OrderingTerm.desc(groups.updatedAt),
@@ -86,6 +139,8 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
       (row) => MyGroup(
         group: row.readTable(groups),
         membership: row.readTable(groupMembers),
+        peerUserId: row.readTableOrNull(peer)?.userId,
+        peerProfile: row.readTableOrNull(peerProfile),
       ),
     );
   }
@@ -96,14 +151,19 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
   /// L'état « demande en attente » ne se joint pas ici : il vit dans
   /// [pendingRequestGroupIds], que le repository croise avec cette liste. Deux
   /// requêtes simples valent mieux qu'une colonne agrégée fragile.
-  Selectable<GroupRow> discoverableGroups() {
+  Selectable<GroupRow> discoverableGroups(String? myUserId) {
+    final me = myUserId ?? '';
+    // « Suis-je membre » se lit désormais sur MA ligne du roster (le roster porte
+    // aussi les autres). Un DM (`is_direct`) n'entre jamais en découverte.
     final isMember = existsQuery(
-      select(groupMembers)..where((m) => m.groupId.equalsExp(groups.id)),
+      select(groupMembers)
+        ..where((m) => m.groupId.equalsExp(groups.id) & m.userId.equals(me)),
     );
     return select(groups)
       ..where(
         (g) =>
             g.isActive.equals(true) &
+            g.isDirect.equals(false) &
             g.joinPolicy.isIn(const ['open', 'request']) &
             isMember.not(),
       )
@@ -145,13 +205,26 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
       (m) => OrderingTerm.desc(m.id),
     ]);
 
-  /// **Un groupe et son identité de propriétaire**, plus mon appartenance.
-  Selectable<GroupWithOwner> watchGroup(String groupId) {
+  /// **Un groupe et son identité de propriétaire**, plus **mon** appartenance
+  /// (le roster est filtré sur moi — sinon le join multiplierait la ligne par
+  /// membre) et, pour un DM, le profil de l'autre.
+  Selectable<GroupWithOwner> watchGroup(String groupId, String? myUserId) {
+    final me = myUserId ?? '';
+    final peer = alias(groupMembers, 'peer');
+    final peerProfile = alias(profiles, 'peer_profile');
     final query = select(groups).join([
       leftOuterJoin(
         groupMembers,
-        groupMembers.groupId.equalsExp(groups.id),
+        groupMembers.groupId.equalsExp(groups.id) &
+            groupMembers.userId.equals(me),
       ),
+      leftOuterJoin(
+        peer,
+        peer.groupId.equalsExp(groups.id) &
+            peer.userId.equals(me).not() &
+            groups.isDirect.equals(true),
+      ),
+      leftOuterJoin(peerProfile, peerProfile.id.equalsExp(peer.userId)),
       leftOuterJoin(
         officialAccounts,
         officialAccounts.id.equalsExp(groups.ownerOfficialAccountId),
@@ -168,8 +241,68 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
         membership: row.readTableOrNull(groupMembers),
         ownerAccount: row.readTableOrNull(officialAccounts),
         ownerContributor: row.readTableOrNull(contributors),
+        peerUserId: row.readTableOrNull(peer)?.userId,
+        peerProfile: row.readTableOrNull(peerProfile),
       ),
     );
+  }
+
+  /// **La liste des membres d'un groupe** (PRD `messagerie-directe.md` D12) :
+  /// chaque appartenance jointe **tolérablement** à son profil (nom, avatar).
+  /// Trié admins d'abord (`leader` puis `moderator` puis `member`), puis par nom
+  /// affiché. Le magasin ne garde que les membres **actifs** (une rétractation
+  /// retire la ligne), aucun filtre de tombstone n'est donc nécessaire ici.
+  Selectable<GroupMemberEntry> watchGroupMembers(String groupId) {
+    final query = select(groupMembers).join([
+      leftOuterJoin(profiles, profiles.id.equalsExp(groupMembers.userId)),
+    ])
+      ..where(groupMembers.groupId.equals(groupId))
+      ..orderBy([
+        // `leader`(0) < `moderator`(1) < `member`(2) — l'ordre alphabétique
+        // inverse ne le donne pas, d'où le CASE explicite.
+        OrderingTerm.asc(
+          CaseWhenExpression<int>(
+            cases: [
+              CaseWhen(groupMembers.role.equals('leader'),
+                  then: const Constant(0)),
+              CaseWhen(groupMembers.role.equals('moderator'),
+                  then: const Constant(1)),
+            ],
+            orElse: const Constant(2),
+          ),
+        ),
+        OrderingTerm.asc(profiles.displayName),
+        OrderingTerm.asc(groupMembers.userId),
+      ]);
+    return query.map(
+      (row) => GroupMemberEntry(
+        membership: row.readTable(groupMembers),
+        profile: row.readTableOrNull(profiles),
+      ),
+    );
+  }
+
+  /// **Résout le DM avec `otherUserId`** : le groupe `is_direct` dont les membres
+  /// sont {moi, lui}. `null` tant que le fil n'existe pas (création paresseuse au
+  /// premier message, PRD `messagerie-directe.md` D6/D13) — l'écran de DM est
+  /// alors vide et adressé par `userId`, et se rebranche ici après le premier
+  /// envoi, quand la sync a ramené le groupe.
+  Selectable<GroupRow> directGroupWith(String? myUserId, String otherUserId) {
+    final me = myUserId ?? '';
+    final mine = alias(groupMembers, 'mine');
+    final other = alias(groupMembers, 'other');
+    final query = select(groups).join([
+      innerJoin(
+        mine,
+        mine.groupId.equalsExp(groups.id) & mine.userId.equals(me),
+      ),
+      innerJoin(
+        other,
+        other.groupId.equalsExp(groups.id) & other.userId.equals(otherUserId),
+      ),
+    ])
+      ..where(groups.isDirect.equals(true));
+    return query.map((row) => row.readTable(groups));
   }
 
   /// **Les demandes d'adhésion en attente** d'un groupe, à valider par ses

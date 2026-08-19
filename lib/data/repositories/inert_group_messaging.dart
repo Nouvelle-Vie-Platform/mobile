@@ -18,6 +18,14 @@ class InertGroupMessaging implements GroupMessaging {
   }) async {}
 
   @override
+  Future<void> sendDirect(
+    String targetUserId, {
+    required String body,
+    String? clientMessageId,
+    DateTime? clientCreatedAt,
+  }) async {}
+
+  @override
   Future<void> join(String groupId) async {}
 
   @override

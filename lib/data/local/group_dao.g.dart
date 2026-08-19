@@ -12,6 +12,7 @@ mixin _$GroupDaoMixin on DatabaseAccessor<AppDatabase> {
   $OfficialAccountsTable get officialAccounts =>
       attachedDatabase.officialAccounts;
   $ContributorsTable get contributors => attachedDatabase.contributors;
+  $ProfilesTable get profiles => attachedDatabase.profiles;
   GroupDaoManager get managers => GroupDaoManager(this);
 }
 
@@ -32,4 +33,6 @@ class GroupDaoManager {
           _db.attachedDatabase, _db.officialAccounts);
   $$ContributorsTableTableManager get contributors =>
       $$ContributorsTableTableManager(_db.attachedDatabase, _db.contributors);
+  $$ProfilesTableTableManager get profiles =>
+      $$ProfilesTableTableManager(_db.attachedDatabase, _db.profiles);
 }

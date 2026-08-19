@@ -652,6 +652,18 @@ abstract class AppLocalizations {
   /// **'{count} membres'**
   String groupMembers(int count);
 
+  /// No description provided for @groupRoleLeader.
+  ///
+  /// In fr, this message translates to:
+  /// **'Responsable'**
+  String get groupRoleLeader;
+
+  /// No description provided for @groupRoleModerator.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modérateur'**
+  String get groupRoleModerator;
+
   /// No description provided for @groupMembersWithRole.
   ///
   /// In fr, this message translates to:

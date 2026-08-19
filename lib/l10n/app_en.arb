@@ -117,6 +117,8 @@
   "mediaSaveError": "Couldn't save the image.",
   "groupMembers": "{count} members",
   "groupMembersWithRole": "{count} members • {role}",
+  "groupRoleLeader": "Leader",
+  "groupRoleModerator": "Moderator",
 
   "joinGroupOpen": "Join",
   "joinGroupRequest": "Request to join",

@@ -34,6 +34,7 @@ import 'tables/group_tables.dart';
 import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
+import 'tables/profile_tables.dart';
 import 'tables/settings_tables.dart';
 import 'tables/sync_tables.dart';
 
@@ -85,6 +86,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     GroupMembers,
     GroupMessages,
     GroupJoinRequests,
+    Profiles,
   ],
   daos: [
     SyncDao,
@@ -301,18 +303,30 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(downloadNotifications);
           }
 
-          // v9 → v10 — la messagerie de groupe réelle. **Quatre créations de
-          // table, et rien d'autre** : la messagerie était peinte par
+          // v9 → v10 — la messagerie de groupe réelle **et directe (DM)**. **Cinq
+          // créations de table, et rien d'autre** : la messagerie était peinte par
           // `SampleData`, il n'y a aucune donnée locale à reprendre et aucune
-          // colonne existante ne bouge. Les quatre tables naissent vides et le
-          // premier cycle les remplit — leurs curseurs n'existent pas encore, le
-          // manifeste les annoncera `from_zero`. Purement additif, d'où le
-          // simple `if (from < 10)`.
+          // colonne existante ne bouge. Les tables naissent vides et le premier
+          // cycle les remplit — leurs curseurs n'existent pas encore, le manifeste
+          // les annoncera `from_zero`. Purement additif, d'où le simple
+          // `if (from < 10)`.
+          //
+          // **Le DM est fondu dans ce palier, pas dans un v11**, et c'est un choix
+          // de correction, pas de commodité. Le schéma v10 (messagerie de groupe)
+          // n'a **jamais été publié** — il vit sur la branche
+          // `feat/groupes-officiels-mobile`, jamais fusionnée ; le dernier schéma
+          // livré est v9. Aucun appareil ne porte donc un v10 « sans DM » à
+          // migrer : `groups` naît directement avec `is_direct` et `profiles` naît
+          // ici. Un palier v10→v11 séparé avec `addColumn(is_direct)` aurait au
+          // contraire **doublé** la colonne — `createTable(groups)` emploie la
+          // forme courante, qui la porte déjà — et fait diverger toute migration
+          // `X → 10` du schéma cible (`is_direct` en trop).
           if (from < 10) {
             await m.createTable(groups);
             await m.createTable(groupMembers);
             await m.createTable(groupMessages);
             await m.createTable(groupJoinRequests);
+            await m.createTable(profiles);
           }
         },
         beforeOpen: (details) async {

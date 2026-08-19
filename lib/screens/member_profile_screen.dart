@@ -13,22 +13,21 @@ import '../widgets/app_button.dart';
 import 'media_viewer_screen.dart';
 
 /// Fiche détail d'un **membre** — le pendant, pour une personne, de la fiche de
-/// groupe (D15). Même inspiration Telegram : en-tête immersif (avatar, nom,
-/// statut), action **Message** (démarre/rouvre une conversation directe, D10),
-/// puis les **médias partagés**.
+/// groupe (D15). Même inspiration Telegram : en-tête immersif (avatar, nom),
+/// action **Message** (démarre/rouvre une conversation directe, D10).
 ///
-/// Accessible aussi bien depuis un groupe (membre, auteur d'un message) que
-/// depuis l'en-tête d'une discussion privée : un utilisateur simple bénéficie
-/// de la même page détail. Domaine fictif — les médias sont dérivés du nom.
+/// **Au réel** (PRD `messagerie-directe.md`) : la fiche porte le **vrai `userId`**
+/// du membre ([GroupMemberView]), d'où part le DM. Le bouton « Message » ouvre le
+/// fil direct **adressé par `userId`** — création paresseuse : le fil n'existe
+/// qu'au premier message. Les médias partagés restent une maquette.
 class MemberProfileScreen extends StatelessWidget {
-  const MemberProfileScreen({super.key, required this.memberName});
+  const MemberProfileScreen({super.key, required this.member});
 
-  final String memberName;
+  final GroupMemberView member;
 
-  /// Médias partagés fictifs, **déterministes** pour un nom donné (pas d'aléa,
-  /// pour que la page soit stable d'un affichage à l'autre).
+  /// Médias partagés fictifs, **déterministes** pour un membre donné.
   List<String> get _sharedMedia {
-    final seed = memberName.hashCode.abs();
+    final seed = member.userId.hashCode.abs();
     return List.generate(
       4,
       (i) => 'https://picsum.photos/seed/m$seed-$i/240',
@@ -42,19 +41,24 @@ class MemberProfileScreen extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          _Header(name: memberName),
+          _Header(name: member.name),
           const SizedBox(height: AppSpacing.lg),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: AppButton(
               label: l.memberMessage,
               icon: Icons.chat_bubble_outline,
+              // DM **adressé par userId**, fil vide au départ (création paresseuse) :
+              // l'écran de chat le résout par `directConversationProvider` et se
+              // rebranche sur l'id réel après le premier envoi.
               onPressed: () => context.pushNamed(
                 AppRoute.groupChat,
                 extra: Conversation(
-                  id: 'dm-${memberName.hashCode}',
+                  id: '',
                   kind: ConversationKind.direct,
-                  name: memberName,
+                  name: member.name,
+                  avatarUrl: member.avatarUrl,
+                  peerUserId: member.userId,
                   lastMessagePreview: '',
                   time: '',
                 ),

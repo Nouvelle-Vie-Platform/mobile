@@ -31,6 +31,14 @@ class _FakeGroupRepository implements GroupRepository {
   Stream<List<ChatMessage>> messages(String groupId) => Stream.value(const []);
 
   @override
+  Stream<List<GroupMemberView>> members(String groupId) =>
+      Stream.value(const []);
+
+  @override
+  Stream<Conversation?> directConversationWith(String otherUserId) =>
+      Stream.value(null);
+
+  @override
   Stream<List<GroupJoinRequest>> pendingRequests(String groupId) =>
       Stream.value(const []);
 

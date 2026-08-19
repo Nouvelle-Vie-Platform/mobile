@@ -1705,6 +1705,12 @@ class Groups extends Table with TableInfo {
       requiredDuringInsert: false,
       $customConstraints: 'NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1))',
       defaultValue: const CustomExpression('1'));
+  late final GeneratedColumn<int> isDirect = GeneratedColumn<int>(
+      'is_direct', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (is_direct IN (0, 1))',
+      defaultValue: const CustomExpression('0'));
   late final GeneratedColumn<int> memberCount = GeneratedColumn<int>(
       'member_count', aliasedName, true,
       type: DriftSqlType.int,
@@ -1734,6 +1740,7 @@ class Groups extends Table with TableInfo {
         postPolicy,
         isWriteLocked,
         isActive,
+        isDirect,
         memberCount,
         createdAt,
         updatedAt
@@ -1982,6 +1989,68 @@ class GroupJoinRequests extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
+class Profiles extends Table with TableInfo {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  Profiles(this.attachedDatabase, [this._alias]);
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+      'display_name', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<String> avatarUrl = GeneratedColumn<String>(
+      'avatar_url', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, id, displayName, avatarUrl, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'profiles';
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
+    throw UnsupportedError('TableInfo.map in schema verification code');
+  }
+
+  @override
+  Profiles createAlias(String alias) {
+    return Profiles(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
 class DatabaseAtV10 extends GeneratedDatabase {
   DatabaseAtV10(QueryExecutor e) : super(e);
   late final SyncCursors syncCursors = SyncCursors(this);
@@ -2011,6 +2080,7 @@ class DatabaseAtV10 extends GeneratedDatabase {
   late final GroupMembers groupMembers = GroupMembers(this);
   late final GroupMessages groupMessages = GroupMessages(this);
   late final GroupJoinRequests groupJoinRequests = GroupJoinRequests(this);
+  late final Profiles profiles = Profiles(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2039,7 +2109,8 @@ class DatabaseAtV10 extends GeneratedDatabase {
         groups,
         groupMembers,
         groupMessages,
-        groupJoinRequests
+        groupJoinRequests,
+        profiles
       ];
   @override
   int get schemaVersion => 10;

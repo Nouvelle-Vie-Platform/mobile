@@ -160,6 +160,8 @@
   "@groupMembers": {
     "placeholders": { "count": { "type": "int", "example": "80" } }
   },
+  "groupRoleLeader": "Responsable",
+  "groupRoleModerator": "Modérateur",
   "groupMembersWithRole": "{count} membres • {role}",
   "@groupMembersWithRole": {
     "placeholders": {

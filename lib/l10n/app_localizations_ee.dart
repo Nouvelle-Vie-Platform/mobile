@@ -325,6 +325,12 @@ class AppLocalizationsEe extends AppLocalizations {
   }
 
   @override
+  String get groupRoleLeader => 'Responsable';
+
+  @override
+  String get groupRoleModerator => 'Modérateur';
+
+  @override
   String groupMembersWithRole(int count, String role) {
     return '$count membres • $role';
   }

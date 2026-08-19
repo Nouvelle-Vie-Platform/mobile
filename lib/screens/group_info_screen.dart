@@ -6,6 +6,7 @@ import '../data/repositories/group_messaging.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
 import '../router/app_router.dart';
+import '../state/auth_providers.dart';
 import '../state/group_providers.dart';
 import '../state/sync_providers.dart';
 import '../theme/app_colors.dart';
@@ -87,6 +88,8 @@ class _Body extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
         ],
         _SectionTitle(l.groupMembers(group.memberCount ?? 0)),
+        const SizedBox(height: AppSpacing.md),
+        _MembersList(groupId: groupId),
         const SizedBox(height: AppSpacing.md),
         if (group.role != null) ...[
           Padding(
@@ -345,4 +348,73 @@ class _SectionTitle extends StatelessWidget {
       child: Text(label, style: AppTypography.h5),
     );
   }
+}
+
+/// **La liste des membres** du groupe (PRD `messagerie-directe.md` D12) — nom via
+/// `profiles`, avatar par initiales. Un tap ouvre la fiche membre (d'où part un
+/// DM) ; ma propre ligne n'est pas navigable (pas de DM avec soi-même).
+class _MembersList extends ConsumerWidget {
+  const _MembersList({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final me = ref.watch(authProvider).user?.id;
+    final members =
+        ref.watch(groupMembersListProvider(groupId)).asData?.value ??
+            const <GroupMemberView>[];
+    if (members.isEmpty) return const SizedBox.shrink();
+    return Column(
+      children: [
+        for (final m in members) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: AppCard(
+              // Ma propre ligne : pas de tap (un DM relie deux personnes).
+              onTap: m.userId == me
+                  ? null
+                  : () => context.pushNamed(
+                        AppRoute.memberProfile,
+                        extra: m,
+                      ),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  AppAvatar(name: m.name, size: 40),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      // Nom réel ; vide (profil pas encore synchronisé) → repli
+                      // sur un identifiant abrégé, jamais un libellé inventé.
+                      m.name.isNotEmpty ? m.name : _shortId(m.userId),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body,
+                    ),
+                  ),
+                  if (m.role == GroupRole.leader ||
+                      m.role == GroupRole.moderator)
+                    Text(
+                      m.role == GroupRole.leader
+                          ? context.l10n.groupRoleLeader
+                          : context.l10n.groupRoleModerator,
+                      style: AppTypography.caption
+                          .copyWith(color: palette.textSecondary),
+                    ),
+                  if (m.userId != me)
+                    Icon(Icons.chevron_right, color: palette.textSecondary),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+      ],
+    );
+  }
+
+  String _shortId(String userId) =>
+      userId.length <= 8 ? userId : '${userId.substring(0, 8)}…';
 }

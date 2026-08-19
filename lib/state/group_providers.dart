@@ -78,6 +78,24 @@ final groupMessagesProvider = StreamProvider.family<List<ChatMessage>, String>(
   retry: _noAutomaticRetry,
 );
 
+/// La **liste des membres** d'un groupe (nom via `profiles`, rôle) — le point
+/// d'entrée d'un DM (PRD `messagerie-directe.md` D12).
+final groupMembersListProvider =
+    StreamProvider.family<List<GroupMemberView>, String>(
+  (ref, groupId) => ref.watch(groupRepositoryProvider).members(groupId),
+  retry: _noAutomaticRetry,
+);
+
+/// Le **DM avec un utilisateur**, résolu par son `userId` — `null` tant que le
+/// fil n'existe pas (création paresseuse). L'écran de DM s'y rebranche dès que la
+/// sync ramène le groupe direct après le premier envoi.
+final directConversationProvider =
+    StreamProvider.family<Conversation?, String>(
+  (ref, userId) =>
+      ref.watch(groupRepositoryProvider).directConversationWith(userId),
+  retry: _noAutomaticRetry,
+);
+
 /// Les **demandes d'adhésion en attente** d'un groupe, à valider.
 final groupPendingRequestsProvider =
     StreamProvider.family<List<GroupJoinRequest>, String>(

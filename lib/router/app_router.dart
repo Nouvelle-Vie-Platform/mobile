@@ -371,10 +371,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.memberProfile,
         path: '/member-profile',
         builder: (_, state) {
-          // Profil-membre léger et fictif : le nom voyage par `extra`. Accès
-          // direct sans nom → chaîne vide (l'écran reste stable).
-          final name = state.extra as String? ?? '';
-          return AppBackground(child: MemberProfileScreen(memberName: name));
+          // Fiche membre réelle : le membre (vrai `userId` + nom) voyage par
+          // `extra`. Accès direct sans membre → fiche vide inoffensive.
+          final member = state.extra as GroupMemberView? ??
+              const GroupMemberView(userId: '', name: '');
+          return AppBackground(child: MemberProfileScreen(member: member));
         },
       ),
       GoRoute(
