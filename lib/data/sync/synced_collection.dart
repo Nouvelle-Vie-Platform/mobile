@@ -219,4 +219,47 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) => contentId(SyncCollectionKey.playbackProgress, item),
         rowOf: playbackProgressRowOf,
       ),
+      // Les **profils** des gens que je côtoie (PRD `messagerie-directe.md`) —
+      // rangés **avant** les groupes et leurs membres : un membre arrivé avant
+      // son profil s'afficherait par ses initiales, un titre de DM resterait nu.
+      // La jointure de lecture reste tolérante (un membre sans profil s'affiche
+      // quand même), mais l'ordre supprime le cas fréquent de la première
+      // synchronisation. Sans tombstone : un profil ne se rétracte pas.
+      SyncedCollection<ProfileRow>(
+        key: SyncCollectionKey.profiles,
+        local: (dao) => dao.profilesCollection,
+        idOf: (item) => contentId(SyncCollectionKey.profiles, item),
+        rowOf: profileRowOf,
+      ),
+      // La messagerie de groupe. Le **groupe** précède ses **messages** et ses
+      // **appartenances** par la règle habituelle « référentiels avant contenu »
+      // — un message ou une appartenance arrivé avant son groupe n'aurait rien à
+      // quoi se raccrocher (la jointure de lecture reste tolérante, mais l'inbox
+      // se peuplerait alors sans nom). Les institutions propriétaires
+      // (`official_accounts`, `contributors`) sont **déjà** plus haut dans ce
+      // registre, donc l'en-tête d'un groupe institutionnel a sa source avant lui.
+      SyncedCollection<GroupRow>(
+        key: SyncCollectionKey.groups,
+        local: (dao) => dao.groupsCollection,
+        idOf: (item) => contentId(SyncCollectionKey.groups, item),
+        rowOf: groupRowOf,
+      ),
+      SyncedCollection<GroupMemberRow>(
+        key: SyncCollectionKey.groupMembers,
+        local: (dao) => dao.groupMembersCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.groupMembers, item),
+        rowOf: groupMemberRowOf,
+      ),
+      SyncedCollection<GroupMessageRow>(
+        key: SyncCollectionKey.groupMessages,
+        local: (dao) => dao.groupMessagesCollection,
+        idOf: (item) => contentId(SyncCollectionKey.groupMessages, item),
+        rowOf: groupMessageRowOf,
+      ),
+      SyncedCollection<GroupJoinRequestRow>(
+        key: SyncCollectionKey.groupJoinRequests,
+        local: (dao) => dao.groupJoinRequestsCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.groupJoinRequests, item),
+        rowOf: groupJoinRequestRowOf,
+      ),
     ];

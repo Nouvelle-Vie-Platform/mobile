@@ -5,12 +5,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/config/app_env.dart';
 import 'core/network/api_client.dart';
+import 'data/push/push_registration_service.dart';
+import 'data/realtime/realtime_service.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
 import 'state/auth_providers.dart';
 import 'state/downloads_providers.dart';
 import 'state/locale_providers.dart';
+import 'state/push_providers.dart';
+import 'state/realtime_providers.dart';
 import 'state/sync_providers.dart';
 import 'state/theme_provider.dart';
 import 'theme/app_theme.dart';
@@ -27,6 +31,18 @@ class MaisonDuMiracleApp extends ConsumerStatefulWidget {
 }
 
 class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
+  /// L'abonnement au [realtimeServiceProvider], gardé pour être fermé au
+  /// démontage. Il **redémarre** le service quand la session change : le
+  /// provider se recrée alors (nouveau `userId`), Riverpod dispose l'ancien
+  /// service, et ce rappel appelle `start()` sur le neuf. Voir plus bas.
+  ProviderSubscription<RealtimeService>? _realtimeSub;
+
+  /// L'abonnement au [pushRegistrationServiceProvider], jumeau du précédent :
+  /// gardé pour être fermé au démontage, il **redémarre** le service quand la
+  /// session change (le provider se recrée avec le nouveau `userId`, Riverpod
+  /// dispose l'ancien, ce rappel appelle `start()` sur le neuf).
+  ProviderSubscription<PushRegistrationService>? _pushSub;
+
   @override
   void initState() {
     super.initState();
@@ -73,6 +89,49 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
         // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
         // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.
         unawaited(scheduler.start());
+
+        // **Le temps-réel (SSE Transmit)**, à côté des trois déclencheurs de
+        // sync (`docs/temps-reel-sse.md` §2). Le `RealtimeService` ouvre une
+        // connexion SSE au premier plan, s'abonne à tous mes groupes/DM et
+        // déclenche une sync `SyncTrigger.realtime` à chaque événement (D1) :
+        // le SSE **accélère** la sync, il ne peint jamais le message.
+        //
+        // On écoute le provider plutôt que de le lire une fois : à un
+        // changement de session il se recrée (nouveau `userId`), Riverpod
+        // dispose l'ancien service — observateur retiré, socket fermée — et ce
+        // rappel démarre le neuf. `fireImmediately` couvre le tout premier
+        // démarrage (l'app est au premier plan, la connexion s'ouvre d'emblée).
+        _realtimeSub = ref.listenManual<RealtimeService>(
+          realtimeServiceProvider,
+          (previous, next) => next.start(),
+          fireImmediately: true,
+        );
+
+        // **Le réveil push (FCM + ntfy/UnifiedPush)**, à côté du temps-réel : le
+        // SSE couvre l'app **ouverte**, le push couvre l'app **fermée** (PRD
+        // `docs/prd/notifications-push.md`). Le `PushRegistrationService` obtient
+        // l'inscription de l'appareil (jeton FCM / endpoint UnifiedPush) et la
+        // POSTe au serveur pour le rendre joignable ; il se réenregistre sur
+        // rotation. Rien ici ne lève (best-effort) : un push raté n'est jamais
+        // une panne — c'est un confort qui double le SSE.
+        //
+        // **Tout est inerte tant que Firebase n'est pas debout** : le transport
+        // réel (`FcmPushTransport`) est le maillon restant, décrit dans
+        // `docs/notifications-push-seam-natif.md`. `start()` est alors un no-op
+        // (l'inscription obtenue est `null`), ce câblage est donc déjà en place
+        // pour le jour où le transport réel arrivera — sans toucher `app.dart`.
+        //
+        // On **écoute** le provider (comme le temps-réel) : à un changement de
+        // session il se recrée, l'ancien service est disposé, ce rappel démarre
+        // le neuf. Le *wake handler* (réception du réveil → sync → notif locale)
+        // n'est **pas** déclenché ici : il le sera par le background isolate
+        // handler FCM (seam futur), et n'est qu'**exposé** par
+        // `pushWakeHandlerProvider`.
+        _pushSub = ref.listenManual<PushRegistrationService>(
+          pushRegistrationServiceProvider,
+          (previous, next) => unawaited(next.start()),
+          fireImmediately: true,
+        );
       });
     }
   }
@@ -80,6 +139,15 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   @override
   void dispose() {
     ApiClient.instance.onUnauthorized = null;
+    // Ferme l'écoute du temps-réel ; le service lui-même est disposé par le
+    // `ref.onDispose` de son provider quand le conteneur Riverpod s'en va.
+    _realtimeSub?.close();
+    // Idem pour le réveil push : on ferme l'écoute ; le
+    // `PushRegistrationService` est disposé par le `ref.onDispose` de son
+    // provider (abonnement aux rotations relâché, transport natif fermé). Le
+    // `dispose` **ne purge pas** l'inscription serveur — la purge est un geste
+    // explicite de déconnexion, jamais un effet de bord d'un cycle de vie.
+    _pushSub?.close();
     super.dispose();
   }
 

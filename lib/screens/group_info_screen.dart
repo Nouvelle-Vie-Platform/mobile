@@ -1,59 +1,122 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/repositories/group_messaging.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
 import '../router/app_router.dart';
+import '../state/auth_providers.dart';
+import '../state/group_providers.dart';
+import '../state/sync_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_avatar.dart';
 import '../widgets/app_card.dart';
-import 'media_viewer_screen.dart';
+import '../widgets/community/institution_avatar.dart';
+import '../widgets/content_absence.dart';
 
-/// Fiche d'un groupe, ouverte en tapant le nom du groupe dans la discussion —
-/// **inspiration Telegram** : en-tête immersif (logo + nom + effectif), puis
-/// description, médias partagés, et enfin la liste des membres.
+/// Fiche d'un groupe — **inspiration Telegram**, migrée au réel : en-tête
+/// immersif, description, en-tête **propriétaire** (une institution → tap vers sa
+/// fiche, décision D23/7), effectif, et — pour un responsable — la file des
+/// **demandes d'adhésion** à valider (décision D12).
 ///
-/// Taper un membre ouvre son **profil**, d'où l'on démarre une conversation
-/// privée (décision D10). Domaine fictif : tout vient de [Conversation].
-class GroupInfoScreen extends StatelessWidget {
-  const GroupInfoScreen({super.key, required this.group});
+/// Reçoit l'**identifiant** du groupe (jamais une copie figée) et le relit dans
+/// la source de vérité : une rétractation le retire de l'écran ouvert.
+class GroupInfoScreen extends ConsumerWidget {
+  const GroupInfoScreen({super.key, required this.groupId});
 
-  final Conversation group;
+  final String groupId;
 
   @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final description = group.description;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(groupByIdProvider(groupId));
     return Scaffold(
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          _Header(group: group),
-          const SizedBox(height: AppSpacing.lg),
-          if (description != null && description.isNotEmpty) ...[
-            _DescriptionCard(text: description),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          if (group.sharedMedia.isNotEmpty) ...[
-            _SharedMedia(urls: group.sharedMedia),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          _SectionTitle(l.groupMembers(group.members.length)),
-          const SizedBox(height: AppSpacing.md),
-          for (final name in group.members) ...[
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: _MemberTile(name: name),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-          const SizedBox(height: AppSpacing.xxl),
-        ],
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const ContentAbsenceView(
+          absence: ContentAbsence.notSynced,
+        ),
+        data: (group) {
+          if (group == null) {
+            return const ContentAbsenceView(
+              absence: ContentAbsence.retracted,
+            );
+          }
+          return _Body(group: group, groupId: groupId);
+        },
       ),
     );
+  }
+}
+
+class _Body extends ConsumerWidget {
+  const _Body({required this.group, required this.groupId});
+
+  final Conversation group;
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final description = group.description;
+    final isAdmin = group.role?.canModerate ?? false;
+    final institution = group.institution;
+
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        _Header(group: group),
+        const SizedBox(height: AppSpacing.lg),
+        if (description != null && description.isNotEmpty) ...[
+          _DescriptionCard(text: description),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+        // En-tête propriétaire institutionnel (décision 7) : tap → fiche.
+        if (institution != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: _OwnerCard(institution: institution),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+        // Demandes d'adhésion à valider (responsables uniquement).
+        if (isAdmin) ...[
+          _PendingRequests(groupId: groupId),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+        _SectionTitle(l.groupMembers(group.memberCount ?? 0)),
+        const SizedBox(height: AppSpacing.md),
+        _MembersList(groupId: groupId),
+        const SizedBox(height: AppSpacing.md),
+        if (group.role != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: OutlinedButton.icon(
+              onPressed: () => _leave(context, ref),
+              icon: const Icon(Icons.logout),
+              label: Text(l.groupLeave),
+            ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.xxl),
+      ],
+    );
+  }
+
+  Future<void> _leave(BuildContext context, WidgetRef ref) async {
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await ref.read(groupMessagingProvider).leave(groupId);
+      await ref.read(pullToRefreshProvider)();
+      if (navigator.canPop()) navigator.pop();
+    } on GroupWriteException {
+      messenger.showSnackBar(SnackBar(content: Text(l.groupActionError)));
+    }
   }
 }
 
@@ -91,7 +154,7 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               group.name,
               textAlign: TextAlign.center,
@@ -100,7 +163,7 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            l.groupMembers(group.members.length),
+            l.groupMembers(group.memberCount ?? 0),
             style: AppTypography.body
                 .copyWith(color: Colors.white.withValues(alpha: 0.85)),
           ),
@@ -119,7 +182,7 @@ class _DescriptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: AppCard(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -141,88 +204,135 @@ class _DescriptionCard extends StatelessWidget {
   }
 }
 
-class _SharedMedia extends StatelessWidget {
-  const _SharedMedia({required this.urls});
+/// L'identité de l'**institution propriétaire** — tap ouvre sa fiche (D23).
+class _OwnerCard extends StatelessWidget {
+  const _OwnerCard({required this.institution});
 
-  final List<String> urls;
-
-  static const double _size = 96;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(context.l10n.groupInfoSharedMedia),
-        const SizedBox(height: AppSpacing.md),
-        SizedBox(
-          height: _size,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: urls.length,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
-            itemBuilder: (context, i) => GestureDetector(
-              onTap: () => context.pushNamed(
-                AppRoute.mediaViewer,
-                extra: MediaViewerArgs(urls: urls, index: i),
-              ),
-              child: _MediaThumb(url: urls[i]),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MediaThumb extends StatelessWidget {
-  const _MediaThumb({required this.url});
-
-  final String url;
+  final InstitutionProfile institution;
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final palette = context.palette;
-    return ClipRRect(
-      borderRadius: AppRadius.card,
-      child: SizedBox(
-        width: _SharedMedia._size,
-        height: _SharedMedia._size,
-        child: Image.network(
-          url,
-          fit: BoxFit.cover,
-          // Repli coloré : jamais d'échec réseau visible (hors ligne / test).
-          errorBuilder: (_, __, ___) => ColoredBox(
-            color: palette.divider,
-            child: Icon(Icons.image_outlined, color: palette.textSecondary),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.name});
-
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
+    final subtitle = institution.kind == GroupOwnerKind.officialAccount
+        ? l.institutionOfficialAccount
+        : l.institutionContributor;
     return AppCard(
-      onTap: () => context.pushNamed(AppRoute.memberProfile, extra: name),
+      onTap: () => context.pushNamed(
+        AppRoute.institutionProfile,
+        pathParameters: {
+          'kind': institutionKindSlug(institution.kind),
+          'id': '${institution.id}',
+        },
+      ),
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
-          AppAvatar(name: name, size: 44),
+          InstitutionAvatar(
+            name: institution.name,
+            avatarUrl: institution.avatarUrl,
+            size: 44,
+          ),
           const SizedBox(width: AppSpacing.md),
-          Expanded(child: Text(name, style: AppTypography.bodyStrong)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(institution.name, style: AppTypography.bodyStrong),
+                Text(
+                  subtitle,
+                  style: AppTypography.caption
+                      .copyWith(color: palette.textSecondary),
+                ),
+              ],
+            ),
+          ),
           Icon(Icons.chevron_right, color: palette.textSecondary),
         ],
       ),
     );
+  }
+}
+
+/// La file des demandes d'adhésion — approuver / refuser (D12).
+class _PendingRequests extends ConsumerWidget {
+  const _PendingRequests({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final requests =
+        ref.watch(groupPendingRequestsProvider(groupId)).asData?.value ??
+            const <GroupJoinRequest>[];
+    if (requests.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(l.groupJoinRequestsTitle),
+        const SizedBox(height: AppSpacing.md),
+        for (final r in requests) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: AppCard(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  const AppAvatar(name: '', size: 40),
+                  const SizedBox(width: AppSpacing.md),
+                  // Pas de nom de fidèle (ADR-0029) : identifiant abrégé, à
+                  // réconcilier quand un nom voyagera.
+                  Expanded(
+                    child: Text(
+                      _shortId(r.userId),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: l.groupReject,
+                    onPressed: () => _decide(context, ref, r, approve: false),
+                    icon: const Icon(Icons.close),
+                  ),
+                  IconButton(
+                    tooltip: l.groupApprove,
+                    onPressed: () => _decide(context, ref, r, approve: true),
+                    icon: const Icon(Icons.check),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+      ],
+    );
+  }
+
+  String _shortId(String userId) =>
+      userId.length <= 8 ? userId : '${userId.substring(0, 8)}…';
+
+  Future<void> _decide(
+    BuildContext context,
+    WidgetRef ref,
+    GroupJoinRequest request, {
+    required bool approve,
+  }) async {
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final messaging = ref.read(groupMessagingProvider);
+    try {
+      if (approve) {
+        await messaging.approveJoinRequest(groupId, request.id);
+      } else {
+        await messaging.rejectJoinRequest(groupId, request.id);
+      }
+      await ref.read(pullToRefreshProvider)();
+    } on GroupWriteException {
+      messenger.showSnackBar(SnackBar(content: Text(l.groupActionError)));
+    }
   }
 }
 
@@ -234,8 +344,77 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Text(label, style: AppTypography.h5),
     );
   }
+}
+
+/// **La liste des membres** du groupe (PRD `messagerie-directe.md` D12) — nom via
+/// `profiles`, avatar par initiales. Un tap ouvre la fiche membre (d'où part un
+/// DM) ; ma propre ligne n'est pas navigable (pas de DM avec soi-même).
+class _MembersList extends ConsumerWidget {
+  const _MembersList({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final me = ref.watch(authProvider).user?.id;
+    final members =
+        ref.watch(groupMembersListProvider(groupId)).asData?.value ??
+            const <GroupMemberView>[];
+    if (members.isEmpty) return const SizedBox.shrink();
+    return Column(
+      children: [
+        for (final m in members) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: AppCard(
+              // Ma propre ligne : pas de tap (un DM relie deux personnes).
+              onTap: m.userId == me
+                  ? null
+                  : () => context.pushNamed(
+                        AppRoute.memberProfile,
+                        extra: m,
+                      ),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  AppAvatar(name: m.name, size: 40),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      // Nom réel ; vide (profil pas encore synchronisé) → repli
+                      // sur un identifiant abrégé, jamais un libellé inventé.
+                      m.name.isNotEmpty ? m.name : _shortId(m.userId),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body,
+                    ),
+                  ),
+                  if (m.role == GroupRole.leader ||
+                      m.role == GroupRole.moderator)
+                    Text(
+                      m.role == GroupRole.leader
+                          ? context.l10n.groupRoleLeader
+                          : context.l10n.groupRoleModerator,
+                      style: AppTypography.caption
+                          .copyWith(color: palette.textSecondary),
+                    ),
+                  if (m.userId != me)
+                    Icon(Icons.chevron_right, color: palette.textSecondary),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+      ],
+    );
+  }
+
+  String _shortId(String userId) =>
+      userId.length <= 8 ? userId : '${userId.substring(0, 8)}…';
 }

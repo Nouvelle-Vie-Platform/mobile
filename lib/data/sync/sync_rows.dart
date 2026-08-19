@@ -431,6 +431,117 @@ LegalDocumentsCompanion legalDocumentRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/groups` — un **espace de discussion**.
+///
+/// Le propriétaire est **polymorphe** (décision D3) : `ownerKind` discrimine, et
+/// **une** des trois colonnes `owner*Id` est renseignée. L'identité de
+/// l'institution (nom, logo) ne voyage pas ici — elle se **joint** sur
+/// `official_accounts` / `contributors`.
+///
+/// N'est appelée que sur un élément dont `readsAsRetraction` a dit qu'il n'en
+/// était pas une : c'est ce qui l'autorise à exiger `name`, `ownerKind` et
+/// `joinPolicy`.
+GroupsCompanion groupRowOf(Map<String, Object?> item) {
+  const collection = 'groups';
+  return GroupsCompanion.insert(
+    id: contentId(collection, item),
+    name: _text(collection, item, 'name'),
+    description: Value(_optionalText(item, 'description')),
+    // Stocké tel quel, jamais refermé sur un enum : une valeur inconnue se
+    // replie à l'affichage plutôt que de coûter la page.
+    ownerKind: _text(collection, item, 'ownerKind'),
+    // **Le serveur émet la clé `ownerId`** (propriétaire humain, uuid|null), pas
+    // `ownerUserId` — contrat §7 arrêté. On la range dans la colonne
+    // `ownerUserId` du magasin : seul le mapping de clé diffère du nom de colonne.
+    ownerUserId: Value(_optionalText(item, 'ownerId')),
+    // Entiers nus, sans clé étrangère : la cible d'institution n'a pas à être
+    // déjà arrivée.
+    ownerOfficialAccountId: Value(_optionalInt(item, 'ownerOfficialAccountId')),
+    ownerContributorId: Value(_optionalInt(item, 'ownerContributorId')),
+    joinPolicy: _text(collection, item, 'joinPolicy'),
+    postPolicy: Value(_optionalText(item, 'postPolicy') ?? 'all'),
+    isWriteLocked: Value(item['isWriteLocked'] == true),
+    isActive: Value(item['isActive'] != false),
+    // DM (PRD `messagerie-directe.md`) : le serveur émet `isDirect`. Absent d'un
+    // vieux payload → `false` (vrai groupe), le défaut de la colonne.
+    isDirect: Value(item['isDirect'] == true),
+    memberCount: Value(_optionalInt(item, 'memberCount')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/profiles` — le **profil** (nom, avatar) d'un utilisateur que je
+/// côtoie (PRD `messagerie-directe.md` D8/D9). Projection minimale de `users`,
+/// scoppée côté serveur sur mes groupes ∪ mes DM.
+ProfilesCompanion profileRowOf(Map<String, Object?> item) {
+  const collection = 'profiles';
+  return ProfilesCompanion.insert(
+    id: contentId(collection, item),
+    // Déjà résolu par le serveur (« Prénom Nom », à défaut le titre, à défaut
+    // `null`). `null` se replie sur les initiales au rendu — jamais un libellé
+    // inventé.
+    displayName: Value(_optionalText(item, 'displayName')),
+    avatarUrl: Value(_optionalText(item, 'avatarUrl')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/group_members` — **mes** appartenances aux groupes.
+///
+/// Scoppée sur l'acteur : le serveur n'y sert jamais l'appartenance de quelqu'un
+/// d'autre. `userId` n'est stocké que pour le diagnostic.
+GroupMembersCompanion groupMemberRowOf(Map<String, Object?> item) {
+  const collection = 'group_members';
+  return GroupMembersCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    groupId: _text(collection, item, 'groupId'),
+    userId: _text(collection, item, 'userId'),
+    // `leader` | `moderator` | `member`, stocké tel quel.
+    role: _text(collection, item, 'role'),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/group_messages` — un **message**.
+///
+/// `authorId` est **nullable** et `isSystem` l'accompagne : l'origine se lit sur
+/// le couple (ADR-0032), jamais sur `authorId` seul. `body` est nullable — un
+/// message système peut n'en pas porter. Une ligne tombstonée n'arrive jamais
+/// ici (triée en amont par `readsAsRetraction`), ce qui autorise à exiger
+/// `groupId`.
+GroupMessagesCompanion groupMessageRowOf(Map<String, Object?> item) {
+  const collection = 'group_messages';
+  return GroupMessagesCompanion.insert(
+    id: contentId(collection, item),
+    groupId: _text(collection, item, 'groupId'),
+    authorId: Value(_optionalText(item, 'authorId')),
+    isSystem: Value(item['isSystem'] == true),
+    body: Value(_optionalText(item, 'body')),
+    clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/group_join_requests` — une **demande d'adhésion**.
+///
+/// Ma demande en attente, ou (si j'administre le groupe) celle d'un autre. Le
+/// `status` traverse tel quel (`pending` | `approved` | `rejected`).
+GroupJoinRequestsCompanion groupJoinRequestRowOf(Map<String, Object?> item) {
+  const collection = 'group_join_requests';
+  return GroupJoinRequestsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    groupId: _text(collection, item, 'groupId'),
+    userId: _text(collection, item, 'userId'),
+    status: _text(collection, item, 'status'),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Rouages
 // ─────────────────────────────────────────────────────────────────────────────

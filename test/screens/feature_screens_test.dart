@@ -88,7 +88,8 @@ void main() {
       expect(find.text(teaching.title), findsOneWidget);
     });
 
-    testWidgets('GroupChatScreen affiche la conversation reçue', (tester) async {
+    testWidgets('GroupChatScreen affiche la conversation reçue',
+        (tester) async {
       final conversation = SampleData.conversations.first;
       await pumpScreen(tester, GroupChatScreen(conversation: conversation));
       expect(find.byType(GroupChatScreen), findsOneWidget);

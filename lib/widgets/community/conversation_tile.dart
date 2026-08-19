@@ -52,8 +52,7 @@ class ConversationTile extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Text(
             conversation.time,
-            style:
-                AppTypography.caption.copyWith(color: palette.textSecondary),
+            style: AppTypography.caption.copyWith(color: palette.textSecondary),
           ),
         ],
       ),
