@@ -159,6 +159,7 @@ TeachingsCompanion teachingRowOf(Map<String, Object?> item) {
     // Relatives : la résolution contre la base d'API appartient au client.
     imageLandscapeUrl: Value(_optionalText(item, 'imageLandscapeUrl')),
     imagePortraitUrl: Value(_optionalText(item, 'imagePortraitUrl')),
+    imageSquareUrl: Value(_optionalText(item, 'imageSquareUrl')),
     publishedAt: Value(_instant(item, 'publishedAt')),
     clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
     createdAt: Value(_instant(item, 'createdAt')),

@@ -21,7 +21,7 @@ import 'package:maison_du_miracle/core/network/api_client.dart';
 /// ```
 const String kLiveServerUrl = String.fromEnvironment(
   'LIVE_SERVER_URL',
-  defaultValue: 'http://localhost:3333',
+  defaultValue: 'https://eenv.brainsial.com',
 );
 
 /// Identifiant de l'**opérateur** — celui qui publie les enseignements du

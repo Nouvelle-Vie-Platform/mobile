@@ -127,7 +127,7 @@ class AppDatabase extends _$AppDatabase {
   /// colonne apparaîtrait dès le palier v8 et se heurterait au schéma v8 gelé
   /// (voir `download_titles`). Rien du catalogue déjà téléchargé ne bouge.
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -284,6 +284,30 @@ class AppDatabase extends _$AppDatabase {
           if (from < 9) {
             await m.createTable(downloadTitles);
             await m.createTable(downloadNotifications);
+          }
+
+          // v9 → v10 — le visuel **carré** des enseignements (issue #209, côté
+          // serveur). **Un ajout de colonne, et rien d'autre** : le serveur sert
+          // désormais `imageSquareUrl` dans le flux delta (même
+          // `TeachingTransformer` que le paysage et le portrait), et le magasin
+          // doit pouvoir le stocker brut (règle 5 — « on stocke ce que le serveur
+          // envoie »).
+          //
+          // `addColumn` sur une colonne nullable ne réécrit aucune ligne et n'a
+          // pas de valeur par défaut à poser : les enseignements déjà en magasin
+          // la portent à `NULL` (« pas de carré »), jusqu'à ce que le prochain
+          // cycle ramène leur `imageSquareUrl` s'ils en ont un. Rien du catalogue
+          // déjà téléchargé n'est en jeu.
+          //
+          // **La garde `to >= 10` n'est pas décorative** — même raison qu'au
+          // palier v7→v8 : le vérificateur de schéma ignore une table
+          // surnuméraire mais **signale une colonne surnuméraire**. Sans la
+          // garde, `addColumn` s'exécuterait dès qu'un test migre vers une
+          // version intermédiaire (v1→v9 appelle `onUpgrade(1, 9)`), et
+          // `teachings.image_square_url` apparaîtrait dans un schéma v9 qui ne la
+          // connaît pas.
+          if (from < 10 && to >= 10) {
+            await m.addColumn(teachings, teachings.imageSquareUrl);
           }
         },
         beforeOpen: (details) async {

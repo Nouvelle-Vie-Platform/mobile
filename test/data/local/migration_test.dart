@@ -340,12 +340,20 @@ void main() {
     await verifier.migrateAndValidate(db, 9);
   });
 
-  test('v1 → v9 : un appareil resté en v1 rejoue les huit paliers', () async {
+  test('v9 → v10 : la colonne teachings.image_square_url naît', () async {
+    final connection = await verifier.startAt(9);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 10);
+  });
+
+  test('v1 → v10 : un appareil resté en v1 rejoue les neuf paliers', () async {
     final connection = await verifier.startAt(1);
     final db = AppDatabase(connection);
     addTearDown(db.close);
 
-    await verifier.migrateAndValidate(db, 9);
+    await verifier.migrateAndValidate(db, 10);
   });
 
   test(
@@ -373,6 +381,30 @@ void main() {
     // retrait d'un enseignement téléchargé.
     expect(await db.select(db.downloadTitles).get(), isEmpty);
     expect(await db.select(db.downloadNotifications).get(), isEmpty);
+  });
+
+  test(
+      'v9 → v10 : le catalogue survit, `imageSquareUrl` naît nul sur une ligne '
+      'écrite avant la migration', () async {
+    // Un seul changement **additif** (#209) : la colonne `image_square_url`
+    // s'ajoute à `teachings`, nullable. Aucune ligne n'est réécrite — c'est le
+    // catalogue hors ligne du fidèle, la pièce qui se corrige le plus mal une
+    // fois publiée.
+    final schema = await verifier.schemaAt(9);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 10);
+
+    final teaching = (await db.select(db.teachings).get()).single;
+    expect(teaching.title, 'Dieu a le dernier mot');
+    // La colonne ajoutée est nulle sur une ligne écrite avant la migration :
+    // « pas de carré », jusqu'à ce qu'un cycle ramène son `imageSquareUrl`.
+    expect(teaching.imageSquareUrl, isNull);
   });
 
   test('la version de schéma couvre bien toutes les versions exportées', () {

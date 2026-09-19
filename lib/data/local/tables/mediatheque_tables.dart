@@ -204,6 +204,10 @@ class Teachings extends Table with SyncedRow {
   TextColumn get imageLandscapeUrl => text().nullable()();
   TextColumn get imagePortraitUrl => text().nullable()();
 
+  /// Le troisième cadrage (1:1), même contrat relatif que ses deux frères.
+  /// **Additif** : nullable, aucune ligne existante n'est réécrite.
+  TextColumn get imageSquareUrl => text().nullable()();
+
   DateTimeColumn get publishedAt => dateTime().nullable()();
   DateTimeColumn get clientCreatedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().nullable()();

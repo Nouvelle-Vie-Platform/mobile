@@ -516,7 +516,9 @@ class _Thumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Color(view?.color ?? kBrandFallbackColor);
-    final source = view?.landscapeOrPortrait;
+    // Miniature carrée (64×64) : c'est le cadrage carré qu'il lui faut, avec
+    // repli sur le paysage puis le portrait s'il manque.
+    final source = view?.squareOrLandscape;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),

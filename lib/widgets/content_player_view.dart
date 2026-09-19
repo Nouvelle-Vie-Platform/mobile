@@ -373,7 +373,10 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
       localFilePath: resolution.localFilePath,
       title: content.title,
       author: content.authorName,
-      artUrl: content.landscapeOrPortrait,
+      // La vignette de lecture en cours (notification, écran verrouillé,
+      // mini-lecteur) est carrée : c'est le cadrage carré qu'il lui faut, avec
+      // repli sur le paysage puis le portrait s'il manque.
+      artUrl: content.squareOrLandscape,
     );
     if (!mounted) return;
 
@@ -651,10 +654,11 @@ class _Artwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // En-tête pleine largeur : le cadrage paysage. Le portrait prend le relais
-    // s'il est seul, plutôt que de renoncer à toute image. La résolution des
-    // chemins relatifs a déjà eu lieu dans le modèle de lecture.
-    final image = _imageProvider(content.landscapeOrPortrait);
+    // Visuel central du lecteur : le cadrage **carré** est celui qu'on veut ici
+    // (il habille la pochette de lecture). Le paysage puis le portrait prennent
+    // le relais s'il manque, plutôt que de renoncer à toute image. La
+    // résolution des chemins relatifs a déjà eu lieu dans le modèle de lecture.
+    final image = _imageProvider(content.squareOrLandscape);
 
     // Pas d'image : grande icône flottant sur le dégradé.
     if (image == null) return _placeholder();

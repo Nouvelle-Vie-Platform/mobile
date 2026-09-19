@@ -445,7 +445,11 @@ class _AlbumCard extends StatelessWidget {
             SizedBox(
               width: 124,
               height: 120,
-              child: ContentCover(content: teaching, radius: AppRadius.lg),
+              child: ContentCover(
+                content: teaching,
+                radius: AppRadius.lg,
+                orientation: CoverOrientation.square,
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -494,7 +498,11 @@ class _PlaylistItem extends StatelessWidget {
             SizedBox(
               width: 56,
               height: 56,
-              child: ContentCover(content: teaching, radius: AppRadius.md),
+              child: ContentCover(
+                content: teaching,
+                radius: AppRadius.md,
+                orientation: CoverOrientation.square,
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(

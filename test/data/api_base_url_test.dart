@@ -7,7 +7,7 @@ void main() {
     test('vaut le backend local tant qu\'aucun --dart-define n\'est passé', () {
       // Les tests tournent sans `--dart-define` : c'est la valeur de repli qui
       // s'applique. Elle doit rester une URL de développement.
-      expect(kBaseUrl, 'http://localhost:3333');
+      expect(kBaseUrl, 'https://eenv.brainsial.com');
     });
 
     test('hors release, une URL en clair passe (dev local)', () {
@@ -31,7 +31,7 @@ void main() {
 
     test('en release, une URL en clair fait échouer le démarrage', () {
       for (final url in [
-        'http://localhost:3333',
+        'https://eenv.brainsial.com',
         'http://api.example.org',
         'HTTPS://api.example.org', // le schéma est sensible à la casse
         '',

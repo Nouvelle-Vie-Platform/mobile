@@ -43,4 +43,4 @@ jobs:
       # `test/data/local/web_assets_test.dart` apparie sqlite3.wasm et
       # drift_worker.js à pubspec.lock.
       - name: Build web
-        run: flutter build web --dart-define=API_BASE_URL=http://localhost:3333
+        run: flutter build web --dart-define=API_BASE_URL=https://eenv.brainsial.com

@@ -69,6 +69,7 @@ abstract class ContentView {
     this.typeLabel = '',
     this.imageLandscapeUrl,
     this.imagePortraitUrl,
+    this.imageSquareUrl,
     this.playlistUrl,
     this.description,
     this.recordedAt,
@@ -94,6 +95,7 @@ abstract class ContentView {
     int? typeColor,
     String? imageLandscapeUrl,
     String? imagePortraitUrl,
+    String? imageSquareUrl,
     this.playlistUrl,
     String? description,
     this.recordedAt,
@@ -114,6 +116,7 @@ abstract class ContentView {
         // environnement à l'autre.
         imageLandscapeUrl = resolveMediaUrl(imageLandscapeUrl),
         imagePortraitUrl = resolveMediaUrl(imagePortraitUrl),
+        imageSquareUrl = resolveMediaUrl(imageSquareUrl),
         description = blankToNull(description);
 
   /// UUIDv7 servi par le serveur — ce qui circule dans la navigation.
@@ -158,6 +161,11 @@ abstract class ContentView {
   /// Visuel portrait (0,6:1), **URL absolue** ou `null`.
   final String? imagePortraitUrl;
 
+  /// Visuel carré (1:1), **URL absolue** ou `null` — le troisième cadrage,
+  /// celui du rail de vignettes de l'accueil. Additif : le paysage et le portrait
+  /// restent servis, `null` = pas de carré (le repli sur la couleur s'applique).
+  final String? imageSquareUrl;
+
   /// URL HLS publique. `null` = le contenu existe, son média pas encore :
   /// c'est une absence à dessiner (`ContentAbsence.noMedia`), pas un cas
   /// impossible.
@@ -182,6 +190,12 @@ abstract class ContentView {
 
   /// Visuel à privilégier pour un cadre haut, l'autre en secours.
   String? get portraitOrLandscape => imagePortraitUrl ?? imageLandscapeUrl;
+
+  /// Visuel à privilégier pour un cadre **carré** (rail, vignette) : le carré
+  /// d'abord, puis les deux autres en secours — une image mal cadrée reste plus
+  /// informative qu'un aplat.
+  String? get squareOrLandscape =>
+      imageSquareUrl ?? imageLandscapeUrl ?? imagePortraitUrl;
 
   /// Une chaîne vide ou blanche **est** une absence, et se dessine comme telle.
   static String? blankToNull(String? value) {

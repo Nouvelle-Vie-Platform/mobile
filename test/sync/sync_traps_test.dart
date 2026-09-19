@@ -36,7 +36,7 @@ void main() {
 
   setUp(() {
     server = FakeSyncServer();
-    dio = Dio(BaseOptions(baseUrl: 'http://localhost:3333'))
+    dio = Dio(BaseOptions(baseUrl: 'https://eenv.brainsial.com'))
       ..interceptors.add(unwrapEnvelopeInterceptor)
       ..httpClientAdapter = server;
     db = openTestDatabase();
@@ -397,6 +397,9 @@ void main() {
           .getSingle();
       expect(applied.title, fullTeachingPayload['title']);
       expect(applied.recordedAt, fullTeachingPayload['recordedAt']);
+      // Le troisième cadrage (#209) traverse toute la chaîne de synchro : la
+      // clé du flux delta est bien relue puis stockée dans la colonne v10.
+      expect(applied.imageSquareUrl, fullTeachingPayload['imageSquareUrl']);
 
       // La page appliquée a validé ses lignes **et** son curseur.
       expect(await dao.cursorFor(SyncCollectionKey.teachings),

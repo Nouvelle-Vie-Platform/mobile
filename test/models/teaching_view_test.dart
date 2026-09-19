@@ -78,10 +78,10 @@ void main() {
         imagePortraitUrl: 'uploads/teachings/abc-p.jpg',
       );
       expect(view.imageLandscapeUrl,
-          'http://localhost:3333/uploads/teachings/abc.jpg');
+          'https://eenv.brainsial.comuploads/teachings/abc.jpg');
       expect(
         view.imagePortraitUrl,
-        'http://localhost:3333/uploads/teachings/abc-p.jpg',
+        'https://eenv.brainsial.com/uploads/teachings/abc-p.jpg',
         reason: 'la barre oblique manquante est ajoutée, jamais doublée',
       );
     });
@@ -101,6 +101,27 @@ void main() {
 
       // Aucun des deux : rien à afficher, c'est la couleur qui habille.
       expect(_view().landscapeOrPortrait, isNull);
+    });
+
+    test('le carré est résolu comme ses deux frères, et prime au rail', () {
+      // Le troisième cadrage (#209) suit le même contrat : relatif en base,
+      // absolu une fois résolu — jamais résolu deux fois ni laissé tel quel.
+      final view = _view(
+        imageSquareUrl: '/uploads/teachings/abc-s.jpg',
+        imageLandscapeUrl: '/uploads/teachings/abc-l.jpg',
+      );
+      expect(view.imageSquareUrl,
+          'https://eenv.brainsial.com/uploads/teachings/abc-s.jpg');
+      // Le rail de vignettes veut le carré d'abord, puis le paysage en repli.
+      expect(view.squareOrLandscape, view.imageSquareUrl);
+
+      // Sans carré, le paysage prend le relais ; sans l'un ni l'autre, le
+      // portrait ; et sans aucun des trois, rien — la couleur habille.
+      expect(_view(imageLandscapeUrl: '/l.jpg').squareOrLandscape,
+          'https://eenv.brainsial.com/l.jpg');
+      expect(_view(imagePortraitUrl: '/p.jpg').squareOrLandscape,
+          'https://eenv.brainsial.com/p.jpg');
+      expect(_view().squareOrLandscape, isNull);
     });
   });
 
@@ -171,6 +192,7 @@ TeachingView _view({
   int? typeColor,
   String? imageLandscapeUrl,
   String? imagePortraitUrl,
+  String? imageSquareUrl,
 }) =>
     TeachingView.resolve(
       id: 't-1',
@@ -182,4 +204,5 @@ TeachingView _view({
       typeColor: typeColor,
       imageLandscapeUrl: imageLandscapeUrl,
       imagePortraitUrl: imagePortraitUrl,
+      imageSquareUrl: imageSquareUrl,
     );

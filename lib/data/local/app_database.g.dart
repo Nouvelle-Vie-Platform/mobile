@@ -2211,6 +2211,12 @@ class $TeachingsTable extends Teachings
   late final GeneratedColumn<String> imagePortraitUrl = GeneratedColumn<String>(
       'image_portrait_url', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _imageSquareUrlMeta =
+      const VerificationMeta('imageSquareUrl');
+  @override
+  late final GeneratedColumn<String> imageSquareUrl = GeneratedColumn<String>(
+      'image_square_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _publishedAtMeta =
       const VerificationMeta('publishedAt');
   @override
@@ -2262,6 +2268,7 @@ class $TeachingsTable extends Teachings
         download,
         imageLandscapeUrl,
         imagePortraitUrl,
+        imageSquareUrl,
         publishedAt,
         clientCreatedAt,
         createdAt,
@@ -2348,6 +2355,12 @@ class $TeachingsTable extends Teachings
           imagePortraitUrl.isAcceptableOrUnknown(
               data['image_portrait_url']!, _imagePortraitUrlMeta));
     }
+    if (data.containsKey('image_square_url')) {
+      context.handle(
+          _imageSquareUrlMeta,
+          imageSquareUrl.isAcceptableOrUnknown(
+              data['image_square_url']!, _imageSquareUrlMeta));
+    }
     if (data.containsKey('published_at')) {
       context.handle(
           _publishedAtMeta,
@@ -2416,6 +2429,8 @@ class $TeachingsTable extends Teachings
           DriftSqlType.string, data['${effectivePrefix}image_landscape_url']),
       imagePortraitUrl: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}image_portrait_url']),
+      imageSquareUrl: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}image_square_url']),
       publishedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}published_at']),
       clientCreatedAt: attachedDatabase.typeMapping.read(
@@ -2497,6 +2512,10 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
   /// d'un environnement à l'autre, la résolution appartient au client.
   final String? imageLandscapeUrl;
   final String? imagePortraitUrl;
+
+  /// Le troisième cadrage (1:1), même contrat relatif que ses deux frères.
+  /// **Additif** : nullable, aucune ligne existante n'est réécrite.
+  final String? imageSquareUrl;
   final DateTime? publishedAt;
   final DateTime? clientCreatedAt;
   final DateTime? createdAt;
@@ -2527,6 +2546,7 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
       this.download,
       this.imageLandscapeUrl,
       this.imagePortraitUrl,
+      this.imageSquareUrl,
       this.publishedAt,
       this.clientCreatedAt,
       this.createdAt,
@@ -2568,6 +2588,9 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
     }
     if (!nullToAbsent || imagePortraitUrl != null) {
       map['image_portrait_url'] = Variable<String>(imagePortraitUrl);
+    }
+    if (!nullToAbsent || imageSquareUrl != null) {
+      map['image_square_url'] = Variable<String>(imageSquareUrl);
     }
     if (!nullToAbsent || publishedAt != null) {
       map['published_at'] = Variable<DateTime>(publishedAt);
@@ -2624,6 +2647,9 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
       imagePortraitUrl: imagePortraitUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(imagePortraitUrl),
+      imageSquareUrl: imageSquareUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageSquareUrl),
       publishedAt: publishedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(publishedAt),
@@ -2663,6 +2689,7 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
       imageLandscapeUrl:
           serializer.fromJson<String?>(json['imageLandscapeUrl']),
       imagePortraitUrl: serializer.fromJson<String?>(json['imagePortraitUrl']),
+      imageSquareUrl: serializer.fromJson<String?>(json['imageSquareUrl']),
       publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
       clientCreatedAt: serializer.fromJson<DateTime?>(json['clientCreatedAt']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
@@ -2689,6 +2716,7 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
       'download': serializer.toJson<TeachingDownload?>(download),
       'imageLandscapeUrl': serializer.toJson<String?>(imageLandscapeUrl),
       'imagePortraitUrl': serializer.toJson<String?>(imagePortraitUrl),
+      'imageSquareUrl': serializer.toJson<String?>(imageSquareUrl),
       'publishedAt': serializer.toJson<DateTime?>(publishedAt),
       'clientCreatedAt': serializer.toJson<DateTime?>(clientCreatedAt),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
@@ -2713,6 +2741,7 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
           Value<TeachingDownload?> download = const Value.absent(),
           Value<String?> imageLandscapeUrl = const Value.absent(),
           Value<String?> imagePortraitUrl = const Value.absent(),
+          Value<String?> imageSquareUrl = const Value.absent(),
           Value<DateTime?> publishedAt = const Value.absent(),
           Value<DateTime?> clientCreatedAt = const Value.absent(),
           Value<DateTime?> createdAt = const Value.absent(),
@@ -2740,6 +2769,8 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
         imagePortraitUrl: imagePortraitUrl.present
             ? imagePortraitUrl.value
             : this.imagePortraitUrl,
+        imageSquareUrl:
+            imageSquareUrl.present ? imageSquareUrl.value : this.imageSquareUrl,
         publishedAt: publishedAt.present ? publishedAt.value : this.publishedAt,
         clientCreatedAt: clientCreatedAt.present
             ? clientCreatedAt.value
@@ -2777,6 +2808,9 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
       imagePortraitUrl: data.imagePortraitUrl.present
           ? data.imagePortraitUrl.value
           : this.imagePortraitUrl,
+      imageSquareUrl: data.imageSquareUrl.present
+          ? data.imageSquareUrl.value
+          : this.imageSquareUrl,
       publishedAt:
           data.publishedAt.present ? data.publishedAt.value : this.publishedAt,
       clientCreatedAt: data.clientCreatedAt.present
@@ -2807,6 +2841,7 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
           ..write('download: $download, ')
           ..write('imageLandscapeUrl: $imageLandscapeUrl, ')
           ..write('imagePortraitUrl: $imagePortraitUrl, ')
+          ..write('imageSquareUrl: $imageSquareUrl, ')
           ..write('publishedAt: $publishedAt, ')
           ..write('clientCreatedAt: $clientCreatedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -2818,27 +2853,29 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      syncStamp,
-      id,
-      ownerId,
-      branchId,
-      contributorId,
-      teachingTypeId,
-      title,
-      description,
-      isLive,
-      isFullService,
-      playlistUrl,
-      download,
-      imageLandscapeUrl,
-      imagePortraitUrl,
-      publishedAt,
-      clientCreatedAt,
-      createdAt,
-      updatedAt,
-      recordedAt,
-      color);
+  int get hashCode => Object.hashAll([
+        syncStamp,
+        id,
+        ownerId,
+        branchId,
+        contributorId,
+        teachingTypeId,
+        title,
+        description,
+        isLive,
+        isFullService,
+        playlistUrl,
+        download,
+        imageLandscapeUrl,
+        imagePortraitUrl,
+        imageSquareUrl,
+        publishedAt,
+        clientCreatedAt,
+        createdAt,
+        updatedAt,
+        recordedAt,
+        color
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2857,6 +2894,7 @@ class TeachingRow extends DataClass implements Insertable<TeachingRow> {
           other.download == this.download &&
           other.imageLandscapeUrl == this.imageLandscapeUrl &&
           other.imagePortraitUrl == this.imagePortraitUrl &&
+          other.imageSquareUrl == this.imageSquareUrl &&
           other.publishedAt == this.publishedAt &&
           other.clientCreatedAt == this.clientCreatedAt &&
           other.createdAt == this.createdAt &&
@@ -2880,6 +2918,7 @@ class TeachingsCompanion extends UpdateCompanion<TeachingRow> {
   final Value<TeachingDownload?> download;
   final Value<String?> imageLandscapeUrl;
   final Value<String?> imagePortraitUrl;
+  final Value<String?> imageSquareUrl;
   final Value<DateTime?> publishedAt;
   final Value<DateTime?> clientCreatedAt;
   final Value<DateTime?> createdAt;
@@ -2902,6 +2941,7 @@ class TeachingsCompanion extends UpdateCompanion<TeachingRow> {
     this.download = const Value.absent(),
     this.imageLandscapeUrl = const Value.absent(),
     this.imagePortraitUrl = const Value.absent(),
+    this.imageSquareUrl = const Value.absent(),
     this.publishedAt = const Value.absent(),
     this.clientCreatedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -2925,6 +2965,7 @@ class TeachingsCompanion extends UpdateCompanion<TeachingRow> {
     this.download = const Value.absent(),
     this.imageLandscapeUrl = const Value.absent(),
     this.imagePortraitUrl = const Value.absent(),
+    this.imageSquareUrl = const Value.absent(),
     this.publishedAt = const Value.absent(),
     this.clientCreatedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -2949,6 +2990,7 @@ class TeachingsCompanion extends UpdateCompanion<TeachingRow> {
     Expression<String>? download,
     Expression<String>? imageLandscapeUrl,
     Expression<String>? imagePortraitUrl,
+    Expression<String>? imageSquareUrl,
     Expression<DateTime>? publishedAt,
     Expression<DateTime>? clientCreatedAt,
     Expression<DateTime>? createdAt,
@@ -2972,6 +3014,7 @@ class TeachingsCompanion extends UpdateCompanion<TeachingRow> {
       if (download != null) 'download': download,
       if (imageLandscapeUrl != null) 'image_landscape_url': imageLandscapeUrl,
       if (imagePortraitUrl != null) 'image_portrait_url': imagePortraitUrl,
+      if (imageSquareUrl != null) 'image_square_url': imageSquareUrl,
       if (publishedAt != null) 'published_at': publishedAt,
       if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
       if (createdAt != null) 'created_at': createdAt,
@@ -2997,6 +3040,7 @@ class TeachingsCompanion extends UpdateCompanion<TeachingRow> {
       Value<TeachingDownload?>? download,
       Value<String?>? imageLandscapeUrl,
       Value<String?>? imagePortraitUrl,
+      Value<String?>? imageSquareUrl,
       Value<DateTime?>? publishedAt,
       Value<DateTime?>? clientCreatedAt,
       Value<DateTime?>? createdAt,
@@ -3019,6 +3063,7 @@ class TeachingsCompanion extends UpdateCompanion<TeachingRow> {
       download: download ?? this.download,
       imageLandscapeUrl: imageLandscapeUrl ?? this.imageLandscapeUrl,
       imagePortraitUrl: imagePortraitUrl ?? this.imagePortraitUrl,
+      imageSquareUrl: imageSquareUrl ?? this.imageSquareUrl,
       publishedAt: publishedAt ?? this.publishedAt,
       clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
       createdAt: createdAt ?? this.createdAt,
@@ -3075,6 +3120,9 @@ class TeachingsCompanion extends UpdateCompanion<TeachingRow> {
     if (imagePortraitUrl.present) {
       map['image_portrait_url'] = Variable<String>(imagePortraitUrl.value);
     }
+    if (imageSquareUrl.present) {
+      map['image_square_url'] = Variable<String>(imageSquareUrl.value);
+    }
     if (publishedAt.present) {
       map['published_at'] = Variable<DateTime>(publishedAt.value);
     }
@@ -3116,6 +3164,7 @@ class TeachingsCompanion extends UpdateCompanion<TeachingRow> {
           ..write('download: $download, ')
           ..write('imageLandscapeUrl: $imageLandscapeUrl, ')
           ..write('imagePortraitUrl: $imagePortraitUrl, ')
+          ..write('imageSquareUrl: $imageSquareUrl, ')
           ..write('publishedAt: $publishedAt, ')
           ..write('clientCreatedAt: $clientCreatedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -10605,6 +10654,7 @@ typedef $$TeachingsTableCreateCompanionBuilder = TeachingsCompanion Function({
   Value<TeachingDownload?> download,
   Value<String?> imageLandscapeUrl,
   Value<String?> imagePortraitUrl,
+  Value<String?> imageSquareUrl,
   Value<DateTime?> publishedAt,
   Value<DateTime?> clientCreatedAt,
   Value<DateTime?> createdAt,
@@ -10628,6 +10678,7 @@ typedef $$TeachingsTableUpdateCompanionBuilder = TeachingsCompanion Function({
   Value<TeachingDownload?> download,
   Value<String?> imageLandscapeUrl,
   Value<String?> imagePortraitUrl,
+  Value<String?> imageSquareUrl,
   Value<DateTime?> publishedAt,
   Value<DateTime?> clientCreatedAt,
   Value<DateTime?> createdAt,
@@ -10691,6 +10742,10 @@ class $$TeachingsTableFilterComposer
 
   ColumnFilters<String> get imagePortraitUrl => $composableBuilder(
       column: $table.imagePortraitUrl,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get imageSquareUrl => $composableBuilder(
+      column: $table.imageSquareUrl,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get publishedAt => $composableBuilder(
@@ -10769,6 +10824,10 @@ class $$TeachingsTableOrderingComposer
       column: $table.imagePortraitUrl,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get imageSquareUrl => $composableBuilder(
+      column: $table.imageSquareUrl,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get publishedAt => $composableBuilder(
       column: $table.publishedAt, builder: (column) => ColumnOrderings(column));
 
@@ -10840,6 +10899,9 @@ class $$TeachingsTableAnnotationComposer
   GeneratedColumn<String> get imagePortraitUrl => $composableBuilder(
       column: $table.imagePortraitUrl, builder: (column) => column);
 
+  GeneratedColumn<String> get imageSquareUrl => $composableBuilder(
+      column: $table.imageSquareUrl, builder: (column) => column);
+
   GeneratedColumn<DateTime> get publishedAt => $composableBuilder(
       column: $table.publishedAt, builder: (column) => column);
 
@@ -10896,6 +10958,7 @@ class $$TeachingsTableTableManager extends RootTableManager<
             Value<TeachingDownload?> download = const Value.absent(),
             Value<String?> imageLandscapeUrl = const Value.absent(),
             Value<String?> imagePortraitUrl = const Value.absent(),
+            Value<String?> imageSquareUrl = const Value.absent(),
             Value<DateTime?> publishedAt = const Value.absent(),
             Value<DateTime?> clientCreatedAt = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -10919,6 +10982,7 @@ class $$TeachingsTableTableManager extends RootTableManager<
             download: download,
             imageLandscapeUrl: imageLandscapeUrl,
             imagePortraitUrl: imagePortraitUrl,
+            imageSquareUrl: imageSquareUrl,
             publishedAt: publishedAt,
             clientCreatedAt: clientCreatedAt,
             createdAt: createdAt,
@@ -10942,6 +11006,7 @@ class $$TeachingsTableTableManager extends RootTableManager<
             Value<TeachingDownload?> download = const Value.absent(),
             Value<String?> imageLandscapeUrl = const Value.absent(),
             Value<String?> imagePortraitUrl = const Value.absent(),
+            Value<String?> imageSquareUrl = const Value.absent(),
             Value<DateTime?> publishedAt = const Value.absent(),
             Value<DateTime?> clientCreatedAt = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -10965,6 +11030,7 @@ class $$TeachingsTableTableManager extends RootTableManager<
             download: download,
             imageLandscapeUrl: imageLandscapeUrl,
             imagePortraitUrl: imagePortraitUrl,
+            imageSquareUrl: imageSquareUrl,
             publishedAt: publishedAt,
             clientCreatedAt: clientCreatedAt,
             createdAt: createdAt,

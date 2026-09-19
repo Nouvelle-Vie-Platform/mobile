@@ -164,11 +164,14 @@ void main() {
   });
 
   group('GET /sync/teachings — la ligne', () {
-    /// Les dix-neuf clés d'un enseignement, en `camelCase`.
+    /// Les vingt clés d'un enseignement, en `camelCase`.
     ///
     /// **La dix-neuvième est `download`** (ADR-0038, issue #188) : le contrat de
     /// téléchargement hors ligne, additif à `playlistUrl` et servi par le même
     /// transformer. Il vaut `null` tant que l'enseignement n'a pas de `.aac`.
+    ///
+    /// **La vingtième est `imageSquareUrl`** (issue #209) : le troisième cadrage,
+    /// additif au paysage et au portrait, servi par le même `TeachingTransformer`.
     const keys = [
       'id',
       'ownerId',
@@ -183,6 +186,7 @@ void main() {
       'download',
       'imageLandscapeUrl',
       'imagePortraitUrl',
+      'imageSquareUrl',
       'publishedAt',
       'clientCreatedAt',
       'createdAt',
@@ -191,8 +195,8 @@ void main() {
       'color',
     ];
 
-    test('dix-neuf clés, ni une de plus', () {
-      expect(keys, hasLength(19));
+    test('vingt clés, ni une de plus', () {
+      expect(keys, hasLength(20));
       for (final teaching in _teachings) {
         expect(teaching.keys.toSet(), keys.toSet());
       }
@@ -263,7 +267,11 @@ void main() {
 
     test('les images sont relatives, à résoudre contre la base d\'API', () {
       for (final teaching in _teachings) {
-        for (final key in const ['imageLandscapeUrl', 'imagePortraitUrl']) {
+        for (final key in const [
+          'imageLandscapeUrl',
+          'imagePortraitUrl',
+          'imageSquareUrl',
+        ]) {
           expect(teaching[key], startsWith('/uploads/'));
           expect(teaching[key], isNot(startsWith('http')));
         }
@@ -389,7 +397,7 @@ void main() {
       // tombe ici plutôt qu'à l'écran.
       for (final gathering in _gatherings) {
         expect(gathering.keys.toSet(), fullTeachingPayload.keys.toSet());
-        expect(gathering.keys, hasLength(19));
+        expect(gathering.keys, hasLength(20));
       }
     });
 
@@ -450,7 +458,7 @@ void main() {
           .cast<Map<String, Object?>>();
 
       expect(items.where((i) => i.length == 2), hasLength(1));
-      expect(items.where((i) => i.length == 19), hasLength(2));
+      expect(items.where((i) => i.length == 20), hasLength(2));
       expect(items.last.keys.toSet(), {'id', 'deletedAt'});
     });
   });
@@ -490,7 +498,7 @@ void main() {
           (mixedTeachingsPage()['items']! as List).cast<Map<String, Object?>>();
 
       expect(items.where((i) => i.length == 2), hasLength(2));
-      expect(items.where((i) => i.length == 19), hasLength(3));
+      expect(items.where((i) => i.length == 20), hasLength(3));
     });
 
     test('une rétractation est en dernière position', () {

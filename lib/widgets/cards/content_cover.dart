@@ -11,6 +11,9 @@ enum CoverOrientation {
 
   /// Vignette haute : carrousels et listes.
   portrait,
+
+  /// Vignette carrée (1:1) : pochettes et miniatures.
+  square,
 }
 
 /// Visuel d'un **contenu de médiathèque** — enseignement ou rassemblement :
@@ -55,10 +58,14 @@ class ContentCover extends StatelessWidget {
     );
 
     // La résolution des chemins relatifs a déjà eu lieu, une fois, dans le
-    // modèle de lecture — ici on ne fait que choisir le cadrage.
-    final image = orientation == CoverOrientation.landscape
-        ? content.landscapeOrPortrait
-        : content.portraitOrLandscape;
+    // modèle de lecture — ici on ne fait que choisir le cadrage. Chaque cadrage
+    // a son propre repli (carré → paysage → portrait, etc.) : une image mal
+    // cadrée reste plus informative qu'un aplat.
+    final image = switch (orientation) {
+      CoverOrientation.landscape => content.landscapeOrPortrait,
+      CoverOrientation.portrait => content.portraitOrLandscape,
+      CoverOrientation.square => content.squareOrLandscape,
+    };
     final Widget child = image == null
         ? fallback
         : Image.network(

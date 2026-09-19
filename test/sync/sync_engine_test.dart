@@ -33,7 +33,7 @@ void main() {
 
   setUp(() {
     server = FakeSyncServer();
-    dio = Dio(BaseOptions(baseUrl: 'http://localhost:3333'))
+    dio = Dio(BaseOptions(baseUrl: 'https://eenv.brainsial.com'))
       ..interceptors.add(unwrapEnvelopeInterceptor)
       ..httpClientAdapter = server;
     db = openTestDatabase();

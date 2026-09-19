@@ -90,6 +90,7 @@ class StoreMediathequeRepository implements MediathequeRepository {
       typeColor: parseHexColor(row.type?.color),
       imageLandscapeUrl: row.teaching.imageLandscapeUrl,
       imagePortraitUrl: row.teaching.imagePortraitUrl,
+      imageSquareUrl: row.teaching.imageSquareUrl,
       playlistUrl: row.teaching.playlistUrl,
       description: row.teaching.description,
       recordedAt: parseCalendarDayOrNull(row.teaching.recordedAt),

@@ -16,7 +16,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// en dur finit par partir en production.
 const String kBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://localhost:3333',
+  defaultValue: 'https://eenv.brainsial.com',
 );
 
 /// Clé de stockage sécurisé du token d'authentification.

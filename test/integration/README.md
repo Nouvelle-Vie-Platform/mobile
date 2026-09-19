@@ -74,7 +74,7 @@ Réglages par `--dart-define`, tous facultatifs :
 
 | Clé                        | Défaut                  | Rôle                                  |
 | -------------------------- | ----------------------- | ------------------------------------- |
-| `LIVE_SERVER_URL`          | `http://localhost:3333` | URL du serveur.                       |
+| `LIVE_SERVER_URL`          | `https://eenv.brainsial.com` | URL du serveur.                       |
 | `LIVE_OPERATOR_IDENTIFIER` | `+22890000000`          | Le super admin, qui publie le décor.  |
 | `LIVE_MEMBER_IDENTIFIER`   | `+22899000031`          | Le fidèle dont le périmètre bouge.    |
 

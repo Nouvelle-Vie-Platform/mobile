@@ -8,7 +8,7 @@ ANDROID_EMULATOR ?= emulateur_flutter
 # URL du backend, passée à l'app par --dart-define (jamais codée en dur dans
 # les sources). Sur un appareil physique, viser l'IP locale du Mac :
 #   make ios API_BASE_URL=http://192.168.1.20:3333
-API_BASE_URL ?= http://localhost:3333
+API_BASE_URL ?= https://eenv.brainsial.com
 
 # Depuis l'émulateur Android, la machine hôte s'appelle 10.0.2.2 — `localhost`
 # y désigne l'émulateur lui-même. Une valeur donnée en ligne de commande reste

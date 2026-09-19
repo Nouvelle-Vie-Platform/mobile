@@ -357,10 +357,10 @@ Map<String, Object?> emptyPageFromZero() => deltaPage();
 /// famille filtre côté serveur (un rassemblement ne voyage pas dans cette
 /// collection), et `teachings` ne porte aucune colonne de soft-delete.
 ///
-/// `imageLandscapeUrl` et `imagePortraitUrl` sont **relatives** : l'hôte de
-/// l'API change d'un environnement à l'autre, c'est au client de résoudre
-/// contre sa propre base. Deux images parce que l'accueil rend le même
-/// enseignement à deux ratios opposés.
+/// `imageLandscapeUrl`, `imagePortraitUrl` et `imageSquareUrl` sont
+/// **relatives** : l'hôte de l'API change d'un environnement à l'autre, c'est au
+/// client de résoudre contre sa propre base. Trois cadrages parce que l'accueil
+/// rend le même enseignement à des ratios opposés (large, haut, carré).
 ///
 /// `color` est la couleur **déjà résolue** par le serveur (cascade choisie →
 /// déduite de la photo → héritée de la rubrique) : le client n'a pas à
@@ -401,6 +401,7 @@ const Map<String, Object?> fullTeachingPayload = {
   },
   'imageLandscapeUrl': '/uploads/teachings/019f2c40-landscape.webp',
   'imagePortraitUrl': '/uploads/teachings/019f2c40-portrait.webp',
+  'imageSquareUrl': '/uploads/teachings/019f2c40-square.webp',
   'publishedAt': '2026-04-05T18:00:00.000Z',
   'clientCreatedAt': '2026-04-05T17:42:00.000Z',
   'createdAt': '2026-04-05T17:42:03.000Z',
@@ -431,6 +432,7 @@ const Map<String, Object?> teachingWithoutPlaylistPayload = {
   'download': null,
   'imageLandscapeUrl': '/uploads/teachings/019f2c41-landscape.webp',
   'imagePortraitUrl': '/uploads/teachings/019f2c41-portrait.webp',
+  'imageSquareUrl': '/uploads/teachings/019f2c41-square.webp',
   'publishedAt': '2026-04-12T09:00:00.000Z',
   'clientCreatedAt': null,
   'createdAt': '2026-04-11T20:15:00.000Z',
@@ -465,6 +467,7 @@ const Map<String, Object?> teachingWithoutColorPayload = {
   'download': null,
   'imageLandscapeUrl': '/uploads/teachings/019f2c42-landscape.webp',
   'imagePortraitUrl': '/uploads/teachings/019f2c42-portrait.webp',
+  'imageSquareUrl': '/uploads/teachings/019f2c42-square.webp',
   'publishedAt': '2026-04-19T18:30:00.000Z',
   'clientCreatedAt': null,
   'createdAt': '2026-04-18T11:00:00.000Z',
@@ -725,6 +728,7 @@ const Map<String, Object?> fullGatheringPayload = {
   'download': null,
   'imageLandscapeUrl': '/uploads/teachings/019f3a10-landscape.webp',
   'imagePortraitUrl': '/uploads/teachings/019f3a10-portrait.webp',
+  'imageSquareUrl': '/uploads/teachings/019f3a10-square.webp',
   'publishedAt': '2026-05-03T20:00:00.000Z',
   'clientCreatedAt': null,
   'createdAt': '2026-05-02T09:00:00.000Z',
@@ -750,6 +754,7 @@ const Map<String, Object?> gatheringWithoutColorPayload = {
   'download': null,
   'imageLandscapeUrl': '/uploads/teachings/019f3a11-landscape.webp',
   'imagePortraitUrl': null,
+  'imageSquareUrl': '/uploads/teachings/019f3a11-square.webp',
   'publishedAt': '2026-05-10T08:00:00.000Z',
   'clientCreatedAt': null,
   'createdAt': '2026-05-09T18:00:00.000Z',
