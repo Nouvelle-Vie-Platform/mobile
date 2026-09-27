@@ -9,6 +9,7 @@ import '../data/repositories/auth_repository.dart';
 import '../data/repositories/branch_repository.dart';
 import '../data/repositories/http_auth_repository.dart';
 import '../models/models.dart';
+import 'startup_providers.dart';
 import 'sync_providers.dart';
 
 /// Fournit l'implémentation courante de [AuthRepository].
@@ -19,9 +20,19 @@ import 'sync_providers.dart';
 /// Pour brancher un vrai backend (phase B), on surchargera ce provider avec une
 /// autre implémentation — aucun écran ne change (même pattern que
 /// `churchRepositoryProvider`).
-final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AppEnv.useBackend ? HttpAuthRepository() : InMemoryAuthRepository(),
-);
+///
+/// Le **porteur d'appareil** lui est passé quand il y en a un (`main()` l'a
+/// câblé) : c'est ce qui fait qu'une déconnexion **reprend** un jeton d'appareil
+/// au lieu de laisser le coffre vide, donc qu'un invité qui vient de se
+/// déconnecter retombe sur le catalogue et non sur l'écran de connexion. Le
+/// paramètre est facultatif — `null` = pas de mode invité câblé, et
+/// `HttpAuthRepository` se comporte alors exactement comme avant.
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  if (!AppEnv.useBackend) return InMemoryAuthRepository();
+  return HttpAuthRepository(
+    device: ref.watch(deviceBootstrapProvider).repository,
+  );
+});
 
 /// Fournit l'implémentation courante de [BranchRepository] — mêmes règles que
 /// [authRepositoryProvider] : HTTP avec backend, mock sinon.
@@ -42,12 +53,34 @@ final branchesProvider = FutureProvider<List<Branch>>(
 );
 
 /// État global d'authentification.
+///
+/// **`unauthenticated` a été remplacé par [guest], et ce n'est pas un renommage
+/// de confort.** L'ancien nom disait « personne n'est connecté » et le routeur
+/// en déduisait « donc rien n'est permis » : tout était réécrit vers `/auth`.
+/// Sous le mode invité, cet état-là n'existe plus — il n'y a plus de situation
+/// où l'absence de compte ferme l'application. Renommer plutôt qu'ajouter met
+/// **le compilateur** sur chaque `switch` et chaque comparaison qui supposait
+/// l'ancien sens : aucun site ne peut survivre à la bascule sans avoir été relu.
+///
+/// Ce que ça rend impossible : traiter « invité » comme un cas particulier
+/// d'« utilisateur absent » dans un coin du code, et écrire un `if (!isAuthenticated)`
+/// qui veut dire « envoie-le se connecter ».
 enum AuthStatus {
   /// Init en cours (session pas encore résolue) → on reste sur le splash.
+  ///
+  /// **Cet état ne se produit plus quand le coffre ne porte pas de session de
+  /// membre** : `main()` a lu le coffre avant le premier frame
+  /// ([StartupVault]), et l'état part alors directement de [guest]. C'est ce
+  /// qui supprime l'écran d'attente du premier lancement.
   unknown,
 
-  /// Aucun utilisateur connecté.
-  unauthenticated,
+  /// **Invité** : aucune session de membre, et l'application s'utilise.
+  ///
+  /// Ce n'est ni une erreur, ni un état transitoire, ni une antichambre de la
+  /// connexion : c'est le régime normal de quelqu'un qui n'a pas de compte, et
+  /// [AuthState.user] y est nul pour de bon. Ce qui exige un compte se demande
+  /// au moment du geste (`requireSession`), jamais à l'entrée.
+  guest,
 
   /// Utilisateur connecté ([AuthState.user] non nul).
   authenticated,
@@ -57,10 +90,21 @@ enum AuthStatus {
 class AuthState {
   const AuthState({required this.status, this.user});
 
+  /// L'invité, écrit une fois : il n'y a rien à y paramétrer, et un
+  /// `AuthState(status: AuthStatus.guest, user: quelqu'un)` serait un mensonge.
+  static const AuthState guest = AuthState(status: AuthStatus.guest);
+
+  /// Le démarrage à résoudre.
+  static const AuthState unknown = AuthState(status: AuthStatus.unknown);
+
   final AuthStatus status;
   final User? user;
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
+
+  /// Un invité — à ne pas dériver de `!isAuthenticated`, qui est **aussi** vrai
+  /// pendant la résolution du démarrage.
+  bool get isGuest => status == AuthStatus.guest;
 }
 
 /// Contrôleur d'authentification : orchestre [AuthRepository] et publie
@@ -76,9 +120,19 @@ class AuthController extends Notifier<AuthState> {
 
   @override
   AuthState build() {
-    // Résolution asynchrone de la session existante ; l'état part de `unknown`.
-    unawaited(_load());
-    return const AuthState(status: AuthStatus.unknown);
+    // **Le splash n'existe que s'il y a une session de membre à attendre.**
+    //
+    // `main()` a lu le coffre avant le premier frame : rien dedans — ou un jeton
+    // d'appareil seul — et il n'y a rien à résoudre, donc rien à faire attendre.
+    // L'état part alors d'`invité`, le routeur envoie `/` sur l'accueil à la
+    // **première** évaluation de sa garde, et l'écran d'attente ne se peint pas
+    // du tout. Avec une session de membre (ou un coffre qu'on n'a pas lu, ce qui
+    // est le cas sous `flutter test`), on repart de `unknown` : splash bref puis
+    // résolution, exactement comme avant le mode invité.
+    final vault = ref.watch(startupVaultProvider);
+    final hasMemberSession = vault != StartupVault.noMemberSession;
+    unawaited(_load(hasMemberSession: hasMemberSession));
+    return hasMemberSession ? AuthState.unknown : AuthState.guest;
   }
 
   /// Démarrage **non bloquant** : le cache local décide de la route, le réseau
@@ -87,10 +141,16 @@ class AuthController extends Notifier<AuthState> {
   /// L'ordre compte. Lire le cache d'abord, c'est afficher l'accueil en
   /// quelques millisecondes plutôt qu'après un aller-retour HTTP — sensible sur
   /// une connexion lente, et seule façon d'ouvrir l'app hors ligne.
-  Future<void> _load() async {
+  Future<void> _load({required bool hasMemberSession}) async {
     final cached = await _repo.cachedUser();
     if (cached != null) {
       state = AuthState(status: AuthStatus.authenticated, user: cached);
+    } else if (!hasMemberSession) {
+      // **Rien à revalider.** Le coffre ne porte pas de session de membre, on
+      // est déjà invité, et `GET /auth/me` partirait avec un jeton d'appareil
+      // pour se faire refuser — un 401, un renouvellement silencieux et un rejeu
+      // à chaque ouverture, pour apprendre ce qu'on savait déjà.
+      return;
     }
     await _revalidate(settleOnFailure: cached == null);
   }
@@ -108,7 +168,7 @@ class AuthController extends Notifier<AuthState> {
         // Plus de token, ou token refusé (401) : `ApiClient` a déjà purgé le
         // token et prévenu [handleUnauthorized] ; on converge ici de toute
         // façon, y compris quand le 401 tombe sur un démarrage à froid.
-        state = const AuthState(status: AuthStatus.unauthenticated);
+        state = AuthState.guest;
         return;
       }
       if (!_sameUser(state.user, fresh)) {
@@ -118,7 +178,7 @@ class AuthController extends Notifier<AuthState> {
       // Serveur injoignable : on garde les données locales. Une coupure réseau
       // n'est pas une déconnexion — le token reste valide 90 jours glissants.
       if (settleOnFailure) {
-        state = const AuthState(status: AuthStatus.unauthenticated);
+        state = AuthState.guest;
       }
     }
   }
@@ -205,19 +265,68 @@ class AuthController extends Notifier<AuthState> {
   /// profil de l'ancien. Pas d'appel réseau — le token étant refusé,
   /// `signOut()` le serait aussi.
   ///
-  /// L'état repasse ensuite à « déconnecté », dont la garde `redirect` du
-  /// routeur déduit le retour à `/auth`, y compris depuis un démarrage à froid
-  /// où c'est la revalidation de fond qui a pris le 401.
-  void handleUnauthorized() {
+  /// L'état repasse à **invité**, mais la navigation, elle, **éjecte vers
+  /// l'écran de connexion** — et c'est `app.dart` qui s'en charge, au point où le
+  /// 401 se branche. Voir là-bas pourquoi les deux gestes ne se ressemblent pas.
+  ///
+  /// Rend `true` quand une session de membre vient d'être perdue, c'est-à-dire
+  /// quand il y a **quelqu'un** à renvoyer vers la connexion. Rend `false` pour
+  /// un invité : sa requête a simplement échoué, et il n'y a rien à lui dire. Le
+  /// cas existe vraiment — un invité dont l'ouverture de session d'appareil a été
+  /// refusée part sans porteur, et son 401 n'est estampillé « appareil » par
+  /// personne.
+  ///
+  /// L'état `unknown` compte comme une session à perdre : c'est un démarrage à
+  /// froid dont la revalidation de fond a pris le 401, et le coffre portait donc
+  /// bien un jeton de membre.
+  ///
+  /// **Un jeton d'appareil est redemandé au passage**, pour la raison exacte qui
+  /// le rend obligatoire à la déconnexion (`HttpAuthRepository.signOut`) :
+  /// `ApiClient` vient de purger le jeton **et son marqueur**, l'application n'a
+  /// donc plus aucun porteur ; la requête suivante partirait nue, son 401 se
+  /// relirait comme un 401 de membre, et l'invité n'aurait plus jamais de jeton
+  /// jusqu'au prochain démarrage. Vrai quelle que soit la destination de la
+  /// navigation. `resume()` ne lève pas et est sérialisé côté porteur.
+  bool handleUnauthorized() {
     unawaited(_repo.forgetSession());
-    if (state.status == AuthStatus.unauthenticated) return;
-    state = const AuthState(status: AuthStatus.unauthenticated);
+    if (state.status == AuthStatus.guest) return false;
+    unawaited(_resumeDeviceSession());
+    state = AuthState.guest;
+    return true;
   }
 
-  /// Déconnecte l'utilisateur.
+  /// Déconnecte l'utilisateur, qui **redevient un invité** et reste dans
+  /// l'application.
+  ///
+  /// **Rien n'est effacé**, et c'est une décision explicite du client, assumée y
+  /// compris sur un téléphone partagé : ni les téléchargements, ni la
+  /// progression d'écoute — qui redevient simplement locale, la collection
+  /// répliquée cessant d'être alimentée. C'est ce qui distingue cette méthode de
+  /// [deleteAccount], la seule qui appelle `eraseEverything()`.
+  ///
+  /// **Et cette méthode-ci ne navigue pas**, contrairement à
+  /// [handleUnauthorized] : l'accueil invité se déduit de l'état, par la garde du
+  /// routeur. La personne a choisi de partir, on ne lui demande pas de revenir.
+  ///
+  /// Le jeton d'appareil, lui, est reprise par le repository (`device:`), qui est
+  /// le seul à savoir que le coffre vient d'être purgé — le redemander **ici**
+  /// ferait deux jetons pour un appareil.
   Future<void> signOut() async {
     await _repo.signOut();
-    state = const AuthState(status: AuthStatus.unauthenticated);
+    state = AuthState.guest;
+  }
+
+  /// Redemande un jeton d'appareil pour **le même** appareil. Muet, sans jamais
+  /// lever : un invité n'a rien à voir de cette mécanique.
+  Future<void> _resumeDeviceSession() async {
+    final device = ref.read(deviceBootstrapProvider).repository;
+    if (device == null) return;
+    try {
+      await device.resume();
+    } on Object catch (_) {
+      // `resume` ne lève pas ; ce `catch` couvre ce qui n'est pas du réseau (un
+      // coffre indisponible). Perdre sa session ne peut pas échouer.
+    }
   }
 
   /// **Supprime le compte, puis efface tout ce qui en restait sur l'appareil.**
@@ -235,11 +344,15 @@ class AuthController extends Notifier<AuthState> {
   /// compte **neuf** dans la minute, sur ce téléphone-ci. Sans cet effacement,
   /// la personne suivante reprendrait un prêche là où la précédente s'était
   /// arrêtée.
+  /// Le compte supprimé, l'appareil reste : on repart **invité**, avec un jeton
+  /// d'appareil frais pour le même `deviceId`. Sans lui, l'application se
+  /// retrouverait sans porteur — voir [handleUnauthorized].
   Future<void> deleteAccount() async {
     await _repo.deleteAccount();
     await _database.eraseEverything();
     await _repo.forgetSession();
-    state = const AuthState(status: AuthStatus.unauthenticated);
+    unawaited(_resumeDeviceSession());
+    state = AuthState.guest;
   }
 }
 

@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/config/app_env.dart';
 import 'core/network/api_client.dart';
+import 'data/devices/http_device_repository.dart';
 import 'data/players/bitrate_cap_controller.dart';
 import 'data/players/content_player.dart';
 import 'models/media_preferences.dart';
@@ -16,6 +18,7 @@ import 'data/players/playback_notifications.dart';
 import 'data/players/web_content_player.dart';
 import 'state/media_settings_providers.dart';
 import 'state/player_providers.dart';
+import 'state/startup_providers.dart';
 
 /// **Le seul chemin qui monte un lecteur réel** — et le seul endroit du dépôt
 /// qui sache qu'il y en a deux.
@@ -36,6 +39,43 @@ Future<void> main() async {
   // qu'une app qui tourne en fuyant les identifiants.
   ApiClient.ensureSecureBaseUrl();
 
+  // **Le mode invité s'installe ici, avant la première requête.**
+  //
+  // L'ordre des quatre lignes qui suivent est l'ordre du démarrage, et chacune
+  // est à sa place pour une raison :
+  //
+  // 1. `wire()` **avant tout appel réseau** : c'est lui qui donne à
+  //    l'intercepteur 401 quelqu'un à qui demander un jeton frais. Câblé après la
+  //    première requête, le premier 401 d'un invité éjecterait encore vers
+  //    `/auth` ;
+  // 2. la **lecture du coffre**, attendue : deux lectures locales, aucun réseau,
+  //    et c'est ce qui décide de l'existence du splash. C'est le seul `await`
+  //    ajouté avant `runApp`, et il est d'un ordre de grandeur sous
+  //    `AudioService.init()` qui l'entoure déjà ;
+  // 3. `ensureSession()` **lancé sans être attendu** : le premier écran ne doit
+  //    pas attendre le réseau. L'application s'ouvre, le jeton arrive. Ce qui en
+  //    dépend vraiment — le premier cycle de synchronisation — l'attend de son
+  //    côté, borné, dans `app.dart` ;
+  // 4. et si le coffre porte déjà un jeton (de membre comme d'appareil),
+  //    `ensureSession()` ne demande rien du tout : il n'y a **pas** de requête
+  //    par ouverture d'application.
+  // (1) Le porteur, installé sur le client HTTP. Hors backend il n'y a personne
+  // à qui parler, et l'application reste celle d'avant.
+  final device = AppEnv.useBackend ? HttpDeviceRepository.wire() : null;
+
+  // (2) Ce que le coffre portait, lu **avant** d'y écrire quoi que ce soit.
+  final vault = device == null ? StartupVault.unread : await readStartupVault();
+
+  // (3) L'ouverture de session, lancée et **pas attendue**. Le `onError` n'est
+  // pas une ceinture de plus : personne n'attend ce `Future` avant le premier
+  // frame, et une erreur sans écouteur remonterait en « unhandled async error »
+  // à l'ouverture de l'application.
+  var bootstrap = DeviceBootstrap.none;
+  if (device != null) {
+    final session = device.ensureSession().onError<Object>((_, __) => false);
+    bootstrap = DeviceBootstrap(repository: device, session: session);
+  }
+
   final player = await _startPlayback();
 
   // Le conteneur est construit ici plutôt que par `ProviderScope` seul : c'est
@@ -45,6 +85,11 @@ Future<void> main() async {
   final container = ProviderContainer(
     overrides: [
       if (player != null) contentPlayerProvider.overrideWithValue(player),
+      // Les deux seules choses que `main()` sait et que l'arbre de widgets ne
+      // pourrait pas apprendre à temps : ce que portait le coffre, et le porteur
+      // d'appareil de cette exécution.
+      startupVaultProvider.overrideWithValue(vault),
+      deviceBootstrapProvider.overrideWithValue(bootstrap),
     ],
   );
 

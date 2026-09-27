@@ -99,12 +99,122 @@ class CodeArgs {
   final IdentifierChannel channel;
 }
 
-/// Emplacements autorisés tant que l'utilisateur n'est pas authentifié.
+/// Le parcours d'authentification — **ouvert à tous**, et atteint par un geste.
+///
+/// Sous le mode invité ce n'est plus une liste d'exceptions dans une
+/// application fermée, mais trois écrans comme les autres, poussés par
+/// `requireSession()` quand un geste exige un compte. La constante ne sert plus
+/// qu'à une chose : ramener à l'accueil un **membre** qui y reviendrait alors
+/// qu'il est déjà connecté.
 const _authLocations = {'/auth', '/auth/identifier', '/auth/code'};
 
 /// La barrière de consentement — écrite une fois, lue par la garde et par la
 /// route.
 const _legalGate = '/legal/accept';
+
+/// **Les seuls écrans réservés aux membres.** Tout ce qui n'y figure pas est
+/// ouvert, et le défaut penche de ce côté-là exprès : un écran ajouté demain
+/// s'ouvre, il ne se ferme pas par accident. Fermer par oubli est invisible —
+/// personne ne réclame un écran qu'il n'a jamais vu ; ouvrir par oubli se
+/// remarque et se corrige en une ligne.
+///
+/// La surface **invitée** est donc tout le reste, et c'est la décision du
+/// client : accueil, annonces en lecture, médiathèque, fiche d'enseignement,
+/// fiche de rassemblement, agenda, direct, téléchargements, Bible, dons, CGU,
+/// confidentialité, à propos.
+///
+/// **Les clés sont des motifs de route**, tels que `GoRouterState.fullPath` les
+/// rend — jamais des chemins concrets : `/announcement/:id/edit` ne se
+/// reconnaîtrait pas dans `/announcement/42/edit`, et la garde laisserait
+/// passer exactement l'écran qu'elle croit fermer.
+///
+/// Trois entrées méritent leur justification :
+/// - `/member-profile` n'est pas nommé dans la liste du client, mais c'est la
+///   fiche d'**un autre membre**, atteinte depuis la communauté : elle
+///   appartient à la même surface qu'Échanges. C'est le seul ajout par rapport
+///   à la décision écrite, et il est réversible d'une ligne ;
+/// - `/legal/accept` est la barrière de consentement. Un invité n'a rien à y
+///   accepter (`pendingLegalAcceptancesProvider` rend une liste vide sans
+///   utilisateur) ; l'y laisser entrer lui montrerait un écran dont rien ne le
+///   ferait sortir, `PopScope(canPop: false)` compris ;
+/// - la **consultation** des documents (`/legal/:kind`, `/about`) n'y est pas :
+///   c'est précisément ce qu'on doit pouvoir lire sans compte.
+const memberOnlyRoutes = <String>{
+  // Le profil et ce qui en dépend.
+  '/profile',
+  '/profile/edit',
+  '/profile/delete',
+  // L'**écriture** d'une annonce — leur lecture est ouverte.
+  '/announcement/compose',
+  '/announcement/:id/edit',
+  // Ce qui n'a aucun sens sans compte : des notes, des prières, des demandes.
+  '/notes',
+  '/prayers',
+  '/new-request',
+  '/requests',
+  // Échanges.
+  '/group-chat',
+  '/group-info',
+  '/member-profile',
+  // La barrière de consentement.
+  _legalGate,
+};
+
+/// **La garde, écrite une fois et testable sans routeur.**
+///
+/// Elle vit hors du `redirect` pour une raison précise : c'est l'endroit du
+/// dépôt où une erreur ne se voit pas — un écran fermé par accident ne fait
+/// rougir aucun test, et personne ne réclame ce qu'il n'a jamais vu. Sortie en
+/// fonction pure, elle se vérifie **route par route** contre la table déclarée
+/// du routeur (`test/state/guest_guard_test.dart`), sans monter un seul écran.
+///
+/// [location] est le chemin concret (`GoRouterState.matchedLocation`),
+/// [pattern] le motif de la route (`GoRouterState.fullPath`) — c'est lui qui
+/// décide, le chemin ne servant qu'au splash et au parcours d'authentification.
+String? redirectFor({
+  required AuthStatus status,
+  required String location,
+  String? pattern,
+  bool legalPending = false,
+}) {
+  switch (status) {
+    case AuthStatus.unknown:
+      // Une session de membre attend d'être résolue : rester sur le splash.
+      // **Cet état ne se produit plus sur un coffre vide** — voir
+      // `AuthController.build` —, et c'est ce qui retire l'écran d'attente du
+      // premier lancement au lieu de le raccourcir.
+      return location == '/' ? null : '/';
+    case AuthStatus.guest:
+      // **Public par défaut.** Le splash n'a rien à résoudre pour un invité :
+      // il va droit à l'accueil.
+      if (location == '/') return '/home';
+      // Et les écrans réservés ramènent à l'**accueil invité**, jamais vers
+      // `/auth`. Renvoyer vers la connexion serait le verrou qu'on retire : la
+      // connexion se demande au moment du geste (`requireSession`), elle ne
+      // s'impose pas à l'arrivée sur une route.
+      return memberOnlyRoutes.contains(pattern ?? location) ? '/home' : null;
+    case AuthStatus.authenticated:
+      // **Rien ne change de ce côté-ci**, et c'est la contrainte du client :
+      // « quand la personne s'est déjà connectée, tout se passe exactement
+      // comme présentement ».
+      //
+      // Depuis splash ou parcours d'auth → accueil. `/profile/edit` et le
+      // reste de l'app restent accessibles.
+      if (location == '/' || _authLocations.contains(location)) return '/home';
+      // **La barrière** : les versions acceptées couvrent-elles les versions
+      // exigées ? La comparaison a déjà eu lieu — ici on ne fait que lire son
+      // résultat, sans rien attendre.
+      if (legalPending) {
+        return location == _legalGate ? null : _legalGate;
+      }
+      // Barrière levée — ou jamais dressée : l'écran se retire **de
+      // lui-même**, personne ne navigue. C'est le motif de la déconnexion, et
+      // c'est aussi ce qui empêche `/legal/accept` d'être un cul-de-sac pour
+      // qui l'atteindrait sans rien avoir à accepter : rien n'en sort, pas
+      // même un retour Android.
+      return location == _legalGate ? '/home' : null;
+  }
+}
 
 /// Routeur de l'application (go_router).
 ///
@@ -147,33 +257,15 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     refreshListenable: Listenable.merge([authListenable, legalGateListenable]),
-    redirect: (context, state) {
-      final auth = authListenable.value;
-      final loc = state.matchedLocation;
-      switch (auth.status) {
-        case AuthStatus.unknown:
-          // Session pas encore résolue : rester sur le splash.
-          return loc == '/' ? null : '/';
-        case AuthStatus.unauthenticated:
-          return _authLocations.contains(loc) ? null : '/auth';
-        case AuthStatus.authenticated:
-          // Depuis splash ou parcours d'auth → accueil. `/profile/edit` et le
-          // reste de l'app restent accessibles.
-          if (loc == '/' || _authLocations.contains(loc)) return '/home';
-          // **La barrière** : les versions acceptées couvrent-elles les
-          // versions exigées ? La comparaison a déjà eu lieu — ici on ne fait
-          // que lire son résultat, sans rien attendre.
-          if (legalGateListenable.value.isNotEmpty) {
-            return loc == _legalGate ? null : _legalGate;
-          }
-          // Barrière levée — ou jamais dressée : l'écran se retire **de
-          // lui-même**, personne ne navigue. C'est le motif de la déconnexion,
-          // et c'est aussi ce qui empêche `/legal/accept` d'être un cul-de-sac
-          // pour qui l'atteindrait sans rien avoir à accepter : rien n'en sort,
-          // pas même un retour Android.
-          return loc == _legalGate ? '/home' : null;
-      }
-    },
+    // La garde n'a plus de corps ici : elle vit dans [redirectFor], pour se
+    // vérifier route par route sans monter un écran. Ce `redirect` ne fait que
+    // lui passer ce que seul le routeur sait.
+    redirect: (context, state) => redirectFor(
+      status: authListenable.value.status,
+      location: state.matchedLocation,
+      pattern: state.fullPath,
+      legalPending: legalGateListenable.value.isNotEmpty,
+    ),
     routes: [
       GoRoute(
         name: AppRoute.splash,
