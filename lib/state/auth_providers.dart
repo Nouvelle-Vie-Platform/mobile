@@ -8,7 +8,10 @@ import '../data/local/app_database.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/branch_repository.dart';
 import '../data/repositories/http_auth_repository.dart';
+import '../data/repositories/playback_progress_handover.dart';
 import '../models/models.dart';
+import 'branch_scope_providers.dart';
+import 'playback_progress_providers.dart';
 import 'startup_providers.dart';
 import 'sync_providers.dart';
 
@@ -50,6 +53,52 @@ final branchRepositoryProvider = Provider<BranchRepository>(
 /// nouveau » ne dépendant d'aucun référentiel.
 final branchesProvider = FutureProvider<List<Branch>>(
   (ref) => ref.watch(branchRepositoryProvider).branches(),
+);
+
+/// **Ce qui ramène la progression du compte avant une fusion**, et dit si c'est
+/// frais.
+///
+/// Un cycle de synchronisation, et il doit être **entièrement postérieur au
+/// remplacement du jeton**. Un cycle déjà en vol a pu partir avec le jeton
+/// d'appareil : son manifeste décrit alors le périmètre d'un invité, où la
+/// collection `private` est vide — conclure « le compte ne sait rien » sur ce
+/// manifeste-là ferait pousser des positions en retard, c'est-à-dire reculer la
+/// reprise du membre. On attend donc celui qui tourne, puis on en demande un qui
+/// soit à nous.
+///
+/// Le booléen rendu est ce que `SyncScheduler` sait dire : `null` = cycle échoué
+/// (voir `SyncScheduler.lastFailure`). Sans backend, jamais frais — il n'y a pas
+/// de compte, et lire le planificateur ouvrirait une base Drift pour rien.
+///
+/// Provider séparé pour une seule raison : c'est le seul moyen qu'un test
+/// exerce la fusion **entière** — vraie base, vrai DAO, vraie règle — sans ouvrir
+/// de socket.
+final accountProgressPullProvider = Provider<Future<bool> Function()>((ref) {
+  if (!AppEnv.useBackend) return () async => false;
+  return () async {
+    final scheduler = ref.read(syncSchedulerProvider);
+    if (scheduler.isRunning) await scheduler.refresh();
+    return await scheduler.refresh() != null;
+  };
+});
+
+/// **La fusion de la progression**, telle que l'ouverture de session l'appelle.
+///
+/// Inerte sans backend : pas de compte, donc rien à transférer (et aucune base
+/// ouverte, aucune minuterie de Dio laissée derrière).
+///
+/// Il vit dans ce fichier-ci et non dans `playback_progress_providers.dart`
+/// parce que son seul appelant est l'ouverture d'une session de membre, juste
+/// en dessous ; le déplacer plus tard ne coûterait qu'un import.
+final playbackProgressHandoverProvider = Provider<PlaybackProgressHandover>(
+  (ref) {
+    if (!AppEnv.useBackend) return const InertPlaybackProgressHandover();
+    return StorePlaybackProgressHandover(
+      dao: ref.watch(playbackDaoProvider),
+      reporter: ref.watch(playbackProgressReporterProvider),
+      pullAccountProgress: ref.watch(accountProgressPullProvider),
+    );
+  },
 );
 
 /// État global d'authentification.
@@ -198,22 +247,98 @@ class AuthController extends Notifier<AuthState> {
     required String code,
   }) async {
     final session = await _repo.verifyCode(identifier: identifier, code: code);
-    state = AuthState(status: AuthStatus.authenticated, user: session.user);
-    return session;
+    return _openMemberSession(session);
   }
 
   /// Connexion Google (saute l'étape code). Retourne la [Session].
   Future<Session> signInWithGoogle() async {
-    final session = await _repo.signInWithGoogle();
-    state = AuthState(status: AuthStatus.authenticated, user: session.user);
-    return session;
+    return _openMemberSession(await _repo.signInWithGoogle());
   }
 
   /// Connexion Apple (saute l'étape code). Retourne la [Session].
   Future<Session> signInWithApple() async {
-    final session = await _repo.signInWithApple();
+    return _openMemberSession(await _repo.signInWithApple());
+  }
+
+  /// **Une session de membre vient de s'ouvrir** — les trois voies confondues :
+  /// code par SMS/e-mail, Google, Apple.
+  ///
+  /// Un seul endroit, et c'est le point de la méthode. Trois voies et deux
+  /// endroits qui réagissent, c'est une divergence annoncée : le jour où Google
+  /// et Apple cessent de lever `UnimplementedError`, il n'y aura rien à
+  /// rebrancher. C'est le pendant de ce que la tranche du porteur d'appareil a
+  /// fait pour le jeton — un seul emplacement dans le coffre, un seul
+  /// remplacement.
+  ///
+  /// **L'état passe d'abord**, et l'adoption part ensuite sans être attendue :
+  /// quelqu'un qui se connecte doit entrer. Ce qui suit est une commodité qui
+  /// parle au réseau (un cycle de synchronisation, des poussées de progression) ;
+  /// l'attendre ferait dépendre l'entrée dans l'application d'une 3G togolaise,
+  /// et un échec ferait échouer une connexion réussie. Rien de tout ceci ne lève.
+  Future<Session> _openMemberSession(Session session) async {
     state = AuthState(status: AuthStatus.authenticated, user: session.user);
+    adoption = _adoptLocalTrail();
     return session;
+  }
+
+  /// **L'adoption en cours, exposée pour les tests seulement.**
+  ///
+  /// Elle n'est pas attendue par l'application — c'est tout le sujet de
+  /// [_openMemberSession] —, et un test qui n'aurait aucun moyen de l'attendre
+  /// devrait dormir un nombre de tours de boucle deviné. Aucun écran ne la lit.
+  @visibleForTesting
+  Future<void>? adoption;
+
+  /// **Ce que cet appareil a accumulé sans compte rejoint le compte.** Deux
+  /// gestes, muets tous les deux, et dans cet ordre.
+  ///
+  /// 1. **Le miroir de la préférence d'assemblée** (`hydrateFromAccount`) : un
+  ///    appareil qui n'a jamais choisi adopte ce que le compte porte, un appareil
+  ///    qui a choisi remonte son réglage si le compte n'en a pas. Idempotent,
+  ///    muet, et il ne part **jamais** pour un invité — le miroir lit la nature
+  ///    du porteur avant d'appeler. Il vient **en premier** parce qu'il peut
+  ///    changer le filtre de branche, et donc ce que le cycle suivant tire.
+  /// 2. **La fusion de la progression d'écoute** : voir
+  ///    `playback_progress_handover.dart` pour la règle de conflit et pour qui
+  ///    l'arbitre.
+  ///
+  /// Les deux échecs sont avalés **séparément** : une préférence d'assemblée qui
+  /// ne se recopie pas n'a pas à emporter le transfert de la progression avec
+  /// elle.
+  ///
+  /// **Un seul déclencheur, et c'est une décision assumée** : l'ouverture d'une
+  /// session, et non le démarrage d'une session déjà en cache. La question se
+  /// pose pour de bon — un transfert interrompu (application tuée, cycle de
+  /// synchronisation échoué) attend donc la **prochaine** connexion, qui peut
+  /// être dans trois mois, le jeton glissant sur quatre-vingt-dix jours. Deux
+  /// raisons de ne pas l'accrocher aussi à [_load] :
+  ///
+  /// - **le prix serait payé par tout le monde pour un cas rare** : à chaque
+  ///   ouverture de l'application, le miroir demanderait un `GET /auth/me` (en
+  ///   plus de celui de la revalidation) et la fusion un cycle de
+  ///   synchronisation, alors que la trace à transférer n'existe que sur un
+  ///   appareil qui a servi **d'invité** puis s'est connecté ;
+  /// - **le lecteur rattrape le cas fréquent tout seul** : un contenu qu'on
+  ///   réouvre est rapporté au premier déclencheur de
+  ///   `PlaybackProgressRecorder`, et la position qu'il rapporte est celle que la
+  ///   fusion a laissée en local.
+  ///
+  /// Si le produit veut l'autre arbitrage, c'est un appel de plus dans [_load],
+  /// après qu'une session de membre a été confirmée : la fusion est idempotente,
+  /// sérialisée, et ne coûte pas un octet quand il n'y a rien en local.
+  Future<void> _adoptLocalTrail() async {
+    try {
+      // `hydrateFromAccount` ne lève jamais ; ce `catch` couvre ce qui l'entoure
+      // (un conteneur Riverpod déjà disposé, un magasin indisponible).
+      await ref.read(branchScopeProvider).hydrateFromAccount();
+    } on Object catch (error) {
+      debugPrint('[branche] miroir de compte ignoré à la connexion : $error');
+    }
+    try {
+      await ref.read(playbackProgressHandoverProvider).run();
+    } on Object catch (error) {
+      debugPrint('[progression] fusion ignorée à la connexion : $error');
+    }
   }
 
   /// Met à jour le profil de l'utilisateur courant.
