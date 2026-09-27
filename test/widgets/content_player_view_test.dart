@@ -741,20 +741,24 @@ void main() {
   });
 }
 
-/// La couleur d'où part le dégradé du cadre du lecteur.
+/// La couleur dont le cadre du lecteur est habillé.
 ///
 /// Elle n'est lisible que là : le cadre est privé au fichier de production, et
 /// c'est bien ce qu'on veut vérifier — la teinte que porte l'écran, pas la
 /// valeur qu'on lui a passée.
+///
+/// **Elle se lit sur le fond, et non plus sur le dégradé.** Le cadre est
+/// désormais un empilement : un fond (la teinte, ou l'image du direct), puis un
+/// voile sombre par-dessus qui tient la lisibilité des textes. Le dégradé ne
+/// part donc plus de la teinte du contenu mais du noir ; c'est le fond qui la
+/// porte, et c'est lui qu'il faut lire.
 Color _scaffoldBase(WidgetTester tester) {
-  final gradient = tester
+  return tester
       .widgetList<Container>(find.byType(Container))
-      .map((container) => container.decoration)
-      .whereType<BoxDecoration>()
-      .map((decoration) => decoration.gradient)
-      .whereType<LinearGradient>()
-      .first;
-  return gradient.colors.first;
+      .firstWhere(
+        (container) => container.decoration == null && container.color != null,
+      )
+      .color!;
 }
 
 /// Monte le lecteur seul, sur un contenu piloté par le test.
