@@ -684,6 +684,24 @@ class AppLocalizationsFr extends AppLocalizations {
       'Par défaut, les téléchargements attendent le wifi pour préserver votre forfait.';
 
   @override
+  String get branchScopeTitle => 'Mon assemblée';
+
+  @override
+  String get branchScopeLead =>
+      'Choisissez l\'assemblée dont vous voulez suivre les enseignements, les rassemblements et les annonces. L\'agenda et le mur de prière ne changent pas.';
+
+  @override
+  String get branchScopeAll => 'Toutes les assemblées';
+
+  @override
+  String get branchScopeAllSubtitle =>
+      'Tout ce que publie l\'église, où qu\'elle le publie.';
+
+  @override
+  String get branchScopeEmpty =>
+      'La liste des assemblées arrivera à la première synchronisation.';
+
+  @override
   String get mediaQualityAuto => 'Automatique';
 
   @override

@@ -109,4 +109,97 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   /// Autorise (ou non) les téléchargements en données mobiles (F8).
   Future<void> setDownloadOnCellular(bool allowed) =>
       _put(_downloadOnCellularKey, allowed ? 'true' : 'false');
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // La préférence de branche
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// La clé de la **préférence de branche**. Stable, comme les autres : la
+  /// renommer basculerait silencieusement tous les appareils installés sur
+  /// « toutes les branches », donc sur un catalogue soudain plus large, sans que
+  /// personne ne l'ait demandé.
+  static const String _preferredBranchKey = 'preferred_branch_id';
+
+  /// La valeur qui dit « **toutes les branches**, et c'est un choix ».
+  ///
+  /// Une ligne absente et cette valeur-ci produisent le même comportement — pas
+  /// de `branch_id` sur le fil, tout arrive. Elles ne disent pourtant pas la
+  /// même chose, et écrire la ligne plutôt que de la supprimer garde la
+  /// distinction disponible : l'absence est « je n'ai jamais choisi », d'où l'on
+  /// a le droit d'adopter ce que le compte propose.
+  static const String _allBranches = 'all';
+
+  /// La branche préférée, `null` = toutes. **Ponctuelle, et il n'y a pas de
+  /// variante en flux** — même partage que [downloadOnCellular], et pour une
+  /// raison de plus.
+  ///
+  /// Le moteur de synchronisation, seul consommateur, la lit une fois par cycle.
+  /// Et un `watch()` sur cette table est un piège avéré : son `QueryStream`
+  /// programme un `Timer` de nettoyage à l'annulation, qui reste pendant sous
+  /// l'horloge factice de `testWidgets` et fait mourir tout test montant l'écran
+  /// de réglages (voir l'en-tête de `test/screens/media_settings_screen_test.dart`,
+  /// qui raconte la première fois). `watchMediaPreferences` le paie encore : ses
+  /// tests d'écran doivent la surcharger par un flux nu.
+  ///
+  /// **Une valeur illisible vaut « toutes »**, jamais une exception : une base
+  /// bricolée ne doit pas vider le catalogue de quelqu'un. La panne va du côté
+  /// large — le contraire montrerait un écran vide sans rien pour l'expliquer.
+  Future<int?> readPreferredBranch() async =>
+      _preferredBranchFrom(await select(appSettings).get());
+
+  int? _preferredBranchFrom(List<AppSettingRow> rows) {
+    for (final row in rows) {
+      if (row.key != _preferredBranchKey) continue;
+      if (row.value == _allBranches) return null;
+      return int.tryParse(row.value);
+    }
+    return null;
+  }
+
+  /// La préférence a-t-elle été **choisie** au moins une fois sur cet appareil ?
+  ///
+  /// Distinct de [readPreferredBranch] rendant `null` : « je veux toutes les
+  /// branches » et « je n'ai jamais choisi » se comportent pareil sur le fil,
+  /// mais seul le second autorise à adopter ce que le compte propose sans
+  /// écraser une décision.
+  Future<bool> hasPreferredBranchChoice() async {
+    final row = await (select(appSettings)
+          ..where((t) => t.key.equals(_preferredBranchKey)))
+        .getSingleOrNull();
+    return row != null;
+  }
+
+  /// Pose la préférence de branche. `null` = toutes les branches.
+  ///
+  /// **Ne remet aucun curseur à zéro** : ce n'est pas le travail d'un DAO de
+  /// réglages, et confondre les deux serait une faute silencieuse. C'est
+  /// `BranchScopeStore.choose` qui compose les deux dans **une** transaction, et
+  /// c'est le seul appelant que cette méthode doit avoir.
+  Future<void> setPreferredBranch(int? branchId) =>
+      _put(_preferredBranchKey, branchId?.toString() ?? _allBranches);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // La file des écoutes non remontées
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// Clé de la file d'attente des remontées d'écoute.
+  static const String _pendingPlaysKey = 'plays_pending';
+
+  /// La file d'attente, **telle quelle**.
+  ///
+  /// Le format est **opaque à ce DAO** : il appartient à `PlaySpool`
+  /// (`lib/data/measurement/play_spool.dart`), qui est seul à l'écrire et seul à
+  /// le lire. Le ranger ici plutôt que dans une table dédiée évite une migration
+  /// Drift pour une liste bornée, jamais interrogée autrement qu'en entier —
+  /// c'est précisément à ça que sert une table clé/valeur.
+  Future<String?> pendingPlays() async {
+    final row = await (select(appSettings)
+          ..where((t) => t.key.equals(_pendingPlaysKey)))
+        .getSingleOrNull();
+    return row?.value;
+  }
+
+  /// Remplace la file d'attente.
+  Future<void> setPendingPlays(String encoded) =>
+      _put(_pendingPlaysKey, encoded);
 }

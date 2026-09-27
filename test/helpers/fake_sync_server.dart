@@ -100,6 +100,19 @@ class FakeSyncServer implements HttpClientAdapter {
   }) =>
       _queueFor(key).add(_Reply.error(status, code, message));
 
+  /// Même chose sur le **manifeste** : `GET /sync` rend une erreur
+  /// applicative.
+  ///
+  /// C'est là que se joue le **422 de branche inconnue** — le manifeste est la
+  /// première requête d'un cycle, donc la première à porter `branch_id`, donc
+  /// celle qui refuse.
+  void serveErrorOnManifest({
+    int status = 422,
+    String code = 'E_VALIDATION_FAILURE',
+    String? message,
+  }) =>
+      _manifest.add(_Reply.error(status, code, message));
+
   /// **Coupure réseau au milieu d'un cycle.** Ajoute, à la suite des pages déjà
   /// scriptées, une panne de transport : la requête suivante lève une
   /// [DioException] sans qu'aucune réponse ne soit rendue.

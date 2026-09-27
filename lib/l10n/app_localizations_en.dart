@@ -679,6 +679,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'By default, downloads wait for Wi-Fi to protect your data plan.';
 
   @override
+  String get branchScopeTitle => 'My assembly';
+
+  @override
+  String get branchScopeLead =>
+      'Choose the assembly whose teachings, gatherings and announcements you want to follow. The agenda and the prayer wall are unaffected.';
+
+  @override
+  String get branchScopeAll => 'All assemblies';
+
+  @override
+  String get branchScopeAllSubtitle =>
+      'Everything the church publishes, wherever it publishes it.';
+
+  @override
+  String get branchScopeEmpty =>
+      'The list of assemblies will arrive with the first sync.';
+
+  @override
   String get mediaQualityAuto => 'Automatic';
 
   @override

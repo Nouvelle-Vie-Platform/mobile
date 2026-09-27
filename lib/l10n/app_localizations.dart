@@ -1294,6 +1294,36 @@ abstract class AppLocalizations {
   /// **'Par défaut, les téléchargements attendent le wifi pour préserver votre forfait.'**
   String get mediaSettingsDownloadOnCellularSubtitle;
 
+  /// Titre de la section « préférence de branche » du panneau de réglages. « Mon assemblée » et non « Ma branche » : c'est le mot qu'emploient les fidèles, et « branche » est le mot du référentiel serveur
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon assemblée'**
+  String get branchScopeTitle;
+
+  /// Phrase d'introduction de la section assemblée. Elle dit ce que le réglage touche ET ce qu'il ne touche pas : le serveur garde son propre cloisonnement sur l'agenda et le mur de prière, et quelqu'un qui l'ignorerait croirait le réglage cassé
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez l\'assemblée dont vous voulez suivre les enseignements, les rassemblements et les annonces. L\'agenda et le mur de prière ne changent pas.'**
+  String get branchScopeLead;
+
+  /// L'option par défaut : aucun filtre. C'est aussi l'état d'une installation neuve, où rien n'a été choisi
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les assemblées'**
+  String get branchScopeAll;
+
+  /// Phrase d'impact de l'option « toutes » — sur le modèle des paliers de qualité, où chaque ligne dit ce qu'elle coûte et ce qu'elle fait perdre
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout ce que publie l\'église, où qu\'elle le publie.'**
+  String get branchScopeAllSubtitle;
+
+  /// État vide de la liste : les branches viennent du magasin local (collection répliquée « branches »), donc elles manquent tant qu'aucun cycle n'a abouti. L'absence s'affiche comme une absence, jamais comme une liste vide sans explication
+  ///
+  /// In fr, this message translates to:
+  /// **'La liste des assemblées arrivera à la première synchronisation.'**
+  String get branchScopeEmpty;
+
   /// No description provided for @mediaQualityAuto.
   ///
   /// In fr, this message translates to:

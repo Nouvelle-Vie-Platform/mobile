@@ -35,6 +35,7 @@ import '../data/local/sync_dao.dart';
 import '../data/sync/sync_api.dart';
 import '../data/sync/sync_engine.dart';
 import '../data/sync/sync_scheduler.dart';
+import 'branch_scope_providers.dart';
 
 /// **Le magasin local** — une seule instance pour toute l'application.
 ///
@@ -98,10 +99,33 @@ final legalDaoProvider = Provider<LegalDao>(
 final syncApiProvider = Provider<SyncApi>((ref) => SyncApi());
 
 /// La boucle manifeste → tirage → application.
+///
+/// **La préférence de branche y entre par deux rappels, jamais par une valeur.**
+/// [SyncEngine] la relit à chaque cycle : capturée ici, elle figerait le filtre
+/// au premier `ref.watch` et le geste du fidèle resterait sans effet jusqu'au
+/// redémarrage suivant. Et le rappel de 422 est ce qui permet à une branche
+/// disparue du référentiel de ne pas éteindre **toute** la synchronisation.
+///
+/// L'importation de `branch_scope_providers.dart` est locale à ce provider et va
+/// dans ce sens-là seulement : c'est la préférence qui ignore le moteur, pas
+/// l'inverse.
 final syncEngineProvider = Provider<SyncEngine>(
   (ref) => SyncEngine(
     api: ref.watch(syncApiProvider),
     dao: ref.watch(syncDaoProvider),
+    branchId: () => ref.read(branchScopeStoreProvider).read(),
+    // **Le magasin et le miroir, pas la façade.** `BranchScope` resynchronise
+    // dans son `forget`, et resynchroniser depuis le chemin d'erreur d'un cycle
+    // ouvrirait un second cycle sur les mêmes curseurs — pire, la chaîne
+    // `branchScopeProvider → pullToRefreshProvider → syncSchedulerProvider →
+    // syncEngineProvider` boucle, et Riverpod refuse une dépendance circulaire.
+    // Le miroir est remis à zéro ici même : sans ça, le prochain démarrage
+    // irait rechercher la même branche morte dans le compte et rejouerait le
+    // même 422, indéfiniment.
+    onUnknownBranch: (_) async {
+      await ref.read(branchScopeStoreProvider).forget();
+      await ref.read(branchScopeMirrorProvider).write(null);
+    },
   ),
 );
 

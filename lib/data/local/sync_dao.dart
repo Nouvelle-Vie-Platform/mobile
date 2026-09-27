@@ -240,6 +240,41 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
     });
   }
 
+  /// **Marque des collections « à remplacer »**, sans attendre que le serveur
+  /// le demande.
+  ///
+  /// C'est le seul chemin par lequel le **client** déclenche un remplacement, et
+  /// il existe pour un cas précis : la **préférence de branche a changé**. Le
+  /// serveur ne le détecte pas — il filtre sur le paramètre de la requête, il
+  /// n'a aucune trace de ce que le client demandait au cycle précédent — et ne
+  /// posera donc jamais `full_resync_required`. Sans ce marquage, l'application
+  /// garderait des lignes qu'elle ne doit plus afficher (le keyset ne repasse
+  /// jamais derrière son curseur) ou manquerait celles qu'elle devrait voir.
+  /// **Rien côté serveur ne le rattrapera.**
+  ///
+  /// Ce n'est **pas** un nouveau mécanisme : le jeton posé ici est exactement
+  /// celui de [beginResync], et `SyncEngine` le lit déjà (« un jeton survivant
+  /// dit qu'un remplacement a été interrompu »). Le cycle suivant re-tire donc
+  /// chaque collection marquée **depuis zéro** et balaie, dans la transaction
+  /// finale, tout ce qu'il n'a pas revu — c'est-à-dire précisément les lignes
+  /// sorties du périmètre. Aucune purge préalable : les écrans continuent de
+  /// peindre l'ancien contenu jusqu'au remplacement.
+  ///
+  /// **Le curseur n'est pas effacé**, et il ne faut pas l'effacer : `_resync` ne
+  /// le rejoue pas, et `finishResync` l'écrase. Le laisser en place fait qu'une
+  /// coupure avant le remplacement laisse le magasin exactement où il était, au
+  /// lieu de le laisser sans borne et sans ses lignes.
+  ///
+  /// Une collection déjà marquée le reste (`insertOrReplace` sur la table des
+  /// jetons) : l'appel est **idempotent**.
+  Future<void> markForReplacement(Iterable<String> collectionKeys) {
+    return transaction(() async {
+      for (final key in collectionKeys) {
+        await beginResync(key);
+      }
+    });
+  }
+
   /// **(2) Applique une page du re-tirage, sans rien effacer et sans avancer le
   /// curseur.**
   ///
