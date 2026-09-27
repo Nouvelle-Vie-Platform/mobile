@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/network/api_client.dart';
 import '../../models/models.dart';
+import '../devices/device_repository.dart';
 import '../local/user_cache.dart';
 import 'auth_repository.dart';
 
@@ -30,15 +31,35 @@ import 'auth_repository.dart';
 /// `updateProfile`, `me`) et l'efface dès qu'il n'y a plus de session. Les
 /// écrans ne voient que `AuthRepository` — remplacer [UserCache] par ObjectBox
 /// au jalon synchro ne touchera aucun widget.
+///
+/// **Le porteur d'appareil entoure ce cycle de vie**, et à deux endroits :
+///
+/// - à la **connexion**, `verifyCode` range le jeton de membre **à la place** du
+///   jeton d'appareil (un seul emplacement dans le coffre). Le serveur révoque
+///   celui-ci de son côté, à partir du porteur qui a présenté la requête de
+///   connexion : c'est pour cela que `POST /auth/verify-code` doit partir **avec
+///   le jeton d'appareil**, ce que `_AuthInterceptor` fait déjà en posant le
+///   jeton présent. Rien à lui demander de plus ;
+/// - à la **déconnexion**, l'application **redemande** un jeton d'appareil avec
+///   le **même** `deviceId` ([DeviceRepository.resume]), pour que l'invité
+///   retombe sur le catalogue et non sur l'écran de connexion.
 class HttpAuthRepository implements AuthRepository {
-  HttpAuthRepository({ApiClient? client, UserCache? cache})
-      : _client = (client ?? ApiClient.instance).dio,
+  HttpAuthRepository({
+    ApiClient? client,
+    UserCache? cache,
+    DeviceRepository? device,
+  })  : _client = (client ?? ApiClient.instance).dio,
         _api = client ?? ApiClient.instance,
-        _cache = cache ?? UserCache();
+        _cache = cache ?? UserCache(),
+        _device = device;
 
   final Dio _client;
   final ApiClient _api;
   final UserCache _cache;
+
+  /// Le porteur d'appareil, **facultatif** : `null` = pas de mode invité câblé,
+  /// et la déconnexion laisse alors le coffre vide, comme avant.
+  final DeviceRepository? _device;
 
   // ── requestCode ─────────────────────────────────────────────────────────
 
@@ -76,6 +97,10 @@ class HttpAuthRepository implements AuthRepository {
       // Le token est **opaque** (`oat_…`) : on le stocke tel quel pour les
       // requêtes suivantes. Il ne contient aucune information — ne jamais
       // tenter de le décoder pour y lire une expiration ou un identifiant.
+      //
+      // Il prend la place du jeton d'appareil, dans le même emplacement et avec
+      // le marqueur `member` : à partir d'ici, un 401 redevient une éjection vers
+      // `/auth`, ce qui est bien ce qu'on veut pour quelqu'un de connecté.
       await _api.saveToken(session.token);
       // Le cache prend le relais dès le prochain démarrage : sans lui, une
       // session valide repasserait par le réseau avant d'ouvrir l'app.
@@ -201,6 +226,18 @@ class HttpAuthRepository implements AuthRepository {
   /// **Token et cache partent ensemble** : effacer le seul token laisserait le
   /// prochain démarrage router vers l'accueil avec le nom de l'utilisateur qui
   /// vient de partir.
+  ///
+  /// **La reprise d'un jeton d'appareil vient après la purge, et elle est aussi
+  /// obligatoire que la purge.** Sans elle, l'application se retrouve sans aucun
+  /// porteur : la requête suivante part nue, son 401 se lit comme un 401 de
+  /// membre, et un invité qui vient de se déconnecter tombe sur l'écran de
+  /// connexion — exactement ce que le mode invité supprime.
+  ///
+  /// Elle tient aussi dans le cas que `signOut` traite déjà de travers en
+  /// apparence : le coffre est purgé **même quand le réseau est absent**. La
+  /// reprise échoue alors elle aussi, mais [DeviceRepository.resume] a marqué le
+  /// coffre comme *attendant* un jeton d'appareil, et le prochain 401 la
+  /// relancera en silence. Rien ne reste sans jeton pour toujours.
   @override
   Future<void> signOut() async {
     try {
@@ -209,6 +246,11 @@ class HttpAuthRepository implements AuthRepository {
       // Rien à remonter : la déconnexion locale ne dépend pas du serveur.
     } finally {
       await forgetSession();
+      // `resume` ne lève pas ; le `catch` couvre ce qui n'est pas une
+      // `DioException` (coffre indisponible), car partir ne peut pas échouer.
+      try {
+        await _device?.resume();
+      } on Object catch (_) {}
     }
   }
 
