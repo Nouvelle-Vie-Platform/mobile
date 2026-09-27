@@ -8,6 +8,7 @@ import '../models/announcement_view.dart';
 import '../router/app_router.dart';
 import '../state/announcement_providers.dart';
 import '../state/player_providers.dart';
+import '../state/session_gate.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_error_state.dart';
@@ -195,25 +196,70 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
   double _actionsWidth({required bool compose, required bool edit}) =>
       48 * (2 + (compose ? 1 : 0) + (edit ? 1 : 0));
 
+  /// **Publier et corriger exigent un compte**, et cet onglet n'en exige pas.
+  ///
+  /// L'affordance existe déjà pour les seuls membres d'un compte officiel
+  /// (`canCompose`), mais cette réponse vient du **magasin local**, que la
+  /// déconnexion ne vide pas : les lignes d'`official_account_memberships`
+  /// laissées par la session précédente survivent, et l'invité qui suit voit donc
+  /// les deux boutons. Sans `requireSession()`, l'appui sur l'un d'eux serait
+  /// avalé par la garde du routeur (`/announcement/compose` est réservé) et
+  /// renverrait sur l'accueil — la visionneuse disparaîtrait sans un mot. C'est
+  /// le cul-de-sac le plus facile à manquer de tout l'onglet, parce qu'il ne se
+  /// produit **pas** sur une installation neuve.
+  ///
+  /// Corollaire assumé : si la personne qui se connecte n'est pas celle qui
+  /// s'était déconnectée, elle arrive dans le composeur sans droit dessus et le
+  /// serveur répond 403. C'est le chemin déjà documenté (« confort d'affichage,
+  /// jamais une autorisation »), traité par l'écran du composeur.
+  void _requireCompose() {
+    final router = ref.read(routerProvider);
+    ref.requireSession(action: () => _openComposer(router));
+  }
+
+  void _requireEdit(String id) {
+    final router = ref.read(routerProvider);
+    // L'**identifiant** est capturé, pas le statut affiché : un identifiant est
+    // une valeur, et l'écran de modification résout la ligne dans le magasin à
+    // chaque build. C'est ce qui rend ce geste rejouable — capturer le statut
+    // courant l'aurait figé au moment du clic, et la reprise aurait corrigé une
+    // annonce que la synchronisation peut avoir retirée entre-temps.
+    ref.requireSession(action: () => _openEditor(router, id));
+  }
+
   /// **Le composeur suspend la visionneuse** : on ne rédige pas une annonce
   /// pendant que les statuts défilent derrière le formulaire.
-  Future<void> _openComposer() => _pauseDuring(
-        () => context.pushNamed(AppRoute.announcementCompose),
+  ///
+  /// La `GoRouter` est passée en paramètre — lue au moment de l'appui, jamais au
+  /// moment du rejeu. Le parcours de connexion reconstruit la pile, et
+  /// `context.pushNamed` s'appuierait alors sur un `BuildContext` dont rien ne
+  /// garantit la survie.
+  Future<void> _openComposer(GoRouter router) => _pauseDuring(
+        () => router.pushNamed<void>(AppRoute.announcementCompose),
       );
 
-  Future<void> _openEditor(String id) => _pauseDuring(
-        () => context.pushNamed(
+  Future<void> _openEditor(GoRouter router, String id) => _pauseDuring(
+        () => router.pushNamed<void>(
           AppRoute.announcementEdit,
           pathParameters: {'id': id},
         ),
       );
 
   Future<void> _pauseDuring(Future<void> Function() push) async {
-    _overlayOpen = true;
-    _syncPlayback();
+    _suspendViewer(true);
     await push();
+    _suspendViewer(false);
+  }
+
+  /// Suspendre la visionneuse **si elle est encore là**.
+  ///
+  /// Les deux `mounted` ne sont pas décoratifs : après une connexion à la
+  /// demande, ce geste est rejoué sur un arbre qui a été reconstruit entre-temps.
+  /// Toucher `_overlayOpen` sur un `State` mort est sans effet ; appeler
+  /// `_syncPlayback` sans garde toucherait un lecteur dont l'écran n'existe plus.
+  void _suspendViewer(bool suspended) {
     if (!mounted) return;
-    _overlayOpen = false;
+    _overlayOpen = suspended;
     _syncPlayback();
   }
 
@@ -383,8 +429,8 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
               onToggleMute: () =>
                   ref.read(statusMutedProvider.notifier).toggle(),
               onOpenList: _openList,
-              onCompose: canCompose ? _openComposer : null,
-              onEdit: canEditCurrent ? () => _openEditor(current.id) : null,
+              onCompose: canCompose ? _requireCompose : null,
+              onEdit: canEditCurrent ? () => _requireEdit(current.id) : null,
             ),
           ),
         ],

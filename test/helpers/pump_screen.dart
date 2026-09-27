@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:maison_du_miracle/data/legal_notice_store.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
@@ -16,6 +17,7 @@ import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
+import 'package:maison_du_miracle/state/legal_notice_providers.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
 import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
@@ -70,6 +72,14 @@ import 'playback_doubles.dart';
 /// Le **rapporteur de progression** est posé muet pour la raison qui vaut déjà
 /// pour l'auth : son implémentation par défaut est HTTP dès que
 /// `AppEnv.useBackend` est vrai — et il l'est hors surcharge.
+///
+/// La **mention légale du premier lancement** est posée « déjà vue », et c'est le
+/// seul repli de cette liste qui cache quelque chose plutôt que d'éviter une
+/// socket. Motif : la coquille la monte, comme elle monte les quatre onglets, et
+/// un test qui ne parle pas du bandeau n'a pas à savoir qu'il existe — il ne doit
+/// surtout pas se mettre à échouer parce qu'un bandeau est venu se poser entre
+/// deux de ses `tap`. Les tests **du** bandeau passent leur propre double
+/// ([legalNotice]), et seul le vrai magasin porte la réponse de production.
 /// Monte un **routeur** plutôt qu'un écran isolé, dans le même environnement.
 ///
 /// Nécessaire dès qu'un test porte sur la navigation : `context.pop()` et
@@ -83,6 +93,7 @@ Future<void> pumpRouter(
   AppDatabase? database,
   AuthRepository? auth,
   ThemePreferences? theme,
+  LegalNoticeStore? legalNotice,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -90,7 +101,12 @@ Future<void> pumpRouter(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        ..._commonOverrides(db, auth: auth, theme: theme),
+        ..._commonOverrides(
+          db,
+          auth: auth,
+          theme: theme,
+          legalNotice: legalNotice,
+        ),
         ...overrides,
       ],
       child: MaterialApp.router(
@@ -115,6 +131,7 @@ List<Override> _commonOverrides(
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
+  LegalNoticeStore? legalNotice,
   List<DownloadNotificationRow> notifications = const [],
 }) =>
     [
@@ -154,6 +171,9 @@ List<Override> _commonOverrides(
           .overrideWithValue(gatherings ?? InMemoryGatheringRepository()),
       announcementRepositoryProvider
           .overrideWithValue(announcements ?? InMemoryAnnouncementRepository()),
+      legalNoticeStoreProvider.overrideWithValue(
+        legalNotice ?? InMemoryLegalNoticeStore(seen: true),
+      ),
     ];
 
 Future<void> pumpScreen(
@@ -166,6 +186,7 @@ Future<void> pumpScreen(
   AppDatabase? database,
   AuthRepository? auth,
   ThemePreferences? theme,
+  LegalNoticeStore? legalNotice,
   List<DownloadNotificationRow> notifications = const [],
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
@@ -186,6 +207,7 @@ Future<void> pumpScreen(
           mediatheque: mediatheque,
           gatherings: gatherings,
           announcements: announcements,
+          legalNotice: legalNotice,
           notifications: notifications,
         ),
         ...overrides,

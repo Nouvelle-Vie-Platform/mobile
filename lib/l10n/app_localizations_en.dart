@@ -1277,4 +1277,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get legalGateReload => 'Reload';
+
+  @override
+  String get legalNoticeBody =>
+      'By using the app, you accept our terms of use and our privacy policy.';
+
+  @override
+  String get legalNoticeTerms => 'Terms of use';
+
+  @override
+  String get legalNoticePrivacy => 'Privacy';
+
+  @override
+  String get legalNoticeDismiss => 'Got it';
 }
