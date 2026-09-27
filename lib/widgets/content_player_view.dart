@@ -200,7 +200,8 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
           _PlayerTopBar(
             title: widget.chromeTitle,
             isLive: widget.isLive,
-            onInfo: widget.isLive ? null : () => _showInfoSheet(context, content),
+            onInfo:
+                widget.isLive ? null : () => _showInfoSheet(context, content),
           ),
           Expanded(
             child: ContentAbsenceView(
@@ -293,7 +294,8 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
       final recorder = await open(contentId);
       if (mounted) _recorder = recorder;
     } catch (error, stack) {
-      debugPrint('[progression] enregistreur indisponible pour $contentId : $error');
+      debugPrint(
+          '[progression] enregistreur indisponible pour $contentId : $error');
       debugPrintStack(stackTrace: stack, maxFrames: 4);
     }
   }
@@ -373,7 +375,8 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
             _PlayerTopBar(
               title: widget.chromeTitle,
               isLive: widget.isLive,
-              onInfo: widget.isLive ? null : () => _showInfoSheet(context, content),
+              onInfo:
+                  widget.isLive ? null : () => _showInfoSheet(context, content),
             ),
             Expanded(
               child: _PlayerStage(
@@ -428,12 +431,13 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
               onPlayPause: () => _togglePlayback(content),
               onLike: () => setState(() => _liked = !_liked),
               onNotes: () => context.pushNamed(AppRoute.notes),
-              downloadButton: widget.downloadContentType == null || widget.isLive
-                  ? null
-                  : _DownloadButton(
-                      contentId: content.id,
-                      contentType: widget.downloadContentType!,
-                    ),
+              downloadButton:
+                  widget.downloadContentType == null || widget.isLive
+                      ? null
+                      : _DownloadButton(
+                          contentId: content.id,
+                          contentType: widget.downloadContentType!,
+                        ),
             ),
             const SizedBox(height: AppSpacing.xl),
           ],
@@ -477,7 +481,8 @@ class _PlayerScaffold extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withValues(alpha: 0.35), // Légèrement sombre en haut
+                  Colors.black
+                      .withValues(alpha: 0.35), // Légèrement sombre en haut
                   Colors.black.withValues(alpha: 0.65), // Plus sombre au milieu
                   Color.lerp(base, Colors.black, 0.85)!, // Très sombre en bas
                 ],
@@ -617,9 +622,8 @@ class _PlayerStage extends ConsumerWidget {
 
     // Si c'est le flux direct, on masque l'illustration centrale pour laisser voir l'image de fond
     final isLiveContent = content.id == LiveStreamConfig.liveContentId;
-    final Widget artworkWidget = isLiveContent
-        ? const SizedBox.shrink()
-        : _Artwork(content: content);
+    final Widget artworkWidget =
+        isLiveContent ? const SizedBox.shrink() : _Artwork(content: content);
 
     return switch (stage) {
       _Stage.artwork => Center(child: artworkWidget),

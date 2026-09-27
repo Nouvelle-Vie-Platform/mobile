@@ -196,7 +196,8 @@ class _WavyHeader extends StatelessWidget {
                         const _ProfileIconButton(),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.sm), // Espacement réduit (ex-xxl)
+                    const SizedBox(
+                        height: AppSpacing.sm), // Espacement réduit (ex-xxl)
                     Text(
                       name == null
                           ? context.l10n.homeGreetingNoName
@@ -245,7 +246,8 @@ class _ProfileIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: const Icon(Icons.account_circle_outlined, color: Colors.white, size: 28),
+      icon: const Icon(Icons.account_circle_outlined,
+          color: Colors.white, size: 28),
       tooltip: 'Profil',
       onPressed: () => context.pushNamed(AppRoute.profile),
     );

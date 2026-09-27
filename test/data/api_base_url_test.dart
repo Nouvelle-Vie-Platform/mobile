@@ -4,7 +4,8 @@ import 'package:maison_du_miracle/core/network/api_client.dart';
 
 void main() {
   group('URL de base du backend', () {
-    test('vaut le serveur de l\'église tant qu\'aucun --dart-define n\'est passé',
+    test(
+        'vaut le serveur de l\'église tant qu\'aucun --dart-define n\'est passé',
         () {
       // Les tests tournent sans `--dart-define` : c'est la valeur de repli qui
       // s'applique. Elle **n'est plus une URL de développement** — le repli

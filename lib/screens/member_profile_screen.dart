@@ -136,8 +136,8 @@ class _SharedMedia extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Text(context.l10n.groupInfoSharedMedia,
-              style: AppTypography.h5),
+          child:
+              Text(context.l10n.groupInfoSharedMedia, style: AppTypography.h5),
         ),
         const SizedBox(height: AppSpacing.md),
         SizedBox(

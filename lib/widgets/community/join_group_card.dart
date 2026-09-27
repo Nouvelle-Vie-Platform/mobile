@@ -83,7 +83,8 @@ class _Cover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Teinte de repli stable, dérivée du nom (comme [AppAvatar]).
-    final fallback = _fallbackColors[group.name.length % _fallbackColors.length];
+    final fallback =
+        _fallbackColors[group.name.length % _fallbackColors.length];
     return ClipRRect(
       borderRadius: AppRadius.card,
       child: SizedBox(

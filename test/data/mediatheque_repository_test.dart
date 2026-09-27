@@ -110,11 +110,12 @@ void main() {
       );
 
       final view = await repository.teachingById('t-1', locale: 'fr').first;
-      expect(view!.imageLandscapeUrl, 'https://eenv.brainsial.com/uploads/t/a.jpg');
+      expect(view!.imageLandscapeUrl,
+          'https://eenv.brainsial.com/uploads/t/a.jpg');
       // Le troisième cadrage (#209) suit la colonne jusqu'au modèle de lecture,
       // résolu par la même règle — preuve que le palier v10 l'a bien stockée.
-      expect(view.imageSquareUrl,
-          'https://eenv.brainsial.com/uploads/t/a-sq.jpg');
+      expect(
+          view.imageSquareUrl, 'https://eenv.brainsial.com/uploads/t/a-sq.jpg');
       expect(view.squareOrLandscape, view.imageSquareUrl);
     });
 
