@@ -31,7 +31,10 @@ void main() {
 
     test('en release, une URL en clair fait échouer le démarrage', () {
       for (final url in [
-        'https://eenv.brainsial.com',
+        // Le repli de développement en est une : `kBaseUrl` est HTTPS depuis
+        // qu'il pointe le serveur de l'église, mais c'est le **schéma** qui est
+        // jugé ici, pas l'hôte — et une URL en clair doit rester refusée.
+        'http://localhost:3333',
         'http://api.example.org',
         'HTTPS://api.example.org', // le schéma est sensible à la casse
         '',

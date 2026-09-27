@@ -78,7 +78,7 @@ void main() {
         imagePortraitUrl: 'uploads/teachings/abc-p.jpg',
       );
       expect(view.imageLandscapeUrl,
-          'https://eenv.brainsial.comuploads/teachings/abc.jpg');
+          'https://eenv.brainsial.com/uploads/teachings/abc.jpg');
       expect(
         view.imagePortraitUrl,
         'https://eenv.brainsial.com/uploads/teachings/abc-p.jpg',
