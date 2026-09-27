@@ -20,7 +20,8 @@ import '../screens/home_shell.dart';
 import '../screens/legal_acceptance_screen.dart';
 import '../screens/legal_document_screen.dart';
 import '../screens/media_settings_screen.dart';
-import '../screens/live_screen.dart';
+import '../screens/live_player_screen.dart';
+import '../screens/profile_screen.dart';
 import '../screens/media_library_screen.dart';
 import '../screens/member_profile_screen.dart';
 import '../screens/new_request_screen.dart';
@@ -48,6 +49,7 @@ abstract final class AppRoute {
   static const mediaSettings = 'media-settings';
   static const downloads = 'downloads';
   static const home = 'home';
+  static const profile = 'profile';
   static const media = 'media';
   static const live = 'live';
   static const teachingDetail = 'teaching';
@@ -226,6 +228,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/home',
         builder: (_, __) => const AppBackground(child: HomeShell()),
       ),
+      // Profil en **push** : plus un onglet, pour que la barre du bas disparaisse
+      // et qu'une flèche de retour ramène à l'accueil.
+      GoRoute(
+        name: AppRoute.profile,
+        path: '/profile',
+        builder: (_, __) =>
+            const AppBackground(child: ProfileScreen(showBack: true)),
+      ),
       // Composeur d'annonce — deux chemins, un seul écran. Ils ne se disputent
       // rien : `/announcement/compose` a un segment, `/announcement/:id/edit`
       // en a trois. **Aucune garde de route** : l'affordance n'existe déjà que
@@ -255,7 +265,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: AppRoute.live,
         path: '/live',
-        builder: (_, __) => const AppBackground(child: LiveScreen()),
+        builder: (_, __) => const AppBackground(child: LivePlayerScreen()),
       ),
       GoRoute(
         name: AppRoute.teachingDetail,

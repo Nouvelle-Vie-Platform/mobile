@@ -124,8 +124,8 @@ class AppButton extends StatelessWidget {
         );
       case AppButtonVariant.accent:
         return const _ButtonStyle(
-          background: AppColors.accent,
-          foreground: AppColors.neutralDark,
+          background: AppColors.neutralLight,
+          foreground: AppColors.primary,
         );
       case AppButtonVariant.outline:
         return _ButtonStyle(

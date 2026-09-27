@@ -15,16 +15,14 @@ import '../widgets/menu_tile.dart';
 import '../widgets/profile_completion_banner.dart';
 import '../widgets/theme_sheet.dart';
 
-/// Onglet « Profil » : en-tête de marque (avatar, rôle, branche, statistiques,
+/// Écran « Profil » : en-tête de marque (avatar, rôle, branche, statistiques,
 /// badges) surmontant une feuille de réglages.
 class ProfileScreen extends ConsumerWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.showBack = false});
 
-  /// Clé de l'entrée « Supprimer mon compte », pour la cibler depuis les tests
-  /// sans dépendre de son libellé.
+  final bool showBack;
+
   static const Key deleteAccountKey = Key('profile_delete_account');
-
-  /// Clé du bouton d'apparence de l'en-tête, qui ouvre la feuille.
   static const Key themeButtonKey = Key('profile_theme_button');
 
   @override
@@ -33,25 +31,16 @@ class ProfileScreen extends ConsumerWidget {
     final palette = context.palette;
 
     final user = ref.watch(authProvider).user;
-    // Le référentiel sert seulement à mettre un nom sur `user.branchId` : tant
-    // qu'il n'est pas là (chargement, hors ligne), on affiche un libellé
-    // neutre plutôt que de bloquer l'onglet sur un état de chargement.
     final branches = ref.watch(branchesProvider).value ?? const <Branch>[];
 
-    // Nom affiché : civilité localisée + prénom (+ nom), repli sur le rôle
-    // générique. Le libellé de civilité vient de l10n, jamais du modèle.
     final displayName =
         user == null ? '' : user.displayName(l.userTitleLabel(user.title));
     final name = displayName.isEmpty ? l.profileRole : displayName;
 
-    // Branche : « nouveau » ou pas de rattachement → libellé de statut dédié.
     String branchLabel = l.statusNewLabel;
     if (user != null &&
         user.status != UserStatus.newcomer &&
         user.branchId != null) {
-      // Rattaché, mais le nom de la branche n'est pas (encore) connu : repli
-      // sur un libellé générique. Surtout pas `statusNewLabel`, qui dirait le
-      // contraire de la vérité pendant le chargement du référentiel.
       branchLabel = l.profileMyBranch;
       for (final b in branches) {
         if (b.id == user.branchId) {
@@ -61,80 +50,64 @@ class ProfileScreen extends ConsumerWidget {
       }
     }
 
-    return Column(
-      children: [
-        _ProfileHeader(
-          name: name,
-          role: l.profileRole,
-          branch: branchLabel,
-        ),
-        // Feuille de réglages remontant sur l'en-tête.
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Column(
+        children: [
+          _ProfileHeader(
+            name: name,
+            role: l.profileRole,
+            branch: branchLabel,
+            showBack: showBack,
+          ),
+          Expanded(
+            child: Material(
               color: palette.surface,
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: ListView(
-              padding: EdgeInsets.only(
-                top: AppSpacing.md,
-                bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
-              ),
-              children: [
-                // Bannière douce d'invitation à compléter le profil.
-                if (user != null && !user.profileComplete) ...[
-                  Padding(
-                    padding: AppSpacing.screenPadding,
-                    child: const ProfileCompletionBanner(),
+              clipBehavior: Clip.antiAlias,
+              child: ListView(
+                padding: EdgeInsets.only(
+                  top: AppSpacing.md,
+                  bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
+                ),
+                children: [
+                  if (user != null && !user.profileComplete) ...[
+                    Padding(
+                      padding: AppSpacing.screenPadding,
+                      child: const ProfileCompletionBanner(),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                  MenuTile(
+                    icon: Icons.help_outline,
+                    label: l.helpSupport,
+                    onTap: () {},
                   ),
                   const SizedBox(height: AppSpacing.sm),
+                  MenuTile(
+                    icon: Icons.logout,
+                    label: l.logout,
+                    destructive: true,
+                    onTap: () => _confirmSignOut(context, ref),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  MenuTile(
+                    key: ProfileScreen.deleteAccountKey,
+                    icon: Icons.person_remove_outlined,
+                    label: l.deleteAccount,
+                    destructive: true,
+                    onTap: () => context.pushNamed(AppRoute.profileDelete),
+                  ),
                 ],
-                // **Pas d'entrée « Modifier mon profil » ici**, et c'est un
-                // retrait délibéré : le bouton du bandeau bleu ouvre le même
-                // écran, collé au nom et à la branche qu'il sert à corriger.
-                // Deux chemins vers la même page, à un écran d'écart, se
-                // remarquent comme un doublon. La liste ne porte donc que des
-                // **réglages**, ce qui la rend homogène.
-                MenuTile(
-                  icon: Icons.help_outline,
-                  label: l.helpSupport,
-                  onTap: () {},
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                MenuTile(
-                  icon: Icons.logout,
-                  label: l.logout,
-                  destructive: true,
-                  // Confirmation puis déconnexion : le `redirect` du routeur
-                  // renvoie ensuite vers `/auth` (pas de navigation manuelle).
-                  onTap: () => _confirmSignOut(context, ref),
-                ),
-                // **Séparée de la déconnexion**, et pas seulement rangée en
-                // dessous : les deux sont destructives à l'œil, mais l'une se
-                // rejoue en saisissant un code et l'autre n'a pas de retour.
-                // L'espace vide est ce qui empêche le pouce de glisser de l'une
-                // à l'autre. Elle ouvre un écran — jamais un dialogue.
-                const SizedBox(height: AppSpacing.lg),
-                MenuTile(
-                  key: ProfileScreen.deleteAccountKey,
-                  icon: Icons.person_remove_outlined,
-                  label: l.deleteAccount,
-                  destructive: true,
-                  onTap: () => context.pushNamed(AppRoute.profileDelete),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  /// Demande confirmation avant de déconnecter. À confirmation, appelle
-  /// `signOut()` ; la garde de route (`redirect`) renvoie ensuite vers `/auth`.
   Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
     final l = context.l10n;
     final confirmed = await showDialog<bool>(
@@ -161,18 +134,18 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-/// En-tête de profil au dégradé de marque : barre, avatar + nom + rôle,
-/// branche + bouton « Modifier » et raccourcis.
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
     required this.name,
     required this.role,
     required this.branch,
+    this.showBack = false,
   });
 
   final String name;
   final String role;
   final String branch;
+  final bool showBack;
 
   @override
   Widget build(BuildContext context) {
@@ -186,20 +159,22 @@ class _ProfileHeader extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Barre supérieure.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(l.navProfile,
-                    style: AppTypography.h2.copyWith(color: Colors.white)),
-                // **Le cercle mi-plein, et non un soleil ou une lune.** Ce
-                // bouton **ouvre un panneau**, il ne bascule pas : afficher
-                // l'état courant sur un bouton qui ne le change pas ferait
-                // presser la lune en s'attendant à passer en clair. En mode
-                // `Auto` elle donnerait de surcroît à croire qu'on a choisi
-                // « Sombre ».
+                Row(
+                  children: [
+                    if (showBack)
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => context.pop(),
+                      ),
+                    Text(l.navProfile,
+                        style: AppTypography.h2.copyWith(color: Colors.white)),
+                  ],
+                ),
                 IconButton(
                   key: ProfileScreen.themeButtonKey,
                   icon: const Icon(Icons.brightness_6, color: Colors.white),
@@ -210,7 +185,6 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          // Avatar + nom + rôle.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
@@ -246,7 +220,6 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          // Branche + bouton Modifier.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
@@ -274,17 +247,11 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          // Raccourcis rapides (badges hexagonaux).
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
               children: [
                 Expanded(
-                  // **Le premier hexagone mène à la page Téléchargements**
-                  // (#193, F12) — il ouvrait « Ma branche » sur un `onTap` vide.
-                  // Seul celui-ci change : le nom de branche de l'en-tête et les
-                  // trois autres hexagones (Notes, Agenda, Qualité) sont
-                  // inchangés.
                   child: _BadgeShortcut(
                     icon: Icons.download_rounded,
                     label: l.profileDownloads,
@@ -309,13 +276,6 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  // **Les dons ont cédé cette place**, et la route
-                  // `/donations` n'a plus aucun lien dans l'application : elle
-                  // reste déclarée mais devient injoignable. C'est assumé — cet
-                  // écran fait 106 lignes et il n'y a aucun moyen de paiement
-                  // derrière ; il reviendra quand il en aura un. Le noter ici
-                  // plutôt que de laisser quelqu'un retrouver une route morte
-                  // sans savoir si c'est un oubli.
                   child: _BadgeShortcut(
                     icon: Icons.tune,
                     label: l.mediaSettings,
@@ -339,11 +299,6 @@ class _EditButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      // **`push` et non `go`** : `go` remplace la route, donc il n'y
-      // aurait rien à dépiler — ni flèche de retour dans la barre, ni
-      // retour possible vers l'onglet Profil au sortir du formulaire.
-      // Empilée, la coquille reste montée dessous et son onglet courant,
-      // qui est du `State` local, n'est jamais réinitialisé.
       onTap: () => context.pushNamed(AppRoute.profileEdit),
       child: Container(
         padding: const EdgeInsets.symmetric(
@@ -367,7 +322,6 @@ class _EditButton extends StatelessWidget {
   }
 }
 
-/// Raccourci : badge hexagonal (icône) surmontant un libellé, tappable.
 class _BadgeShortcut extends StatelessWidget {
   const _BadgeShortcut({
     required this.icon,
@@ -412,7 +366,6 @@ class _BadgeShortcut extends StatelessWidget {
   }
 }
 
-/// Découpe une forme hexagonale (badges).
 class _HexagonClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

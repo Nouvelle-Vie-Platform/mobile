@@ -142,6 +142,18 @@ abstract class AppLocalizations {
   /// **'Profil'**
   String get navProfile;
 
+  /// Onglet Bible de la barre de navigation inférieure
+  ///
+  /// In fr, this message translates to:
+  /// **'Bible'**
+  String get navBible;
+
+  /// Placeholder d'un écran pas encore livré (onglet Bible)
+  ///
+  /// In fr, this message translates to:
+  /// **'Page en construction'**
+  String get pageUnderConstruction;
+
   /// No description provided for @navAgenda.
   ///
   /// In fr, this message translates to:
@@ -466,11 +478,23 @@ abstract class AppLocalizations {
   /// **'Cultes à venir'**
   String get sectionUpcomingServices;
 
-  /// No description provided for @homeWatchLive.
+  /// Bouton d'accueil hors lecture : ouvre le lecteur du flux en direct
   ///
   /// In fr, this message translates to:
-  /// **'Regarder le direct'**
+  /// **'Suivre le live'**
   String get homeWatchLive;
+
+  /// Bouton d'accueil compact, affiché tant que le live joue en arrière-plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Live'**
+  String get homeLiveNow;
+
+  /// Info-bulle du bouton Stop du live, sur l'accueil
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter le live'**
+  String get homeStopLive;
 
   /// No description provided for @actionSeeAll.
   ///

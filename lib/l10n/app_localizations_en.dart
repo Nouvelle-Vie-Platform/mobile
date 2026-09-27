@@ -30,6 +30,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navProfile => 'Profile';
 
   @override
+  String get navBible => 'Bible';
+
+  @override
+  String get pageUnderConstruction => 'Page under construction';
+
+  @override
   String get navAgenda => 'Agenda';
 
   @override
@@ -221,7 +227,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionUpcomingServices => 'Upcoming services';
 
   @override
-  String get homeWatchLive => 'Watch live';
+  String get homeWatchLive => 'Follow the live';
+
+  @override
+  String get homeLiveNow => 'Live';
+
+  @override
+  String get homeStopLive => 'Stop live';
 
   @override
   String get actionSeeAll => 'See all';

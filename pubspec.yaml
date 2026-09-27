@@ -180,6 +180,7 @@ flutter:
     - assets/images/brand_logo_inverse.webp
     - assets/images/welcome_bg.webp
     - assets/images/rameau_or.webp
+    - assets/images/live_bg.png
     - assets/images/home_header_church.webp
 
   fonts:
