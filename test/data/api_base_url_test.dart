@@ -4,9 +4,13 @@ import 'package:maison_du_miracle/core/network/api_client.dart';
 
 void main() {
   group('URL de base du backend', () {
-    test('vaut le backend local tant qu\'aucun --dart-define n\'est passé', () {
+    test('vaut le serveur de l\'église tant qu\'aucun --dart-define n\'est passé',
+        () {
       // Les tests tournent sans `--dart-define` : c'est la valeur de repli qui
-      // s'applique. Elle doit rester une URL de développement.
+      // s'applique. Elle **n'est plus une URL de développement** — le repli
+      // pointe désormais la production, en HTTPS, ce qui est aussi ce qui le
+      // rend acceptable en release. Un `--dart-define=API_BASE_URL=…` reste le
+      // chemin pour viser un backend local.
       expect(kBaseUrl, 'https://eenv.brainsial.com');
     });
 
