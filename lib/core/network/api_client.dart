@@ -22,6 +22,95 @@ const String kBaseUrl = String.fromEnvironment(
 /// Clé de stockage sécurisé du token d'authentification.
 const String _kTokenKey = 'auth_token';
 
+/// Clé de stockage sécurisé de la **nature** du porteur rangé à côté.
+///
+/// **Un seul emplacement de jeton, un marqueur à côté** — et non deux clés de
+/// jeton (« membre » / « appareil ») : le coffre ne peut alors pas contenir deux
+/// jetons à la fois, donc aucun code ne peut choisir le mauvais, ni « retomber »
+/// sur un jeton d'appareil resté là pendant qu'une personne est connectée. Le
+/// jeton, lui, reste rangé **tel quel** : le contrat le dit opaque, et y coudre
+/// un préfixe (`device:oat_…`) ferait du coffre un format à décoder.
+///
+/// Ce que ça rend impossible, au prix d'une seconde lecture du coffre par
+/// requête : deux porteurs simultanés, et un jeton qui change de nature sans
+/// que le marqueur bouge.
+const String _kTokenKindKey = 'auth_token_kind';
+
+/// Qui parle au serveur : une personne connectée, ou un appareil anonyme.
+///
+/// Le marqueur du coffre et l'estampille d'`extra` portent cette valeur ; toute
+/// la réaction au **401** en découle (voir [UnauthorizedInterceptor]).
+enum AuthTokenKind {
+  /// Jeton émis par `POST /auth/verify-code` — une personne s'est connectée.
+  member,
+
+  /// Jeton émis par `POST /devices/anonymous` — personne ne s'est connecté.
+  device;
+
+  /// Lecture **prudente** d'un marqueur : tout ce qui n'est pas explicitement
+  /// `device` vaut `member`.
+  ///
+  /// Le défaut n'est pas arbitraire. Les deux désaccords possibles entre le
+  /// marqueur et le jeton n'ont pas le même coût : un jeton d'appareil pris pour
+  /// un jeton de membre éjecte vers `/auth` — visible, et l'on peut se
+  /// reconnecter ; un jeton de **membre** pris pour un jeton d'appareil se
+  /// ferait **écraser en silence** par un jeton d'appareil, déconnectant
+  /// quelqu'un sans le lui dire. On se trompe donc toujours du premier côté.
+  ///
+  /// Corollaire pour les écritures ([ApiClient.saveToken]) : la valeur prudente
+  /// (`member`) s'écrit **avant** le jeton, la valeur permissive (`device`)
+  /// **après** — une panne entre les deux écritures laisse alors toujours l'état
+  /// prudent. Corollaire pour les installations existantes : un coffre qui ne
+  /// porte que `auth_token` (avant cette version) décrit un membre, ce qui est
+  /// exactement ce qu'il est.
+  static AuthTokenKind parse(String? raw) =>
+      raw == device.name ? device : member;
+}
+
+/// Clé d'`extra` : la nature du porteur **réellement posé sur cette requête**,
+/// estampillée par `_AuthInterceptor`.
+///
+/// L'estampille voyage avec la requête au lieu d'être relue au retour du 401, et
+/// c'est le cœur du mécanisme : entre l'envoi et la réponse, le coffre peut
+/// avoir changé de main — une connexion aboutie pendant qu'une requête d'invité
+/// était en vol. Relire le coffre à ce moment-là ferait juger la requête sur un
+/// état qui n'est plus le sien.
+const String kAuthTokenKindExtra = 'authTokenKind';
+
+/// Clé d'`extra` : cette requête **est déjà un rejeu**. Elle ne peut plus
+/// déclencher de renouvellement — c'est la borne de la boucle.
+const String kDeviceSessionReplayExtra = 'deviceSessionReplay';
+
+/// Clé d'`extra` : cette requête **est** l'ouverture d'une session d'appareil
+/// (`POST /devices/anonymous`).
+///
+/// Deux effets, tous deux nécessaires : `_AuthInterceptor` ne lui pose **aucun**
+/// porteur — un jeton mort ne doit pas pouvoir empêcher d'en obtenir un vivant,
+/// et la route est publique, le porteur n'y apporterait rien — et un 401 sur
+/// elle n'éjecte personne et ne relance rien.
+const String kDeviceSessionRequestExtra = 'deviceSessionRequest';
+
+/// Ce que l'intercepteur 401 attend du **mode invité**, et rien de plus.
+///
+/// Le contrat vit ici — dans la couche réseau — et son implémentation dans
+/// `lib/data/devices/` : la couche basse déclare ce dont elle a besoin, elle
+/// n'importe pas la couche haute (même raison que [ApiClient.onUnauthorized]).
+abstract interface class DeviceSessionGuard {
+  /// Obtient un jeton d'appareil frais et le range dans le coffre.
+  ///
+  /// Rend `true` si le coffre porte un jeton d'appareil utilisable au retour.
+  /// **Ne lève jamais** : un échec de renouvellement n'est pas une erreur à
+  /// montrer, c'est une requête qui échoue.
+  ///
+  /// L'implémentation doit **sérialiser** les appels concurrents : plusieurs
+  /// requêtes peuvent recevoir un 401 dans la même milliseconde au démarrage, et
+  /// il ne doit en partir qu'**un** renouvellement.
+  Future<bool> renew();
+
+  /// Rejoue une requête avec le jeton frais.
+  Future<Response<dynamic>> replay(RequestOptions options);
+}
+
 /// Client HTTP global, pré-configuré avec :
 /// - l'URL de base du backend ([kBaseUrl], injectée par `--dart-define`)
 /// - Headers JSON par défaut
@@ -48,7 +137,12 @@ class ApiClient {
     _dio.interceptors.addAll([
       _AuthInterceptor(_storage),
       unwrapEnvelopeInterceptor,
-      UnauthorizedInterceptor(_handleUnauthorized),
+      // Le garde est lu **à chaque 401**, jamais capturé à la construction :
+      // `ApiClient.instance` naît avant que quoi que ce soit ait pu le câbler.
+      UnauthorizedInterceptor(
+        _handleUnauthorized,
+        deviceSession: () => deviceSession,
+      ),
       // Uniquement en debug : ces logs contiennent les corps de requête et le
       // header `Authorization`, qui n'ont rien à faire dans les journaux d'un
       // appareil de production.
@@ -76,6 +170,15 @@ class ApiClient {
   /// (`MaisonDuMiracleApp`), là où le routeur et les providers existent. Les
   /// couches basses ne connaissent pas les couches hautes.
   void Function()? onUnauthorized;
+
+  /// Le **mode invité**, s'il est câblé : ce qui sait renouveler un jeton
+  /// d'appareil en silence (`HttpDeviceRepository.wire`, appelé au démarrage).
+  ///
+  /// Tant qu'il vaut `null`, un 401 se comporte **exactement** comme avant cette
+  /// version, y compris sur une requête estampillée « appareil » : sans personne
+  /// pour renouveler, se taire rendrait l'application muette pour toujours,
+  /// alors que l'éjection vers `/auth` mène au moins quelque part.
+  DeviceSessionGuard? deviceSession;
 
   /// Refuse une URL de base en HTTP clair dans un build **release**.
   ///
@@ -112,19 +215,60 @@ class ApiClient {
 
   // ── Token helpers ────────────────────────────────────────────────────────
 
-  /// Persiste le token après une connexion réussie.
-  Future<void> saveToken(String token) =>
-      _storage.write(key: _kTokenKey, value: token);
+  /// Persiste le token — **un seul emplacement**, quelle que soit sa nature :
+  /// ranger un jeton d'appareil remplace le jeton de membre, et l'inverse.
+  ///
+  /// L'ordre des deux écritures suit la règle d'[AuthTokenKind.parse] : la valeur
+  /// prudente (`member`) d'abord, la permissive (`device`) en dernier. Le coffre
+  /// n'a pas de transaction ; c'est ce qui fait qu'une interruption entre les
+  /// deux écritures ne peut pas donner « jeton de membre marqué appareil ».
+  Future<void> saveToken(
+    String token, {
+    AuthTokenKind kind = AuthTokenKind.member,
+  }) async {
+    if (kind == AuthTokenKind.member) {
+      await _storage.write(key: _kTokenKindKey, value: kind.name);
+      await _storage.write(key: _kTokenKey, value: token);
+      return;
+    }
+    await _storage.write(key: _kTokenKey, value: token);
+    await _storage.write(key: _kTokenKindKey, value: kind.name);
+  }
 
-  /// Supprime le token à la déconnexion.
-  Future<void> deleteToken() => _storage.delete(key: _kTokenKey);
+  /// Supprime le token **et son marqueur** : un marqueur orphelin décrirait la
+  /// nature d'un porteur qui n'existe plus.
+  Future<void> deleteToken() async {
+    await _storage.delete(key: _kTokenKey);
+    await _storage.delete(key: _kTokenKindKey);
+  }
 
   /// Lit le token courant (null si absent).
   Future<String?> readToken() => _storage.read(key: _kTokenKey);
+
+  /// Lit la nature du porteur courant. Marqueur absent → [AuthTokenKind.member]
+  /// (le défaut prudent, cf. [AuthTokenKind.parse]).
+  Future<AuthTokenKind> readTokenKind() async =>
+      AuthTokenKind.parse(await _storage.read(key: _kTokenKindKey));
+
+  /// Marque le coffre comme **attendant** une session d'appareil, sans jeton.
+  ///
+  /// C'est l'état d'après une déconnexion dont la reprise de jeton a échoué
+  /// (avion, serveur injoignable). Sans lui, la requête suivante partirait sans
+  /// porteur, son 401 serait jugé « membre », et un invité se retrouverait devant
+  /// l'écran de connexion — précisément ce que le mode invité supprime. Avec lui,
+  /// ce 401 déclenche un renouvellement silencieux : l'échec réseau se rattrape
+  /// de lui-même au prochain appel, sans rester sans jeton pour toujours.
+  Future<void> expectDeviceSession() =>
+      _storage.write(key: _kTokenKindKey, value: AuthTokenKind.device.name);
 }
 
 /// Intercepteur Dio : ajoute automatiquement `Authorization: Bearer <token>`
 /// à chaque requête si un token est disponible en stockage sécurisé.
+///
+/// Il **estampille** aussi la requête avec la nature du porteur
+/// ([kAuthTokenKindExtra]) — y compris quand il n'y a **pas** de jeton à poser :
+/// un coffre marqué « appareil » sans jeton est un renouvellement en attente, et
+/// c'est le 401 de cette requête-là qui le déclenchera.
 class _AuthInterceptor extends Interceptor {
   _AuthInterceptor(this._storage);
 
@@ -135,9 +279,25 @@ class _AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    // L'ouverture d'une session d'appareil part **nue** : voir
+    // [kDeviceSessionRequestExtra].
+    if (options.extra[kDeviceSessionRequestExtra] == true) {
+      options.headers.remove('Authorization');
+      handler.next(options);
+      return;
+    }
+
+    options.extra[kAuthTokenKindExtra] = AuthTokenKind.parse(
+      await _storage.read(key: _kTokenKindKey),
+    );
+
     final token = await _storage.read(key: _kTokenKey);
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
+    } else {
+      // Un rejeu réutilise les mêmes `RequestOptions` : l'en-tête d'un jeton
+      // disparu du coffre y traînerait encore.
+      options.headers.remove('Authorization');
     }
     handler.next(options);
   }
@@ -181,19 +341,90 @@ final Interceptor unwrapEnvelopeInterceptor = InterceptorsWrapper(
 ///
 /// [_onUnauthorized] est injecté (et non lu sur [ApiClient]) pour rendre
 /// l'intercepteur testable sans réseau ni stockage sécurisé.
+///
+/// ## Deux natures de porteur, deux réactions
+///
+/// Le comportement ci-dessus est celui d'un jeton de **membre**, et il ne change
+/// pas d'un octet : quand la personne s'est connectée, un 401 veut dire que sa
+/// session est finie, et la voir revenir à `/auth` est la bonne réponse.
+///
+/// Un jeton d'**appareil** n'a personne à qui demander de se reconnecter : son
+/// 401 se **renouvelle en silence** — nouveau jeton pour le même `deviceId`,
+/// requête rejouée, rien à l'écran. Un invité dont le jeton a expiré ne doit
+/// jamais tomber sur l'écran de connexion.
+///
+/// La nature se lit sur l'**estampille de la requête** ([kAuthTokenKindExtra]),
+/// posée par `_AuthInterceptor` au moment où il posait le porteur — pas sur le
+/// coffre au retour du 401, qui peut avoir changé entre-temps.
+///
+/// ## Les deux bornes
+///
+/// 1. **La boucle.** Un renouvellement qui échoue, ou un rejeu qui échoue à son
+///    tour, ne relance rien : [kDeviceSessionReplayExtra] marque le rejeu et
+///    [kDeviceSessionRequestExtra] marque le renouvellement lui-même. Chaque
+///    requête d'origine vaut donc **au plus un** renouvellement et **au plus un**
+///    rejeu, et l'échec du rejeu remonte tel quel à l'appelant.
+/// 2. **Les requêtes concurrentes.** La sérialisation appartient au garde
+///    ([DeviceSessionGuard.renew]) : cinq 401 simultanés au démarrage doivent
+///    donner **un** jeton, pas cinq appareils dans le compteur du serveur.
+///
+/// Rejouer une écriture est sans danger : un 401 est refusé **avant** tout
+/// traitement, la première tentative n'a donc rien produit côté serveur.
 class UnauthorizedInterceptor extends Interceptor {
-  UnauthorizedInterceptor(this._onUnauthorized);
+  UnauthorizedInterceptor(
+    this._onUnauthorized, {
+    DeviceSessionGuard? Function()? deviceSession,
+  }) : _deviceSession = deviceSession ?? _noDeviceSession;
 
   final Future<void> Function() _onUnauthorized;
+
+  /// Lu à chaque 401 : le garde se câble **après** la naissance du client.
+  final DeviceSessionGuard? Function() _deviceSession;
+
+  static DeviceSessionGuard? _noDeviceSession() => null;
 
   @override
   Future<void> onError(
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (err.response?.statusCode == 401) {
-      await _onUnauthorized();
+    if (err.response?.statusCode != 401) {
+      handler.next(err);
+      return;
     }
+
+    final options = err.requestOptions;
+    final guard = _deviceSession();
+    final carriedByDevice =
+        options.extra[kAuthTokenKindExtra] == AuthTokenKind.device ||
+            options.extra[kDeviceSessionRequestExtra] == true;
+
+    // Jeton de membre (ou aucune estampille, ou pas de mode invité câblé) :
+    // purge + retour à `/auth`, comme depuis toujours.
+    if (!carriedByDevice || guard == null) {
+      await _onUnauthorized();
+      handler.next(err);
+      return;
+    }
+
+    final alreadyTried = options.extra[kDeviceSessionReplayExtra] == true ||
+        options.extra[kDeviceSessionRequestExtra] == true;
+
+    if (!alreadyTried && await guard.renew()) {
+      options.extra[kDeviceSessionReplayExtra] = true;
+      try {
+        handler.resolve(await guard.replay(options));
+        return;
+      } on DioException catch (replayed) {
+        handler.next(replayed);
+        return;
+      }
+    }
+
+    // Renouvellement impossible : la requête échoue, et **rien d'autre**. Ni
+    // purge (le prochain renouvellement remplacera le jeton mort), ni éjection —
+    // l'invité reste devant son catalogue, la synchronisation retentera à son
+    // prochain déclencheur.
     handler.next(err);
   }
 }
