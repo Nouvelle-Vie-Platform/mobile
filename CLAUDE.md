@@ -1114,8 +1114,23 @@ autorisés avant authentification.
      `select`. La position émet plusieurs fois par seconde : la faire descendre
      en paramètre reconstruirait le dégradé, le `Hero` et l'image au même
      rythme ;
-  4. **l'auto-lecture à l'ouverture est un choix assumé** — elle coûte du
-     réseau, elle est pinnée par les tests des deux écrans de détail ;
+  4. **l'ouverture charge le média et ne joue pas** — sauf le direct. Cette
+     règle a **changé**, et son ancienne version était écrite ici : « l'auto-
+     lecture à l'ouverture est un choix assumé — ouvrir la fiche d'un prêche
+     est, ici, l'acte d'aller l'écouter ». Ce n'en est plus un. Le son, le
+     réseau et la batterie d'un prêche d'une heure ne partent plus sur un coup
+     d'œil à une fiche ; le geste les demande. Le **direct** est la seule
+     exception (`isLive`), parce qu'un flux qu'on ouvre sans le suivre n'a pas
+     de sens : il n'y a ni position à reprendre ni durée à parcourir.
+     Mécanique : `_open(content, {required bool autoplay})`, et `autoplay` n'a
+     que deux appelants — `_loadOnce` (donc `widget.isLive`) et
+     `_togglePlayback` (**toujours vrai**). Ce second cas n'est pas un détail :
+     le bouton passe par `_open` chaque fois que le lecteur ne tient plus ce
+     contenu (rétracté puis republié, arrêté depuis la notification, ou fiche
+     simplement ouverte), et si la demande s'y perd le premier appui recharge
+     en silence — il faut **appuyer deux fois** pour entendre quelque chose.
+     C'est arrivé, `test/widgets/content_player_view_test.dart` le verrouille
+     désormais (« un seul appui suffit, même quand il faut rouvrir le média ») ;
   5. **les cinq déclencheurs de #43 sont câblés ici** : position poussée,
      pause, sortie d'écran, `AppLifecycleState.paused` (**sans arrêter la
      lecture**) et état terminal — qui exige `pause()` **et** `seek(zero)`,
