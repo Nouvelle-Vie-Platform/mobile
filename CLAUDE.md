@@ -950,8 +950,189 @@ dans une liste. Une absence, elle, occupe l'écran entier.
 
 ### Navigation principale
 `HomeShell` = `IndexedStack` de 4 onglets **Accueil · Annonces · Communauté ·
-Profil** + `BottomAppBar` à encoche + **FAB central** (→ médiathèque, route
+Bible** + `BottomAppBar` à encoche + **FAB central** (→ médiathèque, route
 poussée). Le FAB n'est PAS un onglet.
+
+**Le profil a quitté la barre** : c'est une route **poussée** (`/profile`), donc
+la barre du bas disparaît et une flèche de retour ramène à l'accueil — au lieu
+d'un onglet dont on ne sortait que par un autre onglet. L'onglet libéré est
+devenu **Bible**, avec un écran provisoire.
+
+⚠️ **L'index d'onglet reste un numéro nu**, et c'est un contrat partagé :
+`AppDrawerMenu.homeTab`, `AppBottomNav.currentIndex` et
+`test/screens/drawer_menu_test.dart` (« Accueil » depuis l'onglet **3**) en
+dépendent. Une barre à géométrie variable — un onglet qui disparaîtrait selon
+l'état de session — casserait ce vocabulaire. C'est l'une des raisons pour
+lesquelles l'onglet Communauté **reste visible** en mode invité (voir plus bas).
+
+### Le mode invité (issue #398 côté serveur, ADR-0040/0041)
+
+L'application **ne s'ouvre plus sur l'écran d'authentification**. On peut venir
+uniquement pour écouter les enseignements.
+
+#### Deux régimes de démarrage, et le coffre décide
+
+`AuthController.build()` n'est pas asynchrone : il **ne peut pas** lire le
+coffre. La lecture est donc remontée dans `main()` (`readStartupVault`), avant
+`runApp`, et passée en surcharge de provider.
+
+- **Coffre vide, ou portant un jeton d'appareil seul** ⇒ l'état part de `guest`,
+  et la garde réécrit `/` en `/home` **à sa première évaluation** : le splash ne
+  se peint pas d'une seule image. C'est la différence entre « pas de splash » et
+  « un splash très court », et c'était l'exigence du client.
+- **Coffre portant un jeton de membre** — ou sans marqueur, une installation
+  d'avant cette version ⇒ `unknown`, splash, résolution : **à la lettre comme
+  avant**. Contrainte du client, littérale : « quand la personne s'est déjà
+  connectée, tout se passe exactement comme présentement ».
+
+Corollaire : sans session de membre, **pas de `GET /auth/me` au démarrage**.
+Sinon la requête partirait avec le jeton d'appareil, prendrait un 401,
+déclencherait un renouvellement silencieux et un rejeu — deux requêtes par
+ouverture pour apprendre ce qu'on savait déjà.
+
+#### `AuthStatus.guest` est un **renommage**, pas un ajout
+
+`unauthenticated` **n'existe plus**. C'était le point de décision : ajouter
+`guest` à côté aurait laissé vivre un état qui veut dire « pas de compte, donc
+rien n'est permis », et le compilateur n'aurait rien attrapé. Ne dérive **jamais**
+« invité » de `!isAuthenticated` : c'est vrai aussi pendant `unknown`, donc
+pendant le démarrage. `isGuest` est un getter distinct, exprès.
+
+#### La garde est **inversée** : public par défaut
+
+`app_router.dart` porte `memberOnlyRoutes` (une courte liste) et `redirectFor()`,
+fonction pure. Tout le reste est ouvert, et un écran réservé ramène à **l'accueil
+invité**, jamais vers `/auth` — y renvoyer serait remettre le verrou par la porte
+de service.
+
+⚠️ **Les clés sont des motifs de route** (`GoRouterState.fullPath`), jamais des
+chemins concrets : `/announcement/:id/edit` ne se reconnaîtrait pas dans
+`/announcement/42/edit`, et la garde laisserait passer exactement l'écran qu'elle
+croit fermer.
+
+#### Ce qu'une garde de route ne peut pas fermer
+
+**Les onglets ne sont pas des routes.** Le hub Communauté est fermé par la
+coquille elle-même (`_selectTab` → `requireSession`), et l'onglet **reste
+visible** : un onglet retiré est une fermeture invisible, et personne ne réclame
+un écran qu'il n'a jamais vu. La barre devient l'endroit où l'on découvre qu'un
+compte existe.
+
+#### `requireSession()` — le geste, pas l'écran
+
+Extension sur `WidgetRef` (`lib/state/session_gate.dart`). Mémorise l'intention,
+**pousse** le parcours d'authentification, et **rejoue le geste** au succès.
+
+Trois pièges, tous payés une fois :
+
+1. **Une seule ligne d'`app.dart` tient le mécanisme** :
+   `ref.listenManual(sessionGateProvider, …)`. Riverpod met en pause les
+   abonnements d'un provider que personne n'écoute — sans elle, le geste serait
+   mis de côté et **jamais repris, sans erreur ni trace**.
+2. **La reprise est reportée d'une image.** L'écran du code navigue dès que la
+   vérification lui rend la main, dans le même tour de boucle que le changement
+   d'état : naviguer tout de suite ferait perdre la course.
+3. **Lis la `GoRouter` au moment de l'appui** (`ref.read(routerProvider)`),
+   jamais un `BuildContext` capturé : après un détour par la connexion, il n'a
+   plus rien à garantir. Un test de source le verrouille.
+
+**Application tuée ⇒ l'intention est perdue, et c'est la décision** : un geste
+rejoué après un redémarrage agirait dans le dos de la personne.
+
+#### Deux gestes, deux destinations — ne les unifie pas
+
+- **Déconnexion explicite** ⇒ accueil invité, **rien d'effacé** : ni les
+  téléchargements, ni la progression, qui redevient locale.
+- **Session expirée (401 sur un jeton de membre)** ⇒ **écran de connexion**,
+  comme avant. La personne n'a rien choisi, et l'éjection lui *dit* quelque chose
+  que le silence ne dit pas.
+
+C'est une décision explicite du client. Ce n'est pas une incohérence à lisser.
+
+#### Le porteur d'appareil (`lib/data/devices/`)
+
+`POST /devices/anonymous` échange un UUID d'appareil contre un jeton opaque, qui
+porte **toutes** les requêtes, invité comme membre. Le coffre porte **un seul
+jeton à la fois**, plus un **marqueur de nature** (`auth_token_kind`).
+
+⚠️ **L'intercepteur 401 juge l'estampille posée sur la requête, jamais le coffre
+au retour** : une connexion qui aboutit pendant qu'une requête d'invité est en
+vol ferait juger cette requête sur un coffre qui n'est plus le sien.
+
+Les deux erreurs n'ont pas le même coût, et le code le dit : appareil pris pour
+membre = éjection visible et rattrapable ; **membre pris pour appareil = jeton de
+membre écrasé en silence**, quelqu'un déconnecté sans le savoir. D'où une lecture
+prudente (tout ce qui n'est pas explicitement `device` vaut `member`) et un ordre
+d'écriture délibéré — le coffre n'a pas de transaction.
+
+**L'identifiant d'appareil est falsifiable** : il sert à compter et à révoquer
+côté serveur, jamais à autoriser.
+
+#### La préférence d'assemblée, et le contrat que le serveur ne tient pas
+
+`GET /sync` accepte un `branch_id` : filtre d'affichage, **jamais** une
+autorisation — une branche inconnue rend 422, jamais 403.
+
+⚠️ **Quand la préférence change, c'est le client qui remet ses curseurs à zéro**,
+sur les quatre collections de `kBranchScopedCollections`. Le serveur ne peut pas
+détecter une préférence changée sans nettoyage, et **rien ne le rattrapera**.
+
+Et ce n'est **pas** un effacement de curseur : effacer fait re-tirer, donc
+ré-écrire, mais n'efface **rien** — les lignes sorties du périmètre resteraient.
+On pose le **jeton de remplacement**, et c'est la transaction finale qui balaie.
+
+**La préférence n'est pas observable en direct** : `watch()` a été retiré du
+magasin et du DAO. Un `QueryStream` Drift, à son annulation, programme un `Timer`
+qui reste pendant sous horloge factice — et fige les tests d'écran. Si un futur
+écran a besoin du direct, il le rétablira **en sachant** qu'il devra surcharger
+le provider dans ses tests.
+
+#### La mesure d'écoute est séparée de la reprise de lecture
+
+`POST /teachings/:id/plays`, au **seuil de 30 s de temps joué**, une fois par
+ouverture. Un déplacement n'est **pas** une écoute (au-delà de 2 s d'écart entre
+deux poussées, l'avancée est un saut) — c'est l'inverse exact du rapport de
+progression, qui compte délibérément un saut comme du temps joué.
+
+Hors ligne, l'événement est **mis en file** (50 entrées, 7 jours) : le
+téléchargement existe *pour* écouter sans réseau, et la population qui télécharge
+est celle dont le réseau est le plus mauvais. Contrepartie : la route ne prend
+aucun horodatage, donc une écoute de mardi remise en ligne jeudi compte pour
+jeudi.
+
+C'est de la **télémétrie** : un échec ne se voit jamais et n'interrompt rien.
+
+#### La fusion de progression à la connexion
+
+La progression accumulée en invité part vers le compte, et **la position la plus
+avancée gagne**.
+
+⚠️ **C'est le client qui arbitre, parce que le serveur n'arbitre pas.** Vérifié à
+la source : `app/mediatheque/actions/report_playback_progress.ts` passe la
+position **telle quelle**, et `upsertOwned` (ADR-0018) réécrit **tout champ qui
+diffère**. Une position inférieure diffère, donc elle est écrite — et `completed`
+aussi, ce qui permet aujourd'hui de **dé-terminer** un enseignement. Voir
+`server-portal#421`. Si elle est tenue, tout ce mécanisme fond en une poussée
+aveugle.
+
+Donc : on **lit** ce que le compte porte (`GET /sync/playback_progress`) avant de
+pousser, et **si le cycle échoue, rien ne part**. Ne rien faire perd une
+commodité ; pousser à l'aveugle abîme une donnée.
+
+La règle diffère de celle de `resumeFor`, qui prend **la plus récente** : c'est
+pourquoi la fusion **relève aussi la ligne locale** quand le compte est devant —
+sans quoi l'enregistreur rapporterait ensuite une position en retard qui
+écraserait le compte.
+
+#### Le bandeau légal du premier lancement
+
+Non bloquant, invités seulement, **une seule fois** (`legal_notice_seen` dans
+`app_settings`). Il existe parce que l'application pose un **identifiant
+d'appareil** — donnée personnelle — dès avant tout compte, et qu'un invité ne
+voit jamais la barrière de consentement. Ce n'est pas une décoration.
+
+Il dit **« j'ai compris », pas « j'accepte »** : rien n'est envoyé ni tracé, et
+prétendre recueillir un consentement ici serait faux.
 
 #### Le menu latéral (#54) — `flutter_zoom_drawer`, quatre entrées
 Spécification de rendu : `docs/documents-legaux.md` §1. Six points qui se
@@ -989,7 +1170,8 @@ ratent en silence :
    est la seule ouverture** — et elle n'existe sur aucun des trois autres
    onglets.
 6. **Quatre entrées, rien d'autre** — Accueil · CGU · Confidentialité · À propos.
-   Ni mode sombre, ni aide, ni déconnexion (l'onglet Profil les porte déjà), ni
+   Ni mode sombre, ni aide, ni déconnexion (l'écran Profil les porte déjà, en
+   route poussée), ni
    entête utilisateur (`_ProfileHeader` fait cela). L'entête du menu porte la
    **marque**, et rien qu'elle : l'emblème seul (`BrandLogo.inverse`, à demi
    effacé), sans le nom de l'église qui y figurait — un bloc de marque qui
