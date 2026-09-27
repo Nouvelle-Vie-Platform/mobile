@@ -214,15 +214,40 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     );
   }
 
+  /// **Confie le contenu au lecteur, une fois par contenu.**
+  ///
+  /// Appelée à chaque build de l'écran rempli, elle ne fait quelque chose que la
+  /// première fois : sans cette garde, chaque reconstruction — et il y en a une
+  /// à chaque cycle de synchronisation — rouvrirait le média.
+  ///
+  /// **Elle ouvre, elle ne joue pas** — sauf pour le direct, où il n'y a rien
+  /// d'autre à faire d'un flux que de le suivre. C'est la règle d'ouverture, et
+  /// `autoplay` en est le seul porteur : voir [_open].
   void _loadOnce(ContentView content) {
     if (_stoppedByRetraction || _requested == content.id) return;
     _requested = content.id;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_open(content));
+      if (mounted) unawaited(_open(content, autoplay: widget.isLive));
     });
   }
 
-  Future<void> _open(ContentView content) async {
+  /// Ouvre le contenu : reprise résolue, média chargé — et lecture démarrée
+  /// **seulement si on la demande**.
+  ///
+  /// [autoplay] porte toute la règle, et il n'a que deux appelants :
+  ///
+  /// - [_loadOnce], à l'arrivée sur l'écran : **faux** sur un enseignement ou un
+  ///   rassemblement (ouvrir une fiche n'est plus l'acte d'écouter — le son, le
+  ///   réseau et la batterie attendent qu'on les demande), **vrai** sur le
+  ///   direct, où un flux qu'on ouvre sans le suivre n'a pas de sens ;
+  /// - [_togglePlayback], quand le geste vient du bouton : **toujours vrai**.
+  ///   Ce paramètre existe pour ça — le média peut avoir à être rouvert avant de
+  ///   jouer (contenu rétracté puis republié, lecteur arrêté depuis la
+  ///   notification, ou fiche simplement ouverte sans démarrage automatique), et
+  ///   l'intention explicite ne doit pas se perdre dans cette réouverture. Sans
+  ///   lui, le premier appui rechargeait en silence et il fallait **appuyer deux
+  ///   fois** pour entendre quelque chose.
+  Future<void> _open(ContentView content, {required bool autoplay}) async {
     final url = content.playlistUrl;
     if (url == null) return;
 
@@ -230,6 +255,10 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     await _openRecorder(content.id);
     if (!mounted) return;
 
+    // **Déjà chargé** : revenir sur un prêche en cours ne le recharge pas et ne
+    // le fait pas repartir de zéro. On ne force pas non plus la lecture — un
+    // contenu mis en pause depuis la notification doit le rester, et c'est vrai
+    // du direct comme du reste.
     if (player.value.contentId == content.id) return;
 
     final resolution = await ref
@@ -254,11 +283,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
       player.seek(resume.position);
     }
 
-    // --- MODIFICATION ICI ---
-    // Ne démarrer automatiquement la lecture QUE pour le flux Live
-    if (widget.isLive) {
-      player.play();
-    }
+    if (autoplay) player.play();
   }
 
   Future<void> _openRecorder(String contentId) async {
@@ -314,12 +339,18 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     );
   }
 
+  /// Lecture/pause — **sur le lecteur**, jamais sur un booléen local.
+  ///
+  /// Rien de chargé sous la main : contenu rétracté puis republié, lecteur
+  /// arrêté depuis la notification, ou fiche ouverte sans démarrage automatique,
+  /// ce qui est désormais le cas courant. Le geste, lui, est explicite — on
+  /// rouvre **et on joue**, en un seul appui.
   void _togglePlayback(ContentView content) {
     final player = ref.read(contentPlayerProvider);
     if (player.value.contentId != content.id) {
       _stoppedByRetraction = false;
       _requested = content.id;
-      unawaited(_open(content));
+      unawaited(_open(content, autoplay: true));
       return;
     }
     player.value.isPlaying ? player.pause() : player.play();

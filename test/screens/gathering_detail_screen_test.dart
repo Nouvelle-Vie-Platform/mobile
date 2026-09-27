@@ -265,7 +265,13 @@ void main() {
       );
       await _settle(tester);
 
+      // **On se met en lecture.** L'ouverture ne démarre plus le son : la
+      // prémisse de ce test vient donc du geste. La retirer aurait rendu ce test
+      // vert sur un silence, sans plus rien prouver de l'arrêt qu'une
+      // rétractation doit provoquer.
       expect(find.text('Nuit de gloire'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.play_arrow));
+      await tester.pump();
       expect(find.byIcon(Icons.pause), findsOneWidget);
       expect(find.byType(Slider), findsOneWidget);
 
@@ -292,6 +298,11 @@ void main() {
         pathParameters: {'id': _gatherings[0].id},
       );
       await _settle(tester);
+      // Même prémisse : il faut un son qui joue pour que « ne redémarre pas »
+      // dise quelque chose.
+      await tester.tap(find.byIcon(Icons.play_arrow));
+      await tester.pump();
+      expect(find.byIcon(Icons.pause), findsOneWidget);
 
       repository.retract(_gatherings[0].id);
       await tester.pump();

@@ -70,7 +70,7 @@ final _contentProvider =
 
 void main() {
   group('Le branchement', () {
-    testWidgets('charger le contenu à l\'ouverture, et démarrer', (
+    testWidgets('charger le contenu à l\'ouverture, sans démarrer', (
       tester,
     ) async {
       final player = InertContentPlayer();
@@ -78,12 +78,34 @@ void main() {
 
       await _pump(tester, player: player);
 
+      // Le média est **tenu** : la résolution offline-first a tranché, la
+      // reprise est posée, le curseur est là.
       expect(player.loadedUrl, _url);
       expect(player.loadedTitle, 'La foi qui déplace');
       expect(player.loadCount, 1);
-      // L'auto-lecture à l'ouverture est un **choix** : elle coûte désormais du
-      // réseau. Elle est pinnée par les tests des deux écrans de détail, et le
-      // bouton de pause en est la trace visible.
+      // Et le son attend qu'on le demande. **Ouvrir une fiche n'est plus l'acte
+      // d'aller écouter** : c'était un choix assumé, ce n'en est plus un — le
+      // réseau et la batterie d'un prêche d'une heure ne partent plus sur un
+      // simple coup d'œil. Le direct est la seule exception (test suivant).
+      expect(player.value.isPlaying, isFalse);
+      expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+      expect(find.byIcon(Icons.pause), findsNothing);
+    });
+
+    testWidgets('le direct, lui, démarre seul', (tester) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+
+      await _pump(tester, player: player, isLive: true);
+
+      // L'autre moitié de la règle, et sa seule exception : un flux qu'on ouvre
+      // sans le suivre n'a pas de sens — il n'y a pas de position à reprendre,
+      // rien à parcourir, et « suivre le live » est le geste qui a mené ici.
+      //
+      // Cette règle-ci n'était verrouillée par rien, et c'est précisément pour
+      // ça que sa moitié a pu être posée en silence, sans que le corps d'un
+      // commit ni ce fichier n'en portent la trace.
+      expect(player.loadCount, 1);
       expect(player.value.isPlaying, isTrue);
       expect(find.byIcon(Icons.pause), findsOneWidget);
     });
@@ -108,6 +130,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       // `context.pop()` : l'écran s'en va, le lecteur est global et le son
       // continue. C'est le sens même de l'écoute en arrière-plan — et la raison
@@ -203,14 +226,51 @@ void main() {
       addTearDown(player.dispose);
       await _pump(tester, player: player);
 
+      // Le bouton part sur « lecture » : l'ouverture ne joue plus. Le premier
+      // appui doit donc **lancer** le son, les suivants l'alterner — et chaque
+      // état se lit dans le lecteur, jamais dans un booléen de ce widget.
+      await tester.tap(find.byIcon(Icons.play_arrow));
+      await tester.pump();
+      expect(player.value.isPlaying, isTrue);
+      expect(find.byIcon(Icons.pause), findsOneWidget);
+
       await tester.tap(find.byIcon(Icons.pause));
       await tester.pump();
       expect(player.value.isPlaying, isFalse);
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
 
+      // Et aucun rechargement en chemin : le média n'a jamais quitté la main du
+      // lecteur, c'est la même écoute.
+      expect(player.loadCount, 1);
+    });
+
+    testWidgets('un seul appui suffit, même quand il faut rouvrir le média', (
+      tester,
+    ) async {
+      // **La garantie neuve de cette passe.** Depuis que l'ouverture ne joue
+      // plus, `_open` ne démarre le son que si on le lui demande — et le bouton
+      // passe par `_open` chaque fois que le lecteur ne tient plus ce contenu.
+      // Si cette demande se perd en route, le premier appui recharge en silence
+      // et il faut appuyer **deux fois** pour entendre quelque chose. Ce test
+      // rougit dès que le double appui revient.
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      await _pump(tester, player: player);
+
+      // Le lecteur est arrêté depuis la notification : il ne tient plus rien.
+      player.stop();
+      await tester.pump();
+      expect(player.value.contentId, isNull);
+
       await tester.tap(find.byIcon(Icons.play_arrow));
       await tester.pump();
-      expect(player.value.isPlaying, isTrue);
+
+      expect(
+        player.value.isPlaying,
+        isTrue,
+        reason: 'un appui, du son — pas un rechargement muet',
+      );
+      expect(player.loadCount, 2, reason: 'le média a bien été rouvert');
     });
 
     testWidgets('le bouton suit le lecteur, même piloté d\'ailleurs', (
@@ -221,6 +281,10 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      // Sans cette prémisse, ce test ne prouverait plus rien : l'écran affiche
+      // « lecture » dès l'ouverture, et une pause sur un silence ne change rien
+      // à ce qu'on y verrait. Il faut un son à mettre en pause.
+      await _demarrer(tester, player);
 
       player.pause();
       await tester.pump();
@@ -341,7 +405,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       final container = await _pump(tester, player: player);
-      expect(player.value.isPlaying, isTrue);
+      await _demarrer(tester, player);
 
       // `{ id, deletedAt }` dans le flux delta : le contenu quitte le magasin
       // pendant l'écoute.
@@ -364,6 +428,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       final container = await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       // Une resynchronisation repasse par « chargement ». Le déclencheur est la
       // **valeur**, jamais l'`AsyncValue` : couper ici serait couper le son à
@@ -382,6 +447,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       final container = await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       container.read(_contentProvider.notifier).set(const AsyncData(null));
       await tester.pump();
@@ -393,10 +459,12 @@ void main() {
       expect(player.value.isPlaying, isFalse);
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
 
-      // Le geste explicite, lui, recharge : l'écran n'est pas mort.
+      // Le geste explicite, lui, rouvre **et** joue — en **un seul appui**. Le
+      // média n'est plus sous la main du lecteur, l'appui passe donc par une
+      // réouverture ; l'intention ne doit pas s'y perdre.
       await tester.tap(find.byIcon(Icons.play_arrow));
       await tester.pump();
-      expect(player.value.isPlaying, isTrue);
+      expect(player.value.isPlaying, isTrue, reason: 'un appui, du son');
       expect(player.loadCount, 2);
     });
   });
@@ -590,6 +658,7 @@ void main() {
       final reporter = FakePlaybackProgressReporter();
 
       await _pump(tester, player: player, reporter: reporter);
+      await _demarrer(tester, player);
       // Douze secondes : sous le pas du rapport périodique (30 s de temps
       // joué). Ce qui part ensuite ne peut donc venir que de la pause.
       player.emit(player.value.copyWith(position: const Duration(seconds: 12)));
@@ -609,6 +678,7 @@ void main() {
       final reporter = FakePlaybackProgressReporter();
 
       await _pump(tester, player: player, reporter: reporter);
+      await _demarrer(tester, player);
       player.emit(player.value.copyWith(position: const Duration(seconds: 12)));
       await tester.pump();
 
@@ -628,6 +698,10 @@ void main() {
       final reporter = FakePlaybackProgressReporter();
 
       await _pump(tester, player: player, reporter: reporter);
+      // La prémisse compte ici aussi : c'est un lecteur **qui joue** qu'il faut
+      // remettre d'aplomb. Sur un silence, le `isPlaying` attendu plus bas
+      // serait vrai d'avance et ne dirait plus rien.
+      await _demarrer(tester, player);
       player.emit(
         player.value.copyWith(
           position: const Duration(minutes: 40),
@@ -679,10 +753,11 @@ void main() {
 
       await _pump(tester, player: player, database: db);
 
-      // La copie sur le disque prend le pas sur le `playlistUrl`.
+      // La copie sur le disque prend le pas sur le `playlistUrl`. Ce test ne
+      // dit plus rien de la lecture — l'ouverture ne démarre pas le son, et
+      // c'est la **source** qu'il verrouille, pas le fait qu'elle sonne.
       expect(player.loadedFilePath, localPath);
       expect(player.loadCount, 1);
-      expect(player.value.isPlaying, isTrue);
     });
 
     testWidgets('un partiel hors ligne est joué depuis le disque', (
@@ -741,6 +816,28 @@ void main() {
   });
 }
 
+/// **La prémisse « quelque chose joue », posée par un geste explicite.**
+///
+/// Ouvrir l'écran ne démarre plus le son. Les tests qui doivent prouver qu'une
+/// rétractation le **coupe**, qu'une resynchronisation ne le coupe pas, ou que
+/// l'écran éteint ne l'arrête pas, ont donc besoin qu'il y ait un son à couper —
+/// et ils le demandent comme un fidèle le demande, en appuyant sur lecture.
+///
+/// La prémisse a changé de source, elle n'a **pas** disparu, et c'est tout
+/// l'enjeu : la retirer aurait rendu ces tests verts sur un silence, sans plus
+/// aucun témoin du `stop()` que l'écran doit à un contenu retiré. Quelqu'un qui
+/// écoute un enseignement dépublié continuerait de l'entendre, et la suite
+/// n'aurait rien à en dire.
+Future<void> _demarrer(WidgetTester tester, InertContentPlayer player) async {
+  await tester.tap(find.byIcon(Icons.play_arrow));
+  await tester.pump();
+  expect(
+    player.value.isPlaying,
+    isTrue,
+    reason: 'prémisse de ce test : le son joue',
+  );
+}
+
 /// La couleur dont le cadre du lecteur est habillé.
 ///
 /// Elle n'est lisible que là : le cadre est privé au fichier de production, et
@@ -771,6 +868,7 @@ Future<ProviderContainer> _pump(
   AppDatabase? database,
   FakePlaybackProgressReporter? reporter,
   NetworkStatus? networkStatus,
+  bool isLive = false,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -803,6 +901,7 @@ Future<ProviderContainer> _pump(
           retractedTitle: 'Cet enseignement n\'est plus disponible',
           retractedMessage: 'Il a été retiré du catalogue.',
           onRetry: () {},
+          isLive: isLive,
         ),
       ),
     ),
