@@ -23,6 +23,15 @@ class NavItem {
 /// central (FAB), géré au niveau de [Scaffold] par la coquille.
 ///
 /// Disposition « Accueil · Annonces · (encoche) · Échanges · Bible ».
+///
+/// **Quatre onglets, en invité comme en membre**, et la géométrie ne dépend
+/// donc d'aucun état d'authentification : c'est la coquille qui refuse l'entrée
+/// du hub à un invité, par `requireSession()` (voir `HomeShell`). Deux raisons
+/// de ne pas retirer l'onglet ici — l'encoche du FAB est calée sur *deux*
+/// onglets de chaque côté, qu'une barre à trois rendrait boiteuse ; et l'index
+/// d'onglet est un **numéro** que se partagent cette barre, le tiroir latéral et
+/// leurs tests. Une barre à géométrie variable ferait de ce numéro une valeur
+/// dont le sens dépend de qui regarde.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
@@ -31,13 +40,22 @@ class AppBottomNav extends StatelessWidget {
     this.items,
   });
 
+  /// Hauteur de la barre, **nommée parce qu'un autre widget en dépend** : la
+  /// coquille pose la mention légale du premier lancement juste au-dessus, et
+  /// `extendBody: true` fait passer le corps derrière cette barre. Un littéral
+  /// recopié là-bas se serait désaccordé à la première retouche de hauteur, et le
+  /// bandeau aurait recouvert les onglets.
+  static const double barHeight = 64;
+
   final int currentIndex;
   final ValueChanged<int> onSelect;
 
   /// Onglets affichés. Si `null`, on utilise les onglets par défaut localisés.
   final List<NavItem>? items;
 
-  /// Onglets par défaut « Accueil · Annonces · Échanges · Bible ».
+  /// Onglets par défaut « Accueil · Annonces · Échanges · Bible », **tous
+  /// localisés** : les deux derniers étaient écrits en dur, et ne se
+  /// traduisaient donc ni en anglais ni en éwé alors que les clés existaient.
   static List<NavItem> defaultItems(BuildContext context) => [
         NavItem(
           icon: Icons.home_outlined,
@@ -52,12 +70,14 @@ class AppBottomNav extends StatelessWidget {
         NavItem(
           icon: Icons.forum_outlined,
           activeIcon: Icons.forum,
-          label: 'Échanges',
+          // **`navGroups`, et pas un libellé de plus** : la même clé titre déjà
+          // le hub des conversations (voir sa description dans `app_fr.arb`).
+          label: context.l10n.navGroups,
         ),
         NavItem(
           icon: Icons.menu_book_outlined,
           activeIcon: Icons.menu_book,
-          label: 'Bible',
+          label: context.l10n.navBible,
         ),
       ];
 
@@ -76,7 +96,7 @@ class AppBottomNav extends StatelessWidget {
           surfaceTintColor: Colors.transparent,
           shape: const CircularNotchedRectangle(),
           notchMargin: 8,
-          height: 64,
+          height: barHeight,
           padding: EdgeInsets.zero,
           child: Row(
             children: [

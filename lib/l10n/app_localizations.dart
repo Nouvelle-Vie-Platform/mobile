@@ -2367,6 +2367,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Recharger'**
   String get legalGateReload;
+
+  /// Mention légale NON bloquante du premier lancement, pour un invité. Elle existe parce que l'application attribue un identifiant à l'appareil dès l'ouverture — une donnée personnelle — et qu'un invité ne passe jamais par la barrière de consentement des membres (/legal/accept), seule à recueillir un accord explicite. Ce n'est donc pas une décoration : c'est le seul endroit où cela s'annonce à qui n'a pas de compte
+  ///
+  /// In fr, this message translates to:
+  /// **'En utilisant l\'application, vous acceptez nos conditions d\'utilisation et notre politique de confidentialité.'**
+  String get legalNoticeBody;
+
+  /// Lien du bandeau vers /legal/cgu. Un libellé propre plutôt que l'abrégé du menu latéral (drawerTerms, « CGU ») : ici il n'y a pas de contrainte de largeur, et un sigle dans une phrase de consentement se lit moins bien qu'un mot
+  ///
+  /// In fr, this message translates to:
+  /// **'Conditions d\'utilisation'**
+  String get legalNoticeTerms;
+
+  /// Lien du bandeau vers /legal/privacy. Abrégé, lui, parce qu'il partage sa ligne avec le lien des conditions et le bouton de fermeture
+  ///
+  /// In fr, this message translates to:
+  /// **'Confidentialité'**
+  String get legalNoticePrivacy;
+
+  /// Ferme le bandeau, définitivement (mémoire locale). Pas « Accepter » : il n'y a rien à cocher ni à envoyer ici — l'accord d'un invité est implicite par l'usage, et prétendre le recueillir donnerait à croire qu'il est tracé
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'ai compris'**
+  String get legalNoticeDismiss;
 }
 
 class _AppLocalizationsDelegate

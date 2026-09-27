@@ -17,6 +17,7 @@ import '../state/downloads_providers.dart';
 import '../state/measurement_providers.dart';
 import '../state/playback_progress_providers.dart';
 import '../state/player_providers.dart';
+import '../state/session_gate.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -59,6 +60,12 @@ class ContentPlayerView extends ConsumerStatefulWidget {
 
   static const Key bufferingKey = Key('content_player_buffering');
   static const Key downloadButtonKey = Key('content_player_download');
+
+  /// Le bouton « prendre une note » — **le seul geste réservé de cet écran**, et
+  /// donc le seul qui ait besoin d'être désigné depuis un test. Une clé plutôt
+  /// qu'un pictogramme : `Icons.edit_note_rounded` peut changer, ce que le bouton
+  /// exige ne changera pas.
+  static const Key notesButtonKey = Key('content_player_notes');
 
   @override
   ConsumerState<ContentPlayerView> createState() => _ContentPlayerViewState();
@@ -407,6 +414,24 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     player.value.isPlaying ? player.pause() : player.play();
   }
 
+  /// **Prendre une note exige un compte**, et l'écran de lecture n'en exige pas.
+  ///
+  /// `/notes` est dans `memberOnlyRoutes` : pour un invité, la garde du routeur
+  /// renverrait ce bouton sur `/home` — la fiche disparaîtrait sous ses doigts,
+  /// prêche compris, sans qu'aucune phrase ne dise pourquoi. `requireSession()`
+  /// ouvre la connexion à la place, et les notes s'ouvrent après.
+  ///
+  /// **Le geste est rejouable, et ce n'est pas gratuit** : la `GoRouter` est lue
+  /// *maintenant*, tant que cet élément est monté. La reprise passe par un
+  /// `router.go(origin)` qui reconstruit la pile, et un `context.pushNamed`
+  /// s'appuierait alors sur un `BuildContext` dont rien ne garantit la survie.
+  /// Rien d'autre du geste ne dépend de cet écran : ni la position de lecture, ni
+  /// le contenu — `NotesScreen` ne reçoit aucun argument.
+  void _requireNotes() {
+    final router = ref.read(routerProvider);
+    ref.requireSession(action: () => router.pushNamed(AppRoute.notes));
+  }
+
   Widget _buildPlayer(BuildContext context, ContentView content) {
     _loadOnce(content);
 
@@ -479,7 +504,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
                   ref.read(contentPlayerProvider).seek(position),
               onPlayPause: () => _togglePlayback(content),
               onLike: () => setState(() => _liked = !_liked),
-              onNotes: () => context.pushNamed(AppRoute.notes),
+              onNotes: _requireNotes,
               downloadButton:
                   widget.downloadContentType == null || widget.isLive
                       ? null
@@ -779,6 +804,7 @@ class _Controls extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.md),
               _GlassCircleButton(
+                key: ContentPlayerView.notesButtonKey,
                 icon: Icons.edit_note_rounded,
                 onPressed: onNotes,
               ),
@@ -910,7 +936,11 @@ class _PlayButton extends ConsumerWidget {
 }
 
 class _GlassCircleButton extends StatelessWidget {
-  const _GlassCircleButton({required this.icon, required this.onPressed});
+  const _GlassCircleButton({
+    super.key,
+    required this.icon,
+    required this.onPressed,
+  });
   final IconData icon;
   final VoidCallback onPressed;
 

@@ -1283,4 +1283,17 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get legalGateReload => 'Recharger';
+
+  @override
+  String get legalNoticeBody =>
+      'En utilisant l\'application, vous acceptez nos conditions d\'utilisation et notre politique de confidentialité.';
+
+  @override
+  String get legalNoticeTerms => 'Conditions d\'utilisation';
+
+  @override
+  String get legalNoticePrivacy => 'Confidentialité';
+
+  @override
+  String get legalNoticeDismiss => 'J\'ai compris';
 }

@@ -433,5 +433,10 @@
   "legalGateErrorUnauthorized": "Your session has expired. Sign in again to record your agreement.",
   "legalGateErrorOutdated": "These terms have been updated.",
   "legalGateErrorServer": "The server could not record your agreement.",
-  "legalGateReload": "Reload"
+  "legalGateReload": "Reload",
+
+  "legalNoticeBody": "By using the app, you accept our terms of use and our privacy policy.",
+  "legalNoticeTerms": "Terms of use",
+  "legalNoticePrivacy": "Privacy",
+  "legalNoticeDismiss": "Got it"
 }

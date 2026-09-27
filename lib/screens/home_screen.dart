@@ -13,6 +13,7 @@ import '../state/auth_providers.dart';
 import '../state/calendar_providers.dart';
 import '../state/gathering_providers.dart';
 import '../state/mediatheque_providers.dart';
+import '../state/session_gate.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -40,6 +41,11 @@ class HomeScreen extends ConsumerWidget {
   final VoidCallback? onMenuTap;
 
   static const Key menuButtonKey = Key('home_menu_button');
+
+  /// L'icône de profil de l'en-tête. Ciblée par clé et non par pictogramme :
+  /// c'est le seul geste **réservé** de l'accueil, et un test qui le vise doit
+  /// résister à un changement d'icône.
+  static const Key profileButtonKey = Key('home_profile_button');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -239,17 +245,35 @@ class _WavyHeader extends StatelessWidget {
   }
 }
 
-/// Icône de profil dans l'en-tête de l'accueil.
-class _ProfileIconButton extends StatelessWidget {
+/// Icône de profil dans l'en-tête de l'accueil — **le seul geste réservé de cet
+/// écran**.
+///
+/// `/profile` est dans `memberOnlyRoutes` : pour un invité, la garde du routeur
+/// renverrait cette navigation sur `/home`, c'est-à-dire un bouton qui ne fait
+/// rien. `requireSession()` en fait au contraire la porte d'entrée : la connexion
+/// s'ouvre, et le profil s'ouvre tout seul derrière.
+///
+/// **Le routeur est lu au moment de l'appui, pas au moment du rejeu.** Le geste
+/// peut être rejoué après le parcours de connexion, qui reconstruit la pile ;
+/// `context.pushNamed` s'appuierait alors sur un élément dont rien ne garantit
+/// qu'il est encore monté. La `GoRouter`, elle, vit dans le conteneur Riverpod et
+/// survit à tout — c'est ce qui rend ce geste **rejouable sans condition**.
+class _ProfileIconButton extends ConsumerWidget {
   const _ProfileIconButton();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return IconButton(
+      key: HomeScreen.profileButtonKey,
       icon: const Icon(Icons.account_circle_outlined,
           color: Colors.white, size: 28),
       tooltip: 'Profil',
-      onPressed: () => context.pushNamed(AppRoute.profile),
+      onPressed: () {
+        final router = ref.read(routerProvider);
+        ref.requireSession(
+          action: () => router.pushNamed(AppRoute.profile),
+        );
+      },
     );
   }
 }
