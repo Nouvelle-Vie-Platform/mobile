@@ -7,6 +7,13 @@
 /// compte de l'application, et refait défiler à la main. C'est exactement le
 /// genre de défaut qui survit à une revue de code et à un test manuel.
 ///
+/// Et rien, côté serveur, ne rattrapera l'erreur : son upsert écrit la position
+/// reçue **sans la comparer** (vérifié dans `server-portal` —
+/// `app/mediatheque/actions/report_playback_progress.ts` et
+/// `app/shared/repositories/owned_content_repository.ts`). C'est ce qui rend ces
+/// tests-ci nécessaires plutôt que défensifs ; ils pourront disparaître avec un
+/// upsert monotone côté serveur (issue #421), pas avant.
+///
 /// Trois affirmations à tenir, et la troisième est celle qui se casse en silence
 /// si l'on inverse un ordre :
 ///
@@ -323,9 +330,10 @@ void main() {
 
       final report = await handover(fresh: false).run();
 
-      // Ne rien faire perd une commodité ; pousser à l'aveugle ferait peut-être
-      // reculer une reprise. La fusion repartira à la prochaine ouverture de
-      // session.
+      // Ne rien faire perd une commodité ; pousser à l'aveugle abîme la donnée —
+      // l'upsert du serveur écrit la position reçue, même en retard (vérifié :
+      // `report_playback_progress.ts` + `owned_content_repository.ts`). La fusion
+      // repartira à la prochaine ouverture de session.
       expect(reporter.reports, isEmpty);
       expect(report.accountIsFresh, isFalse);
       expect(report.candidates, 1);

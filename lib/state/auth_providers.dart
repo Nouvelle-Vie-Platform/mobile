@@ -305,6 +305,27 @@ class AuthController extends Notifier<AuthState> {
   /// Les deux échecs sont avalés **séparément** : une préférence d'assemblée qui
   /// ne se recopie pas n'a pas à emporter le transfert de la progression avec
   /// elle.
+  ///
+  /// **Un seul déclencheur, et c'est une décision assumée** : l'ouverture d'une
+  /// session, et non le démarrage d'une session déjà en cache. La question se
+  /// pose pour de bon — un transfert interrompu (application tuée, cycle de
+  /// synchronisation échoué) attend donc la **prochaine** connexion, qui peut
+  /// être dans trois mois, le jeton glissant sur quatre-vingt-dix jours. Deux
+  /// raisons de ne pas l'accrocher aussi à [_load] :
+  ///
+  /// - **le prix serait payé par tout le monde pour un cas rare** : à chaque
+  ///   ouverture de l'application, le miroir demanderait un `GET /auth/me` (en
+  ///   plus de celui de la revalidation) et la fusion un cycle de
+  ///   synchronisation, alors que la trace à transférer n'existe que sur un
+  ///   appareil qui a servi **d'invité** puis s'est connecté ;
+  /// - **le lecteur rattrape le cas fréquent tout seul** : un contenu qu'on
+  ///   réouvre est rapporté au premier déclencheur de
+  ///   `PlaybackProgressRecorder`, et la position qu'il rapporte est celle que la
+  ///   fusion a laissée en local.
+  ///
+  /// Si le produit veut l'autre arbitrage, c'est un appel de plus dans [_load],
+  /// après qu'une session de membre a été confirmée : la fusion est idempotente,
+  /// sérialisée, et ne coûte pas un octet quand il n'y a rien en local.
   Future<void> _adoptLocalTrail() async {
     try {
       // `hydrateFromAccount` ne lève jamais ; ce `catch` couvre ce qui l'entoure

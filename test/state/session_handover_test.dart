@@ -292,7 +292,8 @@ void main() {
 
     test('un cycle de synchronisation qui échoue ne pousse rien', () async {
       // Ne rien faire perd une commodité ; pousser sans savoir ce que le compte
-      // porte ferait peut-être reculer une reprise.
+      // porte reculerait sa reprise — le serveur écrit la position reçue sans la
+      // comparer.
       await givenGuestProgress();
       final scope = container(accountIsFresh: false);
       final controller = scope.read(authProvider.notifier);

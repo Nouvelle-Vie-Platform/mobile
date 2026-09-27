@@ -26,24 +26,39 @@
 ///
 /// ## Qui arbitre le conflit — et sur quelle preuve
 ///
-/// **Le client arbitre, parce que rien ne prouve que le serveur le fasse.** Ce
-/// qu'on sait de `POST /teachings/:teachingId/progress`, et qui est tout ce que
-/// ce dépôt en dit : c'est un **upsert owner-scopé idempotent** (ADR-0018) qui
-/// *range la position reçue* — « le serveur ... stocke le booléen que le client
-/// lui envoie » (`tables/playback_tables.dart`), « un rejeu est un no-op »
-/// portant sur `created_at`, pas sur la position. Nulle part, ni dans
-/// `docs/auth-contract.md`, ni dans CLAUDE.md, ni dans
-/// `http_playback_progress_reporter.dart`, il n'est écrit que le serveur garde le
-/// **maximum**. Le code serveur (`new-life-server`) n'est pas présent sur cette
-/// machine : l'affirmation n'a donc pas pu être vérifiée à la source, et le
-/// doute se tranche du côté prudent.
+/// **Le client arbitre, parce que le serveur écrase sans comparer. Vérifié à la
+/// source**, dans le dépôt du serveur (`server-portal`, qui sert l'API mobile) :
 ///
-/// Conséquence directe : **pousser une position inférieure ferait reculer la
-/// reprise du membre.** On ne pousse donc que ce qui est plus avancé, et pour
-/// savoir ce que le compte porte il n'existe qu'une lecture —
-/// `GET /sync/playback_progress`, c'est-à-dire la collection répliquée du
-/// magasin. Il n'y a **aucun endpoint REST de lecture** (CLAUDE.md, § reprise) :
-/// on ne peut pas demander « où en étais-je ? ».
+/// - `app/mediatheque/actions/report_playback_progress.ts` passe la position au
+///   repository **telle quelle** (`payload: { teachingId, positionSeconds,
+///   completed }`) : aucune comparaison, aucun `GREATEST` ;
+/// - `app/shared/repositories/owned_content_repository.ts` (`upsertOwned`,
+///   ADR-0018) insère si la ligne est absente, refuse en **409** si elle
+///   appartient à quelqu'un d'autre, ne ressuscite pas un tombstone — et sinon
+///   **écrit tout champ qui diffère**. Une position *inférieure* diffère : elle
+///   est écrite. Le « no-op sémantique » de l'ADR ne protège que `created_at` et
+///   le cas où rien n'a changé.
+///
+/// Donc : **la dernière écriture gagne, même en retard.** Une poussée aveugle
+/// ferait reculer la reprise d'un membre — trente minutes écoutées sur un
+/// téléphone ramenées à cinq par une écoute invitée sur un autre. Le même défaut
+/// existe d'ailleurs déjà hors de cette tranche, entre deux appareils d'un même
+/// membre : l'issue **#421** du dépôt serveur propose un upsert **monotone**
+/// (maximum sur la position, `completed` collant) et, si elle est tenue, **tout
+/// ce mécanisme de lecture préalable pourra fondre en une poussée aveugle**.
+/// Tant qu'elle ne l'est pas, ne pas lire avant de pousser abîme une donnée.
+/// (L'issue porte aussi la réserve inverse : un maximum monotone interdit la
+/// reprise **volontaire** depuis le début.)
+///
+/// Le corollaire, moins visible : **`completed` n'est pas collant côté serveur
+/// non plus** — envoyer `false` par-dessus un `true` l'effacerait. C'est la
+/// seconde raison pour laquelle [verdictFor] ne pousse **jamais** quand le compte
+/// a terminé.
+///
+/// On ne pousse donc que ce qui est plus avancé, et pour savoir ce que le compte
+/// porte il n'existe qu'une lecture — `GET /sync/playback_progress`, c'est-à-dire
+/// la collection répliquée du magasin. Il n'y a **aucun endpoint REST de
+/// lecture** (CLAUDE.md, § reprise) : on ne peut pas demander « où en étais-je ? ».
 ///
 /// D'où l'ordre imposé, et la seule chose de cette classe qui coûte du réseau
 /// avant de décider :
@@ -56,13 +71,7 @@
 ///    la comparaison possible, et c'est aussi l'hypothèse la plus fragile de
 ///    cette tranche (elle tient au serveur, pas à ce code) ;
 /// 3. le miroir n'est pas frais → **on ne pousse rien**. Ne rien faire perd une
-///    commodité ; pousser à l'aveugle fait reculer une reprise.
-///
-/// Si le serveur devait un jour garantir un upsert **monotone**
-/// (`GREATEST(position_seconds, :incoming)`), tout ceci se réduirait à une
-/// poussée aveugle : c'est la question à faire trancher côté serveur (PRD
-/// `miracle-house-server#151`, qui porte déjà la question voisine des
-/// rassemblements).
+///    commodité ; pousser à l'aveugle abîme une donnée.
 ///
 /// ## Comment se marque ce qui a été transféré
 ///
@@ -78,6 +87,10 @@
 /// prochaine ouverture de session. Entre la poussée et le retour du delta, une
 /// connexion immédiate pourrait rejouer la **même** position sous le **même**
 /// identifiant : c'est un no-op côté serveur, pas un doublon.
+///
+/// **Le seul déclencheur est l'ouverture d'une session, et c'est assumé** : voir
+/// `AuthController._adoptLocalTrail`, qui dit ce qu'on paierait pour en ajouter
+/// un au démarrage d'une session déjà en cache.
 ///
 /// ## Le silence
 ///
@@ -119,10 +132,13 @@ enum PlaybackMergeVerdict {
 ///   ce relèvement, la reprise de cet appareil resterait sur la position invitée
 ///   (`resumeFor` prend la plus **récente**, et la ligne locale vient d'être
 ///   écrite) — et le premier rapport du lecteur, lui, **écraserait** le compte
-///   avec cette position en retard. Relever est donc ce qui ferme la porte par
-///   laquelle une position pouvait reculer après la fusion ;
+///   avec cette position en retard, puisque le serveur ne compare rien (voir
+///   l'en-tête). Relever est donc ce qui ferme la porte par laquelle une position
+///   pouvait reculer après la fusion ;
 /// - le compte a **terminé** ce contenu → plus rien ne se rapporte, règle de
-///   l'issue #43 (« une fois `completed`, la position n'est plus rapportée ») ;
+///   l'issue #43 (« une fois `completed`, la position n'est plus rapportée ») —
+///   et rien ne doit lui renvoyer un `completed: false`, que son upsert
+///   écrirait ;
 /// - **la même seconde** des deux côtés → un upsert pour rien ;
 /// - **position zéro** jamais commencée → un contenu ouvert puis refermé ne vaut
 ///   pas un aller-retour réseau.
@@ -278,8 +294,9 @@ class StorePlaybackProgressHandover implements PlaybackProgressHandover {
       final candidates = await _dao.handoverCandidates();
 
       if (!fresh) {
-        // On ne sait pas ce que le compte porte : ne rien faire perd une
-        // commodité, pousser ferait peut-être reculer une reprise. La fusion
+        // On ne sait pas ce que le compte porte, et le serveur écrirait ce qu'on
+        // lui enverrait, même en retard (vérifié : voir l'en-tête). Ne rien
+        // faire perd une commodité, pousser abîmerait la reprise. La fusion
         // repartira à la prochaine ouverture de session.
         return PlaybackHandoverReport(
           candidates: candidates.length,
