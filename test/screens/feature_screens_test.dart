@@ -6,7 +6,7 @@ import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/screens/agenda_screen.dart';
 import 'package:maison_du_miracle/screens/donations_screen.dart';
 import 'package:maison_du_miracle/screens/group_chat_screen.dart';
-import 'package:maison_du_miracle/screens/live_screen.dart';
+import 'package:maison_du_miracle/screens/live_player_screen.dart';
 import 'package:maison_du_miracle/screens/new_request_screen.dart';
 import 'package:maison_du_miracle/screens/notes_screen.dart';
 import 'package:maison_du_miracle/screens/prayer_requests_screen.dart';
@@ -32,9 +32,9 @@ void main() {
       expect(find.byType(AgendaScreen), findsOneWidget);
     });
 
-    testWidgets('LiveScreen se monte', (tester) async {
-      await pumpScreen(tester, const LiveScreen());
-      expect(find.byType(LiveScreen), findsOneWidget);
+    testWidgets('LivePlayerScreen se monte', (tester) async {
+      await pumpScreen(tester, const LivePlayerScreen());
+      expect(find.byType(LivePlayerScreen), findsOneWidget);
     });
 
     testWidgets('PrayerRequestsScreen se monte', (tester) async {

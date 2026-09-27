@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:go_router/go_router.dart';
 
-import '../data/downloads/download_manager.dart';
 import '../data/local/app_database.dart';
 import '../data/local/tables/download_tables.dart';
 import '../data/players/content_player.dart';

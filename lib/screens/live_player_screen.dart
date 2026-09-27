@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/live_stream_config.dart';
 import '../l10n/l10n_extension.dart';
-import '../models/content_view.dart';
 import '../models/gathering_view.dart';
 import '../state/player_providers.dart';
 import '../widgets/content_player_view.dart';
