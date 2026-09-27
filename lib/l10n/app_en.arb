@@ -235,6 +235,12 @@
   "mediaSettingsDownload": "Download",
   "mediaSettingsDownloadOnCellular": "Download on mobile data",
   "mediaSettingsDownloadOnCellularSubtitle": "By default, downloads wait for Wi-Fi to protect your data plan.",
+
+  "branchScopeTitle": "My assembly",
+  "branchScopeLead": "Choose the assembly whose teachings, gatherings and announcements you want to follow. The agenda and the prayer wall are unaffected.",
+  "branchScopeAll": "All assemblies",
+  "branchScopeAllSubtitle": "Everything the church publishes, wherever it publishes it.",
+  "branchScopeEmpty": "The list of assemblies will arrive with the first sync.",
   "mediaQualityAuto": "Automatic",
   "mediaQualityLow": "Data saver",
   "mediaQualityMid": "Standard",

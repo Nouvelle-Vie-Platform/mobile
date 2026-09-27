@@ -11,6 +11,7 @@ import 'package:drift/drift.dart';
 
 import '../local/app_database.dart';
 import '../local/sync_dao.dart';
+import 'branch_filter.dart';
 import 'sync_protocol.dart';
 import 'sync_rows.dart';
 
@@ -37,6 +38,17 @@ final class SyncedCollection<D> {
   /// se range d'après le canal par lequel elle est arrivée, jamais d'après un
   /// champ qu'elle porte.
   final String key;
+
+  /// **Cette collection est-elle filtrée par la préférence de branche ?**
+  ///
+  /// Dérivé de [kBranchScopedCollections] plutôt que passé à la construction, et
+  /// c'est délibéré : un drapeau posé entrée par entrée serait une seconde
+  /// définition de la même liste, libre de diverger de celle que consulte la
+  /// remise à zéro des curseurs. Le jour où les deux ne diraient plus la même
+  /// chose, le client filtrerait une collection dont il ne nettoie pas les
+  /// curseurs — l'incohérence exacte que cette tranche existe pour éviter, et
+  /// que rien côté serveur ne rattraperait.
+  bool get branchScoped => isBranchScoped(key);
 
   final LocalCollection<D> Function(SyncDao dao) _local;
   final Object Function(Map<String, Object?> item) _idOf;
