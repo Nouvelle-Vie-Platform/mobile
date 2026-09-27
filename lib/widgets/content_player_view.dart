@@ -7,12 +7,14 @@ import 'package:go_router/go_router.dart';
 
 import '../data/local/app_database.dart';
 import '../data/local/tables/download_tables.dart';
+import '../data/measurement/play_tracker.dart';
 import '../data/players/content_player.dart';
 import '../data/repositories/playback_progress_recorder.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/content_view.dart';
 import '../router/app_router.dart';
 import '../state/downloads_providers.dart';
+import '../state/measurement_providers.dart';
 import '../state/playback_progress_providers.dart';
 import '../state/player_providers.dart';
 import '../theme/app_colors.dart';
@@ -68,6 +70,19 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
   String? _requested;
   bool _stoppedByRetraction = false;
   PlaybackProgressRecorder? _recorder;
+
+  /// **La mesure d'audience de cette ouverture** (`POST /teachings/:id/plays`).
+  ///
+  /// Un objet **à côté** de [_recorder], jamais un champ de plus sur lui : la
+  /// reprise de lecture est un confort personnel attaché à un compte, l'écoute
+  /// comptée est une statistique d'église, et les deux n'ont ni la même durée de
+  /// vie ni le même statut au regard du RGPD. Ce qui les sépare dans cet écran
+  /// est visible à l'œil : deux champs, deux appels, aucun chemin de l'un vers
+  /// l'autre.
+  ///
+  /// `null` sur le **direct** : il n'y a pas d'enseignement à compter derrière un
+  /// flux, et la route veut un identifiant de contenu.
+  PlayTracker? _playTracker;
 
   @override
   void initState() {
@@ -254,6 +269,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
 
     final player = ref.read(contentPlayerProvider);
     await _openRecorder(content.id);
+    _openPlayTracker(content.id);
     if (!mounted) return;
 
     // **Déjà chargé** : revenir sur un prêche en cours ne le recharge pas et ne
@@ -300,6 +316,22 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     }
   }
 
+  /// **Ouvre la mesure de cette ouverture.** Synchrone, et sans `await` : rien
+  /// de ce que fait la télémétrie ne doit retarder le chargement d'un média.
+  ///
+  /// Le direct n'est pas mesuré : voir [_playTracker].
+  void _openPlayTracker(String contentId) {
+    if (widget.isLive) return;
+    if (_playTracker?.contentId == contentId) return;
+    try {
+      _playTracker = ref.read(playTrackerProvider)(contentId);
+    } catch (error, stack) {
+      // Une mesure qui ne s'ouvre pas est une mesure perdue, pas une panne.
+      debugPrint('[mesure] traqueur indisponible pour $contentId : $error');
+      debugPrintStack(stackTrace: stack, maxFrames: 4);
+    }
+  }
+
   void _stopForRetraction() {
     if (_stoppedByRetraction) return;
     _stoppedByRetraction = true;
@@ -309,6 +341,12 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
   }
 
   void _onPlayback(ContentPlayback? previous, ContentPlayback next) {
+    // **La mesure d'abord, et avec sa propre garde.** Elle ne passe pas sous
+    // celle de l'enregistreur : un enregistreur qui n'a pas pu s'ouvrir — base
+    // illisible, reprise introuvable — ne doit pas faire disparaître l'audience
+    // avec lui. Ce sont deux mesures indépendantes, y compris en panne.
+    _trackPlay(next);
+
     final recorder = _recorder;
     if (recorder == null || next.contentId != recorder.contentId) return;
 
@@ -332,11 +370,22 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     }
   }
 
-  void _fireAndForget(Future<void>? work) {
+  /// Pousse la position au traqueur d'écoute — **jamais à l'enregistreur de
+  /// progression**, qui a son propre appel juste en dessous.
+  void _trackPlay(ContentPlayback next) {
+    final tracker = _playTracker;
+    if (tracker == null || next.contentId != tracker.contentId) return;
+    _fireAndForget(
+      tracker.onPosition(next.position, isPlaying: next.isPlaying),
+      label: 'mesure',
+    );
+  }
+
+  void _fireAndForget(Future<void>? work, {String label = 'progression'}) {
     if (work == null) return;
     unawaited(
       work.catchError((Object error) {
-        debugPrint('[progression] déclencheur abandonné : $error');
+        debugPrint('[$label] déclencheur abandonné : $error');
       }),
     );
   }
