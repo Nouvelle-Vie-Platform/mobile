@@ -11,6 +11,8 @@ import 'router/app_router.dart';
 import 'state/auth_providers.dart';
 import 'state/downloads_providers.dart';
 import 'state/locale_providers.dart';
+import 'state/session_gate.dart';
+import 'state/startup_providers.dart';
 import 'state/sync_providers.dart';
 import 'state/theme_provider.dart';
 import 'theme/app_theme.dart';
@@ -27,6 +29,9 @@ class MaisonDuMiracleApp extends ConsumerStatefulWidget {
 }
 
 class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
+  /// L'abonnement qui tient le porte-intention vivant — voir [initState].
+  ProviderSubscription<SessionIntent?>? _intents;
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +39,15 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
     // réseau, sans accès à Riverpod ni à GoRouter — et il ne doit pas en
     // acquérir. C'est ici, où les deux existent, qu'on branche la réaction.
     ApiClient.instance.onUnauthorized = _handleUnauthorized;
+
+    // **L'intention en attente doit rester vivante**, et c'est la seule raison
+    // de cette ligne. `requireSession()` met un geste de côté et le rejoue à
+    // l'ouverture de la session ; cette réaction est un `ref.listen` **interne**
+    // au provider, et Riverpod 3 met en pause les abonnements d'un provider que
+    // personne n'écoute. Sans cet abonnement-ci, le geste serait mis de côté et
+    // jamais repris — sans erreur, sans trace : la personne se connecte, revient,
+    // et son geste a disparu. Même motif que le routeur, que `build` observe.
+    _intents = ref.listenManual(sessionGateProvider, (_, __) {});
 
     // **Le déclencheur « ouverture »** (ADR-0017). Sans lui, le magasin ne se
     // remplit jamais et la médiathèque reste muette : les écrans lisent le
@@ -48,7 +62,24 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
     // `pullToRefreshProvider`, que la médiathèque passe à son
     // `RefreshIndicator`. **Jamais de polling.**
     if (AppEnv.useBackend) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        // **Le jeton avant le cycle, mais jamais au prix du premier écran.**
+        //
+        // L'ordre du démarrage est : porteur câblé et session d'appareil lancée
+        // dans `main()` (sans l'attendre) → premier frame → *ici*. L'écran est
+        // donc déjà peint quand cette attente commence, et elle ne retient rien
+        // de visible. Elle existe parce qu'un cycle lancé sans aucun porteur
+        // échoue pour rien : au premier lancement d'un invité, c'est le seul
+        // cycle qui remplit le magasin, et le rater laisse une application
+        // **muette** — pas une erreur.
+        //
+        // Et elle est **bornée** ([kDeviceSessionStartupGrace]) : en avion
+        // l'ouverture de session ne rend la main qu'au bout du `connectTimeout`,
+        // et le déclencheur « ouverture » n'a pas à dépendre du réseau. Passé le
+        // délai on synchronise quand même — l'échec est gratuit, et « retour au
+        // premier plan » rattrapera de lui-même.
+        await ref.read(deviceBootstrapProvider).awaitToken();
         if (!mounted) return;
         final scheduler = ref.read(syncSchedulerProvider);
         // **Le cycle de vie des téléchargements** (#194) suit chaque cycle
@@ -79,17 +110,45 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
 
   @override
   void dispose() {
+    _intents?.close();
     ApiClient.instance.onUnauthorized = null;
     super.dispose();
   }
 
-  /// Le serveur a refusé le token : `ApiClient` l'a purgé, on repasse l'état
-  /// d'auth à « déconnecté ». La garde `redirect` du routeur, déjà branchée sur
-  /// `authProvider`, ramène alors à `/auth` depuis n'importe quel écran — nul
-  /// besoin de manipuler le routeur ici.
+  /// Le serveur a refusé le token : `ApiClient` l'a purgé, l'état d'auth repasse
+  /// à « invité », et **la personne est renvoyée vers l'écran de connexion**.
+  ///
+  /// ## Pourquoi ce n'est pas la même destination que la déconnexion
+  ///
+  /// Les deux gestes finissent sur le même *état* — invité — et sur deux
+  /// *écrans* différents. Ça ressemble à une incohérence à lisser ; c'en est
+  /// exactement l'inverse, et c'est une décision du client, prise sur ce cas
+  /// nommément. Avant d'unifier, lire ceci :
+  ///
+  /// - **déconnexion explicite** → accueil invité, rien d'effacé. La personne a
+  ///   choisi de partir ; on ne lui demande pas de revenir. Rien ne navigue :
+  ///   l'état change et la garde du routeur en déduit l'accueil ;
+  /// - **session expirée (401)** → écran de connexion. Elle n'a **rien choisi**,
+  ///   et l'éjection lui dit quelque chose que le silence ne dit pas. La reposer
+  ///   sur l'accueil invité serait la seule façon de lui cacher qu'elle a perdu
+  ///   sa session — et c'est la contrainte de fond du client : « quand la
+  ///   personne s'est déjà connectée, tout se passe exactement comme
+  ///   présentement ».
+  ///
+  /// L'éjection est une **navigation explicite**, et non plus une déduction de
+  /// la garde : sous le mode invité, la garde est publique par défaut, et lui
+  /// faire porter un cas « renvoie tout vers `/auth` » y remettrait le verrou
+  /// qu'on vient d'en retirer. Un 401 est un **évènement**, pas un état.
+  ///
+  /// Et elle ne concerne **que** ceux qui avaient une session : un invité dont
+  /// une requête se fait refuser reste devant son catalogue. C'est ce que dit la
+  /// valeur de retour de `handleUnauthorized()`, et c'est un vrai cas — un
+  /// invité sans jeton d'appareil (ouverture de session refusée) voit ses
+  /// requêtes prendre un 401 qui n'est estampillé « appareil » par personne.
   void _handleUnauthorized() {
     if (!mounted) return;
-    ref.read(authProvider.notifier).handleUnauthorized();
+    if (!ref.read(authProvider.notifier).handleUnauthorized()) return;
+    ref.read(routerProvider).goNamed(AppRoute.authWelcome);
   }
 
   @override
