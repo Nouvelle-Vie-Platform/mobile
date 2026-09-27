@@ -49,6 +49,44 @@ enum PlaybackResumeSource {
   synced,
 }
 
+/// **Un contenu à fusionner** : la position que cet appareil tient en local, et
+/// celle que le compte porte déjà, côte à côte et non départagées.
+///
+/// Rendue par `PlaybackDao.handoverCandidates`, consommée par
+/// `playback_progress_handover.dart` — qui porte la **règle**, et il est le seul
+/// à la porter. Cet objet ne décide rien : on ne peut pas lire une position qui
+/// recule dans un getter qui n'existe pas ici.
+@immutable
+class PlaybackHandover {
+  const PlaybackHandover({
+    required this.contentId,
+    required this.progressId,
+    required this.localPositionSeconds,
+    required this.localCompleted,
+    required this.accountPositionSeconds,
+    required this.accountCompleted,
+  });
+
+  final String contentId;
+
+  /// L'UUIDv7 sous lequel ce contenu se rapporte : celui de la ligne répliquée
+  /// dès qu'elle existe, sinon celui que ce client a frappé.
+  final String progressId;
+
+  final int localPositionSeconds;
+  final bool localCompleted;
+
+  /// La position du **compte**, ou `null` quand la collection répliquée ne
+  /// connaît rien de ce contenu.
+  ///
+  /// `null` ne veut dire « le compte ne sait rien » que si la collection vient
+  /// d'être tirée : c'est toute la raison pour laquelle la fusion exige un cycle
+  /// de synchronisation avant de s'autoriser à conclure.
+  final int? accountPositionSeconds;
+
+  final bool accountCompleted;
+}
+
 /// **Les deux tables de la reprise de lecture, et rien d'autre.**
 ///
 /// Un DAO par domaine, comme `MediathequeDao`, `GatheringDao` et
@@ -145,12 +183,75 @@ class PlaybackDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// **Ce que cet appareil a écouté, et ce que le compte en sait déjà** — une
+  /// ligne par contenu de la table locale seule, mise en regard de la ligne
+  /// répliquée quand il y en a une.
+  ///
+  /// C'est la lecture de la **fusion à l'ouverture d'une session de membre**
+  /// ([PlaybackHandover], arbitrée par `playback_progress_handover.dart`), et la
+  /// seule du dépôt qui regarde les deux tables **sans les départager** :
+  /// [resumeFor] rend un gagnant, celle-ci rend les deux positions côte à côte.
+  /// L'arbitrage de la fusion n'est pas celui de la reprise — la plus **avancée**
+  /// d'un côté, la plus **récente** de l'autre —, et mélanger les deux règles
+  /// dans une seule lecture les rendrait impossibles à relire séparément.
+  ///
+  /// Elle ne distingue pas ce qu'un invité a écouté de ce qu'un membre a écouté,
+  /// et il n'y a aucun moyen de le faire : la table locale ne porte pas de
+  /// porteur, et lui en ajouter un serait une migration pour une colonne qui ne
+  /// servirait qu'ici. Ce n'est pas un pis-aller — « la trace locale que le
+  /// compte ignore encore » est exactement l'ensemble à transférer, qu'elle ait
+  /// été écrite avant ou après une connexion : une position qu'un membre a perdue
+  /// hors ligne est au même titre une position que le compte n'a pas.
+  ///
+  /// Une requête par contenu plutôt qu'une jointure, et c'est volontaire : la
+  /// jointure dupliquerait la ligne locale si deux lignes répliquées portaient le
+  /// même contenu, cas que [_syncedRowFor] absorbe déjà (`limit(1)` sur
+  /// `updatedAt` décroissant). Le nombre de lignes est celui des contenus ouverts
+  /// sur cet appareil — quelques dizaines au plus.
+  ///
+  /// L'ordre est celui de l'identifiant de contenu, pour que deux exécutions
+  /// transfèrent dans le même ordre.
+  Future<List<PlaybackHandover>> handoverCandidates() async {
+    final locals = await (select(localPlaybackPositions)
+          ..orderBy([(t) => OrderingTerm.asc(t.contentId)]))
+        .get();
+
+    final candidates = <PlaybackHandover>[];
+    for (final local in locals) {
+      final synced = await _syncedRowFor(local.contentId);
+      candidates.add(
+        PlaybackHandover(
+          contentId: local.contentId,
+          // Même règle d'identité que [resumeFor], et pour la même raison : dès
+          // que le serveur connaît une ligne pour ce contenu, c'est **son** `id`
+          // qui repart. En frapper un second créerait une seconde ligne — ou un
+          // 409 le jour où le rapprochement par `(userId, teachingId)`
+          // disparaîtrait.
+          progressId: synced?.id ?? local.progressId,
+          localPositionSeconds: local.positionSeconds,
+          localCompleted: local.completed,
+          accountPositionSeconds: synced?.positionSeconds,
+          accountCompleted: synced?.completed ?? false,
+        ),
+      );
+    }
+    return candidates;
+  }
+
   /// La ligne **répliquée** d'un contenu, telle que la synchronisation l'a
   /// laissée. Exposée pour les tests et le diagnostic ; la lecture normale
   /// passe par [resumeFor].
   @visibleForTesting
   Future<PlaybackProgressRow?> syncedProgressFor(String contentId) =>
       _syncedRowFor(contentId);
+
+  /// La ligne **locale seule** d'un contenu. Exposée pour les tests et le
+  /// diagnostic, comme [syncedProgressFor] : c'est le seul moyen de prouver
+  /// qu'une déconnexion n'a rien effacé, ou qu'une fusion a relevé une position
+  /// locale sans toucher à l'autre table.
+  @visibleForTesting
+  Future<LocalPlaybackPositionRow?> localPositionFor(String contentId) =>
+      _localRowFor(contentId);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Rouages
