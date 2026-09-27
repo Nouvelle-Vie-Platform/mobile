@@ -55,7 +55,7 @@ void main() {
       expect(find.byKey(AppDrawerMenu.privacyKey), findsOneWidget);
       expect(find.byKey(AppDrawerMenu.aboutKey), findsOneWidget);
       // Quatre entrées, rien d'autre : ni mode sombre, ni aide, ni
-      // déconnexion — l'onglet Profil les porte déjà.
+      // déconnexion — l'écran Profil les porte déjà.
       expect(
           find.descendant(
             of: find.byType(AppDrawerMenu),
@@ -68,8 +68,9 @@ void main() {
         (tester) async {
       await _pumpShell(tester);
 
-      // Onglet « Profil » (le dernier de la barre).
-      await tester.tap(find.text('Profil'));
+      // Onglet « Bible » (le dernier de la barre). Le profil n'y est plus : il
+      // est devenu une route poussée, on ne l'atteint plus par la barre du bas.
+      await tester.tap(find.text('Bible'));
       await tester.pump();
       expect(_tab(tester), 3);
 
