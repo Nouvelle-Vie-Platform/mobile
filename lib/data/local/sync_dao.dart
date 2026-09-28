@@ -8,6 +8,7 @@ import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
 import 'tables/sync_tables.dart';
+import 'tables/decor_tables.dart';
 import 'tables/season_tables.dart';
 
 part 'sync_dao.g.dart';
@@ -66,6 +67,12 @@ abstract final class SyncCollectionKey {
   /// sans réseau.
   static const String seasons = 'seasons';
 
+  /// **Le décor par défaut** — le fond que l'application pose quand aucune
+  /// saison ne couvre le jour. Une collection d'une seule ligne (le singleton
+  /// des réglages de la vitrine), et une clé à elle plutôt qu'une saison sans
+  /// dates : deux notions, deux clés.
+  static const String decor = 'decor';
+
   /// **La reprise de lecture** — la première collection `private` que ce client
   /// réplique (issue #43). Elle est en **lecture-depuis-la-synchro seulement** :
   /// l'application écrit sa position à chaud dans `local_playback_positions`,
@@ -123,6 +130,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     PlaybackProgress,
     LegalDocuments,
     Seasons,
+    Decor,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -183,6 +191,11 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// `id` — la saison recréée l'emporte sur celle qu'on venait d'effacer.
   LocalCollection<SeasonRow> get seasonsCollection =>
       LocalCollection._(SyncCollectionKey.seasons, seasons);
+
+  /// **Une seule ligne**, et `null` y est une valeur : pas de décor déposé au
+  /// portail n'est pas la même chose que pas encore reçu les réglages.
+  LocalCollection<DecorRow> get decorCollection =>
+      LocalCollection._(SyncCollectionKey.decor, decor);
 
   /// **La seule collection `private` de ce registre.** Elle se remplit comme
   /// les dix autres — par le flux delta, jamais par l'application — et rien

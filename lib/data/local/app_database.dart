@@ -35,6 +35,7 @@ import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
 import 'tables/settings_tables.dart';
 import 'tables/sync_tables.dart';
+import 'tables/decor_tables.dart';
 import 'tables/season_tables.dart';
 
 part 'app_database.g.dart';
@@ -78,6 +79,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     LocalPlaybackPositions,
     LegalDocuments,
     Seasons,
+    Decor,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -131,7 +133,7 @@ class AppDatabase extends _$AppDatabase {
   /// colonne apparaîtrait dès le palier v8 et se heurterait au schéma v8 gelé
   /// (voir `download_titles`). Rien du catalogue déjà téléchargé ne bouge.
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -326,6 +328,14 @@ class AppDatabase extends _$AppDatabase {
           // raison qu'aux paliers v2 à v5, v7 et v9.
           if (from < 11) {
             await m.createTable(seasons);
+          }
+
+          // v11 → v12 — le **décor par défaut**, l'étage de la cascade du fond
+          // qui sert quand aucune saison ne couvre le jour. Une création de
+          // table, et rien d'autre ; même raison qu'au palier précédent pour
+          // l'absence de garde `to >= 12`.
+          if (from < 12) {
+            await m.createTable(decor);
           }
         },
         beforeOpen: (details) async {

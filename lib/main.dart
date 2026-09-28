@@ -19,6 +19,7 @@ import 'data/players/web_content_player.dart';
 import 'state/media_settings_providers.dart';
 import 'state/player_providers.dart';
 import 'state/startup_providers.dart';
+import 'state/season_providers.dart';
 
 /// **Le seul chemin qui monte un lecteur réel** — et le seul endroit du dépôt
 /// qui sache qu'il y en a deux.
@@ -78,6 +79,13 @@ Future<void> main() async {
 
   final player = await _startPlayback();
 
+  // (5) **Le fond déjà sur le disque**, lu avant le premier frame. L'écran de
+  // marque dure le temps de résoudre une session : un fond qui arriverait après
+  // lui n'aurait servi à personne. Pas de réseau, pas de base — un seul fichier
+  // dans un dossier —, et `null` au premier lancement, ce qui est le contrat.
+  final startupBackground =
+      AppEnv.useBackend ? await readStartupBackground() : null;
+
   // Le conteneur est construit ici plutôt que par `ProviderScope` seul : c'est
   // ce qui permet de brancher le plafond de débit **hors de l'arbre de
   // widgets**, sur le lecteur réel. `UncontrolledProviderScope` le rend ensuite
@@ -90,6 +98,7 @@ Future<void> main() async {
       // d'appareil de cette exécution.
       startupVaultProvider.overrideWithValue(vault),
       deviceBootstrapProvider.overrideWithValue(bootstrap),
+      startupBackgroundProvider.overrideWithValue(startupBackground),
     ],
   );
 

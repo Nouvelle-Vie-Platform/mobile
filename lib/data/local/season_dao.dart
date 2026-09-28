@@ -1,18 +1,19 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'tables/decor_tables.dart';
 import 'tables/season_tables.dart';
 
 part 'season_dao.g.dart';
 
-/// **Les lectures du magasin, côté saisons.**
+/// **Les lectures du magasin, côté fond.**
 ///
-/// Une seule question : quelle saison habille **aujourd'hui** ? Le serveur sert
-/// la table entière et ne tranche pas — lui seul ne peut pas, parce que le jour
-/// qui compte est celui du téléphone, y compris hors ligne, et parce qu'une
-/// saison qui commence à minuit ne doit pas attendre un aller-retour réseau
-/// pour habiller l'écran.
-@DriftAccessor(tables: [Seasons])
+/// Une seule question, en deux étages : quelle **saison** habille aujourd'hui,
+/// et à défaut quel **décor** par défaut ? Le serveur sert les deux tables et ne
+/// tranche pas — lui seul ne peut pas, parce que le jour qui compte est celui
+/// du téléphone, y compris hors ligne, et parce qu'une saison qui commence à
+/// minuit ne doit pas attendre un aller-retour réseau pour habiller l'écran.
+@DriftAccessor(tables: [Seasons, Decor])
 class SeasonDao extends DatabaseAccessor<AppDatabase> with _$SeasonDaoMixin {
   SeasonDao(super.db);
 
@@ -48,6 +49,23 @@ class SeasonDao extends DatabaseAccessor<AppDatabase> with _$SeasonDaoMixin {
       ..where((row) => row.startsOn.isSmallerOrEqualValue(day))
       ..where((row) => row.endsOn.isBiggerOrEqualValue(day))
       ..orderBy([(row) => OrderingTerm.desc(row.id)])
+      ..limit(1));
+  }
+
+  /// Le **décor par défaut**, ou `null` si le magasin n'a pas encore reçu les
+  /// réglages.
+  ///
+  /// La table n'a qu'une ligne (le singleton des réglages de la vitrine), mais
+  /// la lecture ne le suppose pas : `getSingleOrNull` sur une table qui en
+  /// porterait deux lèverait, là où `limit(1)` rend simplement la première. Un
+  /// magasin local n'a pas à se fier à un CHECK posé dans une autre base.
+  ///
+  /// ⚠️ **Une ligne dont les deux adresses sont nulles n'est pas une absence** :
+  /// c'est « le portail n'a déposé aucun décor », et c'est ce qui autorise
+  /// l'appelant à retomber sur l'image du dépôt au lieu d'attendre.
+  Selectable<DecorRow> defaultDecor() {
+    return (select(decor)
+      ..orderBy([(row) => OrderingTerm.asc(row.id)])
       ..limit(1));
   }
 }

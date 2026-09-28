@@ -373,8 +373,10 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   par genre** (`cgu`, `privacy`, `about`), sections brutes en JSON,
   **sans tombstone** — un document ne se supprime pas, il s'édite.
   `tables/season_tables.dart` — `seasons` : la période datée dont le **fond
-  vertical** habille les deux lecteurs. **Sans tombstone** non plus, et celui-ci
-  a un coût — voir « Le fond des lecteurs » plus bas.
+  vertical** habille les lecteurs et l'écran de démarrage. **Sans tombstone**
+  non plus, et celui-ci a un coût — voir « Le fond de l'application » plus bas.
+  `tables/decor_tables.dart` — `decor` : **une seule ligne**, le fond par défaut
+  quand aucune saison ne couvre le jour.
 - `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart`,
   `gathering_dao.dart`, `announcement_dao.dart`, `playback_dao.dart` et
   `legal_dao.dart` — lectures, **un DAO par domaine**. `playback_dao` est le
@@ -422,7 +424,8 @@ qu'elle remplit. Le réseau ne peint jamais.
   désérialiseur à convention unique se trompe sur la moitié des clés.
 - `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
   `gathering_types`, `status_backgrounds`, `official_accounts`,
-  `official_account_memberships`, `legal_documents`, `seasons`, `contributors`,
+  `official_account_memberships`, `legal_documents`, `seasons`, `decor`,
+  `contributors`,
   `branches`, puis `teachings`, `gatherings`, `announcements`,
   `playback_progress`.
 - `sync_api.dart` — `GET /sync` et `GET /sync/{collection}`, sur le `Dio`
@@ -604,20 +607,50 @@ Le contrat détaillé, le nom du champ de fichier (`backgroundImage`) et la limi
 assumée (on ne sait pas retirer une image déjà publiée) sont dans
 `docs/statuts-annonces.md` §11.
 
-### Le fond des lecteurs — une saison, un fichier sur le disque
+### Le fond de l'application — une saison, un décor, un fichier sur le disque
 
-Les deux lecteurs — enseignement et direct — posent le **même** fond : le
-« fond vertical (téléphone) » de la saison active, déposé au portail, celui-là
-même que le site public sert aux écrans étroits. Ce n'est pas un fond par
-contenu : un direct n'a pas de fiche où en déposer un.
+Les deux lecteurs — enseignement et direct — **et l'écran de démarrage** posent
+le **même** fond : le « fond vertical (téléphone) » de la saison active, déposé
+au portail, celui-là même que le site public sert aux écrans étroits. Ce n'est
+pas un fond par contenu : un direct n'a pas de fiche où en déposer un.
 
-**La cascade tient en deux étages**, et elle est écrite une fois
-(`_background()` dans `ContentPlayerView`, lu par les cinq états de l'écran) :
-le fond de la saison, puis une image du dépôt (`fallbackBackgroundAsset`, que
-seul l'écran du direct fournit aujourd'hui). Rien des deux → l'aplat de couleur
-du contenu, exactement comme avant. Le site public ferme sa propre cascade de la
-même façon, et pour la même raison : une case vide au portail ne doit pas
-produire un écran nu.
+**La cascade a cinq étages**, et les quatre premiers sont écrits une fois, dans
+`seasonBackgroundUrlProvider` :
+
+1. le **vertical de la saison** du jour ;
+2. son **paysage**, si elle n'a pas déposé de vertical ;
+3. le **vertical du décor** par défaut (`decor`, le singleton des réglages de la
+   vitrine), hors saison ;
+4. son **paysage** ;
+5. l'image du dépôt (`fallbackBackgroundAsset`, que seul l'écran du direct
+   fournit aujourd'hui) — le cinquième étage vit dans `ContentPlayerView`
+   (`_background()`, lu par les cinq états de l'écran).
+
+Rien des cinq → l'aplat de couleur du contenu, exactement comme avant. C'est la
+cascade du site public, à ceci près que son premier étage à lui est le fond de
+l'enseignement — que le mobile ne sert pas, parce que le direct n'aurait rien à
+y mettre. **Le paysage en secours plutôt que l'étage suivant** : une image mal
+cadrée reste plus informative qu'un fond qui n'est pas celui de la saison en
+cours.
+
+#### L'écran de démarrage lit le disque, jamais la base
+
+Il dure le temps de résoudre une session. Y déclencher une lecture Drift ou une
+descente d'image donnerait un fond qui apparaît après que l'écran a disparu —
+ou, pire, qui retarde l'ouverture. La lecture est donc remontée dans `main()`
+(`readStartupBackground`), **avant `runApp`**, et passée en surcharge de
+`startupBackgroundProvider` : exactement le motif de `readStartupVault`.
+
+Elle ne connaît pas l'adresse du fond et n'en a pas besoin : le dossier de cache
+ne contient **qu'un** fichier — la purge s'en charge —, et `cachedFile()` le
+rend sans réseau ni magasin. **Le premier lancement n'a donc pas de fond**, et
+c'est le contrat : on descend pendant que l'application tourne, on s'en sert à
+l'ouverture suivante.
+
+⚠️ Le dégradé de marque ne disparaît pas sous le fond : il devient un **voile
+sombre**. Sans lui, un fond clair rendrait l'emblème blanc, le nom de l'église
+et le témoin de chargement illisibles — et ça ne se verrait qu'avec ce fond-là,
+c'est-à-dire un jour, chez quelqu'un d'autre.
 
 Cinq points qui se ratent en silence :
 
@@ -631,18 +664,25 @@ Cinq points qui se ratent en silence :
    l'ordre lexicographique *est* l'ordre chronologique ; convertir en
    `DateTime` poserait un instant, donc un fuseau, donc un décalage d'un jour.
    Les deux bornes sont **incluses**.
-3. **Le fond est descendu une fois, puis lu sur le disque**
+3. **Le décor par défaut n'est pas une saison sans dates.** C'est une
+   collection à part (`decor`, une seule ligne), et la tentation de le servir
+   comme une saison couvrant tous les jours ferait dépendre la cascade d'un
+   départage d'identifiants au lieu d'une règle écrite. Une ligne dont les deux
+   adresses sont nulles **n'est pas une absence** : c'est « le portail n'a
+   déposé aucun décor », ce qui autorise à retomber tout de suite sur l'image du
+   dépôt au lieu d'attendre une ligne qui ne viendra pas.
+4. **Le fond est descendu une fois, puis lu sur le disque**
    (`SeasonBackgroundStore`). Le cache de `NetworkImage` est *en mémoire* : il
    repartirait sur le réseau à chaque lancement. Un cache HTTP générique
    revaliderait au bout de sept jours, ce qui est faux ici — l'adresse d'un
    fond **change quand le fond change**, elle est donc déjà sa propre version.
    Le fichier vit dans le dossier de **support**, jamais dans les documents :
    un cache n'a rien à faire dans la sauvegarde iCloud d'un fidèle.
-4. **`ensureLocal` ne lève jamais** — réseau absent, disque plein, canal de
+5. **`ensureLocal` ne lève jamais** — réseau absent, disque plein, canal de
    plugin inexistant sous `flutter test` : tout rend `null`. Un décor n'est pas
    une donnée. C'est aussi ce qui permet aux tests d'écran de monter le lecteur
    sans rien surcharger.
-5. **Le téléchargement passe par un `Dio` nu**, jamais celui d'`ApiClient` : un
+6. **Le téléchargement passe par un `Dio` nu**, jamais celui d'`ApiClient` : un
    fond est un fichier public de `/uploads/`. Y envoyer le jeton du porteur, et
    faire traverser la réponse à l'intercepteur de 401, donnerait à un
    téléchargement d'image le pouvoir de déconnecter quelqu'un.

@@ -464,6 +464,27 @@ SeasonsCompanion seasonRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/decor` — le fond par défaut, quand aucune saison ne couvre le
+/// jour.
+///
+/// Cinq clés, relevées sur `decor_transformer.ts` : `id`, `backgroundUrl`,
+/// `backgroundVerticalUrl`, `createdAt`, `updatedAt`.
+///
+/// **Les deux adresses sont nullables**, et c'est le seul point à retenir : la
+/// ligne part même quand rien n'a été déposé au portail. Traiter ce cas comme
+/// une ligne mutilée coûterait la page entière, alors que « pas de décor » est
+/// l'état normal d'une installation qui n'en a jamais posé.
+DecorCompanion decorRowOf(Map<String, Object?> item) {
+  const collection = 'decor';
+  return DecorCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    backgroundUrl: Value(_optionalText(item, 'backgroundUrl')),
+    backgroundVerticalUrl: Value(_optionalText(item, 'backgroundVerticalUrl')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Rouages
 // ─────────────────────────────────────────────────────────────────────────────
