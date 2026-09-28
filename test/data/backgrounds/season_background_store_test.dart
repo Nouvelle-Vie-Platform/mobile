@@ -116,6 +116,37 @@ void main() {
     expect(second.fetched, isEmpty);
   });
 
+  group('Ce que lit le démarrage', () {
+    test('rien n\'a été descendu → rien', () async {
+      final (:store, fetched: _) = make();
+      expect(await store.cachedFile(), isNull);
+    });
+
+    test('le fond descendu se retrouve **sans son adresse**', () async {
+      final (:store, fetched: _) = make();
+      final descendu = await store.ensureLocal(url);
+
+      // C'est tout l'intérêt : `main()` lit ce fichier avant le premier frame,
+      // sans ouvrir la base et sans savoir quelle saison court. Le dossier ne
+      // contient qu'un fichier — la purge s'en charge.
+      final startup = await store.cachedFile();
+      expect(startup!.path, descendu!.path);
+    });
+
+    test('un `.partial` n\'est jamais rendu', () async {
+      final (:store, fetched: _) = make();
+      // Une descente interrompue laisse ce fichier-là. Le rendre afficherait
+      // une image tronquée — et la figerait à l'écran de démarrage de **tous**
+      // les lancements suivants, puisque le démarrage ne descend rien.
+      final directory = Directory('${root.path}/season_backgrounds');
+      await directory.create(recursive: true);
+      await File('${directory.path}/abcdef12.webp.partial')
+          .writeAsBytes([0x52]);
+
+      expect(await store.cachedFile(), isNull);
+    });
+  });
+
   test('le dossier est celui qu\'on lui donne, et nommé', () async {
     final (:store, fetched: _) = make();
     final file = await store.ensureLocal(url);

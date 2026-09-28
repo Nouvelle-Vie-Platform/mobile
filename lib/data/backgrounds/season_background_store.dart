@@ -38,6 +38,17 @@ abstract class SeasonBackgroundStore {
   /// Le fichier local du fond d'[url], descendu si besoin. `null` si l'adresse
   /// est vide, ou si quoi que ce soit a échoué.
   Future<File?> ensureLocal(String? url);
+
+  /// Le fond **déjà descendu**, sans jamais toucher au réseau ni à la base.
+  ///
+  /// C'est ce que lit le démarrage : l'écran de marque dure le temps de
+  /// résoudre une session, et un fond qui arriverait après lui n'aurait servi à
+  /// personne. Le dossier ne contient qu'un fichier — la purge s'en charge —, et
+  /// c'est précisément ce qui permet de le retrouver **sans connaître son
+  /// adresse**, donc sans ouvrir le magasin.
+  ///
+  /// `null` est l'état normal du premier lancement.
+  Future<File?> cachedFile();
 }
 
 /// Celui des tests et du mode sans backend : ne descend rien, ne rend rien.
@@ -46,6 +57,9 @@ class InertSeasonBackgroundStore implements SeasonBackgroundStore {
 
   @override
   Future<File?> ensureLocal(String? url) async => null;
+
+  @override
+  Future<File?> cachedFile() async => null;
 }
 
 /// L'implémentation réelle : un fichier par adresse, dans le dossier de
@@ -117,6 +131,24 @@ class FileSeasonBackgroundStore implements SeasonBackgroundStore {
       return target;
     } catch (_) {
       // Voir l'en-tête : un décor n'est pas une donnée.
+      return null;
+    }
+  }
+
+  @override
+  Future<File?> cachedFile() async {
+    try {
+      final directory = Directory('${(await _root()).path}/$_kDirectory');
+      if (!await directory.exists()) return null;
+
+      await for (final entry in directory.list()) {
+        // Les `.partial` sont des descentes interrompues : les rendre
+        // afficherait une image tronquée, et surtout la figerait à l'écran de
+        // démarrage de tous les lancements suivants.
+        if (entry is File && !entry.path.endsWith('.partial')) return entry;
+      }
+      return null;
+    } catch (_) {
       return null;
     }
   }

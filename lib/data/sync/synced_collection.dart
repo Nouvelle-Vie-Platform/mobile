@@ -148,7 +148,7 @@ class _PageSplit<D> {
 /// **déjà** arrivé. La collection n'a **pas de tombstone** : un document ne se
 /// supprime pas, il s'édite.
 ///
-/// **`seasons` entre au même étage** : un référentiel de quelques lignes, dont
+/// **`seasons` et `decor` entrent au même étage** : un référentiel de quelques lignes, dont
 /// le fond vertical habille les deux lecteurs. Rangée avant les contenus pour
 /// la raison habituelle — un enseignement ouvert au premier lancement doit
 /// trouver son décor déjà là, faute de quoi l'écran se peint deux fois.
@@ -205,6 +205,12 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.seasonsCollection,
         idOf: (item) => referenceId(SyncCollectionKey.seasons, item),
         rowOf: seasonRowOf,
+      ),
+      SyncedCollection<DecorRow>(
+        key: SyncCollectionKey.decor,
+        local: (dao) => dao.decorCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.decor, item),
+        rowOf: decorRowOf,
       ),
       SyncedCollection<ContributorRow>(
         key: SyncCollectionKey.contributors,
