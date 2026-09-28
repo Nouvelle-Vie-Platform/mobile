@@ -1107,17 +1107,26 @@ C'est de la **télémétrie** : un échec ne se voit jamais et n'interrompt rien
 La progression accumulée en invité part vers le compte, et **la position la plus
 avancée gagne**.
 
-⚠️ **C'est le client qui arbitre, parce que le serveur n'arbitre pas.** Vérifié à
-la source : `app/mediatheque/actions/report_playback_progress.ts` passe la
-position **telle quelle**, et `upsertOwned` (ADR-0018) réécrit **tout champ qui
-diffère**. Une position inférieure diffère, donc elle est écrite — et `completed`
-aussi, ce qui permet aujourd'hui de **dé-terminer** un enseignement. Voir
-`server-portal#421`. Si elle est tenue, tout ce mécanisme fond en une poussée
-aveugle.
+⚠️ **Le serveur arbitre désormais, et cet arbitrage-ci reste quand même
+nécessaire.** Ce paragraphe disait l'inverse, et c'était vrai au moment où il a
+été écrit : `upsertOwned` (ADR-0018) réécrivait **tout champ qui diffère**, donc
+une position inférieure était écrite, et `completed` pouvait revenir à faux.
+`server-portal#421` a fermé les deux — `position_seconds` garde le maximum,
+`completed` est collant — et `server-portal#422` a fermé le trou qui restait,
+la course des **deux premières** écritures simultanées, qui rendait 500.
 
-Donc : on **lit** ce que le compte porte (`GET /sync/playback_progress`) avant de
-pousser, et **si le cycle échoue, rien ne part**. Ne rien faire perd une
-commodité ; pousser à l'aveugle abîme une donnée.
+Ce qui **ne change pas** : on **lit** ce que le compte porte
+(`GET /sync/playback_progress`) avant de pousser, et **si le cycle échoue, rien
+ne part**. Deux raisons, dont une seule tenait à la lacune serveur :
+
+- la fusion **relève aussi la ligne locale** quand le compte est devant. C'est
+  la raison qui demeure, et elle est côté client par nature — sans elle,
+  l'enregistreur rapporterait ensuite une position en retard, que le serveur
+  ignorerait désormais, mais qui laisserait l'appareil afficher un recul que le
+  compte ne porte pas ;
+- pousser à l'aveugle n'abîme plus la donnée du compte. **Ne pas en conclure que
+  la lecture préalable est devenue gratuite à retirer** : la première raison
+  suffit à la garder, et la retirer se ferait sans qu'aucun test ne rougisse.
 
 La règle diffère de celle de `resumeFor`, qui prend **la plus récente** : c'est
 pourquoi la fusion **relève aussi la ligne locale** quand le compte est devant —
