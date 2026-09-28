@@ -23,6 +23,7 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
   $PlaybackProgressTable get playbackProgress =>
       attachedDatabase.playbackProgress;
   $LegalDocumentsTable get legalDocuments => attachedDatabase.legalDocuments;
+  $SeasonsTable get seasons => attachedDatabase.seasons;
   SyncDaoManager get managers => SyncDaoManager(this);
 }
 
@@ -66,4 +67,6 @@ class SyncDaoManager {
   $$LegalDocumentsTableTableManager get legalDocuments =>
       $$LegalDocumentsTableTableManager(
           _db.attachedDatabase, _db.legalDocuments);
+  $$SeasonsTableTableManager get seasons =>
+      $$SeasonsTableTableManager(_db.attachedDatabase, _db.seasons);
 }

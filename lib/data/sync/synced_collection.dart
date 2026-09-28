@@ -148,6 +148,11 @@ class _PageSplit<D> {
 /// **déjà** arrivé. La collection n'a **pas de tombstone** : un document ne se
 /// supprime pas, il s'édite.
 ///
+/// **`seasons` entre au même étage** : un référentiel de quelques lignes, dont
+/// le fond vertical habille les deux lecteurs. Rangée avant les contenus pour
+/// la raison habituelle — un enseignement ouvert au premier lancement doit
+/// trouver son décor déjà là, faute de quoi l'écran se peint deux fois.
+///
 /// **`playback_progress` ferme la marche** (issue #43), et c'est la première
 /// collection `private` que ce client réplique. Elle se **joint** aux deux
 /// familles de contenu et se range donc après elles, par la même règle que
@@ -194,6 +199,12 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.legalDocumentsCollection,
         idOf: (item) => referenceId(SyncCollectionKey.legalDocuments, item),
         rowOf: legalDocumentRowOf,
+      ),
+      SyncedCollection<SeasonRow>(
+        key: SyncCollectionKey.seasons,
+        local: (dao) => dao.seasonsCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.seasons, item),
+        rowOf: seasonRowOf,
       ),
       SyncedCollection<ContributorRow>(
         key: SyncCollectionKey.contributors,

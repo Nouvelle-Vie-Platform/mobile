@@ -31,6 +31,7 @@ import '../data/local/gathering_dao.dart';
 import '../data/local/legal_dao.dart';
 import '../data/local/mediatheque_dao.dart';
 import '../data/local/playback_dao.dart';
+import '../data/local/season_dao.dart';
 import '../data/local/sync_dao.dart';
 import '../data/sync/sync_api.dart';
 import '../data/sync/sync_engine.dart';
@@ -92,6 +93,13 @@ final playbackDaoProvider = Provider<PlaybackDao>(
 /// (ADR-0035).
 final legalDaoProvider = Provider<LegalDao>(
   (ref) => ref.watch(appDatabaseProvider).legalDao,
+);
+
+/// Les lectures du magasin, côté **saisons** — la période datée dont le fond
+/// vertical habille les deux lecteurs. Un DAO de plus, même motif que les
+/// précédents.
+final seasonDaoProvider = Provider<SeasonDao>(
+  (ref) => ref.watch(appDatabaseProvider).seasonDao,
 );
 
 /// Les deux routes du protocole, sur le `Dio` d'`ApiClient` : la requête

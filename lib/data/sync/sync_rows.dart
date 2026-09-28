@@ -432,6 +432,38 @@ LegalDocumentsCompanion legalDocumentRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/seasons` — la saison, dont le fond vertical habille les deux
+/// lecteurs.
+///
+/// Huit clés, relevées sur `season_transformer.ts` : `id`, `name`,
+/// `backgroundUrl`, `backgroundVerticalUrl`, `startsOn`, `endsOn`, `createdAt`,
+/// `updatedAt`.
+///
+/// **Les deux jours restent des chaînes** (`YYYY-MM-DD`), par la règle 2 de
+/// l'en-tête : les lire en `DateTime` les ancrerait à un instant, et la saison
+/// changerait de jour selon le fuseau du téléphone. La comparaison reste exacte
+/// — en ISO, l'ordre lexicographique est l'ordre chronologique.
+///
+/// **Les deux fonds sont écrits bruts**, le vertical `null` compris : c'est
+/// l'absence de vertical qui apprend au lecteur qu'il doit retomber sur le
+/// paysage. Résoudre ici laquelle des deux images sert reviendrait à figer à
+/// l'écriture une décision de présentation (ADR-0026, décision 3).
+SeasonsCompanion seasonRowOf(Map<String, Object?> item) {
+  const collection = 'seasons';
+  return SeasonsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    // Exigés : une saison sans nom, sans fond paysage ou sans bornes n'a rien
+    // à habiller ni aucun jour où le faire.
+    name: _text(collection, item, 'name'),
+    backgroundUrl: _text(collection, item, 'backgroundUrl'),
+    backgroundVerticalUrl: Value(_optionalText(item, 'backgroundVerticalUrl')),
+    startsOn: _text(collection, item, 'startsOn'),
+    endsOn: _text(collection, item, 'endsOn'),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Rouages
 // ─────────────────────────────────────────────────────────────────────────────

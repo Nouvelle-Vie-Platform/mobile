@@ -26,6 +26,7 @@ import 'mediatheque_dao.dart';
 import 'playback_dao.dart';
 import 'settings_dao.dart';
 import 'sync_dao.dart';
+import 'season_dao.dart';
 import 'tables/announcement_tables.dart';
 import 'tables/download_tables.dart';
 import 'tables/gathering_tables.dart';
@@ -34,6 +35,7 @@ import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
 import 'tables/settings_tables.dart';
 import 'tables/sync_tables.dart';
+import 'tables/season_tables.dart';
 
 part 'app_database.g.dart';
 
@@ -75,6 +77,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     PlaybackProgress,
     LocalPlaybackPositions,
     LegalDocuments,
+    Seasons,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -87,6 +90,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     AnnouncementDao,
     PlaybackDao,
     LegalDao,
+    SeasonDao,
     SettingsDao,
     DownloadsDao,
     DownloadNotificationsDao,
@@ -127,7 +131,7 @@ class AppDatabase extends _$AppDatabase {
   /// colonne apparaîtrait dès le palier v8 et se heurterait au schéma v8 gelé
   /// (voir `download_titles`). Rien du catalogue déjà téléchargé ne bouge.
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -308,6 +312,20 @@ class AppDatabase extends _$AppDatabase {
           // connaît pas.
           if (from < 10 && to >= 10) {
             await m.addColumn(teachings, teachings.imageSquareUrl);
+          }
+
+          // v10 → v11 — les **saisons**, dont le fond vertical habille les deux
+          // lecteurs. **Une création de table, et rien d'autre** : aucune
+          // colonne existante ne bouge, aucune donnée n'est recopiée. La table
+          // naît vide et le premier cycle la remplit — son curseur n'existe pas
+          // encore, le manifeste l'annoncera `from_zero`.
+          //
+          // Pas de garde `to >= 11`, contrairement aux paliers qui ajoutent une
+          // colonne : le vérificateur de schéma **ignore une table
+          // surnuméraire** et ne signale qu'une colonne surnuméraire. Même
+          // raison qu'aux paliers v2 à v5, v7 et v9.
+          if (from < 11) {
+            await m.createTable(seasons);
           }
         },
         beforeOpen: (details) async {

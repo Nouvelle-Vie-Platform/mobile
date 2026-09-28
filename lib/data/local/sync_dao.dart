@@ -8,6 +8,7 @@ import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
 import 'tables/sync_tables.dart';
+import 'tables/season_tables.dart';
 
 part 'sync_dao.g.dart';
 
@@ -57,6 +58,13 @@ abstract final class SyncCollectionKey {
   /// parce que la barrière de consentement doit afficher **hors ligne** ce
   /// qu'elle demande d'accepter.
   static const String legalDocuments = 'legal_documents';
+
+  /// **Les saisons** — la période datée dont le fond vertical habille les deux
+  /// lecteurs. Un **référentiel** sans filtre de périmètre, servi **entier** :
+  /// c'est le téléphone qui élit la saison du jour, parce qu'il est le seul à
+  /// savoir quel jour on est hors ligne, et le seul à pouvoir basculer à minuit
+  /// sans réseau.
+  static const String seasons = 'seasons';
 
   /// **La reprise de lecture** — la première collection `private` que ce client
   /// réplique (issue #43). Elle est en **lecture-depuis-la-synchro seulement** :
@@ -114,6 +122,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     Announcements,
     PlaybackProgress,
     LegalDocuments,
+    Seasons,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -167,6 +176,13 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// ce serait une migration, pas un `deleted_at`.
   LocalCollection<LegalDocumentRow> get legalDocumentsCollection =>
       LocalCollection._(SyncCollectionKey.legalDocuments, legalDocuments);
+
+  /// **Sans tombstone non plus** : une saison se supprime pour de bon côté
+  /// serveur, et la disparition ne voyage pas. Le coût est borné par
+  /// [SeasonDao], qui départage deux saisons du même jour par le plus grand
+  /// `id` — la saison recréée l'emporte sur celle qu'on venait d'effacer.
+  LocalCollection<SeasonRow> get seasonsCollection =>
+      LocalCollection._(SyncCollectionKey.seasons, seasons);
 
   /// **La seule collection `private` de ce registre.** Elle se remplit comme
   /// les dix autres — par le flux delta, jamais par l'application — et rien

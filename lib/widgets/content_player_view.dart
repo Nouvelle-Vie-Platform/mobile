@@ -17,6 +17,7 @@ import '../state/downloads_providers.dart';
 import '../state/measurement_providers.dart';
 import '../state/playback_progress_providers.dart';
 import '../state/player_providers.dart';
+import '../state/season_providers.dart';
 import '../state/session_gate.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
@@ -40,10 +41,17 @@ class ContentPlayerView extends ConsumerStatefulWidget {
     this.downloadContentType,
     this.isLive = false,
     this.onStop,
-    this.backgroundImage,
+    this.fallbackBackgroundAsset,
   });
 
-  final String? backgroundImage;
+  /// **Le dernier étage de la cascade du fond** : une image du dépôt, posée
+  /// quand aucune saison n'en fournit. Le site public ferme sa propre cascade
+  /// de la même façon, et pour la même raison — un lecteur sans décor le jour
+  /// où personne n'a créé de saison serait une régression visible, causée par
+  /// une case vide au portail.
+  ///
+  /// `null` = pas de plancher, l'aplat de couleur du contenu suffit.
+  final String? fallbackBackgroundAsset;
 
   final ProviderListenable<AsyncValue<ContentView?>> content;
   final String chromeTitle;
@@ -143,10 +151,29 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
         );
   }
 
+  /// **La cascade du fond**, écrite une fois pour les cinq états de l'écran.
+  ///
+  /// Le fond de la saison gagne ; l'image du dépôt ferme la cascade, comme sur
+  /// le site public. Elle est lue **ici** et non dans `_PlayerScaffold` pour
+  /// que le cadre reste un widget sans provider : il est monté par les deux
+  /// écrans et par les tests, et un `ref.watch` de plus y obligerait chacun à
+  /// savoir ce qu'est une saison.
+  ///
+  /// `.value`, jamais l'`AsyncValue` : tant que le fichier n'est pas là, il n'y
+  /// a **rien à attendre**. Un lecteur qui retarderait son premier rendu pour
+  /// un décor serait un lecteur qui met une seconde à s'ouvrir — et le fond
+  /// arrive tout seul à la reconstruction suivante.
+  ImageProvider? _background() {
+    final season = ref.watch(seasonBackgroundProvider).value;
+    if (season != null) return season;
+    final fallback = widget.fallbackBackgroundAsset;
+    return fallback == null ? null : AssetImage(fallback);
+  }
+
   Widget _buildLoading(BuildContext context) {
     return _PlayerScaffold(
       base: _fallbackBase,
-      backgroundImage: widget.backgroundImage,
+      background: _background(),
       child: Column(
         children: [
           _PlayerTopBar(
@@ -166,7 +193,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
   Widget _buildError(BuildContext context) {
     return _PlayerScaffold(
       base: _fallbackBase,
-      backgroundImage: widget.backgroundImage,
+      background: _background(),
       child: Column(
         children: [
           _PlayerTopBar(
@@ -192,7 +219,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
   Widget _buildAbsent(BuildContext context) {
     return _PlayerScaffold(
       base: _fallbackBase,
-      backgroundImage: widget.backgroundImage,
+      background: _background(),
       child: Column(
         children: [
           _PlayerTopBar(
@@ -216,7 +243,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
   Widget _buildNoMedia(BuildContext context, ContentView content) {
     return _PlayerScaffold(
       base: Color(content.color),
-      backgroundImage: widget.backgroundImage,
+      background: _background(),
       child: Column(
         children: [
           _PlayerTopBar(
@@ -440,7 +467,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
 
     return _PlayerScaffold(
       base: base,
-      backgroundImage: widget.backgroundImage,
+      background: _background(),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Column(
@@ -525,12 +552,15 @@ class _PlayerScaffold extends StatelessWidget {
   const _PlayerScaffold({
     required this.base,
     required this.child,
-    this.backgroundImage,
+    this.background,
   });
 
   final Color base;
   final Widget child;
-  final String? backgroundImage;
+
+  /// Le fond **déjà résolu** — fichier de saison descendu sur le disque, ou
+  /// image du dépôt. Le cadre ne sait pas d'où il vient et n'a pas à le savoir.
+  final ImageProvider? background;
 
   @override
   Widget build(BuildContext context) {
@@ -539,14 +569,17 @@ class _PlayerScaffold extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // 1. Image de fond (si fournie) ou fond de couleur
-          if (backgroundImage != null)
-            Image.asset(
-              backgroundImage!,
+          //
+          // La couleur est peinte **sous** l'image, et pas seulement en repli :
+          // le fichier de saison est décodé de façon asynchrone, et sans elle
+          // le premier rendu laisserait voir le noir de la fenêtre.
+          Container(color: base),
+          if (background != null)
+            Image(
+              image: background!,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: base),
-            )
-          else
-            Container(color: base),
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
 
           // 2. Dégradé sombre par-dessus l'image pour garder la lisibilité des textes/boutons
           Container(
@@ -624,27 +657,42 @@ class _Artwork extends StatelessWidget {
 
     if (image == null) return _placeholder();
 
+    // **Le visuel est carré, et il le reste.** Sans cette contrainte, l'image
+    // prenait tout l'espace central — un rectangle haut — et `BoxFit.cover`
+    // rognait le carré **à gauche et à droite** : un sujet centré sortait du
+    // cadre des deux côtés, ce qui se lit à l'œil comme une image déformée.
+    // Mesuré : sur un cadre de 390 × 495, un carré de 600 px perdait 52 px de
+    // chaque bord.
+    //
+    // `AspectRatio` se replie tout seul sur la hauteur disponible quand le
+    // cadre est plus haut que large — il n'y a donc pas de cas où le carré
+    // déborderait. Un visuel **non** carré (le repli paysage ou portrait, quand
+    // la rubrique n'a pas de carré) est recadré au centre, et c'est ce qu'on
+    // veut : un carré rogné reste plus informatif qu'un aplat de couleur.
     return Hero(
       tag: 'content_art_${content.id}',
-      child: ShaderMask(
-        blendMode: BlendMode.dstIn,
-        shaderCallback: (rect) => const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.white,
-            Colors.white,
-            Colors.transparent,
-          ],
-          stops: [0.0, 0.12, 0.6, 1.0],
-        ).createShader(rect),
-        child: Image(
-          image: image,
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _placeholder(),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: ShaderMask(
+          blendMode: BlendMode.dstIn,
+          shaderCallback: (rect) => const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.white,
+              Colors.white,
+              Colors.transparent,
+            ],
+            stops: [0.0, 0.12, 0.6, 1.0],
+          ).createShader(rect),
+          child: Image(
+            image: image,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _placeholder(),
+          ),
         ),
       ),
     );

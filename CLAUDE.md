@@ -74,6 +74,13 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   `unknown`, traité comme « pas de cellulaire », donc sans bridage — le bon
   défaut sur un ordinateur). Lu **uniquement** derrière `NetworkTransport`
   (`lib/data/network/`).
+- **path_provider ^2.1.6** — le **dossier de cache du fond des lecteurs**, et
+  rien d'autre. Déjà présent en transitif (`drift_flutter`,
+  `background_downloader`, `just_audio`) ; déclaré parce qu'on l'importe
+  soi-même, comme `web`. **Aucune permission** sur aucune plateforme. Lu
+  uniquement derrière `SeasonBackgroundStore` (`lib/data/backgrounds/`), qui
+  rattrape tout — sous `flutter test` le canal de plugin n'existe pas, et un
+  lecteur monté dans un test ne doit pas rougir pour un décor.
 - **`web ^1.1.1`** (#46) — l'interop DOM du lecteur web, successeur de
   `dart:html` (retiré du jeu en Dart 3.12, comme `package:js`). Déjà présent en
   transitif ; déclaré parce qu'on l'importe soi-même. **Un seul fichier de
@@ -365,6 +372,9 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   `tables/legal_tables.dart` — `legal_documents` (#55) : **une ligne courante
   par genre** (`cgu`, `privacy`, `about`), sections brutes en JSON,
   **sans tombstone** — un document ne se supprime pas, il s'édite.
+  `tables/season_tables.dart` — `seasons` : la période datée dont le **fond
+  vertical** habille les deux lecteurs. **Sans tombstone** non plus, et celui-ci
+  a un coût — voir « Le fond des lecteurs » plus bas.
 - `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart`,
   `gathering_dao.dart`, `announcement_dao.dart`, `playback_dao.dart` et
   `legal_dao.dart` — lectures, **un DAO par domaine**. `playback_dao` est le
@@ -412,7 +422,7 @@ qu'elle remplit. Le réseau ne peint jamais.
   désérialiseur à convention unique se trompe sur la moitié des clés.
 - `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
   `gathering_types`, `status_backgrounds`, `official_accounts`,
-  `official_account_memberships`, `legal_documents`, `contributors`,
+  `official_account_memberships`, `legal_documents`, `seasons`, `contributors`,
   `branches`, puis `teachings`, `gatherings`, `announcements`,
   `playback_progress`.
 - `sync_api.dart` — `GET /sync` et `GET /sync/{collection}`, sur le `Dio`
@@ -424,7 +434,7 @@ qu'elle remplit. Le réseau ne peint jamais.
    arrive sans son intervenant (la jointure de lecture reste tolérante), ça
    supprime le cas fréquent : la toute première synchronisation.
 2. **La `scope_version` est retenue en mémoire pendant tout le cycle et
-   persistée en dernier** (ADR-0027). Une valeur pour les dix-huit collections.
+   persistée en dernier** (ADR-0027). Une valeur pour toutes les collections.
    Persistée trop tôt, elle éteint un resync qui n'a pas eu lieu — et le
    manifeste ne le redemandera **jamais**. Un cycle interrompu ne persiste rien.
 3. **« Rétractation ou ligne », décidé avant toute construction d'objet** :
@@ -593,6 +603,56 @@ Six règles, toutes vérifiées par des tests :
 Le contrat détaillé, le nom du champ de fichier (`backgroundImage`) et la limite
 assumée (on ne sait pas retirer une image déjà publiée) sont dans
 `docs/statuts-annonces.md` §11.
+
+### Le fond des lecteurs — une saison, un fichier sur le disque
+
+Les deux lecteurs — enseignement et direct — posent le **même** fond : le
+« fond vertical (téléphone) » de la saison active, déposé au portail, celui-là
+même que le site public sert aux écrans étroits. Ce n'est pas un fond par
+contenu : un direct n'a pas de fiche où en déposer un.
+
+**La cascade tient en deux étages**, et elle est écrite une fois
+(`_background()` dans `ContentPlayerView`, lu par les cinq états de l'écran) :
+le fond de la saison, puis une image du dépôt (`fallbackBackgroundAsset`, que
+seul l'écran du direct fournit aujourd'hui). Rien des deux → l'aplat de couleur
+du contenu, exactement comme avant. Le site public ferme sa propre cascade de la
+même façon, et pour la même raison : une case vide au portail ne doit pas
+produire un écran nu.
+
+Cinq points qui se ratent en silence :
+
+1. **C'est le téléphone qui élit la saison du jour**, pas le serveur
+   (`SeasonDao.seasonOfDay`). Lui seul sait quel jour on est **hors ligne**, et
+   lui seul peut basculer à minuit sans réseau. Le serveur sert la table
+   entière, saisons passées et futures comprises ; filtrer côté serveur
+   rendrait le décor dépendant du réseau.
+2. **Les deux bornes sont des chaînes `YYYY-MM-DD`**, comparées comme des
+   chaînes — la règle 2 de `sync_rows.dart`, celle de `recordedAt`. En ISO,
+   l'ordre lexicographique *est* l'ordre chronologique ; convertir en
+   `DateTime` poserait un instant, donc un fuseau, donc un décalage d'un jour.
+   Les deux bornes sont **incluses**.
+3. **Le fond est descendu une fois, puis lu sur le disque**
+   (`SeasonBackgroundStore`). Le cache de `NetworkImage` est *en mémoire* : il
+   repartirait sur le réseau à chaque lancement. Un cache HTTP générique
+   revaliderait au bout de sept jours, ce qui est faux ici — l'adresse d'un
+   fond **change quand le fond change**, elle est donc déjà sa propre version.
+   Le fichier vit dans le dossier de **support**, jamais dans les documents :
+   un cache n'a rien à faire dans la sauvegarde iCloud d'un fidèle.
+4. **`ensureLocal` ne lève jamais** — réseau absent, disque plein, canal de
+   plugin inexistant sous `flutter test` : tout rend `null`. Un décor n'est pas
+   une donnée. C'est aussi ce qui permet aux tests d'écran de monter le lecteur
+   sans rien surcharger.
+5. **Le téléchargement passe par un `Dio` nu**, jamais celui d'`ApiClient` : un
+   fond est un fichier public de `/uploads/`. Y envoyer le jeton du porteur, et
+   faire traverser la réponse à l'intercepteur de 401, donnerait à un
+   téléchargement d'image le pouvoir de déconnecter quelqu'un.
+
+⚠️ **`seasons` n'a pas de tombstone**, et la limite se paie côté client : une
+saison supprimée au portail continue d'habiller les appareils qui l'avaient
+déjà reçue, jusqu'à sa date de fin. `SeasonDao` en borne le coût — à égalité de
+dates, **le plus grand `id` gagne**, donc la saison *recréée* l'emporte sur
+celle qu'on venait d'effacer, ce qui est le geste qui suit une suppression par
+erreur.
 
 ### La reprise de lecture (#43) — **deux tables, et c'est délibéré**
 
@@ -1326,7 +1386,15 @@ autorisés avant authentification.
      pause, sortie d'écran, `AppLifecycleState.paused` (**sans arrêter la
      lecture**) et état terminal — qui exige `pause()` **et** `seek(zero)`,
      `just_audio` restant `playing == true`, curseur en fin, sans son ;
-  6. **l'espace central (`_PlayerStage`) porte quatre réponses** (#42) —
+  6. **le visuel central est carré, et il le reste.** Sans contrainte, l'image
+     prenait tout l'espace central — un rectangle haut — et `BoxFit.cover` la
+     rognait **à gauche et à droite** : un sujet centré sortait du cadre des
+     deux côtés, ce qui se lit à l'œil comme une image déformée (mesuré : sur un
+     cadre de 390 × 495, un carré de 600 px perdait 52 px de chaque bord).
+     `AspectRatio` se replie seul sur la hauteur quand le cadre est plus haut
+     que large, et un visuel non carré — le repli paysage ou portrait — est
+     recadré au centre, ce qui reste plus informatif qu'un aplat ;
+  7. **l'espace central (`_PlayerStage`) porte quatre réponses** (#42) —
      visuel, mise en tampon **par-dessus** le visuel, « Lecture interrompue »
      et « il faut du réseau » — et **aucune ne remplace l'écran** : le titre,
      le compteur et les commandes restent dans les quatre. Il s'y abonne par

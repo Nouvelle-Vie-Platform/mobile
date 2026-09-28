@@ -152,6 +152,7 @@ void main() {
           'official_accounts',
           'official_account_memberships',
           'legal_documents',
+          'seasons',
           'contributors',
           'branches',
           'teachings',

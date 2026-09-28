@@ -126,6 +126,14 @@ dependencies:
   # Lu **uniquement** derrière `NetworkTransport`, comme `image_picker` derrière
   # `StatusImagePicker` : les tests posent un transport figé, sans canal de
   # plugin.
+  # `path_provider` — le **dossier de cache du fond des lecteurs**, et rien
+  # d'autre. Déjà présent en transitif (drift_flutter, background_downloader,
+  # just_audio) ; déclaré parce qu'on l'importe soi-même, comme `web`. Aucune
+  # permission sur aucune plateforme. Lu **uniquement** derrière
+  # `SeasonBackgroundStore` (`lib/data/backgrounds/`), qui rattrape tout :
+  # sous `flutter test` le canal de plugin n'existe pas, et un lecteur monté
+  # dans un test ne doit pas rougir pour un décor.
+  path_provider: ^2.1.6
   connectivity_plus: ^7.3.1
 
   # Enregistrement d'un média partagé dans la galerie Photos (visionneuse des
