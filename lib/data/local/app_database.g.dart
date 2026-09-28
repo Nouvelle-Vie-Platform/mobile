@@ -8196,6 +8196,503 @@ class LegalDocumentsCompanion extends UpdateCompanion<LegalDocumentRow> {
   }
 }
 
+class $SeasonsTable extends Seasons with TableInfo<$SeasonsTable, SeasonRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SeasonsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _backgroundUrlMeta =
+      const VerificationMeta('backgroundUrl');
+  @override
+  late final GeneratedColumn<String> backgroundUrl = GeneratedColumn<String>(
+      'background_url', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _backgroundVerticalUrlMeta =
+      const VerificationMeta('backgroundVerticalUrl');
+  @override
+  late final GeneratedColumn<String> backgroundVerticalUrl =
+      GeneratedColumn<String>('background_vertical_url', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _startsOnMeta =
+      const VerificationMeta('startsOn');
+  @override
+  late final GeneratedColumn<String> startsOn = GeneratedColumn<String>(
+      'starts_on', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _endsOnMeta = const VerificationMeta('endsOn');
+  @override
+  late final GeneratedColumn<String> endsOn = GeneratedColumn<String>(
+      'ends_on', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        name,
+        backgroundUrl,
+        backgroundVerticalUrl,
+        startsOn,
+        endsOn,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'seasons';
+  @override
+  VerificationContext validateIntegrity(Insertable<SeasonRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('background_url')) {
+      context.handle(
+          _backgroundUrlMeta,
+          backgroundUrl.isAcceptableOrUnknown(
+              data['background_url']!, _backgroundUrlMeta));
+    } else if (isInserting) {
+      context.missing(_backgroundUrlMeta);
+    }
+    if (data.containsKey('background_vertical_url')) {
+      context.handle(
+          _backgroundVerticalUrlMeta,
+          backgroundVerticalUrl.isAcceptableOrUnknown(
+              data['background_vertical_url']!, _backgroundVerticalUrlMeta));
+    }
+    if (data.containsKey('starts_on')) {
+      context.handle(_startsOnMeta,
+          startsOn.isAcceptableOrUnknown(data['starts_on']!, _startsOnMeta));
+    } else if (isInserting) {
+      context.missing(_startsOnMeta);
+    }
+    if (data.containsKey('ends_on')) {
+      context.handle(_endsOnMeta,
+          endsOn.isAcceptableOrUnknown(data['ends_on']!, _endsOnMeta));
+    } else if (isInserting) {
+      context.missing(_endsOnMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SeasonRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SeasonRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      backgroundUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}background_url'])!,
+      backgroundVerticalUrl: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}background_vertical_url']),
+      startsOn: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}starts_on'])!,
+      endsOn: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}ends_on'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $SeasonsTable createAlias(String alias) {
+    return $SeasonsTable(attachedDatabase, alias);
+  }
+}
+
+class SeasonRow extends DataClass implements Insertable<SeasonRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// PK **SERIAL** côté serveur : une saison s'administre au portail, jamais
+  /// hors ligne.
+  final int id;
+
+  /// Le nom de la saison. Ne s'affiche nulle part aujourd'hui ; il voyage parce
+  /// qu'il est ce qui rend une ligne lisible dans un journal ou une inspection
+  /// de base, quand on cherche pourquoi le fond n'est pas celui qu'on croyait.
+  final String name;
+
+  /// Le fond **paysage**, toujours servi (il est requis au portail).
+  final String backgroundUrl;
+
+  /// Le fond **vertical**, celui des téléphones. `null` = la saison n'en a pas
+  /// déposé, et le lecteur retombe sur le paysage — recadré, ce qui reste
+  /// préférable à un aplat de couleur.
+  final String? backgroundVerticalUrl;
+
+  /// Premier jour, **inclus**, en `YYYY-MM-DD`.
+  ///
+  /// **Une chaîne, jamais un `DateTime`** — la règle 2 de `sync_rows.dart`, la
+  /// même que `teachings.recordedAt` : un jour n'est pas un instant, et le
+  /// convertir en poserait un (minuit, dans un fuseau qu'il faudrait choisir),
+  /// que le moindre décalage ferait afficher la veille. La comparaison reste
+  /// exacte : en ISO, l'ordre lexicographique **est** l'ordre chronologique.
+  final String startsOn;
+
+  /// Dernier jour, **inclus**, en `YYYY-MM-DD`. Voir [startsOn].
+  final String endsOn;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const SeasonRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.name,
+      required this.backgroundUrl,
+      this.backgroundVerticalUrl,
+      required this.startsOn,
+      required this.endsOn,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['background_url'] = Variable<String>(backgroundUrl);
+    if (!nullToAbsent || backgroundVerticalUrl != null) {
+      map['background_vertical_url'] = Variable<String>(backgroundVerticalUrl);
+    }
+    map['starts_on'] = Variable<String>(startsOn);
+    map['ends_on'] = Variable<String>(endsOn);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  SeasonsCompanion toCompanion(bool nullToAbsent) {
+    return SeasonsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      name: Value(name),
+      backgroundUrl: Value(backgroundUrl),
+      backgroundVerticalUrl: backgroundVerticalUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(backgroundVerticalUrl),
+      startsOn: Value(startsOn),
+      endsOn: Value(endsOn),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory SeasonRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SeasonRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      backgroundUrl: serializer.fromJson<String>(json['backgroundUrl']),
+      backgroundVerticalUrl:
+          serializer.fromJson<String?>(json['backgroundVerticalUrl']),
+      startsOn: serializer.fromJson<String>(json['startsOn']),
+      endsOn: serializer.fromJson<String>(json['endsOn']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'backgroundUrl': serializer.toJson<String>(backgroundUrl),
+      'backgroundVerticalUrl':
+          serializer.toJson<String?>(backgroundVerticalUrl),
+      'startsOn': serializer.toJson<String>(startsOn),
+      'endsOn': serializer.toJson<String>(endsOn),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  SeasonRow copyWith(
+          {int? syncStamp,
+          int? id,
+          String? name,
+          String? backgroundUrl,
+          Value<String?> backgroundVerticalUrl = const Value.absent(),
+          String? startsOn,
+          String? endsOn,
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      SeasonRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        name: name ?? this.name,
+        backgroundUrl: backgroundUrl ?? this.backgroundUrl,
+        backgroundVerticalUrl: backgroundVerticalUrl.present
+            ? backgroundVerticalUrl.value
+            : this.backgroundVerticalUrl,
+        startsOn: startsOn ?? this.startsOn,
+        endsOn: endsOn ?? this.endsOn,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  SeasonRow copyWithCompanion(SeasonsCompanion data) {
+    return SeasonRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      backgroundUrl: data.backgroundUrl.present
+          ? data.backgroundUrl.value
+          : this.backgroundUrl,
+      backgroundVerticalUrl: data.backgroundVerticalUrl.present
+          ? data.backgroundVerticalUrl.value
+          : this.backgroundVerticalUrl,
+      startsOn: data.startsOn.present ? data.startsOn.value : this.startsOn,
+      endsOn: data.endsOn.present ? data.endsOn.value : this.endsOn,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeasonRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('backgroundUrl: $backgroundUrl, ')
+          ..write('backgroundVerticalUrl: $backgroundVerticalUrl, ')
+          ..write('startsOn: $startsOn, ')
+          ..write('endsOn: $endsOn, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, name, backgroundUrl,
+      backgroundVerticalUrl, startsOn, endsOn, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SeasonRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.backgroundUrl == this.backgroundUrl &&
+          other.backgroundVerticalUrl == this.backgroundVerticalUrl &&
+          other.startsOn == this.startsOn &&
+          other.endsOn == this.endsOn &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SeasonsCompanion extends UpdateCompanion<SeasonRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> backgroundUrl;
+  final Value<String?> backgroundVerticalUrl;
+  final Value<String> startsOn;
+  final Value<String> endsOn;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const SeasonsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.backgroundUrl = const Value.absent(),
+    this.backgroundVerticalUrl = const Value.absent(),
+    this.startsOn = const Value.absent(),
+    this.endsOn = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  SeasonsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required String name,
+    required String backgroundUrl,
+    this.backgroundVerticalUrl = const Value.absent(),
+    required String startsOn,
+    required String endsOn,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : name = Value(name),
+        backgroundUrl = Value(backgroundUrl),
+        startsOn = Value(startsOn),
+        endsOn = Value(endsOn);
+  static Insertable<SeasonRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? backgroundUrl,
+    Expression<String>? backgroundVerticalUrl,
+    Expression<String>? startsOn,
+    Expression<String>? endsOn,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (backgroundUrl != null) 'background_url': backgroundUrl,
+      if (backgroundVerticalUrl != null)
+        'background_vertical_url': backgroundVerticalUrl,
+      if (startsOn != null) 'starts_on': startsOn,
+      if (endsOn != null) 'ends_on': endsOn,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  SeasonsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String>? name,
+      Value<String>? backgroundUrl,
+      Value<String?>? backgroundVerticalUrl,
+      Value<String>? startsOn,
+      Value<String>? endsOn,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return SeasonsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      backgroundUrl: backgroundUrl ?? this.backgroundUrl,
+      backgroundVerticalUrl:
+          backgroundVerticalUrl ?? this.backgroundVerticalUrl,
+      startsOn: startsOn ?? this.startsOn,
+      endsOn: endsOn ?? this.endsOn,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (backgroundUrl.present) {
+      map['background_url'] = Variable<String>(backgroundUrl.value);
+    }
+    if (backgroundVerticalUrl.present) {
+      map['background_vertical_url'] =
+          Variable<String>(backgroundVerticalUrl.value);
+    }
+    if (startsOn.present) {
+      map['starts_on'] = Variable<String>(startsOn.value);
+    }
+    if (endsOn.present) {
+      map['ends_on'] = Variable<String>(endsOn.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeasonsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('backgroundUrl: $backgroundUrl, ')
+          ..write('backgroundVerticalUrl: $backgroundVerticalUrl, ')
+          ..write('startsOn: $startsOn, ')
+          ..write('endsOn: $endsOn, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AppSettingsTable extends AppSettings
     with TableInfo<$AppSettingsTable, AppSettingRow> {
   @override
@@ -9493,6 +9990,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LocalPlaybackPositionsTable localPlaybackPositions =
       $LocalPlaybackPositionsTable(this);
   late final $LegalDocumentsTable legalDocuments = $LegalDocumentsTable(this);
+  late final $SeasonsTable seasons = $SeasonsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $DownloadsTable downloads = $DownloadsTable(this);
   late final $DownloadTitlesTable downloadTitles = $DownloadTitlesTable(this);
@@ -9506,6 +10004,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       AnnouncementDao(this as AppDatabase);
   late final PlaybackDao playbackDao = PlaybackDao(this as AppDatabase);
   late final LegalDao legalDao = LegalDao(this as AppDatabase);
+  late final SeasonDao seasonDao = SeasonDao(this as AppDatabase);
   late final SettingsDao settingsDao = SettingsDao(this as AppDatabase);
   late final DownloadsDao downloadsDao = DownloadsDao(this as AppDatabase);
   late final DownloadNotificationsDao downloadNotificationsDao =
@@ -9531,6 +10030,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         playbackProgress,
         localPlaybackPositions,
         legalDocuments,
+        seasons,
         appSettings,
         downloads,
         downloadTitles,
@@ -13371,6 +13871,228 @@ typedef $$LegalDocumentsTableProcessedTableManager = ProcessedTableManager<
     ),
     LegalDocumentRow,
     PrefetchHooks Function()>;
+typedef $$SeasonsTableCreateCompanionBuilder = SeasonsCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required String name,
+  required String backgroundUrl,
+  Value<String?> backgroundVerticalUrl,
+  required String startsOn,
+  required String endsOn,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$SeasonsTableUpdateCompanionBuilder = SeasonsCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String> name,
+  Value<String> backgroundUrl,
+  Value<String?> backgroundVerticalUrl,
+  Value<String> startsOn,
+  Value<String> endsOn,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$SeasonsTableFilterComposer
+    extends Composer<_$AppDatabase, $SeasonsTable> {
+  $$SeasonsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get backgroundUrl => $composableBuilder(
+      column: $table.backgroundUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get backgroundVerticalUrl => $composableBuilder(
+      column: $table.backgroundVerticalUrl,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get startsOn => $composableBuilder(
+      column: $table.startsOn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get endsOn => $composableBuilder(
+      column: $table.endsOn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SeasonsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SeasonsTable> {
+  $$SeasonsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get backgroundUrl => $composableBuilder(
+      column: $table.backgroundUrl,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get backgroundVerticalUrl => $composableBuilder(
+      column: $table.backgroundVerticalUrl,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get startsOn => $composableBuilder(
+      column: $table.startsOn, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get endsOn => $composableBuilder(
+      column: $table.endsOn, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SeasonsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SeasonsTable> {
+  $$SeasonsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get backgroundUrl => $composableBuilder(
+      column: $table.backgroundUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get backgroundVerticalUrl => $composableBuilder(
+      column: $table.backgroundVerticalUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get startsOn =>
+      $composableBuilder(column: $table.startsOn, builder: (column) => column);
+
+  GeneratedColumn<String> get endsOn =>
+      $composableBuilder(column: $table.endsOn, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SeasonsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SeasonsTable,
+    SeasonRow,
+    $$SeasonsTableFilterComposer,
+    $$SeasonsTableOrderingComposer,
+    $$SeasonsTableAnnotationComposer,
+    $$SeasonsTableCreateCompanionBuilder,
+    $$SeasonsTableUpdateCompanionBuilder,
+    (SeasonRow, BaseReferences<_$AppDatabase, $SeasonsTable, SeasonRow>),
+    SeasonRow,
+    PrefetchHooks Function()> {
+  $$SeasonsTableTableManager(_$AppDatabase db, $SeasonsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SeasonsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SeasonsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SeasonsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> backgroundUrl = const Value.absent(),
+            Value<String?> backgroundVerticalUrl = const Value.absent(),
+            Value<String> startsOn = const Value.absent(),
+            Value<String> endsOn = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              SeasonsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            name: name,
+            backgroundUrl: backgroundUrl,
+            backgroundVerticalUrl: backgroundVerticalUrl,
+            startsOn: startsOn,
+            endsOn: endsOn,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required String name,
+            required String backgroundUrl,
+            Value<String?> backgroundVerticalUrl = const Value.absent(),
+            required String startsOn,
+            required String endsOn,
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              SeasonsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            name: name,
+            backgroundUrl: backgroundUrl,
+            backgroundVerticalUrl: backgroundVerticalUrl,
+            startsOn: startsOn,
+            endsOn: endsOn,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SeasonsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SeasonsTable,
+    SeasonRow,
+    $$SeasonsTableFilterComposer,
+    $$SeasonsTableOrderingComposer,
+    $$SeasonsTableAnnotationComposer,
+    $$SeasonsTableCreateCompanionBuilder,
+    $$SeasonsTableUpdateCompanionBuilder,
+    (SeasonRow, BaseReferences<_$AppDatabase, $SeasonsTable, SeasonRow>),
+    SeasonRow,
+    PrefetchHooks Function()>;
 typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
     Function({
   required String key,
@@ -14085,6 +14807,8 @@ class $AppDatabaseManager {
           _db, _db.localPlaybackPositions);
   $$LegalDocumentsTableTableManager get legalDocuments =>
       $$LegalDocumentsTableTableManager(_db, _db.legalDocuments);
+  $$SeasonsTableTableManager get seasons =>
+      $$SeasonsTableTableManager(_db, _db.seasons);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$DownloadsTableTableManager get downloads =>

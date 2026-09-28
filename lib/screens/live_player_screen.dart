@@ -39,7 +39,8 @@ class LivePlayerScreen extends ConsumerWidget {
       onRetry: () => ref.invalidate(_liveContentProvider),
       downloadContentType: null,
       isLive: true,
-      backgroundImage: 'assets/images/live_bg.png', // <-- Votre image de fond
+      // Le plancher de la cascade : la saison gagne quand le portail en a une.
+      fallbackBackgroundAsset: 'assets/images/live_bg.png',
       onStop: () {
         ref.read(contentPlayerProvider).stop();
         Navigator.of(context).pop();
