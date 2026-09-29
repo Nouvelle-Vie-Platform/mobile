@@ -157,6 +157,7 @@ void main() {
           'contributors',
           'branches',
           'teachings',
+          'teaching_guests',
           'gatherings',
           'announcements',
           'playback_progress',
@@ -193,6 +194,19 @@ void main() {
       expect(
         keys.indexOf('status_backgrounds'),
         lessThan(keys.indexOf('announcements')),
+      );
+      // Le pivot des invités (#77) se joint aux **deux** collections qu'il
+      // relie, et se range donc après les deux : ses colonnes ne désignent rien
+      // par elles-mêmes, et le tirer avant l'une ou l'autre donnerait, à la
+      // toute première synchronisation, une liste d'invités que le magasin ne
+      // saurait pas nommer.
+      expect(
+        keys.indexOf('contributors'),
+        lessThan(keys.indexOf('teaching_guests')),
+      );
+      expect(
+        keys.indexOf('teachings'),
+        lessThan(keys.indexOf('teaching_guests')),
       );
       // La reprise de lecture se joint aux **deux** familles de contenu, et se
       // range donc après elles : une progression arrivée avant son enseignement

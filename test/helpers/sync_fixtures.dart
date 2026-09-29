@@ -18,6 +18,7 @@
 /// | rétractation | `GET /sync/teachings` | `app/sync/descriptors/teachings_descriptor.ts` (ADR-0025) |
 /// | ligne `teaching_types` | `GET /sync/teaching_types` | `app/mediatheque/transformers/teaching_type_transformer.ts` (ADR-0023) |
 /// | ligne `contributors` | `GET /sync/contributors` | `app/mediatheque/transformers/contributor_transformer.ts` |
+/// | ligne `teaching_guests` | `GET /sync/teaching_guests` | `app/mediatheque/transformers/teaching_guest_transformer.ts` + `app/sync/descriptors/teaching_guests_descriptor.ts` (issue serveur #436) |
 /// | ligne `branches` | `GET /sync/branches` | `app/auth/transformers/branch_transformer.ts` |
 /// | ligne `gatherings` | `GET /sync/gatherings` | `app/sync/descriptors/teaching_family_collection.ts` (issue serveur #133) |
 /// | ligne `gathering_types` | `GET /sync/gathering_types` | idem — **le même transformer** que les deux collections d'enseignement |
@@ -1224,4 +1225,129 @@ Map<String, Object?> playbackProgressPage() => deltaPage(
         updatedAtIso: '2026-05-24T14:31:00.000Z',
         id: '019f6b00-0000-7000-8000-000000000001',
       ),
+    );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// `teaching_guests` — les invités d'un contenu (partition `reference`)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Un crédit d'invité.**
+///
+/// Sept clés, relevées sur
+/// `app/mediatheque/transformers/teaching_guest_transformer.ts` (issue serveur
+/// #436) : `id`, `teachingId`, `contributorId`, `position`, `createdAt`,
+/// `updatedAt`, `deletedAt`.
+///
+/// **Rien de dénormalisé** : ni le nom de l'intervenant, ni le titre de
+/// l'enseignement. Le client réplique `contributors` et `teachings` par ailleurs
+/// et joint contre ses propres copies (ADR-0026, décision 3). Les servir ici les
+/// **figerait** — renommer un intervenant n'écrit rien sur le pivot, donc ne
+/// bouscule aucun `updatedAt`, donc rien ne repasserait jamais dans le flux : le
+/// téléphone afficherait l'ancien nom indéfiniment.
+///
+/// `id` est un **entier** (`increments` côté serveur), comme les référentiels ;
+/// `teachingId` est l'UUIDv7 du parent. Le protocole préserve les deux types de
+/// bout en bout.
+///
+/// `position` voyage parce que l'ordre des invités est une **donnée saisie**, pas
+/// un tri que le client pourrait recalculer : le générique d'un enseignement à
+/// plusieurs voix n'est pas une liste alphabétique. Il est **1-based**.
+///
+/// `deletedAt` voyage **toujours**, `null` compris : c'est le drapeau tombstone
+/// que le client lit pour retirer un crédit de son cache (ADR-0017). C'est ce qui
+/// distingue cette collection de `official_account_memberships`, qui assume la
+/// suppression franche — là-bas une ligne périmée est un bouton offert qui mène à
+/// un 403, ici c'est **un nom affiché sur un écran**.
+const Map<String, Object?> teachingGuestPayload = {
+  'id': 1,
+  'teachingId': '019f2c40-0000-7000-8000-000000000001',
+  'contributorId': 7,
+  'position': 1,
+  'createdAt': '2026-06-01T09:00:00.000Z',
+  'updatedAt': '2026-06-01T09:00:00.000Z',
+  'deletedAt': null,
+};
+
+/// **Le second invité du même enseignement**, au rang suivant.
+///
+/// Deux lignes plutôt qu'une suffisent à exercer ce qui compte : l'ordre saisi,
+/// et le fait que deux crédits du même contenu sont deux lignes indépendantes —
+/// l'une peut être retirée sans l'autre.
+const Map<String, Object?> secondTeachingGuestPayload = {
+  'id': 2,
+  'teachingId': '019f2c40-0000-7000-8000-000000000001',
+  'contributorId': 4,
+  'position': 2,
+  'createdAt': '2026-06-01T09:00:00.000Z',
+  'updatedAt': '2026-06-01T09:00:00.000Z',
+  'deletedAt': null,
+};
+
+/// **Un crédit sur un autre enseignement**, pour qu'un test puisse constater
+/// qu'une lecture par contenu ne ramasse pas les crédits du voisin.
+const Map<String, Object?> otherTeachingGuestPayload = {
+  'id': 3,
+  'teachingId': '019f2c40-0000-7000-8000-000000000002',
+  'contributorId': 7,
+  'position': 1,
+  'createdAt': '2026-06-02T09:00:00.000Z',
+  'updatedAt': '2026-06-02T09:00:00.000Z',
+  'deletedAt': null,
+};
+
+/// **Le retrait d'un invité — un tombstone, pas une rétractation.**
+///
+/// La différence avec `teachings` compte : une rétractation d'enseignement est
+/// réduite à `{ id, deletedAt }` parce que la ligne **n'a pas le droit d'être
+/// vue**. Ici la ligne part **entière**, `deletedAt` en plus — un crédit ne dit
+/// rien qu'il faille cacher, et le serveur sert le même transformer pour les
+/// deux états.
+///
+/// C'est la **même ligne** que [secondTeachingGuestPayload], `id` compris :
+/// l'unicité serveur porte sur la paire tombstones comprise, précisément pour
+/// qu'un invité retiré puis remis réanime cette ligne-ci (`deleted_at → NULL`) et
+/// non une seconde. Un client qui recevrait deux `id` différents verrait l'ordre
+/// d'arrivée décider de ce qu'il affiche.
+const Map<String, Object?> retractedTeachingGuestPayload = {
+  'id': 2,
+  'teachingId': '019f2c40-0000-7000-8000-000000000001',
+  'contributorId': 4,
+  'position': 2,
+  'createdAt': '2026-06-01T09:00:00.000Z',
+  'updatedAt': '2026-06-10T11:00:00.000Z',
+  'deletedAt': '2026-06-10T11:00:00.000Z',
+};
+
+/// Curseur de la page nominale de `teaching_guests` — l'`id` y est un **entier**,
+/// comme sur les référentiels.
+final String teachingGuestsCursor = serverCursor(
+  updatedAtIso: '2026-06-02T09:00:00.000Z',
+  id: 3,
+);
+
+/// Curseur de la page qui porte le **retrait**.
+final String teachingGuestsCursorAfterRetraction = serverCursor(
+  updatedAtIso: '2026-06-10T11:00:00.000Z',
+  id: 2,
+);
+
+/// La page nominale : trois crédits, dont deux sur le même enseignement.
+Map<String, Object?> teachingGuestsPage() => deltaPage(
+      items: const [
+        teachingGuestPayload,
+        secondTeachingGuestPayload,
+        otherTeachingGuestPayload,
+      ],
+      nextCursor: teachingGuestsCursor,
+    );
+
+/// La page suivante : **le retrait d'un invité voyage**.
+///
+/// Un seul élément, portant son `deletedAt`. C'est ce que le client doit lire
+/// pour faire disparaître le nom de l'écran sans attendre une resynchronisation
+/// complète — soit, avec la fenêtre de rétention du serveur, potentiellement des
+/// semaines.
+Map<String, Object?> teachingGuestRetractionPage() => deltaPage(
+      items: const [retractedTeachingGuestPayload],
+      nextCursor: teachingGuestsCursorAfterRetraction,
     );

@@ -297,6 +297,148 @@ void main() {
     });
   });
 
+  group('GET /sync/teaching_guests — la ligne', () {
+    /// Les **sept** clés d'un crédit d'invité, en `camelCase`, relevées sur
+    /// `teaching_guest_transformer.ts` (issue serveur #436).
+    const keys = [
+      'id',
+      'teachingId',
+      'contributorId',
+      'position',
+      'createdAt',
+      'updatedAt',
+      'deletedAt',
+    ];
+
+    test('sept clés, ni une de plus', () {
+      expect(keys, hasLength(7));
+      for (final guest in _teachingGuests) {
+        expect(guest.keys.toSet(), keys.toSet());
+      }
+    });
+
+    test('ni nom, ni biographie, ni titre, ni rôle : rien de dénormalisé', () {
+      // **Le cœur du contrat.** Un nom recopié dans le pivot serait une valeur
+      // **figée** : renommer un intervenant n'écrit rien sur `teaching_guests`,
+      // donc ne bouscule aucun `updatedAt`, donc la ligne ne repasserait
+      // **jamais** dans le flux delta — le téléphone afficherait l'ancien nom
+      // indéfiniment et en silence. Le client joint contre sa copie de
+      // `contributors` (ADR-0026, décision 3).
+      //
+      // Pas de `role` non plus, et ce n'est pas un oubli : `contributorId` sur
+      // l'enseignement **est** l'animateur, être dans ce pivot veut dire être
+      // invité. Le nom de la collection porte le sens.
+      for (final guest in _teachingGuests) {
+        expect(
+          guest.keys,
+          isNot(anyElement(isIn(const [
+            'name',
+            'contributorName',
+            'bio',
+            'title',
+            'teachingTitle',
+            'role',
+          ]))),
+        );
+      }
+    });
+
+    test('deux identifiants, deux types préservés', () {
+      // L'identifiant du pivot est un **entier** (`increments` côté serveur),
+      // celui du parent un **UUIDv7**. Les confondre ferait comparer
+      // `'10' < '9'` quelque part, et le client rangerait la ligne au mauvais
+      // endroit.
+      for (final guest in _teachingGuests) {
+        expect(guest['id'], isA<int>());
+        expect(guest['teachingId'], isA<String>());
+        expect(guest['contributorId'], isA<int>());
+      }
+    });
+
+    test('`position` est l\'ordre saisi, 1-based', () {
+      // Le générique d'un enseignement à plusieurs voix n'est pas une liste
+      // alphabétique : l'ordre est une **donnée**, pas un tri que le client
+      // pourrait recalculer. Le défaut serveur est `1`, jamais `0`.
+      for (final guest in _teachingGuests) {
+        expect(guest['position'], isA<int>());
+        expect(guest['position']! as int, greaterThanOrEqualTo(1));
+      }
+      expect(teachingGuestPayload['position'], 1);
+      expect(secondTeachingGuestPayload['position'], 2);
+    });
+
+    test('`deletedAt` voyage toujours, `null` compris', () {
+      // C'est le drapeau tombstone (ADR-0017), et il est servi sur **chaque**
+      // ligne, vivante comprise : un client qui ne le verrait que sur un retrait
+      // ne saurait pas que cette collection en émet.
+      for (final guest in _teachingGuests) {
+        expect(guest.keys, contains('deletedAt'));
+      }
+      expect(teachingGuestPayload['deletedAt'], isNull);
+      expect(retractedTeachingGuestPayload['deletedAt'], isNotNull);
+    });
+
+    test('le retrait part **entier**, contrairement à une rétractation', () {
+      // La nuance compte. Une rétractation d'enseignement est réduite à
+      // `{ id, deletedAt }` parce que la ligne **n'a pas le droit d'être vue** —
+      // servir son titre après l'avoir dépubliée annulerait le geste. Un crédit
+      // retiré, lui, ne dit rien qu'il faille cacher : le même transformer sert
+      // les deux états, et le client ne trie que sur `deletedAt`.
+      expect(retractedTeachingGuestPayload.keys.toSet(), keys.toSet());
+      expect(retractedTeachingPayload.keys.toSet(), {'id', 'deletedAt'});
+    });
+
+    test('un retrait réanimable : la même ligne, le même `id`', () {
+      // L'unicité serveur porte sur `(teaching_id, contributor_id)` **tombstones
+      // compris**, précisément pour que retirer puis remettre un invité réanime
+      // cette ligne-ci (`deleted_at → NULL`). Un index partiel aurait autorisé
+      // deux lignes pour la même paire, dont une morte : le client aurait reçu un
+      // tombstone et une création portant des `id` différents, et l'**ordre
+      // d'arrivée** aurait décidé de ce qu'il affiche.
+      expect(
+        retractedTeachingGuestPayload['id'],
+        secondTeachingGuestPayload['id'],
+      );
+      expect(
+        retractedTeachingGuestPayload['contributorId'],
+        secondTeachingGuestPayload['contributorId'],
+      );
+      // Et l'`updatedAt` a bougé : c'est ce qui fait repasser la ligne dans le
+      // flux. Sans ce bump, le retrait n'arriverait jamais.
+      expect(
+        DateTime.parse(retractedTeachingGuestPayload['updatedAt']! as String)
+            .isAfter(
+          DateTime.parse(secondTeachingGuestPayload['updatedAt']! as String),
+        ),
+        isTrue,
+      );
+    });
+
+    test('ni `seriesId` ni `numero` : la série n\'entre pas par ici', () {
+      // Le serveur les sert sur `teachings`, le mobile ne les lit pas, et le
+      // regroupement des épisodes reste vitrine + admin. Le pivot n'en a jamais
+      // porté : le vérifier ici évite qu'on les y glisse « tant qu'on y est ».
+      for (final guest in _teachingGuests) {
+        expect(
+          guest.keys,
+          isNot(anyElement(isIn(const ['seriesId', 'numero', 'episode']))),
+        );
+      }
+    });
+
+    test('les dates sont des instants ISO-8601 analysables', () {
+      for (final guest in _teachingGuests) {
+        for (final key in const ['createdAt', 'updatedAt']) {
+          expect(
+            DateTime.tryParse(guest[key]! as String),
+            isNotNull,
+            reason: '$key doit être analysé, jamais comparé comme une chaîne',
+          );
+        }
+      }
+    });
+  });
+
   group('GET /sync/announcements — la ligne', () {
     test('treize clés : deux identifiants à joindre, aucune valeur résolue',
         () {
@@ -773,6 +915,15 @@ const List<Map<String, Object?>> _teachingTypes = [
   heroTeachingTypePayload,
   carouselTeachingTypePayload,
   hiddenTeachingTypePayload,
+];
+
+/// Les crédits d'invité, **retrait compris** : le tombstone porte les mêmes sept
+/// clés qu'une ligne vivante, et doit donc passer les mêmes assertions.
+const List<Map<String, Object?>> _teachingGuests = [
+  teachingGuestPayload,
+  secondTeachingGuestPayload,
+  otherTeachingGuestPayload,
+  retractedTeachingGuestPayload,
 ];
 
 const List<Map<String, Object?>> _gatherings = [
