@@ -102,6 +102,28 @@ final teachingByIdProvider = StreamProvider.family<TeachingView?, String>(
   retry: _noAutomaticRetry,
 );
 
+/// **Les invités d'un contenu, dans l'ordre saisi** — #77.
+///
+/// Un provider **séparé** de [teachingByIdProvider], et c'est la décision de
+/// cette tranche : `ContentView.authorName` est partagée avec les
+/// rassemblements, le lecteur et les trois cartes d'accueil, et elle ne bouge
+/// pas. La liste des invités emprunte donc son propre chemin, que **seul**
+/// l'écran de détail écoute — un carrousel, une vignette ou une notification
+/// d'écran verrouillé ne la demande jamais, donc ne peut pas l'afficher par
+/// accident.
+///
+/// Rien ici ne sait ce qu'est un podcast : le pivot est générique à tous les
+/// enseignements, et un message du dimanche auquel un invité a été crédité
+/// affichera sa ligne comme un épisode.
+///
+/// Une liste **vide** est l'état normal de presque tout le catalogue. Ce n'est
+/// pas une erreur, et elle se rend en **ne rendant rien**.
+final teachingGuestsProvider = StreamProvider.family<List<String>, String>(
+  (ref, teachingId) =>
+      ref.watch(mediathequeRepositoryProvider).guestNames(teachingId),
+  retry: _noAutomaticRetry,
+);
+
 /// Les rubriques de l'accueil, prêtes à composer — **ticket #32**.
 ///
 /// Livré ici parce que c'est ce qui remplace les trois rubriques en dur : sans

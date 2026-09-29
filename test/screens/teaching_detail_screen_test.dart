@@ -22,6 +22,7 @@ import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 import 'package:maison_du_miracle/widgets/app_error_state.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
+import 'package:maison_du_miracle/widgets/content_player_view.dart';
 
 import '../helpers/playback_doubles.dart';
 
@@ -128,6 +129,17 @@ class _FakeMediatheque implements MediathequeRepository {
         }
         return null;
       });
+
+  /// **Les invités du contenu** (#77), pilotés par le test.
+  ///
+  /// Vide par défaut, et c'est l'état de presque tout le catalogue : un
+  /// enseignement à plusieurs voix est l'exception, pas la règle. Le test qui
+  /// veut une ligne de crédit pose la liste ici.
+  List<String> guests = const [];
+
+  @override
+  Stream<List<String>> guestNames(String teachingId) =>
+      Stream.value(guests);
 
   @override
   Stream<List<HomeSectionView>> homeSections({required String locale}) =>
@@ -318,6 +330,54 @@ void main() {
       await tester.pump();
       // Ni fermeture, ni redirection : le fidèle n'est pas déplacé.
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
+    });
+  });
+
+  group('Les invités, sur l\'écran de détail seulement (#77)', () {
+    testWidgets('la feuille d\'info crédite les invités, dans l\'ordre reçu',
+        (tester) async {
+      // Le câblage complet : l'écran de détail branche le provider des invités,
+      // qui lit le repository. C'est le seul écran qui le fasse.
+      final repository = _FakeMediatheque(_teachings)
+        ..guests = const ['Pasteur Kossi', 'Sœur Afi'];
+      addTearDown(repository.dispose);
+
+      await _pumpDetail(tester, _container(repository), _teachings[1].id);
+      await tester.tap(find.byIcon(Icons.menu_book_outlined));
+      await _settle(tester);
+
+      expect(find.text('Avec Pasteur Kossi et Sœur Afi'), findsOneWidget);
+    });
+
+    testWidgets('pas d\'invité : aucune ligne ne se rend', (tester) async {
+      // L'état de presque tout le catalogue. L'absence s'affiche comme une
+      // absence — jamais « aucun invité », qui ressemblerait à une donnée.
+      final repository = _FakeMediatheque(_teachings);
+      addTearDown(repository.dispose);
+
+      await _pumpDetail(tester, _container(repository), _teachings[1].id);
+      await tester.tap(find.byIcon(Icons.menu_book_outlined));
+      await _settle(tester);
+
+      expect(find.byKey(ContentPlayerView.guestsLineKey), findsNothing);
+      expect(find.textContaining('Avec'), findsNothing);
+      // La feuille s'est bien ouverte : c'est ce qui rend l'absence de ligne
+      // significative.
+      expect(find.text('Celui du milieu'), findsWidgets);
+    });
+
+    testWidgets('l\'animateur reste seul sous le titre et au système',
+        (tester) async {
+      final repository = _FakeMediatheque(_teachings)
+        ..guests = const ['Pasteur Kossi'];
+      addTearDown(repository.dispose);
+
+      await _pumpDetail(tester, _container(repository), _teachings[1].id);
+
+      // Avant d'ouvrir la feuille : le lecteur n'affiche que l'animateur, et
+      // c'est aussi ce qui part à la notification d'écran verrouillé.
+      expect(find.text('Pasteur Deux'), findsOneWidget);
+      expect(find.textContaining('Kossi'), findsNothing);
     });
   });
 

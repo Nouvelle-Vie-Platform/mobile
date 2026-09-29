@@ -53,6 +53,25 @@ abstract interface class MediathequeRepository {
   /// valide, il ne l'est plus.
   Stream<TeachingView?> teachingById(String id, {required String locale});
 
+  /// **Les noms des invités d'un contenu, dans l'ordre saisi** (#77).
+  ///
+  /// Un **chemin distinct**, et c'est tout l'intérêt : `ContentView.authorName`
+  /// est une chaîne unique partagée avec les rassemblements, le lecteur et les
+  /// trois cartes d'accueil — elle ne bouge pas, et la liste des invités ne
+  /// passe donc pas par elle. Seul l'écran de détail la demande ; les listes,
+  /// carrousels, vignettes et la notification d'écran verrouillé continuent
+  /// d'afficher le seul **animateur**.
+  ///
+  /// Pas de `locale` : un nom de personne ne se traduit pas.
+  ///
+  /// **Les invités que le magasin ne sait pas encore nommer n'en sortent pas.**
+  /// La jointure du magasin est tolérante — elle rend la ligne de pivot même
+  /// sans son intervenant, pour qu'un manquant n'emporte pas les autres —, et
+  /// c'est ici que l'absence se dessine comme une absence (règle 4 du modèle de
+  /// lecture). Une liste **vide** est l'état normal de presque tout le
+  /// catalogue, et se rend en ne rendant rien.
+  Stream<List<String>> guestNames(String teachingId);
+
   /// Les rubriques de l'accueil, dans l'ordre voulu par le serveur, réduites à
   /// celles qui sont visibles **et** dont le magasin possède au moins un
   /// enseignement.
@@ -114,6 +133,15 @@ class InMemoryMediathequeRepository implements MediathequeRepository {
     }
     return Stream.value(null);
   }
+
+  /// **Aucun invité en mode maquette**, et ce n'est pas un trou à combler :
+  /// `SampleData` ne porte pas de pivot, et en inventer un ferait croire à une
+  /// donnée. Une liste vide est de toute façon l'état de presque tout le
+  /// catalogue, et la règle qu'elle exerce est la bonne — pas d'invité, aucune
+  /// ligne ne se rend.
+  @override
+  Stream<List<String>> guestNames(String teachingId) =>
+      Stream.value(const []);
 
   @override
   Stream<List<HomeSectionView>> homeSections({required String locale}) {

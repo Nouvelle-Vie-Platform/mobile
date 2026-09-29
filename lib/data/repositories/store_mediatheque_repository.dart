@@ -51,6 +51,29 @@ class StoreMediathequeRepository implements MediathequeRepository {
         .map((row) => row == null ? null : _view(row, locale));
   }
 
+  /// **Les invités, nommés par la copie locale de `contributors`** (#77).
+  ///
+  /// Le magasin rend la ligne de pivot même sans son intervenant — pour qu'un
+  /// manquant n'emporte pas les autres — et c'est ici, une fois pour toute
+  /// l'application, que l'invité sans nom est **écarté**. Un « Invité inconnu »
+  /// ressemblerait à une donnée et serait pris pour une erreur de saisie ;
+  /// l'absence se dessine comme une absence, et le nom paraîtra au cycle de
+  /// synchronisation suivant.
+  ///
+  /// Le nom est **joint**, jamais recopié : renommer un intervenant n'écrit rien
+  /// sur le pivot, donc rien ne repasserait par le flux pour corriger une copie.
+  @override
+  Stream<List<String>> guestNames(String teachingId) {
+    return _dao.guestsOfTeaching(teachingId).watch().map(
+          (rows) => List<String>.unmodifiable(
+            rows
+                .map((row) => row.contributor?.name.trim())
+                .whereType<String>()
+                .where((name) => name.isNotEmpty),
+          ),
+        );
+  }
+
   @override
   Stream<List<HomeSectionView>> homeSections({required String locale}) {
     return _dao.homeSections().watch().map(

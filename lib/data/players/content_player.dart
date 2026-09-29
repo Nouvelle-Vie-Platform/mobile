@@ -395,6 +395,18 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   @visibleForTesting
   String? loadedTitle;
 
+  /// **Auteur annoncé au système** — la seconde ligne de la notification et de
+  /// l'écran verrouillé.
+  ///
+  /// Exposé pour la même raison que [loadedTitle], et pour une règle précise :
+  /// c'est **l'animateur seul** qui est annoncé au système, jamais la liste des
+  /// invités (#77). Une notification n'a pas la place d'une énumération, aucune
+  /// règle de troncature n'y serait honnête, et c'est la convention des
+  /// applications de podcast. Sans ce champ, la règle ne serait verrouillée par
+  /// rien.
+  @visibleForTesting
+  String? loadedAuthor;
+
   /// Nombre de chargements — un rechargement en boucle se voit ici.
   @visibleForTesting
   int loadCount = 0;
@@ -432,6 +444,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     loadedUrl = url;
     loadedFilePath = localFilePath;
     loadedTitle = title;
+    loadedAuthor = author;
     loadCount++;
     _request = ContentRequest(
       contentId: contentId,
@@ -514,6 +527,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     loadedUrl = null;
     loadedFilePath = null;
     loadedTitle = null;
+    loadedAuthor = null;
     _request = null;
     value = const ContentPlayback();
   }
