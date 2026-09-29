@@ -3177,6 +3177,414 @@ class TeachingsCompanion extends UpdateCompanion<TeachingRow> {
   }
 }
 
+class $TeachingGuestsTable extends TeachingGuests
+    with TableInfo<$TeachingGuestsTable, TeachingGuestRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TeachingGuestsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _teachingIdMeta =
+      const VerificationMeta('teachingId');
+  @override
+  late final GeneratedColumn<String> teachingId = GeneratedColumn<String>(
+      'teaching_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _contributorIdMeta =
+      const VerificationMeta('contributorId');
+  @override
+  late final GeneratedColumn<int> contributorId = GeneratedColumn<int>(
+      'contributor_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _positionMeta =
+      const VerificationMeta('position');
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+      'position', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        teachingId,
+        contributorId,
+        position,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'teaching_guests';
+  @override
+  VerificationContext validateIntegrity(Insertable<TeachingGuestRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('teaching_id')) {
+      context.handle(
+          _teachingIdMeta,
+          teachingId.isAcceptableOrUnknown(
+              data['teaching_id']!, _teachingIdMeta));
+    } else if (isInserting) {
+      context.missing(_teachingIdMeta);
+    }
+    if (data.containsKey('contributor_id')) {
+      context.handle(
+          _contributorIdMeta,
+          contributorId.isAcceptableOrUnknown(
+              data['contributor_id']!, _contributorIdMeta));
+    } else if (isInserting) {
+      context.missing(_contributorIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(_positionMeta,
+          position.isAcceptableOrUnknown(data['position']!, _positionMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TeachingGuestRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TeachingGuestRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      teachingId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}teaching_id'])!,
+      contributorId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}contributor_id'])!,
+      position: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $TeachingGuestsTable createAlias(String alias) {
+    return $TeachingGuestsTable(attachedDatabase, alias);
+  }
+}
+
+class TeachingGuestRow extends DataClass
+    implements Insertable<TeachingGuestRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// `increments` côté serveur : un **entier**, comme les référentiels — et non
+  /// l'UUIDv7 des contenus. C'est ce type que le protocole préserve de bout en
+  /// bout, pour ne jamais comparer `'10' < '9'`.
+  final int id;
+
+  /// **Chaîne nue, sans clé étrangère** vers `teachings` (UUIDv7) : les deux
+  /// collections se resynchronisent séparément, et un crédit peut arriver avant
+  /// le contenu qu'il crédite. Une contrainte ferait échouer la page entière.
+  final String teachingId;
+
+  /// **Entier nu, sans clé étrangère** vers `contributors`, même raison. La
+  /// jointure de lecture est tolérante : un invité dont la ligne `contributors`
+  /// n'est pas encore arrivée ne fait pas disparaître les autres.
+  final int contributorId;
+
+  /// L'ordre **saisi** au portail, **1-based** — le générique d'un enseignement
+  /// à plusieurs voix n'est pas une liste alphabétique. Le défaut vaut `1` comme
+  /// côté serveur : une ligne sans position se range en tête plutôt que de
+  /// disparaître derrière un `0` qu'aucun écran n'attend.
+  final int position;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const TeachingGuestRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.teachingId,
+      required this.contributorId,
+      required this.position,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['teaching_id'] = Variable<String>(teachingId);
+    map['contributor_id'] = Variable<int>(contributorId);
+    map['position'] = Variable<int>(position);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  TeachingGuestsCompanion toCompanion(bool nullToAbsent) {
+    return TeachingGuestsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      teachingId: Value(teachingId),
+      contributorId: Value(contributorId),
+      position: Value(position),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory TeachingGuestRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TeachingGuestRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      teachingId: serializer.fromJson<String>(json['teachingId']),
+      contributorId: serializer.fromJson<int>(json['contributorId']),
+      position: serializer.fromJson<int>(json['position']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'teachingId': serializer.toJson<String>(teachingId),
+      'contributorId': serializer.toJson<int>(contributorId),
+      'position': serializer.toJson<int>(position),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  TeachingGuestRow copyWith(
+          {int? syncStamp,
+          int? id,
+          String? teachingId,
+          int? contributorId,
+          int? position,
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      TeachingGuestRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        teachingId: teachingId ?? this.teachingId,
+        contributorId: contributorId ?? this.contributorId,
+        position: position ?? this.position,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  TeachingGuestRow copyWithCompanion(TeachingGuestsCompanion data) {
+    return TeachingGuestRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      teachingId:
+          data.teachingId.present ? data.teachingId.value : this.teachingId,
+      contributorId: data.contributorId.present
+          ? data.contributorId.value
+          : this.contributorId,
+      position: data.position.present ? data.position.value : this.position,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TeachingGuestRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('teachingId: $teachingId, ')
+          ..write('contributorId: $contributorId, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp, id, teachingId, contributorId, position, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TeachingGuestRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.teachingId == this.teachingId &&
+          other.contributorId == this.contributorId &&
+          other.position == this.position &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class TeachingGuestsCompanion extends UpdateCompanion<TeachingGuestRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String> teachingId;
+  final Value<int> contributorId;
+  final Value<int> position;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const TeachingGuestsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.teachingId = const Value.absent(),
+    this.contributorId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  TeachingGuestsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required String teachingId,
+    required int contributorId,
+    this.position = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : teachingId = Value(teachingId),
+        contributorId = Value(contributorId);
+  static Insertable<TeachingGuestRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? teachingId,
+    Expression<int>? contributorId,
+    Expression<int>? position,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (teachingId != null) 'teaching_id': teachingId,
+      if (contributorId != null) 'contributor_id': contributorId,
+      if (position != null) 'position': position,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  TeachingGuestsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String>? teachingId,
+      Value<int>? contributorId,
+      Value<int>? position,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return TeachingGuestsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      teachingId: teachingId ?? this.teachingId,
+      contributorId: contributorId ?? this.contributorId,
+      position: position ?? this.position,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (teachingId.present) {
+      map['teaching_id'] = Variable<String>(teachingId.value);
+    }
+    if (contributorId.present) {
+      map['contributor_id'] = Variable<int>(contributorId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TeachingGuestsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('teachingId: $teachingId, ')
+          ..write('contributorId: $contributorId, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $GatheringTypesTable extends GatheringTypes
     with TableInfo<$GatheringTypesTable, GatheringTypeRow> {
   @override
@@ -10351,6 +10759,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TeachingTypesTable teachingTypes = $TeachingTypesTable(this);
   late final $ContributorsTable contributors = $ContributorsTable(this);
   late final $TeachingsTable teachings = $TeachingsTable(this);
+  late final $TeachingGuestsTable teachingGuests = $TeachingGuestsTable(this);
   late final $GatheringTypesTable gatheringTypes = $GatheringTypesTable(this);
   late final $GatheringsTable gatherings = $GatheringsTable(this);
   late final $StatusBackgroundsTable statusBackgrounds =
@@ -10397,6 +10806,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         teachingTypes,
         contributors,
         teachings,
+        teachingGuests,
         gatheringTypes,
         gatherings,
         statusBackgrounds,
@@ -11934,6 +12344,205 @@ typedef $$TeachingsTableProcessedTableManager = ProcessedTableManager<
     $$TeachingsTableUpdateCompanionBuilder,
     (TeachingRow, BaseReferences<_$AppDatabase, $TeachingsTable, TeachingRow>),
     TeachingRow,
+    PrefetchHooks Function()>;
+typedef $$TeachingGuestsTableCreateCompanionBuilder = TeachingGuestsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required String teachingId,
+  required int contributorId,
+  Value<int> position,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$TeachingGuestsTableUpdateCompanionBuilder = TeachingGuestsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String> teachingId,
+  Value<int> contributorId,
+  Value<int> position,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$TeachingGuestsTableFilterComposer
+    extends Composer<_$AppDatabase, $TeachingGuestsTable> {
+  $$TeachingGuestsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get contributorId => $composableBuilder(
+      column: $table.contributorId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$TeachingGuestsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TeachingGuestsTable> {
+  $$TeachingGuestsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get contributorId => $composableBuilder(
+      column: $table.contributorId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$TeachingGuestsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TeachingGuestsTable> {
+  $$TeachingGuestsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => column);
+
+  GeneratedColumn<int> get contributorId => $composableBuilder(
+      column: $table.contributorId, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$TeachingGuestsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TeachingGuestsTable,
+    TeachingGuestRow,
+    $$TeachingGuestsTableFilterComposer,
+    $$TeachingGuestsTableOrderingComposer,
+    $$TeachingGuestsTableAnnotationComposer,
+    $$TeachingGuestsTableCreateCompanionBuilder,
+    $$TeachingGuestsTableUpdateCompanionBuilder,
+    (
+      TeachingGuestRow,
+      BaseReferences<_$AppDatabase, $TeachingGuestsTable, TeachingGuestRow>
+    ),
+    TeachingGuestRow,
+    PrefetchHooks Function()> {
+  $$TeachingGuestsTableTableManager(
+      _$AppDatabase db, $TeachingGuestsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TeachingGuestsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TeachingGuestsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TeachingGuestsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String> teachingId = const Value.absent(),
+            Value<int> contributorId = const Value.absent(),
+            Value<int> position = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              TeachingGuestsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            teachingId: teachingId,
+            contributorId: contributorId,
+            position: position,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required String teachingId,
+            required int contributorId,
+            Value<int> position = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              TeachingGuestsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            teachingId: teachingId,
+            contributorId: contributorId,
+            position: position,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$TeachingGuestsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $TeachingGuestsTable,
+    TeachingGuestRow,
+    $$TeachingGuestsTableFilterComposer,
+    $$TeachingGuestsTableOrderingComposer,
+    $$TeachingGuestsTableAnnotationComposer,
+    $$TeachingGuestsTableCreateCompanionBuilder,
+    $$TeachingGuestsTableUpdateCompanionBuilder,
+    (
+      TeachingGuestRow,
+      BaseReferences<_$AppDatabase, $TeachingGuestsTable, TeachingGuestRow>
+    ),
+    TeachingGuestRow,
     PrefetchHooks Function()>;
 typedef $$GatheringTypesTableCreateCompanionBuilder = GatheringTypesCompanion
     Function({
@@ -15339,6 +15948,8 @@ class $AppDatabaseManager {
       $$ContributorsTableTableManager(_db, _db.contributors);
   $$TeachingsTableTableManager get teachings =>
       $$TeachingsTableTableManager(_db, _db.teachings);
+  $$TeachingGuestsTableTableManager get teachingGuests =>
+      $$TeachingGuestsTableTableManager(_db, _db.teachingGuests);
   $$GatheringTypesTableTableManager get gatheringTypes =>
       $$GatheringTypesTableTableManager(_db, _db.gatheringTypes);
   $$GatheringsTableTableManager get gatherings =>

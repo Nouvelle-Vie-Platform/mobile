@@ -8,6 +8,7 @@ mixin _$MediathequeDaoMixin on DatabaseAccessor<AppDatabase> {
   $TeachingTypesTable get teachingTypes => attachedDatabase.teachingTypes;
   $ContributorsTable get contributors => attachedDatabase.contributors;
   $TeachingsTable get teachings => attachedDatabase.teachings;
+  $TeachingGuestsTable get teachingGuests => attachedDatabase.teachingGuests;
   MediathequeDaoManager get managers => MediathequeDaoManager(this);
 }
 
@@ -22,4 +23,7 @@ class MediathequeDaoManager {
       $$ContributorsTableTableManager(_db.attachedDatabase, _db.contributors);
   $$TeachingsTableTableManager get teachings =>
       $$TeachingsTableTableManager(_db.attachedDatabase, _db.teachings);
+  $$TeachingGuestsTableTableManager get teachingGuests =>
+      $$TeachingGuestsTableTableManager(
+          _db.attachedDatabase, _db.teachingGuests);
 }

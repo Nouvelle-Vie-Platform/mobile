@@ -360,6 +360,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabDescription => 'Description';
 
   @override
+  String contentGuests(String names) {
+    return 'With $names';
+  }
+
+  @override
+  String get listAnd => 'and';
+
+  @override
   String get teachingVerses => 'Verses';
 
   @override

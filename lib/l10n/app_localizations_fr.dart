@@ -363,6 +363,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tabDescription => 'Description';
 
   @override
+  String contentGuests(String names) {
+    return 'Avec $names';
+  }
+
+  @override
+  String get listAnd => 'et';
+
+  @override
   String get teachingVerses => 'Versets';
 
   @override
