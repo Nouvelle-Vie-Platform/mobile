@@ -130,6 +130,8 @@
   "actionMyNotes": "My notes",
   "actionShare": "Share",
   "tabDescription": "Description",
+  "contentGuests": "With {names}",
+  "listAnd": "and",
   "teachingVerses": "Verses",
   "tabNotesCount": "Notes ({count})",
   "actionDownloadAudio": "Download audio",

@@ -227,3 +227,61 @@ class Teachings extends Table with SyncedRow {
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
+
+/// Collection `teaching_guests` — les **invités** d'un contenu de médiathèque.
+///
+/// Un pivot, et rien de plus : « ces deux identifiants vont ensemble, dans cet
+/// ordre ». C'est ce qui permet à un enseignement d'avoir plusieurs voix sans
+/// qu'aucune nouvelle famille de contenu n'existe (ADR-0026, décision 1) — la
+/// rubrique « Podcasts » arrive par `teaching_types`, et **aucun code de ce
+/// dépôt ne sait ce qu'est un podcast**. La table est générique à tous les
+/// enseignements.
+///
+/// **Il n'y a pas de colonne de rôle** : `teachings.contributorId` **est**
+/// l'animateur, être ici veut dire être **invité**. Le nom de la table porte le
+/// sens, côté serveur comme ici.
+///
+/// **Aucun nom, aucune biographie, rien de dénormalisé.** Le serveur sert
+/// `contributorId`, et `contributors` est déjà répliquée : le nom se **joint** à
+/// la lecture (`MediathequeDao.guestsOfTeaching`). Le recopier ici le figerait —
+/// renommer un intervenant n'écrit rien sur le pivot, donc ne bousculerait aucun
+/// `updatedAt`, donc rien ne repasserait par le flux pour corriger la copie.
+///
+/// **Le tombstone ne se stocke pas.** Le serveur déclare
+/// `tombstoneColumn: 'deletedAt'` et le retrait voyage donc comme une ligne
+/// portant sa date ; `readsAsRetraction` le trie **avant** toute construction
+/// d'objet et la ligne quitte le magasin par son identifiant. Garder un
+/// `deleted_at` local obligerait chaque lecture à le filtrer, et une seule
+/// lecture qui l'oublierait afficherait un crédit retiré.
+@DataClassName('TeachingGuestRow')
+class TeachingGuests extends Table with SyncedRow {
+  @override
+  String get tableName => 'teaching_guests';
+
+  /// `increments` côté serveur : un **entier**, comme les référentiels — et non
+  /// l'UUIDv7 des contenus. C'est ce type que le protocole préserve de bout en
+  /// bout, pour ne jamais comparer `'10' < '9'`.
+  IntColumn get id => integer()();
+
+  /// **Chaîne nue, sans clé étrangère** vers `teachings` (UUIDv7) : les deux
+  /// collections se resynchronisent séparément, et un crédit peut arriver avant
+  /// le contenu qu'il crédite. Une contrainte ferait échouer la page entière.
+  TextColumn get teachingId => text()();
+
+  /// **Entier nu, sans clé étrangère** vers `contributors`, même raison. La
+  /// jointure de lecture est tolérante : un invité dont la ligne `contributors`
+  /// n'est pas encore arrivée ne fait pas disparaître les autres.
+  IntColumn get contributorId => integer()();
+
+  /// L'ordre **saisi** au portail, **1-based** — le générique d'un enseignement
+  /// à plusieurs voix n'est pas une liste alphabétique. Le défaut vaut `1` comme
+  /// côté serveur : une ligne sans position se range en tête plutôt que de
+  /// disparaître derrière un `0` qu'aucun écran n'attend.
+  IntColumn get position => integer().withDefault(const Constant(1))();
+
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}

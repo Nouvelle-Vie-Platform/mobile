@@ -185,6 +185,13 @@
   "actionMyNotes": "Mes notes",
   "actionShare": "Partager",
   "tabDescription": "Description",
+  "contentGuests": "Avec {names}",
+  "@contentGuests": {
+    "description": "Crédit des invités d'un contenu, sur l'écran de détail seulement (#77). Ne nomme QUE les invités : l'animateur est déjà affiché sous le titre, et « animé par » ne se dirait pas d'un prédicateur. Pas d'invité, pas de ligne — jamais de libellé de remplacement",
+    "placeholders": { "names": { "type": "String", "example": "Pasteur Kossi et Sœur Afi" } }
+  },
+  "listAnd": "et",
+  "@listAnd": { "description": "Conjonction de la dernière paire d'une énumération, assemblée en Dart (utils/name_list.dart) : un ARB sait accueillir une liste, il ne sait pas l'énumérer" },
   "teachingVerses": "Versets",
   "tabNotesCount": "Notes ({count})",
   "@tabNotesCount": {

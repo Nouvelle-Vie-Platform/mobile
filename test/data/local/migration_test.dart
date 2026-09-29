@@ -407,6 +407,51 @@ void main() {
     expect(teaching.imageSquareUrl, isNull);
   });
 
+  test('v12 → v13 : la table des invités apparaît', () async {
+    // Le palier des **invités** (#77) : une création de table, et rien d'autre.
+    // Aucune colonne n'est ajoutée à `teachings`, aucune ligne n'est réécrite —
+    // un enseignement sans invité est l'état par défaut, et il le reste.
+    final connection = await verifier.startAt(12);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 13);
+  });
+
+  test('v1 → v13 : un appareil resté en v1 rejoue les douze paliers', () async {
+    // Le cas qu'on oublie de tester : un téléphone qui n'a pas été ouvert depuis
+    // plusieurs livraisons ne saute aucun palier, il les traverse l'un après
+    // l'autre. Un `onUpgrade` écrit en `if (from == 12)` passerait le test
+    // précédent et laisserait cet appareil-là sans sa table.
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 13);
+  });
+
+  test('v12 → v13 : le catalogue survit, et la table des invités naît vide',
+      () async {
+    // Ce qu'un fidèle hors ligne risquerait de perdre, c'est son catalogue : le
+    // palier ne le touche pas. La table neuve, elle, naît vide — son curseur
+    // n'existe pas encore, le prochain manifeste l'annoncera `from_zero`, et le
+    // premier cycle ramènera **tous** les crédits du catalogue, y compris ceux
+    // posés avant cette version.
+    final schema = await verifier.schemaAt(12);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 13);
+
+    expect((await db.select(db.teachings).get()).single.title,
+        'Dieu a le dernier mot');
+    expect(await db.select(db.teachingGuests).get(), isEmpty);
+  });
+
   test('la version de schéma couvre bien toutes les versions exportées', () {
     final db = openTestDatabase();
     addTearDown(db.close);

@@ -34,7 +34,14 @@
 ///   `branches` serait particulièrement drôle — la liste où l'on choisit sa
 ///   branche ne contiendrait plus que celle qu'on a choisie ;
 /// - **`playback_progress`** : une collection `private`. C'est *ma* progression,
-///   elle ne relève d'aucune branche.
+///   elle ne relève d'aucune branche ;
+/// - **`teaching_guests`** (#77) : un **pivot**, `partition: 'reference'` côté
+///   serveur — il ne porte pas de `branch_id`. Le filtrer exigerait une jointure
+///   sur son parent pour un résultat que le client obtient gratuitement en
+///   joignant contre sa copie de `teachings` : un crédit dont l'enseignement a
+///   été filtré ne s'affiche nulle part, puisque c'est l'enseignement qui ouvre
+///   l'écran. La contrepartie est assumée — quelques lignes de pivot de contenus
+///   qu'un appareil n'affichera pas, deux identifiants et un rang.
 library;
 
 import '../local/sync_dao.dart';

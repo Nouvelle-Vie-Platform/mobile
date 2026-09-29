@@ -724,6 +724,18 @@ abstract class AppLocalizations {
   /// **'Description'**
   String get tabDescription;
 
+  /// Crédit des invités d'un contenu, sur l'écran de détail seulement (#77). Ne nomme QUE les invités : l'animateur est déjà affiché sous le titre, et « animé par » ne se dirait pas d'un prédicateur. Pas d'invité, pas de ligne — jamais de libellé de remplacement
+  ///
+  /// In fr, this message translates to:
+  /// **'Avec {names}'**
+  String contentGuests(String names);
+
+  /// Conjonction de la dernière paire d'une énumération, assemblée en Dart (utils/name_list.dart) : un ARB sait accueillir une liste, il ne sait pas l'énumérer
+  ///
+  /// In fr, this message translates to:
+  /// **'et'**
+  String get listAnd;
+
   /// No description provided for @teachingVerses.
   ///
   /// In fr, this message translates to:

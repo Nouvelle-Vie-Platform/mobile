@@ -153,6 +153,15 @@ class _PageSplit<D> {
 /// la raison habituelle — un enseignement ouvert au premier lancement doit
 /// trouver son décor déjà là, faute de quoi l'écran se peint deux fois.
 ///
+/// **`teaching_guests` se range après `contributors` ET après `teachings`**
+/// (#77). C'est un **pivot** : ses deux colonnes ne désignent rien par
+/// elles-mêmes, et il ne s'affiche qu'en joignant les deux collections qu'il
+/// relie. Le tirer avant l'une ou l'autre donnerait, à la toute première
+/// synchronisation, une liste d'invités que le magasin ne saurait pas nommer —
+/// la jointure reste tolérante pour la fenêtre inévitable, mais l'ordre
+/// supprime le cas fréquent. Il est rangé juste derrière son parent, dont il
+/// emprunte le périmètre de livraison côté serveur.
+///
 /// **`playback_progress` ferme la marche** (issue #43), et c'est la première
 /// collection `private` que ce client réplique. Elle se **joint** aux deux
 /// familles de contenu et se range donc après elles, par la même règle que
@@ -229,6 +238,15 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.teachingsCollection,
         idOf: (item) => contentId(SyncCollectionKey.teachings, item),
         rowOf: teachingRowOf,
+      ),
+      SyncedCollection<TeachingGuestRow>(
+        key: SyncCollectionKey.teachingGuests,
+        local: (dao) => dao.teachingGuestsCollection,
+        // `referenceId` et non `contentId` : l'identifiant du pivot est un
+        // **entier** (`increments` côté serveur). Seul `teachingId`, qu'il
+        // porte, est un UUIDv7.
+        idOf: (item) => referenceId(SyncCollectionKey.teachingGuests, item),
+        rowOf: teachingGuestRowOf,
       ),
       SyncedCollection<GatheringRow>(
         key: SyncCollectionKey.gatherings,

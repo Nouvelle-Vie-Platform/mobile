@@ -137,6 +137,14 @@ void main() {
         kBranchScopedCollections,
         isNot(contains(SyncCollectionKey.playbackProgress)),
       );
+      // Le pivot des invités (#77) est `partition: 'reference'` côté serveur :
+      // il ne porte pas de `branch_id`. Le filtrer exigerait une jointure sur
+      // son parent, pour un résultat que le client obtient gratuitement en
+      // joignant contre sa copie de `teachings`.
+      expect(
+        kBranchScopedCollections,
+        isNot(contains(SyncCollectionKey.teachingGuests)),
+      );
       expect(kBranchScopedCollections, isNot(contains('branches')));
     });
 

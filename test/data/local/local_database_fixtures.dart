@@ -168,6 +168,27 @@ AnnouncementsCompanion announcementRow(
       isPinned: Value(isPinned),
     );
 
+/// Un **invité** d'un contenu de médiathèque (#77).
+///
+/// `teachingId` et `contributorId` sont des **valeurs nues** : rien n'oblige ni
+/// l'enseignement ni l'intervenant à être déjà en magasin, et c'est ce qui permet
+/// d'écrire le cas qui compte — un crédit dont la ligne `contributors` n'est pas
+/// encore arrivée.
+///
+/// `position` est **1-based**, comme côté serveur.
+TeachingGuestsCompanion teachingGuestRow(
+  int id, {
+  required int contributorId,
+  String teachingId = 't-1',
+  int position = 1,
+}) =>
+    TeachingGuestsCompanion.insert(
+      id: Value(id),
+      teachingId: teachingId,
+      contributorId: contributorId,
+      position: Value(position),
+    );
+
 /// Un enseignement. `contributorId` et `teachingTypeId` sont des **entiers
 /// nus** : rien n'oblige la cible à exister.
 TeachingsCompanion teachingRow(

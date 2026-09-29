@@ -23,6 +23,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../utils/name_list.dart';
 import 'app_error_state.dart';
 import 'content_absence.dart';
 import '../core/config/live_stream_config.dart';
@@ -38,6 +39,7 @@ class ContentPlayerView extends ConsumerStatefulWidget {
     required this.retractedTitle,
     required this.retractedMessage,
     required this.onRetry,
+    this.guests,
     this.downloadContentType,
     this.isLive = false,
     this.onStop,
@@ -54,6 +56,20 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   final String? fallbackBackgroundAsset;
 
   final ProviderListenable<AsyncValue<ContentView?>> content;
+
+  /// **Les invités du contenu, pour la feuille d'info seulement** (#77).
+  ///
+  /// Un chemin **distinct** de [content], et délibérément : `authorName` est une
+  /// chaîne unique partagée avec les rassemblements, ce lecteur et les trois
+  /// cartes d'accueil, et elle ne bouge pas. Les invités arrivent donc à côté,
+  /// et n'atteignent que la feuille d'info — ni le titre du lecteur, ni la
+  /// notification d'écran verrouillé, ni aucune liste.
+  ///
+  /// `null` = ce contenu-là n'a pas de crédit à montrer (le direct, un
+  /// rassemblement) : rien n'est écouté et rien ne se rend. Une liste vide se
+  /// rend de la même façon — l'absence s'affiche comme une absence.
+  final ProviderListenable<AsyncValue<List<String>>>? guests;
+
   final String chromeTitle;
   final String retractedTitle;
   final String retractedMessage;
@@ -74,6 +90,13 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   /// qu'un pictogramme : `Icons.edit_note_rounded` peut changer, ce que le bouton
   /// exige ne changera pas.
   static const Key notesButtonKey = Key('content_player_notes');
+
+  /// La ligne de crédit des **invités**, dans la feuille d'info (#77).
+  ///
+  /// Une clé plutôt que le texte : ce qu'un test doit pouvoir constater est
+  /// qu'**aucune ligne ne se rend** quand il n'y a pas d'invité, et chercher
+  /// l'absence d'un libellé traduit reviendrait à vérifier une traduction.
+  static const Key guestsLineKey = Key('content_info_guests');
 
   @override
   ConsumerState<ContentPlayerView> createState() => _ContentPlayerViewState();
@@ -127,7 +150,8 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) => _ContentInfoSheet(content: content),
+      builder: (_) =>
+          _ContentInfoSheet(content: content, guests: widget.guests),
     );
   }
 
@@ -1219,18 +1243,48 @@ class _DownloadButton extends ConsumerWidget {
   }
 }
 
-class _ContentInfoSheet extends StatelessWidget {
-  const _ContentInfoSheet({required this.content});
+/// **La feuille d'info — le seul endroit où les invités s'affichent** (#77).
+///
+/// L'écran de détail, et rien d'autre : les listes, les carrousels, les
+/// vignettes et la notification d'écran verrouillé continuent d'afficher le seul
+/// animateur. Aucune règle de troncature à inventer, aucune régression visuelle,
+/// et c'est la convention des applications de podcast.
+///
+/// Un `ConsumerWidget` parce que la liste arrive par un **provider**, pas par le
+/// contenu : la feuille peut donc s'ouvrir avant que le magasin ait livré les
+/// crédits, et la ligne paraîtra sous les doigts du fidèle. Un paramètre passé à
+/// l'ouverture aurait figé ce que la feuille sait au moment du clic.
+class _ContentInfoSheet extends ConsumerWidget {
+  const _ContentInfoSheet({required this.content, this.guests});
+
   final ContentView content;
 
+  /// `null` = ce contenu n'a pas de crédit à montrer. Voir
+  /// [ContentPlayerView.guests].
+  final ProviderListenable<AsyncValue<List<String>>>? guests;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final palette = context.palette;
     final subtitle = [content.authorName, content.typeLabel]
         .where((part) => part != null && part.isNotEmpty)
         .join(' • ');
     final description = content.description;
+
+    // **Pas d'invité, aucune ligne ne se rend** — ni « Avec », ni tiret, ni
+    // « aucun invité ». C'est la règle du dépôt : l'absence s'affiche comme une
+    // absence, jamais un libellé de remplacement. Les trois états de
+    // l'`AsyncValue` retombent ici sur la même chose, et c'est voulu : une
+    // panne de lecture du magasin ne doit pas mettre un message d'erreur au
+    // milieu de la fiche d'un prêche.
+    final listenable = guests;
+    final names = listenable == null
+        ? const <String>[]
+        : ref.watch(listenable).value ?? const <String>[];
+    final guestLine = names.isEmpty
+        ? null
+        : l.contentGuests(joinNames(names, and: l.listAnd));
 
     return SizedBox(
       height: MediaQuery.sizeOf(context).height * 0.5,
@@ -1251,6 +1305,14 @@ class _ContentInfoSheet extends StatelessWidget {
                 subtitle,
                 style:
                     AppTypography.body.copyWith(color: palette.textSecondary),
+              ),
+            ],
+            if (guestLine != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                guestLine,
+                key: ContentPlayerView.guestsLineKey,
+                style: AppTypography.body.copyWith(color: palette.textPrimary),
               ),
             ],
             if (description != null) ...[

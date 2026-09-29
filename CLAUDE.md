@@ -363,7 +363,10 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
 - `tables/sync_tables.dart` — plomberie : `sync_cursors` (un curseur **par
   collection**), `sync_state` (état **global**, une ligne), `resync_tokens`.
 - `tables/mediatheque_tables.dart` — `branches`, `teaching_types`,
-  `contributors`, `teachings`. `tables/gathering_tables.dart` —
+  `contributors`, `teachings`, `teaching_guests` (le pivot des **invités**,
+  #77 : un enseignement à plusieurs voix, **aucune nouvelle famille de
+  contenu** ; **avec** tombstone — une ligne périmée y est un nom affiché sur un
+  écran). `tables/gathering_tables.dart` —
   `gathering_types`, `gatherings` (la seconde famille, #34).
   `tables/announcement_tables.dart` — `status_backgrounds`, `official_accounts`,
   `official_account_memberships`, `announcements` (le mur de statuts, #35).

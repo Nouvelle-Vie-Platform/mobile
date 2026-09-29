@@ -50,6 +50,30 @@ class TeachingWithRefs {
   String? get color => teaching.color ?? type?.color;
 }
 
+/// Un **invité** d'un contenu de médiathèque, et ce que le magasin possède de
+/// l'intervenant qu'il crédite (#77).
+///
+/// [contributor] peut être nul, exactement comme celui de [TeachingWithRefs] et
+/// pour la même raison : `teaching_guests` et `contributors` sont deux
+/// collections, qui arrivent et se resynchronisent séparément. La ligne de pivot
+/// est rendue **quand même** — c'est ce qui garantit qu'un invité dont
+/// l'intervenant n'est pas encore arrivé ne fasse pas disparaître les autres de
+/// l'écran.
+///
+/// L'absence se dessine comme une absence à l'étage du dessus : un invité sans
+/// nom ne se rend pas, et paraîtra au cycle suivant. Aucun « Invité inconnu »
+/// n'est fabriqué nulle part.
+@immutable
+class TeachingGuestWithContributor {
+  const TeachingGuestWithContributor({required this.guest, this.contributor});
+
+  final TeachingGuestRow guest;
+
+  /// L'intervenant crédité, `null` tant que la collection `contributors` ne l'a
+  /// pas encore livré (ou ne le livrera plus).
+  final ContributorRow? contributor;
+}
+
 /// Une rubrique de l'accueil, avec le nombre d'enseignements que le magasin en
 /// possède.
 @immutable
@@ -74,7 +98,9 @@ class HomeSection {
 /// Rien ici ne choisit une langue : la carte de traduction est rendue entière,
 /// et `utils/i18n_text.dart` → `pick(map, locale)` reste l'**unique** endroit où
 /// la règle de repli est écrite.
-@DriftAccessor(tables: [Branches, TeachingTypes, Contributors, Teachings])
+@DriftAccessor(
+  tables: [Branches, TeachingTypes, Contributors, Teachings, TeachingGuests],
+)
 class MediathequeDao extends DatabaseAccessor<AppDatabase>
     with _$MediathequeDaoMixin {
   MediathequeDao(super.db);
@@ -152,6 +178,46 @@ class MediathequeDao extends DatabaseAccessor<AppDatabase>
   /// retiré.
   Selectable<TeachingWithRefs> teachingById(String id) {
     return _teachingsQuery(where: teachings.id.equals(id));
+  }
+
+  /// **Les invités d'un contenu, dans l'ordre saisi** (#77).
+  ///
+  /// La jointure est **tolérante**, comme celle de [_teachingsQuery] et pour une
+  /// raison plus forte encore : ici la jointure stricte ne perdrait pas une
+  /// ligne de texte, elle perdrait **les autres invités**. SQLite ne rendrait
+  /// simplement pas la ligne dont l'intervenant manque, et un générique de trois
+  /// noms s'afficherait à deux sans que rien ne le signale — jusqu'au cycle qui
+  /// livre le contributeur manquant, ou jamais.
+  ///
+  /// L'ordre est celui de `position`, **saisi au portail** : le générique d'un
+  /// enseignement à plusieurs voix n'est pas une liste alphabétique. Deux invités
+  /// au même rang sont départagés par l'identifiant du pivot, pour que l'ordre
+  /// soit **stable** d'un appel à l'autre.
+  ///
+  /// Rien ici ne sait ce qu'est un podcast : la requête vaut pour **tout**
+  /// enseignement, et un message du dimanche auquel un invité a été crédité la
+  /// rend aussi bien.
+  Selectable<TeachingGuestWithContributor> guestsOfTeaching(String teachingId) {
+    final query = select(teachingGuests).join([
+      leftOuterJoin(
+        contributors,
+        contributors.id.equalsExp(teachingGuests.contributorId),
+      ),
+    ])
+      ..where(teachingGuests.teachingId.equals(teachingId))
+      ..orderBy([
+        OrderingTerm.asc(teachingGuests.position),
+        OrderingTerm.asc(teachingGuests.id),
+      ]);
+
+    // `readTableOrNull` est ce qui rend la jointure tolérante : sur une jointure
+    // externe sans correspondance, il rend `null` au lieu de lever.
+    return query.map(
+      (row) => TeachingGuestWithContributor(
+        guest: row.readTable(teachingGuests),
+        contributor: row.readTableOrNull(contributors),
+      ),
+    );
   }
 
   /// Toutes les branches connues, par ordre alphabétique.

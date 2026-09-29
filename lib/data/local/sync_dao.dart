@@ -22,6 +22,21 @@ abstract final class SyncCollectionKey {
   static const String contributors = 'contributors';
   static const String teachings = 'teachings';
 
+  /// Le **pivot des invités** d'un contenu de médiathèque (#77) : un
+  /// enseignement à plusieurs voix, **sans nouvelle famille de contenu**. Une
+  /// collection neuve, `partition: 'reference'` — un crédit n'appartient à
+  /// aucune branche —, servie aussi au **porteur sans compte** (ADR-0040) : lui
+  /// refuser le pivot lui donnerait un épisode dont les intervenants manquent,
+  /// c'est-à-dire un écran **faux** plutôt qu'un écran vide.
+  ///
+  /// Elle porte un **tombstone**, contrairement à
+  /// [officialAccountMemberships] : une ligne périmée, ici, est **un nom
+  /// affiché sur un écran**. Un intervenant décrédité resterait crédité sur les
+  /// téléphones jusqu'à une resynchronisation complète — des semaines —, et
+  /// rien côté serveur ne repasserait derrière : il n'y a pas d'écriture à
+  /// revérifier, il n'y a qu'un nom.
+  static const String teachingGuests = 'teaching_guests';
+
   /// Rubriques de **rassemblement** — le jumeau de [teachingTypes] pour l'autre
   /// famille. Deux référentiels distincts, jamais mélangés : le serveur ne
   /// livre à chacun que les rubriques de sa famille.
@@ -121,6 +136,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     TeachingTypes,
     Contributors,
     Teachings,
+    TeachingGuests,
     GatheringTypes,
     Gatherings,
     StatusBackgrounds,
@@ -156,6 +172,13 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
 
   LocalCollection<TeachingRow> get teachingsCollection =>
       LocalCollection._(SyncCollectionKey.teachings, teachings);
+
+  /// **Le pivot des invités** (#77). Rien d'un contenu : deux identifiants et
+  /// un rang. Son tombstone passe par le chemin commun — `readsAsRetraction`
+  /// trie en amont, et la ligne quitte le magasin par son identifiant, sans
+  /// qu'aucune colonne locale ne garde la trace du retrait.
+  LocalCollection<TeachingGuestRow> get teachingGuestsCollection =>
+      LocalCollection._(SyncCollectionKey.teachingGuests, teachingGuests);
 
   LocalCollection<GatheringTypeRow> get gatheringTypesCollection =>
       LocalCollection._(SyncCollectionKey.gatheringTypes, gatheringTypes);

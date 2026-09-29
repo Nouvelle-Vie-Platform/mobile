@@ -33,6 +33,11 @@ class TeachingDetailScreen extends ConsumerWidget {
 
     return ContentPlayerView(
       content: provider,
+      // **Les invités, et seulement ici** (#77) : un enseignement peut être à
+      // plusieurs voix, et c'est la feuille d'info qui les crédite. Aucun autre
+      // écran ne branche ce provider — ni l'accueil, ni la médiathèque, ni le
+      // détail d'un rassemblement, dont la collection n'a pas de pivot.
+      guests: teachingGuestsProvider(teachingId),
       chromeTitle: context.l10n.teachingAppBarTitle,
       retractedTitle: context.l10n.teachingRetractedTitle,
       retractedMessage: context.l10n.teachingRetractedMessage,

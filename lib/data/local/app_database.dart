@@ -69,6 +69,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     TeachingTypes,
     Contributors,
     Teachings,
+    TeachingGuests,
     GatheringTypes,
     Gatherings,
     StatusBackgrounds,
@@ -132,8 +133,13 @@ class AppDatabase extends _$AppDatabase {
   /// colonne sur `downloads` : `createTable` emploie la forme courante, donc une
   /// colonne apparaîtrait dès le palier v8 et se heurterait au schéma v8 gelé
   /// (voir `download_titles`). Rien du catalogue déjà téléchargé ne bouge.
+  ///
+  /// **v13** — `teaching_guests` (#77), le pivot des **invités** d'un contenu de
+  /// médiathèque : une collection répliquée de plus, une création de table, et
+  /// rien d'autre. Aucune nouvelle famille de contenu, aucune colonne ajoutée à
+  /// `teachings`.
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -336,6 +342,23 @@ class AppDatabase extends _$AppDatabase {
           // l'absence de garde `to >= 12`.
           if (from < 12) {
             await m.createTable(decor);
+          }
+
+          // v12 → v13 — les **invités** d'un contenu de médiathèque (#77). Une
+          // création de table, et rien d'autre : le pivot `teaching_guests`
+          // naît vide, son curseur n'existe pas encore, et le prochain
+          // manifeste l'annoncera `from_zero` — le premier cycle ramène donc
+          // **tous** les crédits du catalogue, y compris ceux posés avant cette
+          // version.
+          //
+          // Aucune colonne n'est ajoutée à `teachings`, et aucune ligne n'est
+          // réécrite : un enseignement sans invité est l'état par défaut, et il
+          // le reste. Pas de garde `to >= 13` pour la raison des paliers qui ne
+          // créent que des tables (v2 à v5, v7, v9, v11, v12) : le
+          // vérificateur de schéma **ignore une table surnuméraire** et ne
+          // signale qu'une colonne surnuméraire.
+          if (from < 13) {
+            await m.createTable(teachingGuests);
           }
         },
         beforeOpen: (details) async {

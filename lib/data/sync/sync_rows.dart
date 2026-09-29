@@ -187,6 +187,47 @@ TeachingDownload? _teachingDownload(Map<String, Object?> item, String field) {
   return TeachingDownloadConverter.decodeMap(value);
 }
 
+/// `GET /sync/teaching_guests` — un **invité** d'un contenu de médiathèque
+/// (#77).
+///
+/// Sept clés, relevées sur `app/mediatheque/transformers/
+/// teaching_guest_transformer.ts` : `id`, `teachingId`, `contributorId`,
+/// `position`, `createdAt`, `updatedAt`, `deletedAt`.
+///
+/// **Ni le nom de l'intervenant, ni le titre de l'enseignement** : le client
+/// réplique `contributors` et `teachings` par ailleurs et joint contre ses
+/// propres copies (ADR-0026, décision 3). Les servir ici les **figerait** —
+/// renommer un intervenant n'écrit rien sur le pivot, donc ne bousculerait aucun
+/// `updatedAt`, donc rien ne repasserait par le flux : le téléphone afficherait
+/// l'ancien nom indéfiniment.
+///
+/// `id` est un **entier** (`increments` côté serveur), comme les référentiels —
+/// pas l'UUIDv7 d'un contenu. `teachingId`, lui, est l'UUIDv7 du parent.
+///
+/// Les deux références sont **exigées** : un crédit sans contenu ni intervenant
+/// ne désigne rien, et l'écrire à `null` occuperait la place sans jamais
+/// s'afficher. `deletedAt` n'est pas lu ici — cette fonction ne voit jamais un
+/// tombstone, `readsAsRetraction` a tranché avant (règle 3 de l'en-tête).
+///
+/// Le type de retour est **distinct** de celui de toutes les autres
+/// collections, et c'est la barrière : un `Insertable<TeachingGuestRow>` n'est
+/// ni un `Insertable<TeachingRow>` ni un `Insertable<ContributorRow>`, si bien
+/// qu'un crédit ne peut structurellement pas se ranger dans la médiathèque ni
+/// dans l'annuaire.
+TeachingGuestsCompanion teachingGuestRowOf(Map<String, Object?> item) {
+  const collection = 'teaching_guests';
+  return TeachingGuestsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    teachingId: _text(collection, item, 'teachingId'),
+    contributorId: _requiredInt(collection, item, 'contributorId'),
+    // L'ordre **saisi**, 1-based. Une valeur absente ou d'un autre type vaut
+    // `1` — le rang est un confort d'affichage, il ne coûte pas la page.
+    position: Value(item['position'] is int ? item['position']! as int : 1),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 /// `GET /sync/gathering_types` — la rubrique de **rassemblement**.
 ///
 /// Mêmes dix clés que `teaching_types`, servies par le même transformer côté
