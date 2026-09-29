@@ -135,9 +135,12 @@ void main() {
       // c'est l'état de presque tout le catalogue.
       expect(find.byKey(ContentPlayerView.guestsLineKey), findsNothing);
       expect(find.textContaining('Avec'), findsNothing);
-      // Le reste de la feuille, lui, est bien là.
-      expect(find.text('La foi qui déplace'), findsOneWidget);
-      expect(find.text('Message du dimanche.'), findsOneWidget);
+      // Le reste de la feuille, lui, est bien là — cherché **dans la
+      // feuille**. Le titre se rend deux fois à l'écran, une fois dans
+      // l'habillage du lecteur et une fois ici : le chercher dans l'arbre
+      // entier compterait deux widgets et ne dirait rien de la feuille.
+      expect(_inSheet(find.text('La foi qui déplace')), findsOneWidget);
+      expect(_inSheet(find.text('Message du dimanche.')), findsOneWidget);
     });
 
     testWidgets('liste pas encore arrivée : aucune ligne, aucun message', (
@@ -168,7 +171,7 @@ void main() {
       // Une panne de lecture des crédits ne met pas un message d'erreur dans la
       // fiche : elle se lit comme une absence de crédit.
       expect(find.byKey(ContentPlayerView.guestsLineKey), findsNothing);
-      expect(find.text('La foi qui déplace'), findsOneWidget);
+      expect(_inSheet(find.text('La foi qui déplace')), findsOneWidget);
     });
 
     testWidgets('la ligne paraît quand le magasin livre les crédits', (
@@ -232,40 +235,63 @@ void main() {
       // `authorName`, ou ajoutait une ligne de crédit aux cartes, c'est ici que
       // ça rougirait.
       final db = AppDatabase(NativeDatabase.memory());
-      addTearDown(db.close);
-      final SyncDao sync = db.syncDao;
-
-      await sync.applyPage(
-        sync.contributorsCollection,
-        upserts: [
-          contributorRow(7, 'Pasteur Samuel'),
-          contributorRow(4, 'Sœur Afi'),
-        ],
-        cursor: 'c1',
-      );
-      await sync.applyPage(
-        sync.teachingsCollection,
-        upserts: [
-          teachingRow('t-1', title: 'La foi qui déplace', contributorId: 7),
-        ],
-        cursor: 'c1',
-      );
-      await sync.applyPage(
-        sync.teachingGuestsCollection,
-        upserts: [teachingGuestRow(1, contributorId: 4)],
-        cursor: 'c1',
-      );
-
       final repository = StoreMediathequeRepository(db.mediathequeDao);
-      final view =
-          (await repository.latestTeachings(locale: 'fr').first).single;
+
+      // **Le magasin travaille en asynchrone réel, donc sous `runAsync`.**
+      // `testWidgets` fait tourner son corps dans une horloge factice : une
+      // minuterie n'y part que si le test avance le temps lui-même. Drift en
+      // pose — pour servir un flux, et pour finir de se fermer. Lire
+      // `guestNames(...).first` puis `close()` dans l'horloge factice ne rend
+      // donc **jamais** la main : le test ne se termine pas, `flutter test`
+      // n'écrit pas sa ligne de synthèse, et le processus reste en vie sans
+      // verdict. C'est vérifié : la même lecture suivie d'un `close()` hors
+      // `runAsync` bloque indéfiniment.
+      //
+      // La base se ferme donc **ici**, dans le même bloc, et non par un
+      // `addTearDown` — un `tearDown` ne peut pas rouvrir une fenêtre
+      // d'asynchrone réel, et c'est précisément lui qui bloquait.
+      final lu = await tester.runAsync(() async {
+        final SyncDao sync = db.syncDao;
+
+        await sync.applyPage(
+          sync.contributorsCollection,
+          upserts: [
+            contributorRow(7, 'Pasteur Samuel'),
+            contributorRow(4, 'Sœur Afi'),
+          ],
+          cursor: 'c1',
+        );
+        await sync.applyPage(
+          sync.teachingsCollection,
+          upserts: [
+            teachingRow('t-1', title: 'La foi qui déplace', contributorId: 7),
+          ],
+          cursor: 'c1',
+        );
+        await sync.applyPage(
+          sync.teachingGuestsCollection,
+          upserts: [teachingGuestRow(1, contributorId: 4)],
+          cursor: 'c1',
+        );
+
+        final view =
+            (await repository.latestTeachings(locale: 'fr').first).single;
+        final guests = await repository.guestNames('t-1').first;
+        await db.close();
+        return (view: view, guests: guests);
+      });
+
+      // `runAsync` rend `null` si le corps n'a pas tourné : l'exiger évite de
+      // conclure sur une lecture qui n'a pas eu lieu.
+      expect(lu, isNotNull);
+      final view = lu!.view;
 
       // La lecture du contenu ne ramasse pas les invités : le chemin est
       // distinct, et `authorName` reste l'animateur.
       expect(view.authorName, 'Pasteur Samuel');
       // Les crédits existent bien — le magasin n'est pas vide, c'est la lecture
       // du contenu qui ne les regarde pas.
-      expect(await repository.guestNames('t-1').first, ['Sœur Afi']);
+      expect(lu.guests, ['Sœur Afi']);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -293,6 +319,19 @@ void main() {
     });
   });
 }
+
+/// Cherche **dans la feuille d'info**, et pas dans l'arbre entier.
+///
+/// La feuille est un `showModalBottomSheet`, donc un `BottomSheet` posé
+/// au-dessus du lecteur : le titre de l'enseignement se rend **deux fois** à
+/// l'écran, une fois dans l'habillage du lecteur et une fois dans la feuille.
+/// Un `find.text` non resserré en compte deux — ce qui est le comportement
+/// attendu, pas un défaut. Les assertions qui parlent de la feuille descendent
+/// donc dans son sous-arbre.
+Finder _inSheet(Finder matching) => find.descendant(
+      of: find.byType(BottomSheet),
+      matching: matching,
+    );
 
 /// Ouvre la feuille d'info par le bouton de la barre du lecteur.
 ///
