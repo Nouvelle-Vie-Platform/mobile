@@ -91,6 +91,16 @@ migrations: ## Exporte le schéma local de la version courante (drift_schemas/)
 	@echo "  écrire le palier dans onUpgrade, puis relancer cette cible."
 	dart run drift_dev make-migrations
 	dart run drift_dev schema generate drift_schemas/app_database/ test/data/local/schema/
+	@# `make-migrations` laisse aussi un gabarit de test dans
+	@# `test/data/local/schema/app_database/` : des listes NON remplies (« TODO: Fill these
+	@# lists »). Ce dépôt ne s'en sert pas — ses paliers sont écrits à la main dans
+	@# `MigrationStrategy` et testés à la main dans `test/data/local/migration_test.dart` —,
+	@# et il est gitignoré. Mais il vit sous `test/`, donc `flutter test` le ramasse et il
+	@# ÉCHOUE, définitivement : son assertion v1→v2 attend une base sans la ligne d'état
+	@# global, que `beforeOpen` pose exprès et que la suite versionnée exige positivement.
+	@# Un échec permanent apprend à lire « 1 échec » comme « normal », et c'est ainsi qu'une
+	@# vraie régression passe inaperçue. On efface donc le déchet à la source.
+	rm -rf test/data/local/schema/app_database
 
 web-assets: ## Re-télécharge les actifs web (drift/sqlite3 depuis pubspec.lock, hls.js épinglé)
 	./tool/web_assets.sh
