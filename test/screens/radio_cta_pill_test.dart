@@ -469,7 +469,7 @@ void main() {
     });
   });
 
-  group('Les deux phrases, selon la nature de l\'échec', () {
+  group('Les trois phrases, selon la nature de l\'échec', () {
     testWidgets(
         'la route d\'antenne injoignable → « vérifiez votre connexion »',
         (tester) async {
@@ -502,6 +502,37 @@ void main() {
 
       await tester.pump(const Duration(minutes: 2));
       expect(find.text('Antenne indisponible'), findsOneWidget);
+    });
+
+    testWidgets(
+        'une panne opaque du lecteur ne dit PAS « vérifiez votre connexion »',
+        (tester) async {
+      // **Le défaut constaté sur iPhone**, et c'est pourquoi la troisième phrase
+      // existe : AVFoundation rend sa panne sans code HTTP ni nom d'exception de
+      // transport, et le repli de #104 l'habillait en coupure de réseau. Le
+      // téléphone était connecté, et le bouton lui disait le contraire.
+      await pumpPill(tester);
+      await tapOnce(tester);
+      await paintFailure(
+        tester,
+        'PlatformException(abort, The operation could not be completed, '
+        'AVFoundationErrorDomain, -11800)',
+      );
+
+      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+
+      await tester.pump(const Duration(minutes: 2));
+      expect(find.text('Écoute impossible'), findsOneWidget);
+      expect(
+        find.text('Vérifiez votre connexion'),
+        findsNothing,
+        reason: 'rien ne dit que le réseau de l\'auditeur soit en cause',
+      );
+      expect(
+        find.text('Antenne indisponible'),
+        findsNothing,
+        reason: 'et rien ne dit que l\'église ait cessé de diffuser',
+      );
     });
   });
 
@@ -630,9 +661,11 @@ void main() {
 
     testWidgets('un pré-vol sans réponse → « vérifiez votre connexion »',
         (tester) async {
-      // Son échec se lit **comme les autres** : il n'a pas de troisième voix. Même
-      // phrase que la route d'antenne injoignable et que le lecteur qui part dans
-      // le vide, et c'est `classifyRadioFailure` qui la choisit — pour les trois.
+      // Son échec se lit **comme les autres** : il n'a pas de voix à lui. Même
+      // phrase que la route d'antenne injoignable, et c'est `classifyRadioFailure`
+      // qui la choisit — pour les deux. (La troisième phrase du bouton n'est pas
+      // une voix de plus pour le pré-vol : elle ne sert que les échecs dont on ne
+      // sait pas s'il y a eu une réponse, et un pré-vol sait toujours le dire.)
       await pumpPill(
         tester,
         handshake: const FailingRadioHandshake(

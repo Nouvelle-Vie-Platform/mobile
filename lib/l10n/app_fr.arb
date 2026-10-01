@@ -117,6 +117,8 @@
   "@radioFailureConnection": { "description": "Motif d'extinction du bouton d'antenne : rien n'a répondu (DNS, socket refusée, délai dépassé)" },
   "radioFailureAntenna": "Antenne indisponible",
   "@radioFailureAntenna": { "description": "Motif d'extinction du bouton d'antenne : quelque chose a répondu, et ce n'était pas une playlist (404, 401, page HTML)" },
+  "radioFailureUnknown": "Écoute impossible",
+  "@radioFailureUnknown": { "description": "Motif d'extinction du bouton d'antenne quand on ignore s'il y a eu une réponse — la panne du lecteur iOS n'en porte aucune trace lisible. Ne nomme ni le réseau ni l'antenne : affirmer l'un des deux serait inventer la moitié du diagnostic" },
   "radioUnavailableMessage": "New Life Radio ne diffuse pas pour le moment.",
   "@radioUnavailableMessage": { "description": "Écran d'antenne quand aucune adresse de flux n'est connue" },
   "actionSeeAll": "Voir tout",

@@ -1,15 +1,21 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/radio/radio_failure.dart';
 
-/// Les deux phrases du bouton d'antenne, et ce qui les départage.
+/// Les **trois** phrases du bouton d'antenne, et ce qui les départage.
 ///
 /// Elles se jugent **ici**, sur des échecs construits à la main, plutôt qu'à
 /// l'écran seul : un test d'écran prouve que la phrase arrive, celui-ci prouve
 /// qu'elle est la bonne — et il le prouve sur les formes qu'un téléphone produit
 /// vraiment, qu'aucun harnais ne sait fabriquer autrement.
+///
+/// ⚠️ **Les deux premiers groupes n'ont pas bougé avec #110, et c'est le point.**
+/// La troisième phrase remplace le **repli** — « vérifiez votre connexion » faute
+/// de mieux —, jamais l'un des deux cas que le fichier sait reconnaître. Les voir
+/// rester verts est ce qui prouve que la règle de #104 tient.
 void main() {
   final request = RequestOptions(path: '/radio/antenna');
 
@@ -50,13 +56,33 @@ void main() {
       );
     });
 
-    test('un échec qu\'on ne sait pas nommer penche de ce côté-ci', () {
-      // Et c'est délibéré : « vérifiez votre connexion » invite à un geste utile,
-      // là où « antenne indisponible » **affirmerait** une panne de l'église dont
-      // on n'a aucune preuve. Le chemin du lecteur n'a pas pu être mesuré sur
-      // appareil — le bloc Caddy de MediaMTX n'est pas posé (`context#6`).
+    test('ExoPlayer nomme sa panne de transport en clair', () {
+      // Les noms d'exceptions Java que `just_audio` recopie dans son message.
+      // Ils comptent **depuis que le repli n'est plus « connexion »** : avant, une
+      // coupure franche y tombait sans avoir besoin d'être reconnue ; désormais il
+      // faut la reconnaître pour continuer à la nommer.
+      const messages = [
+        'PlayerException: (0) Source error: '
+            'java.net.UnknownHostException: Unable to resolve host',
+        'PlayerException: (0) Source error: java.net.ConnectException',
+        'PlayerException: (0) Source error: java.net.SocketTimeoutException',
+        'PlayerException: (0) Source error: javax.net.ssl.SSLHandshakeException',
+      ];
+      for (final message in messages) {
+        expect(
+          classifyRadioFailure(message),
+          RadioFailureKind.connection,
+          reason: message,
+        );
+      }
+    });
+
+    test('le délai du pré-vol, remonté nu', () {
+      // `HttpRadioHandshakeResolver.resolve` borne la négociation par `.timeout`,
+      // qui lève un `TimeoutException` — sans réponse, donc sans serveur qui ait
+      // parlé.
       expect(
-        classifyRadioFailure('PlatformException(abort, null, null, null)'),
+        classifyRadioFailure(TimeoutException('', const Duration(seconds: 5))),
         RadioFailureKind.connection,
       );
     });
@@ -107,6 +133,54 @@ void main() {
         classifyRadioFailure('<!DOCTYPE html><html><body>404</body></html>'),
         RadioFailureKind.antenna,
       );
+    });
+  });
+
+  group('classifyRadioFailure — « écoute impossible »', () {
+    // ⚠️ **Le troisième sens, et c'est le correctif.** Il ne remplace ni l'une ni
+    // l'autre des deux phrases de #104 : les deux groupes ci-dessus le prouvent,
+    // et c'est exprès qu'ils n'ont pas bougé. Il remplace le **repli**, qui
+    // empruntait la voix de la connexion.
+    test('la panne opaque d\'AVFoundation ne nomme pas le réseau', () {
+      // Le message réel que rend AVPlayer : ni code HTTP, ni nom d'exception de
+      // transport. C'est la forme sous laquelle un 401 sur une sous-playlist est
+      // arrivé jusqu'au bouton le 2026-10-01, sur un iPhone **connecté**, et où il
+      // s'affichait « Vérifiez votre connexion ».
+      expect(
+        classifyRadioFailure(
+          'PlatformException(abort, The operation could not be completed, '
+          'AVFoundationErrorDomain, -11800)',
+        ),
+        RadioFailureKind.unknown,
+      );
+    });
+
+    test('un échec qu\'on ne sait pas nommer du tout', () {
+      expect(
+        classifyRadioFailure('PlatformException(abort, null, null, null)'),
+        RadioFailureKind.unknown,
+      );
+    });
+  });
+
+  group('looksLikeTransportFailure — ce qu\'elle refuse de reconnaître', () {
+    test('elle ne lit rien dans un domaine d\'erreur Apple', () {
+      // ⚠️ **C'est un refus, pas un trou.** `-11800` recouvre indifféremment une
+      // coupure réseau et un 401 sur une sous-playlist ; l'ajouter ici ferait dire
+      // « vérifiez votre connexion » devant un refus du serveur, c'est-à-dire
+      // réécrirait la panne que cette tranche corrige. La contrepartie est qu'une
+      // coupure franche sur iPhone se dira « écoute impossible », et c'est le prix
+      // honnête d'une information qu'on n'a pas.
+      expect(
+        looksLikeTransportFailure('AVFoundationErrorDomain, -11800'),
+        isFalse,
+      );
+      expect(looksLikeTransportFailure('NSURLErrorDomain, -1009'), isFalse);
+    });
+
+    test('elle ne confond pas un mot voisin avec un nom d\'exception', () {
+      expect(looksLikeTransportFailure('socket closed'), isFalse);
+      expect(looksLikeTransportFailure('timeout'), isFalse);
     });
   });
 

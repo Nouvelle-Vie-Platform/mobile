@@ -479,8 +479,37 @@ est **purement temporelle** — « reprise immédiate si le réseau revient » a
 ⚠️ La panne du lecteur ne peut pas se reconnaître **par son type** :
 `PlayerException` appartient à `just_audio`, qu'aucun autre fichier de `lib/` n'a
 le droit d'importer. On lit donc le code de statut que la plateforme écrit dans
-son message, et un échec qu'on ne sait pas nommer **penche vers « connexion »** :
-inviter à un geste utile vaut mieux qu'affirmer une panne de l'église.
+son message, ou la signature d'une page HTML.
+
+**Il y a une TROISIÈME phrase depuis #110 — « Écoute impossible »** — et ce
+paragraphe disait l'inverse (« un échec qu'on ne sait pas nommer penche vers
+*connexion* : inviter à un geste utile vaut mieux qu'affirmer une panne de
+l'église »). C'était un raisonnement, et **l'appareil l'a démenti** : le
+2026-10-01 sur un iPhone réel, l'antenne ne jouait pas, le bouton tournait, puis
+il annonçait **« Vérifiez votre connexion » sur un téléphone connecté** — la
+seule phrase dont l'auditeur puisse savoir à coup sûr qu'elle est fausse, et
+celle qui lui apprend à ne plus lire le bouton.
+
+La cause n'était pas le partage, c'était le **repli** : AVFoundation rend ses
+pannes sous une forme **opaque** (`AVFoundationErrorDomain -11800`, « The
+operation could not be completed »), sans code HTTP ni nom d'exception, donc un
+401 sur une sous-playlist arrivait exactement comme une coupure de réseau.
+
+Trois conséquences à tenir :
+
+1. **Les deux cas que #104 rangeait bien ne bougent pas** — un DNS qui ne résout
+   pas reste « vérifiez votre connexion », un 404 reste « antenne indisponible ».
+   `radio_failure_test.dart` garde ses deux premiers groupes **intacts** exprès :
+   les voir rester verts est ce qui prouve que la règle tient.
+2. **Le repli ne nomme plus rien**, parce que les deux autres phrases *affirment*
+   quelque chose et qu'on n'affirme pas sur un message qu'on n'a pas su lire.
+3. **Une coupure franche doit désormais être *reconnue* pour être nommée**
+   (`looksLikeTransportFailure`) : avant, elle tombait dans le repli sans effort.
+   La liste est courte et ne contient que des noms écrits en clair — ceux de
+   `dart:io` et ceux qu'ExoPlayer recopie de Java. ⚠️ **iOS n'y figure pas, et
+   c'est un refus** : `-11800` recouvre indifféremment une coupure et un 401, donc
+   l'y mettre redirait « réseau » devant un refus. Une coupure sur iPhone se dira
+   donc « écoute impossible » — le prix honnête d'une information qu'on n'a pas.
 
 #### La poignée de main par cookie, honorée à la main (#108)
 
@@ -574,6 +603,34 @@ que `RadioListening` **observe le lecteur** au lieu de se fier à qui l'a appel�
 il reconnaît la radio dans la main du lecteur unique, et gouverne la reprise quoi
 qu'il arrive.
 
+#### Tout chemin qui ouvre l'antenne porte le cookie (#110)
+
+**L'écran d'antenne n'ouvre plus l'antenne lui-même.** `ContentPlayerView`
+chargeait l'URL de la playlist **sans en-têtes** (`_loadOnce` → `_open` →
+`player.load`), ce qui laissait deux chemins prendre un
+`401 {"error":"session not found"}` : un **lien profond** vers `/radio`, et la
+**course du second appui** pendant les cinq secondes du pré-vol — `start()` n'a pas
+encore publié son `contentId`, donc le `_open` de l'écran pouvait gagner et faire
+une première ouverture nue.
+
+Le correctif est un paramètre nommé **`openSource`** sur `ContentPlayerView` :
+quand il est posé, il **remplace entièrement** le chargement (ni résolution de
+téléchargement, ni `load`, ni déplacement vers la reprise), et `RadioScreen` y
+délègue à `RadioListening.start`. Deux choses à ne pas se tromper :
+
+1. **Ce n'est pas un second pré-vol en série.** `start` est idempotent — un
+   démarrage en vol rend tout de suite, un lecteur qui tient déjà l'antenne reçoit
+   un simple `play()` —, donc rien n'est pris de plus sur la fenêtre de rattrapage
+   de 40 secondes.
+2. **Un `assert` en mode debug ferme le chemin pour de bon** : charger
+   `RadioConfig.contentId` depuis `ContentPlayerView` sans `openSource` fait
+   rougir, avec le motif écrit en clair. C'était la demande explicite derrière
+   #110 — *un échec silencieux est précisément ce qui nous a coûté la soirée* —, et
+   un flux qui ne joue pas ressemble trop à un réseau lent pour qu'on compte sur
+   l'œil. S'y ajoute une trace `debugPrint` quand une négociation **réelle** ne
+   rapporte aucun cookie (`DirectRadioHandshake` est écarté : c'est, par
+   conception, le pré-vol qui n'en fait pas).
+
 Côté tests : `pumpScreen` / `pumpRouter` posent un `FixedRadioRepository` sur
 `RadioAntenna.unknown` (paramètre nommé `radio:`) **et** un `DirectRadioHandshake`
 (paramètre nommé `handshake:`, #108 — le pré-vol réel ouvrirait une socket au
@@ -583,6 +640,12 @@ surcharges du même provider. **Jamais `pumpAndSettle`** : le bouton porte une a
 continue. Et les six attentes sont écrites **en clair** dans le test, jamais
 relues depuis `kRadioRetryDelays` : la constante est ce qu'on éprouve — mesuré,
 un test qui la relisait passait au vert sur six attentes d'une seconde.
+
+⚠️ **Et ce qu'aucun de ces tests ne prouve, en toutes lettres** : qu'un cookie
+traverse jusqu'à ExoPlayer ou AVFoundation. `radio_screen_test.dart` s'arrête à
+l'en-tête **remis au lecteur**, c'est-à-dire à la frontière du double inerte.
+Écrire un test qui prétendrait aller plus loin serait écrire une illusion : la
+suite demande un Android réel et un iPhone réel.
 
 ### Le **modèle de lecture** de la médiathèque (`lib/models/content_view.dart`)
 `ContentView` / `SectionView` : ce qu'un écran affiche, et rien de plus. Les
@@ -1886,6 +1949,52 @@ une suppression.
 « Réessayer ») dit « je n'ai pas pu charger » ; `AppEmptyState` est une carte
 dans une liste. Une absence, elle, occupe l'écran entier.
 
+### La phrase d'un échec de chargement — `errorStateMessage`, et **lui seul**
+
+**Une réponse reçue n'est jamais une panne de réseau.** Seule l'*absence* de
+réponse — délai dépassé, DNS, coupure, TLS — mérite « vérifiez votre connexion
+internet ». Un 401, un 403, un 404, un 5xx ont tous répondu.
+
+**Le défaut était mesuré.** La section « À venir » de l'accueil annonçait
+« Impossible de charger le contenu. Vérifiez votre connexion internet » sur un
+téléphone connecté : le serveur refusait le jeton d'invité sur `GET /events` en
+**401**, `mapCalendarError` rangeait bien ce 401 en `unauthorized`, et c'était
+**l'écran** qui l'écrasait — son ternaire ne nommait que `server` et rabattait
+tout le reste sur le message réseau. `agenda_screen.dart` portait **le même
+ternaire à mi-chemin**, et `ContentPlayerView._buildError` ne regardait rien du
+tout, alors que l'écran d'antenne l'atteint par un appel HTTP
+(`GET /radio/antenna`, dont la `DioException` remonte brute).
+
+Un seul endroit décide désormais : **`errorStateMessage`**
+(`lib/utils/error_message.dart`), trois sorties — `stateErrorMessage` (personne
+n'a répondu), `stateErrorServerMessage` (le serveur a échoué),
+`stateErrorRefusedMessage` (le serveur a refusé). C'est la même règle que
+`radio_failure.dart`, l'un pour un état d'écran, l'autre pour un bouton.
+
+Trois points qui se ratent en silence :
+
+1. **La règle est à sens unique.** *Une réponse reçue n'est pas une panne de
+   réseau* ; une erreur dont on ne sait rien n'est **pas** une réponse reçue, et
+   elle retombe donc sur le message réseau — qui propose au moins un geste. Ce
+   sont les deux premières branches qui ferment le défaut, pas la troisième.
+2. **La fonction est hors d'`AppErrorState`, exprès** : ce composant n'a « aucune
+   notion métier dans son API », et lui faire lire une `CalendarException` lui
+   donnerait une connaissance du domaine dont il n'a pas besoin pour dessiner une
+   carte.
+3. **Un 404 se dit encore « le serveur ne répond pas »**, ce qui est imprécis :
+   `CalendarException` ne porte pas le code de statut (`mapCalendarError` range
+   404, 422 et 5xx ensemble en `server`). Imprécision **connue et laissée** — elle
+   n'envoie personne vérifier son wifi, et la corriger demande d'élargir le modèle
+   d'erreur de l'agenda.
+
+⚠️ **Les écrans adossés au magasin n'y passent pas encore** —
+`_MediathequeHome`, `MediaLibraryScreen`, `DownloadsScreen`,
+`HomeContentSection` : leurs échecs sont des lectures Drift, donc ils disent
+« vérifiez votre connexion internet » devant une base illisible. C'est **un autre
+mensonge, qui demande une autre clé** (« je n'ai pas pu lire ce qui est sur cet
+appareil »), et aucun n'a de chemin HTTP, donc aucun ne reproduit le défaut
+corrigé ici.
+
 ### Navigation principale
 `HomeShell` = `IndexedStack` de 4 onglets **Accueil · Annonces · Échanges ·
 Profil** + `BottomAppBar` à encoche + **FAB central** (→ médiathèque, route
@@ -2451,7 +2560,13 @@ autorisés avant authentification.
      simplement ouverte), et si la demande s'y perd le premier appui recharge
      en silence — il faut **appuyer deux fois** pour entendre quelque chose.
      C'est arrivé, `test/widgets/content_player_view_test.dart` le verrouille
-     désormais (« un seul appui suffit, même quand il faut rouvrir le média ») ;
+     désormais (« un seul appui suffit, même quand il faut rouvrir le média »).
+
+     ⚠️ **`openSource` court-circuite tout ce paragraphe quand il est posé**
+     (#110) : l'écran ne résout plus et ne charge plus, il délègue. Seul l'écran
+     d'antenne s'en sert, parce qu'une ouverture de l'antenne doit porter le
+     cookie de MediaMTX — voir « Tout chemin qui ouvre l'antenne porte le
+     cookie » plus haut ;
   5. **les cinq déclencheurs de #43 sont câblés ici** : position poussée,
      pause, sortie d'écran, `AppLifecycleState.paused` (**sans arrêter la
      lecture**) et état terminal — qui exige `pause()` **et** `seek(zero)`,

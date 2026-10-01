@@ -514,6 +514,12 @@ abstract class AppLocalizations {
   /// **'Antenne indisponible'**
   String get radioFailureAntenna;
 
+  /// Motif d'extinction du bouton d'antenne quand on ignore s'il y a eu une réponse — la panne du lecteur iOS n'en porte aucune trace lisible. Ne nomme ni le réseau ni l'antenne : affirmer l'un des deux serait inventer la moitié du diagnostic
+  ///
+  /// In fr, this message translates to:
+  /// **'Écoute impossible'**
+  String get radioFailureUnknown;
+
   /// Écran d'antenne quand aucune adresse de flux n'est connue
   ///
   /// In fr, this message translates to:

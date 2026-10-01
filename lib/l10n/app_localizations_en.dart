@@ -245,6 +245,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radioFailureAntenna => 'Station unavailable';
 
   @override
+  String get radioFailureUnknown => 'Can\'t listen right now';
+
+  @override
   String get radioUnavailableMessage =>
       'New Life Radio is not broadcasting right now.';
 

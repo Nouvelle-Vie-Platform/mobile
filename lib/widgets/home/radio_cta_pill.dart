@@ -284,18 +284,24 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
     );
   }
 
-  /// **Les cinq phrases du bouton**, dans l'ordre de priorité qui les départage.
+  /// **Les six phrases du bouton**, dans l'ordre de priorité qui les départage.
   ///
   /// L'échec passe devant tout : c'est le seul moment où le bouton a une cause à
   /// donner. « Hors antenne » vient après ce que l'application fait — une antenne
   /// annoncée muette qu'on est en train d'écouter n'est plus muette, et c'est
   /// l'écoute qui a raison.
+  ///
+  /// ⚠️ La troisième cause (`unknown`) ne nomme ni le réseau ni l'antenne, parce
+  /// qu'on ne sait pas lequel des deux a lâché — voir `radio_failure.dart`. C'est
+  /// la phrase qui remplace le « vérifiez votre connexion » mesuré sur iPhone
+  /// alors que le téléphone était connecté.
   String _label(BuildContext context, RadioStatus status, bool silent) {
     final l10n = context.l10n;
     return switch (status.phase) {
       RadioPhase.failed => switch (status.failure!) {
           RadioFailureKind.connection => l10n.radioFailureConnection,
           RadioFailureKind.antenna => l10n.radioFailureAntenna,
+          RadioFailureKind.unknown => l10n.radioFailureUnknown,
         },
       RadioPhase.retrying => l10n.radioRetrying,
       RadioPhase.playing || RadioPhase.connecting => l10n.radioTitle,

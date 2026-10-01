@@ -91,6 +91,7 @@
   "radioRetrying": "Trying again…",
   "radioFailureConnection": "Check your connection",
   "radioFailureAntenna": "Station unavailable",
+  "radioFailureUnknown": "Can't listen right now",
   "radioUnavailableMessage": "New Life Radio is not broadcasting right now.",
   "actionSeeAll": "See all",
   "actionListen": "Listen",

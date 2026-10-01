@@ -23,6 +23,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../utils/error_message.dart';
 import '../utils/name_list.dart';
 import 'app_error_state.dart';
 import 'content_absence.dart';
@@ -44,7 +45,34 @@ class ContentPlayerView extends ConsumerStatefulWidget {
     this.isLive = false,
     this.onStop,
     this.fallbackBackgroundAsset,
+    this.openSource,
   });
+
+  /// **Comment la source s'ouvre, quand cet écran ne doit pas l'ouvrir
+  /// lui-même** (#110).
+  ///
+  /// `null` — le cas de la médiathèque — garde le comportement d'origine : cet
+  /// écran résout le téléchargement et appelle `player.load`.
+  ///
+  /// Non nul, il **remplace entièrement** le chargement : ni résolution de
+  /// téléchargement, ni `load`, ni déplacement vers la position de reprise. C'est
+  /// l'appelant qui ouvre, à sa façon, et qui joue s'il le veut.
+  ///
+  /// ⚠️ **Il existe pour une seule raison, et elle est mesurée** : l'antenne de
+  /// New Life Radio ne s'ouvre qu'après une **poignée de main par cookie**
+  /// (#108), et `player.load(url: content.playlistUrl)` écrit ici ne la porte
+  /// pas. Deux chemins y tombaient — un lien profond vers `/radio`, et la course
+  /// du second appui pendant le pré-vol de cinq secondes —, et les deux
+  /// donnaient un `401 {"error":"session not found"}` que rien à l'écran ne
+  /// reliait à sa cause.
+  ///
+  /// ⚠️ **Et ce n'est pas un second pré-vol.** `RadioListening.start` est
+  /// idempotent — un démarrage en vol le fait rendre tout de suite, un lecteur
+  /// qui tient déjà l'antenne ne la recharge pas —, donc l'écran ne consomme
+  /// aucun aller-retour de plus sur la fenêtre de rattrapage de 40 secondes de
+  /// l'antenne. Il **reflète** ce que le contrôleur a démarré, et le démarre
+  /// quand personne ne l'a fait.
+  final Future<void> Function()? openSource;
 
   /// **Le dernier étage de la cascade du fond** : une image du dépôt, posée
   /// quand aucune saison n'en fournit. Le site public ferme sa propre cascade
@@ -165,7 +193,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
 
     return ref.watch(widget.content).when(
           loading: () => _buildLoading(context),
-          error: (_, __) => _buildError(context),
+          error: (error, __) => _buildError(context, error),
           data: (content) => switch (content) {
             null => _buildAbsent(context),
             final found when found.playlistUrl == null =>
@@ -214,7 +242,15 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     );
   }
 
-  Widget _buildError(BuildContext context) {
+  /// **La cause vient de l'erreur, pas d'un défaut.**
+  ///
+  /// Cet état n'était atteint que par la médiathèque, dont les échecs sont des
+  /// lectures de magasin, et le message réseau y passait inaperçu. L'écran
+  /// d'antenne l'atteint désormais aussi : `radioAntennaProvider` est un appel
+  /// HTTP (`GET /radio/antenna`) dont la `DioException` remonte telle quelle, et
+  /// un 404 y annonçait « vérifiez votre connexion internet ». Voir
+  /// `utils/error_message.dart`.
+  Widget _buildError(BuildContext context, Object error) {
     return _PlayerScaffold(
       base: _fallbackBase,
       background: _background(),
@@ -229,7 +265,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
               child: Padding(
                 padding: AppSpacing.screenPadding,
                 child: AppErrorState(
-                  message: context.l10n.stateErrorMessage,
+                  message: errorStateMessage(error, context.l10n),
                   onRetry: widget.onRetry,
                 ),
               ),
@@ -335,6 +371,30 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     // contenu mis en pause depuis la notification doit le rester, et c'est vrai
     // du direct comme du reste.
     if (player.value.contentId == content.id) return;
+
+    // **L'ouverture appartient à l'appelant quand il l'a demandée** (#110) :
+    // c'est tout ce qui suit — résolution, en-têtes, lecture — qui lui revient.
+    // Voir [ContentPlayerView.openSource].
+    final opener = widget.openSource;
+    if (opener != null) {
+      await opener();
+      return;
+    }
+
+    // **Le garde-fou de #110, en mode debug seulement.** Un `load` nu sur
+    // l'antenne est le défaut que cette tranche referme : il rend
+    // `401 {"error":"session not found"}` et il ne se voit nulle part, parce
+    // qu'un flux qui ne joue pas ressemble à un réseau lent. Un écran qui monte
+    // l'antenne dans ce lecteur **doit** passer par le contrôleur d'écoute, qui
+    // seul fait la poignée de main — l'assertion le dit ici et maintenant plutôt
+    // que de laisser quelqu'un y perdre une soirée.
+    assert(
+      content.id != RadioConfig.contentId,
+      'L\'antenne de New Life Radio ne peut pas être ouverte par '
+      'ContentPlayerView : ce chargement partirait sans le cookie de session de '
+      'MediaMTX (#108) et rendrait 401. Passez `openSource:` pour déléguer '
+      'l\'ouverture à RadioListening.start — voir radio_screen.dart.',
+    );
 
     final resolution = await ref
         .read(downloadResolverProvider)

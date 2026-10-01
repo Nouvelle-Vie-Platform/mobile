@@ -247,6 +247,9 @@ class AppLocalizationsEe extends AppLocalizations {
   String get radioFailureAntenna => 'Antenne indisponible';
 
   @override
+  String get radioFailureUnknown => 'Écoute impossible';
+
+  @override
   String get radioUnavailableMessage =>
       'New Life Radio ne diffuse pas pour le moment.';
 
