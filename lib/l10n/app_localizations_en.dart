@@ -245,6 +245,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radioFailureAntenna => 'Station unavailable';
 
   @override
+  String get radioFailureUnknown => 'Can\'t listen right now';
+
+  @override
   String get radioUnavailableMessage =>
       'New Life Radio is not broadcasting right now.';
 
@@ -981,6 +984,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get stateErrorServerMessage =>
       'The server isn\'t responding right now. Please try again in a moment.';
+
+  @override
+  String get stateErrorRefusedMessage =>
+      'This content isn\'t available right now. Your internet connection isn\'t the problem.';
 
   @override
   String get stateRetry => 'Try again';

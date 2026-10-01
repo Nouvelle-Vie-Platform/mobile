@@ -13,6 +13,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../utils/error_message.dart';
 import '../utils/event_time.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_state.dart';
@@ -270,14 +271,15 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
 /// Cause de l'échec, **en langage humain**.
 ///
-/// `null` laisse `AppErrorState` sur son message réseau par défaut : c'est le
-/// cas majoritaire (coupure). Un serveur joignable mais en panne mérite un autre
-/// texte — dire « vérifiez votre connexion » à quelqu'un dont la connexion
-/// fonctionne est une fausse piste.
-String? _errorMessage(Object error, AppLocalizations l10n) =>
-    error is CalendarException && error.code == CalendarErrorCode.server
-        ? l10n.stateErrorServerMessage
-        : null;
+/// ⚠️ **Elle ne laisse plus `AppErrorState` sur son défaut.** Cette fonction ne
+/// nommait que le cas `server` et rendait `null` pour tout le reste — donc le
+/// message réseau du composant, **401 compris**. C'était exactement le défaut
+/// relevé sur l'accueil : « vérifiez votre connexion internet » devant un serveur
+/// qui avait répondu, et refusé. La règle et les trois sorties vivent désormais
+/// dans `utils/error_message.dart`, écrites une fois pour les trois écrans qui en
+/// avaient besoin.
+String _errorMessage(Object error, AppLocalizations l10n) =>
+    errorStateMessage(error, l10n);
 
 /// Intitulé du mois affiché (« Juillet 2026 »), dans la locale courante.
 ///

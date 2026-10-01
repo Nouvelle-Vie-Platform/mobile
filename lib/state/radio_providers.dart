@@ -25,7 +25,7 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
@@ -225,7 +225,9 @@ class RadioListening extends Notifier<RadioStatus> {
       // revanche propre (`kRadioHandshakeTimeout`), parce qu'il est **sur le
       // chemin critique de l'écoute** et que ce qu'il consomme est pris sur la
       // fenêtre de rattrapage de 40 secondes de l'antenne.
-      final handshake = await ref.read(radioHandshakeProvider).resolve(url);
+      final resolver = ref.read(radioHandshakeProvider);
+      final handshake = await resolver.resolve(url);
+      _traceHandshake(resolver, handshake);
       await player.load(
         contentId: RadioConfig.contentId,
         // L'URL **finale**, pas celle de départ : le `Location` du 302 est
@@ -244,10 +246,55 @@ class RadioListening extends Notifier<RadioStatus> {
       );
       player.play();
     } catch (error) {
-      _fail(classifyRadioFailure(error));
+      _fail(_classify(error));
     } finally {
       _starting = false;
     }
+  }
+
+  /// **Range la panne, et laisse une trace de ce qu'on n'a pas su lire.**
+  ///
+  /// Le journal n'est pas de la décoration : l'écoute qui a coûté une soirée
+  /// s'est présentée comme « vérifiez votre connexion » sur un téléphone
+  /// connecté, et le message brut de la plateforme était le **seul** indice de la
+  /// vraie cause — il n'allait nulle part. Il va désormais dans le journal, en
+  /// debug, pour que la prochaine enquête commence par le lire au lieu de le
+  /// deviner. En release, rien.
+  RadioFailureKind _classify(Object error) {
+    final kind = classifyRadioFailure(error);
+    if (kind == RadioFailureKind.unknown) {
+      assert(() {
+        debugPrint('[radio] panne non classée, message brut : $error');
+        return true;
+      }());
+    }
+    return kind;
+  }
+
+  /// **Dit, en debug, qu'une négociation réelle n'a rapporté aucun cookie.**
+  ///
+  /// Ce n'est pas un échec, et ça ne lève donc pas : un MediaMTX configuré sans
+  /// session rend 200 du premier coup, et l'antenne jouerait sans cookie. Mais
+  /// c'est **exactement l'état dans lequel elle rend 401 en silence**, et rien ne
+  /// permettait de le constater depuis l'extérieur — un flux qui ne joue pas
+  /// ressemble à un réseau lent, et c'est ce qui a coûté une soirée.
+  ///
+  /// ⚠️ **Un [DirectRadioHandshake] est écarté, et ce n'est pas une exception de
+  /// confort** : il *est* « le pré-vol qui n'en fait pas », par conception, sur le
+  /// web et dans tous les tests d'écran. L'y faire parler noierait le seul cas
+  /// suspect sous une ligne par montage, c'est-à-dire rendrait cette trace
+  /// inutile — un avertissement qui crie toujours n'avertit plus de rien.
+  void _traceHandshake(
+    RadioHandshakeResolver resolver,
+    RadioHandshake handshake,
+  ) {
+    assert(() {
+      if (resolver is! DirectRadioHandshake && handshake.headers.isEmpty) {
+        debugPrint('[radio] pré-vol sans cookie — l\'antenne sera ouverte nue '
+            '(${handshake.url})');
+      }
+      return true;
+    }());
   }
 
   /// **Arrête l'écoute**, et renonce à toute reprise en cours.
@@ -280,7 +327,7 @@ class RadioListening extends Notifier<RadioStatus> {
       _fail(RadioFailureKind.antenna);
       return null;
     } catch (error) {
-      _fail(classifyRadioFailure(error));
+      _fail(_classify(error));
       return null;
     }
   }
@@ -301,7 +348,7 @@ class RadioListening extends Notifier<RadioStatus> {
 
     final error = playback.error;
     if (error != null) {
-      _fail(classifyRadioFailure(error));
+      _fail(_classify(error));
       return;
     }
 

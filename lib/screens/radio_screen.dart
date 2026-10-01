@@ -42,6 +42,21 @@ class RadioScreen extends ConsumerWidget {
       onRetry: () => ref.invalidate(radioAntennaProvider),
       downloadContentType: null,
       isLive: true,
+      // **L'écran n'ouvre plus l'antenne lui-même** (#110), et c'est le seul
+      // moyen d'obtenir que *tout* chemin porte le cookie de MediaMTX (#108).
+      //
+      // `ContentPlayerView` chargeait l'URL de la playlist **sans en-têtes** :
+      // un lien profond vers `/radio` — ou le second appui du bouton pendant les
+      // cinq secondes du pré-vol, qui gagnait la course — ouvrait l'antenne nue
+      // et prenait `401 {"error":"session not found"}`, sans qu'aucune phrase ne
+      // relie le silence à sa cause.
+      //
+      // ⚠️ **Ce n'est pas un second pré-vol en série.** `start` est idempotent :
+      // un démarrage déjà en vol le fait rendre tout de suite, et un lecteur qui
+      // tient déjà l'antenne reçoit un simple `play()`. Rien n'est pris de plus
+      // sur la fenêtre de rattrapage de 40 secondes de l'antenne.
+      openSource: () =>
+          ref.read(radioListeningProvider.notifier).start(title: title),
       // Le plancher de la cascade : la saison gagne quand le portail en a une.
       // Même image que l'écran de démarrage et que le splash natif.
       fallbackBackgroundAsset: kAppBackgroundAsset,
