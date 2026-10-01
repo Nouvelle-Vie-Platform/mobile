@@ -6,16 +6,24 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<!-- Le nom **affiché**, celui que le fidèle lit sous l'icône. Il ne se
+	     confond ni avec le nom du paquet Dart (`maison_du_miracle`) ni avec
+	     `PRODUCT_BUNDLE_IDENTIFIER`, l'identité de l'app auprès de l'App Store
+	     et de la signature — aucun des deux ne bouge. -->
 	<key>CFBundleDisplayName</key>
-	<string>Maison Du Miracle</string>
+	<string>Nouvelle Vie</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<!-- Le nom **court** (16 caractères au plus), distinct du nom affiché :
+	     iOS s'en sert là où la place manque. `maison_du_miracle` en faisait
+	     17 et portait des tirets bas — il est aligné sur le nom affiché, qui
+	     en fait douze. -->
 	<key>CFBundleName</key>
-	<string>maison_du_miracle</string>
+	<string>Nouvelle Vie</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

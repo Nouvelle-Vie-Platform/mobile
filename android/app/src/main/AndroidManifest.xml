@@ -26,8 +26,14 @@
          d'autorisation d'écriture. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28"/>
+    <!-- `android:label` est le nom **affiché** : ce que le fidèle lit sous
+         l'icône de son écran d'accueil. Il ne se confond ni avec le nom du
+         paquet Dart (`maison_du_miracle`, que personne ne voit) ni avec
+         l'`applicationId` (`com.maisondumiracle.maison_du_miracle`), qui est
+         l'identité de l'application auprès du magasin et de la signature —
+         aucun des deux ne bouge. -->
     <application
-        android:label="maison_du_miracle"
+        android:label="Nouvelle Vie"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
