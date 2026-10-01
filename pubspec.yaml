@@ -169,6 +169,46 @@ dependencies:
   #   déjà demandée à l'exécution pour le lecteur) et le service de premier plan
   #   `dataSync` du plugin, déclarés dans `AndroidManifest.xml`.
   background_downloader: ^9.2.0
+  # **Le réveil push** (#97) — PRD `server-portal/docs/prd/notifications-push.md`.
+  # Trois dépendances, une par rôle, et la frontière entre elles est le sujet de
+  # `lib/data/push/` :
+  #
+  # - `firebase_core` — l'application Firebase. Lue par `firebase_options.dart`
+  #   (écrit **à la main** : `flutterfire` n'est pas installé, et sa commande exige
+  #   de toute façon une authentification Google interactive) et par le choix de
+  #   transport de `main.dart`.
+  # - `firebase_messaging` — le transport FCM. **Un seul fichier du dépôt
+  #   l'importe** (`lib/data/push/fcm_push_transport.dart`), plus `main.dart` qui
+  #   choisit : tout le reste ne connaît que `PushTransport`, exactement comme
+  #   `just_audio` derrière `ContentPlayer`. C'est cette couture qui fera de la
+  #   tranche 4 (UnifiedPush, #99) une **addition** et non une refonte, et
+  #   `test/data/push/push_seam_test.dart` la vérifie sur la source.
+  # - `flutter_local_notifications` — la notification **locale** de D6. Le push est
+  #   silencieux et ne porte aucun contenu (ADR-0006) : le texte affiché est lu
+  #   dans le magasin Drift, jamais dans la charge utile. Confiné derrière
+  #   `WakeNotifier` / `WakeTaps`.
+  #
+  # Configuration native :
+  # - **Android** — le greffon Gradle `com.google.gms.google-services`
+  #   (`settings.gradle.kts` + `app/build.gradle.kts`) et `app/google-services.json`.
+  #   Il n'est **pas** facultatif malgré les options passées côté Dart : le service
+  #   natif de FCM démarre avant tout code Dart quand un réveil arrive sur une
+  #   application fermée. `POST_NOTIFICATIONS` est déjà déclarée et déjà demandée à
+  #   l'exécution pour le lecteur — c'est la **même** permission, et la redemander
+  #   poserait deux fenêtres l'une sur l'autre.
+  # - **iOS** — `GoogleService-Info.plist` dans la cible Runner,
+  #   `UIBackgroundModes: remote-notification`, `Runner.entitlements` avec
+  #   `aps-environment`. Les trois paquets sont des **Swift Packages** : CocoaPods
+  #   ne ressuscite pas. ⚠️ Et **aucun push n'arrivera sur iPhone** tant qu'il n'y
+  #   a pas de clé APNs (compte Apple Developer Program) — ce n'est pas un défaut
+  #   du code, c'est le prérequis §6 du PRD.
+  # - **web** — rien, et c'est voulu : aucune application web n'est déclarée dans
+  #   le projet Firebase, et `main.dart` écarte le web **avant**
+  #   `Firebase.initializeApp()`. `firebase_core_web` ne descend donc jamais le SDK
+  #   JS de `gstatic.com`, et la règle « aucun CDN » tient.
+  firebase_core: ^4.15.0
+  firebase_messaging: ^16.7.0
+  flutter_local_notifications: ^22.3.1
 
 dev_dependencies:
   flutter_test:

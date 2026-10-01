@@ -48,10 +48,12 @@ class HttpAuthRepository implements AuthRepository {
     ApiClient? client,
     UserCache? cache,
     DeviceRepository? device,
+    String? Function()? pushTarget,
   })  : _client = (client ?? ApiClient.instance).dio,
         _api = client ?? ApiClient.instance,
         _cache = cache ?? UserCache(),
-        _device = device;
+        _device = device,
+        _pushTarget = pushTarget;
 
   final Dio _client;
   final ApiClient _api;
@@ -60,6 +62,14 @@ class HttpAuthRepository implements AuthRepository {
   /// Le porteur d'appareil, **facultatif** : `null` = pas de mode invité câblé,
   /// et la déconnexion laisse alors le coffre vide, comme avant.
   final DeviceRepository? _device;
+
+  /// **La cible de réveil enregistrée** (#97), ou `null` quand il n'y en a pas.
+  ///
+  /// Un rappel et non une valeur : la cible arrive après la construction du
+  /// repository (l'enregistrement part au premier frame), et une valeur capturée
+  /// ici serait toujours nulle. Lu **au moment de la déconnexion** —
+  /// `PushEnrolment.target`.
+  final String? Function()? _pushTarget;
 
   // ── requestCode ─────────────────────────────────────────────────────────
 
@@ -238,10 +248,29 @@ class HttpAuthRepository implements AuthRepository {
   /// reprise échoue alors elle aussi, mais [DeviceRepository.resume] a marqué le
   /// coffre comme *attendant* un jeton d'appareil, et le prochain 401 la
   /// relancera en silence. Rien ne reste sans jeton pour toujours.
+  /// **Le `deviceToken` part avec la déconnexion, et il n'est pas optionnel pour
+  /// nous** (#97).
+  ///
+  /// La route l'accepte comme facultatif, et l'omettre laisse l'appareil **abonné
+  /// aux notifications du compte qui vient de partir** : sur un téléphone prêté — le
+  /// cas réel dans une église —, le membre suivant verrait passer les notifications
+  /// du précédent. Le serveur, lui, ne peut pas le deviner : c'est la cible de
+  /// réveil, pas le jeton d'accès, et une seule des deux voyage dans l'en-tête.
+  ///
+  /// Le serveur ne **supprime** pas l'enregistrement quand il sait de quel appareil
+  /// il vient : il le **rend** à l'appareil (`user_id` à `NULL`, lien d'appareil
+  /// conservé). Le téléphone reste donc joignable comme invité, sans attendre un
+  /// redémarrage — et c'est pourquoi il n'y a rien à réenregistrer après coup.
   @override
   Future<void> signOut() async {
+    final target = _pushTarget?.call();
     try {
-      await _client.post<void>('/auth/sign-out');
+      await _client.post<void>(
+        '/auth/sign-out',
+        // Pas de corps quand il n'y a pas de cible : le validateur accepte l'absence
+        // du champ, pas une chaîne vide (`minLength(1)`).
+        data: target == null ? null : {'deviceToken': target},
+      );
     } on Object catch (_) {
       // Rien à remonter : la déconnexion locale ne dépend pas du serveur.
     } finally {

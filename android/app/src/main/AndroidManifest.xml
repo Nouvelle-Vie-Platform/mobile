@@ -19,7 +19,15 @@
          suffit pas, et `audio_service` ne la demande pas. Sans la demande faite
          par l'application (voir `MainActivity.kt` et
          `playback_notifications.dart`), la notification de lecture
-         n'apparaît jamais — silencieusement. -->
+         n'apparaît jamais — silencieusement.
+
+         ⚠️ Depuis #97, **trois** besoins partagent cette seule permission : la
+         notification du lecteur, celle du téléchargement, et la notification
+         locale du réveil push. Elle n'est demandée qu'**une fois**, au démarrage :
+         la redemander afficherait deux fenêtres l'une sur l'autre au premier
+         lancement. Et son refus ne coupe aucun des trois mécanismes — il ne coupe
+         que leur affichage ; le réveil silencieux de FCM, lui, arrive sans aucune
+         permission. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Enregistrer un média partagé dans la galerie (gal). Nécessaire seulement
          jusqu'à Android 9 (API 28) : dès API 29 le MediaStore n'exige plus

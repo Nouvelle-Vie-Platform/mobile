@@ -1,10 +1,10 @@
 /// **Quand on synchronise — et quand on ne synchronise pas.**
 ///
 /// Trois déclencheurs, posés par ADR-0017 : **ouverture** de l'application,
-/// **retour au premier plan**, **tirer-pour-rafraîchir**. Le nudge FCM viendra
-/// plus tard et se branchera ici, comme un appel de plus à [trigger] — c'est
-/// exactement ce que fait déjà le signal d'un fil ouvert
-/// ([SyncTrigger.openThread], #101).
+/// **retour au premier plan**, **tirer-pour-rafraîchir**. Le **signal d'un fil
+/// ouvert** ([SyncTrigger.openThread], #101) est le quatrième, et le **réveil
+/// push** ([SyncTrigger.pushWake], #97) le cinquième. Tous deux se sont branchés
+/// ici comme annoncé : un appel de plus à [trigger], et rien d'autre.
 ///
 /// **Jamais de polling.** Il n'y a aucun `Timer` dans ce fichier, et il ne doit
 /// pas en apparaître (`test/sync/sync_scheduler_test.dart` le vérifie). Un
@@ -18,7 +18,7 @@ import 'package:flutter/widgets.dart';
 import 'sync_engine.dart';
 
 /// Ce qui a déclenché un cycle. Diagnostic seulement — le moteur fait la même
-/// chose dans tous les cas.
+/// chose dans les cinq cas.
 enum SyncTrigger {
   appStart,
   foreground,
@@ -30,13 +30,27 @@ enum SyncTrigger {
   /// Un quatrième appel à [SyncScheduler.trigger], pas un quatrième mécanisme :
   /// le moteur fait exactement la même chose, et c'est tout l'intérêt — un signal
   /// SSE est un **accélérateur de notification** (ADR-0006), jamais une source de
-  /// vérité. Le réveil push, quand la clé APNs existera, se branchera de la même
+  /// vérité. Le réveil push ([SyncTrigger.pushWake]) s'y est branché de la même
   /// façon.
   ///
   /// ⚠️ Ce n'est **pas** une notification : le canal ne vit que tant que l'écran
   /// est affiché. Application en arrière-plan ou fermée, il n'y a aucun signal —
   /// voir `lib/data/realtime/group_channel.dart`.
   openThread,
+  /// **Un réveil push reçu application ouverte** (#97).
+  ///
+  /// Il passe par le planificateur, et c'est délibéré : lancer un cycle en direct
+  /// pendant qu'un autre tourne mettrait **deux** cycles sur les mêmes curseurs et
+  /// les mêmes jetons de resync. Le réveil rejoint donc le cycle en vol, comme un
+  /// tirer-pour-rafraîchir.
+  ///
+  /// Et c'est un cycle **complet**, là où le réveil de l'application *fermée* se
+  /// restreint aux collections nommées par le push : l'application est ouverte, la
+  /// radio et le processeur sont déjà réveillés, et un cycle entier est ce que la
+  /// moindre remontée au premier plan ferait de toute façon. C'est ce qui évite
+  /// d'avoir à faire porter une restriction par ce fichier, donc à perdre un cycle
+  /// complet qui rejoindrait par mégarde un cycle restreint.
+  pushWake,
 }
 
 /// Sérialise les déclenchements et écoute le cycle de vie de l'application.

@@ -8,6 +8,15 @@
 ///
 /// Aucune dépendance ajoutée pour si peu : un canal de méthode vers
 /// `MainActivity` suffit, et il ne coûte rien aux autres plateformes.
+///
+/// ⚠️ **Depuis #97, cet appel sert à trois choses, et il est le seul à les servir.**
+/// `POST_NOTIFICATIONS` est **une** permission système : la notification du lecteur,
+/// celle du téléchargement et la notification locale du réveil push la partagent.
+/// Le module de push ne la redemande donc pas — deux demandes au démarrage
+/// poseraient deux fenêtres l'une sur l'autre au premier lancement. Le jour où le
+/// lecteur quitterait ce dépôt, **c'est cette ligne-là qu'il faudrait déplacer** et
+/// non une qu'il faudrait écrire : sans elle, la notification de réveil ne
+/// paraîtrait plus, en silence.
 library;
 
 import 'package:flutter/foundation.dart';
