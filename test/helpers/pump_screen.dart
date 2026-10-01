@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/data/legal_notice_store.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
+import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
+import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/realtime/group_channel.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
@@ -28,6 +30,7 @@ import 'package:maison_du_miracle/state/media_settings_providers.dart';
 import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/menu_providers.dart';
+import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/models/auth_channels.dart';
@@ -101,6 +104,23 @@ import 'playback_doubles.dart';
 /// deux de ses `tap`. Les tests **du** bandeau passent leur propre double
 /// ([legalNotice]), et seul le vrai magasin porte la réponse de production.
 ///
+/// **L'antenne de New Life Radio** ([radio]) est posée sur un double fixe (#104),
+/// pour la raison de l'auth : l'implémentation réelle est HTTP dès que
+/// `AppEnv.useBackend` est vrai — et il l'est hors surcharge —, donc le bouton
+/// d'antenne de l'accueil ouvrirait une socket au premier frame, et tout test qui
+/// monte l'accueil ou la coquille monte ce bouton.
+///
+/// Le défaut est [RadioAntenna.unknown] — ce que sait une application dont la
+/// route n'a pas encore répondu —, et c'est ce qu'un test qui ne parle pas de radio
+/// doit voir : un bouton **au repos**, jamais « Hors antenne ». ⚠️ Une seule
+/// surcharge est posée, celle du **repository** : le provider d'état la lit
+/// normalement, pour que le chemin éprouvé soit celui de production. Les tests qui
+/// veulent une antenne précise ou un échec passent par ce paramètre nommé —
+/// Riverpod 3 refuse deux surcharges du même provider.
+///
+/// Le **contrôleur d'écoute**, lui, n'est pas doublé : il observe le lecteur, et
+/// `contentPlayerProvider` est déjà inerte par défaut.
+///
 /// Le **canal temps réel d'un groupe** ([channel]) est posé **muet** (#101), pour
 /// la raison de l'auth et de l'envoyeur de messages : l'implémentation réelle est
 /// SSE dès que `AppEnv.useBackend` est vrai, donc ouvrir une conversation
@@ -134,6 +154,7 @@ Future<void> pumpRouter(
   String? updateThreshold,
   EchangesRepository? echanges,
   GroupChannel? channel,
+  RadioRepository? radio,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -154,6 +175,7 @@ Future<void> pumpRouter(
           updateThreshold: updateThreshold,
           echanges: echanges,
           channel: channel,
+          radio: radio,
         ),
         ...overrides,
       ],
@@ -190,10 +212,15 @@ List<Override> _commonOverrides(
   String? updateThreshold,
   EchangesRepository? echanges,
   GroupChannel? channel,
+  RadioRepository? radio,
   List<DownloadNotificationRow> notifications = const [],
 }) =>
     [
       appDatabaseProvider.overrideWithValue(db),
+      // **L'antenne de New Life Radio** (#104) — voir l'en-tête pour le pourquoi.
+      radioRepositoryProvider.overrideWithValue(
+        radio ?? const FixedRadioRepository(RadioAntenna.unknown),
+      ),
       // **Le canal temps réel d'un groupe, posé muet** (#101), pour la raison de
       // l'auth et de l'envoyeur de messages : l'implémentation réelle est SSE dès
       // que `AppEnv.useBackend` est vrai — et il l'est hors surcharge —, donc
@@ -334,6 +361,7 @@ Future<void> pumpScreen(
   String? updateThreshold,
   EchangesRepository? echanges,
   GroupChannel? channel,
+  RadioRepository? radio,
   List<DownloadNotificationRow> notifications = const [],
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
@@ -361,6 +389,7 @@ Future<void> pumpScreen(
           updateThreshold: updateThreshold,
           echanges: echanges,
           channel: channel,
+          radio: radio,
           notifications: notifications,
         ),
         ...overrides,

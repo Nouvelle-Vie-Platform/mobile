@@ -7,7 +7,7 @@ import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/screens/agenda_screen.dart';
 import 'package:maison_du_miracle/screens/donations_screen.dart';
 import 'package:maison_du_miracle/screens/group_chat_screen.dart';
-import 'package:maison_du_miracle/screens/live_player_screen.dart';
+import 'package:maison_du_miracle/screens/radio_screen.dart';
 import 'package:maison_du_miracle/screens/new_request_screen.dart';
 import 'package:maison_du_miracle/screens/notes_screen.dart';
 import 'package:maison_du_miracle/screens/prayer_requests_screen.dart';
@@ -33,9 +33,13 @@ void main() {
       expect(find.byType(AgendaScreen), findsOneWidget);
     });
 
-    testWidgets('LivePlayerScreen se monte', (tester) async {
-      await pumpScreen(tester, const LivePlayerScreen());
-      expect(find.byType(LivePlayerScreen), findsOneWidget);
+    testWidgets('RadioScreen se monte', (tester) async {
+      // Le double par défaut de `pumpScreen` ne connaît **aucune** adresse
+      // d'antenne : l'écran doit donc se monter sur l'absence, et c'est le cas
+      // qu'un smoke test doit exercer — l'application s'ouvre avant que la route
+      // publique ait répondu.
+      await pumpScreen(tester, const RadioScreen());
+      expect(find.byType(RadioScreen), findsOneWidget);
     });
 
     testWidgets('PrayerRequestsScreen se monte', (tester) async {

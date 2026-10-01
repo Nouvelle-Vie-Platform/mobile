@@ -369,6 +369,174 @@ AudioServiceActivity`. iOS exige `UIBackgroundModes: audio` — et **surtout pas
 `NSAllowsArbitraryLoads` déclencherait une justification à l'App Review pour
 rien.
 
+### New Life Radio (#104) — le bouton d'accueil, et le premier double-appui
+
+Le bouton « Suivre le live » de l'accueil **jouait la RTBF belge**
+(`live_stream_config.dart`, bouchon assumé dans son propre commentaire), son
+libellé était en dur, et la clé `.arb` `homeWatchLive` existait **sans aucun
+appelant**. Cadrage autoritaire :
+`server-portal/docs/radio-bouton-ecoute-plan.md`.
+
+Ce qui a bougé : `live_stream_config.dart` → `core/config/radio_config.dart`
+(il ne porte plus **que** l'identifiant de contenu), `LivePlayerScreen` →
+`screens/radio_screen.dart`, `AppRoute.live` / `/live` → `AppRoute.radio` /
+`/radio`, et `_LiveCtaPill` → `widgets/home/radio_cta_pill.dart`. Les trois clés
+orphelines de ce bouton (`homeWatchLive`, `homeLiveNow`, `homeStopLive`) sont
+**retirées** ; le bloc `live*` restant (`liveAppBarTitle`, `liveAudioOnly`…)
+appartient au **culte en direct**, qui est une autre fonctionnalité et aura son
+propre chantier.
+
+#### L'URL vient d'une route publique, jamais d'une constante
+
+`lib/data/radio/` : `RadioRepository` (contrat), `HttpRadioRepository`
+(`GET /radio/antenna`), `FixedRadioRepository` (le double). **Pas de collection
+de synchronisation, pas de table, pas de curseur** — la décision écrite en tête
+d'`app/radio/routes.ts` est respectée : *connaître l'URL hors ligne ne sert à
+rien, puisqu'on ne peut pas écouter hors ligne*.
+
+⚠️ **Le chemin et les clés sont une hypothèse** : la route est écrite par
+`server-portal#493`, en parallèle. `kRadioAntennaPath` et
+`RadioAntenna.fromJson` sont les **deux seuls** endroits à réconcilier, et le
+lecteur accepte une poignée de synonymes nommés (`streamUrl`/`url`/`hlsUrl`,
+`onAir`/`isOnAir`/`live`) : un mot deviné de travers rendrait la radio muette
+**sans qu'aucun test rougisse**.
+
+⚠️ **`onAir` nul n'est pas `onAir` faux.** « Je ne sais pas » laisse le bouton
+**au repos** ; seul un `false` reçu affiche « Hors antenne ». Un corps illisible,
+une route en échec, un premier lancement : tous rendent `RadioAntenna.unknown`.
+Rendre `false` par défaut annoncerait à l'auditeur que l'église ne diffuse pas.
+
+#### Le geste — et pourquoi il n'y a pas de `onDoubleTap`
+
+```
+À L'ARRÊT     1 → lance          EN CONNEXION  1 → (déjà parti)
+              2 → lance + page                 2 → page, connexion intacte
+                                               3, 4, 5… → rien
+EN LECTURE    1 → arrête
+              2 → relance + page
+```
+
+⚠️ **`GestureDetector.onDoubleTap` imposerait un délai au simple appui** : le
+détecteur doit attendre `kDoubleTapTimeout` avant de pouvoir dire qu'il n'y aura
+pas de second contact. On renverse donc la logique — **chaque appui agit tout de
+suite**, et c'est son *rang dans la rafale* qui dit lequel il est
+(`widgets/home/tap_burst.dart`). **Aucune minuterie** : le rang se calcule après
+coup, en comparant l'instant de l'appui au précédent, sur l'horloge injectable
+`nowProvider`. Le second appui **rend ce que le premier a retiré** puis navigue —
+c'est ce qui donne « relance + ouvre la page » sans une ligne qui parle de
+relancer. C'est le **premier double-appui du dépôt**.
+
+⚠️ **L'inertie ne couvre que la connexion *initiale*** (`RadioStatus`,
+`allowsTransport` / `isOn` / `offersStop`). Une antenne déjà entendue s'arrête
+toujours, y compris pendant qu'elle regarnit son tampon — sans quoi un hoquet
+réseau rendrait le bouton d'arrêt inopérant. Et le bouton d'arrêt n'est pas
+grisé pendant la connexion : il **n'est pas là** (règle du sélecteur de canaux,
+#83).
+
+#### Le bouton éteint reste appuyable
+
+« Hors antenne » **informe, il n'interdit pas** : l'état n'est lu qu'au lancement
+et au retour à l'écran (`ref.invalidate(radioAntennaProvider)` sur `resumed`), et
+l'antenne a pu reprendre entre-temps. Même esprit qu'ADR-0040. Idem après un
+abandon : un geste efface le renoncement.
+
+#### La reprise : six attentes, et deux minutes
+
+`lib/data/radio/radio_retry.dart` — **1 s · 2 s · 4 s · 8 s · 16 s · 32 s**, puis
+extinction. Les deux bornes disent deux choses différentes, et il faut les deux :
+les six attentes ne font que 63 s cumulées, mais **une tentative met du temps à
+échouer** (dix à trente secondes pour une ouverture HLS qui part dans le vide).
+Celle des deux qui mord dépend donc du réseau — coupure franche : les six
+tentatives ; réseau qui fait attendre : l'horloge.
+
+Chaque tentative est `ContentPlayer.resume()`, le chemin à deux voies déjà
+documenté, **pas une troisième réouverture**. Quand le lecteur ne tient rien
+(l'échec est venu de la route d'antenne), la tentative est un démarrage complet,
+qui relit l'adresse au passage.
+
+⚠️ **Deux pièges qui ne se voient pas :**
+1. `ContentPlayback.copyWith` **ne sait pas effacer** une panne : toute émission
+   suivante la porte encore. Sans le garde « une tentative est déjà programmée »,
+   chaque battement réarmerait l'attente et **la tentative n'aurait jamais lieu**.
+2. `resume()` publie `isPlaying` **et** `isBuffering` avant tout aller-retour :
+   prendre cela pour un succès remettrait l'insistance à zéro à chaque
+   tentative — six attentes d'une seconde. Le succès exige donc `!isBuffering`.
+
+#### La cause se lit sur l'échec, jamais sur un test de connectivité
+
+`lib/data/radio/radio_failure.dart`. DNS, socket refusée, délai dépassé →
+« vérifiez votre connexion » ; 404, 401, une page HTML là où on attend une
+playlist → « antenne indisponible ». Le partage se fait sur **l'existence d'une
+réponse**, comme `mapCalendarError`.
+
+⚠️ **`connectivity_plus` n'est pas consulté**, et cette tranche n'en fait pas un
+second importeur : il répond « connecté » derrière un portail captif. La reprise
+est **purement temporelle** — « reprise immédiate si le réseau revient » a été
+écrit puis retiré du cadrage, faute d'être tenable sans déroger à la doctrine.
+
+⚠️ La panne du lecteur ne peut pas se reconnaître **par son type** :
+`PlayerException` appartient à `just_audio`, qu'aucun autre fichier de `lib/` n'a
+le droit d'importer. On lit donc le code de statut que la plateforme écrit dans
+son message, et un échec qu'on ne sait pas nommer **penche vers « connexion »** :
+inviter à un geste utile vaut mieux qu'affirmer une panne de l'église.
+
+#### ⚠️⚠️ La poignée de main par cookie **n'est pas honorée**, et c'est la dette
+
+MediaMTX rend un **302** sur `index.m3u8` et pose `hlsSession` ; sans ce cookie,
+la suite rend `401 {"error":"session not found"}`. Signature : **200 puis 401**.
+Relevé dans le source de `just_audio` 0.10.6, pas supposé :
+
+| plateforme | redirections | cookies |
+| --- | --- | --- |
+| Android (`AudioPlayer.java:731-750`) | **suivies** (`setAllowCrossProtocolRedirects(true)`) | **jetés** — `HttpURLConnection` n'en garde que si un `java.net.CookieHandler` est installé par défaut, et il n'y en a aucun |
+| iOS/macOS (`UriAudioSource.m:33-72`) | suivies par AVFoundation | **`AVURLAssetHTTPCookiesKey` jamais posé** — et cette clé existe parce que le chargement média ne partage pas le `HTTPCookieStorage` de l'app |
+
+Le mot « cookie » n'apparaît **nulle part** dans le code Android ni Darwin du
+paquet — seulement dans son README, à propos du web.
+
+**Rien n'est tenté**, et c'est délibéré : le bloc Caddy de MediaMTX n'est pas posé
+(`context#6`), donc le HLS ne répond que depuis `127.0.0.1` sur le VPS et
+**aucune écoute réelle n'est possible**. Un contournement écrit à l'aveugle ne
+serait vérifié par rien. Le contournement, le jour où on pourra l'éprouver, est
+écrit en commentaire au-dessus du `load` de `RadioListening.start` : résoudre le
+302 soi-même et passer l'URL absolue finale **plus** un en-tête `Cookie:` — ce
+qui demande un paramètre `headers` sur `ContentPlayer.load`, et de renégocier à
+chaque réouverture.
+
+**Ce que le flux impose** : segments de 2 s, fenêtre de 20 segments = **40 s de
+rattrapage** (`docs/RADIO.md`). C'est aussi pourquoi l'écran verrouillé perd ses
+« ±30 s » : un recul au-delà de la fenêtre ne retrouverait plus ses segments.
+
+#### Un seul lecteur — un constat, pas un choix
+
+`contentPlayerProvider` est « un seul, global, jamais `autoDispose` », et un
+second `AudioPlayer` fait lever le service audio. La radio **remplace**.
+`load(isLive: true)` descend jusqu'à `ContentAudioHandler`, qui retire alors
+`rewind`, `fastForward` et `MediaAction.seek` ; `ContentPlayerView` retire la
+barre de progression du même coup.
+
+⚠️ **Conséquence à connaître, et que cette tranche ne résout pas** :
+l'enseignement interrompu n'est **pas mis en pause**, il est **remplacé**. Sa
+position n'est sauvée que par le hasard du `PlaybackProgressRecorder` — ni le
+déclencheur « sortie d'écran » ni celui de la pause n'ont lieu ; ce qui reste est
+l'écriture locale continue faite jusqu'au dernier battement. Il n'existe
+**aucune** notion de priorité, de file, ni de « reprendre ce qui jouait », et il
+ne faut pas en inventer une : ce serait une règle éditoriale invisible, prise par
+le premier écran qui en a eu besoin.
+
+⚠️ **Deux gestes peuvent lancer l'antenne** — le bouton de l'accueil et
+l'ouverture de l'écran, qui démarre au montage. Ils ne se disputent rien parce
+que `RadioListening` **observe le lecteur** au lieu de se fier à qui l'a appelé :
+il reconnaît la radio dans la main du lecteur unique, et gouverne la reprise quoi
+qu'il arrive.
+
+Côté tests : `pumpScreen` / `pumpRouter` posent un `FixedRadioRepository` sur
+`RadioAntenna.unknown` (paramètre nommé `radio:`) — tout test qui monte l'accueil
+monte ce bouton. **Jamais `pumpAndSettle`** : le bouton porte une animation
+continue. Et les six attentes sont écrites **en clair** dans le test, jamais
+relues depuis `kRadioRetryDelays` : la constante est ce qu'on éprouve — mesuré,
+un test qui la relisait passait au vert sur six attentes d'une seconde.
+
 ### Le **modèle de lecture** de la médiathèque (`lib/models/content_view.dart`)
 `ContentView` / `SectionView` : ce qu'un écran affiche, et rien de plus. Les
 quatre règles de présentation y sont écrites **une fois pour les deux familles**
@@ -1080,11 +1248,21 @@ produit explicite, pas un oubli :
 | écoute, iOS | ✅ `AVPlayer.preferredPeakBitRate` |
 | écoute, web | ✅ `hls.js`, `autoLevelCapping` |
 | écoute, **Android** | ✅ **par l'URL**, pas par le plafond — voir ci-dessous |
-| direct | ❌ `LiveScreen` n'a pas de lecteur |
+| direct | ❌ **le réglage se range, il ne s'applique pas** — voir ci-dessous |
 | téléchargement | ❌ n'existe pas, et c'est un **refus documenté** (`docs/mediatheque-en-ligne.md` §2) |
 
 Les trois se règlent et s'enregistrent quand même : le jour où la fonction
 existera, la préférence sera déjà là.
+
+⚠️ **La ligne « direct » disait « `LiveScreen` n'a pas de lecteur », et ce n'est
+plus vrai** : depuis #104 l'écran d'antenne joue pour de bon. Ce qui reste vrai,
+et qui est la seule chose qui compte, est que **`MediaUsage.live` n'a aucun
+lecteur** hors de l'écran de réglages : `StreamingBitrateCap` et
+`variantPlaylistUrl` lisent `MediaUsage.streaming`, et c'est donc le palier
+« écoute » qui s'applique à l'antenne. Sans conséquence audible aujourd'hui —
+l'URL d'antenne ne finit pas par `/master.m3u8`, la dérivation de palier la rend
+donc intacte (« la panne du bon côté ») — mais à savoir avant de croire que ce
+réglage-là fait quelque chose.
 
 **Deux leviers, et le second existe pour Android.** `setPreferredPeakBitRate`
 est reçu et **ignoré** par `just_audio` côté Android (`AudioPlayer.java`,

@@ -26,7 +26,7 @@ import '../theme/app_typography.dart';
 import '../utils/name_list.dart';
 import 'app_error_state.dart';
 import 'content_absence.dart';
-import '../core/config/live_stream_config.dart';
+import '../core/config/radio_config.dart';
 
 const _fallbackBase = Color(kBrandFallbackColor);
 
@@ -348,6 +348,10 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
       title: content.title,
       author: content.authorName,
       artUrl: content.squareOrLandscape,
+      // **Le régime de la source descend jusqu'au système** (#104) : une antenne
+      // n'a ni « −30 s » ni déplacement sur l'écran verrouillé, et c'est ce
+      // drapeau qui le dit au handler. L'écran est le seul à le savoir.
+      isLive: widget.isLive,
     );
     if (!mounted) return;
 
@@ -767,7 +771,7 @@ class _PlayerStage extends ConsumerWidget {
     final l10n = context.l10n;
 
     // Si c'est le flux direct, on masque l'illustration centrale pour laisser voir l'image de fond
-    final isLiveContent = content.id == LiveStreamConfig.liveContentId;
+    final isLiveContent = content.id == RadioConfig.contentId;
     final Widget artworkWidget =
         isLiveContent ? const SizedBox.shrink() : _Artwork(content: content);
 
@@ -850,11 +854,20 @@ class _Controls extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Ligne de progression + grand bouton Play/Pause (identique à l'Image 1)
+        //
+        // **Aucune barre de progression sur une antenne** (#104) : il n'y a ni
+        // durée à parcourir ni position à reprendre, et une barre qui n'avance
+        // vers rien se lit comme une lecture figée au début. Le bouton reste,
+        // seul, parce qu'arrêter garde tout son sens.
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(child: _ProgressLine(onSeek: onSeek)),
-            const SizedBox(width: AppSpacing.lg),
+            if (isLive)
+              const Spacer()
+            else ...[
+              Expanded(child: _ProgressLine(onSeek: onSeek)),
+              const SizedBox(width: AppSpacing.lg),
+            ],
             _PlayButton(accent: accent, onPressed: onPlayPause),
           ],
         ),

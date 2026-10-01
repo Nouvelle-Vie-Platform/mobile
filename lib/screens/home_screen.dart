@@ -30,11 +30,10 @@ import '../widgets/home/home_gathering_section.dart';
 import '../widgets/home/home_menu_section.dart';
 import '../widgets/home/home_section_layout.dart';
 import '../widgets/home/home_teaching_section.dart';
+import '../widgets/home/radio_cta_pill.dart';
 import '../widgets/profile_completion_banner.dart';
 import '../widgets/profile_setup_sheet.dart';
 import '../widgets/section_header.dart';
-import '../core/config/live_stream_config.dart';
-import '../state/player_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key, this.onMenuTap});
@@ -237,7 +236,7 @@ class _WavyHeader extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.88)),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    const _LiveCtaPill(),
+                    const RadioCtaPill(),
                   ],
                 ),
               ),
@@ -272,128 +271,6 @@ class _BibleIconButton extends StatelessWidget {
       // `navBible` existait déjà, et c'est la même Bible qu'on nomme.
       tooltip: context.l10n.navBible,
       onPressed: () => context.pushNamed(AppRoute.bible),
-    );
-  }
-}
-
-/// Bouton "Suivre le live" / "Live" + bouton Stop indépendant connecté au lecteur.
-class _LiveCtaPill extends ConsumerStatefulWidget {
-  const _LiveCtaPill();
-
-  @override
-  ConsumerState<_LiveCtaPill> createState() => _LiveCtaPillState();
-}
-
-class _LiveCtaPillState extends ConsumerState<_LiveCtaPill>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-  late Animation<Color?> _iconColorAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..repeat(reverse: true);
-
-    _iconColorAnim = ColorTween(
-      begin: AppColors.primary,
-      end: Colors.red,
-    ).animate(_animController);
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
-  void _stopLive() {
-    // Coupe la lecture audio du live dans le lecteur global
-    ref.read(contentPlayerProvider).stop();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Signature unique: (BuildContext context). `ref` est fourni par ConsumerState.
-    final playback = ref.watch(contentPlaybackProvider);
-    final isLiveActive = playback.isPlaying &&
-        playback.contentId == LiveStreamConfig.liveContentId;
-
-    return AnimatedBuilder(
-      animation: _iconColorAnim,
-      builder: (context, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 1. Bouton principal du Live
-            GestureDetector(
-              onTap: () => context.pushNamed(AppRoute.live),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.sm + 2,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.sensors,
-                      size: 18,
-                      color: _iconColorAnim.value,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      isLiveActive ? "Live" : "Suivre le live",
-                      style: AppTypography.bodyStrong
-                          .copyWith(color: AppColors.neutralDark),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // 2. Bouton Stop séparé
-            if (isLiveActive) ...[
-              const SizedBox(width: AppSpacing.sm),
-              GestureDetector(
-                onTap: _stopLive,
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm + 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.stop_rounded,
-                    size: 18,
-                    color: AppColors.danger,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        );
-      },
     );
   }
 }

@@ -21,7 +21,7 @@ import '../screens/home_shell.dart';
 import '../screens/legal_acceptance_screen.dart';
 import '../screens/legal_document_screen.dart';
 import '../screens/media_settings_screen.dart';
-import '../screens/live_player_screen.dart';
+import '../screens/radio_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/media_library_screen.dart';
 import '../screens/member_profile_screen.dart';
@@ -57,7 +57,12 @@ abstract final class AppRoute {
   /// **ouverte** — la surface invitée décidée par le client la nomme.
   static const bible = 'bible';
   static const media = 'media';
-  static const live = 'live';
+
+  /// **New Life Radio** (#104). La route s'appelait `live` et servait un écran qui
+  /// jouait la RTBF belge ; elle sert désormais l'antenne de l'église, et porte son
+  /// nom. Le culte en direct redeviendra une fonctionnalité à part entière, avec
+  /// son propre chantier — et sa propre route, qui ne sera pas celle-ci.
+  static const radio = 'radio';
   static const teachingDetail = 'teaching';
   static const gatheringDetail = 'gathering';
   static const groupChat = 'group-chat';
@@ -126,7 +131,7 @@ const _legalGate = '/legal/accept';
 ///
 /// La surface **invitée** est donc tout le reste, et c'est la décision du
 /// client : accueil, annonces en lecture, médiathèque, fiche d'enseignement,
-/// fiche de rassemblement, agenda, direct, téléchargements, Bible, dons, CGU,
+/// fiche de rassemblement, agenda, New Life Radio, téléchargements, Bible, dons, CGU,
 /// confidentialité, à propos.
 ///
 /// **Les clés sont des motifs de route**, tels que `GoRouterState.fullPath` les
@@ -390,9 +395,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        name: AppRoute.live,
-        path: '/live',
-        builder: (_, __) => const AppBackground(child: LivePlayerScreen()),
+        name: AppRoute.radio,
+        path: '/radio',
+        builder: (_, __) => const AppBackground(child: RadioScreen()),
       ),
       GoRoute(
         name: AppRoute.teachingDetail,

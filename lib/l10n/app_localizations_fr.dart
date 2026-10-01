@@ -229,13 +229,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sectionUpcomingServices => 'Cultes à venir';
 
   @override
-  String get homeWatchLive => 'Suivre le live';
+  String get radioFollow => 'Suivre New Life Radio';
 
   @override
-  String get homeLiveNow => 'Live';
+  String get radioTitle => 'New Life Radio';
 
   @override
-  String get homeStopLive => 'Arrêter le live';
+  String get radioOffAir => 'Hors antenne';
+
+  @override
+  String get radioRetrying => 'Nouvelle tentative…';
+
+  @override
+  String get radioFailureConnection => 'Vérifiez votre connexion';
+
+  @override
+  String get radioFailureAntenna => 'Antenne indisponible';
+
+  @override
+  String get radioUnavailableMessage =>
+      'New Life Radio ne diffuse pas pour le moment.';
 
   @override
   String get actionSeeAll => 'Voir tout';

@@ -134,6 +134,12 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     // de fichier local, [localFilePath] y est donc toujours nul et ignoré. Le
     // paramètre n'existe que pour satisfaire le contrat [ContentPlayer].
     String? localFilePath,
+    // [isLive] (#104) ne sert qu'aux boutons de la notification et de l'écran
+    // verrouillé — **qui n'existent ni l'un ni l'autre sur le web** : il n'y a
+    // pas de session média ici, pour la même raison que [title] et [author] ne
+    // servent à rien. Retenu dans la requête malgré tout, pour qu'une
+    // réouverture rejoue le même régime si un jour le web en a un.
+    bool isLive = false,
   }) async {
     if (isDisposed) return;
     _releaseSource();
@@ -143,6 +149,7 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
       title: title,
       author: author,
       artUrl: artUrl,
+      isLive: isLive,
     );
     _resumeAt = null;
     startLoading(contentId);
