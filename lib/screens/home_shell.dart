@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_zoom_drawer/flutter_zoom_drawer.dart';
 import 'package:go_router/go_router.dart';
 
-import '../l10n/l10n_extension.dart';
 import '../models/legal_document_view.dart';
 import '../router/app_router.dart';
 import '../state/session_gate.dart';
@@ -12,38 +11,34 @@ import '../widgets/app_background.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_drawer_menu.dart';
 import '../widgets/app_update_banner.dart';
+import '../widgets/home_tab.dart';
 import '../widgets/legal_notice_banner.dart';
 import 'announcements_screen.dart';
 import 'groups_screen.dart';
 import 'home_screen.dart';
-
-/// Écran provisoire pour l'onglet Bible.
-class _BiblePlaceholderScreen extends StatelessWidget {
-  const _BiblePlaceholderScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text(
-          // La phrase était écrite en dur ici, alors que `pageUnderConstruction`
-          // existait dans les trois fichiers de traduction sans appelant.
-          context.l10n.pageUnderConstruction,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
+import 'profile_screen.dart';
 
 /// Conteneur principal : onglets en [IndexedStack], barre à encoche et FAB
 /// central docké, le tout dans le menu latéral ([ZoomDrawer]).
 ///
-/// ## Le hub « Échanges » est réservé aux membres, et se ferme **ici**
+/// ## Les onglets portent un nom, et l'index est un détail de rendu
+///
+/// L'ordre d'affichage vit **dans [HomeTab]**, et nulle part ailleurs : la pile
+/// ci-dessous et la barre du bas le lisent toutes deux dans `HomeTab.values`, et
+/// chacune résout son contenu par un `switch` **exhaustif**. Deux listes
+/// parallèles — les écrans ici, les libellés là-bas — pouvaient se désaccorder
+/// sans la moindre erreur de compilation : on tapait « Bible » et Échanges
+/// s'ouvrait. Le type l'interdit désormais.
+///
+/// ## Les onglets réservés se ferment **ici**
 ///
 /// Les quatre onglets ne sont pas des routes : ils vivent dans un
 /// [IndexedStack], et la garde du routeur (`memberOnlyRoutes`) ne peut donc rien
-/// pour eux. Or la décision du client met la communauté derrière la connexion.
+/// pour eux. C'est vrai du hub « Échanges », que la décision du client met
+/// derrière la connexion ; c'est vrai aussi du **Profil**, qui n'a aucun sens
+/// sans compte et qui perd la garde de route en redevenant un onglet. La
+/// réponse est la même pour les deux, et elle est portée par
+/// `HomeTab.requiresSession` : `requireSession()` au moment du **geste**.
 ///
 /// **L'onglet reste visible et son appui ouvre la connexion** — plutôt que de
 /// disparaître pour un invité. Quatre raisons, dans l'ordre d'importance :
@@ -52,14 +47,12 @@ class _BiblePlaceholderScreen extends StatelessWidget {
 ///    laquelle `memberOnlyRoutes` prévient : « personne ne réclame un écran
 ///    qu'il n'a jamais vu ». L'onglet visible, lui, fait de la barre du bas
 ///    l'endroit où l'on **découvre qu'un compte existe** et ce qu'il ouvre.
-/// 2. **L'index d'onglet est un numéro partagé.** [AppBottomNav] et
-///    [AppDrawerMenu] parlent en numéros, et `drawer_menu_test.dart` vérifie
-///    qu'« Accueil » ramène à l'onglet 0 **depuis l'onglet 3**. Une barre à
-///    géométrie variable ferait de ce numéro une valeur dont le sens dépend de
-///    qui regarde — et il faudrait alors réécrire ce vocabulaire partout.
-/// 3. **L'encoche du FAB est calée sur deux onglets de chaque côté** (`take(2)` /
-///    `skip(2)` dans [AppBottomNav]). À trois onglets, la barre devient
-///    boiteuse : deux à gauche, un à droite d'un creux dimensionné pour deux.
+/// 2. **Le libellé ne change pas selon l'état** : « Profil » pour tout le monde.
+///    La barre n'en porte aucun autre qui varie, et en introduire un ici
+///    créerait une exception à justifier à chaque relecture.
+/// 3. **L'encoche du FAB est calée sur deux moitiés égales** (voir
+///    [AppBottomNav]). À trois onglets, la barre devient boiteuse : deux à
+///    gauche, un à droite d'un creux dimensionné pour deux.
 /// 4. C'est ce pour quoi `requireSession()` a été écrit : exiger un compte au
 ///    moment du **geste**, et reprendre le geste après la connexion.
 ///
@@ -76,14 +69,7 @@ class HomeShell extends ConsumerStatefulWidget {
 }
 
 class _HomeShellState extends ConsumerState<HomeShell> {
-  int _index = 0;
-
-  /// Les quatre onglets, **nommés**. Le numéro reste le vocabulaire partagé avec
-  /// la barre et le tiroir (voir l'en-tête) ; ces constantes évitent seulement
-  /// qu'il se promène en littéral dans ce fichier.
-  static const int _homeTab = 0;
-  static const int _announcementsTab = 1;
-  static const int _communityTab = 2;
+  HomeTab _tab = HomeTab.home;
 
   bool _videoStatus = false;
 
@@ -120,26 +106,33 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   void _openMenu() => _drawer.open?.call();
 
+  /// Le rappel du tiroir : il **nomme** l'onglet qu'il ouvre.
   void _goHome() {
     _drawer.close?.call();
-    setState(() => _index = _homeTab);
+    _showTab(AppDrawerMenu.homeTab);
   }
 
   /// **L'appui sur un onglet**, et le seul endroit où un onglet peut exiger un
   /// compte.
   ///
+  /// La question « cet onglet exige-t-il un compte ? » n'est pas tranchée ici :
+  /// elle appartient à l'onglet (`HomeTab.requiresSession`), où un `switch`
+  /// exhaustif oblige tout onglet neuf à y répondre. Posée ici en comparaisons,
+  /// elle se serait oubliée en silence — c'est le cul-de-sac le plus facile à
+  /// manquer du dépôt, et le seul dont l'oubli n'allume aucun test.
+  ///
   /// Pour un membre, `requireSession` est transparent : il exécute le geste dans
   /// la foulée et rend `true`. Pour un invité, il pousse le parcours de connexion
   /// par-dessus la coquille et rejoue le geste après le succès.
-  void _selectTab(int index) {
-    if (index != _communityTab) {
-      setState(() => _index = index);
+  void _selectTab(HomeTab tab) {
+    if (!tab.requiresSession) {
+      _showTab(tab);
       return;
     }
-    ref.requireSession(action: _showCommunity);
+    ref.requireSession(action: () => _showTab(tab));
   }
 
-  /// Le geste rejoué après la connexion.
+  /// Affiche un onglet — y compris **rejoué après une connexion**.
   ///
   /// **C'est le seul geste branché dont la reprise dépende de l'état d'un
   /// widget**, et il faut l'écrire : l'onglet courant vit en `State` **local**
@@ -147,15 +140,15 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   /// partagé »), et la reprise passe par un `router.go(origin)`, c'est-à-dire par
   /// une reconstruction de la pile. La coquille y survit tant que la page
   /// `/home` garde sa clé — c'est le cas aujourd'hui, et c'est ce qui fait
-  /// atterrir le nouveau membre **sur le hub qu'il avait demandé**.
+  /// atterrir le nouveau membre **sur l'onglet qu'il avait demandé**.
   ///
   /// Le `mounted` n'est donc pas une précaution de style : si cette page était un
   /// jour reconstruite, la reprise doit **retomber sur l'accueil** et non lever.
   /// Un membre qui atterrit sur l'accueil au lieu du hub est une déception ; un
   /// `setState` sur un `State` mort est un écran rouge.
-  void _showCommunity() {
+  void _showTab(HomeTab tab) {
     if (!mounted) return;
-    setState(() => _index = _communityTab);
+    setState(() => _tab = tab);
   }
 
   void _openDocument(String routeName, {String? kind}) {
@@ -166,22 +159,29 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     );
   }
 
+  /// **L'écran d'un onglet.** Pendant exact de `AppBottomNav.itemFor`, et
+  /// `switch` exhaustif pour la même raison : un onglet ajouté à [HomeTab] ne
+  /// compile pas tant qu'il n'a ni écran ni libellé. C'est ce qui remplace les
+  /// deux listes parallèles d'autrefois, qui pouvaient se désaccorder en
+  /// silence.
+  Widget _screenFor(HomeTab tab) => switch (tab) {
+        HomeTab.home => HomeScreen(onMenuTap: _openMenu),
+        HomeTab.announcements => AnnouncementsScreen(
+            isActive: _tab == HomeTab.announcements,
+            onVideoChanged: (isVideo) {
+              if (_videoStatus == isVideo) return;
+              setState(() => _videoStatus = isVideo);
+            },
+          ),
+        HomeTab.community => const GroupsScreen(),
+        // Sans `showBack` : c'est un onglet, on en sort par la barre du bas. La
+        // route `/profile` sert le même écran avec sa flèche de retour.
+        HomeTab.profile => const ProfileScreen(),
+      };
+
   @override
   Widget build(BuildContext context) {
-    final tabs = <Widget>[
-      HomeScreen(onMenuTap: _openMenu),
-      AnnouncementsScreen(
-        isActive: _index == _announcementsTab,
-        onVideoChanged: (isVideo) {
-          if (_videoStatus == isVideo) return;
-          setState(() => _videoStatus = isVideo);
-        },
-      ),
-      const GroupsScreen(),
-      const _BiblePlaceholderScreen(),
-    ];
-
-    final dimFab = _index == _announcementsTab && _videoStatus;
+    final dimFab = _tab == HomeTab.announcements && _videoStatus;
 
     final main = Scaffold(
       extendBody: true,
@@ -190,8 +190,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         children: [
           IndexedStack(
             key: HomeShell.tabsKey,
-            index: _index,
-            children: tabs,
+            // **L'index, enfin réduit à ce qu'il est** : la position de l'onglet
+            // dans l'ordre déclaré. Il ne circule plus, il se calcule.
+            index: _tab.index,
+            children: [for (final tab in HomeTab.values) _screenFor(tab)],
           ),
           // **La mention légale du premier lancement**, posée par-dessus les
           // onglets et non dans l'un d'eux : elle parle de l'application, pas de
@@ -237,7 +239,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: AppBottomNav(
-        currentIndex: _index,
+        current: _tab,
         onSelect: _selectTab,
       ),
     );
@@ -251,7 +253,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       child: ZoomDrawer(
         controller: _drawer,
         menuScreen: AppDrawerMenu(
-          currentIndex: _index,
+          currentTab: _tab,
           onHome: _goHome,
           onTerms: () => _openDocument(
             AppRoute.legalDocument,

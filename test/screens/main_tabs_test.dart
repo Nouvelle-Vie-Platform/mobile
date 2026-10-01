@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
+import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
+import 'package:maison_du_miracle/screens/home_shell.dart';
 import 'package:maison_du_miracle/screens/groups_screen.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/screens/media_library_screen.dart';
 import 'package:maison_du_miracle/screens/profile_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
+import 'package:maison_du_miracle/widgets/app_bottom_nav.dart';
+import 'package:maison_du_miracle/widgets/home_tab.dart';
 
 import '../helpers/pump_screen.dart';
 
@@ -49,6 +53,77 @@ void main() {
       // l'en-tête, qui ouvre une feuille. On vérifie donc le bouton, pas un
       // libellé de liste qui n'existe plus.
       expect(find.byKey(ProfileScreen.themeButtonKey), findsOneWidget);
+    });
+  });
+
+  group('La barre du bas', () {
+    /// Un libellé **de la barre**, et de nulle part ailleurs : le tiroir porte
+    /// aussi « Accueil », et le hub des conversations porte « Échanges » dans
+    /// son bandeau — or l'`IndexedStack` construit ses quatre onglets, donc ce
+    /// bandeau existe dans l'arbre même lorsqu'il n'est pas peint.
+    Finder navTab(String label) => find.descendant(
+          of: find.byType(AppBottomNav),
+          matching: find.text(label),
+        );
+
+    Future<void> pumpShell(WidgetTester tester) => pumpScreen(
+          tester,
+          const HomeShell(),
+          overrides: [
+            calendarRepositoryProvider
+                .overrideWithValue(InMemoryCalendarRepository()),
+          ],
+        );
+
+    testWidgets('Accueil · Annonces · ⊕ · Échanges · Profil', (tester) async {
+      await pumpShell(tester);
+
+      final labels = [
+        for (final tab in HomeTab.values)
+          AppBottomNav.itemFor(
+            tester.element(find.byType(AppBottomNav)),
+            tab,
+          ).label,
+      ];
+      final fr = AppLocalizationsFr();
+      expect(labels, [
+        fr.navHome,
+        fr.navAnnouncements,
+        fr.navGroups,
+        fr.navProfile,
+      ]);
+
+      // Et c'est bien cet ordre-là qui est peint, de gauche à droite.
+      final xs = [for (final l in labels) tester.getCenter(navTab(l)).dx];
+      expect(xs, orderedEquals(<double>[...xs]..sort()));
+    });
+
+    testWidgets('l\'encoche du bouton central tombe entre deux moitiés égales',
+        (tester) async {
+      await pumpShell(tester);
+
+      final width = tester.getSize(find.byType(AppBottomNav)).width;
+      final middle = width / 2;
+      final fr = AppLocalizationsFr();
+      final xs = [
+        for (final l in [
+          fr.navHome,
+          fr.navAnnouncements,
+          fr.navGroups,
+          fr.navProfile,
+        ])
+          tester.getCenter(navTab(l)).dx,
+      ];
+
+      // Deux onglets de chaque côté du creux, et le creux au milieu. C'est ce
+      // que `take(half)` / `skip(half)` promet, et ce qu'un nombre impair
+      // d'onglets casserait — d'où les quatre onglets, dont aucun ne se masque.
+      expect((xs[1] + xs[2]) / 2, closeTo(middle, 0.5));
+      expect(middle - xs[0], closeTo(xs[3] - middle, 0.5));
+
+      // Le FAB est docké au centre : l'encoche et lui se regardent.
+      expect(tester.getCenter(find.byType(FloatingActionButton)).dx,
+          closeTo(middle, 0.5));
     });
   });
 }

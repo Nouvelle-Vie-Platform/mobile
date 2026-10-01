@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/l10n_extension.dart';
 import '../theme/app_palette.dart';
+import 'home_tab.dart';
 import '../theme/app_typography.dart';
 
 /// Élément de la barre de navigation (icône au repos / active + libellé).
@@ -22,22 +23,25 @@ class NavItem {
 /// Barre de navigation inférieure avec **encoche** pour le bouton d'action
 /// central (FAB), géré au niveau de [Scaffold] par la coquille.
 ///
-/// Disposition « Accueil · Annonces · (encoche) · Échanges · Bible ».
+/// Disposition « Accueil · Annonces · (encoche) · Échanges · Profil », et
+/// **l'ordre ne vit pas ici** : il est celui de `HomeTab.values`. Cette barre ne
+/// fait que le rendre, et le `switch` exhaustif de [itemFor] garantit qu'un
+/// onglet neuf ne peut pas arriver sans son libellé — c'est l'autre moitié de ce
+/// que l'`enum` a supprimé : deux listes parallèles dont la discordance ne
+/// produisait aucune erreur de compilation, mais ouvrait Échanges quand on
+/// tapait « Bible ».
 ///
-/// **Quatre onglets, en invité comme en membre**, et la géométrie ne dépend
-/// donc d'aucun état d'authentification : c'est la coquille qui refuse l'entrée
-/// du hub à un invité, par `requireSession()` (voir `HomeShell`). Deux raisons
-/// de ne pas retirer l'onglet ici — l'encoche du FAB est calée sur *deux*
-/// onglets de chaque côté, qu'une barre à trois rendrait boiteuse ; et l'index
-/// d'onglet est un **numéro** que se partagent cette barre, le tiroir latéral et
-/// leurs tests. Une barre à géométrie variable ferait de ce numéro une valeur
-/// dont le sens dépend de qui regarde.
+/// **Quatre onglets, en invité comme en membre**, et la géométrie ne dépend donc
+/// d'aucun état d'authentification : c'est la coquille qui refuse l'entrée des
+/// onglets réservés, par `requireSession()` au moment du geste (voir
+/// `HomeTab.requiresSession`). Deux raisons de n'en retirer aucun — un onglet
+/// retiré est une fermeture invisible, et l'**encoche** du FAB est posée entre
+/// deux moitiés égales, qu'un nombre impair d'onglets rendrait boiteuse.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
-    required this.currentIndex,
+    required this.current,
     required this.onSelect,
-    this.items,
   });
 
   /// Hauteur de la barre, **nommée parce qu'un autre widget en dépend** : la
@@ -47,45 +51,63 @@ class AppBottomNav extends StatelessWidget {
   /// bandeau aurait recouvert les onglets.
   static const double barHeight = 64;
 
-  final int currentIndex;
-  final ValueChanged<int> onSelect;
+  /// L'onglet affiché par la coquille — **un nom, pas un numéro**.
+  final HomeTab current;
 
-  /// Onglets affichés. Si `null`, on utilise les onglets par défaut localisés.
-  final List<NavItem>? items;
+  /// L'onglet demandé. La barre ne décide de rien : elle ne sait pas qu'un
+  /// onglet peut exiger un compte, et n'a pas à le savoir.
+  final ValueChanged<HomeTab> onSelect;
 
-  /// Onglets par défaut « Accueil · Annonces · Échanges · Bible », **tous
-  /// localisés** : les deux derniers étaient écrits en dur, et ne se
-  /// traduisaient donc ni en anglais ni en éwé alors que les clés existaient.
-  static List<NavItem> defaultItems(BuildContext context) => [
-        NavItem(
-          icon: Icons.home_outlined,
-          activeIcon: Icons.home,
-          label: context.l10n.navHome,
-        ),
-        NavItem(
-          icon: Icons.campaign_outlined,
-          activeIcon: Icons.campaign,
-          label: context.l10n.navAnnouncements,
-        ),
-        NavItem(
-          icon: Icons.forum_outlined,
-          activeIcon: Icons.forum,
-          // **`navGroups`, et pas un libellé de plus** : la même clé titre déjà
-          // le hub des conversations (voir sa description dans `app_fr.arb`).
-          label: context.l10n.navGroups,
-        ),
-        NavItem(
-          icon: Icons.menu_book_outlined,
-          activeIcon: Icons.menu_book,
-          label: context.l10n.navBible,
-        ),
-      ];
+  /// L'icône et le libellé d'un onglet, **tous localisés** : « Échanges » et
+  /// « Bible » étaient écrits en dur, et ne se traduisaient donc ni en anglais ni
+  /// en éwé alors que les clés existaient.
+  ///
+  /// `switch` sur l'`enum` et non table indexée : le compilateur exige alors
+  /// qu'il soit **exhaustif**.
+  static NavItem itemFor(BuildContext context, HomeTab tab) => switch (tab) {
+        HomeTab.home => NavItem(
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home,
+            label: context.l10n.navHome,
+          ),
+        HomeTab.announcements => NavItem(
+            icon: Icons.campaign_outlined,
+            activeIcon: Icons.campaign,
+            label: context.l10n.navAnnouncements,
+          ),
+        HomeTab.community => NavItem(
+            icon: Icons.forum_outlined,
+            activeIcon: Icons.forum,
+            // **`navGroups`, et pas un libellé de plus** : la même clé titre déjà
+            // le hub des conversations (voir sa description dans `app_fr.arb`).
+            label: context.l10n.navGroups,
+          ),
+        // **« Profil » pour tout le monde**, invité compris : la connexion se
+        // demande au geste, jamais par un libellé qui change selon l'état. La
+        // barre n'en porte aucun autre, et en introduire un ici créerait une
+        // exception à justifier à chaque relecture.
+        HomeTab.profile => NavItem(
+            icon: Icons.person_outline,
+            activeIcon: Icons.person,
+            label: context.l10n.navProfile,
+          ),
+      };
 
   @override
   Widget build(BuildContext context) {
-    final navItems = items ?? defaultItems(context);
-    final left = navItems.take(2).toList();
-    final right = navItems.skip(2).toList();
+    // **L'encoche tombe entre deux moitiés égales**, et c'est la seule chose
+    // que cette barre sait de la géométrie. Le partage est positionnel, donc
+    // permuter deux onglets ne la déplace pas ; seul un nombre **impair**
+    // d'onglets la rendrait boiteuse — d'où l'assertion, qui parle au moment où
+    // la faute se commet plutôt qu'à la relecture d'une capture d'écran.
+    assert(
+      HomeTab.values.length.isEven,
+      'l\'encoche du FAB est calée sur deux moitiés égales : '
+      'la barre doit porter un nombre pair d\'onglets',
+    );
+    final half = HomeTab.values.length ~/ 2;
+    final left = HomeTab.values.take(half).toList();
+    final right = HomeTab.values.skip(half).toList();
     final palette = context.palette;
 
     return ClipRect(
@@ -100,12 +122,12 @@ class AppBottomNav extends StatelessWidget {
           padding: EdgeInsets.zero,
           child: Row(
             children: [
-              for (var i = 0; i < left.length; i++)
-                Expanded(child: _tab(palette, left[i], i)),
+              for (final tab in left)
+                Expanded(child: _tab(context, palette, tab)),
               // Espace réservé à l'encoche du FAB central.
               const SizedBox(width: 64),
-              for (var i = 0; i < right.length; i++)
-                Expanded(child: _tab(palette, right[i], i + left.length)),
+              for (final tab in right)
+                Expanded(child: _tab(context, palette, tab)),
             ],
           ),
         ),
@@ -113,11 +135,12 @@ class AppBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _tab(AppPalette palette, NavItem item, int index) {
-    final selected = index == currentIndex;
+  Widget _tab(BuildContext context, AppPalette palette, HomeTab tab) {
+    final item = itemFor(context, tab);
+    final selected = tab == current;
     final color = selected ? palette.primary : palette.textSecondary;
     return InkResponse(
-      onTap: () => onSelect(index),
+      onTap: () => onSelect(tab),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,

@@ -5,6 +5,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import 'brand_logo.dart';
+import 'home_tab.dart';
 
 /// Panneau du menu latéral de l'accueil (`flutter_zoom_drawer`).
 ///
@@ -22,17 +23,22 @@ import 'brand_logo.dart';
 class AppDrawerMenu extends StatelessWidget {
   const AppDrawerMenu({
     super.key,
-    required this.currentIndex,
+    required this.currentTab,
     required this.onHome,
     required this.onTerms,
     required this.onPrivacy,
     required this.onAbout,
   });
 
-  /// Onglet courant de la coquille. Seule l'entrée « Accueil » peut être
-  /// courante : les trois autres poussent une route par-dessus la coquille,
+  /// Onglet courant de la coquille, **nommé**. Seule l'entrée « Accueil » peut
+  /// être courante : les trois autres poussent une route par-dessus la coquille,
   /// elles ne changent pas d'onglet.
-  final int currentIndex;
+  ///
+  /// C'était un **numéro** — le même que celui de la barre du bas, dupliqué ici
+  /// sans que l'un référence l'autre. Réordonner la barre faisait alors de ce
+  /// panneau le premier menteur : il désignait l'onglet 0, pas l'accueil, et
+  /// personne ne s'en apercevait avant un retour de fidèle.
+  final HomeTab currentTab;
 
   final VoidCallback onHome;
   final VoidCallback onTerms;
@@ -46,8 +52,8 @@ class AppDrawerMenu extends StatelessWidget {
   static const Key privacyKey = Key('drawer_entry_privacy');
   static const Key aboutKey = Key('drawer_entry_about');
 
-  /// Index de l'onglet Accueil dans la coquille.
-  static const int homeTab = 0;
+  /// L'onglet que l'entrée « Accueil » **désigne** — un nom, pas une position.
+  static const HomeTab homeTab = HomeTab.home;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +77,7 @@ class AppDrawerMenu extends StatelessWidget {
                   key: homeKey,
                   icon: Icons.home_outlined,
                   label: l10n.navHome,
-                  current: currentIndex == homeTab,
+                  current: currentTab == homeTab,
                   onTap: onHome,
                 ),
                 _DrawerEntry(

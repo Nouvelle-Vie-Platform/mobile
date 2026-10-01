@@ -12,6 +12,11 @@
 /// - **invité** → la connexion s'ouvre, puis le geste part **tout seul** ;
 /// - **membre** → le geste part au premier appui, sans détour ni intention en
 ///   attente.
+///
+/// **Le profil n'y figure plus.** Il était ici tant qu'il s'ouvrait depuis
+/// l'icône de l'en-tête de l'accueil ; il est redescendu dans la barre du bas,
+/// et sa garde — toujours un `requireSession()` au geste — se vérifie désormais
+/// avec les autres onglets, dans `guest_tabs_test.dart`.
 library;
 
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -23,9 +28,7 @@ import 'package:maison_du_miracle/models/announcement_view.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/screens/announcements_screen.dart';
 import 'package:maison_du_miracle/screens/auth/welcome_screen.dart';
-import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
-import 'package:maison_du_miracle/state/session_gate.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
 import 'package:maison_du_miracle/widgets/content_player_view.dart';
 
@@ -86,43 +89,6 @@ Future<void> _showAnnouncements(WidgetTester tester) async {
 }
 
 void main() {
-  group('Le profil, depuis l\'en-tête de l\'accueil', () {
-    testWidgets('un invité : la connexion, puis le profil', (tester) async {
-      final container = guestContainer();
-      final router = await pumpGuestApp(tester, container);
-
-      await tester.tap(find.byKey(HomeScreen.profileButtonKey));
-      await settle(tester);
-
-      expect(router.state.matchedLocation, '/auth');
-      expect(find.byType(WelcomeScreen), findsOneWidget);
-
-      await signIn(container);
-      await settle(tester);
-
-      // **Le geste est rejouable sans réserve** : il ne dépend d'aucun état
-      // d'écran, seulement de la `GoRouter` lue au moment de l'appui.
-      expect(router.state.matchedLocation, '/profile');
-      expect(container.read(sessionGateProvider), isNull);
-    });
-
-    testWidgets('un membre : le profil au premier appui', (tester) async {
-      final container = guestContainer(
-        auth: GuestAuthRepository(signedIn: true),
-        vault: StartupVault.memberSession,
-      );
-      final router = await pumpGuestApp(tester, container);
-      await untilSignedIn(tester, container);
-
-      await tester.tap(find.byKey(HomeScreen.profileButtonKey));
-      await settle(tester);
-
-      expect(router.state.matchedLocation, '/profile');
-      expect(find.byType(WelcomeScreen), findsNothing);
-      expect(container.read(sessionGateProvider), isNull);
-    });
-  });
-
   group('Écrire une note, depuis la fiche d\'un enseignement', () {
     testWidgets('un invité : la connexion, puis les notes', (tester) async {
       final container = guestContainer(extra: _oneTeaching);

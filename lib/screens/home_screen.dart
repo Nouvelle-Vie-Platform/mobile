@@ -13,7 +13,6 @@ import '../state/auth_providers.dart';
 import '../state/calendar_providers.dart';
 import '../state/gathering_providers.dart';
 import '../state/mediatheque_providers.dart';
-import '../state/session_gate.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -42,10 +41,13 @@ class HomeScreen extends ConsumerWidget {
 
   static const Key menuButtonKey = Key('home_menu_button');
 
-  /// L'icône de profil de l'en-tête. Ciblée par clé et non par pictogramme :
-  /// c'est le seul geste **réservé** de l'accueil, et un test qui le vise doit
-  /// résister à un changement d'icône.
-  static const Key profileButtonKey = Key('home_profile_button');
+  /// L'icône Bible de l'en-tête. Ciblée par clé et non par pictogramme : un test
+  /// qui la vise doit résister à un changement d'icône.
+  ///
+  /// Elle a pris la place de l'ancienne icône de profil, partie **retrouver la
+  /// barre du bas**. L'en-tête de l'accueil ne porte donc plus aucun geste
+  /// réservé.
+  static const Key bibleButtonKey = Key('home_bible_button');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -199,7 +201,7 @@ class _WavyHeader extends StatelessWidget {
                           icon: const Icon(Icons.menu,
                               color: Colors.white, size: 28),
                         ),
-                        const _ProfileIconButton(),
+                        const _BibleIconButton(),
                       ],
                     ),
                     const SizedBox(
@@ -245,35 +247,29 @@ class _WavyHeader extends StatelessWidget {
   }
 }
 
-/// Icône de profil dans l'en-tête de l'accueil — **le seul geste réservé de cet
-/// écran**.
+/// Icône **Bible** dans l'en-tête de l'accueil, là où se tenait l'icône de
+/// profil.
 ///
-/// `/profile` est dans `memberOnlyRoutes` : pour un invité, la garde du routeur
-/// renverrait cette navigation sur `/home`, c'est-à-dire un bouton qui ne fait
-/// rien. `requireSession()` en fait au contraire la porte d'entrée : la connexion
-/// s'ouvre, et le profil s'ouvre tout seul derrière.
+/// Elle ouvre `/bible` en **poussant** la route : la Bible n'est plus un onglet,
+/// elle ne vit donc plus en permanence sous les autres écrans (voir
+/// [BibleScreen]).
 ///
-/// **Le routeur est lu au moment de l'appui, pas au moment du rejeu.** Le geste
-/// peut être rejoué après le parcours de connexion, qui reconstruit la pile ;
-/// `context.pushNamed` s'appuierait alors sur un élément dont rien ne garantit
-/// qu'il est encore monté. La `GoRouter`, elle, vit dans le conteneur Riverpod et
-/// survit à tout — c'est ce qui rend ce geste **rejouable sans condition**.
-class _ProfileIconButton extends ConsumerWidget {
-  const _ProfileIconButton();
+/// **Aucune garde, et c'est volontaire** : `/bible` appartient à la surface
+/// invitée, décidée par le client. Le seul geste réservé de l'accueil est parti
+/// avec l'icône de profil — c'est désormais la barre du bas qui demande un
+/// compte, au moment du geste.
+class _BibleIconButton extends StatelessWidget {
+  const _BibleIconButton();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return IconButton(
-      key: HomeScreen.profileButtonKey,
-      icon: const Icon(Icons.account_circle_outlined,
-          color: Colors.white, size: 28),
-      tooltip: 'Profil',
-      onPressed: () {
-        final router = ref.read(routerProvider);
-        ref.requireSession(
-          action: () => router.pushNamed(AppRoute.profile),
-        );
-      },
+      key: HomeScreen.bibleButtonKey,
+      icon: const Icon(Icons.menu_book_outlined, color: Colors.white, size: 28),
+      // Localisé, contrairement au « Profil » en dur qu'il remplace : la clé
+      // `navBible` existait déjà, et c'est la même Bible qu'on nomme.
+      tooltip: context.l10n.navBible,
+      onPressed: () => context.pushNamed(AppRoute.bible),
     );
   }
 }

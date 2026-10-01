@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_zoom_drawer/flutter_zoom_drawer.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
+import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
+import 'package:maison_du_miracle/screens/announcements_screen.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/screens/home_shell.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
+import 'package:maison_du_miracle/widgets/app_bottom_nav.dart';
 import 'package:maison_du_miracle/widgets/app_drawer_menu.dart';
+import 'package:maison_du_miracle/widgets/home_tab.dart';
 
 import '../helpers/pump_screen.dart';
 
@@ -27,9 +31,29 @@ Future<void> _pumpShell(WidgetTester tester) => pumpScreen(
 ZoomDrawerState _drawer(WidgetTester tester) =>
     tester.state<ZoomDrawerState>(find.byType(ZoomDrawer));
 
-/// Index de l'onglet affiché par la coquille.
-int? _tab(WidgetTester tester) =>
-    tester.widget<IndexedStack>(find.byKey(HomeShell.tabsKey)).index;
+/// Les libellés attendus, **lus dans les traductions** et non recopiés.
+final _fr = AppLocalizationsFr();
+
+/// **L'écran que la coquille affiche**, et non le numéro qu'elle porte.
+///
+/// C'est toute la différence que ce chantier installe. Ce test attendait
+/// autrefois « l'onglet 0 » : il serait resté vert le jour où l'onglet 0 cesse
+/// d'être l'accueil, c'est-à-dire exactement le jour où le tiroir se met à
+/// ouvrir le mauvais écran. Désormais il nomme l'écran, et c'est le type qui
+/// porte la correspondance.
+Widget _screen(WidgetTester tester) {
+  final stack = tester.widget<IndexedStack>(find.byKey(HomeShell.tabsKey));
+  expect(stack.index, isNotNull,
+      reason: 'la coquille n\'affiche aucun onglet du tout');
+  return stack.children[stack.index!];
+}
+
+/// Un libellé **de la barre du bas**, et de nulle part ailleurs : le tiroir
+/// porte aussi « Accueil ».
+Finder _navTab(String label) => find.descendant(
+      of: find.byType(AppBottomNav),
+      matching: find.text(label),
+    );
 
 /// Ouvre le menu par l'icône et laisse l'animation d'ouverture se terminer.
 Future<void> _openMenu(WidgetTester tester) async {
@@ -64,20 +88,23 @@ void main() {
           findsNWidgets(4));
     });
 
-    testWidgets('« Accueil » revient à l\'onglet 0 depuis un autre onglet',
+    testWidgets(
+        '« Accueil » ramène à l\'écran d\'accueil, depuis un autre onglet',
         (tester) async {
       await _pumpShell(tester);
 
-      // Onglet « Bible » (le dernier de la barre). Le profil n'y est plus : il
-      // est devenu une route poussée, on ne l'atteint plus par la barre du bas.
-      await tester.tap(find.text('Bible'));
+      // Un onglet autre que l'accueil, choisi **par son libellé** et vérifié
+      // **par son écran**. Les annonces, et non le dernier onglet de la barre :
+      // ce test porte sur le tiroir, pas sur la garde de session que « Profil »
+      // ferait entrer en scène.
+      await tester.tap(_navTab(_fr.navAnnouncements));
       await tester.pump();
-      expect(_tab(tester), 3);
+      expect(_screen(tester), isA<AnnouncementsScreen>());
 
       // L'icône du menu **n'existe que sur l'accueil** — c'est la règle — donc
       // on ouvre le tiroir par son contrôleur. Ce que ce test vérifie n'est pas
       // l'ouverture (l'autre s'en charge) mais le rappel : « Accueil » ramène à
-      // l'onglet 0 **depuis n'importe quel onglet**, et non seulement depuis
+      // **l'accueil** depuis n'importe quel onglet, et non seulement depuis
       // celui d'où le menu s'ouvre aujourd'hui.
       _drawer(tester).open();
       await tester.pump();
@@ -86,10 +113,17 @@ void main() {
       await tester.tap(find.byKey(AppDrawerMenu.homeKey));
       await tester.pump();
       // L'onglet change immédiatement ; le tiroir se referme en s'animant.
-      expect(_tab(tester), 0);
+      expect(_screen(tester), isA<HomeScreen>());
 
       await tester.pump(const Duration(milliseconds: 400));
       expect(_drawer(tester).isOpen(), isFalse);
+    });
+
+    test('l\'entrée « Accueil » désigne un onglet, pas un numéro', () {
+      // La constante que le tiroir partage avec la coquille. Elle valait `0` ;
+      // elle vaut maintenant un nom, et c'est le seul moyen qu'un
+      // réordonnancement de la barre ne la laisse pas mentir en silence.
+      expect(AppDrawerMenu.homeTab, HomeTab.home);
     });
 
     testWidgets('aucun glissement horizontal n\'ouvre le menu', (tester) async {

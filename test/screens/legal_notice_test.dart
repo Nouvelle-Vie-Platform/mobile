@@ -16,6 +16,7 @@ import 'package:maison_du_miracle/data/legal_notice_store.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/screens/legal_acceptance_screen.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
+import 'package:maison_du_miracle/widgets/home_tab.dart';
 import 'package:maison_du_miracle/widgets/legal_notice_banner.dart';
 
 import '../helpers/guest_app.dart';
@@ -40,7 +41,7 @@ void main() {
 
     await tester.tap(navTab(_fr.navAnnouncements));
     await settle(tester);
-    expect(shellTab(tester), 1,
+    expect(shellTab(tester), HomeTab.announcements,
         reason: 'l\'application s\'utilise pendant que le bandeau est affiché');
     // Et il ne disparaît pas parce qu'on a touché autre chose : il ne part que
     // par son propre bouton.
