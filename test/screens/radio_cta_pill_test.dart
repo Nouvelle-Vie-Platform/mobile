@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/core/config/radio_config.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
+import 'package:maison_du_miracle/data/radio/radio_handshake.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
@@ -67,11 +70,13 @@ void main() {
   Future<void> pumpPill(
     WidgetTester tester, {
     RadioRepository radio = const FixedRadioRepository(kTestAntennaOnAir),
+    RadioHandshakeResolver? handshake,
   }) async {
     await pumpRouter(
       tester,
       buildRouter(),
       radio: radio,
+      handshake: handshake,
       overrides: [
         contentPlayerProvider.overrideWithValue(player),
         nowProvider.overrideWithValue(() => clock),
@@ -535,4 +540,162 @@ void main() {
       expect(player.loadedIsLive, isTrue);
     });
   });
+
+  group('La poignée de main par cookie de MediaMTX (#108)', () {
+    late RecordingRadioHandshake handshake;
+
+    setUp(() => handshake = RecordingRadioHandshake());
+
+    testWidgets('rien n\'est ouvert avant que la session soit obtenue',
+        (tester) async {
+      // ⚠️ **L'assertion qui porte la tranche.** Le pré-vol doit être **attendu**,
+      // pas lancé à côté : une ouverture partie avant la session rendrait
+      // `401 {"error":"session not found"}` dès la sous-playlist, c'est-à-dire
+      // exactement la panne que #108 corrige. Le portillon rend la chose
+      // observable — tant qu'il n'a pas rendu, le lecteur ne doit tenir rien.
+      final gate = _GatedRadioHandshake();
+      await pumpPill(tester, handshake: gate);
+
+      await tapOnce(tester);
+
+      expect(gate.calls, 1, reason: 'le pré-vol est parti');
+      expect(player.loadCount, 0, reason: 'et le lecteur attend');
+      // Et le bouton dit qu'il travaille pendant ce temps-là : le pré-vol est sur
+      // le chemin critique de l'écoute, il ne doit pas ressembler à un bouton mort.
+      expect(find.byKey(RadioCtaPill.workingKey), findsOneWidget);
+
+      gate.complete(
+        const RadioHandshake(
+          url: 'https://antenne.test/antenne/stream.m3u8',
+          headers: {'Cookie': 'hlsSession=abc'},
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(player.loadCount, 1);
+      expect(player.value.isPlaying, isTrue);
+    });
+
+    testWidgets('l\'URL finale ET le cookie arrivent jusqu\'au lecteur',
+        (tester) async {
+      // Les deux, et pas l'un sans l'autre : l'adresse de départ referait la
+      // négociation sans le bocal, et l'adresse finale seule rend 401. Ce que les
+      // moteurs natifs font de cet en-tête ne se voit pas ici (il y faut un
+      // appareil) — mais le **chemin** qui le porte, lui, se brise en silence.
+      await pumpPill(tester, handshake: handshake);
+
+      await tapOnce(tester);
+
+      expect(handshake.urls, [kTestAntennaOnAir.streamUrl]);
+      expect(
+        player.loadedUrl,
+        RecordingRadioHandshake.resolvedUrlFor(kTestAntennaOnAir.streamUrl!),
+      );
+      expect(player.loadedUrl, isNot(kTestAntennaOnAir.streamUrl));
+      expect(player.loadedHeaders,
+          {'Cookie': RecordingRadioHandshake.sessionAt(1)});
+    });
+
+    testWidgets('une réouverture renégocie au lieu de rejouer', (tester) async {
+      // Une session MediaMTX expire : une reprise après deux minutes de coupure ne
+      // peut pas rejouer l'ancien cookie. Un pré-vol mis en cache « pour épargner
+      // un aller-retour » rendrait l'antenne muette précisément quand l'auditeur
+      // insiste — et le test passerait au vert.
+      await pumpPill(tester, handshake: handshake);
+      await tapOnce(tester);
+      await paintPlaying(tester);
+      expect(
+        player.loadedHeaders,
+        {'Cookie': RecordingRadioHandshake.sessionAt(1)},
+      );
+
+      await tapAgainLater(tester); // 1ᵉʳ de la rafale : arrête
+      await tapOnce(tester); // 2ᵉ : rend ce qu'il a retiré, puis navigue
+
+      expect(handshake.count, 2, reason: 'on a renégocié');
+      expect(
+        player.loadedHeaders,
+        {'Cookie': RecordingRadioHandshake.sessionAt(2)},
+        reason: 'et c\'est la session fraîche qui est partie',
+      );
+      // ⚠️ La négociation repart de l'**adresse d'antenne**, jamais de l'adresse
+      // déjà résolue : celle-ci est au-delà du 302, donc n'en poserait plus aucun
+      // cookie.
+      expect(handshake.urls, [
+        kTestAntennaOnAir.streamUrl,
+        kTestAntennaOnAir.streamUrl,
+      ]);
+    });
+
+    testWidgets('un pré-vol sans réponse → « vérifiez votre connexion »',
+        (tester) async {
+      // Son échec se lit **comme les autres** : il n'a pas de troisième voix. Même
+      // phrase que la route d'antenne injoignable et que le lecteur qui part dans
+      // le vide, et c'est `classifyRadioFailure` qui la choisit — pour les trois.
+      await pumpPill(
+        tester,
+        handshake: const FailingRadioHandshake(
+          SocketException('Failed host lookup'),
+        ),
+      );
+
+      await tapOnce(tester);
+
+      expect(player.loadCount, 0, reason: 'aucune source n\'a été ouverte');
+      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+
+      await tester.pump(const Duration(minutes: 2));
+      expect(find.text('Vérifiez votre connexion'), findsOneWidget);
+    });
+
+    testWidgets('un 401 « session not found » → « antenne indisponible »',
+        (tester) async {
+      // Le serveur a répondu, et il a dit non : ce n'est pas le réseau de
+      // l'auditeur qui manque, et l'inviter à le vérifier l'enverrait chercher une
+      // panne qui n'est pas la sienne.
+      final options = RequestOptions(path: '/antenne/index.m3u8');
+      await pumpPill(
+        tester,
+        handshake: FailingRadioHandshake(
+          DioException(
+            requestOptions: options,
+            response: Response<dynamic>(
+              requestOptions: options,
+              statusCode: 401,
+              data: '{"status":"error","error":"session not found"}',
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ),
+      );
+
+      await tapOnce(tester);
+
+      expect(player.loadCount, 0);
+      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+
+      await tester.pump(const Duration(minutes: 2));
+      expect(find.text('Antenne indisponible'), findsOneWidget);
+    });
+  });
+}
+
+/// **Un pré-vol qu'on fait attendre**, pour voir ce qui se passe pendant.
+///
+/// Il n'existe que pour une assertion, et elle vaut le détour : prouver que le
+/// `load` **attend** la session. Un pré-vol qui rendrait tout de suite laisserait
+/// les deux ordres possibles indiscernables.
+class _GatedRadioHandshake implements RadioHandshakeResolver {
+  final Completer<RadioHandshake> _gate = Completer<RadioHandshake>();
+
+  int calls = 0;
+
+  void complete(RadioHandshake handshake) => _gate.complete(handshake);
+
+  @override
+  Future<RadioHandshake> resolve(String url) {
+    calls++;
+    return _gate.future;
+  }
 }
