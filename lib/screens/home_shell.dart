@@ -11,6 +11,7 @@ import '../theme/app_colors.dart';
 import '../widgets/app_background.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_drawer_menu.dart';
+import '../widgets/app_update_banner.dart';
 import '../widgets/legal_notice_banner.dart';
 import 'announcements_screen.dart';
 import 'groups_screen.dart';
@@ -202,12 +203,23 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           // Elle est posée **au-dessus de la barre** : la coquille garde
           // `extendBody: true`, donc le bas du corps passe derrière la barre
           // givrée, et un bandeau à `bottom: 0` recouvrirait les onglets.
+          //
+          // **Le bandeau de mise à jour** partage cette place, et pour les
+          // mêmes raisons : il parle de l'application, pas de l'accueil, et il
+          // ne bloque rien. Les deux sont empilés dans une `Column` plutôt que
+          // superposés — ils peuvent être là en même temps (une installation
+          // neuve sur une version dépassée), et deux bandeaux au même endroit
+          // en masqueraient un. Chacun se retire de lui-même quand il n'a rien
+          // à dire, la colonne est alors vide et ne mesure rien.
           Positioned(
             left: 0,
             right: 0,
             bottom:
                 MediaQuery.paddingOf(context).bottom + AppBottomNav.barHeight,
-            child: const LegalNoticeBanner(),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [AppUpdateBanner(), LegalNoticeBanner()],
+            ),
           ),
         ],
       ),

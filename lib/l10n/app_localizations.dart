@@ -2403,6 +2403,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'J\'ai compris'**
   String get legalNoticeDismiss;
+
+  /// Bandeau NON bloquant de mise à jour, affiché quand la version installée est sous le seuil réglé au portail. Il informe et renvoie au magasin ; il ne bloque rien, ne force rien, et l'application reste utilisable derrière. Tant qu'aucun seuil n'est réglé, il ne s'affiche pour personne
+  ///
+  /// In fr, this message translates to:
+  /// **'Une nouvelle version de l\'application est disponible.'**
+  String get appUpdateBody;
+
+  /// Ouvre la fiche de l'application dans le magasin. Un verbe d'action et non « Ouvrir le magasin » : ce qu'on vient faire est la mise à jour, le magasin n'en est que le chemin
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour'**
+  String get appUpdateAction;
+
+  /// Ferme le bandeau pour la session en cours — pas définitivement, contrairement à legalNoticeDismiss. Pas « J'ai compris » : il n'y a rien à comprendre ici, seulement un geste qu'on remet à plus tard, et le bandeau reviendra au prochain lancement tant que la version n'aura pas monté
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get appUpdateDismiss;
 }
 
 class _AppLocalizationsDelegate
