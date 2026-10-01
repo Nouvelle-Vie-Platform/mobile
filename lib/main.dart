@@ -82,7 +82,9 @@ Future<void> main() async {
   // (5) **Le fond déjà sur le disque**, lu avant le premier frame. L'écran de
   // marque dure le temps de résoudre une session : un fond qui arriverait après
   // lui n'aurait servi à personne. Pas de réseau, pas de base — un seul fichier
-  // dans un dossier —, et `null` au premier lancement, ce qui est le contrat.
+  // dans un dossier —, et `null` au premier lancement : l'écran retombe alors
+  // sur le dernier étage de la cascade, l'image du dépôt, celle-là même que
+  // peint le démarrage natif.
   final startupBackground =
       AppEnv.useBackend ? await readStartupBackground() : null;
 
@@ -98,7 +100,7 @@ Future<void> main() async {
       // d'appareil de cette exécution.
       startupVaultProvider.overrideWithValue(vault),
       deviceBootstrapProvider.overrideWithValue(bootstrap),
-      startupBackgroundProvider.overrideWithValue(startupBackground),
+      startupCachedBackgroundProvider.overrideWithValue(startupBackground),
     ],
   );
 

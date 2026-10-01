@@ -24,7 +24,7 @@ Future<void> _pump(WidgetTester tester, {ImageProvider? background}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        startupBackgroundProvider.overrideWithValue(background),
+        startupCachedBackgroundProvider.overrideWithValue(background),
       ],
       child: MaterialApp(
         theme: AppTheme.light,
@@ -67,21 +67,26 @@ void main() {
     expect(_gradients(tester), isNot(contains(AppColors.gradientPrimary)));
   });
 
-  testWidgets('premier lancement : pas de fond, et le dégradé de marque',
+  testWidgets('premier lancement : l\'image du dépôt, et le voile',
       (tester) async {
     await _pump(tester);
 
-    // Aucun **fond** — rien n'a encore été descendu, et c'est le contrat : on
-    // descend pendant que l'application tourne, on s'en sert la fois suivante.
-    // (L'emblème, lui, est une image du dépôt et reste là.)
+    // Rien n'a encore été descendu du portail, et l'écran n'est pas nu pour
+    // autant : c'est l'image du dépôt qui paraît — celle-là même que le splash
+    // **natif** vient de peindre, d'où l'absence de rupture entre les deux.
     final images = tester
         .widgetList<Image>(find.byType(Image))
         .map((image) => image.image);
     expect(images.whereType<MemoryImage>(), isEmpty);
+    expect(
+      images.whereType<AssetImage>().map((a) => a.assetName),
+      contains('assets/images/live_bg.png'),
+    );
 
-    // Et c'est le dégradé **de marque** qui revient, pas le voile sombre : le
-    // voile n'existe que pour tenir la lisibilité par-dessus une photo.
-    expect(_gradients(tester), contains(AppColors.gradientPrimary));
+    // Et c'est le **voile**, pas le dégradé de marque : il y a une photo à
+    // assombrir, comme dans tous les autres cas désormais.
+    expect(_gradients(tester), isNotEmpty);
+    expect(_gradients(tester), isNot(contains(AppColors.gradientPrimary)));
   });
 
   testWidgets('l\'écran de marque reste un écran de marque', (tester) async {

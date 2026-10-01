@@ -1,13 +1,17 @@
 /// **La cascade du fond**, en entier, sur un vrai magasin.
 ///
 /// Quatre étages — vertical de la saison, son paysage, vertical du décor, son
-/// paysage — et l'ordre *est* la règle. Aucun écran ne la vérifierait : un fond
-/// pris au mauvais étage s'affiche parfaitement, il est simplement le mauvais,
-/// et personne ne le remarque avant la saison suivante.
+/// paysage — puis l'image du dépôt, et l'ordre *est* la règle. Aucun écran ne
+/// la vérifierait : un fond pris au mauvais étage s'affiche parfaitement, il
+/// est simplement le mauvais, et personne ne le remarque avant la saison
+/// suivante.
 library;
+
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
@@ -130,5 +134,36 @@ void main() {
     // Relative en base, absolue à la sortie : sans quoi `Image` échoue faute de
     // schéma, et le fond manque sans que rien ne le dise.
     expect(url, startsWith('http'));
+  });
+
+  group('le dernier étage — l\'image du dépôt, au démarrage', () {
+    /// Ce que l'écran de démarrage recevrait, le disque portant [cached].
+    ImageProvider startup({ImageProvider? cached}) {
+      final container = ProviderContainer.test(
+        overrides: [
+          if (cached != null)
+            startupCachedBackgroundProvider.overrideWithValue(cached),
+        ],
+      );
+      return container.read(startupBackgroundProvider);
+    }
+
+    test('rien de réglé, rien sur le disque ⇒ live_bg.png', () {
+      // Le même fichier que le splash natif vient de peindre : le fidèle voit
+      // une seule image, du premier pixel jusqu'à l'accueil.
+      expect(startup(), isA<AssetImage>());
+      expect((startup() as AssetImage).assetName, 'assets/images/live_bg.png');
+    });
+
+    test('un décor réglé au portail passe DEVANT l\'image du dépôt', () {
+      // Celui-ci est le test qui protège le réglage, et c'est celui qu'on
+      // oublie. Inverser cette priorité annulerait en silence un décor que
+      // quelqu'un a pris la peine de déposer — et ça s'afficherait
+      // parfaitement, sans faire rougir quoi que ce soit.
+      final portail = MemoryImage(Uint8List.fromList(const [1, 2, 3, 4]));
+
+      expect(startup(cached: portail), same(portail));
+      expect(startup(cached: portail), isNot(isA<AssetImage>()));
+    });
   });
 }

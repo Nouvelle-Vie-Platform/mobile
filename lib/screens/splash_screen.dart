@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/l10n_extension.dart';
 import '../state/season_providers.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/brand_logo.dart';
@@ -25,16 +24,18 @@ import '../widgets/brand_logo.dart';
 /// un fond qui apparaît une fraction de seconde après que l'écran a disparu, ou
 /// pire, qui retarde l'ouverture de l'application.
 ///
-/// **Le premier lancement n'a donc pas de fond**, et c'est le contrat : on
-/// descend pendant que l'application tourne, on s'en sert à l'ouverture
-/// suivante.
+/// **Le premier lancement n'est plus nu pour autant** : rien sur le disque, et
+/// c'est l'image du dépôt qui paraît — exactement celle que le démarrage
+/// **natif** vient de peindre, si bien qu'il n'y a pas de rupture entre les
+/// deux. Le décor du portail, lui, prend la place à l'ouverture suivante.
 ///
-/// ## Le dégradé reste, il ne se remplace pas
+/// ## Le voile reste, il ne se remplace pas
 ///
 /// Il est peint **par-dessus** l'image, à demi opaque. Sans lui, un fond clair
 /// rendrait l'emblème blanc, le nom de l'église et le témoin de chargement
 /// illisibles — et ça ne se verrait qu'avec ce fond-là, c'est-à-dire un jour,
-/// chez quelqu'un d'autre.
+/// chez quelqu'un d'autre. Il n'y a plus de cas « sans image », donc plus de
+/// dégradé de marque ici : l'écran porte toujours une photographie.
 class SplashScreen extends ConsumerWidget {
   const SplashScreen({super.key});
 
@@ -48,24 +49,24 @@ class SplashScreen extends ConsumerWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (background != null)
-              Image(
-                image: background,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-              ),
+            Image(
+              image: background,
+              fit: BoxFit.cover,
+              // Une image illisible ne laisse pas un écran noir : la route pose
+              // déjà `AppBackground` sous cet écran, et le voile se peint
+              // par-dessus lui.
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
             DecoratedBox(
               decoration: BoxDecoration(
-                gradient: background == null
-                    ? AppColors.gradientPrimary
-                    : LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.45),
-                          Colors.black.withValues(alpha: 0.70),
-                        ],
-                      ),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.45),
+                    Colors.black.withValues(alpha: 0.70),
+                  ],
+                ),
               ),
               child: SafeArea(
                 child: Column(

@@ -87,6 +87,15 @@ final seasonBackgroundProvider = FutureProvider<ImageProvider?>((ref) async {
   return file == null ? null : FileImage(file);
 });
 
+/// **L'image du dépôt** — le dernier étage de la cascade, et celle que peint
+/// aussi le démarrage **natif** (`launch_background.xml`, `LaunchScreen`).
+///
+/// Les deux étages portent la même image, et c'est le but : le fidèle en voit
+/// **une seule**, du premier pixel jusqu'à l'accueil. Avant, il voyait un blanc
+/// uni puis une image — un clignotement qui fait paraître l'application lente à
+/// ouvrir.
+const String kAppBackgroundAsset = 'assets/images/live_bg.png';
+
 /// **Le fond déjà sur le disque au lancement**, posé par `main()`.
 ///
 /// L'écran de démarrage ne peut pas attendre : il dure le temps de résoudre une
@@ -95,13 +104,26 @@ final seasonBackgroundProvider = FutureProvider<ImageProvider?>((ref) async {
 /// ici en surcharge de provider.
 ///
 /// `null` est l'état **normal du premier lancement** : rien n'a encore été
-/// descendu. Le fond apparaît à l'ouverture suivante, et c'est exactement le
-/// contrat demandé.
+/// descendu. Le décor du portail apparaît à l'ouverture suivante, et c'est
+/// exactement le contrat demandé.
 ///
 /// **Le défaut est `null`, jamais une exception.** Un provider de démarrage qui
 /// lèverait hors surcharge ferait rougir tout test d'écran montant la coquille,
 /// pour un décor — et c'est la coquille entière qu'il faudrait alors surcharger.
-final startupBackgroundProvider = Provider<ImageProvider?>((ref) => null);
+final startupCachedBackgroundProvider = Provider<ImageProvider?>((ref) => null);
+
+/// **Le fond de l'écran de démarrage** — et le dernier étage de la cascade.
+///
+/// ⚠️ **L'ordre est la règle, et il ne s'inverse pas.** Ce que le portail a
+/// réglé — saison du jour ou décor par défaut — passe devant, dès qu'il est sur
+/// le disque ; l'image du dépôt ne paraît que quand **rien** n'est réglé. Poser
+/// l'image locale devant annulerait en silence un réglage que quelqu'un a pris
+/// la peine de faire au portail, et ça s'afficherait parfaitement.
+final startupBackgroundProvider = Provider<ImageProvider>(
+  (ref) =>
+      ref.watch(startupCachedBackgroundProvider) ??
+      const AssetImage(kAppBackgroundAsset),
+);
 
 /// Lit le fond **déjà sur le disque**, pour `main()`.
 ///
