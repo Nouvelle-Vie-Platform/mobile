@@ -11,7 +11,7 @@ void main() {
     testWidgets('SplashScreen se monte et affiche le nom', (tester) async {
       await pumpScreen(tester, const SplashScreen());
       expect(find.byType(SplashScreen), findsOneWidget);
-      expect(find.text('Maison du Miracle'), findsWidgets);
+      expect(find.text('Nouvelle Vie'), findsWidgets);
     });
 
     testWidgets('WelcomeScreen se monte', (tester) async {

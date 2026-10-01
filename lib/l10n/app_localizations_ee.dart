@@ -9,7 +9,7 @@ class AppLocalizationsEe extends AppLocalizations {
   AppLocalizationsEe([String locale = 'ee']) : super(locale);
 
   @override
-  String get appName => 'Maison du Miracle';
+  String get appName => 'Nouvelle Vie';
 
   @override
   String get splashTagline => 'Míeɖe gbeƒã kple xɔse.';

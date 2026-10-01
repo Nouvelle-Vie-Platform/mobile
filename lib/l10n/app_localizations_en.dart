@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Miracle House';
+  String get appName => 'Nouvelle Vie';
 
   @override
   String get splashTagline => 'We proclaim with faith.';

@@ -100,10 +100,10 @@ abstract class AppLocalizations {
     Locale('fr')
   ];
 
-  /// Nom de l'application
+  /// Nom **affiché** de l'application — celui que le fidèle lit sous l'icône, et le seul des trois noms du dépôt qui bouge. Il porte déjà « Nouvelle Vie » dans `android:label` et `CFBundleDisplayName` ; cette clé-ci disait encore « Maison du Miracle », et l'écran de démarrage le montrait. Ni le nom du paquet Dart (`maison_du_miracle`) ni l'identifiant d'application (`com.maisondumiracle.*`) ne sont concernés — voir « L'identité de l'application » dans CLAUDE.md. Le nom de l'**église**, lui, vit dans `aboutChurchName`
   ///
   /// In fr, this message translates to:
-  /// **'Maison du Miracle'**
+  /// **'Nouvelle Vie'**
   String get appName;
 
   /// No description provided for @splashTagline.
