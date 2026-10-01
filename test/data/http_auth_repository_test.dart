@@ -237,6 +237,38 @@ void main() {
       );
       expect(await api.readToken(), isNull);
     });
+
+    test('désabonne CET appareil du réveil push, et lui seul (#97)', () async {
+      // ⚠️ `deviceToken` est **optionnel** côté serveur, et l'omettre laisse
+      // l'appareil abonné aux notifications du compte qui vient de partir : sur un
+      // téléphone prêté — le cas réel dans une église —, le membre suivant verrait
+      // passer celles du précédent. Le serveur ne peut pas le deviner, la cible de
+      // réveil ne voyageant dans aucun en-tête.
+      final signingOut = HttpAuthRepository(
+        client: api,
+        pushTarget: () => 'fMEQ4t:APA91bH',
+      );
+      await api.saveToken('oat_1.token-a-revoquer');
+      serve((_) => jsonReply(200, {'revoked': true}));
+
+      await signingOut.signOut();
+
+      expect(adapter.lastRequest.path, '/auth/sign-out');
+      expect(adapter.lastBody, {'deviceToken': 'fMEQ4t:APA91bH'});
+    });
+
+    test('sans cible enregistrée, le corps reste absent', () async {
+      // Le validateur accepte l'absence du champ, pas une chaîne vide
+      // (`minLength(1)`) : envoyer `{'deviceToken': ''}` prendrait un 422, et une
+      // déconnexion ne doit pas échouer pour un push.
+      await api.saveToken('oat_1.token-a-revoquer');
+      serve((_) => jsonReply(200, {'revoked': true}));
+
+      await repository.signOut();
+
+      expect(adapter.lastRequest.path, '/auth/sign-out');
+      expect(adapter.lastRequest.data, isNull);
+    });
   });
 
   group('currentUser', () {

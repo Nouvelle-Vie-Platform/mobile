@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,8 +18,13 @@ import 'models/media_preferences.dart';
 import 'data/players/just_audio_content_player.dart';
 import 'data/players/playback_notifications.dart';
 import 'data/players/web_content_player.dart';
+import 'data/push/fcm_push_transport.dart';
+import 'data/push/push_transport.dart';
+import 'data/push/wake_notifier.dart';
+import 'firebase_options.dart';
 import 'state/media_settings_providers.dart';
 import 'state/player_providers.dart';
+import 'state/push_providers.dart';
 import 'state/startup_providers.dart';
 import 'state/season_providers.dart';
 
@@ -79,6 +86,14 @@ Future<void> main() async {
 
   final player = await _startPlayback();
 
+  // (4) **Le transport de réveil**, choisi ici et nulle part ailleurs — c'est le
+  // seul fichier du dépôt qui sache que Firebase existe, exactement comme il est le
+  // seul à savoir qu'il y a deux lecteurs. `null` veut dire « cet appareil n'a pas
+  // de push », et l'application tourne alors sur le double inerte
+  // (`pushTransportProvider`) : c'est le cas du web, de macOS, et d'un Android
+  // dé-googlé jusqu'à la tranche 4 (#99).
+  final push = await _startPush();
+
   // (5) **Le fond déjà sur le disque**, lu avant le premier frame. L'écran de
   // marque dure le temps de résoudre une session : un fond qui arriverait après
   // lui n'aurait servi à personne. Pas de réseau, pas de base — un seul fichier
@@ -101,6 +116,18 @@ Future<void> main() async {
       startupVaultProvider.overrideWithValue(vault),
       deviceBootstrapProvider.overrideWithValue(bootstrap),
       startupCachedBackgroundProvider.overrideWithValue(startupBackground),
+      // **Le transport de réveil et le tap, posés ensemble ou pas du tout.** Sans
+      // transport il n'y a aucune notification locale à recevoir, et initialiser le
+      // greffon de notifications pour rien coûterait un canal natif au démarrage.
+      //
+      // ⚠️ `wakeNotifierProvider` n'est **pas** surchargé, et ce n'est pas un oubli :
+      // l'affichage appartient au réveil de l'application *fermée*, dans son isolate
+      // (`push_background.dart`). Application ouverte, les écrans se repeignent du
+      // magasin — voir `push_providers.dart`.
+      if (push != null) ...[
+        pushTransportProvider.overrideWithValue(push),
+        wakeTapsProvider.overrideWithValue(LocalWakeTaps()),
+      ],
     ],
   );
 
@@ -150,6 +177,48 @@ Future<void> main() async {
       child: const MaisonDuMiracleApp(),
     ),
   );
+}
+
+/// **Choisit le transport de réveil** (PRD D4), et rend `null` quand il n'y en a
+/// pas — ce qui est un mode de fonctionnement normal et non une panne.
+///
+/// Trois sorties par `null`, et chacune est un vrai cas du parc :
+///
+/// 1. **sans backend** — il n'y a personne à qui déclarer une cible de réveil ;
+/// 2. **plateforme hors jeu** — macOS, Linux, Windows ne sont pas du jeu fermé de
+///    `POST /devices/tokens`, et le **web** n'a aucune application déclarée dans le
+///    projet Firebase (`firebase_options.dart` y lève exprès). Écarté **ici**, à un
+///    seul endroit, plutôt que rattrapé plus bas ;
+/// 3. **Firebase n'a pas démarré** — et c'est aussi par là que passe l'Android
+///    dé-googlé. `Firebase.initializeApp()` y réussit pourtant : c'est `getToken()`
+///    qui ne rend rien, donc l'absence de cible, donc aucun enregistrement. Le
+///    résultat est le même — pas de push, application intacte —, et c'est
+///    exactement là que la tranche 4 (#99) branchera UnifiedPush : une branche de
+///    plus dans cette fonction, et rien d'autre à reprendre.
+///
+/// L'ordre des deux appels du `try` compte : `onBackgroundMessage` **doit** être
+/// posé avant que l'application ne commence à tourner, et il se pose une fois pour
+/// toute la vie du processus. Le poser plus tard — à la première connexion, par
+/// exemple — laisserait tomber les réveils reçus entre-temps.
+Future<PushTransport?> _startPush() async {
+  if (!AppEnv.useBackend) return null;
+
+  final platform = devicePlatform();
+  if (platform == null || platform == 'web') return null;
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseMessaging.onBackgroundMessage(fcmBackgroundWake);
+    return FcmPushTransport();
+  } catch (error, stackTrace) {
+    // Même `try` que le lecteur : un transport qui ne démarre pas ne doit jamais
+    // empêcher l'application de s'ouvrir. Une médiathèque muette vaut mieux qu'une
+    // application qui refuse de s'ouvrir, et un téléphone sans réveil encore plus.
+    debugPrint('Le réveil push n\'a pas démarré : $error\n$stackTrace');
+    return null;
+  }
 }
 
 /// Monte la lecture et rend le lecteur à brancher sur `contentPlayerProvider`.

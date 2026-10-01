@@ -481,6 +481,107 @@ DELETE FROM pending_group_messages
       updateKind: UpdateKind.delete,
     );
   }
+
+  /// **Un message, avec de quoi l'annoncer** — ou `null` si le magasin ne l'a pas.
+  ///
+  /// La seule lecture de ce DAO qui ne peint pas un écran : elle sert la
+  /// notification locale du réveil push (#97). Elle existe ici et non dans
+  /// `lib/data/push/` parce que c'est une **lecture du domaine Échanges**, et que
+  /// la règle du dépôt est « un DAO par domaine » — le module de push ne doit pas
+  /// se mettre à écrire du SQL sur `group_messages`.
+  ///
+  /// Trois choses qu'elle ne fait **pas**, et qui sont le contrat de la tranche :
+  ///
+  /// 1. elle ne lit **rien** de la charge utile du push. Son seul paramètre est un
+  ///    identifiant, et tout ce qu'elle rend vient du magasin. C'est ce qui fait
+  ///    qu'une notification ne peut pas afficher un message absent de la base
+  ///    (ADR-0006) ni ouvrir un fil qui ne le contient pas ;
+  /// 2. elle ne devine **aucun** nom : `authorName` reste nul quand `profiles` n'a
+  ///    pas encore livré l'auteur, quand le serveur parle (`isSystem`), et quand le
+  ///    compte a été supprimé (ADR-0032). L'absence s'affiche comme une absence ;
+  /// 3. elle ne filtre pas sur mon appartenance. Le serveur ne réveille que les
+  ///    membres d'un groupe, et un `group_messages` en magasin y est **déjà**
+  ///    arrivé par mon périmètre : filtrer ici referait, moins bien, le travail de
+  ///    `ResolveDeviceTokens`.
+  ///
+  /// `null` est une réponse **normale** et fréquente : la synchronisation
+  /// déclenchée par le réveil peut avoir échoué (avion), ou le message avoir été
+  /// retiré par la modération entre l'envoi du push et le tirage. Il n'y a alors
+  /// rien à annoncer, et c'est très exactement ce qu'il faut faire.
+  Future<MessageAnnouncement?> announcementFor(String messageId) {
+    return customSelect(
+      '''
+SELECT
+  m.id                AS message_id,
+  m.group_id          AS group_id,
+  m.body              AS body,
+  m.author_id         AS author_id,
+  m.is_system         AS is_system,
+  g.name              AS group_name,
+  g.is_direct         AS is_direct,
+  author.display_name AS author_name
+FROM group_messages AS m
+LEFT JOIN "groups" AS g ON g.id = m.group_id
+LEFT JOIN profiles AS author ON author.id = m.author_id
+WHERE m.id = ?1
+''',
+      variables: [Variable<String>(messageId)],
+      readsFrom: {groupMessages, groups, profiles},
+    ).map(_announcement).getSingleOrNull();
+  }
+
+  static MessageAnnouncement _announcement(QueryRow row) => MessageAnnouncement(
+        messageId: row.read<String>('message_id'),
+        groupId: row.read<String>('group_id'),
+        // La jointure est **externe** : `groups` n'a pas de tombstone mais rien ne
+        // garantit qu'elle soit arrivée avant le message (`profiles` est la seule
+        // contrainte d'ordre écrite par le cadrage de #96).
+        groupName: row.read<String?>('group_name'),
+        isDirect: row.read<bool?>('is_direct') ?? false,
+        body: row.read<String>('body'),
+        authorId: row.read<String?>('author_id'),
+        isSystem: row.read<bool>('is_system'),
+        authorName: row.read<String?>('author_name'),
+      );
+}
+
+/// Ce que le magasin sait d'un message qu'un réveil vient d'annoncer (#97).
+///
+/// Elle porte les colonnes, elle ne tranche rien : c'est
+/// `lib/data/push/wake_notifier.dart` qui en dresse un titre et un corps, et
+/// `messageOriginOf` (`models/echanges_view.dart`) qui lit le **couple**
+/// `(authorId, isSystem)` partout ailleurs. Ne jamais tester [authorId] seul : le
+/// nul a deux sens depuis la suppression de compte (ADR-0032).
+@immutable
+class MessageAnnouncement {
+  const MessageAnnouncement({
+    required this.messageId,
+    required this.groupId,
+    required this.groupName,
+    required this.isDirect,
+    required this.body,
+    required this.authorId,
+    required this.isSystem,
+    required this.authorName,
+  });
+
+  final String messageId;
+
+  /// Lu du **magasin**, et non du push : c'est lui qui sert de cible au tap, et il
+  /// désigne donc un fil dont on sait qu'il contient le message.
+  final String groupId;
+
+  /// `null` quand `groups` n'est pas encore arrivée en magasin.
+  final String? groupName;
+
+  final bool isDirect;
+  final String body;
+  final String? authorId;
+  final bool isSystem;
+
+  /// `null` dans **trois** cas distincts — profil pas encore reçu, message
+  /// système, auteur retiré. Aucun ne se remplace par un nom inventé.
+  final String? authorName;
 }
 
 /// Une ligne de la liste des conversations — ce que la tuile affiche, et rien de

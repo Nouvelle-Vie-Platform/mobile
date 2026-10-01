@@ -2,6 +2,10 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Le réveil push (#97). **Après** le greffon Android : il enrichit la variante,
+    // qui n'existe pas encore avant. Sa version est déclarée dans
+    // `settings.gradle.kts`, qui dit aussi pourquoi il est obligatoire.
+    id("com.google.gms.google-services")
 }
 
 android {

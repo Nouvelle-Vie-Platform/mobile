@@ -11,6 +11,7 @@ import 'router/app_router.dart';
 import 'state/auth_providers.dart';
 import 'state/downloads_providers.dart';
 import 'state/locale_providers.dart';
+import 'state/push_providers.dart';
 import 'state/session_gate.dart';
 import 'state/startup_providers.dart';
 import 'state/sync_providers.dart';
@@ -32,6 +33,9 @@ class MaisonDuMiracleApp extends ConsumerStatefulWidget {
 class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   /// L'abonnement qui tient le porte-intention vivant — voir [initState].
   ProviderSubscription<SessionIntent?>? _intents;
+
+  /// L'abonnement aux réveils reçus **application ouverte** — voir [_handleWake].
+  StreamSubscription<Map<String, Object?>>? _wakes;
 
   @override
   void initState() {
@@ -105,13 +109,77 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
         // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
         // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.
         unawaited(scheduler.start());
+
+        // **Le réveil push** (#97), posé au même endroit et pour la même raison que
+        // le premier cycle : il a besoin d'un porteur, et `awaitToken()` vient de
+        // l'attendre. `POST /devices/tokens` accepte les deux porteurs — un invité
+        // s'enregistre donc aussi, et c'est le point de la tranche 2b serveur : un
+        // invité qu'on ne peut pas prévenir d'un direct est un invité qui ne revient
+        // pas.
+        //
+        // Rien n'est attendu : l'enregistrement est muet, et le premier écran n'a
+        // pas à dépendre d'un aller-retour de plus. Sans transport (le défaut), tout
+        // ceci est inerte et ne coûte pas un canal natif.
+        unawaited(ref.read(pushEnrolmentProvider).start());
+        _wakes = ref
+            .read(pushTransportProvider)
+            .wakes
+            .listen(_handleWake, onError: _ignoreWakeError);
+        unawaited(ref.read(wakeTapsProvider).listen(_openConversation));
       });
     }
+  }
+
+  /// **Un réveil reçu application ouverte.**
+  ///
+  /// Il passe par le handler, qui est le **même** que celui du réveil de
+  /// l'application fermée : la règle « on synchronise, puis on lit le magasin » n'est
+  /// écrite qu'une fois. Ce qui diffère est injecté — ici un cycle du planificateur
+  /// et un notifieur inerte (voir `push_providers.dart`).
+  void _handleWake(Map<String, Object?> data) {
+    if (!mounted) return;
+    unawaited(ref.read(pushWakeHandlerProvider).handle(data));
+  }
+
+  /// Un flux de réveils en erreur ne doit pas remonter en « unhandled async
+  /// error » : personne n'attend ce `Future`, et un push raté n'est pas une panne
+  /// d'application.
+  void _ignoreWakeError(Object error) {
+    debugPrint('[push] réveil ignoré : $error');
+  }
+
+  /// **Le tap sur une notification de réveil ouvre la conversation.**
+  ///
+  /// `goNamed` et non `pushNamed` : la notification peut avoir **lancé**
+  /// l'application, et il n'y a alors aucune pile à empiler. La `GoRouter` est lue
+  /// dans le conteneur et non sur un `BuildContext` capturé — la contrainte de tout
+  /// geste que `requireSession()` peut rejouer après un détour par la connexion.
+  ///
+  /// L'identifiant vient du **magasin** (`MessageAnnouncement.groupId`), donc le fil
+  /// ouvert contient bien le message annoncé.
+  ///
+  /// ⚠️ **`requireSession()`, et non une navigation nue.** `/group-chat/:id` est dans
+  /// `memberOnlyRoutes` : naviguer tout droit ferait reconduire la personne à
+  /// l'accueil par la garde, et le fil disparaîtrait sous ses doigts sans qu'elle
+  /// apprenne pourquoi — le cul-de-sac exact que le mode invité existe pour
+  /// supprimer (`test/screens/guest_affordances_test.dart` le verrouille sur la
+  /// source). Le cas n'est pas théorique : la notification **reste dans la barre**
+  /// après une déconnexion ou une session expirée, et c'est précisément alors qu'on
+  /// la touche.
+  void _openConversation(String groupId) {
+    if (!mounted) return;
+    ref.requireSession(
+      action: () => ref.read(routerProvider).goNamed(
+        AppRoute.groupChat,
+        pathParameters: {'id': groupId},
+      ),
+    );
   }
 
   @override
   void dispose() {
     _intents?.close();
+    unawaited(_wakes?.cancel());
     ApiClient.instance.onUnauthorized = null;
     super.dispose();
   }

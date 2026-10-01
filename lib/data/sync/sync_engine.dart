@@ -91,12 +91,14 @@ class SyncEngine {
     int pageLimit = kSyncPageLimit,
     Future<int?> Function()? branchId,
     Future<void> Function(int branchId)? onUnknownBranch,
+    bool persistsScopeVersion = true,
   })  : _api = api,
         _dao = dao,
         _collections = collections ?? syncedCollections(),
         _pageLimit = pageLimit,
         _branchId = branchId ?? _noBranchPreference,
-        _onUnknownBranch = onUnknownBranch;
+        _onUnknownBranch = onUnknownBranch,
+        _persistsScopeVersion = persistsScopeVersion;
 
   static Future<int?> _noBranchPreference() async => null;
 
@@ -120,6 +122,24 @@ class SyncEngine {
   /// `null` par défaut — le socle ne dépend pas de la préférence de branche, et
   /// sans ce rappel un 422 remonte comme n'importe quelle autre panne.
   final Future<void> Function(int branchId)? _onUnknownBranch;
+
+  /// **Ce moteur a-t-il le droit de persister la version de périmètre ?**
+  ///
+  /// `true` pour le moteur de l'application, qui parcourt le registre **entier**.
+  /// `false` pour un moteur **restreint** à quelques collections — celui du réveil
+  /// push (#97), qui ne tire que ce que le réveil nomme.
+  ///
+  /// C'est le corollaire direct de la règle 2 (ADR-0027), et l'oublier serait la
+  /// faute la plus coûteuse de ce fichier. La `scope_version` est **globale** : la
+  /// persister après un cycle qui n'a visité que les quatre collections d'un réveil
+  /// éteindrait le resync que les dix-neuf autres n'ont pas encore fait, et le
+  /// manifeste ne le redemanderait **jamais** — il recevrait une version à jour. Le
+  /// magasin garderait pour toujours des lignes sorties du périmètre, sans qu'aucune
+  /// erreur ne le signale.
+  ///
+  /// Ne rien persister ne coûte rien en retour : le cycle complet suivant repart
+  /// avec l'ancienne version, et le serveur lui redemande ce qu'il doit.
+  final bool _persistsScopeVersion;
 
   /// **Un cycle complet.**
   ///
@@ -176,8 +196,9 @@ class SyncEngine {
     }
 
     // … et persistée **en dernier**, une fois que chaque collection marquée a
-    // remplacé et re-tiré jusqu'à `has_more: false`.
-    if (retained != null) {
+    // remplacé et re-tiré jusqu'à `has_more: false`. Un moteur **restreint** ne la
+    // persiste pas du tout : voir [_persistsScopeVersion].
+    if (retained != null && _persistsScopeVersion) {
       await _dao.writeScopeVersion(retained);
       report.scopeVersion = retained;
     }

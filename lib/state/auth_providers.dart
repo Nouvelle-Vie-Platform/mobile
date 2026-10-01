@@ -12,6 +12,7 @@ import '../data/repositories/playback_progress_handover.dart';
 import '../models/models.dart';
 import 'branch_scope_providers.dart';
 import 'playback_progress_providers.dart';
+import 'push_providers.dart';
 import 'startup_providers.dart';
 import 'sync_providers.dart';
 
@@ -30,10 +31,16 @@ import 'sync_providers.dart';
 /// déconnecter retombe sur le catalogue et non sur l'écran de connexion. Le
 /// paramètre est facultatif — `null` = pas de mode invité câblé, et
 /// `HttpAuthRepository` se comporte alors exactement comme avant.
+/// La **cible de réveil** lui est passée par un rappel, pour la même raison que le
+/// porteur d'appareil lui est passé tout court : `POST /auth/sign-out` doit désabonner
+/// cet appareil-ci des notifications du compte qui part, sinon le membre suivant d'un
+/// téléphone prêté verrait passer celles du précédent (#97). Un rappel et non une
+/// valeur — l'enregistrement part au premier frame, après la construction d'ici.
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   if (!AppEnv.useBackend) return InMemoryAuthRepository();
   return HttpAuthRepository(
     device: ref.watch(deviceBootstrapProvider).repository,
+    pushTarget: () => ref.read(pushEnrolmentProvider).target,
   );
 });
 

@@ -85,6 +85,33 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   `dart:html` (retiré du jeu en Dart 3.12, comme `package:js`). Déjà présent en
   transitif ; déclaré parce qu'on l'importe soi-même. **Un seul fichier de
   `lib/` l'importe**, `hls_content_player.dart`.
+- **`firebase_core ^4.15` + `firebase_messaging ^16.7` +
+  `flutter_local_notifications ^22.3`** (#97) — le **réveil push**. Voir « Le
+  réveil push » plus bas.
+
+  Les trois sont des **Swift Packages** (`Package.swift` présent dans chacun) :
+  CocoaPods ne ressuscite pas, et l'état « ni `Podfile`, ni `Pods/` » tient.
+  `firebase_core` exige `IPHONEOS_DEPLOYMENT_TARGET 15.0` — déjà la valeur du
+  projet, rien n'a eu à bouger. Android exige en revanche le greffon Gradle
+  `com.google.gms.google-services`, ajouté à `settings.gradle.kts` et appliqué
+  dans `android/app/build.gradle.kts` : **il n'est pas facultatif**, même si les
+  options Firebase sont données côté Dart — le service natif de FCM démarre
+  avant tout code Dart quand un réveil arrive sur une application fermée.
+
+  `firebase_messaging` est lu **uniquement** derrière `PushTransport`
+  (`lib/data/push/`) et `flutter_local_notifications` uniquement derrière
+  `WakeNotifier` / `WakeTaps`, exactement comme `just_audio` derrière
+  `ContentPlayer` — et `test/data/push/push_seam_test.dart` le vérifie sur la
+  source.
+
+  ⚠️ **La règle « aucun CDN » tient, et c'est `_startPush()` qui la tient.**
+  `firebase_core_web` descend le SDK JS de Firebase depuis `gstatic.com` — mais
+  **seulement** à l'appel de `Firebase.initializeApp()`, et le web est écarté
+  **avant** cet appel (aucune application web n'est déclarée dans le projet
+  Firebase, `firebase_options.dart` y lève exprès). Rien n'est donc chargé, et
+  `web/` n'a aucun actif de plus à versionner. Le jour où le web aurait du push,
+  c'est cette règle-là qu'il faudrait rouvrir d'abord. Aucune des trois
+  dépendances n'a bougé `drift`, `sqlite3` ni `hls.js` : pas de `make web-assets`.
 
 ## Commandes
 ```bash
@@ -170,6 +197,9 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
     derrière une abstraction pour la même raison (#57). L'implémentation réelle
     ne lève **jamais** ; l'inconnu se rend en `null`.
   - `players/` — les lecteurs, derrière une abstraction. Voir ci-dessous.
+  - `push/` — **le réveil push** (#97), derrière `PushTransport` et son double
+    inerte. Voir « Le réveil push » plus bas : c'est la couture qui fera de la
+    tranche 4 (UnifiedPush, #99) une addition et non une refonte.
 
 ### Le lecteur de la médiathèque (`lib/data/players/`) — #39, #46
 `ContentPlayer` / `ContentPlayback` : le contrat, et la valeur immuable que
@@ -223,9 +253,10 @@ sur iOS. Aucun décodage logiciel, aucun greffon JS — c'est le web, sans
 `just_audio`, qui est le cas particulier.
 
 **Les cibles de déploiement ont de la marge** : le projet est à `minSdk 24`
-(Android) et `IPHONEOS_DEPLOYMENT_TARGET 13.0` (iOS), contre 19 et 12 exigés
+(Android) et `IPHONEOS_DEPLOYMENT_TARGET 15.0` (iOS), contre 19 et 12 exigés
 par la pile audio. Rien n'a eu à bouger pour l'ajouter, et rien n'a à bouger
-pour la faire évoluer.
+pour la faire évoluer — `firebase_core` exige exactement 15.0, et c'est déjà la
+valeur du projet.
 
 `minSdk` valait 23 jusqu'à la montée de `flutter_secure_storage` en v10. Ce 23
 était une portée **nominale** : Flutter 3.35 a relevé son propre minimum à 24
@@ -541,12 +572,21 @@ son `catch` donne la réponse en une exécution. Ensuite, **un fixture de
 client** : un fixture qui recopie l'hypothèse du client ne teste plus rien
 (l'en-tête du fichier donne la source de chaque forme, colonne par colonne).
 
-Déclenchement : **ouverture, foreground, tirer-pour-rafraîchir**, et depuis #101
-le **signal d'un fil ouvert** (`SyncTrigger.openThread` — un quatrième appel à
-`trigger`, pas un quatrième mécanisme). *Jamais de polling* — aucun `Timer` dans
-`lib/data/sync/`, et un test le vérifie ; la minuterie de réouverture d'un canal
-SSE vit dans `lib/data/realtime/`, ne demande **aucun** cycle quand elle échoue, et
-ne tourne que pendant qu'un écran est affiché.
+Déclenchement : **ouverture, foreground, tirer-pour-rafraîchir**, plus le **signal
+d'un fil ouvert** (`SyncTrigger.openThread`, #101) et le **réveil push**
+(`SyncTrigger.pushWake`, #97). Tous deux se sont branchés là où le fichier
+l'annonçait — un appel de plus à `trigger`, et rien d'autre. *Jamais de
+polling* — aucun `Timer` dans `lib/data/sync/`, et un test le vérifie ; la
+minuterie de réouverture d'un canal SSE vit dans `lib/data/realtime/`, ne demande
+**aucun** cycle quand elle échoue, et ne tourne que pendant qu'un écran est
+affiché.
+
+Le réveil d'une application **fermée**, lui, ne passe pas par le planificateur :
+il vit dans un autre isolate et monte son propre moteur, **restreint** aux
+collections que le push nomme et donc `persistsScopeVersion: false`. Voir « Le
+réveil push » plus bas, et l'en-tête de ce drapeau dans `sync_engine.dart` — la
+`scope_version` est globale, et la persister après un cycle partiel éteindrait un
+resync que le manifeste ne redemanderait jamais.
 Le curseur du manifeste (`current_cursor`) est la **borne haute du périmètre**,
 pas un accusé de réception : il ne devient jamais le curseur local.
 - `lib/state/` — providers Riverpod :
@@ -1353,6 +1393,162 @@ tombé — et les tests passent par le paramètre nommé `channel:`.
   l'overlay au dépilement. Un acteur différent est une **autre clé**, donc un élément
   neuf — rien n'est invalidé. Les écrans lisent `echangesActorProvider` et le passent ;
   `test/screens/guest_tabs_test.dart` verrouille les deux gestes qui l'avaient révélé.
+
+### Le réveil push (#97) — `lib/data/push/`
+
+PRD autoritaire : `server-portal/docs/prd/notifications-push.md` (D4, D6, D7, D8 et
+§ 4). Cadrage : `server-portal/docs/echanges-branchement-plan.md`, tranche 2.
+
+Le serveur savait réveiller un téléphone depuis des mois — trois pushers FCM, un
+registre de jetons, une trentaine de sites d'appel — et le mobile était à **zéro**.
+Il ne l'est plus. Ce que la tranche a posé tient en une règle et une couture.
+
+#### **La règle** : la notification se dresse depuis le magasin, jamais depuis le push
+
+Les réveils de groupe et de synchronisation sont des messages **`data` silencieux**
+qui ne portent **jamais** de contenu (ADR-0006 : la base est la seule source de
+vérité, le push n'est qu'un accélérateur de notification) :
+
+```
+{ type: 'group_message', groupId, messageId }   // GroupWakePayload
+{ type: 'sync_nudge',    collection }           // SyncNudgePayload
+```
+
+`PushWakeHandler` synchronise, **lit le magasin**, et dresse la notification locale
+depuis ce que Drift contient. Une notification écrite depuis la charge utile
+afficherait un message qui n'est pas en base, et le tap ouvrirait un fil qui ne le
+contient pas.
+
+Et ce n'est pas une discipline à tenir, c'est **structurel** : `PushWake`
+(`push_wake.dart`) n'a **aucun champ de texte**, et `readPushWake` jette toute clé
+qu'il ne nomme pas. Un `body` ou un `title` glissé dans un push — par un
+intermédiaire, par quelqu'un qui pousserait sur un jeton volé — n'a nulle part où
+atterrir. Le test le vérifie en positif *et* en négatif
+(`test/data/push/push_wake_handler_test.dart`).
+
+**Pas de ligne en magasin, pas de notification.** Le cas est normal et fréquent :
+cycle échoué, ou message retiré par la modération entre l'envoi du push et le
+tirage. Annoncer « Nouveau message » serait affirmer sur la seule foi du push
+l'existence de ce que la base ne porte pas.
+
+Les notifications **visibles** (annonces, changements d'événement) arrivent à
+l'inverse avec un bloc `notification` complet : c'est l'OS qui les dessine, et leur
+`type` est inconnu de `readPushWake`, donc **ignoré** — jamais rabattu sur un réveil
+de substitution (la règle de `destinationKind`, #82).
+
+#### **La couture** : `PushTransport`, et son double inerte
+
+Exigée par le § 4 du PRD, et elle existe pour une raison datée : la tranche 4
+(UnifiedPush, #99) doit être une **addition**. Ce qui change d'un transport à
+l'autre est ce que `push_transport.dart` déclare — la clé annoncée au serveur, comment
+obtenir une cible, par où les réveils arrivent application ouverte. Tout le reste est
+écrit **une fois** et ne connaît aucun transport :
+
+| pièce | fichier |
+|---|---|
+| l'enregistrement (`POST /devices/tokens`) | `push_registrar.dart` |
+| le moment de l'enregistrement et la rotation | `push_enrolment.dart` |
+| la lecture d'une charge utile | `push_wake.dart` |
+| synchroniser puis notifier depuis le magasin | `push_wake_handler.dart` |
+| afficher / recevoir le tap | `wake_notifier.dart` |
+| le réveil d'une application fermée | `push_background.dart` |
+| **FCM** | `fcm_push_transport.dart` — le seul qui connaisse Firebase |
+
+**Le double inerte est le défaut de production**, exactement comme
+`InertContentPlayer` : `pushTransportProvider` le rend, et `main.dart` — seul endroit
+du dépôt qui sache que Firebase existe — le surcharge quand un transport a vraiment
+démarré. Conséquences : aucun test ne touche Firebase, et l'application **démarre et
+fonctionne entièrement sans push** (le web, macOS, un Android dé-googlé, un refus de
+permission).
+
+**La sélection de transport (D4) se fait par le résultat, pas par une sonde.**
+`Firebase.initializeApp()` réussit sans Play Services ; c'est `getToken()` qui ne
+rend rien. Interroger `GoogleApiAvailability` demanderait une dépendance native de
+plus pour une réponse qui mentirait encore. On tente, et l'absence de cible **est**
+la réponse — c'est exactement là que la tranche 4 se branchera.
+
+#### Huit points qui se ratent en silence
+
+1. **Le réveil d'une application fermée vit dans un autre isolate**, et rien de ce
+   que `main()` a construit n'y existe. `push_background.dart` remonte tout, puis
+   referme la base. En particulier : `DartPluginRegistrant.ensureInitialized()`
+   d'abord (sans quoi le coffre et SQLite lèvent), et
+   **`HttpDeviceRepository.wire()`** — sans lui, un 401 sur un jeton d'appareil ne se
+   renouvelle pas, `ApiClient` **purge le coffre**, et quelqu'un se retrouve
+   déconnecté par un réveil.
+2. **Le cycle du fond est restreint, donc il ne persiste PAS la `scope_version`**
+   (`SyncEngine(persistsScopeVersion: false)`). C'est le corollaire de la règle 2
+   d'ADR-0027 : elle est **globale**, et la persister après un cycle qui n'a visité
+   que quatre collections éteindrait le resync des dix-neuf autres — que le manifeste
+   ne redemanderait **jamais**.
+3. **Le réveil reçu application ouverte passe par `SyncScheduler`**
+   (`SyncTrigger.pushWake`, le quatrième déclencheur), et c'est un cycle **complet**.
+   Lancer un moteur en direct mettrait deux cycles sur les mêmes curseurs ; et un
+   cycle restreint posé dans le planificateur ferait qu'un retour au premier plan le
+   **rejoindrait** au lieu de tout tirer.
+4. **Application ouverte, on ne notifie pas** : les écrans se repeignent du magasin,
+   et une bannière par-dessus l'écran qu'on regarde serait du bruit. C'est
+   `wakeNotifierProvider` (inerte) qui le dit, et le même `PushWakeHandler` sert les
+   deux chemins — ce qui change est **injecté**, jamais décidé par un drapeau.
+   L'immédiateté d'un fil **ouvert** est le sujet du temps réel SSE (#101).
+5. **Un réveil de groupe tire quatre collections**, et la plus facile à croire
+   superflue est `groups` : « le groupe est déjà en magasin ». Vrai **sauf au premier
+   message après une installation**, c'est-à-dire exactement le réveil qu'on remarque
+   — et sans le nom du fil la notification n'a pas de titre, donc se tait.
+6. **`POST_NOTIFICATIONS` n'est demandée qu'une fois**, par
+   `requestPlaybackNotificationPermission()` au démarrage : c'est **une** permission
+   système pour trois besoins (lecteur, téléchargement, réveil), et la redemander
+   poserait deux fenêtres l'une sur l'autre au premier lancement. Le jour où le
+   lecteur partirait, c'est cette ligne-là qu'il faudrait **déplacer**.
+7. **Le nom du canal Android est en français en dur** (`kWakeChannelName`), comme
+   `'Lecture des messages'` dans `main.dart` et pour la même raison : un canal se crée
+   dans un isolate **sans `BuildContext` ni `Localizations`**, et Android retient le
+   libellé du jour de la création. Le reste de la notification, lui, ne traverse aucun
+   `.arb` — c'est du contenu, pas de l'interface.
+8. **Le `deviceToken` part avec `POST /auth/sign-out`**, et ce n'est pas optionnel
+   pour nous. La route l'accepte comme facultatif ; l'omettre laisse l'appareil
+   **abonné aux notifications du compte qui vient de partir**, et sur un téléphone
+   prêté le membre suivant verrait passer celles du précédent. À l'inverse, **rien
+   n'est à rappeler à la connexion** : le serveur rattache l'enregistrement au compte
+   de lui-même (`ClaimDevicePushRegistrations`) et le rend à l'appareil à la
+   déconnexion.
+
+#### Le contrat de la route, et ses invariants
+
+`POST /devices/tokens`, guards `['api', 'device']` — **un appareil sans compte peut
+s'enregistrer**, et c'est le point de la tranche 2b serveur (#408) : un invité qu'on
+ne peut pas prévenir d'un direct est un invité qui ne revient pas. Pas de préfixe
+`/api` (ADR-0004), corps en camelCase :
+
+```
+token      string, 1..2048
+platform   'ios' | 'android' | 'web'
+transport  'fcm' | 'unifiedpush'   (optionnel, défaut 'fcm')
+```
+
+⚠️ **Aucun `deviceId` dans le corps** : l'identité d'appareil est lue sur le jeton
+d'authentification, une chaîne fournie par le client étant **falsifiable**. Ne pas
+« compléter » ce corps — un test le verrouille.
+
+L'unicité porte sur `token` **seul**, donc réenregistrer **transfère la ligne** au
+nouveau porteur (téléphone revendu, mobile familial). Plafonds serveur : 10 par
+utilisateur, 3 par appareil, les moins récemment vus évincés d'abord. L'appel est
+**idempotent par conception** et muet : un refus coûte un réveil, pas une
+fonctionnalité, et se rejoue au démarrage suivant.
+
+#### ⚠️ **Aucun push n'arrivera sur iPhone**, et ce n'est pas un défaut du code
+
+Sur iOS, FCM passe **obligatoirement** par APNs, et la clé d'authentification APNs
+exige un compte Apple Developer Program qui n'est pas pris (PRD §6). Le chemin iOS
+est écrit entier — `UIBackgroundModes: remote-notification`, `Runner.entitlements`
+avec `aps-environment`, `GoogleService-Info.plist` enregistré dans la cible Runner (et
+**pas** dans `RunnerTests`) — et il s'allumera le jour où la clé sera téléversée. Ne
+pas passer de temps à diagnostiquer une non-livraison sur iPhone : elle est attendue.
+C'est aussi la raison d'être de la décision 12 du cadrage, le temps réel SSE (#101).
+
+Hors périmètre, nommément : la *Notification Service Extension* iOS (D8), les OEM
+Android tueurs de fond, le groupage et les badges, le choix manuel du transport,
+UnifiedPush (#99), et l'UX de réveil des domaines autres que les messages.
 
 ### Brancher un vrai backend : **un repository dédié asynchrone par domaine**
 Surcharger `churchRepositoryProvider` **ne suffit pas** et n'est pas le motif :
@@ -2205,9 +2401,12 @@ n'est lu par personne sur un téléphone, et le corriger est un autre sujet.
 ## iOS : **plus de CocoaPods**, tout passe par Swift Package Manager
 
 `ios/` n'a **ni `Podfile`, ni `Podfile.lock`, ni `Pods/`**, et c'est un état à
-tenir. Les huit plugins iOS sont des Swift Packages ; le dernier qui ne l'était
+tenir. Les plugins iOS sont tous des Swift Packages ; le dernier qui ne l'était
 pas, `flutter_secure_storage`, l'est devenu en v10 (implémentation fédérée
-`flutter_secure_storage_darwin`, qui porte un `Package.swift`). Flutter le
+`flutter_secure_storage_darwin`, qui porte un `Package.swift`). Les trois du
+réveil push (#97) ont été vérifiés avant d'être ajoutés — `firebase_core`,
+`firebase_messaging` et `flutter_local_notifications` portent chacun un
+`ios/<nom>/Package.swift`. Flutter le
 confirme de lui-même au build — *« All plugins found for ios are Swift
 Packages »* — et le `pod install` a disparu du cycle.
 
@@ -2250,6 +2449,10 @@ Maquette UI riche et cohérente. **Il ne reste de fictif que les prières et les
 notes** (`ChurchRepository`, deux méthodes) : la rubrique « Échanges » a été
 branchée par #96, et `InMemoryChurchRepository` — qui était le **seul** double en
 mémoire câblé en production sans condition — ne sert plus rien qui mente.
-Prochaines grandes étapes : backend + auth réels, dons/paiement, notifications,
-finir d'habiller les écrans restants (onboarding, login/register, live, dons,
-notes, nouvelle requête).
+Le **réveil push** est branché depuis #97 — jeton enregistré, réveil reçu,
+synchronisation ciblée, notification locale lue du magasin —, et il est **muet sur
+iPhone** tant qu'il n'y a pas de clé APNs (donc pas de compte Apple Developer
+Program). Prochaines grandes étapes : dons/paiement, UnifiedPush (#99) pour
+l'Android dé-googlé, la voix et l'image dans les échanges (tranche 3), finir
+d'habiller les écrans restants (onboarding, login/register, live, dons, notes,
+nouvelle requête).
