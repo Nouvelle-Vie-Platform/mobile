@@ -386,6 +386,12 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   serveur, effacer une surcharge y écrit `null`, et c'est ce `null` qui porte le
   retour au mot du dépôt jusqu'au téléphone. **PK textuelle** (la clé du
   catalogue), seule du registre dans ce cas.
+  `tables/auth_tables.dart` — `auth_channels` (#83) : **une seule ligne**, par
+  quelles portes l'application propose d'entrer, et ce qu'elle annonce. **Sans
+  tombstone** — fermer un canal met un booléen à `false`, et c'est cette
+  ligne-là qui voyage. Une table **vide** veut dire « pas encore reçu les
+  réglages », jamais « aucun canal » : le repli est l'**e-mail seul**, et
+  `AuthChannelsDao` est le seul endroit qui en décide.
 - `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart`,
   `gathering_dao.dart`, `announcement_dao.dart`, `playback_dao.dart` et
   `legal_dao.dart` — lectures, **un DAO par domaine**. `playback_dao` est le
@@ -434,7 +440,7 @@ qu'elle remplit. Le réseau ne peint jamais.
 - `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
   `gathering_types`, `status_backgrounds`, `official_accounts`,
   `official_account_memberships`, `legal_documents`, `seasons`,
-  `presentation_vocabulary`, `decor`,
+  `presentation_vocabulary`, `auth_channels`, `decor`,
   `contributors`,
   `branches`, puis `teachings`, `teaching_guests`, `gatherings`,
   `announcements`, `playback_progress`.
@@ -526,7 +532,7 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`,
     `gatheringDaoProvider`, `announcementDaoProvider`, `playbackDaoProvider`,
     `legalDaoProvider`, `seasonDaoProvider`, `vocabularyDaoProvider`,
-    `pullToRefreshProvider`.
+    `authChannelsDaoProvider`, `pullToRefreshProvider`.
     Les trois DAO de lecture sont lus par les trois repositories de magasin.
     **Les trois déclencheurs d'ADR-0017 sont câblés** : `app.dart` appelle
     `SyncScheduler.start()` au premier frame sous `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
@@ -1452,8 +1458,8 @@ réglages de #81 ; il ne voyage pas, et pour une raison qui est côté serveur :
 
 - le seuil vit dans `device_settings.update_banner_min_version`
   (`server-portal#465`), une table d'une seule ligne **qui n'a pas de descripteur
-  de synchronisation** — `app/sync/descriptors/registry.ts` en compte vingt-six,
-  aucune ne la touche. Elle ne se lit que par l'écran d'administration ;
+  de synchronisation** — `app/sync/descriptors/registry.ts` en compte vingt-sept
+  depuis #83, aucune ne la touche. Elle ne se lit que par l'écran d'administration ;
 - `presentation_vocabulary`, la collection livrée par #81, ne pouvait pas le
   porter : `SaveVocabulary` **ignore en silence** toute clé absente de
   `vocabulary_catalog.ts`, qui ne nomme que des termes et des clés de
@@ -1480,6 +1486,47 @@ dit l'inverse — et le `+build` est ignoré des deux côtés.
 
 Hors périmètre, et dans l'autre dépôt (`server-portal#465`) : la table `devices`,
 l'écran *Appareils*, le comptage du parc.
+
+#### Les canaux de connexion (#83) — une **offre**, jamais une préférence
+
+L'écran d'identifiant promettait un code que personne n'enverrait : il affichait
+un sélecteur **Téléphone / Email** alors que seul l'e-mail part réellement
+(`OTP_PHONE_DRIVER` vaut `log` côté serveur). La collection `auth_channels`
+(jumelle serveur #468) est ce par quoi l'application l'apprend — un singleton
+servi **sans compte**, deux booléens et une annonce en carte de traduction.
+
+Cinq points qui se ratent en silence :
+
+1. **Un seul canal ⇒ pas de sélecteur du tout.** On ne grise pas une option, on
+   ne la propose pas : une option désactivée reste une option offerte, donc une
+   promesse que personne ne tiendra. Le test le vérifie comme tel — absence, pas
+   grisage (`test/screens/identifier_channels_test.dart`).
+2. **Le repli est l'e-mail seul** (`AuthChannelOffer.emailOnly`), et il compte
+   plus qu'il n'en a l'air : avant le premier cycle de synchronisation
+   l'application ne sait rien, et c'est précisément le moment où quelqu'un ouvre
+   l'application pour la première fois. **Jamais « tous les canaux »** — un repli
+   permissif remettrait le sélecteur menteur qu'on retire — et jamais « aucun
+   canal », qui fermerait la porte. Le repli vit à **deux endroits qui nomment la
+   même constante** : `AuthChannelsDao` (table vide) et `authChannelOfferProvider`
+   (pas encore chargé, ou en erreur).
+3. **Le canal retenu se dérive à chaque `build`**, jamais d'un drapeau d'état
+   seul : une synchronisation peut fermer, sous les yeux du fidèle, le canal
+   qu'il venait de sélectionner. `_channelOf` est le seul endroit qui tranche, et
+   `_submit` le relit au moment du tap.
+4. **L'annonce du portail prend la place du sous-titre** quand il n'y a rien à
+   choisir : « Entrez votre numéro ou votre email » nommerait sinon un canal que
+   l'écran ne propose pas. Vide ou blanche, elle retombe sur le `.arb`
+   (`authNoticeEmailOnly` / `authNoticePhoneOnly`) — même règle que le
+   vocabulaire, et pour la même raison : un bandeau blanc ressemble à une donnée
+   perdue.
+5. **`authOrContinueWith` et `SocialButton` restent endormis.** Les boutons
+   sociaux sont hors périmètre par décision écrite (`docs/auth-contract.md`), et
+   n'offrir que l'e-mail **ne déclenche pas** la règle App Store 4.8 : c'est
+   *ajouter* Google qui *crée* l'obligation d'offrir « Sign in with Apple ».
+
+Comme le vocabulaire, `pumpScreen` pose un **flux nu** (`authChannelsProvider`)
+et les tests passent par le paramètre nommé `authChannels:` — Riverpod 3 refuse
+deux surcharges du même provider.
 
 #### La barrière de consentement (#56) — `/legal/accept`, ADR-0036
 Spécification : `docs/documents-legaux.md` §4. **Une garde de route, pas une
