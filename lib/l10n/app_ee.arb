@@ -32,6 +32,8 @@
 
   "authStart": "Dze egɔme",
   "authContinue": "Yi edzi",
+  "authNoticeEmailOnly": "Woaɖo wò gegeɖeme dzesi la ɖa to email dzi.",
+  "authNoticePhoneOnly": "Woaɖo wò gegeɖeme dzesi la ɖa to wò kaƒomɔ̃ dzi.",
   "titleBrother": "Nɔviŋutsu",
   "titleSister": "Nɔvinyɔnu",
   "fieldYourName": "Wò ŋkɔ",

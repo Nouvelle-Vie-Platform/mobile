@@ -10,6 +10,7 @@ import 'tables/playback_tables.dart';
 import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
 import 'tables/season_tables.dart';
+import 'tables/auth_tables.dart';
 import 'tables/vocabulary_tables.dart';
 
 part 'sync_dao.g.dart';
@@ -106,6 +107,21 @@ abstract final class SyncCollectionKey {
   /// référentiels portent un `SERIAL`.
   static const String presentationVocabulary = 'presentation_vocabulary';
 
+  /// **Les canaux de connexion** (#83) — par quelles portes l'application
+  /// propose d'entrer, et ce qu'elle annonce.
+  ///
+  /// Un **référentiel** sans aucun filtre de périmètre : une porte d'entrée
+  /// n'appartient à aucune branche — il n'y a pas une connexion de Lomé et une
+  /// d'Aného. Et elle est servie **sans compte** (`servesAnonymous`), ce qui
+  /// n'est pas un confort : l'écran de connexion est par définition regardé par
+  /// quelqu'un qui n'a pas de compte, et un refus ici laisserait l'application
+  /// proposer pour toujours une porte fermée.
+  ///
+  /// **Sans tombstone, et sans en avoir besoin** : le singleton ne se supprime
+  /// pas. **Fermer** un canal met un booléen à `false`, et c'est cette ligne-là
+  /// qui voyage.
+  static const String authChannels = 'auth_channels';
+
   /// **La reprise de lecture** — la première collection `private` que ce client
   /// réplique (issue #43). Elle est en **lecture-depuis-la-synchro seulement** :
   /// l'application écrit sa position à chaud dans `local_playback_positions`,
@@ -166,6 +182,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     Seasons,
     PresentationVocabulary,
     Decor,
+    AuthChannels,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -249,6 +266,13 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// portail n'est pas la même chose que pas encore reçu les réglages.
   LocalCollection<DecorRow> get decorCollection =>
       LocalCollection._(SyncCollectionKey.decor, decor);
+
+  /// **Une seule ligne, et pas de tombstone** : fermer un canal met un booléen
+  /// à `false` — la fermeture voyage donc par le flux normal, sur la ligne
+  /// elle-même. Une table vide, elle, ne dit pas « aucun canal » mais « pas
+  /// encore reçu les réglages », et c'est `AuthChannelsDao` qui en décide.
+  LocalCollection<AuthChannelsRow> get authChannelsCollection =>
+      LocalCollection._(SyncCollectionKey.authChannels, authChannels);
 
   /// **La seule collection `private` de ce registre.** Elle se remplit comme
   /// les dix autres — par le flux delta, jamais par l'application — et rien

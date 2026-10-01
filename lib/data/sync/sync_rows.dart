@@ -568,6 +568,41 @@ DecorCompanion decorRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/auth_channels` — **par quelles portes on entre**, et ce que
+/// l'application annonce (#83).
+///
+/// Six clés, relevées sur `app/auth/transformers/auth_channels_transformer.ts` :
+/// `id`, `emailOpen`, `phoneOpen`, `loginNotice`, `createdAt`, `updatedAt`.
+///
+/// **Deux booléens, et non une liste de canaux** : le jeu est fermé (le contrat
+/// mobile nomme deux canaux, et ADR-0019 range SMS, WhatsApp et Telegram du côté
+/// des *fournisseurs* du canal téléphone). Une liste aurait laissé croire au
+/// client qu'il peut en découvrir un troisième, qu'il ne saurait de toute façon
+/// pas afficher.
+///
+/// **`loginNotice` est nullable, et `null` est une valeur** : il dit « il n'y a
+/// pas d'annonce » plutôt que « je n'ai pas encore reçu les réglages », ce qui
+/// autorise l'écran à retomber tout de suite sur le libellé du dépôt. La carte
+/// part **entière**, jamais résolue (ADR-0023) : figer une langue ici
+/// l'arrêterait à celle du moment de la synchronisation.
+///
+/// Les deux booléens se lisent `== true`, comme partout dans ce fichier. Un
+/// champ absent vaut donc « fermé » — et cette ligne-là ne ferme rien pour
+/// autant : `AuthChannelOffer.resolve` remet l'état « tous fermés » sur
+/// l'e-mail seul, à la lecture, parce qu'une porte fermée ne se rouvre pas
+/// depuis l'application.
+AuthChannelsCompanion authChannelsRowOf(Map<String, Object?> item) {
+  const collection = 'auth_channels';
+  return AuthChannelsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    emailOpen: Value(item['emailOpen'] == true),
+    phoneOpen: Value(item['phoneOpen'] == true),
+    loginNotice: Value(_optionalI18nMap(item, 'loginNotice')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Rouages
 // ─────────────────────────────────────────────────────────────────────────────

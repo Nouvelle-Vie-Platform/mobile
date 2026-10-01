@@ -164,6 +164,16 @@ class _PageSplit<D> {
 /// collection sans rien dégrader — un serveur en retard d'une version laisse
 /// simplement l'application sur ses `.arb`.
 ///
+/// **`auth_channels` se range avec les référentiels, et tôt** (#83). C'est la
+/// première chose qu'un porteur **sans compte** a besoin de savoir, puisque
+/// c'est tout ce que son écran lui propose de faire : par quelle porte entrer.
+/// Même raison d'être tôt que le vocabulaire — toute erreur autre qu'un `404`
+/// coupe le cycle, donc toutes les collections rangées après la fautive, et une
+/// collection d'une ligne sans filtre ni jointure est parmi les moins
+/// susceptibles d'échouer. Un `404` la saute sans rien dégrader : l'application
+/// reste sur son repli, **l'e-mail seul**, qui est le canal qui envoie
+/// réellement un code.
+///
 /// **`teaching_guests` se range après `contributors` ET après `teachings`**
 /// (#77). C'est un **pivot** : ses deux colonnes ne désignent rien par
 /// elles-mêmes, et il ne s'affiche qu'en joignant les deux collections qu'il
@@ -235,6 +245,14 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) =>
             contentId(SyncCollectionKey.presentationVocabulary, item),
         rowOf: presentationVocabularyRowOf,
+      ),
+      SyncedCollection<AuthChannelsRow>(
+        key: SyncCollectionKey.authChannels,
+        local: (dao) => dao.authChannelsCollection,
+        // `referenceId` : la PK du singleton est un **entier** (`id = 1`), pas
+        // un UUID — c'est le patron de `decor`, pas celui du vocabulaire.
+        idOf: (item) => referenceId(SyncCollectionKey.authChannels, item),
+        rowOf: authChannelsRowOf,
       ),
       SyncedCollection<DecorRow>(
         key: SyncCollectionKey.decor,

@@ -26,6 +26,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/app_env.dart';
 
 import '../data/local/announcement_dao.dart';
+import '../data/local/auth_channels_dao.dart';
 import '../data/local/app_database.dart';
 import '../data/local/gathering_dao.dart';
 import '../data/local/legal_dao.dart';
@@ -111,6 +112,16 @@ final seasonDaoProvider = Provider<SeasonDao>(
 /// — à un seul endroit.
 final vocabularyDaoProvider = Provider<VocabularyDao>(
   (ref) => ref.watch(appDatabaseProvider).vocabularyDao,
+);
+
+/// Les lectures du magasin, côté **canaux de connexion** — par quelles portes
+/// l'application propose d'entrer (#83). Un DAO de plus, même motif que les
+/// précédents.
+///
+/// C'est lui, et lui seul, qui traduit une table vide en **offre** : le repli
+/// est l'e-mail seul, jamais « tous les canaux ».
+final authChannelsDaoProvider = Provider<AuthChannelsDao>(
+  (ref) => ref.watch(appDatabaseProvider).authChannelsDao,
 );
 
 /// Les deux routes du protocole, sur le `Dio` d'`ApiClient` : la requête

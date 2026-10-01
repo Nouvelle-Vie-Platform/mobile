@@ -813,6 +813,14 @@ class AppLocalizationsEe extends AppLocalizations {
   String get authEmailHint => 'jean.kossi@email.com';
 
   @override
+  String get authNoticeEmailOnly =>
+      'Woaɖo wò gegeɖeme dzesi la ɖa to email dzi.';
+
+  @override
+  String get authNoticePhoneOnly =>
+      'Woaɖo wò gegeɖeme dzesi la ɖa to wò kaƒomɔ̃ dzi.';
+
+  @override
   String get authContinue => 'Yi edzi';
 
   @override

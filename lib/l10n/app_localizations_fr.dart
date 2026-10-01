@@ -813,6 +813,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authEmailHint => 'jean.kossi@email.com';
 
   @override
+  String get authNoticeEmailOnly =>
+      'Votre code de connexion vous sera envoyé par email.';
+
+  @override
+  String get authNoticePhoneOnly =>
+      'Votre code de connexion vous sera envoyé sur votre téléphone.';
+
+  @override
   String get authContinue => 'Continuer';
 
   @override

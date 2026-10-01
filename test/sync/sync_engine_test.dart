@@ -154,6 +154,7 @@ void main() {
           'legal_documents',
           'seasons',
           'presentation_vocabulary',
+          'auth_channels',
           'decor',
           'contributors',
           'branches',
@@ -223,6 +224,18 @@ void main() {
       );
       expect(
         keys.indexOf('presentation_vocabulary'),
+        lessThan(keys.indexOf('announcements')),
+      );
+      // Les canaux de connexion se rangent avec les référentiels eux aussi, et
+      // avant tout contenu : c'est la première chose qu'un porteur **sans
+      // compte** a besoin de savoir, et une erreur autre qu'un 404 sur une
+      // collection de contenu emporterait tout ce qui est rangé après elle.
+      expect(
+        keys.indexOf('auth_channels'),
+        lessThan(keys.indexOf('teachings')),
+      );
+      expect(
+        keys.indexOf('auth_channels'),
         lessThan(keys.indexOf('announcements')),
       );
       // La reprise de lecture se joint aux **deux** familles de contenu, et se

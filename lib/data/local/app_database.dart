@@ -10,6 +10,7 @@ import '../../models/legal_document_view.dart';
 // pas.
 import '../../models/teaching_download.dart';
 import 'announcement_dao.dart';
+import 'auth_channels_dao.dart';
 // Utilisé par le code généré (`app_database.g.dart`), qui est une `part` de ce
 // fichier : le convertisseur de carte de traduction y est instancié.
 import 'converters/i18n_map_converter.dart';
@@ -28,6 +29,7 @@ import 'settings_dao.dart';
 import 'sync_dao.dart';
 import 'season_dao.dart';
 import 'tables/announcement_tables.dart';
+import 'tables/auth_tables.dart';
 import 'tables/download_tables.dart';
 import 'tables/gathering_tables.dart';
 import 'tables/legal_tables.dart';
@@ -84,6 +86,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     Seasons,
     PresentationVocabulary,
     Decor,
+    AuthChannels,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -98,6 +101,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     LegalDao,
     SeasonDao,
     VocabularyDao,
+    AuthChannelsDao,
     SettingsDao,
     DownloadsDao,
     DownloadNotificationsDao,
@@ -148,8 +152,14 @@ class AppDatabase extends _$AppDatabase {
   /// Aucune valeur de `.arb` ne change, et la table naît **vide** — ce qui veut
   /// dire « le mot du dépôt partout », exactement ce que l'application affiche
   /// déjà.
+  ///
+  /// **v15** — `auth_channels` (#83), par quelles portes l'application propose
+  /// d'entrer : une collection répliquée de plus, une création de table, et rien
+  /// d'autre. La table naît **vide**, et vide veut dire « je n'ai pas encore reçu
+  /// les réglages » — le repli est alors l'**e-mail seul**, c'est-à-dire ce que
+  /// l'écran d'identifiant choisissait déjà par défaut.
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -391,6 +401,29 @@ class AppDatabase extends _$AppDatabase {
           // surnuméraire.
           if (from < 14) {
             await m.createTable(presentationVocabulary);
+          }
+
+          // v14 → v15 — les **canaux de connexion** (#83). Une création de
+          // table, et rien d'autre : aucune colonne existante ne bouge, aucune
+          // ligne n'est réécrite, et l'écran d'identifiant ne change pas de
+          // comportement tant que le premier cycle n'a rien ramené.
+          //
+          // La table naît **vide**, et c'est un état plein de sens : vide veut
+          // dire « je n'ai pas encore reçu les réglages », jamais « aucun
+          // canal ». Le repli est alors l'**e-mail seul** — le canal qui envoie
+          // réellement un code, et celui que l'écran choisissait déjà par
+          // défaut. Son curseur n'existe pas encore, le prochain manifeste
+          // l'annoncera `from_zero`, et le premier cycle ramènera la ligne du
+          // portail. D'ici là — et si le serveur est en retard d'une version,
+          // auquel cas la collection prend un `404` et se saute — rien ne se
+          // dégrade.
+          //
+          // Pas de garde `to >= 15` pour la raison des paliers qui ne créent que
+          // des tables (v2 à v5, v7, v9, v11 à v14) : le vérificateur de schéma
+          // **ignore une table surnuméraire** et ne signale qu'une colonne
+          // surnuméraire.
+          if (from < 15) {
+            await m.createTable(authChannels);
           }
         },
         beforeOpen: (details) async {

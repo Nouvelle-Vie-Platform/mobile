@@ -5,23 +5,49 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_extension.dart';
+import '../../models/auth_channels.dart';
 import '../../models/models.dart';
 import '../../router/app_router.dart';
+import '../../state/auth_channels_providers.dart';
 import '../../state/auth_providers.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../utils/dial_codes.dart';
+import '../../utils/i18n_text.dart';
 
-/// `/auth/identifier` : saisie du téléphone ou de l'email, envoi du code.
+/// `/auth/identifier` : saisie de l'identifiant, envoi du code.
 ///
-/// Toggle **Téléphone / Email**, **email sélectionné par défaut** (le canal
-/// téléphone n'est pas encore actif). En mode téléphone, un sélecteur
-/// d'indicatif (déduit du locale, repli +228) précède le champ et l'identifiant
-/// est normalisé en **E.164** ; en mode email, l'adresse est mise en
-/// minuscules. Cette normalisation est un confort d'ergonomie : le serveur
-/// re-normalise de son côté et ne s'y fie pas. « Continuer » demande un code
-/// puis pousse [CodeScreen].
+/// ## Le sélecteur n'est pas une préférence, c'est une **offre** (#83)
+///
+/// Les canaux ouverts sont ceux que le portail déclare (collection
+/// `auth_channels`, servie **sans compte**). Deux canaux ouverts ⇒ le sélecteur
+/// **Téléphone / Email**, e-mail présélectionné comme avant. Un seul ⇒ **pas de
+/// sélecteur du tout** : on ne grise pas une option, on ne la propose pas — et
+/// l'annonce du portail prend la place du sous-titre pour dire par où le code
+/// arrivera. Le sous-titre du dépôt (« votre numéro ou votre email ») nommerait
+/// sinon un canal que l'écran ne propose pas, c'est-à-dire la promesse même que
+/// cette tranche existe pour retirer.
+///
+/// **Avant le premier cycle de synchronisation, l'offre est l'e-mail seul**
+/// (`AuthChannelOffer.emailOnly`) — jamais « tous les canaux ». Voir
+/// `state/auth_channels_providers.dart`.
+///
+/// ⚠️ Le canal retenu est **dérivé à chaque `build`** et non lu dans l'état :
+/// une synchronisation peut fermer, sous les yeux du fidèle, le canal qu'il
+/// venait de sélectionner, et un drapeau figé lui laisserait un champ qui
+/// n'enverra rien.
+///
+/// En mode téléphone, un sélecteur d'indicatif (déduit du locale, repli +228)
+/// précède le champ et l'identifiant est normalisé en **E.164** ; en mode email,
+/// l'adresse est mise en minuscules. Cette normalisation est un confort
+/// d'ergonomie : le serveur re-normalise de son côté et ne s'y fie pas.
+/// « Continuer » demande un code puis pousse [CodeScreen].
+///
+/// **Aucun bouton social, et le séparateur « Ou continuer avec » reste
+/// endormi** : hors périmètre par décision écrite (`docs/auth-contract.md`).
+/// N'offrir que l'e-mail ne déclenche pas la règle App Store 4.8 — c'est
+/// *ajouter* Google qui *crée* l'obligation d'offrir « Sign in with Apple ».
 class IdentifierScreen extends ConsumerStatefulWidget {
   const IdentifierScreen({super.key});
 
@@ -32,12 +58,12 @@ class IdentifierScreen extends ConsumerStatefulWidget {
 class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
   final _controller = TextEditingController();
 
-  /// Onglet courant : téléphone ou email.
+  /// Onglet **choisi par le fidèle**, quand il y a quelque chose à choisir.
   ///
-  /// **Email par défaut** : le canal téléphone n'est pas actif au lancement
-  /// (aucun fournisseur SMS/WhatsApp retenu), seul l'email envoie réellement un
-  /// code. Pour remettre le téléphone en premier, passer cette seule valeur à
-  /// `true` (cf. docs/auth-contract.md, décision figée n°2).
+  /// **Email par défaut**, comme avant #83 : c'est le canal qui envoie
+  /// réellement un code. Cette valeur ne fait foi que si les deux canaux sont
+  /// ouverts — sinon c'est l'offre qui décide, et [_channelOf] est le seul
+  /// endroit qui tranche.
   bool _isPhone = false;
 
   /// Indicatif sélectionné (initialisé depuis le locale appareil).
@@ -63,6 +89,8 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final palette = context.palette;
+    final offer = ref.watch(authChannelOfferProvider);
+    final isPhone = _channelOf(offer) == IdentifierChannel.phone;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -83,15 +111,25 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
               Text(l.authIdentifierTitle, style: AppTypography.h1),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                l.authIdentifierSubtitle,
+                // Un seul canal : le sous-titre du dépôt nommerait « votre
+                // numéro ou votre email », donc un canal que l'écran ne propose
+                // pas. C'est l'annonce qui parle à sa place.
+                offer.offersChoice
+                    ? l.authIdentifierSubtitle
+                    : _notice(context, offer, isPhone: isPhone),
                 style: AppTypography.bodyLarge.copyWith(
                   color: palette.textSecondary,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              _buildToggle(l),
-              const SizedBox(height: AppSpacing.lg),
-              _isPhone ? _buildPhoneField(l) : _buildEmailField(l),
+              // **Rien à choisir ⇒ rien à proposer.** Pas de sélecteur grisé :
+              // une option désactivée reste une option offerte, et c'est encore
+              // une promesse que personne ne tiendra.
+              if (offer.offersChoice) ...[
+                _buildToggle(l),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+              isPhone ? _buildPhoneField(l) : _buildEmailField(l),
               const SizedBox(height: AppSpacing.xl),
               _buildContinueButton(l),
             ],
@@ -99,6 +137,39 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
         ),
       ),
     );
+  }
+
+  /// **Le canal retenu**, et le seul endroit qui le décide.
+  ///
+  /// Les deux canaux ouverts : c'est le fidèle qui choisit ([_isPhone], e-mail
+  /// par défaut). Un seul : c'est l'offre, quoi qu'ait pu sélectionner le
+  /// fidèle avant qu'un cycle de synchronisation ne ferme la porte.
+  IdentifierChannel _channelOf(AuthChannelOffer offer) {
+    if (!offer.offersChoice) return offer.soleChannel!;
+    return _isPhone ? IdentifierChannel.phone : IdentifierChannel.email;
+  }
+
+  /// L'annonce affichée quand il n'y a rien à choisir : **celle du portail**,
+  /// et à défaut le libellé du dépôt.
+  ///
+  /// Le repli de langue est `pick` (`utils/i18n_text.dart`), avec la locale
+  /// **d'interface** : c'est une phrase de l'application, pas un contenu. `pick`
+  /// traite déjà une valeur blanche comme absente et rend `''` quand rien n'est
+  /// exploitable — un message vide retombe donc sur le `.arb`, comme une absence
+  /// de message. Un bandeau blanc ne ressemble pas à un bug, il ressemble à une
+  /// donnée perdue.
+  String _notice(
+    BuildContext context,
+    AuthChannelOffer offer, {
+    required bool isPhone,
+  }) {
+    final notice = offer.notice;
+    if (notice != null) {
+      final text = pick(notice, Localizations.localeOf(context).languageCode);
+      if (text.trim().isNotEmpty) return text;
+    }
+    final l = context.l10n;
+    return isPhone ? l.authNoticePhoneOnly : l.authNoticeEmailOnly;
   }
 
   Widget _buildToggle(AppLocalizations l) {
@@ -270,15 +341,13 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
     final raw = _controller.text.trim();
     if (raw.isEmpty) return;
 
-    final String identifier;
-    final IdentifierChannel channel;
-    if (_isPhone) {
-      identifier = toE164(_dialCountry.dialCode, raw);
-      channel = IdentifierChannel.phone;
-    } else {
-      identifier = raw.toLowerCase();
-      channel = IdentifierChannel.email;
-    }
+    // Le canal se relit sur l'**offre**, jamais sur le seul drapeau d'état :
+    // un cycle de synchronisation a pu fermer, entre le montage et le tap, le
+    // canal que le fidèle avait sélectionné.
+    final channel = _channelOf(ref.read(authChannelOfferProvider));
+    final identifier = channel == IdentifierChannel.phone
+        ? toE164(_dialCountry.dialCode, raw)
+        : raw.toLowerCase();
 
     setState(() => _busy = true);
     try {

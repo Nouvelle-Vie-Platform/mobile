@@ -808,6 +808,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authEmailHint => 'jean.kossi@email.com';
 
   @override
+  String get authNoticeEmailOnly =>
+      'Your sign-in code will be sent to you by email.';
+
+  @override
+  String get authNoticePhoneOnly =>
+      'Your sign-in code will be sent to your phone.';
+
+  @override
   String get authContinue => 'Continue';
 
   @override
