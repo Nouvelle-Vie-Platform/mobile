@@ -991,6 +991,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le serveur ne répond pas pour l\'instant. Réessayez dans un instant.';
 
   @override
+  String get stateErrorRefusedMessage =>
+      'Ce contenu n\'est pas accessible pour l\'instant. Votre connexion internet n\'est pas en cause.';
+
+  @override
   String get stateRetry => 'Réessayer';
 
   @override

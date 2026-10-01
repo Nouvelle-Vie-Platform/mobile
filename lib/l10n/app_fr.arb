@@ -507,6 +507,8 @@
   "@stateErrorMessage": { "description": "Cause par défaut de l'état d'erreur, en langage humain — jamais un code HTTP ni un toString() d'exception" },
   "stateErrorServerMessage": "Le serveur ne répond pas pour l'instant. Réessayez dans un instant.",
   "@stateErrorServerMessage": { "description": "Cause de l'état d'erreur quand le serveur est joignable mais échoue (5xx), en langage humain" },
+  "stateErrorRefusedMessage": "Ce contenu n'est pas accessible pour l'instant. Votre connexion internet n'est pas en cause.",
+  "@stateErrorRefusedMessage": { "description": "Cause de l'état d'erreur quand le serveur a répondu en refusant (401, 403) — jamais « vérifiez votre connexion » : une réponse reçue n'est pas une panne de réseau, et la seconde phrase retire la fausse piste" },
   "stateRetry": "Réessayer",
   "@stateRetry": { "description": "Action de l'état d'erreur : relance le chargement via le callback fourni par l'écran" },
 

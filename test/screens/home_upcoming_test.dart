@@ -261,6 +261,30 @@ void main() {
       );
     });
 
+    testWidgets('un 401 ne dit PAS « vérifiez votre connexion internet »',
+        (tester) async {
+      // **Le défaut signalé par l'utilisateur, à l'endroit exact où il l'a vu.**
+      // Le serveur refusait le jeton d'invité sur `GET /events` ; `mapCalendarError`
+      // rangeait bien ce 401 en `unauthorized`, et c'est cet écran-ci qui l'écrasait
+      // — son ternaire ne nommait que `server` et rabattait tout le reste sur le
+      // message réseau. Le téléphone était connecté, et l'application lui disait
+      // le contraire.
+      repository.failure = CalendarException(CalendarErrorCode.unauthorized);
+
+      await _pumpHome(tester, repository);
+
+      expect(find.byType(AppErrorState), findsOneWidget);
+      expect(
+        find.textContaining('Vérifiez votre connexion internet'),
+        findsNothing,
+        reason: 'le serveur a répondu : ce n\'est pas une panne de réseau',
+      );
+      expect(
+        find.textContaining('n\'est pas accessible pour l\'instant'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('« Réessayer » relance le chargement et affiche le contenu',
         (tester) async {
       repository.failure = CalendarException(CalendarErrorCode.network);

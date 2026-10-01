@@ -1846,6 +1846,12 @@ abstract class AppLocalizations {
   /// **'Le serveur ne répond pas pour l\'instant. Réessayez dans un instant.'**
   String get stateErrorServerMessage;
 
+  /// Cause de l'état d'erreur quand le serveur a répondu en refusant (401, 403) — jamais « vérifiez votre connexion » : une réponse reçue n'est pas une panne de réseau, et la seconde phrase retire la fausse piste
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce contenu n\'est pas accessible pour l\'instant. Votre connexion internet n\'est pas en cause.'**
+  String get stateErrorRefusedMessage;
+
   /// Action de l'état d'erreur : relance le chargement via le callback fourni par l'écran
   ///
   /// In fr, this message translates to:

@@ -18,6 +18,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../utils/error_message.dart';
 import '../utils/event_time.dart';
 import '../utils/i18n_text.dart';
 import '../widgets/app_card.dart';
@@ -326,16 +327,21 @@ class _UpcomingSectionState extends ConsumerState<_UpcomingSection>
         padding: AppSpacing.screenPadding,
       );
 
+  /// **La phrase vient d'`errorStateMessage`, et plus d'un ternaire local.**
+  ///
+  /// Celui qui vivait ici ne nommait que `server` et rabattait **tout le reste**
+  /// sur le message réseau — 401 compris. Le serveur refusant le jeton d'invité
+  /// sur `GET /events`, cette section annonçait « vérifiez votre connexion
+  /// internet » à des téléphones parfaitement connectés. Voir
+  /// `utils/error_message.dart` pour la règle et pour les deux autres écrans qui
+  /// la partagent désormais.
   Widget _buildError(Object error) {
-    final l10n = context.l10n;
-    final message =
-        error is CalendarException && error.code == CalendarErrorCode.server
-            ? l10n.stateErrorServerMessage
-            : l10n.stateErrorMessage;
-
     return Padding(
       padding: AppSpacing.screenPadding,
-      child: AppErrorState(message: message, onRetry: _reload),
+      child: AppErrorState(
+        message: errorStateMessage(error, context.l10n),
+        onRetry: _reload,
+      ),
     );
   }
 

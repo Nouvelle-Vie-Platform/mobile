@@ -983,6 +983,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server isn\'t responding right now. Please try again in a moment.';
 
   @override
+  String get stateErrorRefusedMessage =>
+      'This content isn\'t available right now. Your internet connection isn\'t the problem.';
+
+  @override
   String get stateRetry => 'Try again';
 
   @override

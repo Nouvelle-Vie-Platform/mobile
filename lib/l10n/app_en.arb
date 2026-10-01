@@ -337,6 +337,7 @@
   "stateErrorTitle": "Connection lost",
   "stateErrorMessage": "We couldn't load this content. Check your internet connection, then try again.",
   "stateErrorServerMessage": "The server isn't responding right now. Please try again in a moment.",
+  "stateErrorRefusedMessage": "This content isn't available right now. Your internet connection isn't the problem.",
   "stateRetry": "Try again",
 
   "homeUpcomingEmptyTitle": "No upcoming gatherings",
