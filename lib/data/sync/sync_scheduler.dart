@@ -37,6 +37,7 @@ enum SyncTrigger {
   /// est affiché. Application en arrière-plan ou fermée, il n'y a aucun signal —
   /// voir `lib/data/realtime/group_channel.dart`.
   openThread,
+
   /// **Un réveil push reçu application ouverte** (#97).
   ///
   /// Il passe par le planificateur, et c'est délibéré : lancer un cycle en direct

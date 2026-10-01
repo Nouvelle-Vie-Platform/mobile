@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -75,5 +77,40 @@ void main() {
     // `AppPlatformInfo.name`, qui dit la vérité de la machine et non celle du
     // contrat — et hors du jeu, on rend `null`, ce qui n'enregistre rien.
     expect(devicePlatform(), anyOf(isNull, isIn(['ios', 'android', 'web'])));
+  });
+
+  test(
+      "garde-fou de source : le cycle de fond ne persiste pas la `scope_version`",
+      () {
+    // ⚠️ **Cette ligne de production n'est atteignable par aucun test de
+    // comportement.** `push_background.dart` est le point d'entrée d'un *autre
+    // isolate*, monté par le service natif FCM sur une application fermée : rien
+    // dans la suite ne l'exécute. Les deux tests qui encadrent le drapeau
+    // (`push_wake_handler_test.dart`) construisent leur **propre** moteur — ils
+    // prouvent que le moteur se comporte bien, jamais que l'isolate le câble
+    // ainsi.
+    //
+    // Sans cette garde, remplacer `false` par `true` dans `push_background.dart`
+    // laisse **toute la suite verte**. Et la panne serait silencieuse et
+    // définitive : la `scope_version` est globale (ADR-0027), donc la persister
+    // après un cycle restreint à quatre collections éteindrait pour toujours le
+    // resync des autres — le manifeste ne le redemanderait jamais.
+    //
+    // Même procédé que `lib/data/realtime/`, pour la même raison : ce qu'aucun
+    // test ne peut atteindre, une lecture du source le tient.
+    // On lit le **code**, pas les commentaires : l'en-tête du fichier cite la
+    // valeur en prose, et une recherche naïve passerait donc même après
+    // l'inversion. C'est le piège que cette garde est censée fermer.
+    final code = File('lib/data/push/push_background.dart')
+        .readAsLinesSync()
+        .where((line) => !line.trimLeft().startsWith('//'))
+        .join('\n');
+    expect(
+      code.contains('persistsScopeVersion: false'),
+      isTrue,
+      reason: "le cycle de l'isolate de fond est restreint : persister la "
+          "`scope_version` y éteindrait le resync des collections non tirées",
+    );
+    expect(code.contains('persistsScopeVersion: true'), isFalse);
   });
 }
