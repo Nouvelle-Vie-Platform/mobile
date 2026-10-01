@@ -505,6 +505,48 @@ SeasonsCompanion seasonRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/presentation_vocabulary` — un **mot réglé** au portail (#81).
+///
+/// Sept clés, relevées sur `app/presentation/transformers/vocabulary_transformer.ts`
+/// et sur la migration `*_create_presentation_vocabulary_table.ts` : `id`,
+/// `kind`, `singular`, `plural`, `label`, `createdAt`, `updatedAt`.
+///
+/// ⚠️ **L'identifiant est une chaîne**, et c'est la seule surprise de cette
+/// ligne : c'est la **clé du catalogue** (`teaching`, `sectionLatestTeachings`),
+/// pas un `SERIAL`. La colonne s'appelle quand même `id` côté serveur parce que
+/// le curseur composé l'exige — une PK nommée autrement y produirait un `500`,
+/// c'est-à-dire un cycle coupé et toutes les collections rangées après celle-ci
+/// sautées. D'où [contentId] et non [referenceId], qui lèverait sur chaque
+/// ligne.
+///
+/// **Les trois cartes sont nullables, et `null` est une information** : c'est
+/// « reviens au mot du dépôt ». Le serveur les sert explicitement plutôt que de
+/// les omettre, parce qu'une clé absente laisserait le client deviner s'il doit
+/// garder sa surcharge locale ou l'oublier. Une carte **vide** dit la même
+/// chose, et c'est la résolution (`l10n/vocabulary.dart`) qui le tranche — pas
+/// le magasin, qui stocke ce que le serveur envoie.
+///
+/// **`kind` est stocké tel quel**, bien qu'il se déduise du catalogue : le
+/// client n'a pas le catalogue, et le déduire de la forme de la clé —
+/// « contient-elle un point ? » — serait une convention qu'un seul renommage
+/// casserait, en silence.
+PresentationVocabularyCompanion presentationVocabularyRowOf(
+  Map<String, Object?> item,
+) {
+  const collection = 'presentation_vocabulary';
+  return PresentationVocabularyCompanion.insert(
+    id: contentId(collection, item),
+    // Exigé : une ligne sans nature n'est ni un terme ni une surcharge, et le
+    // client ne saurait ni la ranger ni l'ignorer.
+    kind: _text(collection, item, 'kind'),
+    singular: Value(_optionalI18nMap(item, 'singular')),
+    plural: Value(_optionalI18nMap(item, 'plural')),
+    label: Value(_optionalI18nMap(item, 'label')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 /// `GET /sync/decor` — le fond par défaut, quand aucune saison ne couvre le
 /// jour.
 ///
@@ -626,6 +668,29 @@ DateTime? _instant(Map<String, Object?> item, String field) {
   final value = item[field];
   if (value is! String) return null;
   return DateTime.tryParse(value)?.toUtc();
+}
+
+/// Une carte de traduction **nullable**, où `null` est une valeur.
+///
+/// À la différence d'[_i18nMap], elle ne lève pas sur l'absence : la surcharge
+/// du vocabulaire (#81) part explicitement à `null` quand le portail n'a rien
+/// réglé, et ce `null` veut dire « garde le mot du dépôt ». Le traiter comme
+/// une ligne mutilée coûterait la page entière, alors que c'est l'état normal
+/// de presque toutes les lignes.
+///
+/// Une carte **vide** est rendue telle quelle plutôt que convertie en `null` :
+/// le magasin stocke ce que le serveur envoie, et les deux formes se résolvent
+/// de toute façon pareil à la lecture.
+Map<String, String>? _optionalI18nMap(
+  Map<String, Object?> item,
+  String field,
+) {
+  final value = item[field];
+  if (value is! Map) return null;
+  return {
+    for (final entry in value.entries)
+      if (entry.value is String) entry.key.toString(): entry.value! as String,
+  };
 }
 
 /// Lit une carte de traduction `{fr, en, ee}` **entière**.

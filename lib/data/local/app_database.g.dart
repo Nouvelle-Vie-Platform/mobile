@@ -9101,6 +9101,464 @@ class SeasonsCompanion extends UpdateCompanion<SeasonRow> {
   }
 }
 
+class $PresentationVocabularyTable extends PresentationVocabulary
+    with TableInfo<$PresentationVocabularyTable, VocabularyRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PresentationVocabularyTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+      'kind', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      singular = GeneratedColumn<String>('singular', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<Map<String, String>?>(
+              $PresentationVocabularyTable.$convertersingularn);
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      plural = GeneratedColumn<String>('plural', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<Map<String, String>?>(
+              $PresentationVocabularyTable.$converterpluraln);
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      label = GeneratedColumn<String>('label', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<Map<String, String>?>(
+              $PresentationVocabularyTable.$converterlabeln);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, id, kind, singular, plural, label, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'presentation_vocabulary';
+  @override
+  VerificationContext validateIntegrity(Insertable<VocabularyRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+          _kindMeta, kind.isAcceptableOrUnknown(data['kind']!, _kindMeta));
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  VocabularyRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VocabularyRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      kind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
+      singular: $PresentationVocabularyTable.$convertersingularn.fromSql(
+          attachedDatabase.typeMapping
+              .read(DriftSqlType.string, data['${effectivePrefix}singular'])),
+      plural: $PresentationVocabularyTable.$converterpluraln.fromSql(
+          attachedDatabase.typeMapping
+              .read(DriftSqlType.string, data['${effectivePrefix}plural'])),
+      label: $PresentationVocabularyTable.$converterlabeln.fromSql(
+          attachedDatabase.typeMapping
+              .read(DriftSqlType.string, data['${effectivePrefix}label'])),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $PresentationVocabularyTable createAlias(String alias) {
+    return $PresentationVocabularyTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Map<String, String>, String> $convertersingular =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>?, String?> $convertersingularn =
+      NullAwareTypeConverter.wrap($convertersingular);
+  static TypeConverter<Map<String, String>, String> $converterplural =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>?, String?> $converterpluraln =
+      NullAwareTypeConverter.wrap($converterplural);
+  static TypeConverter<Map<String, String>, String> $converterlabel =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>?, String?> $converterlabeln =
+      NullAwareTypeConverter.wrap($converterlabel);
+}
+
+class VocabularyRow extends DataClass implements Insertable<VocabularyRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// La clé du catalogue — **une chaîne**, à la différence des autres
+  /// référentiels (PK `SERIAL`). C'est le premier référentiel du dépôt dans ce
+  /// cas, et le tri `(updated_at, id)` y reste total et déterministe.
+  final String id;
+
+  /// `'term'` ou `'label'`. Stockée **telle quelle**, jamais refermée sur un
+  /// enum : le magasin n'a pas à refuser une nature qu'il ne connaîtrait pas
+  /// encore. La déduire de la forme de la clé — « contient-elle un point ? » —
+  /// serait une convention qu'un seul renommage casserait en silence.
+  final String kind;
+
+  /// Le singulier d'un **terme**. `null` = le mot du dépôt. Toujours `null`
+  /// pour une surcharge de libellé.
+  final Map<String, String>? singular;
+
+  /// Le pluriel d'un **terme**, écrit à la main au portail. **Aucun accord
+  /// n'est jamais calculé** : une phrase composée est sa propre clé, surchargée
+  /// entière (décision de cadrage, pas un report).
+  final Map<String, String>? plural;
+
+  /// La surcharge d'un **libellé**. `null` = le libellé du dépôt. Toujours
+  /// `null` pour un terme.
+  final Map<String, String>? label;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const VocabularyRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.kind,
+      this.singular,
+      this.plural,
+      this.label,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    map['kind'] = Variable<String>(kind);
+    if (!nullToAbsent || singular != null) {
+      map['singular'] = Variable<String>(
+          $PresentationVocabularyTable.$convertersingularn.toSql(singular));
+    }
+    if (!nullToAbsent || plural != null) {
+      map['plural'] = Variable<String>(
+          $PresentationVocabularyTable.$converterpluraln.toSql(plural));
+    }
+    if (!nullToAbsent || label != null) {
+      map['label'] = Variable<String>(
+          $PresentationVocabularyTable.$converterlabeln.toSql(label));
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  PresentationVocabularyCompanion toCompanion(bool nullToAbsent) {
+    return PresentationVocabularyCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      kind: Value(kind),
+      singular: singular == null && nullToAbsent
+          ? const Value.absent()
+          : Value(singular),
+      plural:
+          plural == null && nullToAbsent ? const Value.absent() : Value(plural),
+      label:
+          label == null && nullToAbsent ? const Value.absent() : Value(label),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory VocabularyRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VocabularyRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      singular: serializer.fromJson<Map<String, String>?>(json['singular']),
+      plural: serializer.fromJson<Map<String, String>?>(json['plural']),
+      label: serializer.fromJson<Map<String, String>?>(json['label']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'kind': serializer.toJson<String>(kind),
+      'singular': serializer.toJson<Map<String, String>?>(singular),
+      'plural': serializer.toJson<Map<String, String>?>(plural),
+      'label': serializer.toJson<Map<String, String>?>(label),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  VocabularyRow copyWith(
+          {int? syncStamp,
+          String? id,
+          String? kind,
+          Value<Map<String, String>?> singular = const Value.absent(),
+          Value<Map<String, String>?> plural = const Value.absent(),
+          Value<Map<String, String>?> label = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      VocabularyRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        kind: kind ?? this.kind,
+        singular: singular.present ? singular.value : this.singular,
+        plural: plural.present ? plural.value : this.plural,
+        label: label.present ? label.value : this.label,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  VocabularyRow copyWithCompanion(PresentationVocabularyCompanion data) {
+    return VocabularyRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      singular: data.singular.present ? data.singular.value : this.singular,
+      plural: data.plural.present ? data.plural.value : this.plural,
+      label: data.label.present ? data.label.value : this.label,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VocabularyRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('singular: $singular, ')
+          ..write('plural: $plural, ')
+          ..write('label: $label, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp, id, kind, singular, plural, label, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VocabularyRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.singular == this.singular &&
+          other.plural == this.plural &&
+          other.label == this.label &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PresentationVocabularyCompanion extends UpdateCompanion<VocabularyRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String> kind;
+  final Value<Map<String, String>?> singular;
+  final Value<Map<String, String>?> plural;
+  final Value<Map<String, String>?> label;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const PresentationVocabularyCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.singular = const Value.absent(),
+    this.plural = const Value.absent(),
+    this.label = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PresentationVocabularyCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    required String kind,
+    this.singular = const Value.absent(),
+    this.plural = const Value.absent(),
+    this.label = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        kind = Value(kind);
+  static Insertable<VocabularyRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? kind,
+    Expression<String>? singular,
+    Expression<String>? plural,
+    Expression<String>? label,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (singular != null) 'singular': singular,
+      if (plural != null) 'plural': plural,
+      if (label != null) 'label': label,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PresentationVocabularyCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String>? kind,
+      Value<Map<String, String>?>? singular,
+      Value<Map<String, String>?>? plural,
+      Value<Map<String, String>?>? label,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return PresentationVocabularyCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      singular: singular ?? this.singular,
+      plural: plural ?? this.plural,
+      label: label ?? this.label,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (singular.present) {
+      map['singular'] = Variable<String>($PresentationVocabularyTable
+          .$convertersingularn
+          .toSql(singular.value));
+    }
+    if (plural.present) {
+      map['plural'] = Variable<String>(
+          $PresentationVocabularyTable.$converterpluraln.toSql(plural.value));
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(
+          $PresentationVocabularyTable.$converterlabeln.toSql(label.value));
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PresentationVocabularyCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('singular: $singular, ')
+          ..write('plural: $plural, ')
+          ..write('label: $label, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DecorTable extends Decor with TableInfo<$DecorTable, DecorRow> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -10775,6 +11233,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $LocalPlaybackPositionsTable(this);
   late final $LegalDocumentsTable legalDocuments = $LegalDocumentsTable(this);
   late final $SeasonsTable seasons = $SeasonsTable(this);
+  late final $PresentationVocabularyTable presentationVocabulary =
+      $PresentationVocabularyTable(this);
   late final $DecorTable decor = $DecorTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $DownloadsTable downloads = $DownloadsTable(this);
@@ -10790,6 +11250,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final PlaybackDao playbackDao = PlaybackDao(this as AppDatabase);
   late final LegalDao legalDao = LegalDao(this as AppDatabase);
   late final SeasonDao seasonDao = SeasonDao(this as AppDatabase);
+  late final VocabularyDao vocabularyDao = VocabularyDao(this as AppDatabase);
   late final SettingsDao settingsDao = SettingsDao(this as AppDatabase);
   late final DownloadsDao downloadsDao = DownloadsDao(this as AppDatabase);
   late final DownloadNotificationsDao downloadNotificationsDao =
@@ -10817,6 +11278,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         localPlaybackPositions,
         legalDocuments,
         seasons,
+        presentationVocabulary,
         decor,
         appSettings,
         downloads,
@@ -15079,6 +15541,239 @@ typedef $$SeasonsTableProcessedTableManager = ProcessedTableManager<
     (SeasonRow, BaseReferences<_$AppDatabase, $SeasonsTable, SeasonRow>),
     SeasonRow,
     PrefetchHooks Function()>;
+typedef $$PresentationVocabularyTableCreateCompanionBuilder
+    = PresentationVocabularyCompanion Function({
+  Value<int> syncStamp,
+  required String id,
+  required String kind,
+  Value<Map<String, String>?> singular,
+  Value<Map<String, String>?> plural,
+  Value<Map<String, String>?> label,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$PresentationVocabularyTableUpdateCompanionBuilder
+    = PresentationVocabularyCompanion Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String> kind,
+  Value<Map<String, String>?> singular,
+  Value<Map<String, String>?> plural,
+  Value<Map<String, String>?> label,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$PresentationVocabularyTableFilterComposer
+    extends Composer<_$AppDatabase, $PresentationVocabularyTable> {
+  $$PresentationVocabularyTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<Map<String, String>?, Map<String, String>,
+          String>
+      get singular => $composableBuilder(
+          column: $table.singular,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnWithTypeConverterFilters<Map<String, String>?, Map<String, String>,
+          String>
+      get plural => $composableBuilder(
+          column: $table.plural,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnWithTypeConverterFilters<Map<String, String>?, Map<String, String>,
+          String>
+      get label => $composableBuilder(
+          column: $table.label,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$PresentationVocabularyTableOrderingComposer
+    extends Composer<_$AppDatabase, $PresentationVocabularyTable> {
+  $$PresentationVocabularyTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get singular => $composableBuilder(
+      column: $table.singular, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get plural => $composableBuilder(
+      column: $table.plural, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PresentationVocabularyTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PresentationVocabularyTable> {
+  $$PresentationVocabularyTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String> get singular =>
+      $composableBuilder(column: $table.singular, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String> get plural =>
+      $composableBuilder(column: $table.plural, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$PresentationVocabularyTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PresentationVocabularyTable,
+    VocabularyRow,
+    $$PresentationVocabularyTableFilterComposer,
+    $$PresentationVocabularyTableOrderingComposer,
+    $$PresentationVocabularyTableAnnotationComposer,
+    $$PresentationVocabularyTableCreateCompanionBuilder,
+    $$PresentationVocabularyTableUpdateCompanionBuilder,
+    (
+      VocabularyRow,
+      BaseReferences<_$AppDatabase, $PresentationVocabularyTable, VocabularyRow>
+    ),
+    VocabularyRow,
+    PrefetchHooks Function()> {
+  $$PresentationVocabularyTableTableManager(
+      _$AppDatabase db, $PresentationVocabularyTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PresentationVocabularyTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PresentationVocabularyTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PresentationVocabularyTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> kind = const Value.absent(),
+            Value<Map<String, String>?> singular = const Value.absent(),
+            Value<Map<String, String>?> plural = const Value.absent(),
+            Value<Map<String, String>?> label = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PresentationVocabularyCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            kind: kind,
+            singular: singular,
+            plural: plural,
+            label: label,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            required String kind,
+            Value<Map<String, String>?> singular = const Value.absent(),
+            Value<Map<String, String>?> plural = const Value.absent(),
+            Value<Map<String, String>?> label = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PresentationVocabularyCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            kind: kind,
+            singular: singular,
+            plural: plural,
+            label: label,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PresentationVocabularyTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $PresentationVocabularyTable,
+        VocabularyRow,
+        $$PresentationVocabularyTableFilterComposer,
+        $$PresentationVocabularyTableOrderingComposer,
+        $$PresentationVocabularyTableAnnotationComposer,
+        $$PresentationVocabularyTableCreateCompanionBuilder,
+        $$PresentationVocabularyTableUpdateCompanionBuilder,
+        (
+          VocabularyRow,
+          BaseReferences<_$AppDatabase, $PresentationVocabularyTable,
+              VocabularyRow>
+        ),
+        VocabularyRow,
+        PrefetchHooks Function()>;
 typedef $$DecorTableCreateCompanionBuilder = DecorCompanion Function({
   Value<int> syncStamp,
   Value<int> id,
@@ -15973,6 +16668,9 @@ class $AppDatabaseManager {
       $$LegalDocumentsTableTableManager(_db, _db.legalDocuments);
   $$SeasonsTableTableManager get seasons =>
       $$SeasonsTableTableManager(_db, _db.seasons);
+  $$PresentationVocabularyTableTableManager get presentationVocabulary =>
+      $$PresentationVocabularyTableTableManager(
+          _db, _db.presentationVocabulary);
   $$DecorTableTableManager get decor =>
       $$DecorTableTableManager(_db, _db.decor);
   $$AppSettingsTableTableManager get appSettings =>

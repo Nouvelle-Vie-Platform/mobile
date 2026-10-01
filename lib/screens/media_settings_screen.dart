@@ -172,7 +172,7 @@ class _BranchScopeSectionState extends ConsumerState<_BranchScopeSection> {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          l.branchScopeLead,
+          context.words.branchScopeLead,
           style: AppTypography.caption.copyWith(color: palette.textSecondary),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -400,8 +400,10 @@ class _UsageSection extends StatelessWidget {
   final MediaQuality selected;
   final ValueChanged<MediaQuality> onSelect;
 
-  String _title(AppLocalizations l) => switch (usage) {
-        MediaUsage.streaming => l.mediaSettingsStreaming,
+  String _title(BuildContext context, AppLocalizations l) => switch (usage) {
+        // La seule des trois que le catalogue du portail déclare surchargeable
+        // (`surface: 'mobile'`) — d'où `context.words` ici et `l` à côté.
+        MediaUsage.streaming => context.words.mediaSettingsStreaming,
         MediaUsage.live => l.mediaSettingsLive,
         MediaUsage.download => l.mediaSettingsDownload,
       };
@@ -415,7 +417,7 @@ class _UsageSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _title(l),
+          _title(context, l),
           style: AppTypography.bodyStrong.copyWith(color: palette.textPrimary),
         ),
         const SizedBox(height: AppSpacing.sm),

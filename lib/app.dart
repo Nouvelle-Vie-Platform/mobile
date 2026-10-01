@@ -15,6 +15,7 @@ import 'state/session_gate.dart';
 import 'state/startup_providers.dart';
 import 'state/sync_providers.dart';
 import 'state/theme_provider.dart';
+import 'state/vocabulary_providers.dart';
 import 'theme/app_theme.dart';
 
 /// Widget racine de l'application « Maison du Miracle ».
@@ -165,8 +166,13 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
       localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: appSupportedLocales,
       routerConfig: router,
-      builder: (context, child) =>
-          _ContentLocaleSync(child: child ?? const SizedBox.shrink()),
+      // **Sous `MaterialApp`, et c'est obligatoire** : `VocabularyBoundary` pose
+      // les surcharges du portail sur l'arbre, et `context.words` y lit la
+      // locale que le framework vient de résoudre — `Localizations` n'existe pas
+      // au-dessus. Même motif que `_ContentLocaleSync`, à côté duquel il vit.
+      builder: (context, child) => VocabularyBoundary(
+        child: _ContentLocaleSync(child: child ?? const SizedBox.shrink()),
+      ),
     );
   }
 }

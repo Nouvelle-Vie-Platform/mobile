@@ -153,6 +153,7 @@ void main() {
           'official_account_memberships',
           'legal_documents',
           'seasons',
+          'presentation_vocabulary',
           'decor',
           'contributors',
           'branches',
@@ -207,6 +208,22 @@ void main() {
       expect(
         keys.indexOf('teachings'),
         lessThan(keys.indexOf('teaching_guests')),
+      );
+      // Le vocabulaire se range avec les référentiels, et **avant tout
+      // contenu** : un mot doit être arrivé avant la liste qu'il intitule,
+      // faute de quoi une section s'affiche sous le mot du dépôt puis change de
+      // titre sous les yeux du fidèle au cycle suivant.
+      expect(
+        keys.indexOf('presentation_vocabulary'),
+        lessThan(keys.indexOf('teachings')),
+      );
+      expect(
+        keys.indexOf('presentation_vocabulary'),
+        lessThan(keys.indexOf('gatherings')),
+      );
+      expect(
+        keys.indexOf('presentation_vocabulary'),
+        lessThan(keys.indexOf('announcements')),
       );
       // La reprise de lecture se joint aux **deux** familles de contenu, et se
       // range donc après elles : une progression arrivée avant son enseignement

@@ -10,6 +10,7 @@ import 'tables/playback_tables.dart';
 import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
 import 'tables/season_tables.dart';
+import 'tables/vocabulary_tables.dart';
 
 part 'sync_dao.g.dart';
 
@@ -88,6 +89,23 @@ abstract final class SyncCollectionKey {
   /// dates : deux notions, deux clés.
   static const String decor = 'decor';
 
+  /// **Le vocabulaire réglé au portail** (#81) — les termes de l'église et les
+  /// surcharges de libellé qui recouvrent les `.arb` de l'application.
+  ///
+  /// Un **référentiel** sans aucun filtre de périmètre : un mot n'appartient à
+  /// aucune branche, et le porteur sans compte lit la même façade qu'un membre
+  /// — lui refuser le vocabulaire lui donnerait l'**ancien** mot là où le
+  /// membre voit le nouveau.
+  ///
+  /// **Sans tombstone, et sans en avoir besoin** : la ligne ne se supprime
+  /// jamais côté serveur. Effacer une surcharge y écrit `null`, et c'est ce
+  /// `null` qui apprend au téléphone de revenir à son `.arb` — une suppression
+  /// de ligne, elle, ne voyagerait pas.
+  ///
+  /// ⚠️ Son `id` est une **chaîne** (la clé du catalogue), là où les autres
+  /// référentiels portent un `SERIAL`.
+  static const String presentationVocabulary = 'presentation_vocabulary';
+
   /// **La reprise de lecture** — la première collection `private` que ce client
   /// réplique (issue #43). Elle est en **lecture-depuis-la-synchro seulement** :
   /// l'application écrit sa position à chaud dans `local_playback_positions`,
@@ -146,6 +164,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     PlaybackProgress,
     LegalDocuments,
     Seasons,
+    PresentationVocabulary,
     Decor,
   ],
 )
@@ -214,6 +233,17 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// `id` — la saison recréée l'emporte sur celle qu'on venait d'effacer.
   LocalCollection<SeasonRow> get seasonsCollection =>
       LocalCollection._(SyncCollectionKey.seasons, seasons);
+
+  /// **Sans tombstone, et sans en avoir besoin** : un mot réglé ne se supprime
+  /// pas, il repasse à `null` — et c'est ce `null` qui porte le retour au mot
+  /// du dépôt jusqu'au téléphone. Supprimer la ligne laisserait un appareil
+  /// déjà synchronisé afficher pour toujours un mot que le portail ne montre
+  /// plus.
+  LocalCollection<VocabularyRow> get presentationVocabularyCollection =>
+      LocalCollection._(
+        SyncCollectionKey.presentationVocabulary,
+        presentationVocabulary,
+      );
 
   /// **Une seule ligne**, et `null` y est une valeur : pas de décor déposé au
   /// portail n'est pas la même chose que pas encore reçu les réglages.

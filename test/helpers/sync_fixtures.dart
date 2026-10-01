@@ -1369,3 +1369,93 @@ Map<String, Object?> teachingGuestRetractionPage() => deltaPage(
       items: const [retractedTeachingGuestPayload],
       nextCursor: teachingGuestsCursorAfterRetraction,
     );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lignes `presentation_vocabulary` — **sept clés**, `camelCase` (issue #81)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Une surcharge de libellé.** Sept clés, relevées sur
+/// `app/presentation/transformers/vocabulary_transformer.ts` : `id`, `kind`,
+/// `singular`, `plural`, `label`, `createdAt`, `updatedAt`.
+///
+/// ⚠️ **`id` est une chaîne** — la **clé du catalogue**, pas un `SERIAL`. La
+/// colonne serveur s'appelle quand même `id`, parce que le curseur composé
+/// l'exige de toute collection synchronisable ; une PK nommée autrement
+/// produirait un `column "id" does not exist` au premier tirage, c'est-à-dire un
+/// `500` qui coupe le cycle.
+///
+/// **Les trois cartes partent toujours, `null` compris** : le transformer les
+/// sert explicitement plutôt que de les omettre. Un terme porte `label: null`,
+/// une surcharge porte `singular: null` et `plural: null` — la contrainte
+/// `presentation_vocabulary_shape` rend l'autre moitié impossible à écrire.
+///
+/// **Aucun `deletedAt`** : `tombstoneColumn: null`, et la ligne ne se supprime
+/// jamais. Effacer une surcharge y écrit `null`.
+const Map<String, Object?> vocabularyLabelPayload = {
+  'id': 'sectionLatestTeachings',
+  'kind': 'label',
+  'singular': null,
+  'plural': null,
+  'label': {'fr': 'Derniers messages', 'en': 'Latest messages'},
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:00:00.000Z',
+};
+
+/// **Un terme**, ses deux formes écrites à la main. Aucun accord n'est calculé.
+const Map<String, Object?> vocabularyTermPayload = {
+  'id': 'teaching',
+  'kind': 'term',
+  'singular': {'fr': 'message', 'en': 'message'},
+  'plural': {'fr': 'messages', 'en': 'messages'},
+  'label': null,
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:05:00.000Z',
+};
+
+/// **La non-décision, telle qu'elle voyage.** Les trois cartes à `null` : le
+/// portail a réglé ce mot puis l'a effacé, et c'est cette ligne-là — jamais une
+/// suppression — qui apprend au téléphone de revenir à son `.arb`.
+const Map<String, Object?> vocabularyClearedPayload = {
+  'id': 'filterTeachings',
+  'kind': 'label',
+  'singular': null,
+  'plural': null,
+  'label': null,
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:10:00.000Z',
+};
+
+/// **Une surcharge vide**, et ce n'est pas la même chose qu'une chaîne vide à
+/// l'écran : une carte sans aucune langue remplie veut dire « garde le mot du
+/// dépôt ». Le serveur la normalise en `null` à l'écriture, mais le magasin n'a
+/// pas à le supposer — et le client doit se comporter pareil dans les deux cas.
+const Map<String, Object?> vocabularyBlankPayload = {
+  'id': 'downloadsEmptyMessage',
+  'kind': 'label',
+  'singular': null,
+  'plural': null,
+  'label': <String, Object?>{'fr': '   ', 'en': ''},
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:15:00.000Z',
+};
+
+/// Curseur de la page nominale de `presentation_vocabulary`.
+///
+/// ⚠️ L'`id` y est une **chaîne**, contrairement à tous les autres référentiels :
+/// c'est le premier du registre dont la PK est textuelle. Le tri
+/// `(updated_at, id)` y reste total et déterministe.
+final String presentationVocabularyCursor = serverCursor(
+  updatedAtIso: '2026-09-20T10:15:00.000Z',
+  id: 'downloadsEmptyMessage',
+);
+
+/// La page nominale : une surcharge, un terme, une non-décision, une carte vide.
+Map<String, Object?> presentationVocabularyPage() => deltaPage(
+      items: const [
+        vocabularyLabelPayload,
+        vocabularyTermPayload,
+        vocabularyClearedPayload,
+        vocabularyBlankPayload,
+      ],
+      nextCursor: presentationVocabularyCursor,
+    );

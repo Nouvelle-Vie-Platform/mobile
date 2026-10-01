@@ -153,6 +153,17 @@ class _PageSplit<D> {
 /// la raison habituelle — un enseignement ouvert au premier lancement doit
 /// trouver son décor déjà là, faute de quoi l'écran se peint deux fois.
 ///
+/// **`presentation_vocabulary` se range avec les référentiels, et tôt** (#81).
+/// Un mot doit être arrivé **avant la liste qu'il intitule** : une section
+/// d'accueil tirée avant sa surcharge s'afficherait sous le mot du dépôt, puis
+/// changerait de titre sous les yeux du fidèle au cycle suivant. Et c'est la
+/// collection la moins susceptible d'échouer du registre — aucun filtre de
+/// périmètre, aucune jointure, aucune date —, ce qui compte pour une raison qui
+/// n'a rien d'esthétique : **toute erreur autre qu'un `404` coupe le cycle**,
+/// donc toutes les collections rangées après la fautive. Un `404`, lui, saute la
+/// collection sans rien dégrader — un serveur en retard d'une version laisse
+/// simplement l'application sur ses `.arb`.
+///
 /// **`teaching_guests` se range après `contributors` ET après `teachings`**
 /// (#77). C'est un **pivot** : ses deux colonnes ne désignent rien par
 /// elles-mêmes, et il ne s'affiche qu'en joignant les deux collections qu'il
@@ -214,6 +225,16 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.seasonsCollection,
         idOf: (item) => referenceId(SyncCollectionKey.seasons, item),
         rowOf: seasonRowOf,
+      ),
+      SyncedCollection<VocabularyRow>(
+        key: SyncCollectionKey.presentationVocabulary,
+        local: (dao) => dao.presentationVocabularyCollection,
+        // `contentId` et non `referenceId` : l'identifiant est la **clé du
+        // catalogue**, une chaîne (`teaching`, `sectionLatestTeachings`), là où
+        // les autres référentiels portent un `SERIAL`.
+        idOf: (item) =>
+            contentId(SyncCollectionKey.presentationVocabulary, item),
+        rowOf: presentationVocabularyRowOf,
       ),
       SyncedCollection<DecorRow>(
         key: SyncCollectionKey.decor,

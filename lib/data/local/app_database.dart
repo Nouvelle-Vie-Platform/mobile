@@ -37,6 +37,8 @@ import 'tables/settings_tables.dart';
 import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
 import 'tables/season_tables.dart';
+import 'tables/vocabulary_tables.dart';
+import 'vocabulary_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -80,6 +82,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     LocalPlaybackPositions,
     LegalDocuments,
     Seasons,
+    PresentationVocabulary,
     Decor,
     AppSettings,
     Downloads,
@@ -94,6 +97,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     PlaybackDao,
     LegalDao,
     SeasonDao,
+    VocabularyDao,
     SettingsDao,
     DownloadsDao,
     DownloadNotificationsDao,
@@ -138,8 +142,14 @@ class AppDatabase extends _$AppDatabase {
   /// médiathèque : une collection répliquée de plus, une création de table, et
   /// rien d'autre. Aucune nouvelle famille de contenu, aucune colonne ajoutée à
   /// `teachings`.
+  ///
+  /// **v14** — `presentation_vocabulary` (#81), les mots réglés au portail : une
+  /// collection répliquée de plus, une création de table, et rien d'autre.
+  /// Aucune valeur de `.arb` ne change, et la table naît **vide** — ce qui veut
+  /// dire « le mot du dépôt partout », exactement ce que l'application affiche
+  /// déjà.
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -359,6 +369,28 @@ class AppDatabase extends _$AppDatabase {
           // signale qu'une colonne surnuméraire.
           if (from < 13) {
             await m.createTable(teachingGuests);
+          }
+
+          // v13 → v14 — le **vocabulaire réglé au portail** (#81). Une création
+          // de table, et rien d'autre : aucune colonne existante ne bouge,
+          // aucune ligne n'est réécrite, et **aucune valeur de `.arb` ne
+          // change**.
+          //
+          // La table naît **vide**, et c'est un état plein de sens : vide veut
+          // dire « le mot du dépôt partout », ce que l'application affiche déjà.
+          // Son curseur n'existe pas encore, le prochain manifeste l'annoncera
+          // `from_zero`, et le premier cycle ramènera **tous** les mots réglés,
+          // y compris ceux posés avant cette version. D'ici là — et si le
+          // serveur est en retard d'une version, auquel cas la collection prend
+          // un `404` et se saute — rien ne se dégrade : les `.arb` compilés
+          // font foi.
+          //
+          // Pas de garde `to >= 14` pour la raison des paliers qui ne créent que
+          // des tables (v2 à v5, v7, v9, v11 à v13) : le vérificateur de schéma
+          // **ignore une table surnuméraire** et ne signale qu'une colonne
+          // surnuméraire.
+          if (from < 14) {
+            await m.createTable(presentationVocabulary);
           }
         },
         beforeOpen: (details) async {

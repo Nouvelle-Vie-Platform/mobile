@@ -38,9 +38,9 @@ class TeachingDetailScreen extends ConsumerWidget {
       // écran ne branche ce provider — ni l'accueil, ni la médiathèque, ni le
       // détail d'un rassemblement, dont la collection n'a pas de pivot.
       guests: teachingGuestsProvider(teachingId),
-      chromeTitle: context.l10n.teachingAppBarTitle,
-      retractedTitle: context.l10n.teachingRetractedTitle,
-      retractedMessage: context.l10n.teachingRetractedMessage,
+      chromeTitle: context.words.teachingAppBarTitle,
+      retractedTitle: context.words.teachingRetractedTitle,
+      retractedMessage: context.words.teachingRetractedMessage,
       onRetry: () => ref.invalidate(provider),
       // La v1 est **enseignements seuls** (PRD) : seul cet écran offre le
       // téléchargement. `'teaching'` est aussi ce qu'écrit `downloads.contentType`.

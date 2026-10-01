@@ -105,7 +105,7 @@ class _Body extends StatelessWidget {
           AppEmptyState(
             icon: Icons.download_done_outlined,
             title: l.downloadsEmptyTitle,
-            message: l.downloadsEmptyMessage,
+            message: context.words.downloadsEmptyMessage,
           ),
         ],
       );
@@ -169,7 +169,7 @@ class _PurgeNotice extends ConsumerWidget {
     final palette = context.palette;
     final title = notice.title;
     final message = title == null
-        ? l.downloadPurgeNoticeUnnamed
+        ? context.words.downloadPurgeNoticeUnnamed
         : l.downloadPurgeNotice(title);
 
     return Container(
@@ -251,7 +251,7 @@ class _DownloadItem extends ConsumerWidget {
     // Titre et image **joints à la lecture** depuis le read-model : la table
     // `downloads` ne les porte pas.
     final view = ref.watch(teachingByIdProvider(row.contentId)).value;
-    final title = view?.title ?? l.downloadsUnknownTitle;
+    final title = view?.title ?? context.words.downloadsUnknownTitle;
 
     return Dismissible(
       key: DownloadsScreen.itemKey(row.contentId),
