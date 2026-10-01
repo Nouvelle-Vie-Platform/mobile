@@ -224,6 +224,30 @@ class _PageSplit<D> {
 /// `POST /teachings/:teachingId/progress` et attend que le flux delta ramène
 /// la ligne. Sa position à chaud vit dans `local_playback_positions`, qui n'est
 /// pas une collection et n'apparaîtra jamais ici.
+///
+/// **Les cinq collections d'« Échanges » ferment la marche** (#96), et dans cet
+/// ordre-ci : `profiles`, `groups`, `group_members`, `group_join_requests`,
+/// `group_messages`.
+///
+/// `profiles` passe **avant** `group_messages`, et c'est la seule contrainte
+/// d'ordre que le cadrage impose en toutes lettres : elle **nomme ce que les
+/// messages désignent**, et un référentiel qui ne filtre ni ne joint rien est le
+/// moins susceptible d'échouer. Un fil arrivé avant les noms s'afficherait sous
+/// des avatars anonymes, puis changerait de visage au cycle suivant — la même
+/// gêne que le vocabulaire arrivé après les listes qu'il intitule.
+///
+/// `group_members` vient après `groups` pour la raison du pivot
+/// `teaching_guests` : une appartenance ne désigne rien par elle-même, elle relie
+/// un groupe et un profil. Et `group_messages` ferme, parce que c'est la plus
+/// volumineuse des cinq et celle dont le périmètre se calcule — donc celle qu'on
+/// ne veut jamais voir précéder quoi que ce soit.
+///
+/// ⚠️ **Aucune des cinq n'entre dans `kBranchScopedCollections`**, bien que
+/// `groups` et `group_messages` soient `partition: 'branch'` côté serveur. Leur
+/// périmètre réel est l'**appartenance** : filtrer côté client par la préférence
+/// de branche retirerait du téléphone un groupe dont je suis membre et qui est
+/// rattaché à une autre assemblée — c'est-à-dire ma propre conversation. Les trois
+/// autres sont `private`, et une collection privée ne relève d'aucune branche.
 List<SyncedCollection<Object?>> syncedCollections() => [
       SyncedCollection<TeachingTypeRow>(
         key: SyncCollectionKey.teachingTypes,
@@ -354,5 +378,40 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.playbackProgressCollection,
         idOf: (item) => contentId(SyncCollectionKey.playbackProgress, item),
         rowOf: playbackProgressRowOf,
+      ),
+      SyncedCollection<ProfileRow>(
+        key: SyncCollectionKey.profiles,
+        local: (dao) => dao.profilesCollection,
+        // `contentId` : l'identifiant est l'**UUID** de `users`, pas un SERIAL.
+        idOf: (item) => contentId(SyncCollectionKey.profiles, item),
+        rowOf: profileRowOf,
+      ),
+      SyncedCollection<GroupRow>(
+        key: SyncCollectionKey.groups,
+        local: (dao) => dao.groupsCollection,
+        idOf: (item) => contentId(SyncCollectionKey.groups, item),
+        rowOf: groupRowOf,
+      ),
+      SyncedCollection<GroupMemberRow>(
+        key: SyncCollectionKey.groupMembers,
+        local: (dao) => dao.groupMembersCollection,
+        // `referenceId` et non `contentId` : l'identifiant d'une appartenance est
+        // un **entier** (`increments` côté serveur). Seuls `groupId` et `userId`,
+        // qu'elle porte, sont des UUID.
+        idOf: (item) => referenceId(SyncCollectionKey.groupMembers, item),
+        rowOf: groupMemberRowOf,
+      ),
+      SyncedCollection<GroupJoinRequestRow>(
+        key: SyncCollectionKey.groupJoinRequests,
+        local: (dao) => dao.groupJoinRequestsCollection,
+        // `referenceId`, pour la raison de `group_members`.
+        idOf: (item) => referenceId(SyncCollectionKey.groupJoinRequests, item),
+        rowOf: groupJoinRequestRowOf,
+      ),
+      SyncedCollection<GroupMessageRow>(
+        key: SyncCollectionKey.groupMessages,
+        local: (dao) => dao.groupMessagesCollection,
+        idOf: (item) => contentId(SyncCollectionKey.groupMessages, item),
+        rowOf: groupMessageRowOf,
       ),
     ];

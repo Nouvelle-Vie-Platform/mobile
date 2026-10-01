@@ -23,6 +23,7 @@ import 'downloads_dao.dart';
 import 'converters/legal_sections_converter.dart';
 import 'device_settings_dao.dart';
 import 'gathering_dao.dart';
+import 'group_dao.dart';
 import 'legal_dao.dart';
 import 'mediatheque_dao.dart';
 import 'menu_dao.dart';
@@ -34,6 +35,7 @@ import 'tables/announcement_tables.dart';
 import 'tables/auth_tables.dart';
 import 'tables/download_tables.dart';
 import 'tables/gathering_tables.dart';
+import 'tables/group_tables.dart';
 import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
@@ -93,6 +95,12 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     Decor,
     AuthChannels,
     DeviceSettings,
+    Profiles,
+    Groups,
+    GroupMembers,
+    GroupJoinRequests,
+    GroupMessages,
+    PendingGroupMessages,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -110,6 +118,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     MenuDao,
     AuthChannelsDao,
     DeviceSettingsDao,
+    GroupDao,
     SettingsDao,
     DownloadsDao,
     DownloadNotificationsDao,
@@ -181,8 +190,21 @@ class AppDatabase extends _$AppDatabase {
   /// la **coexistence bornée** décrite par le cadrage § 14, et c'est elle qui
   /// permet à un appareil de monter de version avant que le portail n'ait réglé
   /// quoi que ce soit.
+  ///
+  /// **v18** — la rubrique **« Échanges »** (#96) : **six créations de table, et
+  /// rien d'autre**. Cinq collections répliquées — `profiles`, `groups`,
+  /// `group_members`, `group_join_requests`, `group_messages` — et une table
+  /// **locale seule**, `pending_group_messages`, qui porte l'écho optimiste d'un
+  /// envoi (même patron que `local_playback_positions` : aucun registre, aucun
+  /// curseur, aucun cycle ne la touche).
+  ///
+  /// Aucune colonne existante ne bouge et aucune ligne n'est réécrite : la
+  /// rubrique était **intégralement fictive** avant ce palier (`SampleData`), il
+  /// n'y a donc rien à reprendre. Les six tables naissent **vides**, et vide veut
+  /// dire ici « je n'ai pas encore reçu mes conversations » — ce que les écrans
+  /// rendent déjà comme une absence, jamais comme une erreur.
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -492,6 +514,41 @@ class AppDatabase extends _$AppDatabase {
           // colonne surnuméraire.
           if (from < 17) {
             await m.createTable(menuEntries);
+          }
+
+          // v17 → v18 — la rubrique **« Échanges »** (#96). **Six créations de
+          // table, et rien d'autre** : cinq collections répliquées et une table
+          // locale seule.
+          //
+          // Rien du catalogue d'un fidèle n'est en jeu, et rien de ses
+          // conversations non plus : la rubrique était **intégralement fictive**
+          // jusqu'ici (`SampleData` — quatre groupes, sept conversations et le
+          // même fil de cinq messages pour toutes), il n'y a donc **aucune
+          // donnée locale à reprendre**. Aucune colonne existante ne bouge.
+          //
+          // Les cinq collections naissent vides, leurs curseurs n'existent pas
+          // encore, et le prochain manifeste les annoncera `from_zero` : le
+          // premier cycle ramène les groupes, le roster, les profils et le fil
+          // d'un coup. D'ici là — et sur un serveur en retard d'une version,
+          // auquel cas les collections prennent un `404` et se sautent — les
+          // écrans montrent une **absence**, pas une erreur : un magasin vide ne
+          // se plaint pas, et c'est ce que `GroupDao` rend.
+          //
+          // `pending_group_messages` naît vide et le reste jusqu'au premier
+          // envoi — elle n'est alimentée que par le composeur de messages, et
+          // aucun cycle de synchronisation ne l'écrit ni ne la lit.
+          //
+          // Pas de garde `to >= 18` pour la raison des paliers qui ne créent que
+          // des tables (v2 à v5, v7, v9, v11 à v16) : le vérificateur de schéma
+          // **ignore une table surnuméraire** et ne signale qu'une colonne
+          // surnuméraire.
+          if (from < 18) {
+            await m.createTable(profiles);
+            await m.createTable(groups);
+            await m.createTable(groupMembers);
+            await m.createTable(groupJoinRequests);
+            await m.createTable(groupMessages);
+            await m.createTable(pendingGroupMessages);
           }
         },
         beforeOpen: (details) async {

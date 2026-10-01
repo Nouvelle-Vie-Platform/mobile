@@ -601,6 +601,75 @@ void main() {
     expect(await db.syncDao.cursorFor('device_settings'), isNull);
   });
 
+  test('v16 → v18 : les six tables d\'Échanges naissent', () async {
+    // Le palier de la rubrique **« Échanges »** (#96) : cinq collections
+    // répliquées et une table locale seule, et rien d'autre. Aucune colonne
+    // existante ne bouge.
+    //
+    // ⚠️ **v16 et non v17**, et ce n'est pas une inattention : la v17 appartient à
+    // la tranche jumelle #82 (les entrées de menu), qui n'est pas encore fusionnée.
+    // `drift_schemas/` n'exporte donc pas de v17, et `GeneratedHelper.versions`
+    // porte un trou — `[1…16, 18]`. Au rebasage sur #82, ce test devient
+    // `v17 → v18` et le trou se referme ; la paire avec `v1 → v18` ci-dessous, elle,
+    // ne bouge pas.
+    final connection = await verifier.startAt(16);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 18);
+  });
+
+  test('v1 → v18 : un appareil resté en v1 rejoue tous les paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 18);
+  });
+
+  test('v16 → v18 : le catalogue survit, et la rubrique naît vide', () async {
+    // Ce qu'un fidèle hors ligne risquerait de perdre, c'est son catalogue : le
+    // palier ne le touche pas. Les six tables, elles, naissent **vides** — et vide
+    // veut dire ici « je n'ai pas encore reçu mes conversations », ce que les
+    // écrans rendent comme une **absence** et non comme une erreur. Un magasin vide
+    // ne se plaint pas.
+    //
+    // Il n'y avait de toute façon **rien à reprendre** : la rubrique était
+    // intégralement fictive avant ce palier (`SampleData` — quatre groupes, sept
+    // conversations et le même fil de cinq messages pour toutes).
+    final schema = await verifier.schemaAt(16);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 18);
+
+    expect((await db.select(db.teachings).get()).single.title,
+        'Dieu a le dernier mot');
+    expect(await db.select(db.profiles).get(), isEmpty);
+    expect(await db.select(db.groups).get(), isEmpty);
+    expect(await db.select(db.groupMembers).get(), isEmpty);
+    expect(await db.select(db.groupJoinRequests).get(), isEmpty);
+    expect(await db.select(db.groupMessages).get(), isEmpty);
+    // La table **locale seule** de l'écho optimiste naît vide elle aussi, et le
+    // reste jusqu'au premier envoi : aucun cycle ne l'écrit.
+    expect(await db.select(db.pendingGroupMessages).get(), isEmpty);
+    // Aucun curseur posé : les cinq collections n'ont jamais été tirées, et le
+    // prochain manifeste les annoncera `from_zero`.
+    for (final key in const [
+      'profiles',
+      'groups',
+      'group_members',
+      'group_join_requests',
+      'group_messages',
+    ]) {
+      expect(await db.syncDao.cursorFor(key), isNull, reason: key);
+    }
+  });
+
   test('v16 → v17 : la table des entrées de menu apparaît', () async {
     // Le palier des **menus** (#82) : une création de table, et rien d'autre.
     // Aucune colonne existante ne bouge, et ni la médiathèque ni l'accueil ne

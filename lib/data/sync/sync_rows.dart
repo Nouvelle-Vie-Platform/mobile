@@ -638,6 +638,163 @@ DeviceSettingsCompanion deviceSettingsRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/profiles` — **quatre clés** : `id`, `displayName`, `avatarUrl`,
+/// `updatedAt` (#96).
+///
+/// Relevées sur le `transform` **inline** de
+/// `app/sync/descriptors/profiles_descriptor.ts` — il n'y a pas de classe
+/// transformer pour cette collection. **Il n'y a pas de `createdAt`** : l'attendre
+/// laisserait une colonne nulle pour toujours.
+///
+/// `displayName` est nullable **par contrat** : `displayNameOf` rend « Prénom
+/// Nom » élagué, à défaut le titre, à défaut `null`. Un compte qui n'a jamais
+/// rempli son profil n'a pas de nom, et c'est un cas courant — pas une ligne
+/// mutilée. `avatarUrl` est, lui, **toujours** nul aujourd'hui : `users` ne porte
+/// aucune colonne d'avatar.
+ProfilesCompanion profileRowOf(Map<String, Object?> item) {
+  const collection = 'profiles';
+  return ProfilesCompanion.insert(
+    id: contentId(collection, item),
+    displayName: Value(_optionalText(item, 'displayName')),
+    avatarUrl: Value(_optionalText(item, 'avatarUrl')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/groups` — **seize clés servies, quinze stockées** (#96).
+///
+/// Relevées sur `app/groups/transformers/group_transformer.ts` : `id`, `name`,
+/// `description`, `joinPolicy`, `postPolicy`, `isWriteLocked`, `isActive`,
+/// `isDirect`, `ownerId`, `ownerKind`, `ownerOfficialAccountId`,
+/// `ownerContributorId`, `memberCount`, `branchIds`, `createdAt`, `updatedAt`.
+///
+/// **`branchIds` n'est pas stocké**, et c'est le patron de `branchRowOf` (« neuf
+/// clés, ni `timezone` ni `pastorId` ») et de `teachingRowOf` (« ni `family`, ni
+/// durée, ni `mimeType` ») : on ne range pas une clé que rien ne lit. Le ciblage
+/// d'un groupe est déjà appliqué **par le serveur** dans le périmètre qu'il sert
+/// — `applyVisibleGroupsScope` —, et aucun écran ne montre la portée d'un groupe.
+/// Le jour où l'un la montrera, la colonne s'ajoutera avec son lecteur.
+///
+/// ⚠️ **`ownerId` est `groups.owner_user_id`**, renommé par le transformer : il
+/// n'y a pas de clé `ownerUserId` sur le fil, et il est nul pour un groupe
+/// institutionnel. Les trois `owner*` sont gardés tous les trois parce que
+/// `ownerKind` dit **où joindre le nom de l'animateur** — `profiles`,
+/// `official_accounts` ou `contributors`, les trois déjà répliquées.
+///
+/// `joinPolicy`, `postPolicy` et `ownerKind` sont stockés **en chaîne brute**,
+/// jamais en enum : ce sont des `varchar` côté serveur, et une valeur ajoutée là
+/// ferait **lever** un enum ici — donc couper le cycle, donc emporter toutes les
+/// collections rangées après celle-ci. Une chaîne inconnue se replie à
+/// l'affichage.
+GroupsCompanion groupRowOf(Map<String, Object?> item) {
+  const collection = 'groups';
+  return GroupsCompanion.insert(
+    id: contentId(collection, item),
+    name: _text(collection, item, 'name'),
+    description: Value(_optionalText(item, 'description')),
+    joinPolicy: _text(collection, item, 'joinPolicy'),
+    postPolicy: _text(collection, item, 'postPolicy'),
+    isWriteLocked: Value(item['isWriteLocked'] == true),
+    // `!= false` et non `== true` : l'activité et la direction ont des défauts
+    // opposés côté serveur (`is_active` vrai, `is_direct` faux), et c'est le
+    // défaut qu'on reproduit quand la clé manque.
+    isActive: Value(item['isActive'] != false),
+    isDirect: Value(item['isDirect'] == true),
+    ownerId: Value(_optionalText(item, 'ownerId')),
+    ownerKind: _text(collection, item, 'ownerKind'),
+    ownerOfficialAccountId: Value(_optionalInt(item, 'ownerOfficialAccountId')),
+    ownerContributorId: Value(_optionalInt(item, 'ownerContributorId')),
+    memberCount: Value(_optionalInt(item, 'memberCount') ?? 0),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/group_members` — **sept clés** : `id`, `groupId`, `userId`, `role`,
+/// `createdAt`, `updatedAt`, `deletedAt` (#96).
+///
+/// `deletedAt` ne figure pas ci-dessous : `readsAsRetraction` a déjà trié en
+/// amont, et une ligne tombstonée ne traverse jamais cette fonction (règle 3 du
+/// moteur).
+///
+/// **`id` est un entier** (`increments` côté serveur), donc `referenceId` et non
+/// `contentId` — seuls `groupId` et `userId`, qu'il porte, sont des UUID.
+GroupMembersCompanion groupMemberRowOf(Map<String, Object?> item) {
+  const collection = 'group_members';
+  return GroupMembersCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    groupId: _text(collection, item, 'groupId'),
+    userId: _text(collection, item, 'userId'),
+    role: _text(collection, item, 'role'),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/group_join_requests` — **sept clés** : `id`, `groupId`, `userId`,
+/// `status`, `createdAt`, `updatedAt`, `deletedAt` (#96).
+///
+/// `decidedBy` et `decidedAt` existent en base et **ne sont pas servis** : le
+/// mobile n'a rien à dire de qui a tranché.
+///
+/// **`id` est un entier**, comme pour `group_members`.
+GroupJoinRequestsCompanion groupJoinRequestRowOf(Map<String, Object?> item) {
+  const collection = 'group_join_requests';
+  return GroupJoinRequestsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    groupId: _text(collection, item, 'groupId'),
+    userId: _text(collection, item, 'userId'),
+    status: _text(collection, item, 'status'),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/group_messages` — **neuf clés servies, huit stockées** (#96).
+///
+/// Relevées sur `app/groups/transformers/group_message_transformer.ts` : `id`,
+/// `groupId`, `authorId`, `isSystem`, `body`, `clientMessageId`,
+/// `clientCreatedAt`, `createdAt`, `deletedAt`. La neuvième est le tombstone, que
+/// `readsAsRetraction` a déjà traité. **Il n'y a pas d'`updatedAt`** sur le fil,
+/// bien que la colonne existe en base et porte le curseur composé.
+///
+/// ## ⚠️ Les deux lignes qui portent tout le contrat
+///
+/// ```dart
+/// authorId: Value(_optionalText(item, 'authorId')),
+/// isSystem: Value(item['isSystem'] == true),
+/// ```
+///
+/// Un **nul explicite**, jamais une absence — et c'est ce qui rend le
+/// **détachement** d'auteur vrai sur les téléphones déjà synchronisés. ADR-0032
+/// écrit `author_id = NULL` et bouscule `updated_at` à la main, exprès pour que
+/// la ligne reparte dans le flux : le mobile ne reçoit pas un message neuf, il
+/// reçoit **la mise à jour d'un message qu'il a déjà**. Un `Value.absentIfNull`,
+/// un `COALESCE` ou un « ne pas écraser par du vide » laisserait l'ancien uuid en
+/// place, et la seule promesse qui compte — « vos messages ne vous sont plus
+/// attribués » — ne serait tenue que côté serveur. `sync_dao.applyPage` applique
+/// en `InsertMode.insertOrReplace` : **ne pas y déroger pour cette collection**.
+///
+/// Et `isSystem` est lu **séparément**, parce que le nul d'`authorId` a deux sens
+/// depuis la suppression de compte : `(null, true)` = le serveur parle,
+/// `(null, false)` = un auteur retiré. Le déduire d'`authorId` afficherait les
+/// messages d'un membre parti comme des annonces du serveur — et rien ne
+/// planterait.
+GroupMessagesCompanion groupMessageRowOf(Map<String, Object?> item) {
+  const collection = 'group_messages';
+  return GroupMessagesCompanion.insert(
+    id: contentId(collection, item),
+    groupId: _text(collection, item, 'groupId'),
+    // Nul **explicite** : voir l'en-tête. Ces deux lignes-ci sont le contrat.
+    authorId: Value(_optionalText(item, 'authorId')),
+    isSystem: Value(item['isSystem'] == true),
+    body: _text(collection, item, 'body'),
+    clientMessageId: Value(_optionalText(item, 'clientMessageId')),
+    clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+  );
+}
+
 /// `GET /sync/menu_entries` — **une entrée de menu** (#82).
 ///
 /// **Trente et une clés**, relevées une à une sur

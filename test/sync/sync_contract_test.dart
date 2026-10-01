@@ -153,6 +153,45 @@ void main() {
       expect(kSyncCollections['group_join_requests'], 'private');
     });
 
+    test('les cinq collections d\'Échanges sont là, et déjà au bon compte', () {
+      // ⚠️ **Le compte ne bouge pas avec #96, et ce n'est pas un oubli.** Les cinq
+      // collections de la messagerie étaient **déjà** dans cette carte : elles ont
+      // été relevées sur `registry.ts` en #81, au moment où ce test disait
+      // dix-neuf pour vingt-cinq descripteurs. #96 les **réplique** (une table
+      // locale, un DAO, un repository), elle ne les découvre pas.
+      //
+      // Le registre serveur en compte **vingt-neuf**, recompté descripteur par
+      // descripteur (`awk '/^export const syncDescriptors/,/^\]/' | grep -cE
+      // '^  [a-zA-Z]+Descriptor,$'`), jamais sur la phrase qui les précède — elle
+      // a déjà menti deux fois. La différence avec les vingt-huit d'ici est
+      // **exactement `menu_entries`**, livrée côté serveur par #480 et répliquée
+      // côté client par la tranche jumelle #82. L'assertion ci-dessous est ce qui
+      // empêchera de croire, le jour où ce sera faux, que l'écart était connu.
+      for (final key in const [
+        'profiles',
+        'groups',
+        'group_members',
+        'group_join_requests',
+        'group_messages',
+      ]) {
+        expect(kSyncCollections, contains(key));
+      }
+      expect(
+        kSyncCollections,
+        isNot(contains('menu_entries')),
+        reason: 'si cette clé est arrivée, le compte passe à vingt-neuf (#82)',
+      );
+      expect(kSyncCollections['groups'], 'branch');
+      expect(kSyncCollections['group_messages'], 'branch');
+      // `profiles` précède `group_messages` **dans le registre serveur**, et c'est
+      // ce que le client reproduit : elle nomme ce que les messages désignent.
+      final order = kSyncCollections.keys.toList();
+      expect(
+        order.indexOf('profiles'),
+        lessThan(order.indexOf('group_messages')),
+      );
+    });
+
     test(
       'les deux familles de la médiathèque ont chacune leur paire de clés',
       () {

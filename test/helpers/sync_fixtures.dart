@@ -1791,3 +1791,451 @@ final String decorCursor = serverCursor(
 /// La page nominale : l'unique ligne du singleton.
 Map<String, Object?> decorPage() =>
     deltaPage(items: const [decorPayload], nextCursor: decorCursor);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// « Échanges » — les cinq collections de la messagerie de groupe (#96)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Les identifiants qui servent de décor à tout ce bloc, nommés une fois.
+///
+/// [kMeId] est **moi** : c'est l'identifiant que les tests passent à
+/// `StoreEchangesRepository`, et celui sur lequel le `mine` d'une bulle se
+/// compare.
+const String kMeId = '019a1000-0000-7000-8000-00000000me01';
+const String kPeerId = '019a1000-0000-7000-8000-0000000peer1';
+const String kGoneId = '019a1000-0000-7000-8000-0000000gone1';
+const String kGroupId = '019a2000-0000-7000-8000-000000grp001';
+const String kOpenGroupId = '019a2000-0000-7000-8000-000000grp002';
+const String kDirectGroupId = '019a2000-0000-7000-8000-000000grp003';
+
+// --- `profiles` : **quatre clés**, et pas de `createdAt` ---------------------
+
+/// **Mon propre profil.** Quatre clés, relevées sur le `transform` **inline** de
+/// `app/sync/descriptors/profiles_descriptor.ts` : `id`, `displayName`,
+/// `avatarUrl`, `updatedAt`.
+///
+/// ⚠️ **Il n'y a pas de `createdAt`** — le transformer ne l'émet pas. Un client
+/// qui l'attendrait garderait une colonne nulle pour toujours.
+///
+/// ⚠️ **`avatarUrl` est toujours `null`** : `users` ne porte aucune colonne
+/// d'avatar. Ce n'est pas une omission de fixture, c'est la valeur servie.
+const Map<String, Object?> myProfilePayload = {
+  'id': kMeId,
+  'displayName': 'Kossi Amavi',
+  'avatarUrl': null,
+  'updatedAt': '2026-09-01T08:00:00.000Z',
+};
+
+/// **Le profil d'un co-membre** — ce qui donne un nom à ses bulles.
+const Map<String, Object?> peerProfilePayload = {
+  'id': kPeerId,
+  'displayName': 'Estelle Adjo',
+  'avatarUrl': null,
+  'updatedAt': '2026-09-01T08:05:00.000Z',
+};
+
+/// **Un profil sans nom.** Cas **légitime** et courant : `displayNameOf` rend
+/// `null` quand ni prénom, ni nom, ni titre n'est renseigné. Le client doit le
+/// rendre par une absence — jamais par un « Utilisateur inconnu ».
+const Map<String, Object?> namelessProfilePayload = {
+  'id': kGoneId,
+  'displayName': null,
+  'avatarUrl': null,
+  'updatedAt': '2026-09-01T08:10:00.000Z',
+};
+
+final String profilesCursor = serverCursor(
+  updatedAtIso: '2026-09-01T08:10:00.000Z',
+  id: kGoneId,
+);
+
+Map<String, Object?> profilesPage() => deltaPage(
+      items: const [
+        myProfilePayload,
+        peerProfilePayload,
+        namelessProfilePayload,
+      ],
+      nextCursor: profilesCursor,
+    );
+
+// --- `groups` : **seize clés**, aucun tombstone ------------------------------
+
+/// **Un groupe dont je suis membre.** Seize clés, relevées sur
+/// `app/groups/transformers/group_transformer.ts`.
+///
+/// ⚠️ **`ownerId` est `groups.owner_user_id`**, renommé par le transformer : il
+/// n'y a **pas** de clé `ownerUserId` sur le fil. Et `branchIds` est un tableau
+/// d'entiers, `[]` valant « portée nationale » — jamais `null`.
+///
+/// ⚠️ **Il n'y a pas de `deletedAt`** : la table `groups` n'a pas de
+/// soft-delete. Retirer un groupe met `isActive` à `false`, et c'est cette
+/// ligne-là qui voyage.
+const Map<String, Object?> myGroupPayload = {
+  'id': kGroupId,
+  'name': 'Chorale Harmonie',
+  'description': 'Répétitions le samedi, service à chaque culte.',
+  'joinPolicy': 'invite_only',
+  'postPolicy': 'all',
+  'isWriteLocked': false,
+  'isActive': true,
+  'isDirect': false,
+  'ownerId': kPeerId,
+  'ownerKind': 'user',
+  'ownerOfficialAccountId': null,
+  'ownerContributorId': null,
+  'memberCount': 3,
+  'branchIds': [3],
+  'createdAt': '2026-08-01T09:00:00.000Z',
+  'updatedAt': '2026-09-01T09:00:00.000Z',
+};
+
+/// **Un groupe à rejoindre**, politique ouverte, dont je ne suis pas membre —
+/// propriété d'un **compte officiel**, ce qui fait joindre son nom ailleurs que
+/// dans `profiles`.
+const Map<String, Object?> openGroupPayload = {
+  'id': kOpenGroupId,
+  'name': 'Étude biblique du mardi',
+  'description': 'Ouvert à tous, chaque mardi à 18h.',
+  'joinPolicy': 'open',
+  'postPolicy': 'all',
+  'isWriteLocked': false,
+  'isActive': true,
+  'isDirect': false,
+  'ownerId': null,
+  'ownerKind': 'official_account',
+  'ownerOfficialAccountId': 1,
+  'ownerContributorId': null,
+  'memberCount': 24,
+  'branchIds': [],
+  'createdAt': '2026-08-02T09:00:00.000Z',
+  'updatedAt': '2026-09-01T09:05:00.000Z',
+};
+
+/// **Un tête-à-tête.** Le serveur en fait un groupe comme un autre : c'est ce qui
+/// donne gratuitement le fil, le tombstone de modération et le curseur.
+/// `isDirect: true`, et son `name` **n'a pas été écrit pour être lu** — le client
+/// affiche le nom de l'autre.
+const Map<String, Object?> directGroupPayload = {
+  'id': kDirectGroupId,
+  'name': 'direct:019a1000-019a1000',
+  'description': null,
+  'joinPolicy': 'invite_only',
+  'postPolicy': 'all',
+  'isWriteLocked': false,
+  'isActive': true,
+  'isDirect': true,
+  'ownerId': kMeId,
+  'ownerKind': 'user',
+  'ownerOfficialAccountId': null,
+  'ownerContributorId': null,
+  'memberCount': 2,
+  'branchIds': [],
+  'createdAt': '2026-08-03T09:00:00.000Z',
+  'updatedAt': '2026-09-01T09:10:00.000Z',
+};
+
+/// **Un groupe en diffusion** : `postPolicy: 'admins'`. Un simple membre n'y
+/// écrit pas, et le client ne doit pas lui offrir la barre de saisie.
+///
+/// Écrit **en entier** et non par recopie d'une autre fixture : une carte
+/// constante dont une clé en recouvrirait une autre ne compile pas en Dart, et
+/// l'écrire au long rend de toute façon lisible la seule différence qui compte.
+const Map<String, Object?> broadcastGroupPayload = {
+  'id': '019a2000-0000-7000-8000-000000grp004',
+  'name': 'Annonces du bureau',
+  'description': 'Les communications du bureau exécutif.',
+  'joinPolicy': 'invite_only',
+  'postPolicy': 'admins',
+  'isWriteLocked': false,
+  'isActive': true,
+  'isDirect': false,
+  'ownerId': kPeerId,
+  'ownerKind': 'user',
+  'ownerOfficialAccountId': null,
+  'ownerContributorId': null,
+  'memberCount': 3,
+  'branchIds': [3],
+  'createdAt': '2026-08-01T09:00:00.000Z',
+  'updatedAt': '2026-09-01T09:15:00.000Z',
+};
+
+final String groupsCursor = serverCursor(
+  updatedAtIso: '2026-09-01T09:10:00.000Z',
+  id: kDirectGroupId,
+);
+
+Map<String, Object?> groupsPage({List<Object?>? items}) => deltaPage(
+      items:
+          items ?? const [myGroupPayload, openGroupPayload, directGroupPayload],
+      nextCursor: groupsCursor,
+    );
+
+// --- `group_members` : **sept clés**, `id` **entier**, avec tombstone --------
+
+/// **Mon appartenance** au groupe. `id` est un **entier** (`increments`), là où
+/// `groupId` et `userId` sont des UUID.
+const Map<String, Object?> myMembershipPayload = {
+  'id': 1,
+  'groupId': kGroupId,
+  'userId': kMeId,
+  'role': 'member',
+  'createdAt': '2026-08-01T09:00:00.000Z',
+  'updatedAt': '2026-08-01T09:00:00.000Z',
+  'deletedAt': null,
+};
+
+/// L'appartenance d'un **co-membre**, animateur du groupe.
+const Map<String, Object?> peerMembershipPayload = {
+  'id': 2,
+  'groupId': kGroupId,
+  'userId': kPeerId,
+  'role': 'leader',
+  'createdAt': '2026-08-01T09:00:00.000Z',
+  'updatedAt': '2026-08-01T09:00:00.000Z',
+  'deletedAt': null,
+};
+
+/// Les deux lignes du **tête-à-tête** : la mienne et celle de l'autre.
+const Map<String, Object?> myDirectMembershipPayload = {
+  'id': 3,
+  'groupId': kDirectGroupId,
+  'userId': kMeId,
+  'role': 'member',
+  'createdAt': '2026-08-03T09:00:00.000Z',
+  'updatedAt': '2026-08-03T09:00:00.000Z',
+  'deletedAt': null,
+};
+
+const Map<String, Object?> peerDirectMembershipPayload = {
+  'id': 4,
+  'groupId': kDirectGroupId,
+  'userId': kPeerId,
+  'role': 'member',
+  'createdAt': '2026-08-03T09:00:00.000Z',
+  'updatedAt': '2026-08-03T09:00:00.000Z',
+  'deletedAt': null,
+};
+
+/// **Mon départ du groupe** — un tombstone, et c'est lui qui retire la
+/// conversation de mon téléphone.
+///
+/// C'est la **même ligne** que [myMembershipPayload], `id` compris : l'unicité
+/// `(group_id, user_id)` n'étant pas partielle, une ré-adhésion réanime cet
+/// `id`-ci (`deleted_at → NULL`) plutôt que d'en créer un second.
+const Map<String, Object?> myMembershipRetractedPayload = {
+  'id': 1,
+  'groupId': kGroupId,
+  'userId': kMeId,
+  'role': 'member',
+  'createdAt': '2026-08-01T09:00:00.000Z',
+  'updatedAt': '2026-09-05T10:00:00.000Z',
+  'deletedAt': '2026-09-05T10:00:00.000Z',
+};
+
+final String groupMembersCursor = serverCursor(
+  updatedAtIso: '2026-08-03T09:00:00.000Z',
+  id: 4,
+);
+
+final String groupMembersCursorAfterRetraction = serverCursor(
+  updatedAtIso: '2026-09-05T10:00:00.000Z',
+  id: 1,
+);
+
+Map<String, Object?> groupMembersPage({List<Object?>? items}) => deltaPage(
+      items: items ??
+          const [
+            myMembershipPayload,
+            peerMembershipPayload,
+            myDirectMembershipPayload,
+            peerDirectMembershipPayload,
+          ],
+      nextCursor: groupMembersCursor,
+    );
+
+/// La page qui porte **mon départ**.
+Map<String, Object?> groupMembersRetractionPage() => deltaPage(
+      items: const [myMembershipRetractedPayload],
+      nextCursor: groupMembersCursorAfterRetraction,
+    );
+
+// --- `group_join_requests` : **sept clés**, `id` **entier** ------------------
+
+/// **Ma demande d'adhésion**, en attente.
+///
+/// ⚠️ `decidedBy` et `decidedAt` existent en base et **ne sont pas servis**. Et
+/// le `deletedAt` n'est **pas** le canal de la décision : un verdict voyage par
+/// le changement de `status` et le bump d'`updated_at`.
+const Map<String, Object?> pendingJoinRequestPayload = {
+  'id': 1,
+  'groupId': kOpenGroupId,
+  'userId': kMeId,
+  'status': 'pending',
+  'createdAt': '2026-09-02T09:00:00.000Z',
+  'updatedAt': '2026-09-02T09:00:00.000Z',
+  'deletedAt': null,
+};
+
+final String groupJoinRequestsCursor = serverCursor(
+  updatedAtIso: '2026-09-02T09:00:00.000Z',
+  id: 1,
+);
+
+Map<String, Object?> groupJoinRequestsPage({List<Object?>? items}) => deltaPage(
+      items: items ?? const [pendingJoinRequestPayload],
+      nextCursor: groupJoinRequestsCursor,
+    );
+
+// --- `group_messages` : **neuf clés**, et les trois origines -----------------
+
+/// **Un membre parle** — `(authorId, isSystem) = (uuid, false)`. Une **bulle**.
+///
+/// Neuf clés, relevées sur
+/// `app/groups/transformers/group_message_transformer.ts`. ⚠️ **Il n'y a pas
+/// d'`updatedAt`** sur le fil, bien que la colonne existe en base et porte le
+/// curseur composé.
+const Map<String, Object?> memberMessagePayload = {
+  'id': '019a3000-0000-7000-8000-00000000msg1',
+  'groupId': kGroupId,
+  'authorId': kPeerId,
+  'isSystem': false,
+  'body': 'Répétition samedi à 16h, salle du fond.',
+  'clientMessageId': null,
+  'clientCreatedAt': null,
+  'createdAt': '2026-09-03T10:30:00.000Z',
+  'deletedAt': null,
+};
+
+/// **Mon propre message** — même origine, mais `mine` se **dérive** en comparant
+/// `authorId` à l'identifiant de session. Il ne se sert pas.
+const Map<String, Object?> myMessagePayload = {
+  'id': '019a3000-0000-7000-8000-00000000msg2',
+  'groupId': kGroupId,
+  'authorId': kMeId,
+  'isSystem': false,
+  'body': 'Amen, j\'y serai.',
+  'clientMessageId': '019a4000-0000-7000-8000-0000000echo1',
+  'clientCreatedAt': '2026-09-03T10:31:58.000Z',
+  'createdAt': '2026-09-03T10:32:00.000Z',
+  'deletedAt': null,
+};
+
+/// **Le serveur parle** — `(null, true)`. Un **bandeau**, centré, sans bulle.
+///
+/// ⚠️ Son `body` est de la **prose française en dur** : le serveur les écrit
+/// ainsi (`post_group_system_message.ts`), pas comme des clés à traduire. Un
+/// membre anglophone ou éwéphone les lira en français, et le mobile n'a rien pour
+/// y remédier — limite serveur acceptée telle quelle par le cadrage.
+const Map<String, Object?> systemMessagePayload = {
+  'id': '019a3000-0000-7000-8000-00000000msg3',
+  'groupId': kGroupId,
+  'authorId': null,
+  'isSystem': true,
+  'body': 'Un nouveau membre a rejoint le groupe.',
+  'clientMessageId': null,
+  'clientCreatedAt': null,
+  'createdAt': '2026-09-03T10:35:00.000Z',
+  'deletedAt': null,
+};
+
+/// **UN AUTEUR RETIRÉ** — `(null, false)`. **Une bulle**, jamais un bandeau.
+///
+/// C'est la ligne que le contrat existe pour défendre (ADR-0032) : la personne a
+/// supprimé son compte, `author_id` est passé à `NULL`, et `is_system` est resté
+/// `false`. Un client qui testerait le nul seul afficherait cette phrase — celle
+/// d'un fidèle — comme une annonce du serveur. Rien ne planterait, aucun test ne
+/// rougirait.
+const Map<String, Object?> removedAuthorMessagePayload = {
+  'id': '019a3000-0000-7000-8000-00000000msg4',
+  'groupId': kGroupId,
+  'authorId': null,
+  'isSystem': false,
+  'body': 'Que Dieu vous bénisse tous.',
+  'clientMessageId': null,
+  'clientCreatedAt': null,
+  'createdAt': '2026-09-03T10:40:00.000Z',
+  'deletedAt': null,
+};
+
+/// **Le même message qu'avant son détachement** : il portait un `authorId`.
+///
+/// C'est la **même ligne** que [removedAuthorMessagePayload], `id` compris. Le
+/// couple de fixtures sert le cas qui ne s'obtient qu'en deux temps — le magasin
+/// doit avoir **perdu** l'uuid après la seconde page.
+const Map<String, Object?> attachedAuthorMessagePayload = {
+  'id': '019a3000-0000-7000-8000-00000000msg4',
+  'groupId': kGroupId,
+  'authorId': kGoneId,
+  'isSystem': false,
+  'body': 'Que Dieu vous bénisse tous.',
+  'clientMessageId': null,
+  'clientCreatedAt': null,
+  'createdAt': '2026-09-03T10:40:00.000Z',
+  'deletedAt': null,
+};
+
+/// **Un message supprimé par modération** — le tombstone du fil.
+///
+/// La ligne part **entière**, `deletedAt` en plus : `readsAsRetraction` tranche
+/// avant toute désérialisation, et la ligne quitte le magasin.
+const Map<String, Object?> deletedMessagePayload = {
+  'id': '019a3000-0000-7000-8000-00000000msg1',
+  'groupId': kGroupId,
+  'authorId': kPeerId,
+  'isSystem': false,
+  'body': 'Répétition samedi à 16h, salle du fond.',
+  'clientMessageId': null,
+  'clientCreatedAt': null,
+  'createdAt': '2026-09-03T10:30:00.000Z',
+  'deletedAt': '2026-09-04T11:00:00.000Z',
+};
+
+final String groupMessagesCursor = serverCursor(
+  updatedAtIso: '2026-09-03T10:40:00.000Z',
+  id: '019a3000-0000-7000-8000-00000000msg4',
+);
+
+final String groupMessagesCursorAfterChange = serverCursor(
+  updatedAtIso: '2026-09-06T12:00:00.000Z',
+  id: '019a3000-0000-7000-8000-00000000msg4',
+);
+
+/// **La page nominale, et elle porte un exemplaire de chaque origine** — membre,
+/// serveur, et **auteur retiré**.
+///
+/// Sans ce dernier dans les fixtures, le cas d'ADR-0032 n'existerait que dans un
+/// test unitaire et aucun écran ne le montrerait jamais à personne.
+Map<String, Object?> groupMessagesPage({List<Object?>? items}) => deltaPage(
+      items: items ??
+          const [
+            memberMessagePayload,
+            myMessagePayload,
+            systemMessagePayload,
+            removedAuthorMessagePayload,
+          ],
+      nextCursor: groupMessagesCursor,
+    );
+
+/// La page **avant** le détachement : le quatrième message porte encore son
+/// auteur.
+Map<String, Object?> groupMessagesPageAttached() => groupMessagesPage(
+      items: const [
+        memberMessagePayload,
+        myMessagePayload,
+        systemMessagePayload,
+        attachedAuthorMessagePayload,
+      ],
+    );
+
+/// La page **du détachement** : la même ligne revient, `authorId` à `null` et
+/// `isSystem` toujours `false`.
+Map<String, Object?> groupMessagesDetachPage() => deltaPage(
+      items: const [removedAuthorMessagePayload],
+      nextCursor: groupMessagesCursorAfterChange,
+    );
+
+/// La page qui porte la **suppression de modération**.
+Map<String, Object?> groupMessagesDeletionPage() => deltaPage(
+      items: const [deletedMessagePayload],
+      nextCursor: groupMessagesCursorAfterChange,
+    );

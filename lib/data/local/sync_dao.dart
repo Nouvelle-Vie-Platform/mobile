@@ -9,6 +9,7 @@ import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
 import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
+import 'tables/group_tables.dart';
 import 'tables/season_tables.dart';
 import 'tables/auth_tables.dart';
 import 'tables/device_tables.dart';
@@ -166,6 +167,56 @@ abstract final class SyncCollectionKey {
   /// qui n'est pas une collection, et rapporte au serveur par
   /// `POST /teachings/:teachingId/progress`. Rien de local n'entre jamais ici.
   static const String playbackProgress = 'playback_progress';
+
+  /// **Les profils de mes co-membres** (#96) — la projection `{id, displayName,
+  /// avatarUrl}` de `users` qui donne un **nom** à chaque `userId`.
+  ///
+  /// `partition: 'private'`, et le périmètre est **relationnel** et non de
+  /// branche : les personnes que je côtoie, jamais un annuaire. C'est la
+  /// réversion assumée d'ADR-0029 côté serveur, et sans elle la rubrique
+  /// Échanges ne pouvait pas être peinte — un fil où personne n'a de nom.
+  ///
+  /// **Sans tombstone** : sortir de mon périmètre ne produit aucun signal. Le
+  /// coût est borné par la lecture, qui ne nomme que ce qu'elle affiche.
+  static const String profiles = 'profiles';
+
+  /// **Les groupes** (#96) : le groupe, son effectif actif, sa politique
+  /// d'adhésion et son régime d'écriture.
+  ///
+  /// `partition: 'branch'` côté serveur, mais le périmètre réel est
+  /// l'**appartenance** — national ∪ branche visible ∪ groupes rejoints. Servie
+  /// au porteur **sans compte**, et **vide** : il n'appartient à rien.
+  ///
+  /// **Sans tombstone** : la table serveur n'a pas de `deleted_at`, retirer un
+  /// groupe met `isActive` à `false`.
+  static const String groups = 'groups';
+
+  /// **Le roster de mes groupes** (#96) : ma ligne **et** celles de mes
+  /// co-membres. `partition: 'private'`.
+  ///
+  /// **Avec tombstone**, et il porte mon propre départ autant que le retrait
+  /// d'un co-membre. C'est la seule des cinq dont la rétractation retire
+  /// vraiment quelque chose de l'écran, et c'est pourquoi la liste des
+  /// conversations se lit sur elle plutôt que sur `groups`.
+  static const String groupMembers = 'group_members';
+
+  /// **Mes demandes d'adhésion** ∪ celles des groupes que j'administre (#96).
+  /// `partition: 'private'`.
+  ///
+  /// **Avec tombstone**, mais il n'est pas le canal de la décision : un verdict
+  /// voyage par le changement de `status` et le bump d'`updated_at`. Un client
+  /// qui attendrait le `deleted_at` ne l'apprendrait jamais.
+  static const String groupJoinRequests = 'group_join_requests';
+
+  /// **Le fil** (#96). `partition: 'branch'`, périmètre réel = l'appartenance.
+  ///
+  /// **Avec tombstone** : la suppression de modération voyage, et la ligne quitte
+  /// le magasin quelle que soit son origine.
+  ///
+  /// ⚠️ Rangée **après** [profiles], exprès : elle désigne ce que les profils
+  /// nomment, et un référentiel sans filtre ni jointure est le moins susceptible
+  /// d'échouer.
+  static const String groupMessages = 'group_messages';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -223,6 +274,11 @@ const String _kSyncStampColumn = 'sync_stamp';
     Decor,
     AuthChannels,
     DeviceSettings,
+    Profiles,
+    Groups,
+    GroupMembers,
+    GroupJoinRequests,
+    GroupMessages,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -330,6 +386,36 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// c'est `DeviceSettingsDao` qui en décide.
   LocalCollection<DeviceSettingsRow> get deviceSettingsCollection =>
       LocalCollection._(SyncCollectionKey.deviceSettings, deviceSettings);
+
+  /// **Sans tombstone** (#96) : un profil sorti de mon périmètre relationnel ne
+  /// produit aucun signal de retrait. Un nom périmé est la nuisance assumée ; la
+  /// lecture ne nomme de toute façon que ce qu'un fil affiche encore.
+  LocalCollection<ProfileRow> get profilesCollection =>
+      LocalCollection._(SyncCollectionKey.profiles, profiles);
+
+  /// **Sans tombstone non plus** : la table serveur n'a pas de `deleted_at`, et
+  /// retirer un groupe met `isActive` à `false` — c'est cette ligne-là qui
+  /// voyage. Quitter un groupe, en revanche, ne fait voyager que la rétractation
+  /// de **mon appartenance** ([groupMembersCollection]) : le groupe reste en
+  /// magasin, et c'est la lecture qui cesse de le lister.
+  LocalCollection<GroupRow> get groupsCollection =>
+      LocalCollection._(SyncCollectionKey.groups, groups);
+
+  /// **Avec tombstone**, et c'est la collection sur laquelle repose la
+  /// disparition d'une conversation : ma propre ligne voyage tombstonée quand je
+  /// quitte, celle d'un co-membre quand il est retiré.
+  LocalCollection<GroupMemberRow> get groupMembersCollection =>
+      LocalCollection._(SyncCollectionKey.groupMembers, groupMembers);
+
+  /// **Avec tombstone**, mais le verdict d'une demande voyage par son `status`,
+  /// pas par un `deleted_at`.
+  LocalCollection<GroupJoinRequestRow> get groupJoinRequestsCollection =>
+      LocalCollection._(SyncCollectionKey.groupJoinRequests, groupJoinRequests);
+
+  /// **Avec tombstone** : une suppression de modération retire le message du
+  /// magasin, quelle que soit son origine — y compris un message système.
+  LocalCollection<GroupMessageRow> get groupMessagesCollection =>
+      LocalCollection._(SyncCollectionKey.groupMessages, groupMessages);
 
   /// **La seule collection `private` de ce registre.** Elle se remplit comme
   /// les dix autres — par le flux delta, jamais par l'application — et rien
