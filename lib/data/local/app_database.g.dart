@@ -9934,6 +9934,409 @@ class DecorCompanion extends UpdateCompanion<DecorRow> {
   }
 }
 
+class $AuthChannelsTable extends AuthChannels
+    with TableInfo<$AuthChannelsTable, AuthChannelsRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AuthChannelsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _emailOpenMeta =
+      const VerificationMeta('emailOpen');
+  @override
+  late final GeneratedColumn<bool> emailOpen = GeneratedColumn<bool>(
+      'email_open', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("email_open" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _phoneOpenMeta =
+      const VerificationMeta('phoneOpen');
+  @override
+  late final GeneratedColumn<bool> phoneOpen = GeneratedColumn<bool>(
+      'phone_open', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("phone_open" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      loginNotice = GeneratedColumn<String>('login_notice', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<Map<String, String>?>(
+              $AuthChannelsTable.$converterloginNoticen);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, id, emailOpen, phoneOpen, loginNotice, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'auth_channels';
+  @override
+  VerificationContext validateIntegrity(Insertable<AuthChannelsRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('email_open')) {
+      context.handle(_emailOpenMeta,
+          emailOpen.isAcceptableOrUnknown(data['email_open']!, _emailOpenMeta));
+    }
+    if (data.containsKey('phone_open')) {
+      context.handle(_phoneOpenMeta,
+          phoneOpen.isAcceptableOrUnknown(data['phone_open']!, _phoneOpenMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AuthChannelsRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AuthChannelsRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      emailOpen: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}email_open'])!,
+      phoneOpen: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}phone_open'])!,
+      loginNotice: $AuthChannelsTable.$converterloginNoticen.fromSql(
+          attachedDatabase.typeMapping.read(
+              DriftSqlType.string, data['${effectivePrefix}login_notice'])),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $AuthChannelsTable createAlias(String alias) {
+    return $AuthChannelsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Map<String, String>, String> $converterloginNotice =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>?, String?> $converterloginNoticen =
+      NullAwareTypeConverter.wrap($converterloginNotice);
+}
+
+class AuthChannelsRow extends DataClass implements Insertable<AuthChannelsRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// `integer` côté serveur et non `SERIAL` — il n'y aura jamais qu'une ligne.
+  /// Vaut toujours `1`, mais la colonne existe parce que le curseur composé du
+  /// protocole en a besoin, et parce qu'une table locale n'a pas à supposer ce
+  /// que le serveur garantit.
+  final int id;
+
+  /// Le canal **e-mail** est-il ouvert ? Livré à `true` : `MailOtpSender` part
+  /// en SMTP, et c'est le seul canal qui envoie réellement un code.
+  final bool emailOpen;
+
+  /// Le canal **téléphone** est-il ouvert ? Livré à `false`, et ce n'est pas un
+  /// défaut prudent : c'est l'état réel du serveur, dont le pilote d'envoi
+  /// (`OTP_PHONE_DRIVER`) n'envoie rien.
+  final bool phoneOpen;
+
+  /// L'annonce du portail, **carte de traduction entière** (ADR-0023). `null` =
+  /// le libellé du dépôt, jamais un message vide : c'est ce qui dit « il n'y a
+  /// pas d'annonce » plutôt que « je n'ai pas encore reçu les réglages ».
+  final Map<String, String>? loginNotice;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const AuthChannelsRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.emailOpen,
+      required this.phoneOpen,
+      this.loginNotice,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['email_open'] = Variable<bool>(emailOpen);
+    map['phone_open'] = Variable<bool>(phoneOpen);
+    if (!nullToAbsent || loginNotice != null) {
+      map['login_notice'] = Variable<String>(
+          $AuthChannelsTable.$converterloginNoticen.toSql(loginNotice));
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  AuthChannelsCompanion toCompanion(bool nullToAbsent) {
+    return AuthChannelsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      emailOpen: Value(emailOpen),
+      phoneOpen: Value(phoneOpen),
+      loginNotice: loginNotice == null && nullToAbsent
+          ? const Value.absent()
+          : Value(loginNotice),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory AuthChannelsRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AuthChannelsRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      emailOpen: serializer.fromJson<bool>(json['emailOpen']),
+      phoneOpen: serializer.fromJson<bool>(json['phoneOpen']),
+      loginNotice:
+          serializer.fromJson<Map<String, String>?>(json['loginNotice']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'emailOpen': serializer.toJson<bool>(emailOpen),
+      'phoneOpen': serializer.toJson<bool>(phoneOpen),
+      'loginNotice': serializer.toJson<Map<String, String>?>(loginNotice),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  AuthChannelsRow copyWith(
+          {int? syncStamp,
+          int? id,
+          bool? emailOpen,
+          bool? phoneOpen,
+          Value<Map<String, String>?> loginNotice = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      AuthChannelsRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        emailOpen: emailOpen ?? this.emailOpen,
+        phoneOpen: phoneOpen ?? this.phoneOpen,
+        loginNotice: loginNotice.present ? loginNotice.value : this.loginNotice,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  AuthChannelsRow copyWithCompanion(AuthChannelsCompanion data) {
+    return AuthChannelsRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      emailOpen: data.emailOpen.present ? data.emailOpen.value : this.emailOpen,
+      phoneOpen: data.phoneOpen.present ? data.phoneOpen.value : this.phoneOpen,
+      loginNotice:
+          data.loginNotice.present ? data.loginNotice.value : this.loginNotice,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuthChannelsRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('emailOpen: $emailOpen, ')
+          ..write('phoneOpen: $phoneOpen, ')
+          ..write('loginNotice: $loginNotice, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp, id, emailOpen, phoneOpen, loginNotice, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AuthChannelsRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.emailOpen == this.emailOpen &&
+          other.phoneOpen == this.phoneOpen &&
+          other.loginNotice == this.loginNotice &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AuthChannelsCompanion extends UpdateCompanion<AuthChannelsRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<bool> emailOpen;
+  final Value<bool> phoneOpen;
+  final Value<Map<String, String>?> loginNotice;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const AuthChannelsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.emailOpen = const Value.absent(),
+    this.phoneOpen = const Value.absent(),
+    this.loginNotice = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  AuthChannelsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.emailOpen = const Value.absent(),
+    this.phoneOpen = const Value.absent(),
+    this.loginNotice = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  static Insertable<AuthChannelsRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<bool>? emailOpen,
+    Expression<bool>? phoneOpen,
+    Expression<String>? loginNotice,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (emailOpen != null) 'email_open': emailOpen,
+      if (phoneOpen != null) 'phone_open': phoneOpen,
+      if (loginNotice != null) 'login_notice': loginNotice,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  AuthChannelsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<bool>? emailOpen,
+      Value<bool>? phoneOpen,
+      Value<Map<String, String>?>? loginNotice,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return AuthChannelsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      emailOpen: emailOpen ?? this.emailOpen,
+      phoneOpen: phoneOpen ?? this.phoneOpen,
+      loginNotice: loginNotice ?? this.loginNotice,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (emailOpen.present) {
+      map['email_open'] = Variable<bool>(emailOpen.value);
+    }
+    if (phoneOpen.present) {
+      map['phone_open'] = Variable<bool>(phoneOpen.value);
+    }
+    if (loginNotice.present) {
+      map['login_notice'] = Variable<String>(
+          $AuthChannelsTable.$converterloginNoticen.toSql(loginNotice.value));
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuthChannelsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('emailOpen: $emailOpen, ')
+          ..write('phoneOpen: $phoneOpen, ')
+          ..write('loginNotice: $loginNotice, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AppSettingsTable extends AppSettings
     with TableInfo<$AppSettingsTable, AppSettingRow> {
   @override
@@ -11236,6 +11639,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PresentationVocabularyTable presentationVocabulary =
       $PresentationVocabularyTable(this);
   late final $DecorTable decor = $DecorTable(this);
+  late final $AuthChannelsTable authChannels = $AuthChannelsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $DownloadsTable downloads = $DownloadsTable(this);
   late final $DownloadTitlesTable downloadTitles = $DownloadTitlesTable(this);
@@ -11251,6 +11655,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final LegalDao legalDao = LegalDao(this as AppDatabase);
   late final SeasonDao seasonDao = SeasonDao(this as AppDatabase);
   late final VocabularyDao vocabularyDao = VocabularyDao(this as AppDatabase);
+  late final AuthChannelsDao authChannelsDao =
+      AuthChannelsDao(this as AppDatabase);
   late final SettingsDao settingsDao = SettingsDao(this as AppDatabase);
   late final DownloadsDao downloadsDao = DownloadsDao(this as AppDatabase);
   late final DownloadNotificationsDao downloadNotificationsDao =
@@ -11280,6 +11686,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         seasons,
         presentationVocabulary,
         decor,
+        authChannels,
         appSettings,
         downloads,
         downloadTitles,
@@ -15950,6 +16357,207 @@ typedef $$DecorTableProcessedTableManager = ProcessedTableManager<
     (DecorRow, BaseReferences<_$AppDatabase, $DecorTable, DecorRow>),
     DecorRow,
     PrefetchHooks Function()>;
+typedef $$AuthChannelsTableCreateCompanionBuilder = AuthChannelsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<bool> emailOpen,
+  Value<bool> phoneOpen,
+  Value<Map<String, String>?> loginNotice,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$AuthChannelsTableUpdateCompanionBuilder = AuthChannelsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<bool> emailOpen,
+  Value<bool> phoneOpen,
+  Value<Map<String, String>?> loginNotice,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$AuthChannelsTableFilterComposer
+    extends Composer<_$AppDatabase, $AuthChannelsTable> {
+  $$AuthChannelsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get emailOpen => $composableBuilder(
+      column: $table.emailOpen, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get phoneOpen => $composableBuilder(
+      column: $table.phoneOpen, builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<Map<String, String>?, Map<String, String>,
+          String>
+      get loginNotice => $composableBuilder(
+          column: $table.loginNotice,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$AuthChannelsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AuthChannelsTable> {
+  $$AuthChannelsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get emailOpen => $composableBuilder(
+      column: $table.emailOpen, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get phoneOpen => $composableBuilder(
+      column: $table.phoneOpen, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get loginNotice => $composableBuilder(
+      column: $table.loginNotice, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$AuthChannelsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AuthChannelsTable> {
+  $$AuthChannelsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<bool> get emailOpen =>
+      $composableBuilder(column: $table.emailOpen, builder: (column) => column);
+
+  GeneratedColumn<bool> get phoneOpen =>
+      $composableBuilder(column: $table.phoneOpen, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      get loginNotice => $composableBuilder(
+          column: $table.loginNotice, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$AuthChannelsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AuthChannelsTable,
+    AuthChannelsRow,
+    $$AuthChannelsTableFilterComposer,
+    $$AuthChannelsTableOrderingComposer,
+    $$AuthChannelsTableAnnotationComposer,
+    $$AuthChannelsTableCreateCompanionBuilder,
+    $$AuthChannelsTableUpdateCompanionBuilder,
+    (
+      AuthChannelsRow,
+      BaseReferences<_$AppDatabase, $AuthChannelsTable, AuthChannelsRow>
+    ),
+    AuthChannelsRow,
+    PrefetchHooks Function()> {
+  $$AuthChannelsTableTableManager(_$AppDatabase db, $AuthChannelsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AuthChannelsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AuthChannelsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AuthChannelsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<bool> emailOpen = const Value.absent(),
+            Value<bool> phoneOpen = const Value.absent(),
+            Value<Map<String, String>?> loginNotice = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              AuthChannelsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            emailOpen: emailOpen,
+            phoneOpen: phoneOpen,
+            loginNotice: loginNotice,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<bool> emailOpen = const Value.absent(),
+            Value<bool> phoneOpen = const Value.absent(),
+            Value<Map<String, String>?> loginNotice = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              AuthChannelsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            emailOpen: emailOpen,
+            phoneOpen: phoneOpen,
+            loginNotice: loginNotice,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$AuthChannelsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $AuthChannelsTable,
+    AuthChannelsRow,
+    $$AuthChannelsTableFilterComposer,
+    $$AuthChannelsTableOrderingComposer,
+    $$AuthChannelsTableAnnotationComposer,
+    $$AuthChannelsTableCreateCompanionBuilder,
+    $$AuthChannelsTableUpdateCompanionBuilder,
+    (
+      AuthChannelsRow,
+      BaseReferences<_$AppDatabase, $AuthChannelsTable, AuthChannelsRow>
+    ),
+    AuthChannelsRow,
+    PrefetchHooks Function()>;
 typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
     Function({
   required String key,
@@ -16673,6 +17281,8 @@ class $AppDatabaseManager {
           _db, _db.presentationVocabulary);
   $$DecorTableTableManager get decor =>
       $$DecorTableTableManager(_db, _db.decor);
+  $$AuthChannelsTableTableManager get authChannels =>
+      $$AuthChannelsTableTableManager(_db, _db.authChannels);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$DownloadsTableTableManager get downloads =>

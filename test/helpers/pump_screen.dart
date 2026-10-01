@@ -23,7 +23,9 @@ import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
+import 'package:maison_du_miracle/models/auth_channels.dart';
 import 'package:maison_du_miracle/models/vocabulary.dart';
+import 'package:maison_du_miracle/state/auth_channels_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/state/vocabulary_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
@@ -97,6 +99,7 @@ Future<void> pumpRouter(
   ThemePreferences? theme,
   LegalNoticeStore? legalNotice,
   VocabularyOverrides? vocabulary,
+  AuthChannelOffer? authChannels,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -110,6 +113,7 @@ Future<void> pumpRouter(
           theme: theme,
           legalNotice: legalNotice,
           vocabulary: vocabulary,
+          authChannels: authChannels,
         ),
         ...overrides,
       ],
@@ -141,10 +145,23 @@ List<Override> _commonOverrides(
   AnnouncementRepository? announcements,
   LegalNoticeStore? legalNotice,
   VocabularyOverrides? vocabulary,
+  AuthChannelOffer? authChannels,
   List<DownloadNotificationRow> notifications = const [],
 }) =>
     [
       appDatabaseProvider.overrideWithValue(db),
+      // **Les canaux de connexion ouverts** (#83), posés **par un flux nu**, pour
+      // la raison déjà donnée pour le vocabulaire : lus depuis le magasin, ils
+      // ouvrent un flux Drift, et un flux Drift attendu sous l'horloge factice du
+      // harnais fige le montage.
+      //
+      // Le défaut est l'**e-mail seul** — ce que propose une application qui n'a
+      // pas encore synchronisé, et ce qu'un test qui ne parle pas de canaux doit
+      // voir. [authChannels] est un paramètre nommé et non un `Override` de
+      // plus : Riverpod 3 refuse deux surcharges du même provider.
+      authChannelsProvider.overrideWith(
+        (ref) => Stream.value(authChannels ?? AuthChannelOffer.emailOnly),
+      ),
       // **Les mots réglés au portail** (#81), posés **par un flux nu** et pour la
       // raison la plus coûteuse de ce dépôt : lus depuis le magasin, ils ouvrent
       // un flux Drift, et un flux Drift attendu sous l'horloge factice du harnais
@@ -212,6 +229,7 @@ Future<void> pumpScreen(
   ThemePreferences? theme,
   LegalNoticeStore? legalNotice,
   VocabularyOverrides? vocabulary,
+  AuthChannelOffer? authChannels,
   List<DownloadNotificationRow> notifications = const [],
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
@@ -234,6 +252,7 @@ Future<void> pumpScreen(
           announcements: announcements,
           legalNotice: legalNotice,
           vocabulary: vocabulary,
+          authChannels: authChannels,
           notifications: notifications,
         ),
         ...overrides,

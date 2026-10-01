@@ -28,6 +28,7 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
   $PresentationVocabularyTable get presentationVocabulary =>
       attachedDatabase.presentationVocabulary;
   $DecorTable get decor => attachedDatabase.decor;
+  $AuthChannelsTable get authChannels => attachedDatabase.authChannels;
   SyncDaoManager get managers => SyncDaoManager(this);
 }
 
@@ -81,4 +82,6 @@ class SyncDaoManager {
           _db.attachedDatabase, _db.presentationVocabulary);
   $$DecorTableTableManager get decor =>
       $$DecorTableTableManager(_db.attachedDatabase, _db.decor);
+  $$AuthChannelsTableTableManager get authChannels =>
+      $$AuthChannelsTableTableManager(_db.attachedDatabase, _db.authChannels);
 }

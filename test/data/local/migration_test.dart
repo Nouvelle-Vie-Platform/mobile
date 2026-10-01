@@ -14,6 +14,7 @@ import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/local/tables/download_tables.dart';
+import 'package:maison_du_miracle/models/auth_channels.dart';
 
 import 'local_database_fixtures.dart';
 import 'schema/schema.dart';
@@ -497,6 +498,56 @@ void main() {
       await db.syncDao.cursorFor('presentation_vocabulary'),
       isNull,
     );
+  });
+
+  test('v14 → v15 : la table des canaux de connexion apparaît', () async {
+    // Le palier des **canaux** (#83) : une création de table, et rien d'autre.
+    // Aucune colonne existante ne bouge, et l'écran d'identifiant ne change pas
+    // de comportement tant que le premier cycle n'a rien ramené.
+    final connection = await verifier.startAt(14);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 15);
+  });
+
+  test('v1 → v15 : un appareil resté en v1 rejoue les quatorze paliers',
+      () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 15);
+  });
+
+  test('v14 → v15 : le catalogue survit, et l\'offre naît vide', () async {
+    // Ce qu'un fidèle hors ligne risquerait de perdre, c'est son catalogue : le
+    // palier ne le touche pas. La table neuve, elle, naît vide — et **vide veut
+    // dire « je n'ai pas encore reçu les réglages »**, jamais « aucun canal ».
+    // Le repli lu par l'écran est alors l'**e-mail seul**, c'est-à-dire ce que
+    // l'application proposait déjà avant la migration. Son curseur n'existe pas
+    // encore, le prochain manifeste l'annoncera `from_zero`.
+    final schema = await verifier.schemaAt(14);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 15);
+
+    expect((await db.select(db.teachings).get()).single.title,
+        'Dieu a le dernier mot');
+    expect(await db.select(db.authChannels).get(), isEmpty);
+    // La table vide se lit comme l'e-mail seul, et jamais comme « aucun
+    // canal » : un repli vide fermerait la porte, un repli permissif
+    // remettrait le sélecteur menteur.
+    final offer = await db.authChannelsDao.readOffer();
+    expect(offer, AuthChannelOffer.emailOnly);
+    expect(offer.offersChoice, isFalse);
+    // Aucun curseur posé : la collection n'a jamais été tirée.
+    expect(await db.syncDao.cursorFor('auth_channels'), isNull);
   });
 
   test('la version de schéma couvre bien toutes les versions exportées', () {

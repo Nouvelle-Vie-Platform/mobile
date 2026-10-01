@@ -276,6 +276,8 @@
   "authIdentifierSubtitle": "Enter your phone number or email to continue.",
   "authPhoneHint": "90 12 34 56",
   "authEmailHint": "jean.kossi@email.com",
+  "authNoticeEmailOnly": "Your sign-in code will be sent to you by email.",
+  "authNoticePhoneOnly": "Your sign-in code will be sent to your phone.",
   "authContinue": "Continue",
   "authOrContinueWith": "Or continue with",
   "authDialCode": "Dial code",

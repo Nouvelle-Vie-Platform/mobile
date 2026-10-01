@@ -29,6 +29,8 @@
 /// | ligne `legal_documents` | `GET /sync/legal_documents` | `app/legal/transformers/legal_document_transformer.ts` (ADR-0035 à ADR-0037) |
 /// | ligne `presentation_vocabulary` | `GET /sync/presentation_vocabulary` | `app/presentation/transformers/vocabulary_transformer.ts` + `database/migrations/*_create_presentation_vocabulary_table.ts` (issue serveur #466) |
 /// | clés du catalogue | — | `app/presentation/support/vocabulary_catalog.ts` |
+/// | ligne `auth_channels` | `GET /sync/auth_channels` | `app/auth/transformers/auth_channels_transformer.ts` + `app/sync/descriptors/auth_channels_descriptor.ts` (issue serveur #468) |
+/// | valeurs livrées des canaux | — | `database/migrations/*_create_auth_settings_table.ts` |
 ///
 /// ## Pourquoi ce fichier existe
 ///
@@ -163,7 +165,7 @@ final String staleCursor = serverCursor(
 ///
 /// Le manifeste les liste **toutes**, pas seulement celles qui ont bougé — et
 /// toutes ne sont pas répliquées par ce client : `syncedCollections()` en tire
-/// seize, les autres n'ont pas de table locale. Le manifeste les liste quand
+/// dix-sept, les autres n'ont pas de table locale. Le manifeste les liste quand
 /// même, le moteur les ignore.
 const Map<String, String> kSyncCollections = {
   'announcements': 'branch',
@@ -1472,3 +1474,91 @@ Map<String, Object?> presentationVocabularyPage() => deltaPage(
       ],
       nextCursor: presentationVocabularyCursor,
     );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lignes `auth_channels` — **six clés**, `camelCase` (issue #83)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Les canaux tels que le serveur les livre.** Six clés, relevées sur
+/// `app/auth/transformers/auth_channels_transformer.ts` : `id`, `emailOpen`,
+/// `phoneOpen`, `loginNotice`, `createdAt`, `updatedAt`.
+///
+/// ⚠️ **`id` est un entier, et il vaut `1`** : `auth_settings` est un singleton
+/// (`integer` et non `SERIAL`, un `CHECK` interdit toute autre valeur). La
+/// collection ne portera jamais qu'une ligne.
+///
+/// **Les valeurs sont celles de la migration livrée** (`database/migrations/
+/// *_create_auth_settings_table.ts`) : `email_channel_open = true`,
+/// `phone_channel_open = **false**`. Ce n'est pas un défaut prudent, c'est
+/// l'état réel du serveur — `MailOtpSender` part en SMTP, le canal téléphone
+/// suit `OTP_PHONE_DRIVER`, dont le défaut est `log` et n'envoie rien.
+///
+/// **`loginNotice` part à `null` et ne se filtre pas** : c'est ce qui dit « il
+/// n'y a pas d'annonce » plutôt que « je n'ai pas encore reçu les réglages », et
+/// autorise le client à retomber tout de suite sur le libellé du dépôt.
+///
+/// **Aucun `deletedAt`** : `tombstoneColumn: null`. Fermer un canal met un
+/// booléen à `false`, et c'est cette ligne-là qui voyage.
+const Map<String, Object?> authChannelsEmailOnlyPayload = {
+  'id': 1,
+  'emailOpen': true,
+  'phoneOpen': false,
+  'loginNotice': null,
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:00:00.000Z',
+};
+
+/// **Les deux canaux ouverts, avec l'annonce du portail.** La carte de
+/// traduction part **entière**, jamais résolue (ADR-0023) : le client choisit sa
+/// langue et replie.
+const Map<String, Object?> authChannelsBothOpenPayload = {
+  'id': 1,
+  'emailOpen': true,
+  'phoneOpen': true,
+  'loginNotice': {
+    'fr': 'Le code arrive par SMS ou par email, à vous de choisir.',
+    'en': 'Your code comes by text or email — your call.',
+  },
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:05:00.000Z',
+};
+
+/// **Un seul canal, et le portail dit pourquoi.** C'est la forme que cette
+/// tranche existe pour afficher.
+const Map<String, Object?> authChannelsNoticedPayload = {
+  'id': 1,
+  'emailOpen': true,
+  'phoneOpen': false,
+  'loginNotice': {
+    'fr': 'La connexion par téléphone rouvrira bientôt.',
+    'en': 'Phone sign-in will reopen soon.',
+  },
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:10:00.000Z',
+};
+
+/// **Une annonce vide**, et ce n'est pas la même chose qu'un bandeau blanc : une
+/// carte sans aucune langue remplie veut dire « garde le libellé du dépôt ». Le
+/// serveur écrit `null` plutôt que cette forme, mais le magasin n'a pas à le
+/// supposer — et le client doit se comporter pareil dans les deux cas.
+const Map<String, Object?> authChannelsBlankNoticePayload = {
+  'id': 1,
+  'emailOpen': true,
+  'phoneOpen': false,
+  'loginNotice': <String, Object?>{'fr': '   ', 'en': ''},
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:15:00.000Z',
+};
+
+/// Curseur de la page de `auth_channels`. L'`id` y est un **entier**, comme
+/// pour les autres référentiels.
+final String authChannelsCursor = serverCursor(
+  updatedAtIso: '2026-09-20T10:00:00.000Z',
+  id: 1,
+);
+
+/// La page nominale : l'unique ligne du singleton, telle que livrée.
+Map<String, Object?> authChannelsPage({
+  Map<String, Object?> row = authChannelsEmailOnlyPayload,
+}) =>
+    deltaPage(items: [row], nextCursor: authChannelsCursor);

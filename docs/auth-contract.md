@@ -236,8 +236,14 @@ l'utilisateur connecté sur son appareil.
 ## Décisions figées
 
 1. Parcours unifié login/inscription ; le compte est créé à la **vérification du code**.
-2. Toggle Téléphone/Email. **Email par défaut** tant que le canal téléphone n'est pas actif — le
-   téléphone repassera en premier ensuite.
+2. **Le sélecteur de canal est une offre, pas une préférence** (#83, jumelle serveur #468). Les canaux
+   ouverts sont ceux que le portail déclare (collection `auth_channels`, servie **sans compte**) :
+   deux ouverts ⇒ le toggle Téléphone/Email, **email présélectionné** ; un seul ⇒ **pas de toggle du
+   tout** — on ne grise pas une option, on ne la propose pas —, le champ de ce canal, et l'annonce du
+   portail à la place du sous-titre (`loginNotice`, `null` ou vide ⇒ le libellé du dépôt).
+   **Avant la première synchronisation, le repli est l'e-mail seul** : jamais « tous les canaux » (ce
+   serait reconduire la promesse d'un code que personne n'envoie), jamais « aucun canal » (ce serait
+   fermer la porte). Le serveur refuse par ailleurs en **403** un identifiant dont le canal est fermé.
 3. Indicatif déduit du **locale**, repli **`+228`**, modifiable.
 4. Écran profil **skippable**.
 5. Profil incomplet → **bannière douce** fermable (Accueil + onglet Profil).

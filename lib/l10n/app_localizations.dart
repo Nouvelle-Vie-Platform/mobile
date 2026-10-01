@@ -1522,6 +1522,18 @@ abstract class AppLocalizations {
   /// **'jean.kossi@email.com'**
   String get authEmailHint;
 
+  /// Annonce affichée quand l'email est le SEUL canal ouvert : il n'y a alors pas de sélecteur, et cette phrase dit pourquoi. Repli du dépôt — le portail peut la remplacer (collection auth_channels, loginNotice)
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre code de connexion vous sera envoyé par email.'**
+  String get authNoticeEmailOnly;
+
+  /// Le symétrique, si le téléphone devenait le seul canal ouvert. Elle ne nomme aucun fournisseur (SMS, WhatsApp) : le canal est le téléphone, le fournisseur est un réglage serveur
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre code de connexion vous sera envoyé sur votre téléphone.'**
+  String get authNoticePhoneOnly;
+
   /// Bouton pour valider l'identifiant et demander le code
   ///
   /// In fr, this message translates to:
