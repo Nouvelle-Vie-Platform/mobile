@@ -381,6 +381,11 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   non plus, et celui-ci a un coût — voir « Le fond de l'application » plus bas.
   `tables/decor_tables.dart` — `decor` : **une seule ligne**, le fond par défaut
   quand aucune saison ne couvre le jour.
+  `tables/vocabulary_tables.dart` — `presentation_vocabulary` (#81) : les mots
+  réglés au portail. **Sans tombstone** — la ligne ne se supprime jamais côté
+  serveur, effacer une surcharge y écrit `null`, et c'est ce `null` qui porte le
+  retour au mot du dépôt jusqu'au téléphone. **PK textuelle** (la clé du
+  catalogue), seule du registre dans ce cas.
 - `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart`,
   `gathering_dao.dart`, `announcement_dao.dart`, `playback_dao.dart` et
   `legal_dao.dart` — lectures, **un DAO par domaine**. `playback_dao` est le
@@ -428,10 +433,11 @@ qu'elle remplit. Le réseau ne peint jamais.
   désérialiseur à convention unique se trompe sur la moitié des clés.
 - `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
   `gathering_types`, `status_backgrounds`, `official_accounts`,
-  `official_account_memberships`, `legal_documents`, `seasons`, `decor`,
+  `official_account_memberships`, `legal_documents`, `seasons`,
+  `presentation_vocabulary`, `decor`,
   `contributors`,
-  `branches`, puis `teachings`, `gatherings`, `announcements`,
-  `playback_progress`.
+  `branches`, puis `teachings`, `teaching_guests`, `gatherings`,
+  `announcements`, `playback_progress`.
 - `sync_api.dart` — `GET /sync` et `GET /sync/{collection}`, sur le `Dio`
   d'`ApiClient`. Un **404** devient `UnknownSyncCollection`.
 - `sync_engine.dart` — la boucle. `sync_scheduler.dart` — les déclencheurs.
@@ -519,7 +525,8 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     mémoire dans les tests), `syncDaoProvider`, `mediathequeDaoProvider`,
     `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`,
     `gatheringDaoProvider`, `announcementDaoProvider`, `playbackDaoProvider`,
-    `legalDaoProvider`, `pullToRefreshProvider`.
+    `legalDaoProvider`, `seasonDaoProvider`, `vocabularyDaoProvider`,
+    `pullToRefreshProvider`.
     Les trois DAO de lecture sont lus par les trois repositories de magasin.
     **Les trois déclencheurs d'ADR-0017 sont câblés** : `app.dart` appelle
     `SyncScheduler.start()` au premier frame sous `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
@@ -1438,15 +1445,25 @@ compte entre eux est la **mémoire** : la mention légale se retient pour toujou
 (`app_settings`), le bandeau de mise à jour **pour la session seulement** (aucune
 écriture) — l'invitation porte sur une version, qui change.
 
-⚠️ **Il n'y a pas de seuil aujourd'hui, et c'est un repli explicite.**
-`appUpdateThresholdProvider` rend `null`, donc le bandeau **ne s'affiche pour
-personne**. Le seuil se règle au portail et descend par la synchronisation ; il
-voyagera avec les réglages de la **tranche 3** (#81), qui dit en toutes lettres
-qu'elle referme ce repli. Une collection neuve pour un seul entier serait
-disproportionnée. Et c'est de toute façon le bon comportement d'ici là :
-l'application n'a jamais été publiée, un bandeau sur la toute première version
-serait le plus mauvais premier contact possible. **La seule ligne à changer est
-celle du provider.**
+⚠️ **Il n'y a pas de seuil aujourd'hui, et la tranche 3 n'a pas pu refermer ce
+repli.** `appUpdateThresholdProvider` rend `null`, donc le bandeau **ne s'affiche
+pour personne**. Le texte précédent annonçait que le seuil voyagerait avec les
+réglages de #81 ; il ne voyage pas, et pour une raison qui est côté serveur :
+
+- le seuil vit dans `device_settings.update_banner_min_version`
+  (`server-portal#465`), une table d'une seule ligne **qui n'a pas de descripteur
+  de synchronisation** — `app/sync/descriptors/registry.ts` en compte vingt-six,
+  aucune ne la touche. Elle ne se lit que par l'écran d'administration ;
+- `presentation_vocabulary`, la collection livrée par #81, ne pouvait pas le
+  porter : `SaveVocabulary` **ignore en silence** toute clé absente de
+  `vocabulary_catalog.ts`, qui ne nomme que des termes et des clés de
+  dictionnaire. Une ligne `update_banner_min_version` n'y naîtrait jamais.
+
+Le descendre demande donc une décision serveur, hors périmètre d'une tranche
+mobile. Et c'est de toute façon le bon comportement d'ici là : l'application n'a
+jamais été publiée, un bandeau sur la toute première version serait le plus
+mauvais premier contact possible. **La seule ligne à changer est celle du
+provider.**
 
 ⚠️ **`UnavailableStoreLauncher` n'ouvre rien**, et c'est assumé pour la même
 fenêtre : il n'y a ni fiche App Store ni fiche Play Store à ouvrir, et le dépôt
@@ -1610,6 +1627,54 @@ autorisés avant authentification.
 - Workflow : éditer les `.arb` (au moins `fr`) → `flutter gen-l10n` → utiliser
   `context.l10n.maCle`. Ne pas éditer à la main les `app_localizations*.dart`
   (générés).
+
+### Le vocabulaire réglé au portail (#81) — `context.words`, et **lui seul**
+
+**Le mot réglé dans le portail l'emporte sur le mot compilé dans le binaire.**
+C'est tout l'intérêt du réglage : sans cette précédence, il ne sert à rien.
+
+**Mais le `.arb` n'est pas un repli honteux.** Avant son premier cycle de
+synchronisation l'application montre ce qu'elle a compilé, et le `.arb` reste la
+vérité de toute clé que le portail ne surcharge pas — la grande majorité d'entre
+elles. Un écran vide ou une clé technique au premier lancement serait pire que le
+mot du dépôt.
+
+Un seul endroit décide, et il est **à côté** de `context.l10n` :
+`context.words` (`lib/l10n/l10n_extension.dart` → `AppWords`, `lib/l10n/
+vocabulary.dart`). Un widget qui déciderait lui-même créerait une seconde
+vérité. Choisir entre les deux accesseurs, c'est **nommer une clé** — le
+catalogue des clés surchargeables est curé côté serveur
+(`app/presentation/support/vocabulary_catalog.ts`, entrées `surface: 'mobile'`) —,
+jamais décider d'une précédence.
+
+Cinq points qui se ratent en silence :
+
+1. **Une surcharge vide n'est pas une chaîne vide.** Le serveur n'efface jamais
+   la ligne : effacer une surcharge y écrit `null`, et c'est ce `null` qui porte
+   le retour au mot du dépôt jusqu'au téléphone. Une carte sans aucune langue
+   remplie — ou remplie de blancs — veut dire « garde le mot du dépôt », jamais
+   « affiche rien ». Un titre blanc ne ressemble pas à un bug, il ressemble à une
+   donnée perdue.
+2. **Aucune composition, aucun accord calculé.** Un terme porte son singulier et
+   son pluriel, écrits à la main au portail ; une phrase composée est **sa propre
+   clé**, surchargée entière. Décision de cadrage, pas un report : « Derniers
+   enseignements » → « Dernières publications » change le genre *et* l'accord.
+3. **Le repli de langue reste `pick`** (`utils/i18n_text.dart`), avec la locale
+   **d'interface** et non celle du contenu. C'est pourquoi `VocabularyBoundary`
+   vit **sous** `MaterialApp` (`app.dart`, à côté de `_ContentLocaleSync`) :
+   `Localizations` n'existe pas au-dessus.
+4. **Sans scope, tout se lit sur le `.arb`.** `VocabularyScope.of` rend
+   `VocabularyOverrides.empty` quand personne ne l'a posé — l'état d'un test monté
+   sans frontière, et le même que la toute première ouverture.
+5. **`pumpScreen` pose un flux nu** (`vocabularyProvider`), comme pour les
+   réglages d'apparence et pour la même raison : un flux Drift attendu sous
+   l'horloge factice fige le montage. Les surcharges d'un test passent par le
+   **paramètre nommé** `vocabulary:` — Riverpod 3 refuse deux surcharges du même
+   provider.
+
+À ne pas confondre avec `LocalizedText` / `parseI18nMap`, qui portent le repli
+`fr/en/ee` du **contenu** (le titre d'une rubrique, le nom d'un compte officiel).
+Ici il s'agit de l'**interface**.
 
 ### La **seule dérogation** à `pick` — les documents légaux (ADR-0035)
 `pick` est l'unique autorité du repli de langue des **contenus** (ADR-0023), et
