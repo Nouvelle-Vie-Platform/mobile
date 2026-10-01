@@ -136,7 +136,7 @@ void main() {
           supportedLocales: appSupportedLocales,
           home: ContentPlayerView(
             content: _contentProvider,
-            chromeTitle: 'ENSEIGNEMENT',
+            chromeTitle: 'MESSAGE',
             retractedTitle: 'x',
             retractedMessage: 'x',
             onRetry: () {},

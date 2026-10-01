@@ -138,8 +138,7 @@ class _FakeMediatheque implements MediathequeRepository {
   List<String> guests = const [];
 
   @override
-  Stream<List<String>> guestNames(String teachingId) =>
-      Stream.value(guests);
+  Stream<List<String>> guestNames(String teachingId) => Stream.value(guests);
 
   @override
   Stream<List<HomeSectionView>> homeSections({required String locale}) =>
@@ -262,8 +261,7 @@ void main() {
       // L'écran s'ouvre quand même : on ne renvoie personne d'où il vient.
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
       expect(find.byType(ContentAbsenceView), findsOneWidget);
-      expect(
-          find.text('Cet enseignement n\'est plus disponible'), findsOneWidget);
+      expect(find.text('Ce message n\'est plus disponible'), findsOneWidget);
       // Aucun contenu emprunté à un autre enseignement.
       expect(find.text('Le premier de la liste'), findsNothing);
     });
@@ -452,7 +450,7 @@ void main() {
       // Le cadre du lecteur, le surtitre, la porte de sortie : on n'éjecte
       // personne et on ne le déplace pas.
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
-      expect(find.text('ENSEIGNEMENT'), findsOneWidget);
+      expect(find.text('MESSAGE'), findsOneWidget);
       expect(find.byType(ContentAbsenceView), findsOneWidget);
       expect(find.byKey(ContentAbsenceView.backKey), findsOneWidget);
       expect(find.text('Enregistrement à venir'), findsOneWidget);
@@ -469,8 +467,7 @@ void main() {
 
       // Confondre les deux ferait croire à une suppression, et le fidèle
       // cesserait d'attendre un enregistrement qui arrive.
-      expect(
-          find.text('Cet enseignement n\'est plus disponible'), findsNothing);
+      expect(find.text('Ce message n\'est plus disponible'), findsNothing);
       expect(find.byIcon(ContentAbsence.retracted.icon), findsNothing);
     });
   });

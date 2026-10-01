@@ -121,7 +121,7 @@ void main() {
         // Aucun titre joint : la ligne existe, le read-model ne la connaît pas.
       );
 
-      expect(find.text('Enseignement téléchargé'), findsOneWidget);
+      expect(find.text('Message téléchargé'), findsOneWidget);
     });
   });
 
@@ -262,7 +262,7 @@ void main() {
       );
 
       expect(
-        find.textContaining('Un enseignement a été retiré'),
+        find.textContaining('Un message a été retiré'),
         findsOneWidget,
       );
     });

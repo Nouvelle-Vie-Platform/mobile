@@ -502,16 +502,16 @@ abstract class AppLocalizations {
   /// **'Voir tout'**
   String get actionSeeAll;
 
-  /// Bouton d'écoute d'un enseignement
+  /// Bouton d'écoute d'un message
   ///
   /// In fr, this message translates to:
   /// **'Écouter'**
   String get actionListen;
 
-  /// No description provided for @sectionLatestTeachings.
+  /// Accueil : titre de la section des contenus les plus récents. La clé garde son nom historique ; le libellé, lui, ne nomme plus un type de contenu — « publications » couvre ce que la section mélange déjà
   ///
   /// In fr, this message translates to:
-  /// **'Derniers enseignements'**
+  /// **'Dernières publications'**
   String get sectionLatestTeachings;
 
   /// No description provided for @mediaTitle.
@@ -523,7 +523,7 @@ abstract class AppLocalizations {
   /// No description provided for @mediaSearchHint.
   ///
   /// In fr, this message translates to:
-  /// **'Rechercher un enseignement...'**
+  /// **'Rechercher un message...'**
   String get mediaSearchHint;
 
   /// No description provided for @mediaRecommended.
@@ -544,10 +544,10 @@ abstract class AppLocalizations {
   /// **'Prêches'**
   String get filterSermons;
 
-  /// No description provided for @filterTeachings.
+  /// Médiathèque : libellé de l'onglet des messages. La clé garde son nom historique, le libellé dit « Messages »
   ///
   /// In fr, this message translates to:
-  /// **'Enseignements'**
+  /// **'Messages'**
   String get filterTeachings;
 
   /// No description provided for @filterMusic.
@@ -556,13 +556,13 @@ abstract class AppLocalizations {
   /// **'Musique'**
   String get filterMusic;
 
-  /// No description provided for @seriesTag.
+  /// Étiquette posée sur un regroupement de messages. La clé garde son nom historique ; le mot affiché est « Thème », plus « Série »
   ///
   /// In fr, this message translates to:
-  /// **'Série'**
+  /// **'Thème'**
   String get seriesTag;
 
-  /// No description provided for @seriesMessagesCount.
+  /// Nombre de messages d'un thème, affiché sous l'étiquette seriesTag. Disait déjà « messages » avant le renommage, et le reste : un thème compte des messages, il n'en est pas un — aucune redondance avec seriesTag
   ///
   /// In fr, this message translates to:
   /// **'{count} messages'**
@@ -694,10 +694,10 @@ abstract class AppLocalizations {
   /// **'Aujourd\'hui'**
   String get chatToday;
 
-  /// No description provided for @teachingAppBarTitle.
+  /// Titre de la barre de l'écran de détail d'un message. La clé garde son nom historique
   ///
   /// In fr, this message translates to:
-  /// **'Enseignement'**
+  /// **'Message'**
   String get teachingAppBarTitle;
 
   /// No description provided for @actionDownload.
@@ -859,7 +859,7 @@ abstract class AppLocalizations {
   /// Page Téléchargements : explication sous le titre de l'état vide
   ///
   /// In fr, this message translates to:
-  /// **'Les enseignements que vous téléchargez pour les écouter hors ligne apparaîtront ici.'**
+  /// **'Les messages que vous téléchargez pour les écouter hors ligne apparaîtront ici.'**
   String get downloadsEmptyMessage;
 
   /// Page Téléchargements : espace disque total occupé par les téléchargements (F13). {size} est un nombre déjà formaté en Mo
@@ -874,10 +874,10 @@ abstract class AppLocalizations {
   /// **'{size} Mo'**
   String downloadSize(String size);
 
-  /// Page Téléchargements : titre de repli quand l'enseignement d'un téléchargement n'est pas (ou plus) dans le magasin local
+  /// Page Téléchargements : titre de repli quand le message d'un téléchargement n'est pas (ou plus) dans le magasin local
   ///
   /// In fr, this message translates to:
-  /// **'Enseignement téléchargé'**
+  /// **'Message téléchargé'**
   String get downloadsUnknownTitle;
 
   /// Badge sur un téléchargement périmé (#194, F15) : le média a été révisé côté serveur. La copie locale reste écoutable ; un tap « Mettre à jour » la remplace
@@ -892,16 +892,16 @@ abstract class AppLocalizations {
   /// **'Mettre à jour'**
   String get downloadActionUpdate;
 
-  /// Bandeau de la page Téléchargements (#194, F16) : un enseignement retiré côté serveur a vu sa copie locale purgée. {title} est le titre de l'enseignement
+  /// Bandeau de la page Téléchargements (#194, F16) : un message retiré côté serveur a vu sa copie locale purgée. {title} est le titre du message
   ///
   /// In fr, this message translates to:
   /// **'« {title} » a été retiré par la médiathèque et supprimé de vos téléchargements.'**
   String downloadPurgeNotice(String title);
 
-  /// Bandeau de purge (#194, F16), repli quand le titre de l'enseignement retiré n'est pas connu (téléchargement d'avant la dénormalisation)
+  /// Bandeau de purge (#194, F16), repli quand le titre du message retiré n'est pas connu (téléchargement d'avant la dénormalisation)
   ///
   /// In fr, this message translates to:
-  /// **'Un enseignement a été retiré par la médiathèque et supprimé de vos téléchargements.'**
+  /// **'Un message a été retiré par la médiathèque et supprimé de vos téléchargements.'**
   String get downloadPurgeNoticeUnnamed;
 
   /// Bandeau de purge : rejeter une notification de purge (le fidèle l'a vue)
@@ -1279,7 +1279,7 @@ abstract class AppLocalizations {
   /// No description provided for @mediaSettingsStreaming.
   ///
   /// In fr, this message translates to:
-  /// **'Écoute d\'un enseignement'**
+  /// **'Écoute d\'un message'**
   String get mediaSettingsStreaming;
 
   /// No description provided for @mediaSettingsLive.
@@ -1315,7 +1315,7 @@ abstract class AppLocalizations {
   /// Phrase d'introduction de la section assemblée. Elle dit ce que le réglage touche ET ce qu'il ne touche pas : le serveur garde son propre cloisonnement sur l'agenda et le mur de prière, et quelqu'un qui l'ignorerait croirait le réglage cassé
   ///
   /// In fr, this message translates to:
-  /// **'Choisissez l\'assemblée dont vous voulez suivre les enseignements, les rassemblements et les annonces. L\'agenda et le mur de prière ne changent pas.'**
+  /// **'Choisissez l\'assemblée dont vous voulez suivre les messages, les rassemblements et les annonces. L\'agenda et le mur de prière ne changent pas.'**
   String get branchScopeLead;
 
   /// L'option par défaut : aucun filtre. C'est aussi l'état d'une installation neuve, où rien n'a été choisi
@@ -1912,13 +1912,13 @@ abstract class AppLocalizations {
   /// **'Rassemblements'**
   String get sectionGatherings;
 
-  /// Absence « contenu retiré » vue depuis l'écran de détail d'un enseignement : dit de quoi on parle, là où absenceRetractedTitle reste générique
+  /// Absence « contenu retiré » vue depuis l'écran de détail d'un message : dit de quoi on parle, là où absenceRetractedTitle reste générique
   ///
   /// In fr, this message translates to:
-  /// **'Cet enseignement n\'est plus disponible'**
+  /// **'Ce message n\'est plus disponible'**
   String get teachingRetractedTitle;
 
-  /// Explication de l'enseignement retiré. Mentionne explicitement l'arrêt de la lecture : le son s'est coupé, il faut dire pourquoi
+  /// Explication du message retiré. Mentionne explicitement l'arrêt de la lecture : le son s'est coupé, il faut dire pourquoi
   ///
   /// In fr, this message translates to:
   /// **'Il a été retiré de la médiathèque. La lecture est arrêtée.'**

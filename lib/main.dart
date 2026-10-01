@@ -181,7 +181,7 @@ Future<ContentPlayer?> _startPlayback() async {
       config: const AudioServiceConfig(
         androidNotificationChannelId:
             'com.maisondumiracle.maison_du_miracle.channel.audio',
-        androidNotificationChannelName: 'Lecture des enseignements',
+        androidNotificationChannelName: 'Lecture des messages',
         // **Le défaut (`true`) est un piège.** Mettre en pause arrêterait le
         // service de premier plan, et le relancer depuis l'arrière-plan lève
         // `ForegroundServiceStartNotAllowedException` sur Android 12+. Or

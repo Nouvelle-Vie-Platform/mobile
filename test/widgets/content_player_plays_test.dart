@@ -110,8 +110,8 @@ void main() {
           supportedLocales: appSupportedLocales,
           home: ContentPlayerView(
             content: _contentProvider,
-            chromeTitle: 'ENSEIGNEMENT',
-            retractedTitle: 'Cet enseignement n\'est plus disponible',
+            chromeTitle: 'MESSAGE',
+            retractedTitle: 'Ce message n\'est plus disponible',
             retractedMessage: 'Il a été retiré du catalogue.',
             onRetry: () {},
             isLive: isLive,

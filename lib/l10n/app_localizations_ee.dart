@@ -244,13 +244,13 @@ class AppLocalizationsEe extends AppLocalizations {
   String get actionListen => 'Écouter';
 
   @override
-  String get sectionLatestTeachings => 'Derniers enseignements';
+  String get sectionLatestTeachings => 'Dernières publications';
 
   @override
   String get mediaTitle => 'Médiathèque';
 
   @override
-  String get mediaSearchHint => 'Rechercher un enseignement...';
+  String get mediaSearchHint => 'Rechercher un message...';
 
   @override
   String get mediaRecommended => 'Recommandés pour vous';
@@ -262,13 +262,13 @@ class AppLocalizationsEe extends AppLocalizations {
   String get filterSermons => 'Prêches';
 
   @override
-  String get filterTeachings => 'Enseignements';
+  String get filterTeachings => 'Messages';
 
   @override
   String get filterMusic => 'Musique';
 
   @override
-  String get seriesTag => 'Série';
+  String get seriesTag => 'Thème';
 
   @override
   String seriesMessagesCount(int count) {
@@ -348,7 +348,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get chatToday => 'Aujourd\'hui';
 
   @override
-  String get teachingAppBarTitle => 'Enseignement';
+  String get teachingAppBarTitle => 'Message';
 
   @override
   String get actionDownload => 'Télécharger';
@@ -437,7 +437,7 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get downloadsEmptyMessage =>
-      'Les enseignements que vous téléchargez pour les écouter hors ligne apparaîtront ici.';
+      'Les messages que vous téléchargez pour les écouter hors ligne apparaîtront ici.';
 
   @override
   String downloadsStorageUsed(String size) {
@@ -450,7 +450,7 @@ class AppLocalizationsEe extends AppLocalizations {
   }
 
   @override
-  String get downloadsUnknownTitle => 'Enseignement téléchargé';
+  String get downloadsUnknownTitle => 'Message téléchargé';
 
   @override
   String get downloadUpdateAvailable => 'Mise à jour disponible';
@@ -465,7 +465,7 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get downloadPurgeNoticeUnnamed =>
-      'Un enseignement a été retiré par la médiathèque et supprimé de vos téléchargements.';
+      'Un message a été retiré par la médiathèque et supprimé de vos téléchargements.';
 
   @override
   String get downloadPurgeDismiss => 'Ignorer';
@@ -675,7 +675,7 @@ class AppLocalizationsEe extends AppLocalizations {
       'Ces réglages ne changent rien à ce que vous entendez sur le réseau de l\'église. Ils protègent votre forfait quand vous êtes dehors.';
 
   @override
-  String get mediaSettingsStreaming => 'Écoute d\'un enseignement';
+  String get mediaSettingsStreaming => 'Écoute d\'un message';
 
   @override
   String get mediaSettingsLive => 'Direct';
@@ -696,7 +696,7 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get branchScopeLead =>
-      'Choisissez l\'assemblée dont vous voulez suivre les enseignements, les rassemblements et les annonces. L\'agenda et le mur de prière ne changent pas.';
+      'Choisissez l\'assemblée dont vous voulez suivre les messages, les rassemblements et les annonces. L\'agenda et le mur de prière ne changent pas.';
 
   @override
   String get branchScopeAll => 'Toutes les assemblées';
@@ -1035,7 +1035,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get sectionGatherings => 'Takpekpewo';
 
   @override
-  String get teachingRetractedTitle => 'Nufiafia sia megali o';
+  String get teachingRetractedTitle => 'Gbedeasi sia megali o';
 
   @override
   String get teachingRetractedMessage =>

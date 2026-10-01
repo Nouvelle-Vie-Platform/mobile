@@ -79,7 +79,7 @@ Future<void> _pump(
         supportedLocales: appSupportedLocales,
         home: ContentPlayerView(
           content: _contentProvider,
-          chromeTitle: 'ENSEIGNEMENT',
+          chromeTitle: 'MESSAGE',
           retractedTitle: 'Indisponible',
           retractedMessage: 'Retiré du catalogue.',
           onRetry: () {},
