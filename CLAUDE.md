@@ -1362,19 +1362,21 @@ d'écran ; et le provider **ne réessaie pas** (`retry`), un binaire ne changean
 pas de version pendant qu'il tourne. Version inconnaissable → **la ligne
 disparaît**, jamais « Version inconnue » : ça ressemblerait à une donnée.
 
-#### La connaissance du parc (#80) — l'en-tête de version et le bandeau
+#### La connaissance du parc (#80, #87) — les en-têtes de présentation et le bandeau
 
 Deux choses distinctes, livrées ensemble, et qui ne se mélangent pas.
 
-**L'en-tête est posé par l'intercepteur, jamais par un appelant.**
+**Les en-têtes sont posés par l'intercepteur, jamais par un appelant.**
 `AppVersionHeaderInterceptor` (`lib/core/network/app_version_header.dart`) est
 le **premier** de la chaîne d'`ApiClient`, avant le Bearer, le déballage
-d'enveloppe et le 401. Il pose deux en-têtes, dont la forme est relevée du plan
-serveur (`server-portal`, `docs/presentation-menus-vocabulaire-plan.md` §9) :
+d'enveloppe et le 401. Il pose **trois** en-têtes, dont la forme est relevée du
+plan serveur (`server-portal`, `docs/presentation-menus-vocabulaire-plan.md`
+§9) :
 
 ```
 X-App-Version: 1.4.0+12
 X-App-Platform: android 14
+X-Device-Id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
 ```
 
 Ils partent sur **toutes** les requêtes d'`ApiClient.instance` — synchronisation
@@ -1383,7 +1385,7 @@ et qui est précisément la requête par laquelle le serveur découvre l'apparei
 Un dépôt qui poserait l'en-tête lui-même créerait une seconde vérité, libre de
 diverger ; **ne pas en ajouter un seul ailleurs**.
 
-Quatre points qui se ratent en silence :
+Six points qui se ratent en silence :
 
 1. **Purement additif, sans exception.** Toute la lecture est dans un `try` qui
    n'a rien à dire, et `handler.next` est appelé dans tous les cas. Version
@@ -1391,21 +1393,41 @@ Quatre points qui se ratent en silence :
    absent donne « version inconnue », jamais un refus. Deux tests le verrouillent,
    dont un avec un lecteur qui **lève**.
 2. **Les lecteurs sont des champs mutables d'`ApiClient`** (`appVersion`,
-   `appPlatform`), comme `onUnauthorized` et `deviceSession`, et pour la même
+   `appPlatform`, `deviceIdentity`), comme `onUnauthorized` et `deviceSession`, et pour la même
    raison : le singleton naît avant tout câblage. Ce n'est pas une seconde vérité
    face à `appVersionReaderProvider` — même classe, même binaire ; ils sont
    séparés parce que la couche réseau ignore Riverpod.
 3. **La lecture est retenue**, attachée à l'identité des lecteurs (changer de
    lecteur la périme, ce que font les tests). Un échec, lui, **ne se met pas en
    cache**.
-4. **`AppPlatformReader` passe par une importation conditionnelle**
+4. **L'identifiant d'appareil (#87) a son propre `try`**, et c'est tout
+   l'intérêt : un coffre illisible fait disparaître **ce seul** en-tête, la
+   version et la plateforme restent — et l'inverse. Les trois sont indépendants,
+   aucun ne tombe avec un autre.
+5. **`ApiClient.deviceIdentity` est le seul exemplaire de `DeviceIdentity`** de
+   l'application : l'en-tête le lit, et `HttpDeviceRepository` le prend **par
+   défaut** pour ouvrir une session. Deux instances pourraient, à la première
+   ouverture, fabriquer deux identifiants dont un seul serait rangé — le corps de
+   `POST /devices/anonymous` ne dirait alors pas la même chose que son en-tête.
+   L'intercepteur ne remet rien en cache de son côté : `DeviceIdentity.current()`
+   retient déjà un succès et jamais un échec.
+6. **`AppPlatformReader` passe par une importation conditionnelle**
    (`app_platform_io.dart` / `app_platform_web.dart`) — `dart:io` n'existe pas
    sur le web. `shortOsVersion` ne garde du système que son numéro : `dart:io`
    rend « 14 (API 34) » et « Version 17.0 (Build 21A329) ». Sur le web, **pas de
    version de système** : la lire serait une empreinte d'appareil.
 
-**Rien d'autre ne part** : ni identifiant publicitaire, ni empreinte. Un test
-vérifie positivement que le client n'ajoute que ces deux `X-`.
+⚠️ **L'identifiant d'appareil mesure, il n'autorise rien** (ADR-0040). Il part
+**aussi quand un membre est connecté** — c'est tout l'objet de #87 : sans lui le
+serveur dérive une fiche *synthétique* du compte, et un membre à deux téléphones
+ne compte que pour un. Il voyage **à côté** du porteur, jamais à sa place : le
+jeton d'accès reste la seule preuve d'identité, et rien ne doit se mettre à
+traiter cette valeur comme un secret ni à décider d'une permission dessus.
+
+**Rien d'autre ne part** : ni identifiant publicitaire, ni empreinte dérivée du
+matériel ou de l'agent utilisateur. On transporte la valeur qui existait déjà
+dans le coffre, et rien d'autre. Un test vérifie positivement que le client
+n'ajoute que ces trois `X-`, ni plus ni moins.
 
 **Le bandeau ne bloque jamais** (`lib/widgets/app_update_banner.dart`). Il
 informe, renvoie au magasin, se ferme, et l'application continue. Ni « mise à
