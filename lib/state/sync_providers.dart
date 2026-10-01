@@ -33,6 +33,7 @@ import '../data/local/mediatheque_dao.dart';
 import '../data/local/playback_dao.dart';
 import '../data/local/season_dao.dart';
 import '../data/local/sync_dao.dart';
+import '../data/local/vocabulary_dao.dart';
 import '../data/sync/sync_api.dart';
 import '../data/sync/sync_engine.dart';
 import '../data/sync/sync_scheduler.dart';
@@ -100,6 +101,16 @@ final legalDaoProvider = Provider<LegalDao>(
 /// précédents.
 final seasonDaoProvider = Provider<SeasonDao>(
   (ref) => ref.watch(appDatabaseProvider).seasonDao,
+);
+
+/// Les lectures du magasin, côté **vocabulaire** — les mots réglés au portail
+/// (#81). Un DAO de plus, même motif que les précédents.
+///
+/// Il ne choisit aucune langue et n'applique aucune précédence : il rend les
+/// surcharges brutes, et c'est `AppWords` (`l10n/vocabulary.dart`) qui tranche
+/// — à un seul endroit.
+final vocabularyDaoProvider = Provider<VocabularyDao>(
+  (ref) => ref.watch(appDatabaseProvider).vocabularyDao,
 );
 
 /// Les deux routes du protocole, sur le `Dio` d'`ApiClient` : la requête

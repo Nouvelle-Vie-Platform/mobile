@@ -452,6 +452,53 @@ void main() {
     expect(await db.select(db.teachingGuests).get(), isEmpty);
   });
 
+  test('v13 → v14 : la table du vocabulaire apparaît', () async {
+    // Le palier du **vocabulaire réglé** (#81) : une création de table, et rien
+    // d'autre. Aucune valeur de `.arb` ne change, aucune colonne existante ne
+    // bouge.
+    final connection = await verifier.startAt(13);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 14);
+  });
+
+  test('v1 → v14 : un appareil resté en v1 rejoue les treize paliers',
+      () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 14);
+  });
+
+  test('v13 → v14 : le catalogue survit, et le vocabulaire naît vide',
+      () async {
+    // Ce qu'un fidèle hors ligne risquerait de perdre, c'est son catalogue : le
+    // palier ne le touche pas. La table neuve, elle, naît vide — et **vide veut
+    // dire « le mot du dépôt partout »**, c'est-à-dire exactement ce que
+    // l'application affichait déjà avant la migration. Son curseur n'existe pas
+    // encore, le prochain manifeste l'annoncera `from_zero`.
+    final schema = await verifier.schemaAt(13);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 14);
+
+    expect((await db.select(db.teachings).get()).single.title,
+        'Dieu a le dernier mot');
+    expect(await db.select(db.presentationVocabulary).get(), isEmpty);
+    // Aucun curseur posé : la collection n'a jamais été tirée.
+    expect(
+      await db.syncDao.cursorFor('presentation_vocabulary'),
+      isNull,
+    );
+  });
+
   test('la version de schéma couvre bien toutes les versions exportées', () {
     final db = openTestDatabase();
     addTearDown(db.close);

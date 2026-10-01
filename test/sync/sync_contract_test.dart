@@ -14,12 +14,45 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les dix-neuf collections du registre, dans l\'ordre', () {
-      expect(kSyncCollections, hasLength(19));
+    test('les vingt-six collections du registre, dans l\'ordre', () {
+      // **Ce nombre avait menti.** Il disait dix-neuf quand le registre serveur
+      // en comptait vingt-cinq, et le test passait au vert en gardant un contrat
+      // périmé — `seasons`, `decor`, `teaching_guests`, `group_members`,
+      // `profiles` et `group_join_requests` manquaient, dont quatre que ce
+      // client réplique. Remis d'aplomb en #81, où `presentation_vocabulary`
+      // devient la vingt-sixième.
+      expect(kSyncCollections, hasLength(26));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
       );
+    });
+
+    test('le vocabulaire est un référentiel, rangé avant les contenus', () {
+      // `partition: 'reference'` : un mot n'appartient à aucune branche — il n'y
+      // a qu'un site public et qu'une application, et le mot choisi depuis Aného
+      // est celui de Lomé. Et il est **servi au porteur sans compte**, faute de
+      // quoi deux téléphones côte à côte montreraient deux vocabulaires.
+      expect(kSyncCollections['presentation_vocabulary'], 'reference');
+
+      final keys = kSyncCollections.keys.toList();
+      expect(
+        keys.indexOf('presentation_vocabulary'),
+        lessThan(keys.indexOf('teachings')),
+      );
+      expect(
+        keys.indexOf('presentation_vocabulary'),
+        lessThan(keys.indexOf('gatherings')),
+      );
+    });
+
+    test('un pivot est un référentiel, une appartenance est privée', () {
+      // Les deux partitions qu'on corrigerait de travers, et qui se relèvent sur
+      // le champ `partition:` du descripteur, jamais sur l'intuition.
+      expect(kSyncCollections['teaching_guests'], 'reference');
+      expect(kSyncCollections['group_members'], 'private');
+      expect(kSyncCollections['profiles'], 'private');
+      expect(kSyncCollections['group_join_requests'], 'private');
     });
 
     test(

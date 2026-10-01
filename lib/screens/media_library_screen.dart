@@ -61,7 +61,7 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
     final tabs = [
       l.filterAll,
       l.filterSermons,
-      l.filterTeachings,
+      context.words.filterTeachings,
       l.filterMusic,
     ];
 
@@ -180,7 +180,7 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
         SliverToBoxAdapter(
           child: Padding(
             padding: AppSpacing.screenPadding,
-            child: _SectionHeader(title: l.sectionLatestTeachings),
+            child: _SectionHeader(title: context.words.sectionLatestTeachings),
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),

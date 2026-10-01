@@ -730,7 +730,7 @@ class _LatestTeachingsShelf extends StatelessWidget {
         Padding(
           padding: AppSpacing.screenPadding,
           child: SectionHeader(
-            title: l10n.sectionLatestTeachings,
+            title: context.words.sectionLatestTeachings,
             icon: Icons.menu_book_outlined,
             actionLabel: l10n.actionSeeAll,
             onAction: () => context.pushNamed(AppRoute.media),

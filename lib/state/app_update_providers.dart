@@ -8,20 +8,33 @@ import 'app_version_providers.dart';
 /// basse version encore recommandée, telle que `1.4.0`. `null` veut dire
 /// « aucun seuil réglé », donc **aucun bandeau**.
 ///
-/// ## Le repli de cette tranche, écrit noir sur blanc
+/// ## Le repli reste ouvert, et la tranche 3 ne pouvait pas le refermer
 ///
-/// Le seuil se règle depuis le portail (écran *Appareils*) et descend par la
-/// **synchronisation**. Il n'a pas de collection à lui : une collection neuve,
-/// une table Drift et un palier de schéma pour un seul entier seraient
-/// disproportionnés, et le réglage a vocation à voyager avec ceux de la
-/// tranche 3 (issue #81), qui dit en toutes lettres qu'elle « referme » ce
-/// repli.
+/// Le seuil se règle depuis le portail (écran *Appareils*) et devait descendre
+/// par la **synchronisation**, avec les réglages de la tranche 3 (#81). Il
+/// n'est pas descendu, et ce n'est pas un oubli : **le serveur ne le sert à
+/// aucune collection**.
 ///
-/// Cette tranche-ci part avant elle. Le repli est donc **explicite et assumé**,
-/// pas un oubli : pas de seuil, pas de bandeau. Tout le reste du chemin — la
-/// comparaison de versions, la fermeture, le renvoi au magasin, la place dans la
-/// coquille — est écrit et testé ; il ne manque que la source, et la seule ligne
-/// à changer est celle-ci.
+/// Ce qui a été vérifié dans `server-portal` au moment d'écrire ceci :
+///
+/// - le seuil vit dans `device_settings.update_banner_min_version`, une table
+///   d'une seule ligne posée par #465 — et cette table **n'a pas de descripteur
+///   de synchronisation** : `app/sync/descriptors/registry.ts` en compte
+///   vingt-six, aucune ne la touche. Elle ne se lit que par l'écran
+///   d'administration, derrière le RBAC ;
+/// - `presentation_vocabulary`, la collection de la tranche 3, ne pouvait pas le
+///   porter : `SaveVocabulary` **ignore en silence** toute clé que
+///   `vocabulary_catalog.ts` ne nomme pas, et le catalogue ne porte que des
+///   termes et des clés de dictionnaire. Une ligne `update_banner_min_version`
+///   n'y naîtrait jamais.
+///
+/// Y faire descendre le seuil demande donc une décision **côté serveur** —
+/// enregistrer un descripteur pour `device_settings`, ou nommer une clé de
+/// catalogue qui n'est pas un mot —, et ni l'une ni l'autre n'est au périmètre
+/// d'une tranche mobile. Le repli reste donc **explicite et assumé** : pas de
+/// seuil, pas de bandeau. Tout le reste du chemin — la comparaison de versions,
+/// la fermeture, le renvoi au magasin, la place dans la coquille — est écrit et
+/// testé ; il ne manque que la source, et la seule ligne à changer est celle-ci.
 ///
 /// ## Et c'est aussi le bon comportement aujourd'hui
 ///
