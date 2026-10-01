@@ -389,8 +389,10 @@ propre chantier.
 #### L'URL vient d'une route publique, jamais d'une constante
 
 `lib/data/radio/` : `RadioRepository` (contrat), `HttpRadioRepository`
-(`GET /radio/antenna`), `FixedRadioRepository` (le double). **Pas de collection
-de synchronisation, pas de table, pas de curseur** — la décision écrite en tête
+(`GET /radio/antenna`), `FixedRadioRepository` (le double) — plus
+`radio_handshake.dart`, le **pré-vol** de la session de MediaMTX (#108, voir plus
+bas), qui est la seule autre chose que cette rubrique demande au réseau. **Pas de
+collection de synchronisation, pas de table, pas de curseur** — la décision écrite en tête
 d'`app/radio/routes.ts` est respectée : *connaître l'URL hors ligne ne sert à
 rien, puisqu'on ne peut pas écouter hors ligne*.
 
@@ -480,28 +482,70 @@ le droit d'importer. On lit donc le code de statut que la plateforme écrit dans
 son message, et un échec qu'on ne sait pas nommer **penche vers « connexion »** :
 inviter à un geste utile vaut mieux qu'affirmer une panne de l'église.
 
-#### ⚠️⚠️ La poignée de main par cookie **n'est pas honorée**, et c'est la dette
+#### La poignée de main par cookie, honorée à la main (#108)
 
-MediaMTX rend un **302** sur `index.m3u8` et pose `hlsSession` ; sans ce cookie,
-la suite rend `401 {"error":"session not found"}`. Signature : **200 puis 401**.
-Relevé dans le source de `just_audio` 0.10.6, pas supposé :
+**La panne est mesurée, pas supposée.** Le 2026-10-01, depuis l'extérieur du VPS,
+sur `https://stream.eenv.brainsial.com/antenne/` : sans cookie,
+`401 {"status":"error","error":"session not found"}` ; avec, la playlist
+complète. La dette de #104 est donc payée — ce paragraphe disait « rien n'est
+tenté », et c'était juste tant que `context#6` n'était pas posé.
 
-| plateforme | redirections | cookies |
-| --- | --- | --- |
-| Android (`AudioPlayer.java:731-750`) | **suivies** (`setAllowCrossProtocolRedirects(true)`) | **jetés** — `HttpURLConnection` n'en garde que si un `java.net.CookieHandler` est installé par défaut, et il n'y en a aucun |
-| iOS/macOS (`UriAudioSource.m:33-72`) | suivies par AVFoundation | **`AVURLAssetHTTPCookiesKey` jamais posé** — et cette clé existe parce que le chargement média ne partage pas le `HTTPCookieStorage` de l'app |
+⚠️ **Il y a DEUX cookies, pas un, et c'est ce qui décide du code.** La
+négociation se fait en deux temps : un **302** pose `cookieCheck` (MediaMTX
+vérifie que le client sait garder un cookie), puis le **200** qui suit pose
+`hlsSession` ; les deux sont `HttpOnly; Secure; SameSite=None; Partitioned`. Un
+suivi de redirection **sans bocal ne suffit pas** : qui ne renvoie pas
+`cookieCheck` au second saut ne reçoit jamais `hlsSession`, et tout ce qui vient
+après rend 401. C'est pourquoi `radio_handshake.dart` pose
+`followRedirects: false` et fait les sauts **un par un** — `dart:io` suit bien
+les 302 tout seul, mais `HttpClient` n'a aucun bocal.
 
-Le mot « cookie » n'apparaît **nulle part** dans le code Android ni Darwin du
-paquet — seulement dans son README, à propos du web.
+Et `just_audio` ne les porte pas (relevé dans le source de la 0.10.6, pas
+supposé — le mot « cookie » n'apparaît nulle part dans son code Android ni
+Darwin) :
 
-**Rien n'est tenté**, et c'est délibéré : le bloc Caddy de MediaMTX n'est pas posé
-(`context#6`), donc le HLS ne répond que depuis `127.0.0.1` sur le VPS et
-**aucune écoute réelle n'est possible**. Un contournement écrit à l'aveugle ne
-serait vérifié par rien. Le contournement, le jour où on pourra l'éprouver, est
-écrit en commentaire au-dessus du `load` de `RadioListening.start` : résoudre le
-302 soi-même et passer l'URL absolue finale **plus** un en-tête `Cookie:` — ce
-qui demande un paramètre `headers` sur `ContentPlayer.load`, et de renégocier à
-chaque réouverture.
+| plateforme | redirections | cookies | en-têtes |
+| --- | --- | --- | --- |
+| Android (`AudioPlayer.java:731-750`) | **suivies** (`setAllowCrossProtocolRedirects(true)`) | **jetés** — `HttpURLConnection` n'en garde que si un `java.net.CookieHandler` est installé par défaut, et il n'y en a aucun | `setDefaultRequestProperties`, appliqué à **toutes** les requêtes du `DataSource` : sous-playlists et segments compris |
+| iOS/macOS (`UriAudioSource.m:33-72`) | suivies par AVFoundation | **`AVURLAssetHTTPCookiesKey` jamais posé** — et cette clé existe parce que le chargement média ne partage pas le `HTTPCookieStorage` de l'app | `AVURLAssetHTTPHeaderFieldsKey`, ⚠️ **clé non documentée par Apple** — posée parce que c'est le seul levier du greffon, **pas** parce qu'on l'a vue marcher |
+
+Ce qui a été posé : `RadioHandshakeResolver` + `HttpRadioHandshakeResolver`
+(`lib/data/radio/radio_handshake.dart`), appelés par `RadioListening.start`
+**avant** le `load`, et un champ `headers` sur `ContentRequest` /
+`ContentPlayer.load`. Cinq points qui se ratent en silence :
+
+1. **Le pré-vol a sa propre borne de temps** (`kRadioHandshakeTimeout`, **5 s**,
+   nommée à un seul endroit), parce qu'il est sur le **chemin critique de
+   l'écoute** et que ce qu'il consomme est pris sur la fenêtre de rattrapage de
+   40 secondes de l'antenne.
+2. **Son échec n'a pas de voix à lui** : il lève, `classifyRadioFailure` range, et
+   les deux phrases restent celles de #104 — réponse absente → « vérifiez votre
+   connexion » ; 401 / 404 / 5xx → « antenne indisponible ». D'où la
+   `DioException` **avec sa réponse attachée** quand le serveur a parlé.
+3. **Il renégocie à chaque `start`, rien n'est mis en cache.** Une session expire ;
+   mémoriser le résultat pour épargner un aller-retour rendrait l'antenne muette
+   précisément quand l'auditeur insiste après deux minutes de coupure.
+4. **`ContentRequest.headers` existe pour le chien de garde** : il rouvre la source
+   sans écran devant lui, et sans ce champ il rouvrirait **sans** cookie. Il porte
+   en revanche le cookie **de l'ouverture** — il ne le rafraîchit pas ; la
+   fraîcheur appartient à l'appelant.
+5. ⚠️ **Il a son propre `Dio`, jamais celui d'`ApiClient`** — l'arbitrage le plus
+   important du fichier, pour la raison de `SeasonBackgroundStore` en pire : sur le
+   client global, `UnauthorizedInterceptor` traiterait le 401 de MediaMTX comme un
+   401 de l'API, donc **purgerait le jeton et éjecterait l'auditeur vers `/auth`**,
+   et `_AuthInterceptor` enverrait le porteur Bearer à un autre hôte que l'API. Un
+   test le verrouille (`test/data/radio_handshake_test.dart`).
+
+**Le web est écarté** (`DirectRadioHandshake`) : le bocal y appartient au
+navigateur, un `Set-Cookie` ne se lit pas depuis JavaScript et `Cookie` est un
+*forbidden header name* de la spécification Fetch. Un pré-vol y échouerait **et**
+serait inutile, et `hls_content_player.dart` ignore les en-têtes pour la même
+raison.
+
+⚠️ **Ce qu'aucun test ne prouve, et qu'il ne faut pas prétendre** : qu'un cookie
+a réellement traversé jusqu'à ExoPlayer ou AVFoundation. Les tests s'arrêtent à
+l'en-tête remis au lecteur ; la suite demande **un Android réel et un iPhone
+réel**, et côté Darwin la clé n'est pas documentée.
 
 **Ce que le flux impose** : segments de 2 s, fenêtre de 20 segments = **40 s de
 rattrapage** (`docs/RADIO.md`). C'est aussi pourquoi l'écran verrouillé perd ses
@@ -531,8 +575,11 @@ il reconnaît la radio dans la main du lecteur unique, et gouverne la reprise qu
 qu'il arrive.
 
 Côté tests : `pumpScreen` / `pumpRouter` posent un `FixedRadioRepository` sur
-`RadioAntenna.unknown` (paramètre nommé `radio:`) — tout test qui monte l'accueil
-monte ce bouton. **Jamais `pumpAndSettle`** : le bouton porte une animation
+`RadioAntenna.unknown` (paramètre nommé `radio:`) **et** un `DirectRadioHandshake`
+(paramètre nommé `handshake:`, #108 — le pré-vol réel ouvrirait une socket au
+premier appui) — tout test qui monte l'accueil monte ce bouton. Les deux sont des
+paramètres nommés et non des `Override` de plus : Riverpod 3 refuse deux
+surcharges du même provider. **Jamais `pumpAndSettle`** : le bouton porte une animation
 continue. Et les six attentes sont écrites **en clair** dans le test, jamais
 relues depuis `kRadioRetryDelays` : la constante est ce qu'on éprouve — mesuré,
 un test qui la relisait passait au vert sur six attentes d'une seconde.

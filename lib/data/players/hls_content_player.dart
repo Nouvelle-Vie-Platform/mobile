@@ -140,6 +140,19 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     // servent à rien. Retenu dans la requête malgré tout, pour qu'une
     // réouverture rejoue le même régime si un jour le web en a un.
     bool isLive = false,
+    // **Ignorés, et c'est le navigateur qui l'impose** (#108). Le bocal à
+    // cookies est à lui, il le tient d'ailleurs très bien tout seul ; mais
+    // `Cookie` est un *forbidden header name* de la spécification Fetch — ni
+    // `fetch`, ni `XMLHttpRequest`, ni un élément `<audio>` ne laissent le poser.
+    // Le pré-vol n'a donc pas lieu sur le web (`DirectRadioHandshake`), et ce
+    // paramètre n'existe ici que pour satisfaire le contrat [ContentPlayer].
+    //
+    // ⚠️ Conséquence à connaître si l'antenne doit un jour jouer dans un
+    // navigateur : ce qu'il faudrait, c'est que les requêtes de `hls.js` partent
+    // avec les identifiants (`xhrSetup` + `withCredentials`) et que MediaMTX
+    // réponde les en-têtes CORS qui vont avec. Ce n'est pas un en-tête à poser,
+    // c'est un autre sujet — et il n'est pas celui de cette tranche.
+    Map<String, String> headers = const {},
   }) async {
     if (isDisposed) return;
     _releaseSource();

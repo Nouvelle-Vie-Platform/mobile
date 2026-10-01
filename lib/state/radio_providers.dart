@@ -25,6 +25,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
@@ -33,6 +34,7 @@ import '../data/players/content_player.dart';
 import '../data/radio/http_radio_repository.dart';
 import '../data/radio/radio_antenna.dart';
 import '../data/radio/radio_failure.dart';
+import '../data/radio/radio_handshake.dart';
 import '../data/radio/radio_repository.dart';
 import '../data/radio/radio_retry.dart';
 import '../data/radio/radio_status.dart';
@@ -54,6 +56,23 @@ final radioRepositoryProvider = Provider<RadioRepository>(
   (ref) => AppEnv.useBackend
       ? HttpRadioRepository()
       : const FixedRadioRepository.trenched(),
+);
+
+/// **Qui négocie la session de MediaMTX avant d'ouvrir le flux** (#108).
+///
+/// Le web est écarté, et ce n'est pas une mise de côté par prudence : le bocal à
+/// cookies y appartient au navigateur, un `Set-Cookie` ne se lit pas depuis
+/// JavaScript et `Cookie` est un *forbidden header name* de la spécification
+/// Fetch. Un pré-vol y échouerait **et** serait inutile — voir
+/// [DirectRadioHandshake] et `hls_content_player.dart`.
+///
+/// Partout ailleurs le pré-vol est **réel, y compris sans backend** : la route
+/// d'antenne peut être doublée (`FixedRadioRepository`), mais le serveur de flux
+/// qu'elle désigne, lui, est le vrai — et il demande sa session. C'est pourquoi
+/// ce provider ne regarde pas `AppEnv.useBackend` ; les tests le surchargent
+/// eux-mêmes (`pumpScreen(handshake: …)`).
+final radioHandshakeProvider = Provider<RadioHandshakeResolver>(
+  (ref) => kIsWeb ? const DirectRadioHandshake() : HttpRadioHandshakeResolver(),
 );
 
 /// **L'état de l'antenne, lu au lancement et au retour à l'écran.**
@@ -179,58 +198,45 @@ class RadioListening extends Notifier<RadioStatus> {
     try {
       final url = await _resolveUrl();
       if (url == null) return; // `_fail` a déjà parlé
-      // ⚠️⚠️ **LA POIGNÉE DE MAIN PAR COOKIE N'EST PAS HONORÉE ICI, ET C'EST LA
-      // DETTE QUI DÉCIDE SI L'ÉCOUTE MARCHE EN VRAI.**
+      // **LA POIGNÉE DE MAIN PAR COOKIE, HONORÉE ICI** (#108) — et c'est ce qui
+      // décide si l'écoute marche en vrai.
       //
-      // MediaMTX impose une négociation (`mediamtx-service/README.md`, § ①) :
-      // `GET <préfixe>/index.m3u8` rend un **302** et pose un cookie
-      // `hlsSession` (`Path` = le dossier du chemin vu par MediaMTX) ; sans ce
-      // cookie, tout le reste rend `401 {"error":"session not found"}`.
-      // Signature de la panne : **200 sur `index.m3u8`, 401 juste après.**
+      // MediaMTX n'ouvre pas son antenne à qui ne porte pas sa session. Mesuré
+      // le 2026-10-01 depuis l'extérieur du VPS : sans cookie, `401
+      // {"status":"error","error":"session not found"}` ; avec, la playlist
+      // complète. La négociation se fait en **deux temps** — un 302 qui pose
+      // `cookieCheck`, puis un 200 qui pose `hlsSession` — et `just_audio` ne
+      // garde ni l'un ni l'autre (relevé dans son source 0.10.6 : Android jette,
+      // faute de `CookieHandler` par défaut ; Darwin ne pose jamais
+      // `AVURLAssetHTTPCookiesKey`). On la fait donc nous-mêmes, puis on passe au
+      // lecteur l'**URL absolue finale** et l'en-tête `Cookie:` —
+      // `radio_handshake.dart` porte tout le détail, bocal compris.
       //
-      // Relevé dans le source de `just_audio` 0.10.6, et non supposé :
+      // ⚠️ **Il est renégocié à chaque fois, et c'est le cœur de la tranche.**
+      // Rien n'est mis en cache entre deux `start` : une session expire, donc une
+      // reprise après deux minutes de coupure ne peut pas rejouer l'ancien
+      // cookie. Mémoriser le résultat pour épargner un aller-retour rendrait
+      // l'antenne muette précisément dans le cas où l'auditeur insiste.
       //
-      // - **Android** — `AudioPlayer.java:731-750`, `buildDataSourceFactory` :
-      //   `DefaultHttpDataSource.Factory` + `setAllowCrossProtocolRedirects(true)`.
-      //   Les redirections sont donc suivies. Mais ce `DataSource` passe par
-      //   `HttpURLConnection`, qui ne garde de cookies que si un
-      //   `java.net.CookieHandler` est **installé par défaut** — et il n'y en a
-      //   aucun : le mot « cookie » n'apparaît nulle part dans le code Android ni
-      //   Darwin du paquet (seulement dans son README, à propos du **web**). Sur
-      //   Android, `CookieHandler.getDefault()` vaut `null` tant que
-      //   l'application n'en pose pas. Le `Set-Cookie` du 302 est donc **jeté**.
-      // - **iOS / macOS** — `UriAudioSource.m:33-72` : l'`AVURLAsset` est
-      //   construit avec `PreferPreciseDurationAndTiming`, éventuellement
-      //   `AVURLAssetHTTPUserAgentKey` et `AVURLAssetHTTPHeaderFieldsKey`.
-      //   **`AVURLAssetHTTPCookiesKey` n'est jamais posé** — et cette clé existe
-      //   précisément parce que le chargement média d'AVFoundation ne partage pas
-      //   le `HTTPCookieStorage` de l'application (il se fait hors du processus).
-      //   Ce que la session de CFNetwork fait d'un cookie reçu **pendant** le
-      //   chargement n'est documenté nulle part, et n'a pas pu être mesuré.
-      //
-      // **Pourquoi rien n'est tenté ici** : le bloc Caddy de MediaMTX n'est pas
-      // posé (`context#6`), donc le HLS ne répond que depuis `127.0.0.1` sur le
-      // VPS — **aucune écoute réelle n'est possible**, et un contournement écrit à
-      // l'aveugle ne serait vérifié par rien. Mettre un pré-vol HTTP sur le chemin
-      // de l'écoute sans pouvoir constater qu'il sert serait ajouter une panne
-      // possible pour corriger une panne supposée.
-      //
-      // **Le contournement, le jour où on pourra l'éprouver** : résoudre le 302
-      // soi-même (le `Dio` d'`ApiClient` suit déjà les redirections et sait lire
-      // `Set-Cookie`), puis passer à `load` l'URL **absolue finale** et un en-tête
-      // `Cookie: hlsSession=…`. Les deux plateformes savent recevoir des en-têtes
-      // (`setDefaultRequestProperties` côté Android — et il les applique à
-      // **toutes** les requêtes du `DataSource`, sous-playlists et segments
-      // compris, ce qui est exactement ce qu'il faut ;
-      // `AVURLAssetHTTPHeaderFieldsKey` côté Darwin, clé **non documentée** par
-      // Apple, à noter avant de s'y adosser). Cela demanderait un paramètre
-      // `headers` sur `ContentPlayer.load` — un champ de plus sur `ContentRequest`,
-      // pour que la réouverture du chien de garde reparte avec le même cookie.
-      // Et le cookie expire : il faudrait le renégocier à chaque réouverture.
+      // ⚠️ **Son échec n'a pas de voix à lui.** Il lève, la prise d'erreur de
+      // cette méthode le range par `classifyRadioFailure`, et il se lit donc
+      // comme les autres : réponse absente → « vérifiez votre connexion » ;
+      // 401 / 404 / 5xx → « antenne indisponible ». Sa borne de temps lui est en
+      // revanche propre (`kRadioHandshakeTimeout`), parce qu'il est **sur le
+      // chemin critique de l'écoute** et que ce qu'il consomme est pris sur la
+      // fenêtre de rattrapage de 40 secondes de l'antenne.
+      final handshake = await ref.read(radioHandshakeProvider).resolve(url);
       await player.load(
         contentId: RadioConfig.contentId,
-        url: url,
+        // L'URL **finale**, pas celle de départ : le `Location` du 302 est
+        // absolu et à la racine, et rouvrir l'adresse de départ referait la
+        // négociation sans le bocal — c'est-à-dire la panne.
+        url: handshake.url,
         title: title,
+        // Ils descendent jusqu'à la source (#108), donc jusqu'aux
+        // sous-playlists et aux segments, et ils sont retenus par
+        // `ContentRequest` pour que le chien de garde ne rouvre pas sans eux.
+        headers: handshake.headers,
         // **Pas de ±30 s ni de barre de progression sur un direct** : c'est ce
         // drapeau, et lui seul, qui le dit à la notification et à l'écran
         // verrouillé.

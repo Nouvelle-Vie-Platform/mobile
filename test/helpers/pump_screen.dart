@@ -8,6 +8,7 @@ import 'package:maison_du_miracle/data/legal_notice_store.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
+import 'package:maison_du_miracle/data/radio/radio_handshake.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/realtime/group_channel.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
@@ -118,6 +119,15 @@ import 'playback_doubles.dart';
 /// veulent une antenne précise ou un échec passent par ce paramètre nommé —
 /// Riverpod 3 refuse deux surcharges du même provider.
 ///
+/// **Le pré-vol de la poignée de main** ([handshake]) est posé de la même façon et
+/// pour la même raison (#108) : son implémentation réelle ouvre une socket vers le
+/// serveur de flux **dès le premier appui** sur le bouton d'antenne, et
+/// `flutter test` répond 400 à tout accès réseau. Le défaut est
+/// `DirectRadioHandshake` — l'URL passe telle quelle, sans en-tête —, c'est-à-dire
+/// ce que voit un test qui ne parle pas de cookie. Les tests qui éprouvent la
+/// poignée de main passent par ce paramètre nommé, et jamais par un `Override` de
+/// plus : Riverpod 3 refuse deux surcharges du même provider.
+///
 /// Le **contrôleur d'écoute**, lui, n'est pas doublé : il observe le lecteur, et
 /// `contentPlayerProvider` est déjà inerte par défaut.
 ///
@@ -155,6 +165,7 @@ Future<void> pumpRouter(
   EchangesRepository? echanges,
   GroupChannel? channel,
   RadioRepository? radio,
+  RadioHandshakeResolver? handshake,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -176,6 +187,7 @@ Future<void> pumpRouter(
           echanges: echanges,
           channel: channel,
           radio: radio,
+          handshake: handshake,
         ),
         ...overrides,
       ],
@@ -213,6 +225,7 @@ List<Override> _commonOverrides(
   EchangesRepository? echanges,
   GroupChannel? channel,
   RadioRepository? radio,
+  RadioHandshakeResolver? handshake,
   List<DownloadNotificationRow> notifications = const [],
 }) =>
     [
@@ -220,6 +233,10 @@ List<Override> _commonOverrides(
       // **L'antenne de New Life Radio** (#104) — voir l'en-tête pour le pourquoi.
       radioRepositoryProvider.overrideWithValue(
         radio ?? const FixedRadioRepository(RadioAntenna.unknown),
+      ),
+      // **Le pré-vol de la poignée de main de MediaMTX** (#108) — voir l'en-tête.
+      radioHandshakeProvider.overrideWithValue(
+        handshake ?? const DirectRadioHandshake(),
       ),
       // **Le canal temps réel d'un groupe, posé muet** (#101), pour la raison de
       // l'auth et de l'envoyeur de messages : l'implémentation réelle est SSE dès
@@ -362,6 +379,7 @@ Future<void> pumpScreen(
   EchangesRepository? echanges,
   GroupChannel? channel,
   RadioRepository? radio,
+  RadioHandshakeResolver? handshake,
   List<DownloadNotificationRow> notifications = const [],
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
@@ -390,6 +408,7 @@ Future<void> pumpScreen(
           echanges: echanges,
           channel: channel,
           radio: radio,
+          handshake: handshake,
           notifications: notifications,
         ),
         ...overrides,
