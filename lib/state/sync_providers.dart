@@ -13,6 +13,11 @@
 /// | retour au premier plan | l'abonnement au cycle de vie posé par `SyncScheduler.start()` |
 /// | tirer-pour-rafraîchir | [pullToRefreshProvider], passé à un `RefreshIndicator` |
 ///
+/// Un quatrième s'y est ajouté depuis (#101), et il n'est pas d'ADR-0017 : le
+/// **signal d'un fil ouvert** ([openThreadSyncProvider]), c'est-à-dire le temps
+/// réel par SSE pendant qu'une conversation est affichée. Même mécanisme, même
+/// moteur, même écriture — seul le déclencheur est neuf.
+///
 /// **Jamais de polling** : aucun `Timer`, et `test/sync/sync_scheduler_test.dart`
 /// le vérifie sur la source.
 ///
@@ -229,4 +234,24 @@ final syncSchedulerProvider = Provider<SyncScheduler>((ref) {
 final pullToRefreshProvider = Provider<Future<void> Function()>((ref) {
   if (!AppEnv.useBackend) return () async {};
   return () => ref.read(syncSchedulerProvider).refresh();
+});
+
+/// **Le déclencheur « un signal est arrivé sur le canal d'un fil ouvert »**
+/// (#101), sous la même forme que [pullToRefreshProvider].
+///
+/// C'est le seul effet qu'un événement SSE produit : un cycle, le même que les
+/// trois autres déclencheurs. L'événement n'écrit **jamais** dans le magasin —
+/// voir `lib/data/realtime/group_channel.dart`, et `SyncTrigger.openThread` pour
+/// le pourquoi d'un quatrième nom.
+///
+/// Le drapeau `AppEnv.useBackend` se lit **ici et non dans l'écran**, comme pour
+/// le tirer-pour-rafraîchir : sans backend il n'y a rien à synchroniser, et lire
+/// [syncSchedulerProvider] ouvrirait une base Drift pour ne rien tirer.
+///
+/// Rend le cycle **en cours** s'il y en a un : une rafale de messages dans une
+/// conversation animée rejoint le cycle qui tourne plutôt que d'en lancer un par
+/// message, ce qui ferait se disputer les mêmes curseurs.
+final openThreadSyncProvider = Provider<Future<void> Function()>((ref) {
+  if (!AppEnv.useBackend) return () async {};
+  return () => ref.read(syncSchedulerProvider).trigger(SyncTrigger.openThread);
 });

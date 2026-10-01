@@ -38,6 +38,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
 import '../data/repositories/echanges_repository.dart';
+import '../data/realtime/group_channel.dart';
+import '../data/realtime/open_thread_channel.dart';
+import '../data/realtime/sse_group_channel.dart';
 import '../data/repositories/group_message_composer.dart';
 import '../data/repositories/group_message_sender.dart';
 import '../data/repositories/store_echanges_repository.dart';
@@ -154,3 +157,48 @@ final groupMessageComposerProvider = Provider<GroupMessageComposer>(
     resynchronize: ref.watch(pullToRefreshProvider),
   ),
 );
+
+/// **Le canal temps réel d'un groupe** (#101) — SSE avec backend, muet sinon.
+///
+/// Sans backend il n'y a pas de canal, donc **aucun signal**, donc aucun cycle :
+/// c'est exactement le régime que l'application doit savoir tenir, et c'est le
+/// défaut de tous les tests d'écran (`pumpScreen` le pose, paramètre `channel:`).
+///
+/// ⚠️ **Ce n'est pas une notification**, et rien ici ne doit être nommé comme si
+/// c'en était une : le canal ne vit que tant qu'un fil est affiché. Voir
+/// `lib/data/realtime/group_channel.dart`.
+final groupChannelProvider = Provider<GroupChannel>(
+  (ref) => AppEnv.useBackend ? SseGroupChannel() : const SilentGroupChannel(),
+);
+
+/// **Le canal du fil affiché** : ouvert au montage de l'écran, fermé au démontage.
+///
+/// `autoDispose` et clé par groupe, et les deux portent la portée décidée au
+/// cadrage (décision 12) :
+///
+/// - **`autoDispose`** *est* la fermeture de la connexion. L'écran l'observe dans
+///   son `build` ; dès qu'il quitte l'arbre, plus personne ne l'écoute, Riverpod
+///   jette l'élément et `onDispose` rend la socket. C'est le piège 2 de l'issue,
+///   réglé structurellement plutôt que par un `dispose()` qu'un écran pourrait
+///   oublier. ⚠️ Le contraire exact de `contentPlayerProvider`, qui n'est **pas**
+///   `autoDispose` parce que la lecture doit survivre au `context.pop()` : un fil
+///   qu'on quitte, lui, n'a plus rien à écouter.
+/// - **une famille par groupe**, donc une seule connexion à la fois : on ne
+///   s'abonne pas aux huit groupes d'un membre pour lire un fil. Une connexion
+///   ouverte coûte de la batterie et du forfait, et au Togo le second compte
+///   autant que la première.
+///
+/// Il ne dépend **pas** de l'acteur, contrairement aux lectures de cette rubrique :
+/// le serveur lit l'appartenance sur le porteur de la requête, et un non-membre est
+/// simplement refusé — sans conséquence visible.
+final openThreadChannelProvider =
+    Provider.autoDispose.family<OpenThreadChannel, String>((ref, groupId) {
+  final channel = OpenThreadChannel(
+    groupId: groupId,
+    channel: ref.watch(groupChannelProvider),
+    resynchronize: ref.watch(openThreadSyncProvider),
+  );
+  ref.onDispose(channel.close);
+  channel.open();
+  return channel;
+});

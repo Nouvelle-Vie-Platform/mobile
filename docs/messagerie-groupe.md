@@ -205,9 +205,12 @@ que ne rien dire.
    d'idempotence **obligatoire** (un UUIDv7 frappé par le client), et rupture
    assumée avec le composeur d'annonces — une conversation ne supporte pas
    d'attendre le réseau. Voir `lib/data/repositories/group_message_composer.dart`.
-   Le **temps réel** (SSE/push) reste hors périmètre : le réveil push est de la
-   tranche 2, et le rattrapage par le moteur suffit. Ni l'un ni l'autre ne change la
-   règle du §1.
+   Le **temps réel par SSE** est arrivé depuis, par #101, et il ne change **rien**
+   à la règle du §1 : l'événement reçu est un **signal**, il ne porte aucune donnée
+   lisible et n'écrit jamais dans le magasin — il déclenche un cycle de
+   synchronisation, et c'est le moteur qui écrit. Le canal ne vit que tant qu'une
+   conversation est **affichée** ; ce n'est donc pas une notification, et le réveil
+   push reste de la tranche 2. Voir `lib/data/realtime/`.
 
 ## 7. Tests attendus au branchement — **écrits**
 

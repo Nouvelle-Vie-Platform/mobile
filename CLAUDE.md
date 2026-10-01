@@ -162,6 +162,8 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
     le contrat de rapport, son implémentation HTTP muette, et les cinq
     déclencheurs. Voir « La reprise de lecture » plus bas.
   - `local/` — **le magasin local Drift**, voir ci-dessous.
+  - `realtime/` — **le canal SSE d'un fil ouvert** (#101) : un *signal* qui pousse
+    le moteur, et qui n'écrit jamais. Voir « Le temps réel par SSE » plus bas.
   - `pickers/status_image_picker.dart` — le choix d'une image de fond, derrière
     une abstraction (les tests injectent un sélecteur inerte).
   - `app_version.dart` — `AppVersionReader` : la version et le build du binaire,
@@ -539,8 +541,12 @@ son `catch` donne la réponse en une exécution. Ensuite, **un fixture de
 client** : un fixture qui recopie l'hypothèse du client ne teste plus rien
 (l'en-tête du fichier donne la source de chaque forme, colonne par colonne).
 
-Déclenchement : **ouverture, foreground, tirer-pour-rafraîchir**. *Jamais de
-polling* — aucun `Timer` dans `lib/data/sync/`, et un test le vérifie.
+Déclenchement : **ouverture, foreground, tirer-pour-rafraîchir**, et depuis #101
+le **signal d'un fil ouvert** (`SyncTrigger.openThread` — un quatrième appel à
+`trigger`, pas un quatrième mécanisme). *Jamais de polling* — aucun `Timer` dans
+`lib/data/sync/`, et un test le vérifie ; la minuterie de réouverture d'un canal
+SSE vit dans `lib/data/realtime/`, ne demande **aucun** cycle quand elle échoue, et
+ne tourne que pendant qu'un écran est affiché.
 Le curseur du manifeste (`current_cursor`) est la **borne haute du périmètre**,
 pas un accusé de réception : il ne devient jamais le curseur local.
 - `lib/state/` — providers Riverpod :
@@ -551,7 +557,9 @@ pas un accusé de réception : il ne devient jamais le curseur local.
   - `echanges_providers.dart` : la rubrique « Échanges ». `echangesActorProvider`,
     `echangesRepositoryProvider` et les quatre lectures, **toutes des familles clés
     sur l'acteur** (voir l'avertissement de « La messagerie de groupe »), plus
-    `groupMessageComposerProvider` — le seul de cette rubrique qui parle au réseau.
+    `groupMessageComposerProvider` — le seul de cette rubrique qui **écrit** au
+    réseau — et, depuis #101, `groupChannelProvider` / `openThreadChannelProvider`
+    (le temps réel d'un fil ouvert, `autoDispose` et clé par groupe).
   - `announcement_providers.dart` : `announcementRepositoryProvider`,
     `announcementsProvider` et `canComposeAnnouncementProvider`. **C'est là que
     vivent les deux règles que le serveur ne prend pas** — le filtre
@@ -594,7 +602,8 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`,
     `gatheringDaoProvider`, `announcementDaoProvider`, `playbackDaoProvider`,
     `legalDaoProvider`, `seasonDaoProvider`, `vocabularyDaoProvider`,
-    `authChannelsDaoProvider`, `menuDaoProvider`, `pullToRefreshProvider`.
+    `authChannelsDaoProvider`, `menuDaoProvider`, `pullToRefreshProvider`,
+    `openThreadSyncProvider` (le quatrième déclencheur, #101).
     Les trois DAO de lecture sont lus par les trois repositories de magasin.
     **Les trois déclencheurs d'ADR-0017 sont câblés** : `app.dart` appelle
     `SyncScheduler.start()` au premier frame sous `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
@@ -1243,6 +1252,86 @@ La **réconciliation** est un `NOT EXISTS` à la lecture, pas une suppression au
 du `POST` : supprimer l'écho là ferait disparaître le message de l'écran pendant le
 temps qui sépare la réponse du cycle qui ramène la ligne. Un message qui clignote est
 pire qu'un message marqué « en cours ».
+
+#### Le temps réel par SSE (#101) — un **signal**, jamais une source de vérité
+
+Il existe parce qu'il n'y a **pas de compte Apple Developer Program**, donc pas de
+clé APNs — et sur iOS, FCM passe par APNs : un iPhone n'a aujourd'hui aucun moyen
+d'apprendre qu'un message est arrivé. Il faut être exact sur ce qu'il achète :
+
+| état de l'application | ce qui arrive |
+| --- | --- |
+| conversation **ouverte à l'écran** | les messages arrivent **instantanément**, sur les deux plateformes |
+| arrière-plan ou fermée | **rien** — iOS suspend le réseau, Android aussi sous contrainte de batterie |
+
+**Ce n'est donc pas un substitut au push, c'est un complément**, et rien — ni un
+nom de classe, ni un commentaire — ne doit laisser croire que les notifications
+marchent sur iPhone. Elles ne marchent pas.
+
+⚠️ **LA contrainte, celle qui décide si le code est bon : l'événement n'écrit
+jamais dans Drift.** Il déclenche un cycle de synchronisation
+(`SyncTrigger.openThread`), et c'est **le moteur** qui écrit — exactement comme le
+fera le réveil push. Écrire depuis l'événement donnerait deux écritures
+concurrentes dans la même table, deux curseurs qui se croisent, et un message qui
+arrive par les deux chemins : le chemin mixte que la décision 1 du cadrage
+d'Échanges a refusé, et la classe de bogue la plus coûteuse à diagnostiquer. **Se
+surprendre à désérialiser le corps d'un message depuis l'événement, c'est avoir
+pris le mauvais chemin.**
+
+C'est **structurel** et non seulement vérifié : `GroupChannelSignal` est une
+classe **vide** — il n'y a rien à lire dedans —, et un garde-fou de source
+(`test/data/open_thread_channel_test.dart`) interdit à tout fichier de
+`lib/data/realtime/` d'importer Drift, un DAO, ou `jsonDecode`.
+
+`lib/data/realtime/`, quatre fichiers et une seule règle (« tout signal déclenche
+un cycle ») :
+
+- `group_channel.dart` — le contrat, le nom de canal (`groups/{groupId}`, la seule
+  copie côté client du motif que le serveur construit dans
+  `group_broadcaster.ts`), le signal **vide**, `GroupChannelRefused`, et
+  `SilentGroupChannel` (le défaut sans backend et dans tous les tests d'écran) ;
+- `sse_frames.dart` — le lecteur de `text/event-stream`. Il **compte des frontières
+  d'événements** et ne décode aucun JSON. Il retient l'état entre deux fragments :
+  une socket rend des octets, pas des lignes, et un lecteur sans mémoire perdrait
+  un événement sur deux dès que le réseau hoquette ;
+- `sse_group_channel.dart` — l'implémentation, sur le `Dio` d'`ApiClient`. **Aucun
+  paquet nouveau** : SSE est du HTTP en flux (`ResponseType.stream`) ;
+- `open_thread_channel.dart` — la durée de vie, le cycle de vie et la réouverture.
+
+Cinq points qui se ratent en silence :
+
+1. **L'ordre des deux requêtes.** `POST /__transmit/subscribe` cherche le flux par
+   son `uid` : il doit partir **après** que `GET /__transmit/events?uid=` a rendu
+   ses en-têtes. L'inverse fait refuser un abonnement légitime.
+2. **`receiveTimeout` doit être désarmé** (`Duration.zero`). Le défaut d'`ApiClient`
+   est de 15 s, et un canal silencieux quinze secondes est le cas **normal** d'une
+   conversation : sans ça, la connexion se fait tuer en boucle par son propre client.
+3. **Une ouverture réussie est elle-même un signal.** Un canal neuf n'a aucune
+   mémoire de ce qui s'est diffusé avant lui — c'est ce qui fait qu'une reconnexion
+   rattrape sa coupure. Posé **après** l'abonnement, jamais avant : une tentative
+   qui échoue ne déclenche aucun cycle, sinon la réouverture périodique deviendrait
+   un **sondage du moteur**, ce qu'ADR-0017 interdit.
+4. **`openThreadChannelProvider` est `autoDispose`**, et c'est *ça* qui ferme la
+   connexion. L'écran l'observe dans son `build` ; dès qu'il quitte l'arbre,
+   Riverpod jette l'élément et `onDispose` rend la socket. Le contraire exact de
+   `contentPlayerProvider`, qui n'est **pas** `autoDispose` parce que la lecture doit
+   survivre au `context.pop()` — un fil qu'on quitte, lui, n'a plus rien à écouter.
+   Sans ça, la connexion survit à l'écran et le harnais de test attend une minuterie
+   que plus personne ne possède.
+5. **Un refus ne se réessaie jamais** (le canal est réservé aux membres,
+   `CheckGroupMembership`) ; une panne de **transport**, si, après
+   `kGroupChannelRetryDelay` (**10 s**, nommé à un seul endroit, **valeur à
+   confirmer**). L'arrière-plan **ferme proprement** — `paused`/`hidden`/`detached`,
+   jamais `inactive`, qui est transitoire — et le retour déclenche un cycle **avant**
+   de rouvrir : le rattrapage ne doit pas dépendre de la réussite d'une réouverture.
+
+**Une connexion à la fois, et seulement pendant que l'écran est affiché.** Pas
+d'abonnement permanent à tous ses groupes : une connexion ouverte coûte de la
+batterie et du forfait, et au Togo le second compte autant que la première.
+
+Côté tests, `pumpScreen` / `pumpRouter` posent `SilentGroupChannel` par défaut — un
+flux vide et **jamais clos**, pour qu'un canal muet ne se lise pas comme un canal
+tombé — et les tests passent par le paramètre nommé `channel:`.
 
 #### Trois choses de plus, toutes vérifiées
 
