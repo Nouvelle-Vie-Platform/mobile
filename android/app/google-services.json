@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "994804124857",
+    "project_id": "nouvelle-vie-25eb5",
+    "storage_bucket": "nouvelle-vie-25eb5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994804124857:android:500c2569d65850113a1f68",
+        "android_client_info": {
+          "package_name": "com.maisondumiracle.maison_du_miracle"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUbqXF9KbeZQwfPW80bkw9_Yzq_5N6Wlo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
