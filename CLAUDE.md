@@ -2017,7 +2017,9 @@ Trois conséquences à tenir :
    on tapait « Bible » et Échanges s'ouvrait.
 3. **La garde de session vit sur l'onglet** (`HomeTab.requiresSession`), pas
    dans un `if` de la coquille — même raison : un onglet neuf doit répondre à la
-   question, pas la contourner.
+   question, pas la contourner. Elle ne décide pas si l'onglet *s'ouvre* mais
+   **ce qu'il montre** : sans session, un onglet réservé rend `SignInTab` à la
+   place de son écran.
 
 ⚠️ **Le nombre d'onglets est pair, et l'encoche du FAB en dépend** : elle est
 posée entre deux moitiés égales (`take(half)` / `skip(half)`). On n'en masque
@@ -2032,7 +2034,7 @@ provisoire, à savoir le jour où il portera une position de lecture.
 **Le profil est un onglet *et* une route.** `/profile` reste servie (lien
 profond, cible web) avec sa flèche de retour ; l'onglet, lui, est la porte
 d'entrée. ⚠️ **`memberOnlyRoutes` ne protège que la route** : l'onglet est fermé
-par `requireSession()` au geste, et rien d'autre ne le ferme.
+par son **contenu**, et rien d'autre ne le ferme.
 
 ### Le mode invité (issue #398 côté serveur, ADR-0040/0041)
 
@@ -2082,19 +2084,77 @@ croit fermer.
 #### Ce qu'une garde de route ne peut pas fermer
 
 **Les onglets ne sont pas des routes.** Le hub Échanges **et le Profil** sont
-fermés par la coquille elle-même (`_selectTab` → `requireSession`, d'après
+fermés par la coquille elle-même (`HomeShell._screenFor`, d'après
 `HomeTab.requiresSession`), et les onglets **restent visibles** : un onglet
 retiré est une fermeture invisible, et personne ne réclame un écran qu'il n'a
 jamais vu. La barre devient l'endroit où l'on découvre qu'un compte existe.
 
 **Le libellé ne change pas selon l'état** : « Profil » pour tout le monde,
-invité compris. La connexion se demande **au geste**, jamais par un libellé qui
-varie — la barre n'en porte aucun autre qui le fasse.
+invité compris. La connexion se demande **dans l'onglet**, jamais par un libellé
+qui varie — la barre n'en porte aucun autre qui le fasse.
+
+##### ⚠️ **Un onglet réservé affiche le formulaire, il ne pousse rien**
+
+Ces deux onglets poussaient le parcours d'authentification **plein écran** par
+`requireSession()`, et c'était un **cul-de-sac sur iPhone**, constaté sur un vrai
+téléphone : le premier écran poussé — l'écran de bienvenue — n'avait ni `appBar`,
+ni `BackButton`, ni `pop`, ni `PopScope`. Sur Android le bouton système dépilait ;
+sur iOS il n'y en a pas, et la personne était **enfermée**. Le bouton manquant
+n'était que le symptôme : la faute était d'avoir fait une **navigation** de ce qui
+est un **état d'onglet**.
+
+Sans session, l'onglet réservé rend donc `SignInTab`
+(`lib/screens/auth/sign_in_tab.dart`) **à la place** de son écran. Quatre
+conséquences, et chacune supprime un problème au lieu de le traiter :
+
+1. **Il n'y a plus de retour à inventer.** On n'a jamais quitté la coquille : la
+   barre du bas reste là, et on sort en touchant un autre onglet. Aucun bouton
+   système n'est requis.
+2. **Le contexte vient de l'endroit.** `signInReasonFor(tab, l10n)` — un `switch`
+   exhaustif, à côté de `requiresSession` et d'`itemFor` — donne la phrase :
+   « Connectez-vous pour accéder aux échanges ». **Aucun appelant ne transporte ce
+   contexte**, et un test exige une phrase pour chaque onglet qui exige une
+   session. Elle prend la place du sous-titre générique, et **jamais** celle de
+   l'annonce de canal (#83), qui répond à une autre question.
+3. **La connexion aboutit ⇒ l'onglet se repeint**, sans que personne n'y
+   retouche. `HomeShell` lit `authProvider.select((s) => s.isGuest)` — `isGuest`
+   et non `!isAuthenticated`, qui est aussi vrai pendant `unknown`. Il n'y a donc
+   **pas de geste à rejouer** pour un onglet, et plus d'intention à mettre de côté.
+4. **L'écran réservé n'est plus monté du tout** pour un invité. Un `IndexedStack`
+   construit tous ses enfants : le hub et le Profil se montaient jusqu'ici hors de
+   l'écran, sur un magasin local qui survit à la déconnexion.
+
+⚠️ **`requireSession()` n'est pas démonté, et ne doit pas l'être** : il garde les
+gestes qui ne sont **pas** des onglets — publier une annonce, écrire une note,
+ouvrir une conversation depuis une notification —, où l'intention mise de côté
+puis rejouée reste indispensable. Et `memberOnlyRoutes` n'est pas contourné : les
+routes réservées le restent, un garde-fou de source le verrouille.
 
 #### `requireSession()` — le geste, pas l'écran
 
 Extension sur `WidgetRef` (`lib/state/session_gate.dart`). Mémorise l'intention,
 **pousse** le parcours d'authentification, et **rejoue le geste** au succès.
+
+**Le parcours n'a plus que deux écrans, et le premier est le formulaire.**
+`AppRoute.authWelcome` et `WelcomeScreen` ont disparu : depuis le mode invité
+l'application ne s'ouvre plus sur l'authentification, cet écran n'était donc plus
+un accueil mais une **page de garde** devant un formulaire — et, sans aucun
+moyen d'en sortir, un cul-de-sac sur iPhone. `/auth` sert désormais
+`IdentifierScreen` (le chemin n'a pas bougé : c'est ce que `requireSession()`
+pousse, ce que le 401 atteint, et une URL de la cible web) ; `/auth/identifier`
+est retiré avec l'étape qu'il dédoublait, et les clés `.arb` orphelines avec lui
+(`onboardingWelcome`, `onboardingTitleHighlight`, `authStart`), de même que ses
+deux actifs (`welcome_bg.webp`, `colombe.webp`).
+
+⚠️ **Chaque étape du parcours est `push`ée, jamais `go`ée**, et c'est ce qui lui
+donne une flèche de retour. Un `go` remplace la pile : l'écran du code se
+retrouvait seul, sans rien à dépiler, donc **sans flèche** — et sur iPhone sans
+bouton système non plus, de sorte que qui s'était trompé d'adresse ne pouvait plus
+revenir la corriger. `go` emportait au passage l'écran d'origine, donc l'intention
+elle-même (le `Future` du `push` se règle, `_abandon` l'oublie). Les flèches
+viennent de l'`AppBar` du formulaire et de `BrandAppBar` sur l'écran du code,
+toutes deux par `automaticallyImplyLeading` ; elles ne paraissent donc **pas**
+quand il n'y a rien dessous — éjection par un 401 —, ce qui est juste.
 
 Trois pièges, tous payés une fois :
 
@@ -2118,7 +2178,9 @@ rejoué après un redémarrage agirait dans le dos de la personne.
   téléchargements, ni la progression, qui redevient locale.
 - **Session expirée (401 sur un jeton de membre)** ⇒ **écran de connexion**,
   comme avant. La personne n'a rien choisi, et l'éjection lui *dit* quelque chose
-  que le silence ne dit pas.
+  que le silence ne dit pas. C'est `go` et non `push` — il n'y a pas de pile à
+  conserver —, et c'est le **formulaire** qu'elle atteint, non une page de garde
+  de plus.
 
 C'est une décision explicite du client. Ce n'est pas une incohérence à lisser.
 
@@ -2699,9 +2761,13 @@ repli**, pas sur la lecture d'une étiquette.
 
 | ce que c'est | où | valeur | change ? |
 | --- | --- | --- | --- |
-| **nom affiché** — ce que le fidèle lit sous l'icône | `android:label`, `CFBundleDisplayName` (+ `CFBundleName`, le nom court) | « Nouvelle Vie » | oui, c'est le seul |
+| **nom affiché** — ce que le fidèle lit sous l'icône | `android:label`, `CFBundleDisplayName` (+ `CFBundleName`, le nom court), **`appName` dans les `.arb`** (écran de démarrage + `onGenerateTitle`), et sur le web le `<title>` et `name`/`short_name` du manifeste | « Nouvelle Vie » | oui, c'est le seul |
 | **nom du paquet Dart** | `pubspec.yaml`, chaque `import 'package:maison_du_miracle/…'` | `maison_du_miracle` | **non** — personne ne le voit |
 | **identifiant d'application** | `applicationId`, `PRODUCT_BUNDLE_IDENTIFIER` | `com.maisondumiracle.*` | **non** — c'est l'identité auprès des magasins et de la signature |
+
+Et le **nom de l'église** n'est aucun des trois : il vit dans `aboutChurchName`
+(« Église Évangélique Nouvelle Vie »), dans l'emblème — qui porte « Maison du
+Miracle » gravé dans l'image — et dans les contenus servis par le portail.
 
 ⚠️ *Éviter* « renommer l'app » tout court : trois choses portent un nom ici, et
 deux ne doivent pas bouger. Changer l'identifiant après une soumission rend

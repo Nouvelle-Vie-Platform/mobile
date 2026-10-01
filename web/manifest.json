@@ -1,6 +1,6 @@
 {
-    "name": "maison_du_miracle",
-    "short_name": "maison_du_miracle",
+    "name": "Nouvelle Vie",
+    "short_name": "Nouvelle Vie",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

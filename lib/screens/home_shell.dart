@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../models/legal_document_view.dart';
 import '../router/app_router.dart';
-import '../state/session_gate.dart';
+import '../state/auth_providers.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_background.dart';
 import '../widgets/app_bottom_nav.dart';
@@ -14,6 +14,7 @@ import '../widgets/app_update_banner.dart';
 import '../widgets/home_tab.dart';
 import '../widgets/legal_notice_banner.dart';
 import 'announcements_screen.dart';
+import 'auth/sign_in_tab.dart';
 import 'groups_screen.dart';
 import 'home_screen.dart';
 import 'profile_screen.dart';
@@ -30,7 +31,7 @@ import 'profile_screen.dart';
 /// sans la moindre erreur de compilation : on tapait « Bible » et Échanges
 /// s'ouvrait. Le type l'interdit désormais.
 ///
-/// ## Les onglets réservés se ferment **ici**
+/// ## Les onglets réservés se ferment **ici**, et par leur contenu
 ///
 /// Les quatre onglets ne sont pas des routes : ils vivent dans un
 /// [IndexedStack], et la garde du routeur (`memberOnlyRoutes`) ne peut donc rien
@@ -38,10 +39,20 @@ import 'profile_screen.dart';
 /// derrière la connexion ; c'est vrai aussi du **Profil**, qui n'a aucun sens
 /// sans compte et qui perd la garde de route en redevenant un onglet. La
 /// réponse est la même pour les deux, et elle est portée par
-/// `HomeTab.requiresSession` : `requireSession()` au moment du **geste**.
+/// `HomeTab.requiresSession`.
 ///
-/// **L'onglet reste visible et son appui ouvre la connexion** — plutôt que de
-/// disparaître pour un invité. Quatre raisons, dans l'ordre d'importance :
+/// ⚠️ **L'onglet est sélectionnable, et c'est son écran qui change.** L'appui
+/// poussait jusqu'ici le parcours d'authentification **plein écran** par-dessus
+/// la coquille, par `requireSession()`. C'était un cul-de-sac sur iPhone : le
+/// premier écran du parcours n'avait aucune flèche de retour, et iOS n'a pas de
+/// bouton système pour dépiler. Le bouton manquant n'était que le symptôme — la
+/// faute était d'avoir fait une **navigation** de ce qui est un **état
+/// d'onglet**. Sans session, l'onglet réservé affiche donc le formulaire de
+/// connexion **à la place** de son écran ([SignInTab]) : la barre du bas reste
+/// là, on sort en touchant un autre onglet, et rien n'est à dépiler.
+///
+/// **L'onglet reste visible** — plutôt que de disparaître pour un invité. Trois
+/// raisons, dans l'ordre d'importance :
 ///
 /// 1. **Un onglet retiré est une fermeture invisible**, exactement celle contre
 ///    laquelle `memberOnlyRoutes` prévient : « personne ne réclame un écran
@@ -53,12 +64,13 @@ import 'profile_screen.dart';
 /// 3. **L'encoche du FAB est calée sur deux moitiés égales** (voir
 ///    [AppBottomNav]). À trois onglets, la barre devient boiteuse : deux à
 ///    gauche, un à droite d'un creux dimensionné pour deux.
-/// 4. C'est ce pour quoi `requireSession()` a été écrit : exiger un compte au
-///    moment du **geste**, et reprendre le geste après la connexion.
 ///
-/// Le coût assumé : un invité peut appuyer sur un onglet qui ne l'emmène pas où
-/// il croyait. C'est exactement ce que le parcours de connexion lui explique, et
-/// renoncer n'est qu'un retour en arrière.
+/// **`requireSession()` n'a pas disparu**, et il ne faut pas le démonter : il
+/// garde les gestes qui ne sont **pas** des onglets — publier une annonce,
+/// écrire une note, ouvrir une conversation depuis une notification —, où
+/// l'intention mise de côté puis rejouée reste indispensable. Un onglet, lui, n'a
+/// pas de geste à rejouer : la session s'ouvre, la coquille se repeint, et
+/// l'écran de l'onglet prend la place du formulaire.
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
 
@@ -112,40 +124,27 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     _showTab(AppDrawerMenu.homeTab);
   }
 
-  /// **L'appui sur un onglet**, et le seul endroit où un onglet peut exiger un
-  /// compte.
+  /// **L'appui sur un onglet** — et il n'y a plus rien à y décider.
   ///
-  /// La question « cet onglet exige-t-il un compte ? » n'est pas tranchée ici :
-  /// elle appartient à l'onglet (`HomeTab.requiresSession`), où un `switch`
-  /// exhaustif oblige tout onglet neuf à y répondre. Posée ici en comparaisons,
-  /// elle se serait oubliée en silence — c'est le cul-de-sac le plus facile à
-  /// manquer du dépôt, et le seul dont l'oubli n'allume aucun test.
+  /// Tous les onglets sont sélectionnables, invité compris. La question « cet
+  /// onglet exige-t-il un compte ? » n'a pas disparu, elle a changé de place :
+  /// elle ne décide plus si l'onglet *s'ouvre* mais **ce qu'il montre** (voir
+  /// [_screenFor]). Elle appartient toujours à l'onglet
+  /// (`HomeTab.requiresSession`), où un `switch` exhaustif oblige tout onglet
+  /// neuf à y répondre.
   ///
-  /// Pour un membre, `requireSession` est transparent : il exécute le geste dans
-  /// la foulée et rend `true`. Pour un invité, il pousse le parcours de connexion
-  /// par-dessus la coquille et rejoue le geste après le succès.
-  void _selectTab(HomeTab tab) {
-    if (!tab.requiresSession) {
-      _showTab(tab);
-      return;
-    }
-    ref.requireSession(action: () => _showTab(tab));
-  }
-
-  /// Affiche un onglet — y compris **rejoué après une connexion**.
-  ///
-  /// **C'est le seul geste branché dont la reprise dépende de l'état d'un
-  /// widget**, et il faut l'écrire : l'onglet courant vit en `State` **local**
-  /// (le remonter dans un provider global est interdit — « Riverpod = état
-  /// partagé »), et la reprise passe par un `router.go(origin)`, c'est-à-dire par
+  /// **C'est le seul endroit dont la reprise dépende de l'état d'un widget**, et
+  /// il faut l'écrire : l'onglet courant vit en `State` **local** (le remonter
+  /// dans un provider global est interdit — « Riverpod = état partagé »), et la
+  /// reprise d'une intention passe par un `router.go(origin)`, c'est-à-dire par
   /// une reconstruction de la pile. La coquille y survit tant que la page
-  /// `/home` garde sa clé — c'est le cas aujourd'hui, et c'est ce qui fait
-  /// atterrir le nouveau membre **sur l'onglet qu'il avait demandé**.
+  /// `/home` garde sa clé — c'est le cas aujourd'hui, et c'est aussi ce qui fait
+  /// retrouver son onglet à qui revient de l'écran du code.
   ///
   /// Le `mounted` n'est donc pas une précaution de style : si cette page était un
-  /// jour reconstruite, la reprise doit **retomber sur l'accueil** et non lever.
-  /// Un membre qui atterrit sur l'accueil au lieu du hub est une déception ; un
-  /// `setState` sur un `State` mort est un écran rouge.
+  /// jour reconstruite, un geste rejoué doit **retomber sur l'accueil** et non
+  /// lever. Un membre qui atterrit sur l'accueil au lieu du hub est une
+  /// déception ; un `setState` sur un `State` mort est un écran rouge.
   void _showTab(HomeTab tab) {
     if (!mounted) return;
     setState(() => _tab = tab);
@@ -164,24 +163,42 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   /// compile pas tant qu'il n'a ni écran ni libellé. C'est ce qui remplace les
   /// deux listes parallèles d'autrefois, qui pouvaient se désaccorder en
   /// silence.
-  Widget _screenFor(HomeTab tab) => switch (tab) {
-        HomeTab.home => HomeScreen(onMenuTap: _openMenu),
-        HomeTab.announcements => AnnouncementsScreen(
-            isActive: _tab == HomeTab.announcements,
-            onVideoChanged: (isVideo) {
-              if (_videoStatus == isVideo) return;
-              setState(() => _videoStatus = isVideo);
-            },
-          ),
-        HomeTab.community => const GroupsScreen(),
-        // Sans `showBack` : c'est un onglet, on en sort par la barre du bas. La
-        // route `/profile` sert le même écran avec sa flèche de retour.
-        HomeTab.profile => const ProfileScreen(),
-      };
+  ///
+  /// **Sans session, un onglet réservé montre le formulaire de connexion** et non
+  /// son écran. Deux conséquences qu'il faut connaître :
+  ///
+  /// - l'écran réservé n'est pas simplement masqué, il n'est **pas construit** —
+  ///   un `IndexedStack` construit pourtant tous ses enfants, et un invité
+  ///   montait donc jusqu'ici le hub et le Profil hors de l'écran ;
+  /// - [isGuest] et non `!isAuthenticated` : celui-ci est **aussi** vrai pendant
+  ///   la résolution du démarrage (`AuthStatus.unknown`), et un membre verrait
+  ///   passer le formulaire. La garde du routeur retient de toute façon le
+  ///   démarrage sur le splash, mais la règle vaut partout (voir `isGuest`).
+  Widget _screenFor(HomeTab tab, {required bool isGuest}) {
+    if (isGuest && tab.requiresSession) return SignInTab(tab: tab);
+    return switch (tab) {
+      HomeTab.home => HomeScreen(onMenuTap: _openMenu),
+      HomeTab.announcements => AnnouncementsScreen(
+          isActive: _tab == HomeTab.announcements,
+          onVideoChanged: (isVideo) {
+            if (_videoStatus == isVideo) return;
+            setState(() => _videoStatus = isVideo);
+          },
+        ),
+      HomeTab.community => const GroupsScreen(),
+      // Sans `showBack` : c'est un onglet, on en sort par la barre du bas. La
+      // route `/profile` sert le même écran avec sa flèche de retour.
+      HomeTab.profile => const ProfileScreen(),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final dimFab = _tab == HomeTab.announcements && _videoStatus;
+    // **La seule chose que la coquille lit de l'authentification**, et par
+    // `select` : la session s'ouvre, l'onglet réservé se repeint avec son écran,
+    // et personne n'a à y retoucher. C'est ce qui remplace le geste rejoué.
+    final isGuest = ref.watch(authProvider.select((state) => state.isGuest));
 
     final main = Scaffold(
       extendBody: true,
@@ -193,7 +210,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             // **L'index, enfin réduit à ce qu'il est** : la position de l'onglet
             // dans l'ordre déclaré. Il ne circule plus, il se calcule.
             index: _tab.index,
-            children: [for (final tab in HomeTab.values) _screenFor(tab)],
+            children: [
+              for (final tab in HomeTab.values)
+                _screenFor(tab, isGuest: isGuest),
+            ],
           ),
           // **La mention légale du premier lancement**, posée par-dessus les
           // onglets et non dans l'un d'eux : elle parle de l'application, pas de
@@ -240,7 +260,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: AppBottomNav(
         current: _tab,
-        onSelect: _selectTab,
+        onSelect: _showTab,
       ),
     );
 

@@ -9,7 +9,7 @@ class AppLocalizationsEe extends AppLocalizations {
   AppLocalizationsEe([String locale = 'ee']) : super(locale);
 
   @override
-  String get appName => 'Maison du Miracle';
+  String get appName => 'Nouvelle Vie';
 
   @override
   String get splashTagline => 'Míeɖe gbeƒã kple xɔse.';
@@ -104,12 +104,6 @@ class AppLocalizationsEe extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get onboardingWelcome => 'Woezɔ';
-
-  @override
-  String get onboardingTitleHighlight => 'Dans la Maison\ndu Miracle';
 
   @override
   String get onboardingSubtitle =>
@@ -840,9 +834,6 @@ class AppLocalizationsEe extends AppLocalizations {
   String get donationsSecure => 'Vos dons sont sécurisés';
 
   @override
-  String get authStart => 'Dze egɔme';
-
-  @override
   String get authAlreadyMember => 'Déjà membre ?';
 
   @override
@@ -851,6 +842,12 @@ class AppLocalizationsEe extends AppLocalizations {
   @override
   String get authIdentifierSubtitle =>
       'Entrez votre numéro ou votre email pour continuer.';
+
+  @override
+  String get authReasonCommunity => 'Connectez-vous pour accéder aux échanges.';
+
+  @override
+  String get authReasonProfile => 'Connectez-vous pour accéder à votre profil.';
 
   @override
   String get authPhoneHint => '90 12 34 56';

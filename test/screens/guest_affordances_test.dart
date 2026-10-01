@@ -51,10 +51,11 @@ const _screensBehindTheGuard = <String, String>{
   'lib/screens/group_info_screen.dart': '/group-info est réservé',
   'lib/screens/member_profile_screen.dart': '/member-profile est réservé',
   // Le hub des conversations n'est **pas** une route : c'est l'onglet 2 de la
-  // coquille, fermé par `HomeShell._selectTab` (`requireSession`). Un invité ne
-  // l'affiche jamais, et un `IndexedStack` ne teste les coups que sur l'onglet
-  // affiché — ses tuiles ne reçoivent donc aucun `tap`.
-  'lib/screens/groups_screen.dart': 'onglet 2, fermé par la coquille',
+  // coquille, et sans session la coquille met le formulaire de connexion à sa
+  // place (`HomeShell._screenFor`). Un invité ne le monte donc même pas — il le
+  // montait jusqu'ici hors de l'écran, un `IndexedStack` construisant tous ses
+  // enfants.
+  'lib/screens/groups_screen.dart': 'onglet 2, remplacé par le formulaire',
   // Le bandeau de complétion de profil ne se rend que si `authProvider.user`
   // n'est pas nul (`showBanner` dans `HomeScreen`, et son jumeau dans le Profil).
   // Il vit sur un écran ouvert, mais il n'existe que pour un membre — et un

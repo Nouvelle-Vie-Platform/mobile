@@ -9,7 +9,6 @@ import '../screens/announcement_composer_screen.dart';
 import '../screens/auth/code_screen.dart';
 import '../screens/auth/identifier_screen.dart';
 import '../screens/auth/profile_form_screen.dart';
-import '../screens/auth/welcome_screen.dart';
 import '../screens/bible_screen.dart';
 import '../screens/delete_account_screen.dart';
 import '../screens/donations_screen.dart';
@@ -41,8 +40,16 @@ import '../widgets/app_background.dart';
 /// Noms des routes nommées (à utiliser avec `context.goNamed` / `pushNamed`).
 abstract final class AppRoute {
   static const splash = 'splash';
-  // Parcours d'authentification unifié (login + inscription).
-  static const authWelcome = 'auth-welcome';
+
+  /// **Le parcours d'authentification unifié** (connexion + inscription), et il
+  /// n'a plus que **deux** écrans.
+  ///
+  /// `authWelcome` a disparu avec l'écran de bienvenue qu'il servait sur `/auth` :
+  /// depuis le mode invité l'application ne s'ouvre plus sur l'authentification,
+  /// cet écran n'était donc plus un accueil mais une page de garde devant un
+  /// formulaire — et, n'ayant ni `appBar` ni `PopScope`, un cul-de-sac sur
+  /// iPhone, qui n'a pas de bouton retour système. `/auth` sert désormais le
+  /// formulaire lui-même.
   static const authIdentifier = 'auth-identifier';
   static const authCode = 'auth-code';
   static const profileEdit = 'profile-edit';
@@ -113,11 +120,11 @@ class CodeArgs {
 /// Le parcours d'authentification — **ouvert à tous**, et atteint par un geste.
 ///
 /// Sous le mode invité ce n'est plus une liste d'exceptions dans une
-/// application fermée, mais trois écrans comme les autres, poussés par
+/// application fermée, mais deux écrans comme les autres, poussés par
 /// `requireSession()` quand un geste exige un compte. La constante ne sert plus
 /// qu'à une chose : ramener à l'accueil un **membre** qui y reviendrait alors
 /// qu'il est déjà connecté.
-const _authLocations = {'/auth', '/auth/identifier', '/auth/code'};
+const _authLocations = {'/auth', '/auth/code'};
 
 /// La barrière de consentement — écrite une fois, lue par la garde et par la
 /// route.
@@ -287,14 +294,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/',
         builder: (_, __) => const AppBackground(child: SplashScreen()),
       ),
-      GoRoute(
-        name: AppRoute.authWelcome,
-        path: '/auth',
-        builder: (_, __) => const AppBackground(child: WelcomeScreen()),
-      ),
+      // **`/auth` est le formulaire**, et non plus une page de garde devant lui.
+      // Le chemin n'a pas bougé — c'est celui que `requireSession()` pousse, que
+      // le 401 atteint, et une URL servie sur la cible web — seul son écran a
+      // changé ; `/auth/identifier` disparaît avec l'étape qu'il dédoublait.
       GoRoute(
         name: AppRoute.authIdentifier,
-        path: '/auth/identifier',
+        path: '/auth',
         builder: (_, __) => const AppBackground(child: IdentifierScreen()),
       ),
       GoRoute(

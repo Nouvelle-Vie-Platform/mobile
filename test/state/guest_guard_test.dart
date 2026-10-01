@@ -12,6 +12,7 @@ import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/legal_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
+import 'package:maison_du_miracle/models/auth_channels.dart';
 import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
@@ -20,6 +21,7 @@ import 'package:maison_du_miracle/screens/media_library_screen.dart';
 import 'package:maison_du_miracle/screens/notes_screen.dart';
 import 'package:maison_du_miracle/screens/splash_screen.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
+import 'package:maison_du_miracle/state/auth_channels_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
@@ -140,7 +142,7 @@ void main() {
     test('le parcours d\'authentification reste ouvert', () {
       // C'est là que `requireSession()` emmène un invité : le fermer rendrait
       // la connexion à la demande impossible.
-      for (final loc in ['/auth', '/auth/identifier', '/auth/code']) {
+      for (final loc in ['/auth', '/auth/code']) {
         expect(
           redirectFor(
             status: AuthStatus.guest,
@@ -188,7 +190,7 @@ void main() {
       // l'accueil, la barrière enferme quand quelque chose est exigé,
       // `/legal/accept` se retire de lui-même sinon, et le reste de
       // l'application est libre.
-      for (final loc in ['/', '/auth', '/auth/identifier', '/auth/code']) {
+      for (final loc in ['/', '/auth', '/auth/code']) {
         expect(
           redirectFor(
             status: AuthStatus.authenticated,
@@ -380,6 +382,14 @@ ProviderContainer _container({
       playbackProgressReporterProvider
           .overrideWithValue(FakePlaybackProgressReporter()),
       networkTransportProvider.overrideWithValue(FixedNetworkTransport()),
+      // **L'offre de canaux, par un flux nu** (#83). La coquille monte désormais
+      // le formulaire de connexion dans les onglets réservés d'un invité, et ce
+      // formulaire lit cette offre : un flux Drift attendu sous l'horloge
+      // factice du harnais figerait le montage. Le repli est l'e-mail seul, ce
+      // que propose une application qui n'a pas encore synchronisé.
+      authChannelsProvider.overrideWith(
+        (ref) => Stream.value(AuthChannelOffer.emailOnly),
+      ),
       themePreferencesProvider
           .overrideWith((ref) => Stream.value(const ThemePreferences())),
       downloadForContentProvider

@@ -1,8 +1,8 @@
 {
   "@@locale": "fr",
 
-  "appName": "Maison du Miracle",
-  "@appName": { "description": "Nom de l'application" },
+  "appName": "Nouvelle Vie",
+  "@appName": { "description": "Nom **affiché** de l'application — celui que le fidèle lit sous l'icône, et le seul des trois noms du dépôt qui bouge. Il porte déjà « Nouvelle Vie » dans `android:label` et `CFBundleDisplayName` ; cette clé-ci disait encore « Maison du Miracle », et l'écran de démarrage le montrait. Ni le nom du paquet Dart (`maison_du_miracle`) ni l'identifiant d'application (`com.maisondumiracle.*`) ne sont concernés — voir « L'identité de l'application » dans CLAUDE.md. Le nom de l'**église**, lui, vit dans `aboutChurchName`" },
   "splashTagline": "Nous annonçons avec foi.",
 
   "navHome": "Accueil",
@@ -54,8 +54,6 @@
     "placeholders": { "count": { "type": "int", "example": "3" } }
   },
 
-  "onboardingWelcome": "Bienvenue",
-  "onboardingTitleHighlight": "Dans la Maison\ndu Miracle",
   "onboardingSubtitle": "Une communauté vivante, connectée et engagée pour la gloire de Dieu.",
   "actionNext": "Suivant",
   "onboardingVerse": "« Venez à moi, vous tous qui êtes fatigués, et je vous donnerai du repos. »\n— Matthieu 11:28",
@@ -408,14 +406,16 @@
   "actionContinue": "Continuer",
   "donationsSecure": "Vos dons sont sécurisés",
 
-  "authStart": "Commencer",
-  "@authStart": { "description": "Bouton d'entrée dans le parcours d'authentification" },
   "authAlreadyMember": "Déjà membre ?",
   "@authAlreadyMember": { "description": "Lien vers le même écran identifiant (parcours unifié)" },
   "authIdentifierTitle": "Rejoignez-nous",
   "@authIdentifierTitle": { "description": "Titre de l'écran de saisie de l'identifiant" },
   "authIdentifierSubtitle": "Entrez votre numéro ou votre email pour continuer.",
-  "@authIdentifierSubtitle": { "description": "Sous-titre de l'écran identifiant" },
+  "@authIdentifierSubtitle": { "description": "Sous-titre de l'écran identifiant, quand rien ne dit déjà pourquoi on y est. Une raison (authReason*) prend sa place" },
+  "authReasonCommunity": "Connectez-vous pour accéder aux échanges.",
+  "@authReasonCommunity": { "description": "Pourquoi le formulaire s'affiche dans l'onglet Échanges. Il remplace le contenu de l'onglet pour un invité, et cette phrase est ce qui dit à quoi la connexion sert ICI — jamais une invitation générique. Elle ne remplace PAS l'annonce de canal (#83), qui répond à une autre question : par où le code arrive" },
+  "authReasonProfile": "Connectez-vous pour accéder à votre profil.",
+  "@authReasonProfile": { "description": "Le même, pour l'onglet Profil" },
   "authPhoneHint": "90 12 34 56",
   "@authPhoneHint": { "description": "Indication du champ téléphone (sans indicatif)" },
   "authEmailHint": "jean.kossi@email.com",

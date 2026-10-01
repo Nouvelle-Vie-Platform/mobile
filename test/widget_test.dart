@@ -17,8 +17,10 @@ void main() {
     await tester.pump();
 
     // Au démarrage l'état d'auth est `unknown` → le splash reste affiché et
-    // montre le nom de l'église (le `redirect` aiguille ensuite selon l'auth).
-    expect(find.text('Maison du Miracle'), findsWidgets);
+    // montre le **nom de l'application** (le `redirect` aiguille ensuite selon
+    // l'auth). C'est `appName`, et non le nom de l'église : l'emblème
+    // au-dessus porte déjà celui-ci, gravé dans l'image.
+    expect(find.text('Nouvelle Vie'), findsWidgets);
 
     // Laisse la résolution de session (currentUser) se terminer pour ne pas
     // laisser de timer en attente ; sans session, l'app file vers /auth.
