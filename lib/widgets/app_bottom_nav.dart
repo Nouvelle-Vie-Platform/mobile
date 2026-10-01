@@ -32,9 +32,10 @@ class NavItem {
 /// tapait « Bible ».
 ///
 /// **Quatre onglets, en invité comme en membre**, et la géométrie ne dépend donc
-/// d'aucun état d'authentification : c'est la coquille qui refuse l'entrée des
-/// onglets réservés, par `requireSession()` au moment du geste (voir
-/// `HomeTab.requiresSession`). Deux raisons de n'en retirer aucun — un onglet
+/// d'aucun état d'authentification. Les onglets réservés sont sélectionnables
+/// comme les autres : sans session, c'est leur **contenu** qui devient le
+/// formulaire de connexion (voir `HomeTab.requiresSession` et
+/// `HomeShell._screenFor`). Deux raisons de n'en retirer aucun — un onglet
 /// retiré est une fermeture invisible, et l'**encoche** du FAB est posée entre
 /// deux moitiés égales, qu'un nombre impair d'onglets rendrait boiteuse.
 class AppBottomNav extends StatelessWidget {
@@ -83,8 +84,8 @@ class AppBottomNav extends StatelessWidget {
             label: context.l10n.navGroups,
           ),
         // **« Profil » pour tout le monde**, invité compris : la connexion se
-        // demande au geste, jamais par un libellé qui change selon l'état. La
-        // barre n'en porte aucun autre, et en introduire un ici créerait une
+        // demande dans l'onglet, jamais par un libellé qui change selon l'état.
+        // La barre n'en porte aucun autre, et en introduire un ici créerait une
         // exception à justifier à chaque relecture.
         HomeTab.profile => NavItem(
             icon: Icons.person_outline,

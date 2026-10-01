@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/screens/auth/identifier_screen.dart';
 import 'package:maison_du_miracle/screens/auth/profile_form_screen.dart';
-import 'package:maison_du_miracle/screens/auth/welcome_screen.dart';
 import 'package:maison_du_miracle/screens/splash_screen.dart';
 
 import '../helpers/pump_screen.dart';
@@ -14,14 +13,12 @@ void main() {
       expect(find.text('Nouvelle Vie'), findsWidgets);
     });
 
-    testWidgets('WelcomeScreen se monte', (tester) async {
-      await pumpScreen(tester, const WelcomeScreen());
-      expect(find.byType(WelcomeScreen), findsOneWidget);
-      // Le bouton est composé de deux couches superposées (état normal +
-      // état rempli) pour l'animation de remplissage : le libellé apparaît
-      // donc deux fois dans l'arbre.
-      expect(find.text('Commencer'), findsWidgets);
-    });
+    // **`WelcomeScreen` a disparu**, et avec lui ce test. Depuis le mode invité
+    // l'application ne s'ouvre plus sur l'authentification : cet écran n'était
+    // plus un accueil mais une page de garde devant le formulaire, et il
+    // n'offrait aucun retour — ni `appBar`, ni `BackButton`, ni `PopScope` —, ce
+    // qui enfermait la personne sur iPhone, qui n'a pas de bouton système.
+    // `/auth` sert le formulaire, et c'est le test suivant qui le couvre.
 
     testWidgets('IdentifierScreen se monte sur le canal email', (tester) async {
       await pumpScreen(tester, const IdentifierScreen());

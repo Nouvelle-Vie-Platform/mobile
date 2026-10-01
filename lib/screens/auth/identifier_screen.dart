@@ -16,7 +16,14 @@ import '../../theme/app_typography.dart';
 import '../../utils/dial_codes.dart';
 import '../../utils/i18n_text.dart';
 
-/// `/auth/identifier` : saisie de l'identifiant, envoi du code.
+/// `/auth` : la saisie de l'identifiant, et **la porte d'entrée du parcours**.
+///
+/// C'était la deuxième page, derrière un écran de bienvenue (« Bienvenue — Dans
+/// la Maison du Miracle — Commencer ») qui n'avait plus de rôle depuis le mode
+/// invité : l'application ne s'ouvre plus sur l'authentification, cet écran
+/// n'était donc plus un accueil mais une page de garde posée devant un
+/// formulaire. Il est retiré, et `/auth` sert directement le formulaire — c'est
+/// ce que `requireSession()` pousse, et c'est là que le 401 éjecte.
 ///
 /// ## Le sélecteur n'est pas une préférence, c'est une **offre** (#83)
 ///
@@ -48,14 +55,66 @@ import '../../utils/i18n_text.dart';
 /// endormi** : hors périmètre par décision écrite (`docs/auth-contract.md`).
 /// N'offrir que l'e-mail ne déclenche pas la règle App Store 4.8 — c'est
 /// *ajouter* Google qui *crée* l'obligation d'offrir « Sign in with Apple ».
-class IdentifierScreen extends ConsumerStatefulWidget {
+class IdentifierScreen extends StatelessWidget {
   const IdentifierScreen({super.key});
 
   @override
-  ConsumerState<IdentifierScreen> createState() => _IdentifierScreenState();
+  Widget build(BuildContext context) {
+    // **L'`AppBar` n'est pas décorative : c'est la porte de sortie.** Elle est
+    // transparente et sans titre, et tout ce qu'elle porte est la flèche de
+    // retour que `automaticallyImplyLeading` pose dès qu'il y a quelque chose
+    // sous la pile — c'est-à-dire à chaque fois que `requireSession()` a poussé
+    // ce formulaire par-dessus l'écran d'origine. **Sur iPhone il n'y a aucun
+    // bouton système pour dépiler**, et sans cette flèche l'écran est un
+    // cul-de-sac (c'est la panne constatée sur l'écran de bienvenue, qui n'en
+    // avait pas). Quand il n'y a rien dessous — éjection par un 401, qui
+    // *remplace* la pile — elle ne paraît pas, et c'est juste : il n'y a nulle
+    // part où revenir.
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: context.palette.textPrimary,
+      ),
+      body: const SafeArea(child: IdentifierForm()),
+    );
+  }
 }
 
-class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
+/// **Le formulaire lui-même, sans sa coquille** — partagé par les deux surfaces
+/// qui le montrent.
+///
+/// Deux, et c'est le cœur du correctif : la route `/auth` ci-dessus, poussée par
+/// `requireSession()` ; et le **contenu d'un onglet réservé** quand il n'y a pas
+/// de session (`SignInTab`). Dans le second cas, rien n'est poussé — la barre du
+/// bas reste là, et on sort de ce formulaire en touchant un autre onglet. Il n'y
+/// a donc pas de retour à inventer : on n'a jamais quitté la coquille.
+class IdentifierForm extends ConsumerStatefulWidget {
+  const IdentifierForm({super.key, this.reason, this.padding});
+
+  /// **Pourquoi on demande un compte ici**, en une phrase.
+  ///
+  /// Nul = invitation générique, et c'est le cas de la route `/auth` : un geste
+  /// qui a poussé le parcours a déjà laissé l'écran d'origine sous la pile, et
+  /// la personne sait d'où elle vient. C'est l'**onglet** qui a quelque chose à
+  /// dire : quelqu'un qui touche « Échanges » doit lire qu'il se connecte *pour
+  /// accéder aux échanges*, pas une invitation passe-partout.
+  ///
+  /// ⚠️ **Elle ne remplace pas l'annonce de canal** (#83) : celle-ci dit par où
+  /// le code arrivera, ce qui est une autre question. Elle remplace en revanche
+  /// le sous-titre générique du dépôt, qui ne dit rien de plus qu'elle.
+  final String? reason;
+
+  /// Les marges du formulaire. Nul = celles de la route ; l'onglet, qui n'a pas
+  /// d'en-tête au-dessus et une barre d'onglets en dessous, pose les siennes.
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  ConsumerState<IdentifierForm> createState() => _IdentifierFormState();
+}
+
+class _IdentifierFormState extends ConsumerState<IdentifierForm> {
   final _controller = TextEditingController();
 
   /// Onglet **choisi par le fidèle**, quand il y a quelque chose à choisir.
@@ -91,50 +150,56 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
     final palette = context.palette;
     final offer = ref.watch(authChannelOfferProvider);
     final isPhone = _channelOf(offer) == IdentifierChannel.phone;
+    final reason = widget.reason;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: palette.textPrimary,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: AppSpacing.screenPadding.copyWith(
+    return SingleChildScrollView(
+      padding: widget.padding ??
+          AppSpacing.screenPadding.copyWith(
             top: AppSpacing.sm,
             bottom: AppSpacing.xxl,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(l.authIdentifierTitle, style: AppTypography.h1),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                // Un seul canal : le sous-titre du dépôt nommerait « votre
-                // numéro ou votre email », donc un canal que l'écran ne propose
-                // pas. C'est l'annonce qui parle à sa place.
-                offer.offersChoice
-                    ? l.authIdentifierSubtitle
-                    : _notice(context, offer, isPhone: isPhone),
-                style: AppTypography.bodyLarge.copyWith(
-                  color: palette.textSecondary,
-                ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l.authIdentifierTitle, style: AppTypography.h1),
+          const SizedBox(height: AppSpacing.sm),
+          // **Deux phrases possibles, qui répondent à deux questions.**
+          // La raison dit *pourquoi on est là* ; l'annonce de canal dit *par où
+          // le code arrive*. Quand une raison est donnée, elle prend la place du
+          // sous-titre générique — qui ne ferait que répéter « entrez votre
+          // email » au-dessus d'un champ email. La règle de #83 ne bouge pas :
+          // le sous-titre du dépôt ne paraît jamais quand il n'y a rien à
+          // choisir, c'est l'annonce qui parle à sa place.
+          if (reason != null) ...[
+            Text(
+              reason,
+              style: AppTypography.bodyLarge.copyWith(
+                color: palette.textSecondary,
               ),
-              const SizedBox(height: AppSpacing.xl),
-              // **Rien à choisir ⇒ rien à proposer.** Pas de sélecteur grisé :
-              // une option désactivée reste une option offerte, et c'est encore
-              // une promesse que personne ne tiendra.
-              if (offer.offersChoice) ...[
-                _buildToggle(l),
-                const SizedBox(height: AppSpacing.lg),
-              ],
-              isPhone ? _buildPhoneField(l) : _buildEmailField(l),
-              const SizedBox(height: AppSpacing.xl),
-              _buildContinueButton(l),
-            ],
-          ),
-        ),
+            ),
+            if (!offer.offersChoice) const SizedBox(height: AppSpacing.xs),
+          ],
+          if (reason == null || !offer.offersChoice)
+            Text(
+              offer.offersChoice
+                  ? l.authIdentifierSubtitle
+                  : _notice(context, offer, isPhone: isPhone),
+              style: AppTypography.bodyLarge.copyWith(
+                color: palette.textSecondary,
+              ),
+            ),
+          const SizedBox(height: AppSpacing.xl),
+          // **Rien à choisir ⇒ rien à proposer.** Pas de sélecteur grisé :
+          // une option désactivée reste une option offerte, et c'est encore
+          // une promesse que personne ne tiendra.
+          if (offer.offersChoice) ...[
+            _buildToggle(l),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+          isPhone ? _buildPhoneField(l) : _buildEmailField(l),
+          const SizedBox(height: AppSpacing.xl),
+          _buildContinueButton(l),
+        ],
       ),
     );
   }
@@ -355,7 +420,14 @@ class _IdentifierScreenState extends ConsumerState<IdentifierScreen> {
           .read(authProvider.notifier)
           .requestCode(identifier: identifier, channel: channel);
       if (!mounted) return;
-      context.goNamed(
+      // ⚠️ **`push`, et jamais `go` : c'est ce qui laisse une flèche de retour
+      // sur l'écran du code.** Un `go` remplace la pile entière — l'écran du
+      // code se retrouvait alors seul, sans rien à dépiler, donc sans flèche, et
+      // sur iPhone sans bouton système non plus : qui s'était trompé d'adresse
+      // n'avait plus aucun moyen de revenir la corriger. Et `go` emportait au
+      // passage l'écran d'origine, donc l'intention que `requireSession()` avait
+      // mise de côté (le `Future` du `push` se règle, `_abandon` l'oublie).
+      context.pushNamed(
         AppRoute.authCode,
         extra: CodeArgs(identifier: identifier, channel: channel),
       );

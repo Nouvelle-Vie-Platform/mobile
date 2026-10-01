@@ -30,11 +30,13 @@ import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/legal_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
+import 'package:maison_du_miracle/models/auth_channels.dart';
 import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/home_shell.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
+import 'package:maison_du_miracle/state/auth_channels_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
@@ -71,6 +73,7 @@ ProviderContainer guestContainer({
   StartupVault vault = StartupVault.noMemberSession,
   AnnouncementRepository? announcements,
   LegalNoticeStore? legalNotice,
+  AuthChannelOffer? authChannels,
   List<Override> extra = const [],
 }) {
   final AppDatabase db = openTestDatabase();
@@ -111,6 +114,16 @@ ProviderContainer guestContainer({
       playbackProgressReporterProvider
           .overrideWithValue(FakePlaybackProgressReporter()),
       networkTransportProvider.overrideWithValue(FixedNetworkTransport()),
+      // **L'offre de canaux, par un flux nu** (#83). La coquille monte désormais
+      // le formulaire de connexion dans les onglets réservés d'un invité, et ce
+      // formulaire lit cette offre : un flux Drift attendu sous l'horloge
+      // factice du harnais figerait le montage. Le repli est l'e-mail seul, ce
+      // que propose une application qui n'a pas encore synchronisé.
+      // [authChannels] est un **paramètre nommé** et non un `Override` de plus :
+      // Riverpod 3 refuse deux surcharges du même provider dans un conteneur.
+      authChannelsProvider.overrideWith(
+        (ref) => Stream.value(authChannels ?? AuthChannelOffer.emailOnly),
+      ),
       themePreferencesProvider
           .overrideWith((ref) => Stream.value(const ThemePreferences())),
       downloadForContentProvider

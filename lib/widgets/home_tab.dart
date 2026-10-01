@@ -36,18 +36,26 @@ enum HomeTab {
   community,
   profile;
 
-  /// **L'onglet exige-t-il un compte ?**
+  /// **L'onglet a-t-il besoin d'un compte pour montrer son contenu ?**
   ///
   /// La réponse vit sur l'onglet lui-même, et pas dans un `if` de la coquille,
   /// pour une raison précise : les onglets ne sont **pas** des routes — ils
   /// vivent dans un `IndexedStack` —, donc `memberOnlyRoutes` n'a aucune prise
-  /// sur eux. La fermeture se fait au **geste**, par `requireSession()` dans la
-  /// sélection d'onglet, et c'est « le cul-de-sac le plus facile à manquer » :
-  /// une garde oubliée ne fait rougir personne, elle ouvre simplement un écran
-  /// de membre à un invité (le magasin local survit à la déconnexion).
+  /// sur eux. Une garde oubliée ici ne fait rougir personne : elle ouvre
+  /// simplement un écran de membre à un invité, et le magasin local survit à la
+  /// déconnexion, donc il y verrait des choses.
   ///
   /// Écrite en `switch` exhaustif, elle oblige un onglet **neuf** à trancher la
   /// question au lieu de la laisser passer par défaut.
+  ///
+  /// ⚠️ **Ce drapeau ne rend pas l'onglet inaccessible, et il ne doit pas.** Il
+  /// a voulu dire « l'appui ouvre le parcours de connexion par-dessus la
+  /// coquille » (`requireSession()`), et c'était un cul-de-sac sur iPhone : le
+  /// premier écran poussé n'avait pas de flèche de retour, et iOS n'a pas de
+  /// bouton système pour dépiler. Il veut désormais dire « sans session, cet
+  /// onglet montre le formulaire de connexion **à la place** de son écran » —
+  /// `HomeShell._screenFor` et `SignInTab`. L'onglet reste sélectionnable, la
+  /// barre du bas reste visible, et on sort en touchant un autre onglet.
   bool get requiresSession => switch (this) {
         // L'accueil et les annonces en lecture sont la surface invitée.
         HomeTab.home || HomeTab.announcements => false,

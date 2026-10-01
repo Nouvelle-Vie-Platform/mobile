@@ -105,12 +105,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get onboardingWelcome => 'Welcome';
-
-  @override
-  String get onboardingTitleHighlight => 'To the Miracle\nHouse';
-
-  @override
   String get onboardingSubtitle =>
       'A living community, connected and committed for the glory of God.';
 
@@ -833,9 +827,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get donationsSecure => 'Your donations are secure';
 
   @override
-  String get authStart => 'Get started';
-
-  @override
   String get authAlreadyMember => 'Already a member?';
 
   @override
@@ -844,6 +835,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authIdentifierSubtitle =>
       'Enter your phone number or email to continue.';
+
+  @override
+  String get authReasonCommunity => 'Sign in to reach your conversations.';
+
+  @override
+  String get authReasonProfile => 'Sign in to reach your profile.';
 
   @override
   String get authPhoneHint => '90 12 34 56';

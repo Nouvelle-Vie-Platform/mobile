@@ -12,11 +12,13 @@ import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/legal_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
+import 'package:maison_du_miracle/models/auth_channels.dart';
 import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
-import 'package:maison_du_miracle/screens/auth/welcome_screen.dart';
+import 'package:maison_du_miracle/screens/auth/identifier_screen.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
+import 'package:maison_du_miracle/state/auth_channels_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
@@ -64,7 +66,7 @@ void main() {
 
     await _settle(tester);
     expect(router.state.matchedLocation, '/auth');
-    expect(find.byType(WelcomeScreen), findsOneWidget);
+    expect(find.byType(IdentifierScreen), findsOneWidget);
 
     // La connexion aboutit. C'est le seul déclencheur : le geste est adossé à
     // l'ouverture de session, pas à un rappel de l'écran du code.
@@ -229,6 +231,14 @@ ProviderContainer _container({
       playbackProgressReporterProvider
           .overrideWithValue(FakePlaybackProgressReporter()),
       networkTransportProvider.overrideWithValue(FixedNetworkTransport()),
+      // **L'offre de canaux, par un flux nu** (#83). La coquille monte désormais
+      // le formulaire de connexion dans les onglets réservés d'un invité, et ce
+      // formulaire lit cette offre : un flux Drift attendu sous l'horloge
+      // factice du harnais figerait le montage. Le repli est l'e-mail seul, ce
+      // que propose une application qui n'a pas encore synchronisé.
+      authChannelsProvider.overrideWith(
+        (ref) => Stream.value(AuthChannelOffer.emailOnly),
+      ),
       themePreferencesProvider
           .overrideWith((ref) => Stream.value(const ThemePreferences())),
       downloadForContentProvider

@@ -27,7 +27,7 @@ import 'package:maison_du_miracle/models/announcement_draft.dart';
 import 'package:maison_du_miracle/models/announcement_view.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/screens/announcements_screen.dart';
-import 'package:maison_du_miracle/screens/auth/welcome_screen.dart';
+import 'package:maison_du_miracle/screens/auth/identifier_screen.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
 import 'package:maison_du_miracle/widgets/content_player_view.dart';
@@ -127,7 +127,7 @@ void main() {
       await settle(tester);
 
       expect(router.state.matchedLocation, '/notes');
-      expect(find.byType(WelcomeScreen), findsNothing);
+      expect(find.byType(IdentifierScreen), findsNothing);
     });
   });
 
@@ -190,7 +190,7 @@ void main() {
       await settle(tester);
 
       expect(router.state.matchedLocation, '/announcement/compose');
-      expect(find.byType(WelcomeScreen), findsNothing);
+      expect(find.byType(IdentifierScreen), findsNothing);
     });
   });
 }

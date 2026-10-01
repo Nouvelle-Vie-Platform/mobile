@@ -13,19 +13,25 @@
 /// lève rien : elle ouvre simplement l'écran de profil à un invité — et le
 /// magasin local survit à la déconnexion, donc il y verrait des choses.
 ///
-/// La forme retenue — l'onglet **reste** et son appui ouvre la connexion — est
-/// justifiée dans l'en-tête de `HomeShell`. Ces tests verrouillent les deux
-/// moitiés de ce choix : un invité n'entre pas dans les onglets réservés, et
-/// **rien ne change pour un membre**.
+/// La forme retenue — l'onglet **reste sélectionnable**, et son contenu devient
+/// le formulaire de connexion — est justifiée dans l'en-tête de `HomeShell`. Ces
+/// tests verrouillent les deux moitiés de ce choix : un invité n'entre pas dans
+/// les onglets réservés, et **rien ne change pour un membre**.
+///
+/// ⚠️ **Ce que ces tests ne couvrent pas** : l'absence de cul-de-sac et la
+/// phrase qui dit pourquoi, qui vivent dans
+/// `test/screens/guest_sign_in_tab_test.dart`.
 library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
-import 'package:maison_du_miracle/screens/auth/welcome_screen.dart';
+import 'package:maison_du_miracle/screens/announcements_screen.dart';
+import 'package:maison_du_miracle/screens/auth/identifier_screen.dart';
+import 'package:maison_du_miracle/screens/auth/sign_in_tab.dart';
 import 'package:maison_du_miracle/screens/bible_screen.dart';
+import 'package:maison_du_miracle/screens/groups_screen.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/screens/profile_screen.dart';
-import 'package:maison_du_miracle/state/session_gate.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
 import 'package:maison_du_miracle/widgets/home_tab.dart';
 
@@ -68,7 +74,7 @@ void main() {
   });
 
   group('Un invité et les onglets réservés', () {
-    testWidgets('Échanges : l\'appui ouvre la connexion et n\'entre pas',
+    testWidgets('Échanges : l\'onglet s\'ouvre sur le formulaire',
         (tester) async {
       final router = await pumpGuestApp(tester, guestContainer());
       expect(router.state.matchedLocation, '/home');
@@ -77,55 +83,64 @@ void main() {
       await tester.tap(navTab(_fr.navGroups));
       await settle(tester);
 
-      // **Pas un bouton mort, pas un écran vide** : le parcours de connexion est
-      // poussé par-dessus la coquille, et renoncer n'est qu'un retour en arrière.
-      expect(router.state.matchedLocation, '/auth');
-      expect(find.byType(WelcomeScreen), findsOneWidget);
-      // Et l'onglet n'a pas bougé sous le parcours : la coquille attend.
-      expect(shellTab(tester), HomeTab.home);
+      // **Rien n'est poussé, et c'est tout le correctif.** La connexion
+      // s'affichait jusqu'ici plein écran par-dessus la coquille (`/auth`), sur
+      // un écran de bienvenue sans aucune flèche de retour : sur iPhone, qui n'a
+      // pas de bouton système, la personne était enfermée.
+      expect(router.state.matchedLocation, '/home');
+      // L'onglet demandé est bien **l'onglet courant** — il n'est plus refusé —,
+      // et c'est le formulaire qui y paraît à la place du hub.
+      expect(shellTab(tester), HomeTab.community);
+      expect(shellScreen(tester), isA<SignInTab>());
+      expect(find.byType(GroupsScreen, skipOffstage: false), findsNothing);
     });
 
-    testWidgets('Profil : l\'appui ouvre la connexion et n\'entre pas',
+    testWidgets('Profil : l\'onglet s\'ouvre sur le formulaire',
         (tester) async {
       // **Le cas que le chantier crée.** Le profil était protégé par la garde du
       // routeur tant qu'il était une route ; redevenu onglet, il ne l'est plus,
-      // et seule la garde au geste le ferme.
+      // et c'est son contenu qui le ferme.
       final router = await pumpGuestApp(tester, guestContainer());
 
       await tester.tap(navTab(_fr.navProfile));
       await settle(tester);
 
-      expect(router.state.matchedLocation, '/auth');
-      expect(find.byType(WelcomeScreen), findsOneWidget);
-      expect(shellTab(tester), HomeTab.home);
+      expect(router.state.matchedLocation, '/home');
+      expect(shellTab(tester), HomeTab.profile);
+      expect(shellScreen(tester), isA<SignInTab>());
+      expect(find.byType(ProfileScreen, skipOffstage: false), findsNothing);
     });
 
-    testWidgets('la connexion aboutit : le hub s\'ouvre de lui-même',
+    testWidgets('la connexion aboutit : le hub prend la place du formulaire',
         (tester) async {
       final container = guestContainer();
       final router = await pumpGuestApp(tester, container);
 
       await tester.tap(navTab(_fr.navGroups));
       await settle(tester);
-      expect(router.state.matchedLocation, '/auth');
+      expect(shellScreen(tester), isA<SignInTab>());
 
       await signIn(container);
       await settle(tester);
 
-      // Le geste est **rejoué** — c'est tout l'intérêt de `requireSession()`.
-      // Sans cette reprise, la personne aurait donné son identifiant, reçu un
-      // code, et retrouverait l'accueil sans le hub qu'elle demandait.
+      // **Personne n'y retouche** : la coquille lit l'état d'authentification et
+      // rend l'écran de l'onglet. Il n'y a pas de geste à rejouer, donc pas
+      // d'intention à mettre de côté — c'est ce que la forme précédente devait
+      // faire, et c'est désormais gratuit.
       expect(router.state.matchedLocation, '/home');
       expect(shellTab(tester), HomeTab.community);
+      expect(shellScreen(tester), isA<GroupsScreen>());
+      expect(find.byType(IdentifierForm, skipOffstage: false), findsNothing);
     });
 
-    testWidgets('la connexion aboutit : le profil s\'ouvre de lui-même',
+    testWidgets('la connexion aboutit : le profil prend la place du formulaire',
         (tester) async {
       final container = guestContainer();
       final router = await pumpGuestApp(tester, container);
 
       await tester.tap(navTab(_fr.navProfile));
       await settle(tester);
+      expect(shellScreen(tester), isA<SignInTab>());
 
       await signIn(container);
       await settle(tester);
@@ -133,25 +148,27 @@ void main() {
       expect(router.state.matchedLocation, '/home');
       expect(shellTab(tester), HomeTab.profile);
       expect(shellScreen(tester), isA<ProfileScreen>());
-      // L'intention a été consommée : elle ne se rejouera pas à la connexion
-      // suivante, faite pour une autre raison.
-      expect(container.read(sessionGateProvider), isNull);
     });
 
-    testWidgets('il renonce : ni hub, ni geste en attente', (tester) async {
+    testWidgets('il renonce : un autre onglet, et rien n\'est resté en route',
+        (tester) async {
       final container = guestContainer();
       final router = await pumpGuestApp(tester, container);
 
       await tester.tap(navTab(_fr.navGroups));
       await settle(tester);
-      router.pop();
+
+      // **La porte de sortie est la barre du bas**, et il n'y en a pas d'autre à
+      // apprendre : on n'a jamais quitté la coquille.
+      await tester.tap(navTab(_fr.navHome));
       await settle(tester);
 
       expect(router.state.matchedLocation, '/home');
       expect(shellTab(tester), HomeTab.home);
+      expect(shellScreen(tester), isA<HomeScreen>());
 
-      // Et le geste ne ressuscite pas à la connexion suivante, faite pour une
-      // autre raison : c'est le cas qui rendrait le mécanisme effrayant.
+      // Et une connexion faite plus tard, pour une autre raison, ne ramène
+      // personne sur Échanges : aucun geste n'a été mis de côté.
       await signIn(container);
       await settle(tester);
       expect(shellTab(tester), HomeTab.home);
@@ -159,17 +176,20 @@ void main() {
 
     testWidgets('les onglets ouverts restent immédiats', (tester) async {
       // Le risque de la forme retenue est d'avoir posé la garde sur le mauvais
-      // onglet, ou sur tous : un invité qui ne pourrait plus ouvrir les annonces
-      // serait une régression que personne ne signalerait.
+      // onglet, ou sur tous : un invité qui verrait un formulaire de connexion à
+      // la place des annonces serait une régression que personne ne
+      // signalerait.
       await pumpGuestApp(tester, guestContainer());
 
       await tester.tap(navTab(_fr.navAnnouncements));
       await tester.pump();
       expect(shellTab(tester), HomeTab.announcements);
+      expect(shellScreen(tester), isA<AnnouncementsScreen>());
 
       await tester.tap(navTab(_fr.navHome));
       await tester.pump();
       expect(shellTab(tester), HomeTab.home);
+      expect(shellScreen(tester), isA<HomeScreen>());
     });
   });
 
@@ -191,13 +211,14 @@ void main() {
       await tester.tap(navTab(_fr.navGroups));
       await settle(tester);
 
-      // **Transparent** : aucune connexion poussée, aucun détour, l'onglet
-      // change au premier appui. C'est la contrainte du client — « quand la
+      // **Transparent** : aucun détour, aucun formulaire, l'onglet montre son
+      // écran au premier appui. C'est la contrainte du client — « quand la
       // personne s'est déjà connectée, tout se passe exactement comme
       // présentement ».
       expect(shellTab(tester), HomeTab.community);
+      expect(shellScreen(tester), isA<GroupsScreen>());
       expect(router.state.matchedLocation, '/home');
-      expect(find.byType(WelcomeScreen), findsNothing);
+      expect(find.byType(IdentifierForm, skipOffstage: false), findsNothing);
 
       await tester.tap(navTab(_fr.navProfile));
       await settle(tester);
@@ -205,7 +226,7 @@ void main() {
       expect(shellTab(tester), HomeTab.profile);
       expect(shellScreen(tester), isA<ProfileScreen>());
       expect(router.state.matchedLocation, '/home');
-      expect(find.byType(WelcomeScreen), findsNothing);
+      expect(find.byType(IdentifierForm, skipOffstage: false), findsNothing);
     });
   });
 
@@ -228,7 +249,7 @@ void main() {
       // demande rien, et la coquille attend dessous.
       expect(router.state.matchedLocation, '/bible');
       expect(find.byType(BibleScreen), findsOneWidget);
-      expect(find.byType(WelcomeScreen), findsNothing);
+      expect(find.byType(IdentifierScreen), findsNothing);
       expect(shellTab(tester), HomeTab.home);
     });
   });

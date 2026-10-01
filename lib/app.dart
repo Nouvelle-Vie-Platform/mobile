@@ -204,6 +204,13 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   ///   personne s'est déjà connectée, tout se passe exactement comme
   ///   présentement ».
   ///
+  /// L'écran de connexion **est le formulaire** : l'éjection menait jusqu'ici
+  /// sur l'écran de bienvenue, qui n'avait ni flèche de retour ni rien à faire
+  /// — une page de plus à traverser pour quelqu'un qui n'avait rien demandé.
+  /// `go` et non `push`, comme avant : il n'y a pas de pile à conserver, et c'est
+  /// pour ça que le formulaire n'y montre aucune flèche de retour — il n'y a
+  /// nulle part où revenir.
+  ///
   /// L'éjection est une **navigation explicite**, et non plus une déduction de
   /// la garde : sous le mode invité, la garde est publique par défaut, et lui
   /// faire porter un cas « renvoie tout vers `/auth` » y remettrait le verrou
@@ -217,7 +224,7 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   void _handleUnauthorized() {
     if (!mounted) return;
     if (!ref.read(authProvider.notifier).handleUnauthorized()) return;
-    ref.read(routerProvider).goNamed(AppRoute.authWelcome);
+    ref.read(routerProvider).goNamed(AppRoute.authIdentifier);
   }
 
   @override

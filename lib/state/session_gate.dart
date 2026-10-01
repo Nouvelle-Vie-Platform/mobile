@@ -87,6 +87,22 @@ class SessionGate extends Notifier<SessionIntent?> {
   /// Le parcours d'authentification est **poussé** plein écran (`push`, pas
   /// `go`) : c'est ce qui laisse l'écran d'origine sous la pile, donc ce qui
   /// permet à un abandon d'être un simple retour en arrière.
+  ///
+  /// ⚠️ **Et ce qui est poussé est le formulaire**, jamais une page de garde
+  /// devant lui. On poussait `AppRoute.authWelcome` — « Bienvenue · Dans la
+  /// Maison du Miracle · Commencer » —, un écran qui n'avait plus de rôle depuis
+  /// que l'application s'ouvre sur l'accueil, et qui n'offrait aucun retour :
+  /// ni `appBar`, ni `BackButton`, ni `PopScope`. Sur Android le bouton système
+  /// dépilait ; **sur iPhone il n'y en a pas**, et la personne était enfermée.
+  /// La flèche de retour vient désormais de l'`AppBar` du formulaire, que
+  /// `push` rend non vide — c'est la même mécanique que l'abandon ci-dessous,
+  /// et elle n'exige aucun bouton système.
+  ///
+  /// ⚠️ **Les onglets ne passent plus par ici**, et c'est délibéré : « Échanges »
+  /// et « Profil » affichent le formulaire *dans* l'onglet
+  /// (`HomeShell._screenFor`), sans rien pousser. Ce qui reste ici est ce qui a
+  /// vraiment un geste à rejouer — publier une annonce, écrire une note, ouvrir
+  /// une conversation depuis une notification.
   bool require({required VoidCallback action}) {
     if (ref.read(authProvider).isAuthenticated) {
       action();
@@ -102,7 +118,7 @@ class SessionGate extends Notifier<SessionIntent?> {
     // `push` se règle quand la route poussée est dépilée : retour Android, flèche
     // de l'en-tête, geste de balayage — les trois façons de renoncer passent par
     // là, et aucun écran d'authentification n'a à connaître cette mécanique.
-    final flow = router.pushNamed<void>(AppRoute.authWelcome);
+    final flow = router.pushNamed<void>(AppRoute.authIdentifier);
     flow.whenComplete(() => _abandon(intent));
     return false;
   }

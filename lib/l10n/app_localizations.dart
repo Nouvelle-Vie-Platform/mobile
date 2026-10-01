@@ -244,18 +244,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{Il y a {count} jour} other{Il y a {count} jours}}'**
   String timeDaysAgo(int count);
 
-  /// No description provided for @onboardingWelcome.
-  ///
-  /// In fr, this message translates to:
-  /// **'Bienvenue'**
-  String get onboardingWelcome;
-
-  /// No description provided for @onboardingTitleHighlight.
-  ///
-  /// In fr, this message translates to:
-  /// **'Dans la Maison\ndu Miracle'**
-  String get onboardingTitleHighlight;
-
   /// No description provided for @onboardingSubtitle.
   ///
   /// In fr, this message translates to:
@@ -1570,12 +1558,6 @@ abstract class AppLocalizations {
   /// **'Vos dons sont sécurisés'**
   String get donationsSecure;
 
-  /// Bouton d'entrée dans le parcours d'authentification
-  ///
-  /// In fr, this message translates to:
-  /// **'Commencer'**
-  String get authStart;
-
   /// Lien vers le même écran identifiant (parcours unifié)
   ///
   /// In fr, this message translates to:
@@ -1588,11 +1570,23 @@ abstract class AppLocalizations {
   /// **'Rejoignez-nous'**
   String get authIdentifierTitle;
 
-  /// Sous-titre de l'écran identifiant
+  /// Sous-titre de l'écran identifiant, quand rien ne dit déjà pourquoi on y est. Une raison (authReason*) prend sa place
   ///
   /// In fr, this message translates to:
   /// **'Entrez votre numéro ou votre email pour continuer.'**
   String get authIdentifierSubtitle;
+
+  /// Pourquoi le formulaire s'affiche dans l'onglet Échanges. Il remplace le contenu de l'onglet pour un invité, et cette phrase est ce qui dit à quoi la connexion sert ICI — jamais une invitation générique. Elle ne remplace PAS l'annonce de canal (#83), qui répond à une autre question : par où le code arrive
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour accéder aux échanges.'**
+  String get authReasonCommunity;
+
+  /// Le même, pour l'onglet Profil
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour accéder à votre profil.'**
+  String get authReasonProfile;
 
   /// Indication du champ téléphone (sans indicatif)
   ///

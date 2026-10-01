@@ -54,8 +54,6 @@
     "placeholders": { "count": { "type": "int", "example": "3" } }
   },
 
-  "onboardingWelcome": "Bienvenue",
-  "onboardingTitleHighlight": "Dans la Maison\ndu Miracle",
   "onboardingSubtitle": "Une communauté vivante, connectée et engagée pour la gloire de Dieu.",
   "actionNext": "Suivant",
   "onboardingVerse": "« Venez à moi, vous tous qui êtes fatigués, et je vous donnerai du repos. »\n— Matthieu 11:28",
@@ -408,14 +406,16 @@
   "actionContinue": "Continuer",
   "donationsSecure": "Vos dons sont sécurisés",
 
-  "authStart": "Commencer",
-  "@authStart": { "description": "Bouton d'entrée dans le parcours d'authentification" },
   "authAlreadyMember": "Déjà membre ?",
   "@authAlreadyMember": { "description": "Lien vers le même écran identifiant (parcours unifié)" },
   "authIdentifierTitle": "Rejoignez-nous",
   "@authIdentifierTitle": { "description": "Titre de l'écran de saisie de l'identifiant" },
   "authIdentifierSubtitle": "Entrez votre numéro ou votre email pour continuer.",
-  "@authIdentifierSubtitle": { "description": "Sous-titre de l'écran identifiant" },
+  "@authIdentifierSubtitle": { "description": "Sous-titre de l'écran identifiant, quand rien ne dit déjà pourquoi on y est. Une raison (authReason*) prend sa place" },
+  "authReasonCommunity": "Connectez-vous pour accéder aux échanges.",
+  "@authReasonCommunity": { "description": "Pourquoi le formulaire s'affiche dans l'onglet Échanges. Il remplace le contenu de l'onglet pour un invité, et cette phrase est ce qui dit à quoi la connexion sert ICI — jamais une invitation générique. Elle ne remplace PAS l'annonce de canal (#83), qui répond à une autre question : par où le code arrive" },
+  "authReasonProfile": "Connectez-vous pour accéder à votre profil.",
+  "@authReasonProfile": { "description": "Le même, pour l'onglet Profil" },
   "authPhoneHint": "90 12 34 56",
   "@authPhoneHint": { "description": "Indication du champ téléphone (sans indicatif)" },
   "authEmailHint": "jean.kossi@email.com",
