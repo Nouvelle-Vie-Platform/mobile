@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
+import 'package:maison_du_miracle/data/repositories/echanges_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
-import 'package:maison_du_miracle/data/sample_data.dart';
+import 'package:maison_du_miracle/models/echanges_view.dart';
 import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/screens/agenda_screen.dart';
 import 'package:maison_du_miracle/screens/donations_screen.dart';
@@ -88,12 +89,26 @@ void main() {
       expect(find.text(teaching.title), findsOneWidget);
     });
 
-    testWidgets('GroupChatScreen affiche la conversation reçue',
+    testWidgets('GroupChatScreen résout son groupe depuis le magasin',
         (tester) async {
-      final conversation = SampleData.conversations.first;
-      await pumpScreen(tester, GroupChatScreen(conversation: conversation));
+      // ⚠️ **L'écran ne reçoit plus qu'un identifiant** (#96) : `SampleData` ne
+      // porte plus de conversation, et l'ancienne convention « l'objet en
+      // `extra`, repli sur le premier » est tombée avec le fictif. Le groupe vient
+      // du repository, comme un enseignement vient du sien.
+      const group = GroupDetailView(
+        groupId: 'g-1',
+        title: 'Chorale Harmonie',
+        isDirect: false,
+        memberCount: 12,
+        canWrite: true,
+      );
+      await pumpScreen(
+        tester,
+        const GroupChatScreen(groupId: 'g-1'),
+        echanges: InMemoryEchangesRepository(groups: {'g-1': group}),
+      );
       expect(find.byType(GroupChatScreen), findsOneWidget);
-      expect(find.text(conversation.name), findsOneWidget);
+      expect(find.text(group.title), findsOneWidget);
     });
   });
 }

@@ -167,3 +167,54 @@ String formatEventWeekday(ChurchEvent event, String locale) {
   if (day.isEmpty) return day;
   return day[0].toUpperCase() + day.substring(1);
 }
+
+/// **L'heure d'un message** (« 10:38 »), dans le fuseau **du lecteur** (#96).
+///
+/// Nommée à part de [formatEventTime], comme [formatLegalDate] l'est de
+/// [formatHorizonDate], et pour une raison de fond : un évènement d'agenda se lit
+/// à l'heure **murale de sa branche** — un culte à 15 h au temple est à 15 h, où
+/// qu'on le regarde —, alors qu'un message a été envoyé à un instant, et que
+/// l'heure qui compte est **celle de qui le lit**. Réutiliser le formateur de
+/// l'agenda obligerait à inventer un fuseau pour une conversation qui n'en a pas.
+///
+/// `toLocal()` et non `toUtc()` : c'est l'inverse de [formatLegalDate], et c'est
+/// voulu — une CGU a une date de publication qui fait foi, un message a une heure
+/// qu'on a vécue.
+String formatMessageTime(DateTime instant, String locale) =>
+    DateFormat.Hm(locale).format(instant.toLocal());
+
+/// **L'horodatage d'une tuile de conversation** — l'heure aujourd'hui, le jour de
+/// la semaine cette semaine, la date au-delà (#96).
+///
+/// Trois formes et non une, parce que la tuile a une ligne et que « 10:38 » sur un
+/// message d'il y a trois semaines est faux à l'œil avant d'être faux tout court.
+///
+/// [now] est **injectable**, et il le faut : « aujourd'hui » dépend de l'heure
+/// qu'il est, et une règle de calendrier non injectable est intestable — c'est la
+/// leçon de `nowProvider` pour le mode sombre automatique.
+///
+/// ⚠️ **Aucun libellé n'est fabriqué ici** : « Hier » serait du texte en dur, donc
+/// non traduit. Le jour de la semaine et la date viennent d'`intl`, qui parle la
+/// langue de l'interface.
+String formatConversationStamp(
+  DateTime instant,
+  String locale, {
+  DateTime? now,
+}) {
+  final local = instant.toLocal();
+  final today = (now ?? DateTime.now()).toLocal();
+  final sameDay = local.year == today.year &&
+      local.month == today.month &&
+      local.day == today.day;
+  if (sameDay) return DateFormat.Hm(locale).format(local);
+
+  // Moins d'une semaine : le jour de la semaine suffit et se lit d'un coup d'œil.
+  // La borne est en **jours de calendrier**, pas en heures : « il y a 23 h » peut
+  // être avant-hier soir.
+  final days = DateTime(today.year, today.month, today.day)
+      .difference(DateTime(local.year, local.month, local.day))
+      .inDays;
+  if (days > 0 && days < 7) return DateFormat.E(locale).format(local);
+
+  return DateFormat.yMd(locale).format(local);
+}

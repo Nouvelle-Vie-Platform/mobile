@@ -2,7 +2,36 @@
 
 > Cahier de décisions issu de la session /grill-me du 2026-08-15.
 > Sert de référence pendant l'implémentation ET de checklist de re-vérification à la fin.
-> **Tout ce domaine reste fictif/synchrone** (patron `SampleData` + `InMemoryChurchRepository`). Aucun backend branché.
+>
+> ⚠️ **Ce domaine n'est plus fictif depuis #96.** Les dix-sept décisions visuelles
+> ci-dessous **tiennent toutes** — elles n'ont pas été rouvertes —, mais trois
+> d'entre elles ont perdu leur matière, parce que leur matière était inventée
+> (cadrage `server-portal/docs/echanges-branchement-plan.md`, décision 10 : « on
+> retire ce qui ne peut pas être vrai, on garde ce qui le deviendra ») :
+>
+> - **D5** — la **pile d'avatars** du bandeau est retirée. « Estelle », « David »,
+>   « Sarah » et une pastille « 5+ » qui ne comptait rien : trois personnes qui
+>   n'existaient pas, sur l'écran d'une église où tout le monde se connaît. Le reste
+>   de D5 est intact (titre à gauche, bouton Requêtes à droite, pas de hamburger).
+> - **D6** — la rangée « groupes à rejoindre » **reste**, et elle est désormais
+>   indispensable (décision 3 du cadrage) : la politique d'adhésion par défaut est
+>   `invite_only`, donc sans elle le groupe créé au backoffice serait visible de
+>   personne. Son **image de carte** part, en revanche : le serveur ne sert aucune
+>   image de groupe. Un aplat dérivé du nom la remplace. Et le tap ouvre la **fiche
+>   du groupe**, non plus le profil de l'animateur : on découvre un groupe.
+> - **D15 / D16 / D17** — les **médias partagés** sont vides en tranche 1 et
+>   remplis en tranche 3 (ce seront les images du fil). La galerie de fiche membre,
+>   engendrée par hachage du nom, est retirée pour de bon. La visionneuse
+>   (`media_viewer_screen.dart`), sa route et sa configuration native **restent en
+>   place** : c'est la destination que la tranche 3 câblera.
+>
+> **D13 est confirmée et devient un fait notable** : `/prayers` garde sa route et
+> son fictif, et c'est désormais le **dernier** reste fictif de l'application.
+> `SampleData.prayers` le dit, `ChurchRepository` le dit, `repository_providers.dart`
+> le dit.
+>
+> **D14 est caduque** : le modèle `Conversation` a été remplacé par les modèles de
+> lecture de `lib/models/echanges_view.dart`, portés par le magasin.
 
 ## 1. Intention
 

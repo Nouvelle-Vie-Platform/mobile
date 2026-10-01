@@ -10,6 +10,9 @@ import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
+import 'package:maison_du_miracle/data/repositories/echanges_repository.dart';
+import 'package:maison_du_miracle/data/repositories/group_message_composer.dart';
+import 'package:maison_du_miracle/data/repositories/group_message_sender.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/data/repositories/menu_repository.dart';
@@ -17,6 +20,7 @@ import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
+import 'package:maison_du_miracle/state/echanges_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/legal_notice_providers.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
@@ -120,6 +124,7 @@ Future<void> pumpRouter(
   VocabularyOverrides? vocabulary,
   AuthChannelOffer? authChannels,
   String? updateThreshold,
+  EchangesRepository? echanges,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -138,6 +143,7 @@ Future<void> pumpRouter(
           vocabulary: vocabulary,
           authChannels: authChannels,
           updateThreshold: updateThreshold,
+          echanges: echanges,
         ),
         ...overrides,
       ],
@@ -172,10 +178,39 @@ List<Override> _commonOverrides(
   VocabularyOverrides? vocabulary,
   AuthChannelOffer? authChannels,
   String? updateThreshold,
+  EchangesRepository? echanges,
   List<DownloadNotificationRow> notifications = const [],
 }) =>
     [
       appDatabaseProvider.overrideWithValue(db),
+      // **La rubrique Échanges, posée sur un double vide** (#96), pour les deux
+      // raisons qui valent déjà pour la médiathèque et les annonces : son
+      // implémentation réelle lit le **magasin Drift** — donc ouvre des flux qu'une
+      // horloge factice fige —, et `HomeShell` monte les quatre onglets dans un
+      // `IndexedStack`, si bien que le hub vit dès qu'un test monte la coquille.
+      //
+      // Le défaut est **vide**, et c'est ce qu'un test qui ne parle pas d'Échanges
+      // doit voir : un magasin qui n'a pas encore reçu mes conversations.
+      // [echanges] est un paramètre nommé et non un `Override` de plus — Riverpod 3
+      // refuse deux surcharges du même provider dans un même conteneur.
+      // Une famille se surcharge **en entier** : tous les acteurs reçoivent le
+      // même double, ce qui est exactement ce qu'un test veut — il n'a pas à savoir
+      // quel identifiant la session en mémoire a résolu.
+      echangesRepositoryProvider.overrideWith(
+        (ref, actor) => echanges ?? InMemoryEchangesRepository(),
+      ),
+      // **L'envoyeur est inerte**, pour la raison de l'auth et du rapporteur de
+      // progression : l'implémentation réelle est HTTP dès que `AppEnv.useBackend`
+      // est vrai — et il l'est hors surcharge —, donc un appui sur « envoyer »
+      // ouvrirait une socket que `flutter test` refuse, en laissant la minuterie de
+      // Dio derrière lui.
+      groupMessageComposerProvider.overrideWith(
+        (ref) => GroupMessageComposer(
+          dao: db.groupDao,
+          sender: const InertGroupMessageSender(),
+          resynchronize: () async {},
+        ),
+      ),
       // **Les canaux de connexion ouverts** (#83), posés **par un flux nu**, pour
       // la raison déjà donnée pour le vocabulaire : lus depuis le magasin, ils
       // ouvrent un flux Drift, et un flux Drift attendu sous l'horloge factice du
@@ -274,6 +309,7 @@ Future<void> pumpScreen(
   VocabularyOverrides? vocabulary,
   AuthChannelOffer? authChannels,
   String? updateThreshold,
+  EchangesRepository? echanges,
   List<DownloadNotificationRow> notifications = const [],
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
@@ -299,6 +335,7 @@ Future<void> pumpScreen(
           vocabulary: vocabulary,
           authChannels: authChannels,
           updateThreshold: updateThreshold,
+          echanges: echanges,
           notifications: notifications,
         ),
         ...overrides,

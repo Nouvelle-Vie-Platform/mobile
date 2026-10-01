@@ -4,28 +4,30 @@ import '../../l10n/l10n_extension.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
-import '../app_avatar.dart';
 
 /// En-tête du hub « Échanges » : **bandeau diagonal**, repris de la structure de
 /// la maquette mais **habillé aux couleurs New Life** (bleu de marque, avec des
 /// diagonales teal et jaune) — jamais le rose Dribbble (décision D4).
 ///
-/// Contenu (décision D5) : le titre « Échanges » à gauche ; à droite une **pile
-/// d'avatars décorative** (fictive) suivie du **bouton Requêtes**. Pas de
-/// hamburger, pas d'avatar central.
+/// Contenu : le titre « Échanges » à gauche, le **bouton Requêtes** à droite. Pas
+/// de hamburger, pas d'avatar central (décision D5).
+///
+/// ## La pile d'avatars **a disparu** (#96, décision 10 du cadrage)
+///
+/// Elle portait trois prénoms écrits en dur — « Estelle », « David », « Sarah » —
+/// et une pastille « 5+ » qui ne comptait rien. Trois personnes qui n'existaient
+/// pas, sur l'écran d'une église où tout le monde se connaît : la seule chose
+/// qu'un fidèle pouvait en conclure était fausse. Et il n'y avait rien à mettre à
+/// la place — `profiles` nomme mes co-membres, pas « la communauté », et faire la
+/// somme de mes groupes pour en tirer une pile de visages serait inventer une
+/// statistique que personne n'a demandée.
+///
+/// C'est la règle de la décision 10 : **on retire ce qui ne peut pas être vrai**.
 class CommunityHeader extends StatelessWidget {
   const CommunityHeader({super.key, required this.onRequests});
 
   /// Ouvre l'écran Requêtes (bouton tout à droite du bandeau).
   final VoidCallback onRequests;
-
-  /// Noms de la pile d'avatars — purement **décoratifs** : ils illustrent la
-  /// communauté, ils ne désignent personne et ne sont pas interactifs.
-  static const List<String> _decorativeAvatars = [
-    'Estelle',
-    'David',
-    'Sarah',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +57,6 @@ class CommunityHeader extends StatelessWidget {
                   style: AppTypography.h2.copyWith(color: Colors.white),
                 ),
               ),
-              const _AvatarStack(names: _decorativeAvatars),
               IconButton(
                 onPressed: onRequests,
                 tooltip: context.l10n.requestsTitle,
@@ -66,59 +67,6 @@ class CommunityHeader extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Pile d'avatars qui se chevauchent, close par une pastille « N+ ».
-class _AvatarStack extends StatelessWidget {
-  const _AvatarStack({required this.names});
-
-  final List<String> names;
-
-  @override
-  Widget build(BuildContext context) {
-    const double size = 32;
-    const double overlap = 20;
-    final children = <Widget>[];
-    for (var i = 0; i < names.length; i++) {
-      children.add(Positioned(
-        left: i * overlap,
-        child: Container(
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.fromBorderSide(
-              BorderSide(color: Colors.white, width: 1.5),
-            ),
-          ),
-          child: AppAvatar(name: names[i], size: size),
-        ),
-      ));
-    }
-    children.add(Positioned(
-      left: names.length * overlap,
-      child: Container(
-        width: size,
-        height: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.secondary,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 1.5),
-        ),
-        child: Text(
-          '5+',
-          style: AppTypography.caption.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    ));
-    return SizedBox(
-      width: names.length * overlap + size,
-      height: size,
-      child: Stack(clipBehavior: Clip.none, children: children),
     );
   }
 }

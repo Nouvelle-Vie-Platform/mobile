@@ -119,6 +119,18 @@
   "groupMembers": "{count} members",
   "groupMembersWithRole": "{count} members • {role}",
 
+  "chatAuthorRemoved": "Removed member",
+  "chatReadOnly": "Only group hosts can post in this group.",
+  "chatEmpty": "No messages yet. Be the first to write.",
+  "echangesEmptyTitle": "No conversations",
+  "echangesEmpty": "Your groups and chats will show up here. Pull down to refresh.",
+  "echangesLoadError": "Could not read your conversations.",
+  "echangesJoinOpen": "Open to all",
+  "echangesJoinOnRequest": "On request",
+  "echangesJoinPending": "Request sent",
+  "groupRoleLeader": "Host",
+  "groupRoleModerator": "Moderator",
+  "groupRoleMember": "Member",
   "chatMessageHint": "Your message...",
   "chatToday": "Today",
 

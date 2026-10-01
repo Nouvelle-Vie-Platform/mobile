@@ -1,58 +1,133 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/l10n_extension.dart';
-import '../models/models.dart';
+import '../models/echanges_view.dart';
 import '../router/app_router.dart';
+import '../state/echanges_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_avatar.dart';
 import '../widgets/app_card.dart';
-import 'media_viewer_screen.dart';
+import '../widgets/content_absence.dart';
 
-/// Fiche d'un groupe, ouverte en tapant le nom du groupe dans la discussion —
-/// **inspiration Telegram** : en-tête immersif (logo + nom + effectif), puis
-/// description, médias partagés, et enfin la liste des membres.
+/// Fiche d'un groupe — **inspiration Telegram** (D15) : en-tête immersif (logo,
+/// nom, effectif), puis description, puis la liste des membres.
 ///
-/// Taper un membre ouvre son **profil**, d'où l'on démarre une conversation
-/// privée (décision D10). Domaine fictif : tout vient de [Conversation].
-class GroupInfoScreen extends StatelessWidget {
-  const GroupInfoScreen({super.key, required this.group});
+/// Taper un membre ouvre sa **fiche**, d'où l'on démarre une conversation privée
+/// (D10).
+///
+/// ## Elle reçoit un identifiant et résout depuis le magasin (#96)
+///
+/// L'ancienne version recevait un `Conversation` en `extra` et lisait ses champs
+/// fictifs. L'effectif, la description et les membres viennent désormais des
+/// collections répliquées : `groups` (nom, description, effectif compté par le
+/// serveur), `group_members` (le roster) et `profiles` (les noms).
+///
+/// ## La section « Médias partagés » **a disparu de la tranche 1**
+///
+/// C'étaient des `picsum.photos` tirées du nom du groupe. Le serveur ne sert aucune
+/// pièce jointe aujourd'hui — elles n'existent **nulle part**, des deux côtés, et
+/// le PRD d'ADR-0006 les exclut nommément de la V1. La section reviendra en tranche
+/// 3, remplie des **images du fil** ; garder la place en l'habillant d'images
+/// inventées aurait promis une fonctionnalité qui n'existe pas.
+class GroupInfoScreen extends ConsumerWidget {
+  const GroupInfoScreen({super.key, required this.groupId});
 
-  final Conversation group;
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    // L'acteur est lu ici et passé en clé : voir l'en-tête
+    // d'`echanges_providers.dart`.
+    final detail = ref.watch(
+      groupDetailProvider(
+          (actor: ref.watch(echangesActorProvider), id: groupId)),
+    );
+
+    return detail.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => Scaffold(
+        appBar: AppBar(title: Text(l.communityTitle)),
+        body: Center(
+          child: Padding(
+            padding: AppSpacing.screenPadding,
+            child: Text(l.echangesLoadError, textAlign: TextAlign.center),
+          ),
+        ),
+      ),
+      data: (group) {
+        // Le magasin ne connaît pas cet identifiant : une **absence**, pas une
+        // erreur. On n'éjecte pas le fidèle de l'écran qu'il a ouvert.
+        if (group == null) {
+          return const Scaffold(
+            body: ContentAbsenceView(absence: ContentAbsence.notSynced),
+          );
+        }
+        return Scaffold(body: _Body(group: group));
+      },
+    );
+  }
+}
+
+class _Body extends StatelessWidget {
+  const _Body({required this.group});
+
+  final GroupDetailView group;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final description = group.description;
-    return Scaffold(
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          _Header(group: group),
+    final host = group.hostName;
+
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        _Header(group: group),
+        const SizedBox(height: AppSpacing.lg),
+        if (host != null && host.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              l.echangesHostedBy(host),
+              style: AppTypography.body
+                  .copyWith(color: context.palette.textSecondary),
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
-          if (description != null && description.isNotEmpty) ...[
-            _DescriptionCard(text: description),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          if (group.sharedMedia.isNotEmpty) ...[
-            _SharedMedia(urls: group.sharedMedia),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          _SectionTitle(l.groupMembers(group.members.length)),
+        ],
+        if (description != null && description.isNotEmpty) ...[
+          _DescriptionCard(text: description),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+        // « Pas de contenu, pas de section » : un roster que la synchronisation
+        // n'a pas encore ramené ne laisse pas un titre suivi du vide.
+        if (group.members.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              l.groupMembers(group.members.length),
+              style: AppTypography.h5,
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
-          for (final name in group.members) ...[
+          for (final member in group.members) ...[
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: _MemberTile(name: name),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: _MemberTile(member: member),
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
-          const SizedBox(height: AppSpacing.xxl),
         ],
-      ),
+        const SizedBox(height: AppSpacing.xxl),
+      ],
     );
   }
 }
@@ -61,7 +136,7 @@ class GroupInfoScreen extends StatelessWidget {
 class _Header extends StatelessWidget {
   const _Header({required this.group});
 
-  final Conversation group;
+  final GroupDetailView group;
 
   @override
   Widget build(BuildContext context) {
@@ -87,20 +162,23 @@ class _Header extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2),
             ),
-            child: AppAvatar(name: group.name, size: 96),
+            child: AppAvatar(name: group.title, size: 96),
           ),
           const SizedBox(height: AppSpacing.md),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
-              group.name,
+              group.title,
               textAlign: TextAlign.center,
               style: AppTypography.h3.copyWith(color: Colors.white),
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
+          // L'effectif vient du **serveur** (`memberCount`, membres actifs) et non
+          // de la longueur du roster : ce roster-là n'arrive que pour les groupes
+          // dont je suis membre, et un groupe à rejoindre afficherait « 0 membre ».
           Text(
-            l.groupMembers(group.members.length),
+            l.groupMembers(group.memberCount),
             style: AppTypography.body
                 .copyWith(color: Colors.white.withValues(alpha: 0.85)),
           ),
@@ -119,7 +197,7 @@ class _DescriptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: AppCard(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -141,101 +219,65 @@ class _DescriptionCard extends StatelessWidget {
   }
 }
 
-class _SharedMedia extends StatelessWidget {
-  const _SharedMedia({required this.urls});
-
-  final List<String> urls;
-
-  static const double _size = 96;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(context.l10n.groupInfoSharedMedia),
-        const SizedBox(height: AppSpacing.md),
-        SizedBox(
-          height: _size,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: urls.length,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
-            itemBuilder: (context, i) => GestureDetector(
-              onTap: () => context.pushNamed(
-                AppRoute.mediaViewer,
-                extra: MediaViewerArgs(urls: urls, index: i),
-              ),
-              child: _MediaThumb(url: urls[i]),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MediaThumb extends StatelessWidget {
-  const _MediaThumb({required this.url});
-
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return ClipRRect(
-      borderRadius: AppRadius.card,
-      child: SizedBox(
-        width: _SharedMedia._size,
-        height: _SharedMedia._size,
-        child: Image.network(
-          url,
-          fit: BoxFit.cover,
-          // Repli coloré : jamais d'échec réseau visible (hors ligne / test).
-          errorBuilder: (_, __, ___) => ColoredBox(
-            color: palette.divider,
-            child: Icon(Icons.image_outlined, color: palette.textSecondary),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+/// Une ligne du roster.
+///
+/// **Un membre dont `profiles` n'a pas encore livré le nom se rend quand même**,
+/// avec un avatar neutre : la jointure est tolérante, et l'absence s'affiche comme
+/// une absence. Sa fiche reste atteignable — c'est un identifiant valide.
 class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.name});
+  const _MemberTile({required this.member});
 
-  final String name;
+  final GroupMemberView member;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final name = member.displayName;
     return AppCard(
-      onTap: () => context.pushNamed(AppRoute.memberProfile, extra: name),
+      onTap: () => context.pushNamed(
+        AppRoute.memberProfile,
+        pathParameters: {'id': member.userId},
+      ),
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
-          AppAvatar(name: name, size: 44),
+          if (name == null || name.isEmpty)
+            const AppAvatar.neutral(size: 44)
+          else
+            AppAvatar(name: name, size: 44),
           const SizedBox(width: AppSpacing.md),
-          Expanded(child: Text(name, style: AppTypography.bodyStrong)),
+          Expanded(
+            child: Text(
+              // Jamais d'« Utilisateur inconnu » : le nom manquant laisse la ligne
+              // au libellé du rôle, qui est un fait.
+              name == null || name.isEmpty ? _roleLabel(context, member) : name,
+              style: AppTypography.bodyStrong,
+            ),
+          ),
+          if (name != null && name.isNotEmpty && member.role != 'member')
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
+              child: Text(
+                _roleLabel(context, member),
+                style: AppTypography.caption
+                    .copyWith(color: palette.textSecondary),
+              ),
+            ),
           Icon(Icons.chevron_right, color: palette.textSecondary),
         ],
       ),
     );
   }
-}
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Text(label, style: AppTypography.h5),
-    );
+  /// Le rôle, traduit. Un rôle **inconnu** rend le libellé générique : le serveur
+  /// peut en ajouter un, et une chaîne brute à l'écran se lirait comme une donnée
+  /// perdue.
+  static String _roleLabel(BuildContext context, GroupMemberView member) {
+    final l = context.l10n;
+    return switch (member.role) {
+      'leader' => l.groupRoleLeader,
+      'moderator' => l.groupRoleModerator,
+      _ => l.groupRoleMember,
+    };
   }
 }

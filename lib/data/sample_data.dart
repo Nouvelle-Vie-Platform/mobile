@@ -613,133 +613,37 @@ abstract final class SampleData {
             'et prière.'),
   ];
 
-  static const List<CommunityGroup> groups = [
-    CommunityGroup(
-        name: 'Jeunesse Nouvelle Vie', members: 125, role: 'Responsable'),
-    CommunityGroup(name: 'Couples Bénis', members: 80),
-    CommunityGroup(name: 'Chorale Harmonie', members: 45),
-    CommunityGroup(name: 'Femmes d\'Impact', members: 67),
-  ];
+  // ⚠️ **Il n'y a plus ici ni groupe, ni conversation, ni fil de discussion**
+  // (#96). `groups`, `conversations`, `groupsToJoin` et `chat` ont été retirés :
+  // la rubrique « Échanges » est peinte par le **magasin local**, que la
+  // synchronisation remplit depuis cinq collections répliquées — `profiles`,
+  // `groups`, `group_members`, `group_join_requests`, `group_messages`.
+  //
+  // Ce n'était pas du confort d'hygiène. `InMemoryChurchRepository` était le
+  // **seul** double en mémoire câblé en production **sans condition** — tous les
+  // autres sont derrière `AppEnv.useBackend` —, et il servait le même fil de cinq
+  // messages pour **toutes** les conversations. Une application branchée montrait
+  // donc quatre groupes qui n'existaient pas.
+  //
+  // Les fixtures de ces cinq collections vivent désormais là où se vérifie leur
+  // forme : `test/helpers/sync_fixtures.dart`, relevée sur le code du serveur.
 
-  /// **Les conversations du hub « Échanges »** — groupes et messages privés
-  /// **mélangés**, déjà triés du plus récent au plus ancien (le hub les rend à
-  /// plat, dans cet ordre, sans les séparer).
+  /// **Les requêtes de prière — LE DERNIER RESTE FICTIF DE L'APPLICATION.**
   ///
-  /// Les identifiants sont écrits en dur et stables d'un lancement à l'autre :
-  /// au branchement, la navigation portera l'identifiant plutôt que l'objet.
-  static const List<Conversation> conversations = [
-    Conversation(
-      id: 'grp-jeunesse',
-      kind: ConversationKind.group,
-      name: 'Jeunesse Nouvelle Vie',
-      lastMessagePreview: 'Réunion ce samedi à 16h au temple.',
-      time: '10:30',
-      members: ['Estelle', 'David', 'Sarah', 'Pasteur Mike', 'Jonas', 'Ruth'],
-      description:
-          'Le groupe des jeunes de l\'église : louange, sorties, études '
-          'bibliques et entraide. Rejoins-nous chaque samedi à 16h.',
-      sharedMedia: [
-        'https://picsum.photos/seed/jeunesse-1/240',
-        'https://picsum.photos/seed/jeunesse-2/240',
-        'https://picsum.photos/seed/jeunesse-3/240',
-        'https://picsum.photos/seed/jeunesse-4/240',
-        'https://picsum.photos/seed/jeunesse-5/240',
-      ],
-    ),
-    Conversation(
-      id: 'dm-estelle',
-      kind: ConversationKind.direct,
-      name: 'Sœur Estelle',
-      lastMessagePreview: 'Merci pour la prière d\'hier soir. 🙏',
-      time: '09:57',
-    ),
-    Conversation(
-      id: 'grp-chorale',
-      kind: ConversationKind.group,
-      name: 'Chorale Harmonie',
-      lastMessagePreview: 'Répétition samedi à 16h, salle du fond.',
-      time: 'Hier',
-      members: ['Sarah', 'David', 'Estelle', 'Grâce', 'Emmanuel'],
-      description:
-          'La chorale de la Maison du Miracle. Répétitions le samedi, service '
-          'à chaque culte du dimanche.',
-      sharedMedia: [
-        'https://picsum.photos/seed/chorale-1/240',
-        'https://picsum.photos/seed/chorale-2/240',
-        'https://picsum.photos/seed/chorale-3/240',
-      ],
-    ),
-    Conversation(
-      id: 'dm-pasteur-mike',
-      kind: ConversationKind.direct,
-      name: 'Pasteur Mike',
-      lastMessagePreview: 'Je passe te voir après le culte.',
-      time: 'Hier',
-    ),
-    Conversation(
-      id: 'grp-couples',
-      kind: ConversationKind.group,
-      name: 'Couples Bénis',
-      lastMessagePreview: 'Sujet de partage pour dimanche prochain.',
-      time: 'Lun',
-      members: ['David', 'Sarah', 'Pasteur Mike', 'Estelle', 'Josué'],
-      description:
-          'Un espace pour les couples de l\'église : partages, prière et '
-          'soutien mutuel autour de la Parole.',
-      sharedMedia: [
-        'https://picsum.photos/seed/couples-1/240',
-        'https://picsum.photos/seed/couples-2/240',
-      ],
-    ),
-    Conversation(
-      id: 'grp-femmes',
-      kind: ConversationKind.group,
-      name: 'Femmes d\'Impact',
-      lastMessagePreview: 'Que Dieu vous bénisse toutes, mes sœurs.',
-      time: 'Dim',
-      members: ['Estelle', 'Sarah', 'Grâce', 'Ruth', 'Déborah'],
-      description:
-          'Femmes d\'Impact : prière, encouragement et projets au service de '
-          'la communauté.',
-      sharedMedia: [
-        'https://picsum.photos/seed/femmes-1/240',
-        'https://picsum.photos/seed/femmes-2/240',
-        'https://picsum.photos/seed/femmes-3/240',
-        'https://picsum.photos/seed/femmes-4/240',
-      ],
-    ),
-    Conversation(
-      id: 'dm-david',
-      kind: ConversationKind.direct,
-      name: 'David',
-      lastMessagePreview: 'Alléluia ! On se voit à la veillée.',
-      time: 'Dim',
-    ),
-  ];
-
-  /// **Les groupes à rejoindre** — la rangée de découverte du hub « Échanges »,
-  /// un jeu **distinct** des [conversations] (on ne discute pas encore dedans).
-  static const List<DiscoverGroup> groupsToJoin = [
-    DiscoverGroup(
-      id: 'join-etude',
-      name: 'Étude biblique du mardi',
-      host: 'Pasteur Jonas',
-      imageUrl: 'https://picsum.photos/seed/etude-groupe/480/640',
-    ),
-    DiscoverGroup(
-      id: 'join-intercession',
-      name: 'Groupe d\'intercession',
-      host: 'Sœur Estelle',
-      imageUrl: 'https://picsum.photos/seed/intercession-groupe/480/640',
-    ),
-    DiscoverGroup(
-      id: 'join-jeunes-pros',
-      name: 'Jeunes professionnels',
-      host: 'Pasteur Mike',
-      imageUrl: 'https://picsum.photos/seed/jeunes-pros/480/640',
-    ),
-  ];
-
+  /// Avec [notes], c'est tout ce qui subsiste de `ChurchRepository`, et c'est une
+  /// décision explicite du cadrage de #96 (décision 10) : « on retire ce qui ne
+  /// peut pas être vrai, on garde ce qui le deviendra ». La route `/prayers` reste
+  /// servie et reste fictive — tout retirer aurait été plus net d'un `grep`, mais
+  /// aurait **retiré une fonctionnalité aux membres** pour une raison d'hygiène de
+  /// code.
+  ///
+  /// Le mur de prière existe côté serveur (`prayer_wall`, `partition: 'branch'`,
+  /// enregistré au registre de synchronisation) : il n'y a donc rien à inventer le
+  /// jour où on le branchera, seulement une table locale, un DAO et un repository
+  /// — le chemin qu'#96 vient de parcourir pour Échanges.
+  ///
+  /// ⚠️ **Rien de neuf ne doit s'y brancher.** Un écran adossé à cette fixture est
+  /// un écran qui se videra en production.
   static const List<PrayerRequest> prayers = [
     PrayerRequest(
       title: 'Pour ma famille',
@@ -919,26 +823,10 @@ abstract final class SampleData {
     'jean.kossi@email.com',
   ];
 
-  static const List<ChatMessage> chat = [
-    ChatMessage(
-        author: 'Système',
-        text: 'Réunion ce samedi à 16h au temple. Soyez tous présents !',
-        time: '10:30',
-        mine: false,
-        system: true),
-    ChatMessage(
-        author: 'Estelle',
-        text: 'Gloire à Dieu ! 🙌',
-        time: '10:32',
-        mine: false),
-    ChatMessage(
-        author: 'Moi',
-        text: 'N\'oublions pas d\'inviter nos amis.',
-        time: '10:34',
-        mine: true),
-    ChatMessage(
-        author: 'David', text: 'Alléluia 🙏', time: '10:36', mine: false),
-    ChatMessage(
-        author: 'Sarah', text: 'À samedi alors !', time: '10:38', mine: false),
-  ];
+  // Le fil fictif `chat` **a disparu** avec #96 : la messagerie de groupe est
+  // branchée, et son modèle de lecture est `GroupMessageView`
+  // (`models/echanges_view.dart`), dont l'origine se lit sur le couple
+  // `(authorId, isSystem)`. Une fixture à `author`/`time` déjà résolus ne pouvait
+  // pas porter les trois origines, et c'est précisément le cas qu'il fallait
+  // rendre visible.
 }

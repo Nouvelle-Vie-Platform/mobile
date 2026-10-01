@@ -5,15 +5,22 @@ Contrat écrit **avant** le branchement, comme `auth-contract.md` et
 d'un message** : ce qui distingue le message d'un membre, celui du serveur et
 celui d'un auteur dont le compte a été supprimé.
 
-> **Rien de ce document n'est branché aujourd'hui** (état au 12/08/2026). Le
-> modèle mobile de la messagerie est `ChatMessage` (`lib/models/models.dart`) :
-> un `author` en `String` — un nom d'affichage —, un `text`, une `time` déjà
-> formatée, un `mine` et un `system`. Il ne porte **ni `authorId` ni
-> `isSystem`**, `groups` et `group_messages` ne sont **pas** au registre du
-> moteur de synchronisation (`lib/data/sync/synced_collection.dart`), et
-> `groupsProvider` / `chatProvider` lisent encore `InMemoryChurchRepository`.
-> Ce document existe pour que le jour du branchement, la règle soit déjà écrite
-> — pas pour décrire un code qui l'applique.
+> **✅ Branché par #96** (état au 01/10/2026). Ce document décrivait un contrat
+> écrit d'avance ; il décrit désormais un code qui l'applique, et les paragraphes
+> ci-dessous ont été rectifiés en conséquence. Ce qui a changé :
+>
+> - `ChatMessage` (`author` en `String`, `time` déjà formatée) **a disparu**. Le
+>   modèle de lecture est `GroupMessageView` (`lib/models/echanges_view.dart`), qui
+>   porte `authorId`, et l'origine se lit par `messageOriginOf` — **le seul endroit
+>   de l'application qui interprète le couple** ;
+> - **cinq collections** sont au registre du moteur
+>   (`lib/data/sync/synced_collection.dart`) : `profiles`, `groups`,
+>   `group_members`, `group_join_requests`, `group_messages` ;
+> - `groupsProvider` / `chatProvider` ont disparu de
+>   `lib/state/repository_providers.dart`, qui ne porte plus que les prières et les
+>   notes — **le dernier reste fictif de l'application** ;
+> - le §6, point 1 (« le nom d'un auteur vivant ») **est levé** : la collection
+>   `profiles` existe. Voir la rectification sur place.
 
 ## 1. L'origine se lit sur le **couple**, jamais sur `authorId` seul
 
@@ -83,12 +90,31 @@ est une action de **supervision admin** (portail), avec son propre périmètre.
 La collection `groups` elle-même ne sert que `{ id, name, description,
 joinPolicy, ownerId, branchIds, … }` : pas de composition, pas de noms.
 
-Conséquence à regarder en face : **le mobile n'a aujourd'hui aucun moyen
-d'afficher le nom de l'auteur d'un message, retiré ou vivant.** ADR-0032 en tire
-la conclusion inverse de celle qu'on attend (« le mobile n'a donc aucun nom à
-remplacer ») — ce qui est vrai, et laisse entière la question de ce qu'affiche
-la ligne d'auteur d'un message de membre. Voir §6, point 1 : c'est un
-**prérequis de branchement**, pas un détail d'habillage.
+⚠️ **Ce paragraphe est périmé, et sa correction est la nouvelle du lot.** Il
+disait : « le mobile n'a aujourd'hui aucun moyen d'afficher le nom de l'auteur
+d'un message, retiré ou vivant », et il en faisait un **prérequis de
+branchement**.
+
+La collection **`profiles`** existe désormais (`app/sync/descriptors/
+profiles_descriptor.ts`), et c'est une **réversion assumée d'ADR-0029** côté
+serveur. Le compromis qui la justifie est son **périmètre** : jamais un annuaire
+ouvert, seulement les personnes que je **côtoie** — un profil `U` entre dans mon
+périmètre s'il existe un groupe où `U` et moi sommes tous deux membres actifs. Elle
+sert quatre clés et quatre seulement : `{ id, displayName, avatarUrl, updatedAt }`.
+
+Deux choses à savoir, et elles comptent à l'écran :
+
+- **`displayName` est nullable par contrat.** « Prénom Nom » élagué, à défaut le
+  titre, à défaut `null` — un compte qui n'a jamais rempli son profil n'a pas de
+  nom, et c'est courant. L'absence se rend comme une absence : jamais un
+  « Utilisateur inconnu », qui ressemblerait à une donnée ;
+- **`avatarUrl` est toujours `null`** aujourd'hui : `users` ne porte aucune colonne
+  d'avatar. Le repli est l'initiale, et pour un auteur retiré l'avatar **neutre**.
+
+Deux limites restent, assumées par le descripteur : un co-membre présent de longue
+date dont `users.updated_at` précède mon curseur peut ne pas voyager au moment où
+je rejoins son groupe ; et `profiles` **n'a pas de tombstone**, donc un profil sorti
+de mon périmètre subsiste — un nom périmé, et rien de plus.
 
 ## 3. Rendu — trois origines, deux axes orthogonaux
 
@@ -164,25 +190,36 @@ que ne rien dire.
 
 ## 6. Prérequis et questions ouvertes, côté serveur
 
-Aucune de ces trois n'est un détail d'habillage, et aucune n'est tranchée :
-
-1. **Le nom d'un auteur vivant.** Sans source d'identité de membre, la ligne
-   d'auteur d'un message de membre est vide, et « Membre retiré » serait alors
-   **la seule** ligne d'auteur du fil — l'auteur parti serait plus identifié que
-   les présents. Il faut une source (collection de synchronisation dédiée aux
-   membres des groupes dont je fais partie, ou endpoint `GET
-   /groups/:id/members` côté mobile) **avant** de peindre le fil. Le §3 reste
-   valable tel quel une fois cette source branchée.
+1. ~~**Le nom d'un auteur vivant.**~~ ✅ **Levé** par la collection `profiles`
+   (voir la rectification du §2). C'était le prérequis bloquant : sans source
+   d'identité, « Membre retiré » aurait été **la seule** ligne d'auteur du fil, et
+   l'auteur parti aurait été plus identifié que les présents. Le §3 est resté
+   valable mot pour mot, comme annoncé.
 2. **Les messages système arrivent en français en dur.** Le serveur les écrit
    comme prose (« Un nouveau membre a rejoint le groupe. »,
    `post_group_system_message.ts` et ses appelants), pas comme des clés à
    traduire. Un membre anglophone ou éwéphone les lira en français, et le mobile
    n'a rien pour y remédier — il ne peut pas traduire une phrase libre.
 3. **L'écriture** (`POST /groups/:id/messages`, idempotence par
-   `clientMessageId`, ADR-0018) et le **temps réel** (SSE/push) sont hors du
-   périmètre de ce document. Ils ne changent pas la règle du §1.
+   `clientMessageId`, ADR-0018) est branchée par #96 : écho optimiste, clé
+   d'idempotence **obligatoire** (un UUIDv7 frappé par le client), et rupture
+   assumée avec le composeur d'annonces — une conversation ne supporte pas
+   d'attendre le réseau. Voir `lib/data/repositories/group_message_composer.dart`.
+   Le **temps réel** (SSE/push) reste hors périmètre : le réveil push est de la
+   tranche 2, et le rattrapage par le moteur suffit. Ni l'un ni l'autre ne change la
+   règle du §1.
 
-## 7. Tests attendus au branchement
+## 7. Tests attendus au branchement — **écrits**
+
+> Les six cas ci-dessous existent. Les quatre premiers et le sixième vivent dans
+> `test/sync/echanges_collections_test.dart` (de bout en bout, par le moteur) et
+> `test/screens/group_chat_origins_test.dart` (le rendu). Le cinquième — la
+> transition — est dans le premier fichier, sous « Le détachement arrive sur une
+> ligne DÉJÀ STOCKÉE ». Les fixtures portent **un exemplaire de chaque ligne du
+> tableau**, l'auteur retiré compris (`test/helpers/sync_fixtures.dart`).
+>
+> La valeur du cas 4 a été **mesurée** : remplacer `messageOriginOf` par un
+> `authorId == null` fait rougir trois tests, et pas un de moins.
 
 Un test **par ligne du tableau du §1**, sur le rendu, plus le cas qui ne
 s'obtient qu'en deux temps :
@@ -222,3 +259,24 @@ porté par le magasin :
 
 `ChatInfoBanner`, `ChatBubble` et le reste de `widgets/chat/` restent : c'est ce
 qui **choisit** entre eux qui change, et c'est exactement le §1.
+
+> ✅ **Fait par #96, et à la lettre.** `GroupMessageView`
+> (`lib/models/echanges_view.dart`) porte `authorId` et `origin` ; `mine` se dérive
+> de la session ; `createdAt` est un **instant**, formaté à la vue
+> (`formatMessageTime`) ; et `author` a disparu — remplacé par `authorName`, qui
+> vient de `profiles` et peut légitimement manquer.
+>
+> Deux ajouts que ce paragraphe n'avait pas prévus, et qui se sont imposés :
+>
+> - **`MessageOrigin`**, un enum à trois valeurs, parce qu'un booléen `isSystem`
+>   stocké à côté d'un `authorId` nullable laisse le lecteur refaire le
+>   raisonnement à chaque site d'appel. `messageOriginOf` le fait une fois, et
+>   `origin.isBubble` est ce que l'écran lit ;
+> - **`MessageDelivery`**, parce que l'écho optimiste fait paraître un message
+>   avant qu'il soit parti, et qu'un envoi perdu doit le **dire** au lieu de rester
+>   « en cours » pour toujours.
+>
+> Et une garde structurelle de plus : `AppAvatar.neutral` est un constructeur
+> **sans paramètre `name`**. Le §5 avertissait de ne pas passer « Membre retiré » à
+> `AppAvatar(name:)` ; un avertissement se rate, une signature qui n'accepte pas de
+> nom ne se rate pas.

@@ -38,12 +38,20 @@ void main() {
     });
 
     testWidgets('GroupsScreen (Échanges) se monte', (tester) async {
+      // ⚠️ **Il se monte sur un magasin vide** (#96) : le hub ne lit plus
+      // `SampleData` mais `EchangesRepository`, dont `pumpScreen` pose un double
+      // vide par défaut. C'est l'état du premier lancement, et le monter ainsi est
+      // ce qui prouve qu'un magasin qui n'a rien reçu ne fait pas rougir l'écran.
       await pumpScreen(tester, const Scaffold(body: GroupsScreen()));
       expect(find.byType(GroupsScreen), findsOneWidget);
       // Le hub porte le titre « Échanges » dans son bandeau ; les onglets
       // pilules (« Inbox »…) ont disparu.
       expect(find.text('Échanges'), findsWidgets);
       expect(find.text('Inbox'), findsNothing);
+      // La pile d'avatars décorative est partie avec le fictif : « Estelle »,
+      // « David » et « Sarah » n'existaient pas, et la pastille « 5+ » ne comptait
+      // rien (décision 10 du cadrage).
+      expect(find.text('5+'), findsNothing);
     });
 
     testWidgets('ProfileScreen se monte', (tester) async {

@@ -158,10 +158,14 @@ const memberOnlyRoutes = <String>{
   '/prayers',
   '/new-request',
   '/requests',
-  // Échanges.
-  '/group-chat',
-  '/group-info',
-  '/member-profile',
+  // Échanges. ⚠️ **Les clés sont des motifs de route** (`GoRouterState.fullPath`),
+  // jamais des chemins concrets : depuis #96 ces trois-là portent un
+  // `pathParameter`, et `/group-chat/42` ne se reconnaîtrait pas dans
+  // `'/group-chat'`. La garde laisserait passer exactement l'écran qu'elle croit
+  // fermer.
+  '/group-chat/:id',
+  '/group-info/:id',
+  '/member-profile/:id',
   // La barrière de consentement.
   _legalGate,
 };
@@ -426,31 +430,32 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      // **L'identifiant, jamais l'objet** (#96). Les trois routes d'Échanges
+      // portaient un objet en `extra`, avec repli sur « la première
+      // conversation » en cas d'accès direct. Ce repli n'était pas un garde-fou :
+      // c'était l'aveu que `/group-chat` ne désignait **aucune** conversation en
+      // particulier, et il levait de toute façon dès que `SampleData` a disparu.
+      //
+      // Trois raisons de la bascule, dans l'ordre d'importance : un objet en
+      // `extra` est une copie figée hors du magasin, qui continuerait d'afficher
+      // un fil que la modération a retiré ; **un réveil push (tranche 2) et un
+      // lien profond n'ont qu'une chaîne à transmettre** ; et un identifiant est
+      // présent ou absent, il n'y a rien à quoi se replier — un identifiant qui ne
+      // résout rien n'est pas une erreur technique, c'est une absence, et ça
+      // s'affiche.
       GoRoute(
         name: AppRoute.groupChat,
-        path: '/group-chat',
-        builder: (_, state) {
-          // Domaine encore fictif : la conversation ciblée voyage par `extra`,
-          // avec repli sur la première en cas d'accès direct (legacy assumé —
-          // voir docs/refonte-echanges.md §5). Au branchement, ce sera un
-          // identifiant en `pathParameter`, résolu depuis le provider.
-          final conversation = state.extra as Conversation? ??
-              ref.read(conversationsProvider).first;
-          return AppBackground(
-            child: GroupChatScreen(conversation: conversation),
-          );
-        },
+        path: '/group-chat/:id',
+        builder: (_, state) => AppBackground(
+          child: GroupChatScreen(groupId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         name: AppRoute.groupInfo,
-        path: '/group-info',
-        builder: (_, state) {
-          // Domaine fictif : la conversation-groupe voyage par `extra`, repli
-          // sur la première conversation en cas d'accès direct.
-          final conversation = state.extra as Conversation? ??
-              ref.read(conversationsProvider).first;
-          return AppBackground(child: GroupInfoScreen(group: conversation));
-        },
+        path: '/group-info/:id',
+        builder: (_, state) => AppBackground(
+          child: GroupInfoScreen(groupId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         name: AppRoute.mediaViewer,
@@ -458,6 +463,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final args = state.extra as MediaViewerArgs? ??
               const MediaViewerArgs(urls: [], index: 0);
+          // ⚠️ **Plus aucun écran n'ouvre cette route depuis #96** : les médias
+          // partagés d'une fiche de groupe étaient des images inventées, et ils
+          // sont retirés jusqu'à la tranche 3, où ils seront **les images du
+          // fil** (décision 10 : « vide en 1, rempli en 3 »). La route, l'écran
+          // et leur configuration native restent en place — c'est la destination
+          // que la tranche 3 câblera, et la détruire pour la réécrire à
+          // l'identique ne gagnerait rien.
+          //
           // `onDownload` sera branché une fois le mécanisme de téléchargement
           // choisi (plugin d'enregistrement galerie / partage). Tant qu'il est
           // nul, la visionneuse ouvre les médias sans bouton télécharger.
@@ -466,14 +479,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         name: AppRoute.memberProfile,
-        path: '/member-profile',
-        builder: (_, state) {
-          // Profil-membre léger et fictif : le nom voyage par `extra`, repli sur
-          // le premier animateur d'un groupe à rejoindre en cas d'accès direct.
-          final name = state.extra as String? ??
-              ref.read(groupsToJoinProvider).first.host;
-          return AppBackground(child: MemberProfileScreen(memberName: name));
-        },
+        path: '/member-profile/:id',
+        builder: (_, state) => AppBackground(
+          child: MemberProfileScreen(memberId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         name: AppRoute.requests,

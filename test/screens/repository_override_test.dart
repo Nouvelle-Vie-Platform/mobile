@@ -1,56 +1,62 @@
+/// **Le hub « Échanges » affiche ce que son repository lui donne**, et rien
+/// d'autre.
+///
+/// ⚠️ Ce fichier testait l'injection d'un `ChurchRepository` fictif (#96 l'a vidé
+/// de ses groupes, de ses conversations et de son fil). Ce qu'il vérifie n'a pas
+/// changé — que l'écran lit bien sa source et non une fixture en dur —, mais la
+/// source a changé : c'est `EchangesRepository`, et il se pose par le **paramètre
+/// nommé** `echanges:` de `pumpScreen`, Riverpod 3 refusant deux surcharges du même
+/// provider.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:maison_du_miracle/data/repositories/church_repository.dart';
-import 'package:maison_du_miracle/models/models.dart';
+import 'package:maison_du_miracle/data/repositories/echanges_repository.dart';
+import 'package:maison_du_miracle/models/echanges_view.dart';
 import 'package:maison_du_miracle/screens/groups_screen.dart';
-import 'package:maison_du_miracle/state/repository_providers.dart';
 
 import '../helpers/pump_screen.dart';
 
-/// Faux repository renvoyant des données contrôlées par le test.
-class _FakeRepository implements ChurchRepository {
-  @override
-  List<CommunityGroup> groups() => const [];
-
-  @override
-  List<Conversation> conversations() => const [
-        Conversation(
-          id: 'conv-test',
-          kind: ConversationKind.group,
-          name: 'Groupe de Test',
-          lastMessagePreview: 'Bonjour',
-          time: '10:00',
-        ),
-      ];
-
-  @override
-  List<DiscoverGroup> groupsToJoin() => const [];
-
-  @override
-  List<PrayerRequest> prayers() => const [];
-
-  @override
-  List<SpiritualNote> notes() => const [];
-
-  @override
-  List<ChatMessage> chatFor(Conversation conversation) => const [];
-}
-
 void main() {
   testWidgets(
-    'GroupsScreen affiche les données du repository injecté',
+    'GroupsScreen affiche les conversations du repository injecté',
     (tester) async {
       await pumpScreen(
         tester,
         const Scaffold(body: GroupsScreen()),
-        overrides: [
-          churchRepositoryProvider.overrideWithValue(_FakeRepository()),
-        ],
+        echanges: InMemoryEchangesRepository(
+          conversations: const [
+            ConversationView(
+              groupId: 'g-test',
+              title: 'Groupe de Test',
+              isDirect: false,
+              memberCount: 4,
+              canWrite: true,
+              lastMessagePreview: 'Bonjour',
+            ),
+          ],
+        ),
       );
 
-      // La donnée provient du faux repository, pas des SampleData.
+      // La donnée provient du repository injecté.
       expect(find.text('Groupe de Test'), findsOneWidget);
+      expect(find.text('Bonjour'), findsOneWidget);
+      // Et plus aucune fixture ne traîne : « Jeunesse Nouvelle Vie » était l'un des
+      // quatre groupes que `SampleData` servait **en production**, sans condition.
       expect(find.textContaining('Jeunesse Nouvelle Vie'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'un magasin vide se dit, et n\'est pas une erreur',
+    (tester) async {
+      // L'état **le plus fréquent au premier lancement** : la synchronisation n'a
+      // pas encore ramené mes groupes. C'est une absence, et l'écran doit nommer le
+      // geste de rattrapage — le réveil push est de la tranche 2.
+      await pumpScreen(tester, const Scaffold(body: GroupsScreen()));
+
+      expect(find.text('Aucune conversation'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     },
   );
 }

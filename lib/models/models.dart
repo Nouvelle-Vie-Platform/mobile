@@ -354,102 +354,23 @@ class Teaching {
   final String description;
 }
 
-class CommunityGroup {
-  const CommunityGroup({
-    required this.name,
-    required this.members,
-    this.role,
-  });
-
-  final String name;
-  final int members;
-  final String? role;
-}
-
-/// Nature d'une [Conversation] du hub « Échanges ».
-///
-/// [group] = discussion à plusieurs (un groupe communautaire) ; [direct] = tête
-/// à tête (message privé). Le hub mélange les deux dans une **seule liste à
-/// plat**, sans les séparer — le discriminant ne sert qu'à l'habillage de la
-/// tuile (avatar de groupe vs. de personne) et jamais à trier.
-enum ConversationKind { group, direct }
-
-/// Une conversation du hub « Échanges » — **modèle de maquette**, fictif et
-/// synchrone (alimenté par `SampleData`, comme [ChatMessage]).
-///
-/// C'est l'unité de la liste d'inbox : groupes et messages privés y sont
-/// mélangés et triés par récence. [lastMessagePreview] et [time] sont **déjà
-/// résolus** (le serveur ne sert pas de texte pré-formaté ; ici il n'y a pas de
-/// serveur), à l'image de `ChatMessage.time`.
-///
-/// Au branchement, ce modèle recevra l'origine réelle de la conversation et un
-/// identifiant serveur ; aujourd'hui l'[id] est une chaîne écrite en dur dans la
-/// fixture, stable d'un lancement à l'autre.
-@immutable
-class Conversation {
-  const Conversation({
-    required this.id,
-    required this.kind,
-    required this.name,
-    required this.lastMessagePreview,
-    required this.time,
-    this.avatarUrl,
-    this.members = const [],
-    this.description,
-    this.sharedMedia = const [],
-  });
-
-  final String id;
-  final ConversationKind kind;
-  final String name;
-
-  /// URL d'avatar, `null` = repli sur les initiales ([AppAvatar]).
-  final String? avatarUrl;
-
-  /// Aperçu déjà tronqué du dernier message échangé.
-  final String lastMessagePreview;
-
-  /// Horodatage **déjà formaté** du dernier message (ex. « 10:38 »).
-  final String time;
-
-  /// Noms des membres — renseigné pour un [ConversationKind.group], vide pour un
-  /// message direct. **Modèle de maquette** : au branchement, le mobile n'aura
-  /// aucune collection d'utilisateurs (ADR-0029) et cette liste viendra d'une
-  /// autre source. Sert à peupler la liste des membres ouverte depuis le titre.
-  final List<String> members;
-
-  /// Description du groupe, affichée dans la fiche (façon Telegram). `null` pour
-  /// un message direct ou un groupe sans présentation.
-  final String? description;
-
-  /// URLs des médias partagés, aperçus dans la fiche du groupe. **Maquette**.
-  final List<String> sharedMedia;
-}
-
-/// Un groupe **à rejoindre** proposé dans la rangée de découverte du hub
-/// « Échanges » — **modèle de maquette**, distinct des [Conversation].
-///
-/// Il ne porte que ce que la carte de découverte affiche : un visuel, un nom et
-/// l'animateur. Volontairement séparé de [Conversation] : découvrir un groupe et
-/// discuter dedans sont deux gestes, et la maquette les range en deux rangées.
-@immutable
-class DiscoverGroup {
-  const DiscoverGroup({
-    required this.id,
-    required this.name,
-    required this.host,
-    this.imageUrl,
-  });
-
-  final String id;
-  final String name;
-
-  /// Nom de l'animateur du groupe.
-  final String host;
-
-  /// Visuel de couverture, `null` = repli coloré.
-  final String? imageUrl;
-}
+// ⚠️ **`CommunityGroup`, `Conversation`, `ConversationKind`, `DiscoverGroup` et
+// `ChatMessage` ont disparu avec #96.** C'étaient cinq modèles de **maquette** :
+// un effectif en dur, un `lastMessagePreview` déjà tronqué, une `time` déjà
+// formatée, un `author` qui était un nom d'affichage, un `mine` déjà comparé.
+//
+// Ils sont remplacés par des **modèles de lecture** portés par le magasin, dans
+// `models/echanges_view.dart` : `ConversationView`, `GroupMessageView`,
+// `GroupDetailView`, `GroupMemberView`, `DiscoverGroupView`, `MemberProfileView`.
+// Le formatage y vit dans la vue, comme partout — « ce que sert le back est une
+// **donnée**, jamais du texte pré-formaté ».
+//
+// `ChatMessage` méritait de partir pour une raison de plus, et c'est la plus
+// coûteuse : il portait `system` **sans** jumeau `authorId`, donc il ne pouvait
+// pas exprimer les trois origines d'un message. `(null, false)` — un auteur
+// retiré (ADR-0032) — n'avait aucune place où exister, et le cas n'était donc
+// montré à personne. `GroupMessageView.origin` le porte désormais, et
+// `messageOriginOf` est le seul endroit qui lit le couple.
 
 class PrayerRequest {
   const PrayerRequest({
@@ -473,52 +394,6 @@ class SpiritualNote {
   const SpiritualNote({required this.title, required this.preview});
   final String title;
   final String preview;
-}
-
-/// Message d'une discussion de groupe — **modèle de maquette**, alimenté par
-/// `SampleData` (voir `docs/messagerie-groupe.md`, qui tient le contrat de
-/// branchement).
-///
-/// Il porte des valeurs déjà résolues que le serveur ne sert pas : [author] est
-/// un nom d'affichage (aucune identité de membre ne circule — il n'existe pas
-/// de collection de synchronisation `users`, ADR-0029), [time] une chaîne déjà
-/// formatée, [mine] une comparaison déjà faite.
-///
-/// **La règle à ne pas rater au branchement.** Le serveur sert `authorId`
-/// (uuid nullable) et `isSystem`, et l'origine d'un message se lit sur le
-/// **couple**, jamais sur `authorId` seul :
-///
-/// | `authorId` | `isSystem` | origine |
-/// | --- | --- | --- |
-/// | uuid | `false` | un membre |
-/// | `null` | `true` | message **système**, émis par le serveur |
-/// | `null` | `false` | **auteur retiré** — compte supprimé (ADR-0032) |
-///
-/// Le nul avait un seul sens jusqu'à la suppression de compte
-/// (`miracle-house-server#128`) : `null` = message système. Il en a deux
-/// depuis. Un client qui teste `authorId == null` pour décider « c'est un
-/// message système » affiche les messages d'un membre parti comme des annonces
-/// du serveur — centrés, en gris, sans bulle. Rien ne plante, aucun test ne
-/// rougit.
-///
-/// [system] est donc le futur `isSystem` — il ne se déduit pas d'un auteur
-/// absent — et il n'a **pas** de champ jumeau ici : la maquette n'a pas de cas
-/// « auteur retiré », et en fabriquer un sans donnée serveur derrière donnerait
-/// un écran qui marche sur les fixtures et se vide en production.
-class ChatMessage {
-  const ChatMessage({
-    required this.author,
-    required this.text,
-    required this.time,
-    required this.mine,
-    this.system = false,
-  });
-
-  final String author;
-  final String text;
-  final String time;
-  final bool mine;
-  final bool system;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -333,6 +333,45 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get chatAuthorRemoved => 'Membre retiré';
+
+  @override
+  String get chatReadOnly =>
+      'Seuls les animateurs peuvent écrire dans ce groupe.';
+
+  @override
+  String get chatEmpty =>
+      'Aucun message pour l\'instant. Soyez le premier à écrire.';
+
+  @override
+  String get echangesEmptyTitle => 'Aucune conversation';
+
+  @override
+  String get echangesEmpty =>
+      'Vos groupes et discussions apparaîtront ici. Tirez vers le bas pour rafraîchir.';
+
+  @override
+  String get echangesLoadError => 'Impossible de lire vos conversations.';
+
+  @override
+  String get echangesJoinOpen => 'Ouvert à tous';
+
+  @override
+  String get echangesJoinOnRequest => 'Sur demande';
+
+  @override
+  String get echangesJoinPending => 'Demande envoyée';
+
+  @override
+  String get groupRoleLeader => 'Animateur';
+
+  @override
+  String get groupRoleModerator => 'Modérateur';
+
+  @override
+  String get groupRoleMember => 'Membre';
+
+  @override
   String get chatMessageHint => 'Votre message...';
 
   @override
