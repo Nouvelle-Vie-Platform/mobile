@@ -154,6 +154,7 @@ void main() {
           'legal_documents',
           'seasons',
           'presentation_vocabulary',
+          'menu_entries',
           'auth_channels',
           'device_settings',
           'decor',
@@ -225,6 +226,23 @@ void main() {
       );
       expect(
         keys.indexOf('presentation_vocabulary'),
+        lessThan(keys.indexOf('announcements')),
+      );
+      // Les **entrées de menu** (#82) se rangent juste après le vocabulaire, et
+      // avant tout contenu : c'est le menu qui dit quels onglets existent et ce
+      // que chacun filtre, donc il doit arriver **avant les listes qu'il
+      // intitule** — sinon la médiathèque s'ouvre une fois sans aucun onglet,
+      // puis en pousse quatre sous les yeux du fidèle.
+      expect(
+        keys.indexOf('menu_entries'),
+        lessThan(keys.indexOf('teachings')),
+      );
+      expect(
+        keys.indexOf('menu_entries'),
+        lessThan(keys.indexOf('gatherings')),
+      );
+      expect(
+        keys.indexOf('menu_entries'),
         lessThan(keys.indexOf('announcements')),
       );
       // Les canaux de connexion se rangent avec les référentiels eux aussi, et

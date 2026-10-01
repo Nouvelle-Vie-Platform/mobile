@@ -9559,6 +9559,1622 @@ class PresentationVocabularyCompanion extends UpdateCompanion<VocabularyRow> {
   }
 }
 
+class $MenuEntriesTable extends MenuEntries
+    with TableInfo<$MenuEntriesTable, MenuEntryRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MenuEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _parentIdMeta =
+      const VerificationMeta('parentId');
+  @override
+  late final GeneratedColumn<int> parentId = GeneratedColumn<int>(
+      'parent_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _labelKeyMeta =
+      const VerificationMeta('labelKey');
+  @override
+  late final GeneratedColumn<String> labelKey = GeneratedColumn<String>(
+      'label_key', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      label = GeneratedColumn<String>('label', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<Map<String, String>?>(
+              $MenuEntriesTable.$converterlabeln);
+  static const VerificationMeta _iconMeta = const VerificationMeta('icon');
+  @override
+  late final GeneratedColumn<String> icon = GeneratedColumn<String>(
+      'icon', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _featuredMeta =
+      const VerificationMeta('featured');
+  @override
+  late final GeneratedColumn<bool> featured = GeneratedColumn<bool>(
+      'featured', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("featured" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _dividedMeta =
+      const VerificationMeta('divided');
+  @override
+  late final GeneratedColumn<bool> divided = GeneratedColumn<bool>(
+      'divided', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("divided" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _destinationKindMeta =
+      const VerificationMeta('destinationKind');
+  @override
+  late final GeneratedColumn<String> destinationKind = GeneratedColumn<String>(
+      'destination_kind', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _destinationPageMeta =
+      const VerificationMeta('destinationPage');
+  @override
+  late final GeneratedColumn<String> destinationPage = GeneratedColumn<String>(
+      'destination_page', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationFamilyMeta =
+      const VerificationMeta('destinationFamily');
+  @override
+  late final GeneratedColumn<String> destinationFamily =
+      GeneratedColumn<String>('destination_family', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationRubricMeta =
+      const VerificationMeta('destinationRubric');
+  @override
+  late final GeneratedColumn<String> destinationRubric =
+      GeneratedColumn<String>('destination_rubric', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationBranchMeta =
+      const VerificationMeta('destinationBranch');
+  @override
+  late final GeneratedColumn<String> destinationBranch =
+      GeneratedColumn<String>('destination_branch', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationSearchMeta =
+      const VerificationMeta('destinationSearch');
+  @override
+  late final GeneratedColumn<String> destinationSearch =
+      GeneratedColumn<String>('destination_search', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationSeriesIdMeta =
+      const VerificationMeta('destinationSeriesId');
+  @override
+  late final GeneratedColumn<String> destinationSeriesId =
+      GeneratedColumn<String>('destination_series_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationContributorIdMeta =
+      const VerificationMeta('destinationContributorId');
+  @override
+  late final GeneratedColumn<int> destinationContributorId =
+      GeneratedColumn<int>('destination_contributor_id', aliasedName, true,
+          type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _destinationUrlMeta =
+      const VerificationMeta('destinationUrl');
+  @override
+  late final GeneratedColumn<String> destinationUrl = GeneratedColumn<String>(
+      'destination_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _filterRubricMeta =
+      const VerificationMeta('filterRubric');
+  @override
+  late final GeneratedColumn<bool> filterRubric = GeneratedColumn<bool>(
+      'filter_rubric', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("filter_rubric" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _filterBranchMeta =
+      const VerificationMeta('filterBranch');
+  @override
+  late final GeneratedColumn<bool> filterBranch = GeneratedColumn<bool>(
+      'filter_branch', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("filter_branch" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _filterFamilyMeta =
+      const VerificationMeta('filterFamily');
+  @override
+  late final GeneratedColumn<bool> filterFamily = GeneratedColumn<bool>(
+      'filter_family', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("filter_family" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _filterSearchMeta =
+      const VerificationMeta('filterSearch');
+  @override
+  late final GeneratedColumn<bool> filterSearch = GeneratedColumn<bool>(
+      'filter_search', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("filter_search" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _mediaVisibleMeta =
+      const VerificationMeta('mediaVisible');
+  @override
+  late final GeneratedColumn<bool> mediaVisible = GeneratedColumn<bool>(
+      'media_visible', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("media_visible" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _mediaPositionMeta =
+      const VerificationMeta('mediaPosition');
+  @override
+  late final GeneratedColumn<int> mediaPosition = GeneratedColumn<int>(
+      'media_position', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _homeVisibleMeta =
+      const VerificationMeta('homeVisible');
+  @override
+  late final GeneratedColumn<bool> homeVisible = GeneratedColumn<bool>(
+      'home_visible', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("home_visible" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _homePositionMeta =
+      const VerificationMeta('homePosition');
+  @override
+  late final GeneratedColumn<int> homePosition = GeneratedColumn<int>(
+      'home_position', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _homeLayoutMeta =
+      const VerificationMeta('homeLayout');
+  @override
+  late final GeneratedColumn<String> homeLayout = GeneratedColumn<String>(
+      'home_layout', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _publishedFromMeta =
+      const VerificationMeta('publishedFrom');
+  @override
+  late final GeneratedColumn<DateTime> publishedFrom =
+      GeneratedColumn<DateTime>('published_from', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _publishedUntilMeta =
+      const VerificationMeta('publishedUntil');
+  @override
+  late final GeneratedColumn<DateTime> publishedUntil =
+      GeneratedColumn<DateTime>('published_until', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      pageTitle = GeneratedColumn<String>('page_title', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<Map<String, String>?>(
+              $MenuEntriesTable.$converterpageTitlen);
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      pageDescription = GeneratedColumn<String>(
+              'page_description', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<Map<String, String>?>(
+              $MenuEntriesTable.$converterpageDescriptionn);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        parentId,
+        labelKey,
+        label,
+        icon,
+        featured,
+        divided,
+        destinationKind,
+        destinationPage,
+        destinationFamily,
+        destinationRubric,
+        destinationBranch,
+        destinationSearch,
+        destinationSeriesId,
+        destinationContributorId,
+        destinationUrl,
+        filterRubric,
+        filterBranch,
+        filterFamily,
+        filterSearch,
+        mediaVisible,
+        mediaPosition,
+        homeVisible,
+        homePosition,
+        homeLayout,
+        publishedFrom,
+        publishedUntil,
+        pageTitle,
+        pageDescription,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'menu_entries';
+  @override
+  VerificationContext validateIntegrity(Insertable<MenuEntryRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('parent_id')) {
+      context.handle(_parentIdMeta,
+          parentId.isAcceptableOrUnknown(data['parent_id']!, _parentIdMeta));
+    }
+    if (data.containsKey('label_key')) {
+      context.handle(_labelKeyMeta,
+          labelKey.isAcceptableOrUnknown(data['label_key']!, _labelKeyMeta));
+    }
+    if (data.containsKey('icon')) {
+      context.handle(
+          _iconMeta, icon.isAcceptableOrUnknown(data['icon']!, _iconMeta));
+    }
+    if (data.containsKey('featured')) {
+      context.handle(_featuredMeta,
+          featured.isAcceptableOrUnknown(data['featured']!, _featuredMeta));
+    }
+    if (data.containsKey('divided')) {
+      context.handle(_dividedMeta,
+          divided.isAcceptableOrUnknown(data['divided']!, _dividedMeta));
+    }
+    if (data.containsKey('destination_kind')) {
+      context.handle(
+          _destinationKindMeta,
+          destinationKind.isAcceptableOrUnknown(
+              data['destination_kind']!, _destinationKindMeta));
+    } else if (isInserting) {
+      context.missing(_destinationKindMeta);
+    }
+    if (data.containsKey('destination_page')) {
+      context.handle(
+          _destinationPageMeta,
+          destinationPage.isAcceptableOrUnknown(
+              data['destination_page']!, _destinationPageMeta));
+    }
+    if (data.containsKey('destination_family')) {
+      context.handle(
+          _destinationFamilyMeta,
+          destinationFamily.isAcceptableOrUnknown(
+              data['destination_family']!, _destinationFamilyMeta));
+    }
+    if (data.containsKey('destination_rubric')) {
+      context.handle(
+          _destinationRubricMeta,
+          destinationRubric.isAcceptableOrUnknown(
+              data['destination_rubric']!, _destinationRubricMeta));
+    }
+    if (data.containsKey('destination_branch')) {
+      context.handle(
+          _destinationBranchMeta,
+          destinationBranch.isAcceptableOrUnknown(
+              data['destination_branch']!, _destinationBranchMeta));
+    }
+    if (data.containsKey('destination_search')) {
+      context.handle(
+          _destinationSearchMeta,
+          destinationSearch.isAcceptableOrUnknown(
+              data['destination_search']!, _destinationSearchMeta));
+    }
+    if (data.containsKey('destination_series_id')) {
+      context.handle(
+          _destinationSeriesIdMeta,
+          destinationSeriesId.isAcceptableOrUnknown(
+              data['destination_series_id']!, _destinationSeriesIdMeta));
+    }
+    if (data.containsKey('destination_contributor_id')) {
+      context.handle(
+          _destinationContributorIdMeta,
+          destinationContributorId.isAcceptableOrUnknown(
+              data['destination_contributor_id']!,
+              _destinationContributorIdMeta));
+    }
+    if (data.containsKey('destination_url')) {
+      context.handle(
+          _destinationUrlMeta,
+          destinationUrl.isAcceptableOrUnknown(
+              data['destination_url']!, _destinationUrlMeta));
+    }
+    if (data.containsKey('filter_rubric')) {
+      context.handle(
+          _filterRubricMeta,
+          filterRubric.isAcceptableOrUnknown(
+              data['filter_rubric']!, _filterRubricMeta));
+    }
+    if (data.containsKey('filter_branch')) {
+      context.handle(
+          _filterBranchMeta,
+          filterBranch.isAcceptableOrUnknown(
+              data['filter_branch']!, _filterBranchMeta));
+    }
+    if (data.containsKey('filter_family')) {
+      context.handle(
+          _filterFamilyMeta,
+          filterFamily.isAcceptableOrUnknown(
+              data['filter_family']!, _filterFamilyMeta));
+    }
+    if (data.containsKey('filter_search')) {
+      context.handle(
+          _filterSearchMeta,
+          filterSearch.isAcceptableOrUnknown(
+              data['filter_search']!, _filterSearchMeta));
+    }
+    if (data.containsKey('media_visible')) {
+      context.handle(
+          _mediaVisibleMeta,
+          mediaVisible.isAcceptableOrUnknown(
+              data['media_visible']!, _mediaVisibleMeta));
+    }
+    if (data.containsKey('media_position')) {
+      context.handle(
+          _mediaPositionMeta,
+          mediaPosition.isAcceptableOrUnknown(
+              data['media_position']!, _mediaPositionMeta));
+    }
+    if (data.containsKey('home_visible')) {
+      context.handle(
+          _homeVisibleMeta,
+          homeVisible.isAcceptableOrUnknown(
+              data['home_visible']!, _homeVisibleMeta));
+    }
+    if (data.containsKey('home_position')) {
+      context.handle(
+          _homePositionMeta,
+          homePosition.isAcceptableOrUnknown(
+              data['home_position']!, _homePositionMeta));
+    }
+    if (data.containsKey('home_layout')) {
+      context.handle(
+          _homeLayoutMeta,
+          homeLayout.isAcceptableOrUnknown(
+              data['home_layout']!, _homeLayoutMeta));
+    }
+    if (data.containsKey('published_from')) {
+      context.handle(
+          _publishedFromMeta,
+          publishedFrom.isAcceptableOrUnknown(
+              data['published_from']!, _publishedFromMeta));
+    }
+    if (data.containsKey('published_until')) {
+      context.handle(
+          _publishedUntilMeta,
+          publishedUntil.isAcceptableOrUnknown(
+              data['published_until']!, _publishedUntilMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MenuEntryRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MenuEntryRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      parentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}parent_id']),
+      labelKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label_key']),
+      label: $MenuEntriesTable.$converterlabeln.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label'])),
+      icon: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}icon']),
+      featured: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}featured'])!,
+      divided: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}divided'])!,
+      destinationKind: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_kind'])!,
+      destinationPage: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_page']),
+      destinationFamily: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_family']),
+      destinationRubric: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_rubric']),
+      destinationBranch: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_branch']),
+      destinationSearch: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_search']),
+      destinationSeriesId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_series_id']),
+      destinationContributorId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}destination_contributor_id']),
+      destinationUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}destination_url']),
+      filterRubric: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}filter_rubric'])!,
+      filterBranch: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}filter_branch'])!,
+      filterFamily: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}filter_family'])!,
+      filterSearch: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}filter_search'])!,
+      mediaVisible: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}media_visible'])!,
+      mediaPosition: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}media_position'])!,
+      homeVisible: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}home_visible'])!,
+      homePosition: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}home_position'])!,
+      homeLayout: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}home_layout']),
+      publishedFrom: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}published_from']),
+      publishedUntil: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}published_until']),
+      pageTitle: $MenuEntriesTable.$converterpageTitlen.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}page_title'])),
+      pageDescription: $MenuEntriesTable.$converterpageDescriptionn.fromSql(
+          attachedDatabase.typeMapping.read(
+              DriftSqlType.string, data['${effectivePrefix}page_description'])),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $MenuEntriesTable createAlias(String alias) {
+    return $MenuEntriesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Map<String, String>, String> $converterlabel =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>?, String?> $converterlabeln =
+      NullAwareTypeConverter.wrap($converterlabel);
+  static TypeConverter<Map<String, String>, String> $converterpageTitle =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>?, String?> $converterpageTitlen =
+      NullAwareTypeConverter.wrap($converterpageTitle);
+  static TypeConverter<Map<String, String>, String> $converterpageDescription =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>?, String?>
+      $converterpageDescriptionn =
+      NullAwareTypeConverter.wrap($converterpageDescription);
+}
+
+class MenuEntryRow extends DataClass implements Insertable<MenuEntryRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// PK **SERIAL** côté serveur, donc un `id` numérique dans le curseur
+  /// composé — contrairement à `presentation_vocabulary`, dont la clé est
+  /// textuelle.
+  final int id;
+
+  /// Le parent d'une sous-entrée, ou `null`. **Un entier nu, sans contrainte** :
+  /// voir l'en-tête du fichier.
+  ///
+  /// La profondeur est bornée à un niveau côté serveur (`SaveMenu`), pas par le
+  /// schéma. Le client n'a pas à la rejouer : il range les enfants sous leur
+  /// parent et ignore un orphelin.
+  final int? parentId;
+
+  /// La clé de traduction du dépôt — une clé `.arb` ici —, ou `null`.
+  ///
+  /// **Indissociable de [label]** : `label = null` ne veut pas dire « pas de
+  /// libellé », mais « le libellé du dépôt », c'est-à-dire la traduction que
+  /// porte cette clé. Les sept entrées reprises de l'ancienne barre arrivent
+  /// ainsi, et c'est ce qui leur fait suivre les corrections du dépôt sans que
+  /// personne rouvre l'écran d'administration.
+  final String? labelKey;
+
+  /// La **surcharge** du libellé, carte de traduction entière (ADR-0023).
+  /// `null` = le libellé du dépôt, porté par [labelKey].
+  final Map<String, String>? label;
+
+  /// Un nom d'icône du kit, ou `null`. Stocké tel quel : le kit du portail
+  /// (`lucide`) n'est pas celui de l'application, et c'est à l'affichage de
+  /// faire ce qu'il peut d'un nom inconnu.
+  final String? icon;
+
+  /// La mise en avant (bouton d'accent) et le filet séparateur. Deux
+  /// décorations que le portail règle et dont chaque surface fait ce qu'elle
+  /// peut : décider **ici** qu'une décoration n'est pas rendable serait la même
+  /// faute que filtrer les destinations.
+  final bool featured;
+  final bool divided;
+
+  /// `page` · `catalogue` · `theme` · `intervenant` · `externe`, **en chaîne
+  /// libre**. Un type que ce binaire ne connaît pas fait disparaître l'entrée,
+  /// en silence et sans repli (décision 13).
+  final String destinationKind;
+
+  /// `page` : `accueil` · `contact` · `themes` · `rencontres` · `mediatheque`.
+  /// Une clé **métier**, jamais un chemin : c'est la surface qui la traduit.
+  final String? destinationPage;
+
+  /// `catalogue` : `teaching` ou `gathering` — **quelle collection lire**.
+  ///
+  /// Ce n'est pas l'étiquette d'une ligne de contenu (ADR-0026 décision 1
+  /// l'interdit, et le serveur ne sert toujours pas `teachings.family`) : c'est
+  /// une part de l'**intention** de l'entrée, et c'est précisément ce qui
+  /// apprend au client par quel canal remplir son onglet.
+  final String? destinationFamily;
+
+  /// `catalogue` : le **slug** d'une rubrique, ou `null` — le catalogue entier.
+  ///
+  /// Un slug, **jamais un `id`** : c'est ce que porte l'URL publique, et c'est ce
+  /// que le client retrouve sur ses lignes de `teaching_types` /
+  /// `gathering_types`.
+  final String? destinationRubric;
+
+  /// `catalogue` : le **slug** d'une branche, ou `null`.
+  ///
+  /// ⚠️ **Ce client ne sait pas le résoudre aujourd'hui**, et ce n'est pas un
+  /// oubli de cette tranche : `BranchTransformer` ne sert pas de slug au flux
+  /// delta (`id`, `name` composé, `city`, et rien d'autre), donc la copie locale
+  /// de `branches` n'en porte aucun. Une entrée qui exige une branche ne trouve
+  /// donc aucune ligne, et « pas de contenu, pas de section » la retire — ce qui
+  /// est le bon sens de la panne : mieux vaut une entrée absente qu'un onglet
+  /// « Aného » qui montrerait le catalogue entier.
+  final String? destinationBranch;
+
+  /// `catalogue` : une recherche figée, ou `null`. Elle se **compose** avec ce
+  /// que la loupe de l'écran saisit : l'entrée borne, le fidèle affine.
+  final String? destinationSearch;
+
+  /// `theme` : la série visée (UUID côté serveur).
+  ///
+  /// Aucune collection de séries n'est répliquée ici, donc aucune entrée de ce
+  /// type ne se rend : la colonne existe parce qu'on stocke ce que le serveur
+  /// envoie, pas parce que l'écran saurait quoi en faire.
+  final String? destinationSeriesId;
+
+  /// `intervenant` : la fiche visée. Même remarque que [destinationSeriesId] —
+  /// il n'existe pas d'écran d'intervenant sur ce client.
+  final int? destinationContributorId;
+
+  /// `externe` : l'adresse `http(s)` saisie au portail. **Le seul chemin que le
+  /// dépôt ne compose pas**, et le seul que personne ne peut promettre.
+  final String? destinationUrl;
+
+  /// Les quatre puces que l'entrée offre au visiteur. La case « recherche »
+  /// attendait la loupe de cet écran.
+  final bool filterRubric;
+  final bool filterBranch;
+  final bool filterFamily;
+  final bool filterSearch;
+
+  /// La surface « médiathèque mobile » : paraître ou non, et à quel rang.
+  ///
+  /// ⚠️ **[mediaPosition] est un ordre relatif, jamais un numéro stable** :
+  /// `SaveMenu` renumérote `1..n` par surface à chaque enregistrement. Rien ne
+  /// doit figer une valeur — ni un écran, ni un test.
+  final bool mediaVisible;
+  final int mediaPosition;
+
+  /// La surface « accueil mobile », son rang, et son **gabarit** —
+  /// `hero` · `carousel` · `list`, `null` hors de cette surface. Chaîne libre,
+  /// comme `teaching_types.layout` : un gabarit inconnu se replie à
+  /// l'affichage.
+  final bool homeVisible;
+  final int homePosition;
+  final String? homeLayout;
+
+  /// La fenêtre de publication, bornes **indépendantes et facultatives**,
+  /// servies brutes.
+  ///
+  /// ⚠️ Des **instants**, pas des jours — contrairement aux deux bornes de
+  /// `seasons`, qui sont des chaînes `YYYY-MM-DD` comparées comme des chaînes.
+  /// Ici le serveur sert des `timestamp` et `ReadMenu` les compare à l'heure
+  /// courante : la comparaison du client se fait donc à `DateTime.now()`.
+  final DateTime? publishedFrom;
+  final DateTime? publishedUntil;
+
+  /// Le lot éditorial **de la page** que l'entrée désigne — pas celui du
+  /// partage, qui ne descend pas. Deux cartes de traduction entières, comme
+  /// [label], et `null` = ce que l'écran compose déjà.
+  final Map<String, String>? pageTitle;
+  final Map<String, String>? pageDescription;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const MenuEntryRow(
+      {required this.syncStamp,
+      required this.id,
+      this.parentId,
+      this.labelKey,
+      this.label,
+      this.icon,
+      required this.featured,
+      required this.divided,
+      required this.destinationKind,
+      this.destinationPage,
+      this.destinationFamily,
+      this.destinationRubric,
+      this.destinationBranch,
+      this.destinationSearch,
+      this.destinationSeriesId,
+      this.destinationContributorId,
+      this.destinationUrl,
+      required this.filterRubric,
+      required this.filterBranch,
+      required this.filterFamily,
+      required this.filterSearch,
+      required this.mediaVisible,
+      required this.mediaPosition,
+      required this.homeVisible,
+      required this.homePosition,
+      this.homeLayout,
+      this.publishedFrom,
+      this.publishedUntil,
+      this.pageTitle,
+      this.pageDescription,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || parentId != null) {
+      map['parent_id'] = Variable<int>(parentId);
+    }
+    if (!nullToAbsent || labelKey != null) {
+      map['label_key'] = Variable<String>(labelKey);
+    }
+    if (!nullToAbsent || label != null) {
+      map['label'] =
+          Variable<String>($MenuEntriesTable.$converterlabeln.toSql(label));
+    }
+    if (!nullToAbsent || icon != null) {
+      map['icon'] = Variable<String>(icon);
+    }
+    map['featured'] = Variable<bool>(featured);
+    map['divided'] = Variable<bool>(divided);
+    map['destination_kind'] = Variable<String>(destinationKind);
+    if (!nullToAbsent || destinationPage != null) {
+      map['destination_page'] = Variable<String>(destinationPage);
+    }
+    if (!nullToAbsent || destinationFamily != null) {
+      map['destination_family'] = Variable<String>(destinationFamily);
+    }
+    if (!nullToAbsent || destinationRubric != null) {
+      map['destination_rubric'] = Variable<String>(destinationRubric);
+    }
+    if (!nullToAbsent || destinationBranch != null) {
+      map['destination_branch'] = Variable<String>(destinationBranch);
+    }
+    if (!nullToAbsent || destinationSearch != null) {
+      map['destination_search'] = Variable<String>(destinationSearch);
+    }
+    if (!nullToAbsent || destinationSeriesId != null) {
+      map['destination_series_id'] = Variable<String>(destinationSeriesId);
+    }
+    if (!nullToAbsent || destinationContributorId != null) {
+      map['destination_contributor_id'] =
+          Variable<int>(destinationContributorId);
+    }
+    if (!nullToAbsent || destinationUrl != null) {
+      map['destination_url'] = Variable<String>(destinationUrl);
+    }
+    map['filter_rubric'] = Variable<bool>(filterRubric);
+    map['filter_branch'] = Variable<bool>(filterBranch);
+    map['filter_family'] = Variable<bool>(filterFamily);
+    map['filter_search'] = Variable<bool>(filterSearch);
+    map['media_visible'] = Variable<bool>(mediaVisible);
+    map['media_position'] = Variable<int>(mediaPosition);
+    map['home_visible'] = Variable<bool>(homeVisible);
+    map['home_position'] = Variable<int>(homePosition);
+    if (!nullToAbsent || homeLayout != null) {
+      map['home_layout'] = Variable<String>(homeLayout);
+    }
+    if (!nullToAbsent || publishedFrom != null) {
+      map['published_from'] = Variable<DateTime>(publishedFrom);
+    }
+    if (!nullToAbsent || publishedUntil != null) {
+      map['published_until'] = Variable<DateTime>(publishedUntil);
+    }
+    if (!nullToAbsent || pageTitle != null) {
+      map['page_title'] = Variable<String>(
+          $MenuEntriesTable.$converterpageTitlen.toSql(pageTitle));
+    }
+    if (!nullToAbsent || pageDescription != null) {
+      map['page_description'] = Variable<String>(
+          $MenuEntriesTable.$converterpageDescriptionn.toSql(pageDescription));
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  MenuEntriesCompanion toCompanion(bool nullToAbsent) {
+    return MenuEntriesCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      parentId: parentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentId),
+      labelKey: labelKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(labelKey),
+      label:
+          label == null && nullToAbsent ? const Value.absent() : Value(label),
+      icon: icon == null && nullToAbsent ? const Value.absent() : Value(icon),
+      featured: Value(featured),
+      divided: Value(divided),
+      destinationKind: Value(destinationKind),
+      destinationPage: destinationPage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationPage),
+      destinationFamily: destinationFamily == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationFamily),
+      destinationRubric: destinationRubric == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationRubric),
+      destinationBranch: destinationBranch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationBranch),
+      destinationSearch: destinationSearch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationSearch),
+      destinationSeriesId: destinationSeriesId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationSeriesId),
+      destinationContributorId: destinationContributorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationContributorId),
+      destinationUrl: destinationUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationUrl),
+      filterRubric: Value(filterRubric),
+      filterBranch: Value(filterBranch),
+      filterFamily: Value(filterFamily),
+      filterSearch: Value(filterSearch),
+      mediaVisible: Value(mediaVisible),
+      mediaPosition: Value(mediaPosition),
+      homeVisible: Value(homeVisible),
+      homePosition: Value(homePosition),
+      homeLayout: homeLayout == null && nullToAbsent
+          ? const Value.absent()
+          : Value(homeLayout),
+      publishedFrom: publishedFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publishedFrom),
+      publishedUntil: publishedUntil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publishedUntil),
+      pageTitle: pageTitle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pageTitle),
+      pageDescription: pageDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pageDescription),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory MenuEntryRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MenuEntryRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      parentId: serializer.fromJson<int?>(json['parentId']),
+      labelKey: serializer.fromJson<String?>(json['labelKey']),
+      label: serializer.fromJson<Map<String, String>?>(json['label']),
+      icon: serializer.fromJson<String?>(json['icon']),
+      featured: serializer.fromJson<bool>(json['featured']),
+      divided: serializer.fromJson<bool>(json['divided']),
+      destinationKind: serializer.fromJson<String>(json['destinationKind']),
+      destinationPage: serializer.fromJson<String?>(json['destinationPage']),
+      destinationFamily:
+          serializer.fromJson<String?>(json['destinationFamily']),
+      destinationRubric:
+          serializer.fromJson<String?>(json['destinationRubric']),
+      destinationBranch:
+          serializer.fromJson<String?>(json['destinationBranch']),
+      destinationSearch:
+          serializer.fromJson<String?>(json['destinationSearch']),
+      destinationSeriesId:
+          serializer.fromJson<String?>(json['destinationSeriesId']),
+      destinationContributorId:
+          serializer.fromJson<int?>(json['destinationContributorId']),
+      destinationUrl: serializer.fromJson<String?>(json['destinationUrl']),
+      filterRubric: serializer.fromJson<bool>(json['filterRubric']),
+      filterBranch: serializer.fromJson<bool>(json['filterBranch']),
+      filterFamily: serializer.fromJson<bool>(json['filterFamily']),
+      filterSearch: serializer.fromJson<bool>(json['filterSearch']),
+      mediaVisible: serializer.fromJson<bool>(json['mediaVisible']),
+      mediaPosition: serializer.fromJson<int>(json['mediaPosition']),
+      homeVisible: serializer.fromJson<bool>(json['homeVisible']),
+      homePosition: serializer.fromJson<int>(json['homePosition']),
+      homeLayout: serializer.fromJson<String?>(json['homeLayout']),
+      publishedFrom: serializer.fromJson<DateTime?>(json['publishedFrom']),
+      publishedUntil: serializer.fromJson<DateTime?>(json['publishedUntil']),
+      pageTitle: serializer.fromJson<Map<String, String>?>(json['pageTitle']),
+      pageDescription:
+          serializer.fromJson<Map<String, String>?>(json['pageDescription']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'parentId': serializer.toJson<int?>(parentId),
+      'labelKey': serializer.toJson<String?>(labelKey),
+      'label': serializer.toJson<Map<String, String>?>(label),
+      'icon': serializer.toJson<String?>(icon),
+      'featured': serializer.toJson<bool>(featured),
+      'divided': serializer.toJson<bool>(divided),
+      'destinationKind': serializer.toJson<String>(destinationKind),
+      'destinationPage': serializer.toJson<String?>(destinationPage),
+      'destinationFamily': serializer.toJson<String?>(destinationFamily),
+      'destinationRubric': serializer.toJson<String?>(destinationRubric),
+      'destinationBranch': serializer.toJson<String?>(destinationBranch),
+      'destinationSearch': serializer.toJson<String?>(destinationSearch),
+      'destinationSeriesId': serializer.toJson<String?>(destinationSeriesId),
+      'destinationContributorId':
+          serializer.toJson<int?>(destinationContributorId),
+      'destinationUrl': serializer.toJson<String?>(destinationUrl),
+      'filterRubric': serializer.toJson<bool>(filterRubric),
+      'filterBranch': serializer.toJson<bool>(filterBranch),
+      'filterFamily': serializer.toJson<bool>(filterFamily),
+      'filterSearch': serializer.toJson<bool>(filterSearch),
+      'mediaVisible': serializer.toJson<bool>(mediaVisible),
+      'mediaPosition': serializer.toJson<int>(mediaPosition),
+      'homeVisible': serializer.toJson<bool>(homeVisible),
+      'homePosition': serializer.toJson<int>(homePosition),
+      'homeLayout': serializer.toJson<String?>(homeLayout),
+      'publishedFrom': serializer.toJson<DateTime?>(publishedFrom),
+      'publishedUntil': serializer.toJson<DateTime?>(publishedUntil),
+      'pageTitle': serializer.toJson<Map<String, String>?>(pageTitle),
+      'pageDescription':
+          serializer.toJson<Map<String, String>?>(pageDescription),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  MenuEntryRow copyWith(
+          {int? syncStamp,
+          int? id,
+          Value<int?> parentId = const Value.absent(),
+          Value<String?> labelKey = const Value.absent(),
+          Value<Map<String, String>?> label = const Value.absent(),
+          Value<String?> icon = const Value.absent(),
+          bool? featured,
+          bool? divided,
+          String? destinationKind,
+          Value<String?> destinationPage = const Value.absent(),
+          Value<String?> destinationFamily = const Value.absent(),
+          Value<String?> destinationRubric = const Value.absent(),
+          Value<String?> destinationBranch = const Value.absent(),
+          Value<String?> destinationSearch = const Value.absent(),
+          Value<String?> destinationSeriesId = const Value.absent(),
+          Value<int?> destinationContributorId = const Value.absent(),
+          Value<String?> destinationUrl = const Value.absent(),
+          bool? filterRubric,
+          bool? filterBranch,
+          bool? filterFamily,
+          bool? filterSearch,
+          bool? mediaVisible,
+          int? mediaPosition,
+          bool? homeVisible,
+          int? homePosition,
+          Value<String?> homeLayout = const Value.absent(),
+          Value<DateTime?> publishedFrom = const Value.absent(),
+          Value<DateTime?> publishedUntil = const Value.absent(),
+          Value<Map<String, String>?> pageTitle = const Value.absent(),
+          Value<Map<String, String>?> pageDescription = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      MenuEntryRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        parentId: parentId.present ? parentId.value : this.parentId,
+        labelKey: labelKey.present ? labelKey.value : this.labelKey,
+        label: label.present ? label.value : this.label,
+        icon: icon.present ? icon.value : this.icon,
+        featured: featured ?? this.featured,
+        divided: divided ?? this.divided,
+        destinationKind: destinationKind ?? this.destinationKind,
+        destinationPage: destinationPage.present
+            ? destinationPage.value
+            : this.destinationPage,
+        destinationFamily: destinationFamily.present
+            ? destinationFamily.value
+            : this.destinationFamily,
+        destinationRubric: destinationRubric.present
+            ? destinationRubric.value
+            : this.destinationRubric,
+        destinationBranch: destinationBranch.present
+            ? destinationBranch.value
+            : this.destinationBranch,
+        destinationSearch: destinationSearch.present
+            ? destinationSearch.value
+            : this.destinationSearch,
+        destinationSeriesId: destinationSeriesId.present
+            ? destinationSeriesId.value
+            : this.destinationSeriesId,
+        destinationContributorId: destinationContributorId.present
+            ? destinationContributorId.value
+            : this.destinationContributorId,
+        destinationUrl:
+            destinationUrl.present ? destinationUrl.value : this.destinationUrl,
+        filterRubric: filterRubric ?? this.filterRubric,
+        filterBranch: filterBranch ?? this.filterBranch,
+        filterFamily: filterFamily ?? this.filterFamily,
+        filterSearch: filterSearch ?? this.filterSearch,
+        mediaVisible: mediaVisible ?? this.mediaVisible,
+        mediaPosition: mediaPosition ?? this.mediaPosition,
+        homeVisible: homeVisible ?? this.homeVisible,
+        homePosition: homePosition ?? this.homePosition,
+        homeLayout: homeLayout.present ? homeLayout.value : this.homeLayout,
+        publishedFrom:
+            publishedFrom.present ? publishedFrom.value : this.publishedFrom,
+        publishedUntil:
+            publishedUntil.present ? publishedUntil.value : this.publishedUntil,
+        pageTitle: pageTitle.present ? pageTitle.value : this.pageTitle,
+        pageDescription: pageDescription.present
+            ? pageDescription.value
+            : this.pageDescription,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  MenuEntryRow copyWithCompanion(MenuEntriesCompanion data) {
+    return MenuEntryRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      parentId: data.parentId.present ? data.parentId.value : this.parentId,
+      labelKey: data.labelKey.present ? data.labelKey.value : this.labelKey,
+      label: data.label.present ? data.label.value : this.label,
+      icon: data.icon.present ? data.icon.value : this.icon,
+      featured: data.featured.present ? data.featured.value : this.featured,
+      divided: data.divided.present ? data.divided.value : this.divided,
+      destinationKind: data.destinationKind.present
+          ? data.destinationKind.value
+          : this.destinationKind,
+      destinationPage: data.destinationPage.present
+          ? data.destinationPage.value
+          : this.destinationPage,
+      destinationFamily: data.destinationFamily.present
+          ? data.destinationFamily.value
+          : this.destinationFamily,
+      destinationRubric: data.destinationRubric.present
+          ? data.destinationRubric.value
+          : this.destinationRubric,
+      destinationBranch: data.destinationBranch.present
+          ? data.destinationBranch.value
+          : this.destinationBranch,
+      destinationSearch: data.destinationSearch.present
+          ? data.destinationSearch.value
+          : this.destinationSearch,
+      destinationSeriesId: data.destinationSeriesId.present
+          ? data.destinationSeriesId.value
+          : this.destinationSeriesId,
+      destinationContributorId: data.destinationContributorId.present
+          ? data.destinationContributorId.value
+          : this.destinationContributorId,
+      destinationUrl: data.destinationUrl.present
+          ? data.destinationUrl.value
+          : this.destinationUrl,
+      filterRubric: data.filterRubric.present
+          ? data.filterRubric.value
+          : this.filterRubric,
+      filterBranch: data.filterBranch.present
+          ? data.filterBranch.value
+          : this.filterBranch,
+      filterFamily: data.filterFamily.present
+          ? data.filterFamily.value
+          : this.filterFamily,
+      filterSearch: data.filterSearch.present
+          ? data.filterSearch.value
+          : this.filterSearch,
+      mediaVisible: data.mediaVisible.present
+          ? data.mediaVisible.value
+          : this.mediaVisible,
+      mediaPosition: data.mediaPosition.present
+          ? data.mediaPosition.value
+          : this.mediaPosition,
+      homeVisible:
+          data.homeVisible.present ? data.homeVisible.value : this.homeVisible,
+      homePosition: data.homePosition.present
+          ? data.homePosition.value
+          : this.homePosition,
+      homeLayout:
+          data.homeLayout.present ? data.homeLayout.value : this.homeLayout,
+      publishedFrom: data.publishedFrom.present
+          ? data.publishedFrom.value
+          : this.publishedFrom,
+      publishedUntil: data.publishedUntil.present
+          ? data.publishedUntil.value
+          : this.publishedUntil,
+      pageTitle: data.pageTitle.present ? data.pageTitle.value : this.pageTitle,
+      pageDescription: data.pageDescription.present
+          ? data.pageDescription.value
+          : this.pageDescription,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MenuEntryRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('parentId: $parentId, ')
+          ..write('labelKey: $labelKey, ')
+          ..write('label: $label, ')
+          ..write('icon: $icon, ')
+          ..write('featured: $featured, ')
+          ..write('divided: $divided, ')
+          ..write('destinationKind: $destinationKind, ')
+          ..write('destinationPage: $destinationPage, ')
+          ..write('destinationFamily: $destinationFamily, ')
+          ..write('destinationRubric: $destinationRubric, ')
+          ..write('destinationBranch: $destinationBranch, ')
+          ..write('destinationSearch: $destinationSearch, ')
+          ..write('destinationSeriesId: $destinationSeriesId, ')
+          ..write('destinationContributorId: $destinationContributorId, ')
+          ..write('destinationUrl: $destinationUrl, ')
+          ..write('filterRubric: $filterRubric, ')
+          ..write('filterBranch: $filterBranch, ')
+          ..write('filterFamily: $filterFamily, ')
+          ..write('filterSearch: $filterSearch, ')
+          ..write('mediaVisible: $mediaVisible, ')
+          ..write('mediaPosition: $mediaPosition, ')
+          ..write('homeVisible: $homeVisible, ')
+          ..write('homePosition: $homePosition, ')
+          ..write('homeLayout: $homeLayout, ')
+          ..write('publishedFrom: $publishedFrom, ')
+          ..write('publishedUntil: $publishedUntil, ')
+          ..write('pageTitle: $pageTitle, ')
+          ..write('pageDescription: $pageDescription, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        syncStamp,
+        id,
+        parentId,
+        labelKey,
+        label,
+        icon,
+        featured,
+        divided,
+        destinationKind,
+        destinationPage,
+        destinationFamily,
+        destinationRubric,
+        destinationBranch,
+        destinationSearch,
+        destinationSeriesId,
+        destinationContributorId,
+        destinationUrl,
+        filterRubric,
+        filterBranch,
+        filterFamily,
+        filterSearch,
+        mediaVisible,
+        mediaPosition,
+        homeVisible,
+        homePosition,
+        homeLayout,
+        publishedFrom,
+        publishedUntil,
+        pageTitle,
+        pageDescription,
+        createdAt,
+        updatedAt
+      ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MenuEntryRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.parentId == this.parentId &&
+          other.labelKey == this.labelKey &&
+          other.label == this.label &&
+          other.icon == this.icon &&
+          other.featured == this.featured &&
+          other.divided == this.divided &&
+          other.destinationKind == this.destinationKind &&
+          other.destinationPage == this.destinationPage &&
+          other.destinationFamily == this.destinationFamily &&
+          other.destinationRubric == this.destinationRubric &&
+          other.destinationBranch == this.destinationBranch &&
+          other.destinationSearch == this.destinationSearch &&
+          other.destinationSeriesId == this.destinationSeriesId &&
+          other.destinationContributorId == this.destinationContributorId &&
+          other.destinationUrl == this.destinationUrl &&
+          other.filterRubric == this.filterRubric &&
+          other.filterBranch == this.filterBranch &&
+          other.filterFamily == this.filterFamily &&
+          other.filterSearch == this.filterSearch &&
+          other.mediaVisible == this.mediaVisible &&
+          other.mediaPosition == this.mediaPosition &&
+          other.homeVisible == this.homeVisible &&
+          other.homePosition == this.homePosition &&
+          other.homeLayout == this.homeLayout &&
+          other.publishedFrom == this.publishedFrom &&
+          other.publishedUntil == this.publishedUntil &&
+          other.pageTitle == this.pageTitle &&
+          other.pageDescription == this.pageDescription &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MenuEntriesCompanion extends UpdateCompanion<MenuEntryRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<int?> parentId;
+  final Value<String?> labelKey;
+  final Value<Map<String, String>?> label;
+  final Value<String?> icon;
+  final Value<bool> featured;
+  final Value<bool> divided;
+  final Value<String> destinationKind;
+  final Value<String?> destinationPage;
+  final Value<String?> destinationFamily;
+  final Value<String?> destinationRubric;
+  final Value<String?> destinationBranch;
+  final Value<String?> destinationSearch;
+  final Value<String?> destinationSeriesId;
+  final Value<int?> destinationContributorId;
+  final Value<String?> destinationUrl;
+  final Value<bool> filterRubric;
+  final Value<bool> filterBranch;
+  final Value<bool> filterFamily;
+  final Value<bool> filterSearch;
+  final Value<bool> mediaVisible;
+  final Value<int> mediaPosition;
+  final Value<bool> homeVisible;
+  final Value<int> homePosition;
+  final Value<String?> homeLayout;
+  final Value<DateTime?> publishedFrom;
+  final Value<DateTime?> publishedUntil;
+  final Value<Map<String, String>?> pageTitle;
+  final Value<Map<String, String>?> pageDescription;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const MenuEntriesCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.parentId = const Value.absent(),
+    this.labelKey = const Value.absent(),
+    this.label = const Value.absent(),
+    this.icon = const Value.absent(),
+    this.featured = const Value.absent(),
+    this.divided = const Value.absent(),
+    this.destinationKind = const Value.absent(),
+    this.destinationPage = const Value.absent(),
+    this.destinationFamily = const Value.absent(),
+    this.destinationRubric = const Value.absent(),
+    this.destinationBranch = const Value.absent(),
+    this.destinationSearch = const Value.absent(),
+    this.destinationSeriesId = const Value.absent(),
+    this.destinationContributorId = const Value.absent(),
+    this.destinationUrl = const Value.absent(),
+    this.filterRubric = const Value.absent(),
+    this.filterBranch = const Value.absent(),
+    this.filterFamily = const Value.absent(),
+    this.filterSearch = const Value.absent(),
+    this.mediaVisible = const Value.absent(),
+    this.mediaPosition = const Value.absent(),
+    this.homeVisible = const Value.absent(),
+    this.homePosition = const Value.absent(),
+    this.homeLayout = const Value.absent(),
+    this.publishedFrom = const Value.absent(),
+    this.publishedUntil = const Value.absent(),
+    this.pageTitle = const Value.absent(),
+    this.pageDescription = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  MenuEntriesCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.parentId = const Value.absent(),
+    this.labelKey = const Value.absent(),
+    this.label = const Value.absent(),
+    this.icon = const Value.absent(),
+    this.featured = const Value.absent(),
+    this.divided = const Value.absent(),
+    required String destinationKind,
+    this.destinationPage = const Value.absent(),
+    this.destinationFamily = const Value.absent(),
+    this.destinationRubric = const Value.absent(),
+    this.destinationBranch = const Value.absent(),
+    this.destinationSearch = const Value.absent(),
+    this.destinationSeriesId = const Value.absent(),
+    this.destinationContributorId = const Value.absent(),
+    this.destinationUrl = const Value.absent(),
+    this.filterRubric = const Value.absent(),
+    this.filterBranch = const Value.absent(),
+    this.filterFamily = const Value.absent(),
+    this.filterSearch = const Value.absent(),
+    this.mediaVisible = const Value.absent(),
+    this.mediaPosition = const Value.absent(),
+    this.homeVisible = const Value.absent(),
+    this.homePosition = const Value.absent(),
+    this.homeLayout = const Value.absent(),
+    this.publishedFrom = const Value.absent(),
+    this.publishedUntil = const Value.absent(),
+    this.pageTitle = const Value.absent(),
+    this.pageDescription = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : destinationKind = Value(destinationKind);
+  static Insertable<MenuEntryRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<int>? parentId,
+    Expression<String>? labelKey,
+    Expression<String>? label,
+    Expression<String>? icon,
+    Expression<bool>? featured,
+    Expression<bool>? divided,
+    Expression<String>? destinationKind,
+    Expression<String>? destinationPage,
+    Expression<String>? destinationFamily,
+    Expression<String>? destinationRubric,
+    Expression<String>? destinationBranch,
+    Expression<String>? destinationSearch,
+    Expression<String>? destinationSeriesId,
+    Expression<int>? destinationContributorId,
+    Expression<String>? destinationUrl,
+    Expression<bool>? filterRubric,
+    Expression<bool>? filterBranch,
+    Expression<bool>? filterFamily,
+    Expression<bool>? filterSearch,
+    Expression<bool>? mediaVisible,
+    Expression<int>? mediaPosition,
+    Expression<bool>? homeVisible,
+    Expression<int>? homePosition,
+    Expression<String>? homeLayout,
+    Expression<DateTime>? publishedFrom,
+    Expression<DateTime>? publishedUntil,
+    Expression<String>? pageTitle,
+    Expression<String>? pageDescription,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (parentId != null) 'parent_id': parentId,
+      if (labelKey != null) 'label_key': labelKey,
+      if (label != null) 'label': label,
+      if (icon != null) 'icon': icon,
+      if (featured != null) 'featured': featured,
+      if (divided != null) 'divided': divided,
+      if (destinationKind != null) 'destination_kind': destinationKind,
+      if (destinationPage != null) 'destination_page': destinationPage,
+      if (destinationFamily != null) 'destination_family': destinationFamily,
+      if (destinationRubric != null) 'destination_rubric': destinationRubric,
+      if (destinationBranch != null) 'destination_branch': destinationBranch,
+      if (destinationSearch != null) 'destination_search': destinationSearch,
+      if (destinationSeriesId != null)
+        'destination_series_id': destinationSeriesId,
+      if (destinationContributorId != null)
+        'destination_contributor_id': destinationContributorId,
+      if (destinationUrl != null) 'destination_url': destinationUrl,
+      if (filterRubric != null) 'filter_rubric': filterRubric,
+      if (filterBranch != null) 'filter_branch': filterBranch,
+      if (filterFamily != null) 'filter_family': filterFamily,
+      if (filterSearch != null) 'filter_search': filterSearch,
+      if (mediaVisible != null) 'media_visible': mediaVisible,
+      if (mediaPosition != null) 'media_position': mediaPosition,
+      if (homeVisible != null) 'home_visible': homeVisible,
+      if (homePosition != null) 'home_position': homePosition,
+      if (homeLayout != null) 'home_layout': homeLayout,
+      if (publishedFrom != null) 'published_from': publishedFrom,
+      if (publishedUntil != null) 'published_until': publishedUntil,
+      if (pageTitle != null) 'page_title': pageTitle,
+      if (pageDescription != null) 'page_description': pageDescription,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  MenuEntriesCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<int?>? parentId,
+      Value<String?>? labelKey,
+      Value<Map<String, String>?>? label,
+      Value<String?>? icon,
+      Value<bool>? featured,
+      Value<bool>? divided,
+      Value<String>? destinationKind,
+      Value<String?>? destinationPage,
+      Value<String?>? destinationFamily,
+      Value<String?>? destinationRubric,
+      Value<String?>? destinationBranch,
+      Value<String?>? destinationSearch,
+      Value<String?>? destinationSeriesId,
+      Value<int?>? destinationContributorId,
+      Value<String?>? destinationUrl,
+      Value<bool>? filterRubric,
+      Value<bool>? filterBranch,
+      Value<bool>? filterFamily,
+      Value<bool>? filterSearch,
+      Value<bool>? mediaVisible,
+      Value<int>? mediaPosition,
+      Value<bool>? homeVisible,
+      Value<int>? homePosition,
+      Value<String?>? homeLayout,
+      Value<DateTime?>? publishedFrom,
+      Value<DateTime?>? publishedUntil,
+      Value<Map<String, String>?>? pageTitle,
+      Value<Map<String, String>?>? pageDescription,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return MenuEntriesCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      parentId: parentId ?? this.parentId,
+      labelKey: labelKey ?? this.labelKey,
+      label: label ?? this.label,
+      icon: icon ?? this.icon,
+      featured: featured ?? this.featured,
+      divided: divided ?? this.divided,
+      destinationKind: destinationKind ?? this.destinationKind,
+      destinationPage: destinationPage ?? this.destinationPage,
+      destinationFamily: destinationFamily ?? this.destinationFamily,
+      destinationRubric: destinationRubric ?? this.destinationRubric,
+      destinationBranch: destinationBranch ?? this.destinationBranch,
+      destinationSearch: destinationSearch ?? this.destinationSearch,
+      destinationSeriesId: destinationSeriesId ?? this.destinationSeriesId,
+      destinationContributorId:
+          destinationContributorId ?? this.destinationContributorId,
+      destinationUrl: destinationUrl ?? this.destinationUrl,
+      filterRubric: filterRubric ?? this.filterRubric,
+      filterBranch: filterBranch ?? this.filterBranch,
+      filterFamily: filterFamily ?? this.filterFamily,
+      filterSearch: filterSearch ?? this.filterSearch,
+      mediaVisible: mediaVisible ?? this.mediaVisible,
+      mediaPosition: mediaPosition ?? this.mediaPosition,
+      homeVisible: homeVisible ?? this.homeVisible,
+      homePosition: homePosition ?? this.homePosition,
+      homeLayout: homeLayout ?? this.homeLayout,
+      publishedFrom: publishedFrom ?? this.publishedFrom,
+      publishedUntil: publishedUntil ?? this.publishedUntil,
+      pageTitle: pageTitle ?? this.pageTitle,
+      pageDescription: pageDescription ?? this.pageDescription,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (parentId.present) {
+      map['parent_id'] = Variable<int>(parentId.value);
+    }
+    if (labelKey.present) {
+      map['label_key'] = Variable<String>(labelKey.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(
+          $MenuEntriesTable.$converterlabeln.toSql(label.value));
+    }
+    if (icon.present) {
+      map['icon'] = Variable<String>(icon.value);
+    }
+    if (featured.present) {
+      map['featured'] = Variable<bool>(featured.value);
+    }
+    if (divided.present) {
+      map['divided'] = Variable<bool>(divided.value);
+    }
+    if (destinationKind.present) {
+      map['destination_kind'] = Variable<String>(destinationKind.value);
+    }
+    if (destinationPage.present) {
+      map['destination_page'] = Variable<String>(destinationPage.value);
+    }
+    if (destinationFamily.present) {
+      map['destination_family'] = Variable<String>(destinationFamily.value);
+    }
+    if (destinationRubric.present) {
+      map['destination_rubric'] = Variable<String>(destinationRubric.value);
+    }
+    if (destinationBranch.present) {
+      map['destination_branch'] = Variable<String>(destinationBranch.value);
+    }
+    if (destinationSearch.present) {
+      map['destination_search'] = Variable<String>(destinationSearch.value);
+    }
+    if (destinationSeriesId.present) {
+      map['destination_series_id'] =
+          Variable<String>(destinationSeriesId.value);
+    }
+    if (destinationContributorId.present) {
+      map['destination_contributor_id'] =
+          Variable<int>(destinationContributorId.value);
+    }
+    if (destinationUrl.present) {
+      map['destination_url'] = Variable<String>(destinationUrl.value);
+    }
+    if (filterRubric.present) {
+      map['filter_rubric'] = Variable<bool>(filterRubric.value);
+    }
+    if (filterBranch.present) {
+      map['filter_branch'] = Variable<bool>(filterBranch.value);
+    }
+    if (filterFamily.present) {
+      map['filter_family'] = Variable<bool>(filterFamily.value);
+    }
+    if (filterSearch.present) {
+      map['filter_search'] = Variable<bool>(filterSearch.value);
+    }
+    if (mediaVisible.present) {
+      map['media_visible'] = Variable<bool>(mediaVisible.value);
+    }
+    if (mediaPosition.present) {
+      map['media_position'] = Variable<int>(mediaPosition.value);
+    }
+    if (homeVisible.present) {
+      map['home_visible'] = Variable<bool>(homeVisible.value);
+    }
+    if (homePosition.present) {
+      map['home_position'] = Variable<int>(homePosition.value);
+    }
+    if (homeLayout.present) {
+      map['home_layout'] = Variable<String>(homeLayout.value);
+    }
+    if (publishedFrom.present) {
+      map['published_from'] = Variable<DateTime>(publishedFrom.value);
+    }
+    if (publishedUntil.present) {
+      map['published_until'] = Variable<DateTime>(publishedUntil.value);
+    }
+    if (pageTitle.present) {
+      map['page_title'] = Variable<String>(
+          $MenuEntriesTable.$converterpageTitlen.toSql(pageTitle.value));
+    }
+    if (pageDescription.present) {
+      map['page_description'] = Variable<String>($MenuEntriesTable
+          .$converterpageDescriptionn
+          .toSql(pageDescription.value));
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MenuEntriesCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('parentId: $parentId, ')
+          ..write('labelKey: $labelKey, ')
+          ..write('label: $label, ')
+          ..write('icon: $icon, ')
+          ..write('featured: $featured, ')
+          ..write('divided: $divided, ')
+          ..write('destinationKind: $destinationKind, ')
+          ..write('destinationPage: $destinationPage, ')
+          ..write('destinationFamily: $destinationFamily, ')
+          ..write('destinationRubric: $destinationRubric, ')
+          ..write('destinationBranch: $destinationBranch, ')
+          ..write('destinationSearch: $destinationSearch, ')
+          ..write('destinationSeriesId: $destinationSeriesId, ')
+          ..write('destinationContributorId: $destinationContributorId, ')
+          ..write('destinationUrl: $destinationUrl, ')
+          ..write('filterRubric: $filterRubric, ')
+          ..write('filterBranch: $filterBranch, ')
+          ..write('filterFamily: $filterFamily, ')
+          ..write('filterSearch: $filterSearch, ')
+          ..write('mediaVisible: $mediaVisible, ')
+          ..write('mediaPosition: $mediaPosition, ')
+          ..write('homeVisible: $homeVisible, ')
+          ..write('homePosition: $homePosition, ')
+          ..write('homeLayout: $homeLayout, ')
+          ..write('publishedFrom: $publishedFrom, ')
+          ..write('publishedUntil: $publishedUntil, ')
+          ..write('pageTitle: $pageTitle, ')
+          ..write('pageDescription: $pageDescription, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DecorTable extends Decor with TableInfo<$DecorTable, DecorRow> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -11975,6 +13591,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SeasonsTable seasons = $SeasonsTable(this);
   late final $PresentationVocabularyTable presentationVocabulary =
       $PresentationVocabularyTable(this);
+  late final $MenuEntriesTable menuEntries = $MenuEntriesTable(this);
   late final $DecorTable decor = $DecorTable(this);
   late final $AuthChannelsTable authChannels = $AuthChannelsTable(this);
   late final $DeviceSettingsTable deviceSettings = $DeviceSettingsTable(this);
@@ -11993,6 +13610,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final LegalDao legalDao = LegalDao(this as AppDatabase);
   late final SeasonDao seasonDao = SeasonDao(this as AppDatabase);
   late final VocabularyDao vocabularyDao = VocabularyDao(this as AppDatabase);
+  late final MenuDao menuDao = MenuDao(this as AppDatabase);
   late final AuthChannelsDao authChannelsDao =
       AuthChannelsDao(this as AppDatabase);
   late final DeviceSettingsDao deviceSettingsDao =
@@ -12025,6 +13643,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         legalDocuments,
         seasons,
         presentationVocabulary,
+        menuEntries,
         decor,
         authChannels,
         deviceSettings,
@@ -16522,6 +18141,618 @@ typedef $$PresentationVocabularyTableProcessedTableManager
         ),
         VocabularyRow,
         PrefetchHooks Function()>;
+typedef $$MenuEntriesTableCreateCompanionBuilder = MenuEntriesCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<int?> parentId,
+  Value<String?> labelKey,
+  Value<Map<String, String>?> label,
+  Value<String?> icon,
+  Value<bool> featured,
+  Value<bool> divided,
+  required String destinationKind,
+  Value<String?> destinationPage,
+  Value<String?> destinationFamily,
+  Value<String?> destinationRubric,
+  Value<String?> destinationBranch,
+  Value<String?> destinationSearch,
+  Value<String?> destinationSeriesId,
+  Value<int?> destinationContributorId,
+  Value<String?> destinationUrl,
+  Value<bool> filterRubric,
+  Value<bool> filterBranch,
+  Value<bool> filterFamily,
+  Value<bool> filterSearch,
+  Value<bool> mediaVisible,
+  Value<int> mediaPosition,
+  Value<bool> homeVisible,
+  Value<int> homePosition,
+  Value<String?> homeLayout,
+  Value<DateTime?> publishedFrom,
+  Value<DateTime?> publishedUntil,
+  Value<Map<String, String>?> pageTitle,
+  Value<Map<String, String>?> pageDescription,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$MenuEntriesTableUpdateCompanionBuilder = MenuEntriesCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<int?> parentId,
+  Value<String?> labelKey,
+  Value<Map<String, String>?> label,
+  Value<String?> icon,
+  Value<bool> featured,
+  Value<bool> divided,
+  Value<String> destinationKind,
+  Value<String?> destinationPage,
+  Value<String?> destinationFamily,
+  Value<String?> destinationRubric,
+  Value<String?> destinationBranch,
+  Value<String?> destinationSearch,
+  Value<String?> destinationSeriesId,
+  Value<int?> destinationContributorId,
+  Value<String?> destinationUrl,
+  Value<bool> filterRubric,
+  Value<bool> filterBranch,
+  Value<bool> filterFamily,
+  Value<bool> filterSearch,
+  Value<bool> mediaVisible,
+  Value<int> mediaPosition,
+  Value<bool> homeVisible,
+  Value<int> homePosition,
+  Value<String?> homeLayout,
+  Value<DateTime?> publishedFrom,
+  Value<DateTime?> publishedUntil,
+  Value<Map<String, String>?> pageTitle,
+  Value<Map<String, String>?> pageDescription,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$MenuEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $MenuEntriesTable> {
+  $$MenuEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get parentId => $composableBuilder(
+      column: $table.parentId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get labelKey => $composableBuilder(
+      column: $table.labelKey, builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<Map<String, String>?, Map<String, String>,
+          String>
+      get label => $composableBuilder(
+          column: $table.label,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<String> get icon => $composableBuilder(
+      column: $table.icon, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get featured => $composableBuilder(
+      column: $table.featured, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get divided => $composableBuilder(
+      column: $table.divided, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationKind => $composableBuilder(
+      column: $table.destinationKind,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationPage => $composableBuilder(
+      column: $table.destinationPage,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationFamily => $composableBuilder(
+      column: $table.destinationFamily,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationRubric => $composableBuilder(
+      column: $table.destinationRubric,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationBranch => $composableBuilder(
+      column: $table.destinationBranch,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationSearch => $composableBuilder(
+      column: $table.destinationSearch,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationSeriesId => $composableBuilder(
+      column: $table.destinationSeriesId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get destinationContributorId => $composableBuilder(
+      column: $table.destinationContributorId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationUrl => $composableBuilder(
+      column: $table.destinationUrl,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get filterRubric => $composableBuilder(
+      column: $table.filterRubric, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get filterBranch => $composableBuilder(
+      column: $table.filterBranch, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get filterFamily => $composableBuilder(
+      column: $table.filterFamily, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get filterSearch => $composableBuilder(
+      column: $table.filterSearch, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get mediaVisible => $composableBuilder(
+      column: $table.mediaVisible, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mediaPosition => $composableBuilder(
+      column: $table.mediaPosition, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get homeVisible => $composableBuilder(
+      column: $table.homeVisible, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get homePosition => $composableBuilder(
+      column: $table.homePosition, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get homeLayout => $composableBuilder(
+      column: $table.homeLayout, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get publishedFrom => $composableBuilder(
+      column: $table.publishedFrom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get publishedUntil => $composableBuilder(
+      column: $table.publishedUntil,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<Map<String, String>?, Map<String, String>,
+          String>
+      get pageTitle => $composableBuilder(
+          column: $table.pageTitle,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnWithTypeConverterFilters<Map<String, String>?, Map<String, String>,
+          String>
+      get pageDescription => $composableBuilder(
+          column: $table.pageDescription,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MenuEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MenuEntriesTable> {
+  $$MenuEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get parentId => $composableBuilder(
+      column: $table.parentId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get labelKey => $composableBuilder(
+      column: $table.labelKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get icon => $composableBuilder(
+      column: $table.icon, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get featured => $composableBuilder(
+      column: $table.featured, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get divided => $composableBuilder(
+      column: $table.divided, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationKind => $composableBuilder(
+      column: $table.destinationKind,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationPage => $composableBuilder(
+      column: $table.destinationPage,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationFamily => $composableBuilder(
+      column: $table.destinationFamily,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationRubric => $composableBuilder(
+      column: $table.destinationRubric,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationBranch => $composableBuilder(
+      column: $table.destinationBranch,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationSearch => $composableBuilder(
+      column: $table.destinationSearch,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationSeriesId => $composableBuilder(
+      column: $table.destinationSeriesId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get destinationContributorId => $composableBuilder(
+      column: $table.destinationContributorId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationUrl => $composableBuilder(
+      column: $table.destinationUrl,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get filterRubric => $composableBuilder(
+      column: $table.filterRubric,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get filterBranch => $composableBuilder(
+      column: $table.filterBranch,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get filterFamily => $composableBuilder(
+      column: $table.filterFamily,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get filterSearch => $composableBuilder(
+      column: $table.filterSearch,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get mediaVisible => $composableBuilder(
+      column: $table.mediaVisible,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mediaPosition => $composableBuilder(
+      column: $table.mediaPosition,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get homeVisible => $composableBuilder(
+      column: $table.homeVisible, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get homePosition => $composableBuilder(
+      column: $table.homePosition,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get homeLayout => $composableBuilder(
+      column: $table.homeLayout, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get publishedFrom => $composableBuilder(
+      column: $table.publishedFrom,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get publishedUntil => $composableBuilder(
+      column: $table.publishedUntil,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get pageTitle => $composableBuilder(
+      column: $table.pageTitle, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get pageDescription => $composableBuilder(
+      column: $table.pageDescription,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MenuEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MenuEntriesTable> {
+  $$MenuEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get parentId =>
+      $composableBuilder(column: $table.parentId, builder: (column) => column);
+
+  GeneratedColumn<String> get labelKey =>
+      $composableBuilder(column: $table.labelKey, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<String> get icon =>
+      $composableBuilder(column: $table.icon, builder: (column) => column);
+
+  GeneratedColumn<bool> get featured =>
+      $composableBuilder(column: $table.featured, builder: (column) => column);
+
+  GeneratedColumn<bool> get divided =>
+      $composableBuilder(column: $table.divided, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationKind => $composableBuilder(
+      column: $table.destinationKind, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationPage => $composableBuilder(
+      column: $table.destinationPage, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationFamily => $composableBuilder(
+      column: $table.destinationFamily, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationRubric => $composableBuilder(
+      column: $table.destinationRubric, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationBranch => $composableBuilder(
+      column: $table.destinationBranch, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationSearch => $composableBuilder(
+      column: $table.destinationSearch, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationSeriesId => $composableBuilder(
+      column: $table.destinationSeriesId, builder: (column) => column);
+
+  GeneratedColumn<int> get destinationContributorId => $composableBuilder(
+      column: $table.destinationContributorId, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationUrl => $composableBuilder(
+      column: $table.destinationUrl, builder: (column) => column);
+
+  GeneratedColumn<bool> get filterRubric => $composableBuilder(
+      column: $table.filterRubric, builder: (column) => column);
+
+  GeneratedColumn<bool> get filterBranch => $composableBuilder(
+      column: $table.filterBranch, builder: (column) => column);
+
+  GeneratedColumn<bool> get filterFamily => $composableBuilder(
+      column: $table.filterFamily, builder: (column) => column);
+
+  GeneratedColumn<bool> get filterSearch => $composableBuilder(
+      column: $table.filterSearch, builder: (column) => column);
+
+  GeneratedColumn<bool> get mediaVisible => $composableBuilder(
+      column: $table.mediaVisible, builder: (column) => column);
+
+  GeneratedColumn<int> get mediaPosition => $composableBuilder(
+      column: $table.mediaPosition, builder: (column) => column);
+
+  GeneratedColumn<bool> get homeVisible => $composableBuilder(
+      column: $table.homeVisible, builder: (column) => column);
+
+  GeneratedColumn<int> get homePosition => $composableBuilder(
+      column: $table.homePosition, builder: (column) => column);
+
+  GeneratedColumn<String> get homeLayout => $composableBuilder(
+      column: $table.homeLayout, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get publishedFrom => $composableBuilder(
+      column: $table.publishedFrom, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get publishedUntil => $composableBuilder(
+      column: $table.publishedUntil, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      get pageTitle => $composableBuilder(
+          column: $table.pageTitle, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      get pageDescription => $composableBuilder(
+          column: $table.pageDescription, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MenuEntriesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $MenuEntriesTable,
+    MenuEntryRow,
+    $$MenuEntriesTableFilterComposer,
+    $$MenuEntriesTableOrderingComposer,
+    $$MenuEntriesTableAnnotationComposer,
+    $$MenuEntriesTableCreateCompanionBuilder,
+    $$MenuEntriesTableUpdateCompanionBuilder,
+    (
+      MenuEntryRow,
+      BaseReferences<_$AppDatabase, $MenuEntriesTable, MenuEntryRow>
+    ),
+    MenuEntryRow,
+    PrefetchHooks Function()> {
+  $$MenuEntriesTableTableManager(_$AppDatabase db, $MenuEntriesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MenuEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MenuEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MenuEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<int?> parentId = const Value.absent(),
+            Value<String?> labelKey = const Value.absent(),
+            Value<Map<String, String>?> label = const Value.absent(),
+            Value<String?> icon = const Value.absent(),
+            Value<bool> featured = const Value.absent(),
+            Value<bool> divided = const Value.absent(),
+            Value<String> destinationKind = const Value.absent(),
+            Value<String?> destinationPage = const Value.absent(),
+            Value<String?> destinationFamily = const Value.absent(),
+            Value<String?> destinationRubric = const Value.absent(),
+            Value<String?> destinationBranch = const Value.absent(),
+            Value<String?> destinationSearch = const Value.absent(),
+            Value<String?> destinationSeriesId = const Value.absent(),
+            Value<int?> destinationContributorId = const Value.absent(),
+            Value<String?> destinationUrl = const Value.absent(),
+            Value<bool> filterRubric = const Value.absent(),
+            Value<bool> filterBranch = const Value.absent(),
+            Value<bool> filterFamily = const Value.absent(),
+            Value<bool> filterSearch = const Value.absent(),
+            Value<bool> mediaVisible = const Value.absent(),
+            Value<int> mediaPosition = const Value.absent(),
+            Value<bool> homeVisible = const Value.absent(),
+            Value<int> homePosition = const Value.absent(),
+            Value<String?> homeLayout = const Value.absent(),
+            Value<DateTime?> publishedFrom = const Value.absent(),
+            Value<DateTime?> publishedUntil = const Value.absent(),
+            Value<Map<String, String>?> pageTitle = const Value.absent(),
+            Value<Map<String, String>?> pageDescription = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              MenuEntriesCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            parentId: parentId,
+            labelKey: labelKey,
+            label: label,
+            icon: icon,
+            featured: featured,
+            divided: divided,
+            destinationKind: destinationKind,
+            destinationPage: destinationPage,
+            destinationFamily: destinationFamily,
+            destinationRubric: destinationRubric,
+            destinationBranch: destinationBranch,
+            destinationSearch: destinationSearch,
+            destinationSeriesId: destinationSeriesId,
+            destinationContributorId: destinationContributorId,
+            destinationUrl: destinationUrl,
+            filterRubric: filterRubric,
+            filterBranch: filterBranch,
+            filterFamily: filterFamily,
+            filterSearch: filterSearch,
+            mediaVisible: mediaVisible,
+            mediaPosition: mediaPosition,
+            homeVisible: homeVisible,
+            homePosition: homePosition,
+            homeLayout: homeLayout,
+            publishedFrom: publishedFrom,
+            publishedUntil: publishedUntil,
+            pageTitle: pageTitle,
+            pageDescription: pageDescription,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<int?> parentId = const Value.absent(),
+            Value<String?> labelKey = const Value.absent(),
+            Value<Map<String, String>?> label = const Value.absent(),
+            Value<String?> icon = const Value.absent(),
+            Value<bool> featured = const Value.absent(),
+            Value<bool> divided = const Value.absent(),
+            required String destinationKind,
+            Value<String?> destinationPage = const Value.absent(),
+            Value<String?> destinationFamily = const Value.absent(),
+            Value<String?> destinationRubric = const Value.absent(),
+            Value<String?> destinationBranch = const Value.absent(),
+            Value<String?> destinationSearch = const Value.absent(),
+            Value<String?> destinationSeriesId = const Value.absent(),
+            Value<int?> destinationContributorId = const Value.absent(),
+            Value<String?> destinationUrl = const Value.absent(),
+            Value<bool> filterRubric = const Value.absent(),
+            Value<bool> filterBranch = const Value.absent(),
+            Value<bool> filterFamily = const Value.absent(),
+            Value<bool> filterSearch = const Value.absent(),
+            Value<bool> mediaVisible = const Value.absent(),
+            Value<int> mediaPosition = const Value.absent(),
+            Value<bool> homeVisible = const Value.absent(),
+            Value<int> homePosition = const Value.absent(),
+            Value<String?> homeLayout = const Value.absent(),
+            Value<DateTime?> publishedFrom = const Value.absent(),
+            Value<DateTime?> publishedUntil = const Value.absent(),
+            Value<Map<String, String>?> pageTitle = const Value.absent(),
+            Value<Map<String, String>?> pageDescription = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              MenuEntriesCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            parentId: parentId,
+            labelKey: labelKey,
+            label: label,
+            icon: icon,
+            featured: featured,
+            divided: divided,
+            destinationKind: destinationKind,
+            destinationPage: destinationPage,
+            destinationFamily: destinationFamily,
+            destinationRubric: destinationRubric,
+            destinationBranch: destinationBranch,
+            destinationSearch: destinationSearch,
+            destinationSeriesId: destinationSeriesId,
+            destinationContributorId: destinationContributorId,
+            destinationUrl: destinationUrl,
+            filterRubric: filterRubric,
+            filterBranch: filterBranch,
+            filterFamily: filterFamily,
+            filterSearch: filterSearch,
+            mediaVisible: mediaVisible,
+            mediaPosition: mediaPosition,
+            homeVisible: homeVisible,
+            homePosition: homePosition,
+            homeLayout: homeLayout,
+            publishedFrom: publishedFrom,
+            publishedUntil: publishedUntil,
+            pageTitle: pageTitle,
+            pageDescription: pageDescription,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MenuEntriesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $MenuEntriesTable,
+    MenuEntryRow,
+    $$MenuEntriesTableFilterComposer,
+    $$MenuEntriesTableOrderingComposer,
+    $$MenuEntriesTableAnnotationComposer,
+    $$MenuEntriesTableCreateCompanionBuilder,
+    $$MenuEntriesTableUpdateCompanionBuilder,
+    (
+      MenuEntryRow,
+      BaseReferences<_$AppDatabase, $MenuEntriesTable, MenuEntryRow>
+    ),
+    MenuEntryRow,
+    PrefetchHooks Function()>;
 typedef $$DecorTableCreateCompanionBuilder = DecorCompanion Function({
   Value<int> syncStamp,
   Value<int> id,
@@ -17790,6 +20021,8 @@ class $AppDatabaseManager {
   $$PresentationVocabularyTableTableManager get presentationVocabulary =>
       $$PresentationVocabularyTableTableManager(
           _db, _db.presentationVocabulary);
+  $$MenuEntriesTableTableManager get menuEntries =>
+      $$MenuEntriesTableTableManager(_db, _db.menuEntries);
   $$DecorTableTableManager get decor =>
       $$DecorTableTableManager(_db, _db.decor);
   $$AuthChannelsTableTableManager get authChannels =>

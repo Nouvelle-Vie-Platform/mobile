@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/local/mediatheque_dao.dart';
@@ -278,6 +279,127 @@ void main() {
 
       final rows = await dao.latestTeachings(limit: 2).get();
       expect(rows.map((r) => r.teaching.id), ['recent', 'vieux']);
+    });
+  });
+
+  group('Le filtre d\'un onglet de médiathèque (#82)', () {
+    Future<void> seed() async {
+      await sync.applyPage(
+        sync.teachingTypesCollection,
+        upserts: [
+          teachingTypeRow(1, label: {'fr': 'Prières'}, slug: 'prieres'),
+          teachingTypeRow(2, label: {'fr': 'Dimanche'}, slug: 'dimanche'),
+        ],
+        cursor: 'tt-1',
+      );
+      await sync.applyPage(
+        sync.teachingsCollection,
+        upserts: [
+          teachingRow('t-1', title: 'Prier sans cesse', teachingTypeId: 1),
+          teachingRow('t-2', title: 'Le pain du jour', teachingTypeId: 2),
+          teachingRow('t-3', title: 'Prier en famille', teachingTypeId: 2),
+        ],
+        cursor: 't-1',
+      );
+    }
+
+    test('sans borne, c\'est le catalogue entier', () async {
+      await seed();
+
+      final rows = await dao.teachingsMatching().get();
+
+      // C'est ce que désigne l'entrée indélébile de la médiathèque : un « tout »
+      // est un catalogue dont aucune borne n'est posée.
+      expect(rows, hasLength(3));
+    });
+
+    test('deux rubriques différentes ne montrent pas la même liste', () async {
+      await seed();
+
+      final prieres = await dao.teachingsMatching(teachingTypeId: 1).get();
+      final dimanche = await dao.teachingsMatching(teachingTypeId: 2).get();
+
+      // **Le cœur de la tranche.** Avant elle, `_tab` ne servait qu'à déplacer un
+      // soulignement : « Musique » affichait exactement la même chose que
+      // « Tout ».
+      expect(prieres.map((r) => r.teaching.id), ['t-1']);
+      expect(dimanche.map((r) => r.teaching.id), {'t-2', 't-3'});
+      expect(prieres.map((r) => r.teaching.id),
+          isNot(dimanche.map((r) => r.teaching.id)));
+    });
+
+    test('la recherche porte sur le titre, et sans égard à la casse', () async {
+      await seed();
+
+      final rows = await dao.teachingsMatching(searchPattern: '%PRIER%').get();
+
+      expect(rows.map((r) => r.teaching.id), {'t-1', 't-3'});
+    });
+
+    test('la rubrique et la recherche se composent', () async {
+      await seed();
+
+      final rows = await dao
+          .teachingsMatching(teachingTypeId: 2, searchPattern: '%prier%')
+          .get();
+
+      // L'entrée borne, le fidèle affine : les deux clauses s'ajoutent, elles ne
+      // se remplacent pas.
+      expect(rows.map((r) => r.teaching.id), ['t-3']);
+    });
+
+    test('le tri ne change pas d\'un onglet à l\'autre', () async {
+      await sync.applyPage(
+        sync.teachingsCollection,
+        upserts: [
+          teachingRow('t-ancien',
+              teachingTypeId: 1, publishedAt: DateTime.utc(2026, 1, 1)),
+          teachingRow('t-recent',
+              teachingTypeId: 1, publishedAt: DateTime.utc(2026, 5, 1)),
+        ],
+        cursor: 't-1',
+      );
+
+      final rows = await dao.teachingsMatching(teachingTypeId: 1).get();
+
+      // `publishedAt DESC` partout : un onglet **borne un périmètre**, il ne
+      // réordonne pas le catalogue.
+      expect(rows.map((r) => r.teaching.id), ['t-recent', 't-ancien']);
+    });
+
+    test('les cultes entiers restent dans la liste', () async {
+      await sync.applyPage(
+        sync.teachingsCollection,
+        upserts: [
+          teachingRow('t-1', title: 'Extrait'),
+          TeachingsCompanion.insert(
+            id: 't-culte',
+            title: 'Culte du 3 mai',
+            isFullService: const Value(true),
+          ),
+        ],
+        cursor: 't-1',
+      );
+
+      final rows = await dao.teachingsMatching().get();
+
+      // **L'arbitrage de la tranche.** Le modèle de menu ne porte aucune colonne
+      // qui les concerne : décider ici qu'une entrée les exclut serait une règle
+      // éditoriale figée dans le binaire, invisible depuis le portail. Le portail
+      // les écarte dans la donnée — une rubrique à eux, et aucune entrée dessus.
+      expect(rows.map((r) => r.teaching.id), {'t-1', 't-culte'});
+    });
+
+    test('un slug se résout en identifiant, et un slug inconnu en rien',
+        () async {
+      await seed();
+
+      expect(
+          (await dao.teachingTypeBySlug('prieres').getSingleOrNull())?.id, 1);
+      // `null` n'est pas une erreur : c'est le slug inconnu, et le client en tire
+      // la même conclusion que le site public d'un `?rubrique=` inconnu.
+      expect(
+          await dao.teachingTypeBySlug('jeunesse').getSingleOrNull(), isNull);
     });
   });
 

@@ -8,7 +8,7 @@
 /// | Forme | Route serveur | Source |
 /// |---|---|---|
 /// | manifeste | `GET /sync` | `app/sync/transformers/sync_manifest_transformer.ts` (ADR-0016/0017/0027) |
-/// | les 28 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
+/// | les 29 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
 /// | `full_resync_required` | `GET /sync` | `app/sync/actions/build_manifest.ts` (issues serveur #48/#49) |
 /// | tirage delta | `GET /sync/{collection}` | `app/sync/controllers/pull_collection_delta_controller.ts` |
 /// | `next_cursor` / `has_more` / `full_resync` | `GET /sync/{collection}` | `app/sync/actions/pull_delta.ts` (ADR-0017) |
@@ -31,6 +31,9 @@
 /// | clés du catalogue | — | `app/presentation/support/vocabulary_catalog.ts` |
 /// | ligne `auth_channels` | `GET /sync/auth_channels` | `app/auth/transformers/auth_channels_transformer.ts` + `app/sync/descriptors/auth_channels_descriptor.ts` (issue serveur #468) |
 /// | valeurs livrées des canaux | — | `database/migrations/*_create_auth_settings_table.ts` |
+/// | ligne `menu_entries` | `GET /sync/menu_entries` | `app/presentation/transformers/menu_entry_transformer.ts` + `app/sync/descriptors/menu_entries_descriptor.ts` (issue serveur #480) |
+/// | destinations et surfaces | — | `app/presentation/support/menu_catalog.ts` |
+/// | entrées reprises (libellés, graine) | — | `app/presentation/support/menu_seed.ts` + `app/vitrine/support/public_nav_catalog.ts` |
 /// | ligne `device_settings` | `GET /sync/device_settings` | `app/devices/transformers/device_settings_transformer.ts` + `app/sync/descriptors/device_settings_descriptor.ts` (issue serveur #475) |
 /// | seuil livré du bandeau | — | `database/migrations/*_create_device_settings_table.ts` (`NULL`) |
 ///
@@ -132,7 +135,7 @@ final String staleCursor = serverCursor(
 // `GET /sync` — le manifeste
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Les **vingt-huit** collections du registre serveur (`app/sync/descriptors/
+/// Les **vingt-neuf** collections du registre serveur (`app/sync/descriptors/
 /// registry.ts`), **dans l'ordre du registre**, avec leur partition.
 ///
 /// ⚠️ **Cette carte avait dérivé, et le test qui la gardait mentait.** Elle en
@@ -151,6 +154,10 @@ final String staleCursor = serverCursor(
 /// précède. Vingt-septième entrée ajoutée en #83, vingt-huitième en #91 —
 /// `device_settings`, et le compte ci-dessous a de nouveau été relevé
 /// **descripteur par descripteur** sur `registry.ts`, pas sur son en-tête.
+/// Vingt-neuvième en #82 — `menu_entries` —, recomptée de la même façon : le
+/// tableau `syncDescriptors` en porte **vingt-neuf**, et son en-tête dit
+/// « vingt-neuf » ; les deux s'accordent cette fois, et c'est le tableau qui a
+/// été cru.
 ///
 /// La partition de chaque entrée est relevée sur le champ `partition:` de son
 /// descripteur, jamais sur l'intuition de ce qu'une collection « devrait » être.
@@ -169,7 +176,7 @@ final String staleCursor = serverCursor(
 ///
 /// Le manifeste les liste **toutes**, pas seulement celles qui ont bougé — et
 /// toutes ne sont pas répliquées par ce client : `syncedCollections()` en tire
-/// dix-huit, les autres n'ont pas de table locale. Le manifeste les liste quand
+/// dix-neuf, les autres n'ont pas de table locale. Le manifeste les liste quand
 /// même, le moteur les ignore.
 const Map<String, String> kSyncCollections = {
   'announcements': 'branch',
@@ -188,6 +195,15 @@ const Map<String, String> kSyncCollections = {
   // arriver avant la liste qu'il intitule, et une collection sans filtre ni
   // jointure est la moins susceptible de couper le cycle.
   'presentation_vocabulary': 'reference',
+  // Les entrées de menu (issue serveur #480, mobile #82) : rangées **ici**,
+  // immédiatement après le vocabulaire et **avant `decor`** — un menu doit
+  // arriver avant les listes qu'il intitule, puisque c'est lui qui dit quels
+  // onglets existent et ce que chacun filtre. `servesAnonymous: true`, et ce
+  // n'est pas un confort : la médiathèque et l'accueil sont les deux premiers
+  // écrans qu'un porteur sans compte ouvre, et sans le drapeau il n'aurait
+  // **aucun** onglet. `tombstoneColumn: null` — une entrée supprimée au portail
+  // cesse simplement de paraître au flux.
+  'menu_entries': 'reference',
   'decor': 'reference',
   // Par quelles portes on entre (issue serveur #468, mobile #83) : rangée
   // **ici**, avec les référentiels, et avant les contenus — c'est la première
@@ -253,7 +269,7 @@ Map<String, Object?> manifestEntry(
   };
 }
 
-/// Manifeste complet : les vingt-huit collections, dans l'ordre du registre.
+/// Manifeste complet : les vingt-neuf collections, dans l'ordre du registre.
 ///
 /// [overrides] remplace, clé par clé, les champs d'une entrée — c'est ainsi
 /// qu'on écrit un cas particulier sans réécrire les douze autres lignes.
@@ -1632,3 +1648,146 @@ Map<String, Object?> deviceSettingsPage({
   Map<String, Object?> row = deviceSettingsNoThresholdPayload,
 }) =>
     deltaPage(items: [row], nextCursor: deviceSettingsCursor);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lignes `menu_entries` — **trente et une clés**, `camelCase` (issue #82)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Les trente et une clés qu'une entrée porte, relevées **une à une** sur
+/// `app/presentation/transformers/menu_entry_transformer.ts`.
+///
+/// ⚠️ La table serveur en compte **trente-neuf** : huit ne descendent
+/// délibérément pas (`headerVisible`/`headerPosition`,
+/// `footerVisible`/`footerPosition`, `shareTitle`/`shareDescription`,
+/// `heroImageUrl`, `locked`). En ajouter une ici ferait tester une forme que le
+/// serveur n'envoie pas.
+Map<String, Object?> menuEntryPayload({
+  required int id,
+  int? parentId,
+  String? labelKey,
+  Map<String, Object?>? label,
+  String? icon,
+  bool featured = false,
+  bool divided = false,
+  String destinationKind = 'catalogue',
+  String? destinationPage,
+  String? destinationFamily = 'teaching',
+  String? destinationRubric,
+  String? destinationBranch,
+  String? destinationSearch,
+  String? destinationSeriesId,
+  int? destinationContributorId,
+  String? destinationUrl,
+  bool filterRubric = false,
+  bool filterBranch = false,
+  bool filterFamily = false,
+  bool filterSearch = false,
+  bool mediaVisible = true,
+  int mediaPosition = 1,
+  bool homeVisible = false,
+  int homePosition = 0,
+  String? homeLayout,
+  String? publishedFrom,
+  String? publishedUntil,
+  Map<String, Object?>? pageTitle,
+  Map<String, Object?>? pageDescription,
+  String updatedAt = '2026-09-20T10:00:00.000Z',
+}) =>
+    {
+      'id': id,
+      'parentId': parentId,
+      'labelKey': labelKey,
+      'label': label,
+      'icon': icon,
+      'featured': featured,
+      'divided': divided,
+      'destinationKind': destinationKind,
+      'destinationPage': destinationPage,
+      'destinationFamily': destinationFamily,
+      'destinationRubric': destinationRubric,
+      'destinationBranch': destinationBranch,
+      'destinationSearch': destinationSearch,
+      'destinationSeriesId': destinationSeriesId,
+      'destinationContributorId': destinationContributorId,
+      'destinationUrl': destinationUrl,
+      'filterRubric': filterRubric,
+      'filterBranch': filterBranch,
+      'filterFamily': filterFamily,
+      'filterSearch': filterSearch,
+      'mediaVisible': mediaVisible,
+      'mediaPosition': mediaPosition,
+      'homeVisible': homeVisible,
+      'homePosition': homePosition,
+      'homeLayout': homeLayout,
+      'publishedFrom': publishedFrom,
+      'publishedUntil': publishedUntil,
+      'pageTitle': pageTitle,
+      'pageDescription': pageDescription,
+      'createdAt': '2026-09-01T09:00:00.000Z',
+      'updatedAt': updatedAt,
+    };
+
+/// **L'entrée livrée par la graine** (`menu_seed.ts`) : la médiathèque mobile
+/// naît avec **une** entrée, celle qui ne filtre rien.
+///
+/// Trois choses s'y lisent, et aucune n'est une invention de test :
+/// `destination_kind = 'page'` avec `destination_page = 'mediatheque'` (le
+/// garde-fou 2 du cadrage verrouille cette entrée-là), `label = null` avec
+/// `labelKey = 'public.nav.mediatheque'` — la clé **de la vitrine**, pas une clé
+/// `.arb` —, et les **quatre** cases de filtre cochées, reprises de ce que la
+/// page `/mediatheque` offrait déjà.
+final Map<String, Object?> menuSeededMediathequePayload = menuEntryPayload(
+  id: 5,
+  labelKey: 'public.nav.mediatheque',
+  destinationKind: 'page',
+  destinationPage: 'mediatheque',
+  destinationFamily: null,
+  filterRubric: true,
+  filterBranch: true,
+  filterFamily: true,
+  filterSearch: true,
+  mediaPosition: 1,
+);
+
+/// Curseur de la page de `menu_entries`. L'`id` y est un **entier** (PK SERIAL),
+/// comme pour les autres référentiels — et non une chaîne comme pour
+/// `presentation_vocabulary`.
+final String menuEntriesCursor = serverCursor(
+  updatedAtIso: '2026-09-20T10:00:00.000Z',
+  id: 5,
+);
+
+/// La page nominale : l'entrée livrée, seule.
+Map<String, Object?> menuEntriesPage({List<Map<String, Object?>>? rows}) =>
+    deltaPage(
+      items: rows ?? [menuSeededMediathequePayload],
+      nextCursor: menuEntriesCursor,
+    );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ligne `decor` — **cinq clés**, `camelCase`
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Le décor par défaut, tel que le serveur le livre. Cinq clés, relevées sur
+/// `app/vitrine/transformers/decor_transformer.ts` : `id`, `backgroundUrl`,
+/// `backgroundVerticalUrl`, `createdAt`, `updatedAt`.
+///
+/// **Les deux adresses sont nullables**, et la ligne part quand même : « le
+/// portail n'a déposé aucun décor » n'est pas une absence de ligne.
+const Map<String, Object?> decorPayload = {
+  'id': 1,
+  'backgroundUrl': null,
+  'backgroundVerticalUrl': null,
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:00:00.000Z',
+};
+
+/// Curseur de la page de `decor`. L'`id` y est un **entier** (singleton `id = 1`).
+final String decorCursor = serverCursor(
+  updatedAtIso: '2026-09-20T10:00:00.000Z',
+  id: 1,
+);
+
+/// La page nominale : l'unique ligne du singleton.
+Map<String, Object?> decorPage() =>
+    deltaPage(items: const [decorPayload], nextCursor: decorCursor);

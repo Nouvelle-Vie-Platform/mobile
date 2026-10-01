@@ -109,6 +109,33 @@ class _FakeMediatheque implements MediathequeRepository {
   }) =>
       _stream.map((rows) => rows.map((t) => _view(t, locale)).toList());
 
+  /// Le même flux, borné comme la médiathèque le borne. Ce double n'est pas le
+  /// sujet de ce fichier — il existe pour que l'écran de détail se monte —, mais
+  /// il applique quand même la règle : sans elle il rendrait tout, et un test
+  /// voisin finirait par s'appuyer dessus.
+  @override
+  Stream<List<TeachingView>> teachingsMatching({
+    required String locale,
+    int? teachingTypeId,
+    String? search,
+  }) =>
+      _stream.map(
+        (rows) => rows
+            .where((t) =>
+                teachingTypeId == null || t.teachingTypeId == teachingTypeId)
+            .where((t) =>
+                search == null ||
+                t.title.toLowerCase().contains(search.toLowerCase()))
+            .map((t) => _view(t, locale))
+            .toList(growable: false),
+      );
+
+  /// Aucune rubrique dans ce double : il ne porte que des contenus, et un slug
+  /// n'y résout donc rien. C'est l'état qui compte ici — l'écran de détail ne
+  /// résout jamais de slug.
+  @override
+  Stream<int?> rubricIdOfSlug(String slug) => Stream.value(null);
+
   @override
   Stream<List<TeachingView>> teachingsOfType(
     int teachingTypeId, {

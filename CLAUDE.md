@@ -133,6 +133,11 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
   - `announcement_composer.dart` / `http_announcement_composer.dart` —
     **l'écriture** des annonces (#36), séparée de leur lecture ; voir « L'onglet
     Annonces ».
+  - `menu_repository.dart` / `store_menu_repository.dart` — **les entrées de
+    menu** (#82) : la barre d'onglets de la médiathèque et les sections de
+    l'accueil, adossées au magasin. `StoreMenuRepository` est l'**unique** endroit
+    où une ligne de `menu_entries` devient une entrée affichable — voir « La
+    médiathèque et l'accueil pilotés par les menus » plus bas.
   - `legal_acceptance_recorder.dart` / `http_legal_acceptance_recorder.dart` —
     **l'écriture du consentement** (#56, `POST /legal/accept`), séparée de la
     lecture des documents pour les mêmes trois raisons que le composeur
@@ -392,6 +397,13 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   ligne-là qui voyage. Une table **vide** veut dire « pas encore reçu les
   réglages », jamais « aucun canal » : le repli est l'**e-mail seul**, et
   `AuthChannelsDao` est le seul endroit qui en décide.
+  `tables/menu_tables.dart` — `menu_entries` (#82) : les **entrées de menu**,
+  trente et une colonnes sur les trente-neuf de la table serveur. **Sans
+  tombstone** — `SaveMenu` écrit le menu en entier et supprime durement, donc une
+  entrée retirée au portail cesse simplement de paraître au flux ; la réparation
+  est « pas de contenu, pas de section ». **Rien ne s'y filtre à l'écriture** : la
+  visibilité par surface et la fenêtre de publication sont des **colonnes**, et
+  c'est le décochage lui-même qui voyage.
   `tables/device_tables.dart` — `device_settings` (#91) : **une seule ligne**, le
   **réglage d'exploitation du parc** installé, et par lui le seuil du bandeau de
   mise à jour. **Sans tombstone** — retirer le seuil met la colonne à `null`, et
@@ -403,8 +415,8 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   et une collection élargie **contamine** les clients qui ne savent pas la lire
   là où une collection neuve est simplement ignorée par eux.
 - `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart`,
-  `gathering_dao.dart`, `announcement_dao.dart`, `playback_dao.dart` et
-  `legal_dao.dart` — lectures, **un DAO par domaine**. `playback_dao` est le
+  `gathering_dao.dart`, `announcement_dao.dart`, `playback_dao.dart`,
+  `legal_dao.dart` et `menu_dao.dart` — lectures, **un DAO par domaine**. `playback_dao` est le
   seul qui **écrive**, et seulement dans la table locale seule.
 
 **Six règles qui ne se renégocient pas** (ADR-0026 en donne le *pourquoi*) :
@@ -450,8 +462,8 @@ qu'elle remplit. Le réseau ne peint jamais.
 - `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
   `gathering_types`, `status_backgrounds`, `official_accounts`,
   `official_account_memberships`, `legal_documents`, `seasons`,
-  `presentation_vocabulary`, `auth_channels`, `device_settings`, `decor`,
-  `contributors`,
+  `presentation_vocabulary`, `menu_entries`, `auth_channels`, `device_settings`,
+  `decor`, `contributors`,
   `branches`, puis `teachings`, `teaching_guests`, `gatherings`,
   `announcements`, `playback_progress`.
 - `sync_api.dart` — `GET /sync` et `GET /sync/{collection}`, sur le `Dio`
@@ -527,6 +539,12 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `gatheringSectionsProvider`. Deux jeux de providers et non un paramétré par
     une famille : c'est ce qui rend impossible qu'un rassemblement se glisse
     dans une liste d'enseignements.
+  - `menu_providers.dart` : `menuRepositoryProvider`, `mediaMenuProvider`,
+    `homeMenuProvider`, `menuTeachingsProvider.family` /
+    `menuGatheringsProvider.family` (clés par `MenuCatalogue`),
+    `teachingRubricIdProvider.family` (slug → identifiant) et
+    `externalLinkLauncherProvider`. **C'est `homeMenuProvider` qui porte la borne
+    de la coexistence des deux mécanismes d'accueil** — voir plus bas.
   - `legal_providers.dart` : `legalRepositoryProvider` (magasin avec backend,
     double en mémoire sinon) et `legalDocumentProvider.family` (par genre) —
     `StreamProvider`, `retry: _noAutomaticRetry`. **Le repli de langue n'y
@@ -542,7 +560,7 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `syncApiProvider`, `syncEngineProvider`, `syncSchedulerProvider`,
     `gatheringDaoProvider`, `announcementDaoProvider`, `playbackDaoProvider`,
     `legalDaoProvider`, `seasonDaoProvider`, `vocabularyDaoProvider`,
-    `authChannelsDaoProvider`, `pullToRefreshProvider`.
+    `authChannelsDaoProvider`, `menuDaoProvider`, `pullToRefreshProvider`.
     Les trois DAO de lecture sont lus par les trois repositories de magasin.
     **Les trois déclencheurs d'ADR-0017 sont câblés** : `app.dart` appelle
     `SyncScheduler.start()` au premier frame sous `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
@@ -633,6 +651,160 @@ Six règles, toutes vérifiées par des tests :
 Le contrat détaillé, le nom du champ de fichier (`backgroundImage`) et la limite
 assumée (on ne sait pas retirer une image déjà publiée) sont dans
 `docs/statuts-annonces.md` §11.
+
+### La médiathèque et l'accueil pilotés par les menus (#82, jumelle serveur #480)
+
+**Les quatre onglets de la médiathèque ne filtraient rien.** `_tab` était un
+`int` dont les seules occurrences du fichier étaient `selected: _tab` et
+`onSelect: (i) => setState(…)` : changer d'onglet déplaçait un soulignement, et
+« Musique » affichait exactement la même chose que « Tout ». La loupe était un
+`onPressed: () {}` alors que `mediaSearchHint` vivait dans l'ARB sans appelant.
+Et les trois sections — carrousel phare, « Derniers enseignements »,
+« Recommandés pour vous » — affichaient **le même tableau, entier, trois fois,
+dans le même ordre**. « Recommandés pour vous » n'était pas une recommandation :
+il a été **retiré**, pas remplacé par un algorithme.
+
+**Vocabulaire, à respecter à la lettre.** *Entrée de menu*, jamais « onglet » :
+l'onglet est le **rendu** d'une entrée sur une surface, et la même entrée paraît
+dans la médiathèque et à l'accueil, sous deux gabarits et à deux rangs
+indépendants. *Destination* : l'intention servie par le portail, lue en **chaîne
+libre**. *Rubrique* : la taxonomie (nom, slug, couleur, icône) — elle ne décide
+plus de l'agencement d'un écran.
+
+#### Les sept pièges du contrat, et où chacun se paie
+
+Tous dans `StoreMenuRepository`, qui est **l'unique** endroit où une ligne devient
+une entrée affichable :
+
+1. **Le serveur sert TOUTES les lignes** — éteintes sur les deux surfaces, hors
+   de leur fenêtre de publication, destinations inconnues comprises. C'est
+   délibéré : **la collection n'a pas de tombstone**, donc une ligne écartée par
+   un filtre serveur ne quitterait pas le flux avec un drapeau de retrait, elle
+   cesserait d'y paraître — et l'appareil qui l'avait reçue la garderait pour
+   toujours. En servant `mediaVisible` / `homeVisible` comme des **colonnes**,
+   c'est le décochage lui-même qui voyage. Le client évalue donc la visibilité et
+   la fenêtre **à la lecture**.
+2. **`publishedFrom` / `publishedUntil` sont des instants**, pas des jours — à la
+   différence des deux bornes de `seasons`, qui restent des chaînes
+   `YYYY-MM-DD` comparées comme des chaînes. On compare à l'horloge, et l'horloge
+   est **injectée** (`nowProvider`) : la fenêtre se réévalue à chaque émission,
+   comme l'expiration des annonces, parce qu'une requête SQL est évaluée quand la
+   table change et non quand l'heure passe.
+3. **`mediaPosition` est un ordre relatif, jamais un numéro stable** : `SaveMenu`
+   renumérote `1..n` par surface à chaque enregistrement. On trie dessus ; aucun
+   test ne fige une valeur, ils comparent l'ordre de **deux** entrées.
+4. **`destinationRubric` et `destinationBranch` portent des slugs, jamais des
+   `id`** : ils se rapprochent des lignes locales du référentiel de **leur**
+   famille. ⚠️ **Le slug de branche n'est pas résoluble sur ce client** —
+   `BranchTransformer` ne sert ni slug ni rien d'approchant au flux delta —, donc
+   une entrée qui en exige un ne ramène aucun contenu et **disparaît**. C'est le
+   bon sens de la panne : mieux vaut une entrée absente qu'un onglet « Aného »
+   montrant tout le catalogue. Le jour où le slug descendra, la clause à changer
+   est dans `MenuDao.watchSurface`, et nulle part ailleurs.
+5. **`parentId` est un entier nu, sans contrainte** : une sous-entrée dont le
+   parent n'est pas en magasin ne fait pas échouer `applyPage`, et à la lecture
+   elle est **ignorée** — surtout pas remontée à la racine, ce qui mettrait dans
+   la barre une entrée que personne n'y a mise.
+6. **`label` et `labelKey` sont indissociables** : `label = null` veut dire « le
+   libellé du dépôt », porté par la clé. ⚠️ **`labelKey` n'est pas une clé `.arb`
+   de ce dépôt** — les sept entrées reprises portent les clés de la **vitrine**
+   (`public.nav.*`). `l10n/menu_labels.dart` est la table de traduction, courte
+   exprès, et c'est aussi l'endroit où une clé inconnue devient une **absence de
+   libellé** : l'entrée ne paraît alors pas, parce qu'un onglet nommé
+   « public.nav.dons » ressemble à une fuite de code et non à un réglage.
+7. **`destinationKind` est une chaîne libre, jamais un enum de donnée.** Un type
+   inconnu fait **disparaître l'entrée en silence**, sans repli sur une
+   destination de substitution (décision 13 du cadrage) : une entrée « Faire un
+   don » qui ouvrirait la liste des prêches est pire qu'une entrée absente, et le
+   visiteur ne peut pas savoir que son application est en retard. `theme`,
+   `intervenant` et les pages du site autres que la médiathèque disparaissent de
+   la même façon — ce ne sont pas des oublis, ce sont des écrans qui n'existent
+   pas ici.
+
+**Et la règle de réparation : pas de contenu, pas de section.** La suppression
+dure côté serveur est un manque assumé ; c'est le **compte de contenus** d'une
+destination qui retire une entrée de l'écran, et rien d'autre ne le fera jamais.
+`destinationFamily` traverse le contrat et dit **quelle collection lire** — ce
+n'est pas l'étiquette d'une ligne de contenu, et elle ne contredit donc pas la
+décision 1 d'ADR-0026. Un **lien externe** porte `1` : son contenu est son
+adresse, et retourner contre lui une règle écrite pour les listes l'effacerait
+toujours.
+
+#### Les deux arbitrages de la tranche
+
+**1. Les cultes entiers (`isFullService`) ne sont ni inclus ni exclus par une
+entrée de menu.** Le modèle de menu ne porte **aucune** colonne qui les concerne.
+Décider dans le client qu'une entrée les écarte serait une règle éditoriale figée
+dans le binaire, invisible depuis le portail et impossible à défaire sans
+livraison — exactement la faute que la décision 13 et tout ce chantier refusent.
+Et le moyen existe déjà, là où il appartient : **dans la donnée** — les ranger
+dans leur rubrique et ne pointer aucune entrée dessus. Le seul endroit qui
+continue de les exclure est `latestTeachingsProvider` (« Dernières
+publications »), et sa raison lui est propre : c'est un **tri**, pas une entrée,
+et un culte de deux heures écraserait une liste faite pour picorer.
+
+**2. La coexistence des deux mécanismes d'accueil est bornée par la donnée, et la
+borne tient en une ligne.** Tant que `homeMenuProvider` rend une liste **vide**,
+l'accueil reste piloté par les rubriques (`teaching_types.visible_on_home` /
+`layout`). Dès qu'il porte une entrée, **les menus font foi et les rubriques se
+taisent**. Trois raisons à cette borne-là plutôt qu'à un drapeau :
+
+- **l'état livré est le vide** — `menu_seed.ts` pose `home_visible: false` sur les
+  sept entrées reprises, et `mobile_home` n'est pas une surface gardée. Un
+  appareil qui monte de version avant que le portail n'ait rien réglé ne doit pas
+  perdre son accueil ;
+- **mélanger les deux montrerait la même rubrique deux fois**, sous deux titres
+  réglés à deux endroits : la divergence que la décision 12 du cadrage interdit ;
+- **une bascule qui vit dans la donnée s'annule en décochant**, ce qu'un drapeau
+  compilé ne permet pas.
+
+**Quand cela finit** : le jour où le serveur retire `visible_on_home` et `layout`
+de `teaching_types` (la moitié serveur de cette tranche). `homeSections()` ne
+rendra alors plus rien, le repli sera mort, et les quatre lignes de
+`_MediathequeHome` qui le portent se retireront avec lui — un seul endroit
+répondra à « où et comment cela paraît ».
+
+#### Ce que l'écran fait, et ce qu'il ne fait pas
+
+`MediaLibraryScreen` ne décide **rien** du menu : il décide « quel onglet est
+actif, et ce qu'il montre ». Cinq points s'y ratent en silence :
+
+1. **Un menu vide ne donne pas une barre vide** : l'écran montre alors le
+   **catalogue entier**, sans barre d'onglets. C'est ce que l'ancienne barre
+   prétendait faire avec son onglet « Tout », et la seule réponse qui ne cache
+   aucun contenu ; une barre vide se lirait comme une panne.
+2. **La loupe n'existe que si l'entrée active offre la puce « recherche »**
+   (`filter_search`, dont c'est l'unique lecteur du dépôt). **Absence, pas
+   grisage** : une icône inerte est une promesse que personne ne tient — c'est
+   exactement ce qu'était `onPressed: () {}`. Refermer la loupe **efface** la
+   recherche, sans quoi un filtre actif resterait derrière un champ invisible.
+3. **Un lien externe n'est jamais l'onglet actif** : il ouvre le navigateur
+   (`ExternalLinkLauncher`) et laisse la liste où elle est. Il n'y a pas de liste
+   dont il serait le filtre, et le souligner laisserait un écran qui ne change
+   pas. ⚠️ `UnavailableExternalLinkLauncher` **n'ouvre rien** aujourd'hui, pour la
+   raison d'`UnavailableStoreLauncher` : le dépôt n'a pas `url_launcher`, et la
+   graine ne sème aucune entrée `externe`. Le chemin est écrit et testé ; seule la
+   dernière ligne attend.
+4. **Les puces d'un onglet sont ses sous-entrées**, jamais une liste fabriquée
+   depuis `filterRubric` / `filterBranch` / `filterFamily` : ces trois cases sont
+   stockées et **n'ont pas de lecteur ici**, parce que les générer donnerait un
+   ordre et des libellés que le portail ne voit pas. Et `icon` n'est pas rendu :
+   le nom vient du kit du portail (`lucide`), qui n'est pas embarqué.
+5. **Le « Voir tout » est réparé, et il porte un slug.** Il poussait `/media` nu —
+   donc la médiathèque **non filtrée** : « Voir tout » de « Prières » affichait
+   tout le catalogue. La route accepte désormais `?rubrique=<slug>` (le nom que le
+   site public emploie déjà, figé par le cadrage), un slug et non un identifiant
+   parce qu'il survit au renommage et qu'un lien partagé saurait le transporter.
+   Un slug que le magasin ne connaît pas ne ramène **rien** — jamais « tout le
+   catalogue », la doctrine du site public devant un `?rubrique=` inconnu.
+
+Côté tests : **le filtrage se juge au niveau du magasin**
+(`test/data/local/menu_dao_test.dart` pour les règles de lecture,
+`mediatheque_dao_test.dart` pour le filtre et la recherche), et l'écran ne répond
+que de l'onglet actif (`test/screens/media_library_screen_test.dart`, couture
+neuve). `pumpScreen` / `pumpRouter` posent un `InMemoryMenuRepository` par
+défaut — donc un menu **vide**, qui est l'état à exercer — et les tests qui
+veulent un vrai menu passent par le paramètre nommé `menu:`.
 
 ### Le fond de l'application — une saison, un décor, un fichier sur le disque
 
@@ -1697,8 +1869,12 @@ autorisés avant authentification.
   refuse, et laisserait la minuterie de Dio derrière lui. `pumpScreen` et
   `test/helpers/playback_doubles.dart` s'en chargent.
 - `home/home_content_section.dart` — le dessin d'une section d'accueil, sans la
-  famille ; `home_teaching_section.dart` et `home_gathering_section.dart` le
-  câblent, chacun à son provider et à sa route.
+  famille **et sans la source** : depuis #82 il prend un titre, une teinte et un
+  gabarit nus, parce que l'accueil a désormais **deux** sources de sections — les
+  rubriques et les entrées de menu — et qu'une entrée n'est pas une rubrique (elle
+  n'a ni slug ni couleur). `home_teaching_section.dart`,
+  `home_gathering_section.dart` et `home_menu_section.dart` le câblent, chacun à
+  son provider et à sa route.
 - `widgets/chat/` — `ChatAppBar`, `ChatBubble`, `ChatDatePill`,
   `ChatInfoBanner`, `MessageInputBar`.
 

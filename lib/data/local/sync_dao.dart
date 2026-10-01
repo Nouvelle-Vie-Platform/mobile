@@ -12,6 +12,7 @@ import 'tables/decor_tables.dart';
 import 'tables/season_tables.dart';
 import 'tables/auth_tables.dart';
 import 'tables/device_tables.dart';
+import 'tables/menu_tables.dart';
 import 'tables/vocabulary_tables.dart';
 
 part 'sync_dao.g.dart';
@@ -108,6 +109,27 @@ abstract final class SyncCollectionKey {
   /// référentiels portent un `SERIAL`.
   static const String presentationVocabulary = 'presentation_vocabulary';
 
+  /// **Les entrées de menu** (#82) — ce qui porte un libellé, une visibilité et
+  /// un ordre **par surface**, et une destination décrite en termes métier.
+  ///
+  /// La clé est `menu_entries` et elle ne se renommera plus (ADR-0017 amendé par
+  /// ADR-0024) : c'est le nom de l'**objet**, pas celui de son rendu. « tabs »
+  /// aurait nommé le rendu d'une entrée sur **une** surface, or une même entrée
+  /// paraît dans la médiathèque et à l'accueil, sous deux gabarits.
+  ///
+  /// Un **référentiel** sans aucun filtre de périmètre : un menu n'appartient à
+  /// aucune branche — il y a un site public et une application, et la barre
+  /// réglée depuis Aného est celle de Lomé. Et elle est servie **sans compte**
+  /// (`servesAnonymous`), ce qui n'est pas un confort mais la condition de
+  /// l'écran : la médiathèque et l'accueil sont les deux premiers écrans qu'un
+  /// porteur sans compte ouvre, et sans le drapeau il n'aurait **aucun** onglet.
+  ///
+  /// **Sans tombstone, et c'est un manque assumé** : `SaveMenu` écrit le menu en
+  /// entier, donc une entrée que le tableau posté ne nomme plus est supprimée
+  /// durement et cesse simplement de paraître au flux. La réparation appartient
+  /// au client, sur le patron « pas de contenu, pas de section ».
+  static const String menuEntries = 'menu_entries';
+
   /// **Les canaux de connexion** (#83) — par quelles portes l'application
   /// propose d'entrer, et ce qu'elle annonce.
   ///
@@ -197,6 +219,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     LegalDocuments,
     Seasons,
     PresentationVocabulary,
+    MenuEntries,
     Decor,
     AuthChannels,
     DeviceSettings,
@@ -278,6 +301,15 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
         SyncCollectionKey.presentationVocabulary,
         presentationVocabulary,
       );
+
+  /// **Toutes les entrées, éteintes et hors fenêtre comprises** (#82) : la
+  /// visibilité par surface et la fenêtre de publication sont des **colonnes**,
+  /// pas un périmètre de livraison. C'est le décochage lui-même qui voyage, et
+  /// c'est la seule forme sous laquelle il puisse voyager — la collection n'a
+  /// pas de tombstone, une ligne écartée par un filtre serveur resterait pour
+  /// toujours sur l'appareil qui l'avait reçue.
+  LocalCollection<MenuEntryRow> get menuEntriesCollection =>
+      LocalCollection._(SyncCollectionKey.menuEntries, menuEntries);
 
   /// **Une seule ligne**, et `null` y est une valeur : pas de décor déposé au
   /// portail n'est pas la même chose que pas encore reçu les réglages.

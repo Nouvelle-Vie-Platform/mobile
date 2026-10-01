@@ -369,7 +369,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: AppRoute.media,
         path: '/media',
-        builder: (_, __) => const AppBackground(child: MediaLibraryScreen()),
+        // `?rubrique=` porte le **slug** d'une rubrique, et c'est ce qui répare
+        // le « Voir tout » d'une section d'accueil : il poussait `/media` nu,
+        // donc la médiathèque **non filtrée** — appuyer sur « Voir tout » de
+        // « Prières » affichait tout le catalogue.
+        //
+        // Un slug et non un identifiant, et le nom du paramètre est celui que le
+        // site public emploie déjà (`?rubrique=`, figé par le cadrage § 12.6) :
+        // c'est ce qui survit au renommage d'une rubrique, et ce qu'un lien
+        // partagé ou une notification saurait transporter. Un slug que le magasin
+        // ne connaît pas ne ramène rien — jamais le catalogue entier.
+        builder: (_, state) => AppBackground(
+          child: MediaLibraryScreen(
+            initialRubric: state.uri.queryParameters['rubrique'],
+          ),
+        ),
       ),
       GoRoute(
         name: AppRoute.live,

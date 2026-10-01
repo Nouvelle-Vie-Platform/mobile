@@ -30,7 +30,9 @@ class HomeGatheringSection extends ConsumerWidget {
     final provider = gatheringsOfTypeProvider(section.teachingTypeId);
 
     return HomeContentSection(
-      section: section,
+      title: section.label,
+      accent: Color(section.color),
+      layout: section.layout,
       items: ref.watch(provider),
       onOpen: (gathering) => context.pushNamed(
         AppRoute.gatheringDetail,

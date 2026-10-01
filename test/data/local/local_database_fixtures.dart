@@ -233,3 +233,71 @@ LegalDocumentsCompanion legalDocumentRow(
       publishedAt: Value(publishedAt),
       updatedAt: Value(updatedAt),
     );
+
+/// Une **entrée de menu** (#82).
+///
+/// Tous les champs sont des **valeurs nues** : rien n'oblige le parent à exister,
+/// ni le slug de rubrique à désigner une ligne du référentiel — et c'est ce qui
+/// permet d'écrire les cas qui comptent, un slug inconnu et une sous-entrée
+/// orpheline.
+///
+/// Les défauts sont ceux du **serveur** : une entrée est visible sur la
+/// médiathèque, invisible à l'accueil, sans fenêtre de publication, et son
+/// libellé est une surcharge (`label`) — `labelKey` reste à `null`, parce qu'une
+/// entrée créée à l'écran n'a pas de clé de dépôt.
+///
+/// ⚠️ [mediaPosition] et [homePosition] sont des **ordres relatifs** : `SaveMenu`
+/// les renumérote `1..n` par surface à chaque enregistrement. Un test les pose
+/// pour comparer deux entrées, jamais pour en figer la valeur.
+MenuEntriesCompanion menuEntryRow(
+  int id, {
+  Map<String, String>? label = const {'fr': 'Tout'},
+  String? labelKey,
+  int? parentId,
+  String destinationKind = 'catalogue',
+  String? destinationPage,
+  String? destinationFamily = 'teaching',
+  String? destinationRubric,
+  String? destinationBranch,
+  String? destinationSearch,
+  String? destinationUrl,
+  String? icon,
+  bool featured = false,
+  bool divided = false,
+  bool filterSearch = false,
+  bool mediaVisible = true,
+  int mediaPosition = 1,
+  bool homeVisible = false,
+  int homePosition = 0,
+  String? homeLayout,
+  DateTime? publishedFrom,
+  DateTime? publishedUntil,
+  Map<String, String>? pageTitle,
+  Map<String, String>? pageDescription,
+}) =>
+    MenuEntriesCompanion.insert(
+      id: Value(id),
+      parentId: Value(parentId),
+      labelKey: Value(labelKey),
+      label: Value(label),
+      icon: Value(icon),
+      featured: Value(featured),
+      divided: Value(divided),
+      destinationKind: destinationKind,
+      destinationPage: Value(destinationPage),
+      destinationFamily: Value(destinationFamily),
+      destinationRubric: Value(destinationRubric),
+      destinationBranch: Value(destinationBranch),
+      destinationSearch: Value(destinationSearch),
+      destinationUrl: Value(destinationUrl),
+      filterSearch: Value(filterSearch),
+      mediaVisible: Value(mediaVisible),
+      mediaPosition: Value(mediaPosition),
+      homeVisible: Value(homeVisible),
+      homePosition: Value(homePosition),
+      homeLayout: Value(homeLayout),
+      publishedFrom: Value(publishedFrom),
+      publishedUntil: Value(publishedUntil),
+      pageTitle: Value(pageTitle),
+      pageDescription: Value(pageDescription),
+    );

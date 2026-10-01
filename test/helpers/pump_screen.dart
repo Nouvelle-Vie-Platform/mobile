@@ -12,6 +12,7 @@ import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
+import 'package:maison_du_miracle/data/repositories/menu_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
@@ -21,6 +22,7 @@ import 'package:maison_du_miracle/state/legal_notice_providers.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
 import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
+import 'package:maison_du_miracle/state/menu_providers.dart';
 import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/models/auth_channels.dart';
@@ -61,6 +63,14 @@ import 'playback_doubles.dart';
 /// la même raison : la seconde famille de la médiathèque lit le même magasin
 /// Drift, et l'accueil la rend désormais.
 ///
+/// Celui des **menus** ([menu]) l'est pour la même raison, et son défaut dit
+/// quelque chose : `InMemoryMenuRepository` rend un menu **vide**, c'est-à-dire
+/// l'état d'une application dont le premier cycle n'a rien ramené. La médiathèque
+/// montre alors son onglet implicite (le catalogue entier) et l'accueil reste
+/// piloté par les rubriques — les deux replis que tout test d'écran doit exercer
+/// sans avoir à parler de menus. Ceux qui veulent un vrai menu passent
+/// `StoreMenuRepository(db.menuDao)`.
+///
 /// Celui des **annonces** ([announcements]) aussi, et il est le plus facile à
 /// oublier : `HomeShell` monte les quatre onglets dans un `IndexedStack`, donc
 /// la visionneuse de statuts vit dès qu'un test monte la coquille — et
@@ -98,6 +108,14 @@ Future<void> pumpRouter(
   AppDatabase? database,
   AuthRepository? auth,
   ThemePreferences? theme,
+  // Les deux repositories de contenu sont des **paramètres nommés ici aussi**,
+  // et pas des `Override` que l'appelant ajouterait : `_commonOverrides` en pose
+  // déjà un pour chacun, et Riverpod 3 refuse deux surcharges du même provider
+  // dans un même conteneur. Un test de navigation qui veut le vrai magasin passe
+  // donc par là.
+  MediathequeRepository? mediatheque,
+  GatheringRepository? gatherings,
+  MenuRepository? menu,
   LegalNoticeStore? legalNotice,
   VocabularyOverrides? vocabulary,
   AuthChannelOffer? authChannels,
@@ -113,6 +131,9 @@ Future<void> pumpRouter(
           db,
           auth: auth,
           theme: theme,
+          mediatheque: mediatheque,
+          gatherings: gatherings,
+          menu: menu,
           legalNotice: legalNotice,
           vocabulary: vocabulary,
           authChannels: authChannels,
@@ -146,6 +167,7 @@ List<Override> _commonOverrides(
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
+  MenuRepository? menu,
   LegalNoticeStore? legalNotice,
   VocabularyOverrides? vocabulary,
   AuthChannelOffer? authChannels,
@@ -228,6 +250,8 @@ List<Override> _commonOverrides(
           .overrideWithValue(mediatheque ?? InMemoryMediathequeRepository()),
       gatheringRepositoryProvider
           .overrideWithValue(gatherings ?? InMemoryGatheringRepository()),
+      menuRepositoryProvider
+          .overrideWithValue(menu ?? const InMemoryMenuRepository()),
       announcementRepositoryProvider
           .overrideWithValue(announcements ?? InMemoryAnnouncementRepository()),
       legalNoticeStoreProvider.overrideWithValue(
@@ -242,6 +266,7 @@ Future<void> pumpScreen(
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
+  MenuRepository? menu,
   AppDatabase? database,
   AuthRepository? auth,
   ThemePreferences? theme,
@@ -269,6 +294,7 @@ Future<void> pumpScreen(
           mediatheque: mediatheque,
           gatherings: gatherings,
           announcements: announcements,
+          menu: menu,
           legalNotice: legalNotice,
           vocabulary: vocabulary,
           authChannels: authChannels,

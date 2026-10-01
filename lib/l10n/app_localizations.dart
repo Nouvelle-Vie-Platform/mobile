@@ -526,35 +526,17 @@ abstract class AppLocalizations {
   /// **'Rechercher un message...'**
   String get mediaSearchHint;
 
-  /// No description provided for @mediaRecommended.
-  ///
-  /// In fr, this message translates to:
-  /// **'Recommandés pour vous'**
-  String get mediaRecommended;
-
-  /// No description provided for @filterAll.
+  /// Médiathèque : le libellé du dépôt de l'entrée de menu indélébile — le catalogue entier, sans filtre (public.nav.mediatheque). Le portail peut le surcharger ; cette valeur est ce qu'affiche une application qui n'a pas encore synchronisé
   ///
   /// In fr, this message translates to:
   /// **'Tout'**
   String get filterAll;
-
-  /// No description provided for @filterSermons.
-  ///
-  /// In fr, this message translates to:
-  /// **'Prêches'**
-  String get filterSermons;
 
   /// Médiathèque : libellé de l'onglet des messages. La clé garde son nom historique, le libellé dit « Messages »
   ///
   /// In fr, this message translates to:
   /// **'Messages'**
   String get filterTeachings;
-
-  /// No description provided for @filterMusic.
-  ///
-  /// In fr, this message translates to:
-  /// **'Musique'**
-  String get filterMusic;
 
   /// Étiquette posée sur un regroupement de messages. La clé garde son nom historique ; le mot affiché est « Thème », plus « Série »
   ///

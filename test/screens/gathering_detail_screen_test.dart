@@ -110,6 +110,25 @@ class _FakeGatherings implements GatheringRepository {
   }) =>
       _stream.map((rows) => rows.map((g) => _view(g, locale)).toList());
 
+  /// Le pendant de `teachingsMatching` : borné comme le magasin le borne, pour
+  /// qu'aucun test voisin ne vienne s'appuyer sur un double qui rend tout.
+  @override
+  Stream<List<GatheringView>> gatheringsMatching({
+    required String locale,
+    int? gatheringTypeId,
+    String? search,
+  }) =>
+      _stream.map(
+        (rows) => rows
+            .where((g) =>
+                gatheringTypeId == null || g.teachingTypeId == gatheringTypeId)
+            .where((g) =>
+                search == null ||
+                g.title.toLowerCase().contains(search.toLowerCase()))
+            .map((g) => _view(g, locale))
+            .toList(growable: false),
+      );
+
   @override
   Stream<List<GatheringView>> gatheringsOfType(
     int gatheringTypeId, {

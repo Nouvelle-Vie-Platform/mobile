@@ -94,11 +94,8 @@
 
   "mediaTitle": "Media library",
   "mediaSearchHint": "Search for a message...",
-  "mediaRecommended": "Recommended for you",
   "filterAll": "All",
-  "filterSermons": "Sermons",
   "filterTeachings": "Messages",
-  "filterMusic": "Music",
   "seriesTag": "Theme",
   "seriesMessagesCount": "{count} messages",
 

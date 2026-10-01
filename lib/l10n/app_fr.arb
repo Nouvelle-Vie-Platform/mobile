@@ -119,12 +119,10 @@
 
   "mediaTitle": "Médiathèque",
   "mediaSearchHint": "Rechercher un message...",
-  "mediaRecommended": "Recommandés pour vous",
   "filterAll": "Tout",
-  "filterSermons": "Prêches",
+  "@filterAll": { "description": "Médiathèque : le libellé du dépôt de l'entrée de menu indélébile — le catalogue entier, sans filtre (public.nav.mediatheque). Le portail peut le surcharger ; cette valeur est ce qu'affiche une application qui n'a pas encore synchronisé" },
   "filterTeachings": "Messages",
   "@filterTeachings": { "description": "Médiathèque : libellé de l'onglet des messages. La clé garde son nom historique, le libellé dit « Messages »" },
-  "filterMusic": "Musique",
   "seriesTag": "Thème",
   "@seriesTag": { "description": "Étiquette posée sur un regroupement de messages. La clé garde son nom historique ; le mot affiché est « Thème », plus « Série »" },
   "seriesMessagesCount": "{count} messages",

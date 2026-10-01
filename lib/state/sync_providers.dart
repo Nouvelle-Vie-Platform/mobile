@@ -32,6 +32,7 @@ import '../data/local/device_settings_dao.dart';
 import '../data/local/gathering_dao.dart';
 import '../data/local/legal_dao.dart';
 import '../data/local/mediatheque_dao.dart';
+import '../data/local/menu_dao.dart';
 import '../data/local/playback_dao.dart';
 import '../data/local/season_dao.dart';
 import '../data/local/sync_dao.dart';
@@ -113,6 +114,16 @@ final seasonDaoProvider = Provider<SeasonDao>(
 /// — à un seul endroit.
 final vocabularyDaoProvider = Provider<VocabularyDao>(
   (ref) => ref.watch(appDatabaseProvider).vocabularyDao,
+);
+
+/// Les lectures du magasin, côté **menus** — les entrées réglées au portail
+/// (#82). Un DAO de plus, même motif que les précédents.
+///
+/// C'est lui qui résout les slugs de rubrique et qui compte, surface par
+/// surface, ce que chaque destination ramènerait : les deux choses dont « pas de
+/// contenu, pas de section » a besoin, et qu'une entrée ne porte pas elle-même.
+final menuDaoProvider = Provider<MenuDao>(
+  (ref) => ref.watch(appDatabaseProvider).menuDao,
 );
 
 /// Les lectures du magasin, côté **canaux de connexion** — par quelles portes

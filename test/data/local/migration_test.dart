@@ -601,6 +601,58 @@ void main() {
     expect(await db.syncDao.cursorFor('device_settings'), isNull);
   });
 
+  test('v16 → v17 : la table des entrées de menu apparaît', () async {
+    // Le palier des **menus** (#82) : une création de table, et rien d'autre.
+    // Aucune colonne existante ne bouge, et ni la médiathèque ni l'accueil ne
+    // changent de comportement tant que le premier cycle n'a rien ramené.
+    final connection = await verifier.startAt(16);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 17);
+  });
+
+  test('v1 → v17 : un appareil resté en v1 rejoue les seize paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 17);
+  });
+
+  test('v16 → v17 : le catalogue survit, et il n\'y a pas de menu', () async {
+    // Ce qu'un fidèle hors ligne risquerait de perdre, c'est son catalogue : le
+    // palier ne le touche pas. La table neuve, elle, naît vide — et **vide veut
+    // dire « aucun menu reçu »**, jamais « aucun onglet ». La médiathèque montre
+    // alors son onglet implicite (le catalogue entier) et l'accueil reste piloté
+    // par les rubriques : c'est la coexistence bornée du cadrage § 14, et c'est
+    // ce qui permet à un appareil de monter de version avant que le portail n'ait
+    // réglé quoi que ce soit.
+    final schema = await verifier.schemaAt(16);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+    schema.rawDatabase.execute(
+      "INSERT INTO teaching_types (id, label, slug, sync_stamp) "
+      "VALUES (1, '{\"fr\":\"Dimanche\"}', 'dimanche', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 17);
+
+    expect((await db.select(db.teachings).get()).single.title,
+        'Dieu a le dernier mot');
+    // La rubrique survit, et c'est elle qui fait foi pour l'accueil tant
+    // qu'aucune entrée de menu n'est allumée.
+    expect((await db.select(db.teachingTypes).get()).single.slug, 'dimanche');
+    expect(await db.select(db.menuEntries).get(), isEmpty);
+    // Aucun curseur posé : la collection n'a jamais été tirée, le prochain
+    // manifeste l'annoncera `from_zero`.
+    expect(await db.syncDao.cursorFor('menu_entries'), isNull);
+  });
+
   test('la version de schéma couvre bien toutes les versions exportées', () {
     final db = openTestDatabase();
     addTearDown(db.close);
