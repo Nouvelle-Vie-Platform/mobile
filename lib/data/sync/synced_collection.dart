@@ -174,6 +174,18 @@ class _PageSplit<D> {
 /// reste sur son repli, **l'e-mail seul**, qui est le canal qui envoie
 /// réellement un code.
 ///
+/// **`device_settings` se range avec les référentiels, et tôt** (#91). C'est le
+/// **réglage d'exploitation du parc** — aujourd'hui le seul seuil du bandeau de
+/// mise à jour —, et il vaut pour tout le monde, porteur **sans compte**
+/// compris : un invité ouvre l'application avec un APK exactement aussi vieux
+/// que celui du membre assis à côté de lui. Même raison d'être tôt que le
+/// vocabulaire et les canaux : toute erreur autre qu'un `404` coupe le cycle,
+/// donc toutes les collections rangées après la fautive, et une collection d'une
+/// ligne sans filtre ni jointure est parmi les moins susceptibles d'échouer. Un
+/// `404` la saute sans rien dégrader : le magasin reste sans seuil, et **sans
+/// seuil il n'y a pas de bandeau** — un serveur en retard d'une version ne
+/// dégrade donc rien du tout.
+///
 /// **`teaching_guests` se range après `contributors` ET après `teachings`**
 /// (#77). C'est un **pivot** : ses deux colonnes ne désignent rien par
 /// elles-mêmes, et il ne s'affiche qu'en joignant les deux collections qu'il
@@ -253,6 +265,15 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         // un UUID — c'est le patron de `decor`, pas celui du vocabulaire.
         idOf: (item) => referenceId(SyncCollectionKey.authChannels, item),
         rowOf: authChannelsRowOf,
+      ),
+      SyncedCollection<DeviceSettingsRow>(
+        key: SyncCollectionKey.deviceSettings,
+        local: (dao) => dao.deviceSettingsCollection,
+        // `referenceId` : la PK du singleton est un **entier** (`id = 1`), pas
+        // un UUID — c'est le patron de `decor` et d'`auth_channels`, pas celui
+        // du vocabulaire.
+        idOf: (item) => referenceId(SyncCollectionKey.deviceSettings, item),
+        rowOf: deviceSettingsRowOf,
       ),
       SyncedCollection<DecorRow>(
         key: SyncCollectionKey.decor,

@@ -11,6 +11,7 @@ import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
 import 'tables/season_tables.dart';
 import 'tables/auth_tables.dart';
+import 'tables/device_tables.dart';
 import 'tables/vocabulary_tables.dart';
 
 part 'sync_dao.g.dart';
@@ -122,6 +123,21 @@ abstract final class SyncCollectionKey {
   /// qui voyage.
   static const String authChannels = 'auth_channels';
 
+  /// **Le réglage d'exploitation du parc** (#91) — aujourd'hui le seul seuil du
+  /// bandeau de mise à jour, réglé depuis l'écran *Appareils* du portail.
+  ///
+  /// Un **référentiel** sans aucun filtre de périmètre : un parc d'appareils
+  /// n'appartient à aucune branche — il n'y a pas une version recommandée à Lomé
+  /// et une autre à Aného. Et elle est servie **sans compte**
+  /// (`servesAnonymous`), ce qui n'est pas un confort : un invité utilise
+  /// l'application, et son APK est exactement aussi vieux que celui du membre
+  /// assis à côté de lui.
+  ///
+  /// **Sans tombstone, et sans en avoir besoin** : le singleton ne se supprime
+  /// pas. **Retirer** le seuil met la colonne à `null`, et c'est cette ligne-là
+  /// qui voyage.
+  static const String deviceSettings = 'device_settings';
+
   /// **La reprise de lecture** — la première collection `private` que ce client
   /// réplique (issue #43). Elle est en **lecture-depuis-la-synchro seulement** :
   /// l'application écrit sa position à chaud dans `local_playback_positions`,
@@ -183,6 +199,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     PresentationVocabulary,
     Decor,
     AuthChannels,
+    DeviceSettings,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -273,6 +290,14 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// encore reçu les réglages », et c'est `AuthChannelsDao` qui en décide.
   LocalCollection<AuthChannelsRow> get authChannelsCollection =>
       LocalCollection._(SyncCollectionKey.authChannels, authChannels);
+
+  /// **Une seule ligne, et pas de tombstone** : retirer le seuil met la colonne
+  /// à `null` — le retrait voyage donc par le flux normal, sur la ligne
+  /// elle-même. Une table vide, elle, ne dit pas autre chose qu'une colonne
+  /// nulle : dans les deux cas il n'y a pas de seuil, donc pas de bandeau, et
+  /// c'est `DeviceSettingsDao` qui en décide.
+  LocalCollection<DeviceSettingsRow> get deviceSettingsCollection =>
+      LocalCollection._(SyncCollectionKey.deviceSettings, deviceSettings);
 
   /// **La seule collection `private` de ce registre.** Elle se remplit comme
   /// les dix autres — par le flux delta, jamais par l'application — et rien

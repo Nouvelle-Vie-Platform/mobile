@@ -21,6 +21,7 @@ import 'downloads_dao.dart';
 // Idem : le convertisseur des sections d'un document légal est instancié par le
 // code généré.
 import 'converters/legal_sections_converter.dart';
+import 'device_settings_dao.dart';
 import 'gathering_dao.dart';
 import 'legal_dao.dart';
 import 'mediatheque_dao.dart';
@@ -38,6 +39,7 @@ import 'tables/playback_tables.dart';
 import 'tables/settings_tables.dart';
 import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
+import 'tables/device_tables.dart';
 import 'tables/season_tables.dart';
 import 'tables/vocabulary_tables.dart';
 import 'vocabulary_dao.dart';
@@ -87,6 +89,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     PresentationVocabulary,
     Decor,
     AuthChannels,
+    DeviceSettings,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -102,6 +105,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     SeasonDao,
     VocabularyDao,
     AuthChannelsDao,
+    DeviceSettingsDao,
     SettingsDao,
     DownloadsDao,
     DownloadNotificationsDao,
@@ -158,8 +162,14 @@ class AppDatabase extends _$AppDatabase {
   /// d'autre. La table naît **vide**, et vide veut dire « je n'ai pas encore reçu
   /// les réglages » — le repli est alors l'**e-mail seul**, c'est-à-dire ce que
   /// l'écran d'identifiant choisissait déjà par défaut.
+  ///
+  /// **v16** — `device_settings` (#91), le **réglage d'exploitation du parc** et
+  /// par lui le seuil du bandeau de mise à jour : une collection répliquée de
+  /// plus, une création de table, et rien d'autre. La table naît **vide**, et
+  /// vide veut dire « pas de seuil », donc **aucun bandeau** — exactement ce que
+  /// l'application affiche déjà, puisque son seuil rendait `null` en dur.
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -424,6 +434,29 @@ class AppDatabase extends _$AppDatabase {
           // surnuméraire.
           if (from < 15) {
             await m.createTable(authChannels);
+          }
+
+          // v15 → v16 — le **réglage d'exploitation du parc** (#91). Une
+          // création de table, et rien d'autre : aucune colonne existante ne
+          // bouge, aucune ligne n'est réécrite, et le bandeau de mise à jour ne
+          // change pas de comportement tant que le premier cycle n'a rien
+          // ramené.
+          //
+          // La table naît **vide**, et c'est un état plein de sens : vide veut
+          // dire « je n'ai pas encore reçu les réglages », ce que le DAO lit
+          // comme « pas de seuil » — donc **aucun bandeau**, jamais l'inverse.
+          // Son curseur n'existe pas encore, le prochain manifeste l'annoncera
+          // `from_zero`, et le premier cycle ramènera la ligne du portail.
+          // D'ici là — et si le serveur est en retard d'une version, auquel cas
+          // la collection prend un `404` et se saute — rien ne se dégrade : le
+          // bandeau reste tu, exactement comme avant la migration.
+          //
+          // Pas de garde `to >= 16` pour la raison des paliers qui ne créent
+          // que des tables (v2 à v5, v7, v9, v11 à v15) : le vérificateur de
+          // schéma **ignore une table surnuméraire** et ne signale qu'une
+          // colonne surnuméraire.
+          if (from < 16) {
+            await m.createTable(deviceSettings);
           }
         },
         beforeOpen: (details) async {

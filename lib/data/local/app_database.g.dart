@@ -10337,6 +10337,343 @@ class AuthChannelsCompanion extends UpdateCompanion<AuthChannelsRow> {
   }
 }
 
+class $DeviceSettingsTable extends DeviceSettings
+    with TableInfo<$DeviceSettingsTable, DeviceSettingsRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DeviceSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _updateBannerMinVersionMeta =
+      const VerificationMeta('updateBannerMinVersion');
+  @override
+  late final GeneratedColumn<String> updateBannerMinVersion =
+      GeneratedColumn<String>('update_banner_min_version', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, id, updateBannerMinVersion, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'device_settings';
+  @override
+  VerificationContext validateIntegrity(Insertable<DeviceSettingsRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('update_banner_min_version')) {
+      context.handle(
+          _updateBannerMinVersionMeta,
+          updateBannerMinVersion.isAcceptableOrUnknown(
+              data['update_banner_min_version']!, _updateBannerMinVersionMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DeviceSettingsRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeviceSettingsRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      updateBannerMinVersion: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}update_banner_min_version']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $DeviceSettingsTable createAlias(String alias) {
+    return $DeviceSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class DeviceSettingsRow extends DataClass
+    implements Insertable<DeviceSettingsRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// `integer` côté serveur et non `SERIAL` — il n'y aura jamais qu'une ligne.
+  /// Vaut toujours `1`, mais la colonne existe parce que le curseur composé du
+  /// protocole en a besoin, et parce qu'une table locale n'a pas à supposer ce
+  /// que le serveur garantit.
+  final int id;
+
+  /// **La plus basse version encore recommandée**, telle que `1.4.0`. `null` =
+  /// aucun seuil réglé, donc **aucun bandeau pour personne**.
+  ///
+  /// Une **chaîne**, et pas trois entiers : c'est la version que l'application
+  /// annonce (`package_info_plus`), et la comparer est l'affaire de qui la lit
+  /// (`compareAppVersions`). La découper au stockage inventerait ici une
+  /// sémantique de version que le client détient déjà.
+  ///
+  /// ⚠️ `null`, jamais la chaîne vide — le transformer serveur le garantit et
+  /// le dit : une chaîne vide passerait le test `threshold == null`, irait
+  /// jusqu'à `compareAppVersions` et s'y ferait rejeter **par chance**, pas par
+  /// contrat.
+  final String? updateBannerMinVersion;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const DeviceSettingsRow(
+      {required this.syncStamp,
+      required this.id,
+      this.updateBannerMinVersion,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || updateBannerMinVersion != null) {
+      map['update_banner_min_version'] =
+          Variable<String>(updateBannerMinVersion);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  DeviceSettingsCompanion toCompanion(bool nullToAbsent) {
+    return DeviceSettingsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      updateBannerMinVersion: updateBannerMinVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updateBannerMinVersion),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory DeviceSettingsRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeviceSettingsRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      updateBannerMinVersion:
+          serializer.fromJson<String?>(json['updateBannerMinVersion']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'updateBannerMinVersion':
+          serializer.toJson<String?>(updateBannerMinVersion),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  DeviceSettingsRow copyWith(
+          {int? syncStamp,
+          int? id,
+          Value<String?> updateBannerMinVersion = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      DeviceSettingsRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        updateBannerMinVersion: updateBannerMinVersion.present
+            ? updateBannerMinVersion.value
+            : this.updateBannerMinVersion,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  DeviceSettingsRow copyWithCompanion(DeviceSettingsCompanion data) {
+    return DeviceSettingsRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      updateBannerMinVersion: data.updateBannerMinVersion.present
+          ? data.updateBannerMinVersion.value
+          : this.updateBannerMinVersion,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeviceSettingsRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('updateBannerMinVersion: $updateBannerMinVersion, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(syncStamp, id, updateBannerMinVersion, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeviceSettingsRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.updateBannerMinVersion == this.updateBannerMinVersion &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class DeviceSettingsCompanion extends UpdateCompanion<DeviceSettingsRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String?> updateBannerMinVersion;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const DeviceSettingsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.updateBannerMinVersion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  DeviceSettingsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.updateBannerMinVersion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  static Insertable<DeviceSettingsRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? updateBannerMinVersion,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (updateBannerMinVersion != null)
+        'update_banner_min_version': updateBannerMinVersion,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  DeviceSettingsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String?>? updateBannerMinVersion,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return DeviceSettingsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      updateBannerMinVersion:
+          updateBannerMinVersion ?? this.updateBannerMinVersion,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (updateBannerMinVersion.present) {
+      map['update_banner_min_version'] =
+          Variable<String>(updateBannerMinVersion.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeviceSettingsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('updateBannerMinVersion: $updateBannerMinVersion, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AppSettingsTable extends AppSettings
     with TableInfo<$AppSettingsTable, AppSettingRow> {
   @override
@@ -11640,6 +11977,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $PresentationVocabularyTable(this);
   late final $DecorTable decor = $DecorTable(this);
   late final $AuthChannelsTable authChannels = $AuthChannelsTable(this);
+  late final $DeviceSettingsTable deviceSettings = $DeviceSettingsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $DownloadsTable downloads = $DownloadsTable(this);
   late final $DownloadTitlesTable downloadTitles = $DownloadTitlesTable(this);
@@ -11657,6 +11995,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final VocabularyDao vocabularyDao = VocabularyDao(this as AppDatabase);
   late final AuthChannelsDao authChannelsDao =
       AuthChannelsDao(this as AppDatabase);
+  late final DeviceSettingsDao deviceSettingsDao =
+      DeviceSettingsDao(this as AppDatabase);
   late final SettingsDao settingsDao = SettingsDao(this as AppDatabase);
   late final DownloadsDao downloadsDao = DownloadsDao(this as AppDatabase);
   late final DownloadNotificationsDao downloadNotificationsDao =
@@ -11687,6 +12027,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         presentationVocabulary,
         decor,
         authChannels,
+        deviceSettings,
         appSettings,
         downloads,
         downloadTitles,
@@ -16558,6 +16899,176 @@ typedef $$AuthChannelsTableProcessedTableManager = ProcessedTableManager<
     ),
     AuthChannelsRow,
     PrefetchHooks Function()>;
+typedef $$DeviceSettingsTableCreateCompanionBuilder = DeviceSettingsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String?> updateBannerMinVersion,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$DeviceSettingsTableUpdateCompanionBuilder = DeviceSettingsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String?> updateBannerMinVersion,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$DeviceSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $DeviceSettingsTable> {
+  $$DeviceSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get updateBannerMinVersion => $composableBuilder(
+      column: $table.updateBannerMinVersion,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$DeviceSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DeviceSettingsTable> {
+  $$DeviceSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get updateBannerMinVersion => $composableBuilder(
+      column: $table.updateBannerMinVersion,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$DeviceSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DeviceSettingsTable> {
+  $$DeviceSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get updateBannerMinVersion => $composableBuilder(
+      column: $table.updateBannerMinVersion, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$DeviceSettingsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $DeviceSettingsTable,
+    DeviceSettingsRow,
+    $$DeviceSettingsTableFilterComposer,
+    $$DeviceSettingsTableOrderingComposer,
+    $$DeviceSettingsTableAnnotationComposer,
+    $$DeviceSettingsTableCreateCompanionBuilder,
+    $$DeviceSettingsTableUpdateCompanionBuilder,
+    (
+      DeviceSettingsRow,
+      BaseReferences<_$AppDatabase, $DeviceSettingsTable, DeviceSettingsRow>
+    ),
+    DeviceSettingsRow,
+    PrefetchHooks Function()> {
+  $$DeviceSettingsTableTableManager(
+      _$AppDatabase db, $DeviceSettingsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DeviceSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DeviceSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DeviceSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String?> updateBannerMinVersion = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              DeviceSettingsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            updateBannerMinVersion: updateBannerMinVersion,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String?> updateBannerMinVersion = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              DeviceSettingsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            updateBannerMinVersion: updateBannerMinVersion,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$DeviceSettingsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $DeviceSettingsTable,
+    DeviceSettingsRow,
+    $$DeviceSettingsTableFilterComposer,
+    $$DeviceSettingsTableOrderingComposer,
+    $$DeviceSettingsTableAnnotationComposer,
+    $$DeviceSettingsTableCreateCompanionBuilder,
+    $$DeviceSettingsTableUpdateCompanionBuilder,
+    (
+      DeviceSettingsRow,
+      BaseReferences<_$AppDatabase, $DeviceSettingsTable, DeviceSettingsRow>
+    ),
+    DeviceSettingsRow,
+    PrefetchHooks Function()>;
 typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
     Function({
   required String key,
@@ -17283,6 +17794,8 @@ class $AppDatabaseManager {
       $$DecorTableTableManager(_db, _db.decor);
   $$AuthChannelsTableTableManager get authChannels =>
       $$AuthChannelsTableTableManager(_db, _db.authChannels);
+  $$DeviceSettingsTableTableManager get deviceSettings =>
+      $$DeviceSettingsTableTableManager(_db, _db.deviceSettings);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$DownloadsTableTableManager get downloads =>

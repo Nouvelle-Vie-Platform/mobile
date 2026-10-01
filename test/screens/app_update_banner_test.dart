@@ -10,6 +10,18 @@
 /// Quatre règles y sont verrouillées : pas de seuil, pas de bandeau ; sous le
 /// seuil, il paraît ; il n'enferme rien ; et il se ferme sans revenir dans la
 /// même session.
+///
+/// ## Deux chemins jusqu'au seuil, et les deux sont couverts ici
+///
+/// Les cas de comparaison se montent en surchargeant
+/// `appUpdateThresholdProvider` directement : c'est le bandeau **seul**, et le
+/// seuil y est une valeur. Depuis #91 il existe un second chemin, celui de la
+/// production : le seuil descend par la collection répliquée
+/// `device_settings`, et le provider le lit du magasin. Le groupe
+/// « depuis le magasin » monte ce chemin-là par le paramètre nommé
+/// [pumpScreen.updateThreshold] — jamais par une seconde surcharge du même
+/// provider, que Riverpod 3 refuserait. Le voyage lui-même (manifeste, page,
+/// curseur, 404) est gardé par `test/sync/device_settings_collection_test.dart`.
 library;
 
 import 'package:flutter/material.dart';
@@ -65,8 +77,12 @@ void main() {
 
   testWidgets('le défaut du dépôt est « aucun seuil » — repli de la tranche',
       (tester) async {
-    // Sans `appUpdateThresholdProvider` surchargé : c'est l'état réel de la
-    // production tant que la tranche 3 (#81) n'a pas livré la source.
+    // Sans `appUpdateThresholdProvider` surchargé : le provider lit le magasin,
+    // et le magasin n'a rien reçu. C'est l'état réel de **tout premier
+    // lancement**, et celui d'un serveur en retard d'une version dont la
+    // collection a pris un 404. Le seuil est alors absent, et le bandeau se
+    // tait — c'est la décision explicite de #80, et #91 ne l'a pas desserrée :
+    // il a seulement branché la source.
     await pumpScreen(
       tester,
       const Scaffold(body: AppUpdateBanner()),
@@ -150,6 +166,65 @@ void main() {
     // et pourtant plus rien ne s'affiche. Une reconstruction ne le ramène pas.
     await tester.pump(const Duration(minutes: 5));
     expect(find.byKey(AppUpdateBanner.bannerKey), findsNothing);
+  });
+
+  group('depuis le magasin — le chemin de la production (#91)', () {
+    /// Monte le bandeau **sans** surcharger `appUpdateThresholdProvider` : le
+    /// seuil arrive par la collection `device_settings`, comme en production.
+    ///
+    /// [threshold] passe par le paramètre nommé de `pumpScreen`, qui surcharge
+    /// le flux du magasin. Une seconde surcharge du même provider serait refusée
+    /// par Riverpod 3 — c'est pour ça que ce n'est pas un `Override` de plus.
+    Future<void> pumpFromStore(
+      WidgetTester tester, {
+      required String installed,
+      String? threshold,
+    }) =>
+        pumpScreen(
+          tester,
+          const Scaffold(body: AppUpdateBanner()),
+          updateThreshold: threshold,
+          overrides: [
+            appVersionReaderProvider.overrideWithValue(
+              FixedAppVersionReader(
+                AppVersionInfo(version: installed, build: '1'),
+              ),
+            ),
+            storeLauncherProvider.overrideWithValue(RecordingStoreLauncher()),
+          ],
+        );
+
+    testWidgets('un seuil servi fait paraître le bandeau sous ce seuil',
+        (tester) async {
+      // Le bandeau était écrit, testé, et ne s'affichait pour personne : son
+      // seuil rendait `null` en dur. C'est **ce test-ci** qui prouve que la
+      // collection le rouvre.
+      await pumpFromStore(tester, installed: '1.0.0', threshold: '1.4.0');
+
+      expect(find.byKey(AppUpdateBanner.bannerKey), findsOneWidget);
+      expect(find.text(_fr.appUpdateBody), findsOneWidget);
+    });
+
+    testWidgets('et pas au-dessus de ce seuil', (tester) async {
+      await pumpFromStore(tester, installed: '1.4.0', threshold: '1.4.0');
+      expect(find.byKey(AppUpdateBanner.bannerKey), findsNothing);
+
+      await pumpFromStore(tester, installed: '1.10.0', threshold: '1.9.0');
+      // La comparaison reste numérique de bout en bout : `1.10.0` est
+      // postérieure à `1.9.0`, et le chemin du magasin ne la change pas.
+      expect(find.byKey(AppUpdateBanner.bannerKey), findsNothing);
+    });
+
+    testWidgets('aucun seuil servi : aucun bandeau', (tester) async {
+      // Les trois états du serveur qui mènent ici, et ils arrivent pour de
+      // vrai : magasin jamais rempli (premier lancement), collection sautée
+      // (404 d'un serveur en retard d'une version), seuil retiré au portail. Le
+      // repli est le même dans les trois cas, et jamais l'inverse.
+      await pumpFromStore(tester, installed: '1.0.0');
+
+      expect(find.byKey(AppUpdateBanner.bannerKey), findsNothing);
+      expect(find.text(_fr.appUpdateBody), findsNothing);
+    });
   });
 
   group('la comparaison de versions', () {

@@ -392,6 +392,16 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   ligne-là qui voyage. Une table **vide** veut dire « pas encore reçu les
   réglages », jamais « aucun canal » : le repli est l'**e-mail seul**, et
   `AuthChannelsDao` est le seul endroit qui en décide.
+  `tables/device_tables.dart` — `device_settings` (#91) : **une seule ligne**, le
+  **réglage d'exploitation du parc** installé, et par lui le seuil du bandeau de
+  mise à jour. **Sans tombstone** — retirer le seuil met la colonne à `null`, et
+  c'est cette ligne-là qui voyage. Table **vide** et colonne **nulle** mènent au
+  même repli — « pas de seuil, donc pas de bandeau » —, et `DeviceSettingsDao`
+  est le seul endroit qui en décide. Une collection **neuve** et non un champ de
+  plus sur `decor` ou `auth_channels`, qui ont pourtant à un champ près la même
+  forme : un réglage d'**exploitation** n'habille rien et n'ouvre aucune porte,
+  et une collection élargie **contamine** les clients qui ne savent pas la lire
+  là où une collection neuve est simplement ignorée par eux.
 - `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart`,
   `gathering_dao.dart`, `announcement_dao.dart`, `playback_dao.dart` et
   `legal_dao.dart` — lectures, **un DAO par domaine**. `playback_dao` est le
@@ -440,7 +450,7 @@ qu'elle remplit. Le réseau ne peint jamais.
 - `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
   `gathering_types`, `status_backgrounds`, `official_accounts`,
   `official_account_memberships`, `legal_documents`, `seasons`,
-  `presentation_vocabulary`, `auth_channels`, `decor`,
+  `presentation_vocabulary`, `auth_channels`, `device_settings`, `decor`,
   `contributors`,
   `branches`, puis `teachings`, `teaching_guests`, `gatherings`,
   `announcements`, `playback_progress`.
@@ -1476,25 +1486,39 @@ compte entre eux est la **mémoire** : la mention légale se retient pour toujou
 (`app_settings`), le bandeau de mise à jour **pour la session seulement** (aucune
 écriture) — l'invitation porte sur une version, qui change.
 
-⚠️ **Il n'y a pas de seuil aujourd'hui, et la tranche 3 n'a pas pu refermer ce
-repli.** `appUpdateThresholdProvider` rend `null`, donc le bandeau **ne s'affiche
-pour personne**. Le texte précédent annonçait que le seuil voyagerait avec les
-réglages de #81 ; il ne voyage pas, et pour une raison qui est côté serveur :
+**Le seuil descend par la synchronisation** (#91, jumelle serveur #475). Il vit
+dans `device_settings.update_banner_min_version`, une table d'une seule ligne
+posée au portail par #465 — et il **ne descendait nulle part** jusqu'à #475 :
+cette table n'avait aucun descripteur de synchronisation, et ne se lisait que par
+l'écran d'administration, derrière le RBAC. Le portail réglait donc un seuil que
+l'application ne verrait jamais, et le bandeau était écrit, testé, et ne
+s'affichait pour personne. `presentation_vocabulary` ne pouvait pas le porter :
+`SaveVocabulary` **ignore en silence** toute clé absente de
+`vocabulary_catalog.ts`, qui ne nomme que des termes et des clés de dictionnaire.
 
-- le seuil vit dans `device_settings.update_banner_min_version`
-  (`server-portal#465`), une table d'une seule ligne **qui n'a pas de descripteur
-  de synchronisation** — `app/sync/descriptors/registry.ts` en compte vingt-sept
-  depuis #83, aucune ne la touche. Elle ne se lit que par l'écran d'administration ;
-- `presentation_vocabulary`, la collection livrée par #81, ne pouvait pas le
-  porter : `SaveVocabulary` **ignore en silence** toute clé absente de
-  `vocabulary_catalog.ts`, qui ne nomme que des termes et des clés de
-  dictionnaire. Une ligne `update_banner_min_version` n'y naîtrait jamais.
+Le chemin complet est désormais `device_settings` → `DeviceSettingsDao` →
+`updateBannerMinVersionProvider` → `appUpdateThresholdProvider`, et il n'a
+coûté qu'**une ligne de provider** — tout le reste était déjà là.
 
-Le descendre demande donc une décision serveur, hors périmètre d'une tranche
-mobile. Et c'est de toute façon le bon comportement d'ici là : l'application n'a
-jamais été publiée, un bandeau sur la toute première version serait le plus
-mauvais premier contact possible. **La seule ligne à changer est celle du
-provider.**
+⚠️ **Le repli n'a pas bougé d'un pouce : pas de seuil, pas de bandeau.** Trois
+chemins mènent à ce `null`, et les trois arrivent pour de vrai : **avant le
+premier cycle** (le moment exact où quelqu'un ouvre l'application pour la
+première fois), **sur un serveur en retard d'une version** (la collection prend
+un `404`, le moteur la saute, le cycle continue), et **quand le portail n'a rien
+réglé** (la valeur livrée). Jamais l'inverse : un bandeau apparu par défaut sur
+la toute première version serait le plus mauvais premier contact possible, et il
+n'y aurait même pas de fiche de magasin où aller. C'est la décision explicite de
+#80, et deux tests la verrouillent dans
+`test/screens/app_update_banner_test.dart` — ils se **complètent**, ils ne
+s'assouplissent pas.
+
+La collection est rangée **avec les référentiels, avant les contenus**, et servie
+**sans compte** (`servesAnonymous: true`). Ce dernier point n'est pas un
+confort : un invité utilise l'application, et son APK est exactement aussi vieux
+que celui du membre assis à côté de lui. Sans ce drapeau, deux téléphones côte à
+côte sur la même version périmée n'auraient qu'un seul avertissement — et l'oubli
+n'aurait rien cassé de visible, puisqu'un bandeau qui se tait ressemble à un
+bandeau qui n'a rien à dire.
 
 ⚠️ **`UnavailableStoreLauncher` n'ouvre rien**, et c'est assumé pour la même
 fenêtre : il n'y a ni fiche App Store ni fiche Play Store à ouvrir, et le dépôt

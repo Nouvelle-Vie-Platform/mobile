@@ -14,7 +14,7 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les vingt-sept collections du registre, dans l\'ordre', () {
+    test('les vingt-huit collections du registre, dans l\'ordre', () {
       // **Ce nombre avait menti.** Il disait dix-neuf quand le registre serveur
       // en comptait vingt-cinq, et le test passait au vert en gardant un contrat
       // périmé — `seasons`, `decor`, `teaching_guests`, `group_members`,
@@ -25,8 +25,9 @@ void main() {
       // **Et l'en-tête du registre serveur ment à son tour** : il annonçait
       // « vingt-six » alors que son tableau en portait déjà vingt-sept,
       // `auth_channels` comprise. Ce nombre-ci est **compté sur les
-      // descripteurs**, jamais lu dans la phrase qui les précède.
-      expect(kSyncCollections, hasLength(27));
+      // descripteurs**, jamais lu dans la phrase qui les précède — recompté en
+      // #91, où `device_settings` devient la vingt-huitième.
+      expect(kSyncCollections, hasLength(28));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
@@ -75,6 +76,37 @@ void main() {
       );
       expect(
         keys.indexOf('auth_channels'),
+        lessThan(keys.indexOf('gatherings')),
+      );
+    });
+
+    test('le réglage du parc est un référentiel, servi sans compte', () {
+      // `partition: 'reference'` : un parc d'appareils n'appartient à aucune
+      // branche — il n'y a pas une version recommandée à Lomé et une autre à
+      // Aného. Et la collection est servie **sans compte**
+      // (`servesAnonymous: true`) : un invité utilise l'application, et son APK
+      // est exactement aussi vieux que celui du membre assis à côté de lui. Sans
+      // ce drapeau, deux téléphones côte à côte sur la même version périmée
+      // n'auraient qu'un seul avertissement — et l'oubli n'aurait rien cassé de
+      // visible, puisqu'un bandeau qui se tait ressemble à un bandeau qui n'a
+      // rien à dire.
+      expect(kSyncCollections['device_settings'], 'reference');
+
+      final keys = kSyncCollections.keys.toList();
+      // Rangée avec les référentiels, avant les contenus : toute erreur autre
+      // qu'un 404 coupe le cycle, donc toutes les collections rangées après.
+      //
+      // ⚠️ Même remarque que pour les canaux : la comparaison ne vise pas
+      // `announcements`, qui ouvre le registre serveur depuis #46. L'ordre du
+      // manifeste n'est pas l'ordre d'application du client — celui-là vit dans
+      // `synced_collection.dart`, et c'est
+      // `test/sync/device_settings_collection_test.dart` qui le garde.
+      expect(
+        keys.indexOf('device_settings'),
+        lessThan(keys.indexOf('teachings')),
+      );
+      expect(
+        keys.indexOf('device_settings'),
         lessThan(keys.indexOf('gatherings')),
       );
     });

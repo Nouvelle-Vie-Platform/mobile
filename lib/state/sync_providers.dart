@@ -28,6 +28,7 @@ import '../core/config/app_env.dart';
 import '../data/local/announcement_dao.dart';
 import '../data/local/auth_channels_dao.dart';
 import '../data/local/app_database.dart';
+import '../data/local/device_settings_dao.dart';
 import '../data/local/gathering_dao.dart';
 import '../data/local/legal_dao.dart';
 import '../data/local/mediatheque_dao.dart';
@@ -122,6 +123,16 @@ final vocabularyDaoProvider = Provider<VocabularyDao>(
 /// est l'e-mail seul, jamais « tous les canaux ».
 final authChannelsDaoProvider = Provider<AuthChannelsDao>(
   (ref) => ref.watch(appDatabaseProvider).authChannelsDao,
+);
+
+/// Les lectures du magasin, côté **réglage d'exploitation du parc** — le seuil
+/// du bandeau de mise à jour (#91). Un DAO de plus, même motif que les
+/// précédents.
+///
+/// C'est lui, et lui seul, qui traduit une table vide **et** une colonne nulle
+/// en la même réponse : pas de seuil, donc pas de bandeau.
+final deviceSettingsDaoProvider = Provider<DeviceSettingsDao>(
+  (ref) => ref.watch(appDatabaseProvider).deviceSettingsDao,
 );
 
 /// Les deux routes du protocole, sur le `Dio` d'`ApiClient` : la requête
