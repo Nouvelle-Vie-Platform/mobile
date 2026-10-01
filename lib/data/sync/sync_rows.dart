@@ -603,6 +603,41 @@ AuthChannelsCompanion authChannelsRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/device_settings` — le **réglage d'exploitation du parc**, et par
+/// lui le seuil du bandeau de mise à jour (#91).
+///
+/// Quatre clés, relevées sur
+/// `app/devices/transformers/device_settings_transformer.ts` : `id`,
+/// `updateBannerMinVersion`, `createdAt`, `updatedAt`. Le transformer les
+/// **énumère** une à une, et c'est ce qui l'empêche d'en porter d'autres par
+/// accident : `device_settings` est la table des réglages d'exploitation,
+/// c'est-à-dire l'endroit où l'on rangera demain ce qui n'a aucune vocation à
+/// descendre sur un téléphone.
+///
+/// **Le nom du champ est celui du portail, du schéma et du PRD** :
+/// `updateBannerMinVersion`, et non un `threshold` ou un `minVersion` abrégé. Un
+/// seul nom du CHECK de la migration serveur jusqu'au provider Flutter est tout
+/// ce qu'on attend d'un réglage unique.
+///
+/// **Le seuil est nullable, et `null` est une valeur** : il dit « aucun seuil
+/// réglé », donc aucun bandeau pour personne. La ligne part quand même avec son
+/// `null` — traiter ce cas comme une ligne mutilée coûterait la page entière,
+/// alors que c'est l'état livré par la migration serveur.
+///
+/// ⚠️ `_optionalText` rend `null` sur tout ce qui n'est pas une chaîne, et c'est
+/// le bon comportement ici : une valeur mal typée vaut « pas de seuil », jamais
+/// « seuil à zéro ».
+DeviceSettingsCompanion deviceSettingsRowOf(Map<String, Object?> item) {
+  const collection = 'device_settings';
+  return DeviceSettingsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    updateBannerMinVersion:
+        Value(_optionalText(item, 'updateBannerMinVersion')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Rouages
 // ─────────────────────────────────────────────────────────────────────────────

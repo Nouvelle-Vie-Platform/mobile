@@ -550,6 +550,57 @@ void main() {
     expect(await db.syncDao.cursorFor('auth_channels'), isNull);
   });
 
+  test('v15 → v16 : la table du réglage du parc apparaît', () async {
+    // Le palier du **réglage d'exploitation du parc** (#91) : une création de
+    // table, et rien d'autre. Aucune colonne existante ne bouge, et le bandeau
+    // de mise à jour ne change pas de comportement tant que le premier cycle
+    // n'a rien ramené.
+    final connection = await verifier.startAt(15);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 16);
+  });
+
+  test('v1 → v16 : un appareil resté en v1 rejoue les quinze paliers',
+      () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 16);
+  });
+
+  test('v15 → v16 : le catalogue survit, et il n\'y a pas de seuil', () async {
+    // Ce qu'un fidèle hors ligne risquerait de perdre, c'est son catalogue : le
+    // palier ne le touche pas. La table neuve, elle, naît vide — et **vide veut
+    // dire « pas de seuil »**, jamais « seuil à zéro ». Le bandeau reste donc tu
+    // immédiatement après la migration, exactement comme avant elle : c'est la
+    // décision explicite de #80, et un bandeau « mettez à jour » apparu tout
+    // seul au premier démarrage suivant une mise à jour serait le plus mauvais
+    // premier contact possible.
+    final schema = await verifier.schemaAt(15);
+    schema.rawDatabase.execute(
+      "INSERT INTO teachings (id, title, sync_stamp) VALUES ('t-1', 'Dieu a le "
+      "dernier mot', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 16);
+
+    expect((await db.select(db.teachings).get()).single.title,
+        'Dieu a le dernier mot');
+    expect(await db.select(db.deviceSettings).get(), isEmpty);
+    expect(
+      await db.deviceSettingsDao.readUpdateBannerMinVersion(),
+      isNull,
+      reason: 'pas de seuil, pas de bandeau — jamais l\'inverse',
+    );
+    // Aucun curseur posé : la collection n'a jamais été tirée.
+    expect(await db.syncDao.cursorFor('device_settings'), isNull);
+  });
+
   test('la version de schéma couvre bien toutes les versions exportées', () {
     final db = openTestDatabase();
     addTearDown(db.close);

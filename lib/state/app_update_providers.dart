@@ -3,55 +3,55 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/app_version.dart';
 import '../data/store_launcher.dart';
 import 'app_version_providers.dart';
+import 'device_settings_providers.dart';
 
 /// **Le seuil de version sous lequel l'application invite à monter** — la plus
 /// basse version encore recommandée, telle que `1.4.0`. `null` veut dire
 /// « aucun seuil réglé », donc **aucun bandeau**.
 ///
-/// ## Le repli reste ouvert, et la tranche 3 ne pouvait pas le refermer
+/// ## Le repli était ouvert, et #91 l'a refermé par la source
 ///
 /// Le seuil se règle depuis le portail (écran *Appareils*) et devait descendre
-/// par la **synchronisation**, avec les réglages de la tranche 3 (#81). Il
-/// n'est pas descendu, et ce n'est pas un oubli : **le serveur ne le sert à
-/// aucune collection**.
+/// par la **synchronisation**. Il ne descendait pas, et ce n'était pas un
+/// oubli : `device_settings.update_banner_min_version` — la table d'une seule
+/// ligne posée par le serveur en #465 — n'avait **aucun descripteur de
+/// synchronisation**, et ne se lisait que par l'écran d'administration, derrière
+/// le RBAC. Le portail réglait donc un seuil que l'application ne verrait
+/// jamais, et le bandeau était écrit, testé, et ne s'affichait pour personne.
 ///
-/// Ce qui a été vérifié dans `server-portal` au moment d'écrire ceci :
+/// `server-portal#475` a enregistré le descripteur ; ce provider lit désormais
+/// la collection répliquée `device_settings`, et c'est tout ce qui manquait.
 ///
-/// - le seuil vit dans `device_settings.update_banner_min_version`, une table
-///   d'une seule ligne posée par #465 — et cette table **n'a pas de descripteur
-///   de synchronisation** : `app/sync/descriptors/registry.ts` en compte
-///   vingt-six, aucune ne la touche. Elle ne se lit que par l'écran
-///   d'administration, derrière le RBAC ;
-/// - `presentation_vocabulary`, la collection de la tranche 3, ne pouvait pas le
-///   porter : `SaveVocabulary` **ignore en silence** toute clé que
-///   `vocabulary_catalog.ts` ne nomme pas, et le catalogue ne porte que des
-///   termes et des clés de dictionnaire. Une ligne `update_banner_min_version`
-///   n'y naîtrait jamais.
+/// ## `null` reste la réponse par défaut, et c'est une décision
 ///
-/// Y faire descendre le seuil demande donc une décision **côté serveur** —
-/// enregistrer un descripteur pour `device_settings`, ou nommer une clé de
-/// catalogue qui n'est pas un mot —, et ni l'une ni l'autre n'est au périmètre
-/// d'une tranche mobile. Le repli reste donc **explicite et assumé** : pas de
-/// seuil, pas de bandeau. Tout le reste du chemin — la comparaison de versions,
-/// la fermeture, le renvoi au magasin, la place dans la coquille — est écrit et
-/// testé ; il ne manque que la source, et la seule ligne à changer est celle-ci.
+/// [updateBannerMinVersionProvider] rend `null` en chargement, et
+/// `DeviceSettingsDao` rend `null` sur une table vide comme sur une colonne
+/// nulle. Trois chemins, une seule réponse : **pas de seuil, pas de bandeau**.
 ///
-/// ## Et c'est aussi le bon comportement aujourd'hui
+/// Les trois se produisent pour de vrai :
 ///
-/// L'application n'a **jamais été publiée**. Un bandeau « mettez à jour » sur la
-/// toute première version, sans fiche de magasin à ouvrir, serait le plus
-/// mauvais premier contact possible. Même le jour où la source existera, un
-/// serveur qui ne sert pas le réglage (version antérieure, 404 de collection)
-/// doit se lire comme « aucun seuil », jamais comme « seuil à zéro ».
-final appUpdateThresholdProvider = Provider<String?>((ref) => null);
+/// - **avant le premier cycle** — le moment exact où quelqu'un ouvre
+///   l'application pour la première fois ;
+/// - **sur un serveur en retard d'une version** — la collection prend un `404`,
+///   le moteur la saute, le cycle continue, et le magasin reste sans seuil ;
+/// - **quand le portail n'a rien réglé** — la valeur livrée, et la seule
+///   honnête tant que l'application n'a jamais été publiée.
+///
+/// Jamais l'inverse : un bandeau « mettez à jour » apparu par défaut sur la
+/// toute première version serait le plus mauvais premier contact possible, et
+/// il n'y aurait même pas de fiche de magasin où aller. C'est la décision
+/// explicite de #80, et deux tests la verrouillent.
+final appUpdateThresholdProvider = Provider<String?>(
+  (ref) => ref.watch(updateBannerMinVersionProvider).value,
+);
 
 /// **Faut-il inviter à monter ?**
 ///
 /// Trois raisons de répondre non, et elles penchent toutes du même côté — celui
 /// qui n'affiche rien :
 ///
-/// 1. aucun seuil réglé (le cas d'aujourd'hui, voir
-///    [appUpdateThresholdProvider]) ;
+/// 1. aucun seuil réglé — rien n'est encore arrivé du portail, ou le portail
+///    n'a rien réglé (voir [appUpdateThresholdProvider]) ;
 /// 2. version locale inconnaissable — `appVersionProvider` rend `null` en
 ///    chargement, en échec, et sur un hôte sans canal de plugin. On n'invite pas
 ///    à quitter une version qu'on ne sait pas nommer ;

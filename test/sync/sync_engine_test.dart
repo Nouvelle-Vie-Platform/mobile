@@ -155,6 +155,7 @@ void main() {
           'seasons',
           'presentation_vocabulary',
           'auth_channels',
+          'device_settings',
           'decor',
           'contributors',
           'branches',
@@ -236,6 +237,18 @@ void main() {
       );
       expect(
         keys.indexOf('auth_channels'),
+        lessThan(keys.indexOf('announcements')),
+      );
+      // Le réglage d'exploitation du parc (#91) se range avec les référentiels
+      // pour la même raison : une erreur autre qu'un 404 sur une collection de
+      // contenu emporterait tout ce qui est rangé après elle, et le seuil du
+      // bandeau vaut pour tout le monde — porteur sans compte compris.
+      expect(
+        keys.indexOf('device_settings'),
+        lessThan(keys.indexOf('teachings')),
+      );
+      expect(
+        keys.indexOf('device_settings'),
         lessThan(keys.indexOf('announcements')),
       );
       // La reprise de lecture se joint aux **deux** familles de contenu, et se

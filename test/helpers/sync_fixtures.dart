@@ -8,7 +8,7 @@
 /// | Forme | Route serveur | Source |
 /// |---|---|---|
 /// | manifeste | `GET /sync` | `app/sync/transformers/sync_manifest_transformer.ts` (ADR-0016/0017/0027) |
-/// | les 27 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
+/// | les 28 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
 /// | `full_resync_required` | `GET /sync` | `app/sync/actions/build_manifest.ts` (issues serveur #48/#49) |
 /// | tirage delta | `GET /sync/{collection}` | `app/sync/controllers/pull_collection_delta_controller.ts` |
 /// | `next_cursor` / `has_more` / `full_resync` | `GET /sync/{collection}` | `app/sync/actions/pull_delta.ts` (ADR-0017) |
@@ -31,6 +31,8 @@
 /// | clés du catalogue | — | `app/presentation/support/vocabulary_catalog.ts` |
 /// | ligne `auth_channels` | `GET /sync/auth_channels` | `app/auth/transformers/auth_channels_transformer.ts` + `app/sync/descriptors/auth_channels_descriptor.ts` (issue serveur #468) |
 /// | valeurs livrées des canaux | — | `database/migrations/*_create_auth_settings_table.ts` |
+/// | ligne `device_settings` | `GET /sync/device_settings` | `app/devices/transformers/device_settings_transformer.ts` + `app/sync/descriptors/device_settings_descriptor.ts` (issue serveur #475) |
+/// | seuil livré du bandeau | — | `database/migrations/*_create_device_settings_table.ts` (`NULL`) |
 ///
 /// ## Pourquoi ce fichier existe
 ///
@@ -130,7 +132,7 @@ final String staleCursor = serverCursor(
 // `GET /sync` — le manifeste
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Les **vingt-sept** collections du registre serveur (`app/sync/descriptors/
+/// Les **vingt-huit** collections du registre serveur (`app/sync/descriptors/
 /// registry.ts`), **dans l'ordre du registre**, avec leur partition.
 ///
 /// ⚠️ **Cette carte avait dérivé, et le test qui la gardait mentait.** Elle en
@@ -146,7 +148,9 @@ final String staleCursor = serverCursor(
 /// « vingt-six collections » alors que la liste en portait déjà vingt-sept —
 /// `auth_channels` y était fusionnée. La seule lecture qui vaille est de
 /// **compter les descripteurs du tableau**, jamais de croire la phrase qui le
-/// précède. Vingt-septième entrée ajoutée en #83.
+/// précède. Vingt-septième entrée ajoutée en #83, vingt-huitième en #91 —
+/// `device_settings`, et le compte ci-dessous a de nouveau été relevé
+/// **descripteur par descripteur** sur `registry.ts`, pas sur son en-tête.
 ///
 /// La partition de chaque entrée est relevée sur le champ `partition:` de son
 /// descripteur, jamais sur l'intuition de ce qu'une collection « devrait » être.
@@ -165,7 +169,7 @@ final String staleCursor = serverCursor(
 ///
 /// Le manifeste les liste **toutes**, pas seulement celles qui ont bougé — et
 /// toutes ne sont pas répliquées par ce client : `syncedCollections()` en tire
-/// dix-sept, les autres n'ont pas de table locale. Le manifeste les liste quand
+/// dix-huit, les autres n'ont pas de table locale. Le manifeste les liste quand
 /// même, le moteur les ignore.
 const Map<String, String> kSyncCollections = {
   'announcements': 'branch',
@@ -192,6 +196,13 @@ const Map<String, String> kSyncCollections = {
   // pas un confort : sans ce drapeau l'écran de connexion n'apprendrait jamais
   // quels canaux sont ouverts.
   'auth_channels': 'reference',
+  // Le réglage d'exploitation du parc (issue serveur #475, mobile #91) : rangé
+  // **ici**, avec les référentiels, et avant les contenus — toute erreur autre
+  // qu'un 404 coupe le cycle, donc toutes les collections rangées après. Un parc
+  // d'appareils n'appartient à aucune branche, et la collection est servie
+  // **sans compte** (`servesAnonymous: true`) : un invité ouvre l'application
+  // avec un APK exactement aussi vieux que celui du membre assis à côté de lui.
+  'device_settings': 'reference',
   // Privées — filtrées sur l'acteur, jamais sur une branche.
   'spiritual_notes': 'private',
   'playback_progress': 'private',
@@ -242,7 +253,7 @@ Map<String, Object?> manifestEntry(
   };
 }
 
-/// Manifeste complet : les vingt-sept collections, dans l'ordre du registre.
+/// Manifeste complet : les vingt-huit collections, dans l'ordre du registre.
 ///
 /// [overrides] remplace, clé par clé, les champs d'une entrée — c'est ainsi
 /// qu'on écrit un cas particulier sans réécrire les douze autres lignes.
@@ -1562,3 +1573,62 @@ Map<String, Object?> authChannelsPage({
   Map<String, Object?> row = authChannelsEmailOnlyPayload,
 }) =>
     deltaPage(items: [row], nextCursor: authChannelsCursor);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// `device_settings` — le réglage d'exploitation du parc (#91)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **La ligne livrée** : le singleton existe, et son seuil est `null`.
+///
+/// Quatre clés, relevées sur
+/// `app/devices/transformers/device_settings_transformer.ts` : `id`,
+/// `updateBannerMinVersion`, `createdAt`, `updatedAt`. Rien d'autre ne descend —
+/// le transformer les énumère exprès, parce que `device_settings` est la table
+/// des réglages d'**exploitation**, c'est-à-dire l'endroit où l'on rangera demain
+/// ce qui n'a aucune vocation à voyager jusqu'à un téléphone.
+///
+/// `null` est la valeur posée par la migration serveur
+/// (`*_create_device_settings_table.ts`), et la seule honnête tant que
+/// l'application n'a jamais été publiée : **aucun seuil, donc aucun bandeau pour
+/// personne**. La ligne part quand même, avec son `null`.
+const Map<String, Object?> deviceSettingsNoThresholdPayload = {
+  'id': 1,
+  'updateBannerMinVersion': null,
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:00:00.000Z',
+};
+
+/// **Un seuil réglé au portail.** La forme que cette tranche existe pour faire
+/// descendre.
+///
+/// Une **chaîne**, et pas trois entiers : c'est la version que l'application
+/// annonce. La comparer est l'affaire de qui la lit.
+const Map<String, Object?> deviceSettingsThresholdPayload = {
+  'id': 1,
+  'updateBannerMinVersion': '1.4.0',
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:05:00.000Z',
+};
+
+/// **Un seuil retiré.** Le singleton ne se supprime pas : retirer le seuil
+/// remet la colonne à `null`, et c'est **cette ligne-là** qui voyage — d'où un
+/// `updatedAt` postérieur à celui du seuil posé.
+const Map<String, Object?> deviceSettingsClearedPayload = {
+  'id': 1,
+  'updateBannerMinVersion': null,
+  'createdAt': '2026-09-01T09:00:00.000Z',
+  'updatedAt': '2026-09-20T10:10:00.000Z',
+};
+
+/// Curseur de la page de `device_settings`. L'`id` y est un **entier**, comme
+/// pour les autres référentiels.
+final String deviceSettingsCursor = serverCursor(
+  updatedAtIso: '2026-09-20T10:00:00.000Z',
+  id: 1,
+);
+
+/// La page nominale : l'unique ligne du singleton, telle que livrée.
+Map<String, Object?> deviceSettingsPage({
+  Map<String, Object?> row = deviceSettingsNoThresholdPayload,
+}) =>
+    deltaPage(items: [row], nextCursor: deviceSettingsCursor);

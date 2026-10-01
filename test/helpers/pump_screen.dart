@@ -26,6 +26,7 @@ import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/models/auth_channels.dart';
 import 'package:maison_du_miracle/models/vocabulary.dart';
 import 'package:maison_du_miracle/state/auth_channels_providers.dart';
+import 'package:maison_du_miracle/state/device_settings_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/state/vocabulary_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
@@ -100,6 +101,7 @@ Future<void> pumpRouter(
   LegalNoticeStore? legalNotice,
   VocabularyOverrides? vocabulary,
   AuthChannelOffer? authChannels,
+  String? updateThreshold,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -114,6 +116,7 @@ Future<void> pumpRouter(
           legalNotice: legalNotice,
           vocabulary: vocabulary,
           authChannels: authChannels,
+          updateThreshold: updateThreshold,
         ),
         ...overrides,
       ],
@@ -146,6 +149,7 @@ List<Override> _commonOverrides(
   LegalNoticeStore? legalNotice,
   VocabularyOverrides? vocabulary,
   AuthChannelOffer? authChannels,
+  String? updateThreshold,
   List<DownloadNotificationRow> notifications = const [],
 }) =>
     [
@@ -176,6 +180,20 @@ List<Override> _commonOverrides(
       // surcharges du même provider dans un même conteneur.
       vocabularyProvider.overrideWith(
         (ref) => Stream.value(vocabulary ?? VocabularyOverrides.empty),
+      ),
+      // **Le seuil du bandeau de mise à jour** (#91), posé **par un flux nu**,
+      // pour la raison déjà donnée pour le vocabulaire et les canaux : lu depuis
+      // le magasin, il ouvre un flux Drift, et un flux Drift attendu sous
+      // l'horloge factice du harnais fige le montage. Et tout test qui monte la
+      // coquille le lit, puisque le bandeau y vit.
+      //
+      // Le défaut est **aucun seuil**, donc **aucun bandeau** : ce que voit une
+      // application qui n'a pas encore synchronisé, et ce qu'un test qui ne parle
+      // pas de mise à jour doit voir. [updateThreshold] est un paramètre nommé et
+      // non un `Override` de plus — Riverpod 3 refuse deux surcharges du même
+      // provider dans un même conteneur.
+      updateBannerMinVersionProvider.overrideWith(
+        (ref) => Stream.value(updateThreshold),
       ),
       playbackProgressReporterProvider
           .overrideWithValue(FakePlaybackProgressReporter()),
@@ -230,6 +248,7 @@ Future<void> pumpScreen(
   LegalNoticeStore? legalNotice,
   VocabularyOverrides? vocabulary,
   AuthChannelOffer? authChannels,
+  String? updateThreshold,
   List<DownloadNotificationRow> notifications = const [],
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
@@ -253,6 +272,7 @@ Future<void> pumpScreen(
           legalNotice: legalNotice,
           vocabulary: vocabulary,
           authChannels: authChannels,
+          updateThreshold: updateThreshold,
           notifications: notifications,
         ),
         ...overrides,
