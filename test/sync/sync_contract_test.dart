@@ -14,14 +14,19 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les vingt-six collections du registre, dans l\'ordre', () {
+    test('les vingt-sept collections du registre, dans l\'ordre', () {
       // **Ce nombre avait menti.** Il disait dix-neuf quand le registre serveur
       // en comptait vingt-cinq, et le test passait au vert en gardant un contrat
       // périmé — `seasons`, `decor`, `teaching_guests`, `group_members`,
       // `profiles` et `group_join_requests` manquaient, dont quatre que ce
       // client réplique. Remis d'aplomb en #81, où `presentation_vocabulary`
       // devient la vingt-sixième.
-      expect(kSyncCollections, hasLength(26));
+      //
+      // **Et l'en-tête du registre serveur ment à son tour** : il annonçait
+      // « vingt-six » alors que son tableau en portait déjà vingt-sept,
+      // `auth_channels` comprise. Ce nombre-ci est **compté sur les
+      // descripteurs**, jamais lu dans la phrase qui les précède.
+      expect(kSyncCollections, hasLength(27));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
@@ -42,6 +47,34 @@ void main() {
       );
       expect(
         keys.indexOf('presentation_vocabulary'),
+        lessThan(keys.indexOf('gatherings')),
+      );
+    });
+
+    test('les canaux de connexion sont un référentiel, servi sans compte', () {
+      // `partition: 'reference'` : une porte d'entrée n'appartient à aucune
+      // branche — il n'y a pas une connexion de Lomé et une d'Aného. Et la
+      // collection est servie **sans compte** (`servesAnonymous: true`) : l'écran
+      // de connexion est par définition regardé par quelqu'un qui n'en a pas, et
+      // un refus y laisserait l'application proposer pour toujours une porte
+      // fermée.
+      expect(kSyncCollections['auth_channels'], 'reference');
+
+      final keys = kSyncCollections.keys.toList();
+      // Rangée avec les référentiels, avant les contenus : toute erreur autre
+      // qu'un 404 coupe le cycle, donc toutes les collections rangées après.
+      //
+      // ⚠️ La comparaison ne vise pas `announcements`, et ce n'est pas un
+      // oubli : elle ouvre le registre serveur depuis l'issue #46, avant même
+      // les référentiels. **L'ordre du manifeste n'est pas l'ordre
+      // d'application du client** — celui-là vit dans `synced_collection.dart`,
+      // et c'est `test/sync/auth_channels_collection_test.dart` qui le garde.
+      expect(
+        keys.indexOf('auth_channels'),
+        lessThan(keys.indexOf('teachings')),
+      );
+      expect(
+        keys.indexOf('auth_channels'),
         lessThan(keys.indexOf('gatherings')),
       );
     });

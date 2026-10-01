@@ -8,7 +8,7 @@
 /// | Forme | Route serveur | Source |
 /// |---|---|---|
 /// | manifeste | `GET /sync` | `app/sync/transformers/sync_manifest_transformer.ts` (ADR-0016/0017/0027) |
-/// | les 26 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
+/// | les 27 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
 /// | `full_resync_required` | `GET /sync` | `app/sync/actions/build_manifest.ts` (issues serveur #48/#49) |
 /// | tirage delta | `GET /sync/{collection}` | `app/sync/controllers/pull_collection_delta_controller.ts` |
 /// | `next_cursor` / `has_more` / `full_resync` | `GET /sync/{collection}` | `app/sync/actions/pull_delta.ts` (ADR-0017) |
@@ -128,7 +128,7 @@ final String staleCursor = serverCursor(
 // `GET /sync` — le manifeste
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Les **vingt-six** collections du registre serveur (`app/sync/descriptors/
+/// Les **vingt-sept** collections du registre serveur (`app/sync/descriptors/
 /// registry.ts`), **dans l'ordre du registre**, avec leur partition.
 ///
 /// ⚠️ **Cette carte avait dérivé, et le test qui la gardait mentait.** Elle en
@@ -139,6 +139,12 @@ final String staleCursor = serverCursor(
 /// donc `hasLength(19)` — un contrat qui n'était plus celui du serveur, et qui
 /// aurait rougi pour la mauvaise raison le jour d'un vrai désaccord. Remise
 /// d'aplomb en #81, en relevant `registry.ts` descripteur par descripteur.
+///
+/// ⚠️ **Et l'en-tête du registre serveur a menti à son tour.** Il annonçait
+/// « vingt-six collections » alors que la liste en portait déjà vingt-sept —
+/// `auth_channels` y était fusionnée. La seule lecture qui vaille est de
+/// **compter les descripteurs du tableau**, jamais de croire la phrase qui le
+/// précède. Vingt-septième entrée ajoutée en #83.
 ///
 /// La partition de chaque entrée est relevée sur le champ `partition:` de son
 /// descripteur, jamais sur l'intuition de ce qu'une collection « devrait » être.
@@ -177,6 +183,13 @@ const Map<String, String> kSyncCollections = {
   // jointure est la moins susceptible de couper le cycle.
   'presentation_vocabulary': 'reference',
   'decor': 'reference',
+  // Par quelles portes on entre (issue serveur #468, mobile #83) : rangée
+  // **ici**, avec les référentiels, et avant les contenus — c'est la première
+  // chose qu'un porteur **sans compte** a besoin de savoir, puisque c'est tout
+  // ce que son écran lui propose de faire. `servesAnonymous: true`, et ce n'est
+  // pas un confort : sans ce drapeau l'écran de connexion n'apprendrait jamais
+  // quels canaux sont ouverts.
+  'auth_channels': 'reference',
   // Privées — filtrées sur l'acteur, jamais sur une branche.
   'spiritual_notes': 'private',
   'playback_progress': 'private',
@@ -227,7 +240,7 @@ Map<String, Object?> manifestEntry(
   };
 }
 
-/// Manifeste complet : les vingt-six collections, dans l'ordre du registre.
+/// Manifeste complet : les vingt-sept collections, dans l'ordre du registre.
 ///
 /// [overrides] remplace, clé par clé, les champs d'une entrée — c'est ainsi
 /// qu'on écrit un cas particulier sans réécrire les douze autres lignes.
