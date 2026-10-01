@@ -800,7 +800,7 @@ abstract final class SampleData {
           body: {
             'fr': 'L\'application est éditée par l\'**Église Évangélique '
                 'Nouvelle Vie – Maison du Miracle**. Elle donne accès aux '
-                'enseignements, à l\'agenda et aux annonces de l\'église.',
+                'messages, à l\'agenda et aux annonces de l\'église.',
             'en': 'This app is published by **Église Évangélique Nouvelle Vie '
                 '– Maison du Miracle**.',
             'ee': 'Sɔlemeha **Église Évangélique Nouvelle Vie – Maison du '

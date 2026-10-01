@@ -140,8 +140,7 @@ class InMemoryMediathequeRepository implements MediathequeRepository {
   /// catalogue, et la règle qu'elle exerce est la bonne — pas d'invité, aucune
   /// ligne ne se rend.
   @override
-  Stream<List<String>> guestNames(String teachingId) =>
-      Stream.value(const []);
+  Stream<List<String>> guestNames(String teachingId) => Stream.value(const []);
 
   @override
   Stream<List<HomeSectionView>> homeSections({required String locale}) {

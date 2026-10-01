@@ -326,12 +326,12 @@ void main() {
         tester,
         const ContentAbsenceView(
           absence: ContentAbsence.retracted,
-          title: 'Cet enseignement a été retiré',
+          title: 'Ce message a été retiré',
           message: 'Il n\'est plus proposé par l\'église.',
         ),
       );
 
-      expect(find.text('Cet enseignement a été retiré'), findsOneWidget);
+      expect(find.text('Ce message a été retiré'), findsOneWidget);
       expect(find.text('Contenu retiré'), findsNothing);
     });
 

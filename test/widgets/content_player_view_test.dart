@@ -165,7 +165,7 @@ void main() {
 
       // Le même échafaudage que la lecture : le surtitre est là, le fidèle
       // n'a pas été déplacé, et il a une porte de sortie.
-      expect(find.text('ENSEIGNEMENT'), findsOneWidget);
+      expect(find.text('MESSAGE'), findsOneWidget);
       expect(find.byType(ContentAbsenceView), findsOneWidget);
       expect(find.byKey(ContentAbsenceView.backKey), findsOneWidget);
       // Le libellé existant convient tel quel : il dit une attente.
@@ -187,8 +187,7 @@ void main() {
 
       // Réutiliser `retracted` ferait croire à une suppression : le fidèle
       // cesserait d'attendre un enregistrement qui arrive.
-      expect(
-          find.text('Cet enseignement n\'est plus disponible'), findsNothing);
+      expect(find.text('Ce message n\'est plus disponible'), findsNothing);
       expect(find.byIcon(ContentAbsence.retracted.icon), findsNothing);
     });
 
@@ -897,8 +896,8 @@ Future<ProviderContainer> _pump(
         supportedLocales: appSupportedLocales,
         home: ContentPlayerView(
           content: _contentProvider,
-          chromeTitle: 'ENSEIGNEMENT',
-          retractedTitle: 'Cet enseignement n\'est plus disponible',
+          chromeTitle: 'MESSAGE',
+          retractedTitle: 'Ce message n\'est plus disponible',
           retractedMessage: 'Il a été retiré du catalogue.',
           onRetry: () {},
           isLive: isLive,

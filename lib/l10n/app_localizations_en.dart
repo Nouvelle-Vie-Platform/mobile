@@ -242,13 +242,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionListen => 'Listen';
 
   @override
-  String get sectionLatestTeachings => 'Latest teachings';
+  String get sectionLatestTeachings => 'Latest publications';
 
   @override
   String get mediaTitle => 'Media library';
 
   @override
-  String get mediaSearchHint => 'Search for a teaching...';
+  String get mediaSearchHint => 'Search for a message...';
 
   @override
   String get mediaRecommended => 'Recommended for you';
@@ -260,13 +260,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterSermons => 'Sermons';
 
   @override
-  String get filterTeachings => 'Teachings';
+  String get filterTeachings => 'Messages';
 
   @override
   String get filterMusic => 'Music';
 
   @override
-  String get seriesTag => 'Series';
+  String get seriesTag => 'Theme';
 
   @override
   String seriesMessagesCount(int count) {
@@ -345,7 +345,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatToday => 'Today';
 
   @override
-  String get teachingAppBarTitle => 'Teaching';
+  String get teachingAppBarTitle => 'Message';
 
   @override
   String get actionDownload => 'Download';
@@ -434,7 +434,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get downloadsEmptyMessage =>
-      'Teachings you download to listen offline will show up here.';
+      'Messages you download to listen offline will show up here.';
 
   @override
   String downloadsStorageUsed(String size) {
@@ -447,7 +447,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get downloadsUnknownTitle => 'Downloaded teaching';
+  String get downloadsUnknownTitle => 'Downloaded message';
 
   @override
   String get downloadUpdateAvailable => 'Update available';
@@ -462,7 +462,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get downloadPurgeNoticeUnnamed =>
-      'A teaching was removed by the library and deleted from your downloads.';
+      'A message was removed by the library and deleted from your downloads.';
 
   @override
   String get downloadPurgeDismiss => 'Dismiss';
@@ -671,7 +671,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'These settings change nothing on the church network. They protect your data plan when you are out.';
 
   @override
-  String get mediaSettingsStreaming => 'Listening to a teaching';
+  String get mediaSettingsStreaming => 'Listening to a message';
 
   @override
   String get mediaSettingsLive => 'Live';
@@ -691,7 +691,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get branchScopeLead =>
-      'Choose the assembly whose teachings, gatherings and announcements you want to follow. The agenda and the prayer wall are unaffected.';
+      'Choose the assembly whose messages, gatherings and announcements you want to follow. The agenda and the prayer wall are unaffected.';
 
   @override
   String get branchScopeAll => 'All assemblies';
@@ -1030,7 +1030,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionGatherings => 'Gatherings';
 
   @override
-  String get teachingRetractedTitle => 'This teaching is no longer available';
+  String get teachingRetractedTitle => 'This message is no longer available';
 
   @override
   String get teachingRetractedMessage =>
