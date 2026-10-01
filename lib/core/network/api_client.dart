@@ -2,6 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../data/app_platform.dart';
+import '../../data/app_version.dart';
+import 'app_version_header.dart';
+
 /// URL du backend, injectée au build.
 ///
 /// ```sh
@@ -114,6 +118,8 @@ abstract interface class DeviceSessionGuard {
 /// Client HTTP global, pré-configuré avec :
 /// - l'URL de base du backend ([kBaseUrl], injectée par `--dart-define`)
 /// - Headers JSON par défaut
+/// - Intercepteur de **version** : annonce la version du binaire et la
+///   plateforme sur toutes les requêtes ([AppVersionHeaderInterceptor])
 /// - Intercepteur d'auth : injecte automatiquement le token Bearer si présent
 /// - Déballage de l'enveloppe `data` posée par le serveur
 /// - Traitement global du 401 (purge du token + [onUnauthorized])
@@ -135,6 +141,15 @@ class ApiClient {
     );
 
     _dio.interceptors.addAll([
+      // **En tête de chaîne, et purement additif.** Il ne lit rien de ce que
+      // les trois suivants posent, et aucun d'eux ne lit ce qu'il pose ; sa
+      // place dit seulement que rien ne doit pouvoir partir sans nom. Les
+      // lecteurs sont relus à chaque requête, comme le garde du 401 :
+      // `ApiClient.instance` naît avant que quoi que ce soit ait pu le câbler.
+      AppVersionHeaderInterceptor(
+        version: () => appVersion,
+        platform: () => appPlatform,
+      ),
       _AuthInterceptor(_storage),
       unwrapEnvelopeInterceptor,
       // Le garde est lu **à chaque 401**, jamais capturé à la construction :
@@ -179,6 +194,25 @@ class ApiClient {
   /// pour renouveler, se taire rendrait l'application muette pour toujours,
   /// alors que l'éjection vers `/auth` mène au moins quelque part.
   DeviceSessionGuard? deviceSession;
+
+  /// **Ce que l'en-tête de version annonce**, et d'où il le tient.
+  ///
+  /// Deux champs mutables plutôt que deux paramètres de construction, pour la
+  /// raison d'[onUnauthorized] et de [deviceSession] : le singleton naît au
+  /// premier accès, avant tout câblage. Les valeurs par défaut sont celles de
+  /// production ; seuls les tests les remplacent, pour poser une version fixe
+  /// sans toucher au canal de plugin.
+  ///
+  /// Ce n'est **pas** une seconde vérité à côté d'`appVersionReaderProvider`
+  /// (`lib/state/app_version_providers.dart`) : les deux servent le même
+  /// `PackageInfoAppVersionReader`, qui lit le même binaire. Ils sont séparés
+  /// parce que la couche réseau ignore Riverpod — elle ne connaît pas les
+  /// couches hautes, et un conteneur de providers n'existe pas forcément quand
+  /// la première requête part.
+  AppVersionReader appVersion = const PackageInfoAppVersionReader();
+
+  /// La plateforme et son système — voir [appVersion] pour le pourquoi du champ.
+  AppPlatformReader appPlatform = const RuntimeAppPlatformReader();
 
   /// Refuse une URL de base en HTTP clair dans un build **release**.
   ///

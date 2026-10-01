@@ -723,5 +723,12 @@
   "legalNoticePrivacy": "Confidentialité",
   "@legalNoticePrivacy": { "description": "Lien du bandeau vers /legal/privacy. Abrégé, lui, parce qu'il partage sa ligne avec le lien des conditions et le bouton de fermeture" },
   "legalNoticeDismiss": "J'ai compris",
-  "@legalNoticeDismiss": { "description": "Ferme le bandeau, définitivement (mémoire locale). Pas « Accepter » : il n'y a rien à cocher ni à envoyer ici — l'accord d'un invité est implicite par l'usage, et prétendre le recueillir donnerait à croire qu'il est tracé" }
+  "@legalNoticeDismiss": { "description": "Ferme le bandeau, définitivement (mémoire locale). Pas « Accepter » : il n'y a rien à cocher ni à envoyer ici — l'accord d'un invité est implicite par l'usage, et prétendre le recueillir donnerait à croire qu'il est tracé" },
+
+  "appUpdateBody": "Une nouvelle version de l'application est disponible.",
+  "@appUpdateBody": { "description": "Bandeau NON bloquant de mise à jour, affiché quand la version installée est sous le seuil réglé au portail. Il informe et renvoie au magasin ; il ne bloque rien, ne force rien, et l'application reste utilisable derrière. Tant qu'aucun seuil n'est réglé, il ne s'affiche pour personne" },
+  "appUpdateAction": "Mettre à jour",
+  "@appUpdateAction": { "description": "Ouvre la fiche de l'application dans le magasin. Un verbe d'action et non « Ouvrir le magasin » : ce qu'on vient faire est la mise à jour, le magasin n'en est que le chemin" },
+  "appUpdateDismiss": "Plus tard",
+  "@appUpdateDismiss": { "description": "Ferme le bandeau pour la session en cours — pas définitivement, contrairement à legalNoticeDismiss. Pas « J'ai compris » : il n'y a rien à comprendre ici, seulement un geste qu'on remet à plus tard, et le bandeau reviendra au prochain lancement tant que la version n'aura pas monté" }
 }

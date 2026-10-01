@@ -1298,4 +1298,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get legalNoticeDismiss => 'Got it';
+
+  @override
+  String get appUpdateBody => 'A new version of the app is available.';
+
+  @override
+  String get appUpdateAction => 'Update';
+
+  @override
+  String get appUpdateDismiss => 'Later';
 }

@@ -1304,4 +1304,14 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get legalNoticeDismiss => 'J\'ai compris';
+
+  @override
+  String get appUpdateBody =>
+      'Une nouvelle version de l\'application est disponible.';
+
+  @override
+  String get appUpdateAction => 'Mettre à jour';
+
+  @override
+  String get appUpdateDismiss => 'Plus tard';
 }

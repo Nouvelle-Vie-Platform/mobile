@@ -1330,6 +1330,86 @@ d'écran ; et le provider **ne réessaie pas** (`retry`), un binaire ne changean
 pas de version pendant qu'il tourne. Version inconnaissable → **la ligne
 disparaît**, jamais « Version inconnue » : ça ressemblerait à une donnée.
 
+#### La connaissance du parc (#80) — l'en-tête de version et le bandeau
+
+Deux choses distinctes, livrées ensemble, et qui ne se mélangent pas.
+
+**L'en-tête est posé par l'intercepteur, jamais par un appelant.**
+`AppVersionHeaderInterceptor` (`lib/core/network/app_version_header.dart`) est
+le **premier** de la chaîne d'`ApiClient`, avant le Bearer, le déballage
+d'enveloppe et le 401. Il pose deux en-têtes, dont la forme est relevée du plan
+serveur (`server-portal`, `docs/presentation-menus-vocabulaire-plan.md` §9) :
+
+```
+X-App-Version: 1.4.0+12
+X-App-Platform: android 14
+```
+
+Ils partent sur **toutes** les requêtes d'`ApiClient.instance` — synchronisation
+comprise, et y compris `POST /devices/anonymous`, qui part pourtant sans porteur
+et qui est précisément la requête par laquelle le serveur découvre l'appareil.
+Un dépôt qui poserait l'en-tête lui-même créerait une seconde vérité, libre de
+diverger ; **ne pas en ajouter un seul ailleurs**.
+
+Quatre points qui se ratent en silence :
+
+1. **Purement additif, sans exception.** Toute la lecture est dans un `try` qui
+   n'a rien à dire, et `handler.next` est appelé dans tous les cas. Version
+   illisible ⇒ **en-tête absent**, jamais d'exception : côté serveur, un en-tête
+   absent donne « version inconnue », jamais un refus. Deux tests le verrouillent,
+   dont un avec un lecteur qui **lève**.
+2. **Les lecteurs sont des champs mutables d'`ApiClient`** (`appVersion`,
+   `appPlatform`), comme `onUnauthorized` et `deviceSession`, et pour la même
+   raison : le singleton naît avant tout câblage. Ce n'est pas une seconde vérité
+   face à `appVersionReaderProvider` — même classe, même binaire ; ils sont
+   séparés parce que la couche réseau ignore Riverpod.
+3. **La lecture est retenue**, attachée à l'identité des lecteurs (changer de
+   lecteur la périme, ce que font les tests). Un échec, lui, **ne se met pas en
+   cache**.
+4. **`AppPlatformReader` passe par une importation conditionnelle**
+   (`app_platform_io.dart` / `app_platform_web.dart`) — `dart:io` n'existe pas
+   sur le web. `shortOsVersion` ne garde du système que son numéro : `dart:io`
+   rend « 14 (API 34) » et « Version 17.0 (Build 21A329) ». Sur le web, **pas de
+   version de système** : la lire serait une empreinte d'appareil.
+
+**Rien d'autre ne part** : ni identifiant publicitaire, ni empreinte. Un test
+vérifie positivement que le client n'ajoute que ces deux `X-`.
+
+**Le bandeau ne bloque jamais** (`lib/widgets/app_update_banner.dart`). Il
+informe, renvoie au magasin, se ferme, et l'application continue. Ni « mise à
+jour forcée », ni « version minimale », ni « kill switch ». Il est posé dans la
+même pile que `LegalNoticeBanner`, au-dessus de la barre d'onglets, les deux dans
+une `Column` — ils peuvent paraître en même temps. La seule différence qui
+compte entre eux est la **mémoire** : la mention légale se retient pour toujours
+(`app_settings`), le bandeau de mise à jour **pour la session seulement** (aucune
+écriture) — l'invitation porte sur une version, qui change.
+
+⚠️ **Il n'y a pas de seuil aujourd'hui, et c'est un repli explicite.**
+`appUpdateThresholdProvider` rend `null`, donc le bandeau **ne s'affiche pour
+personne**. Le seuil se règle au portail et descend par la synchronisation ; il
+voyagera avec les réglages de la **tranche 3** (#81), qui dit en toutes lettres
+qu'elle referme ce repli. Une collection neuve pour un seul entier serait
+disproportionnée. Et c'est de toute façon le bon comportement d'ici là :
+l'application n'a jamais été publiée, un bandeau sur la toute première version
+serait le plus mauvais premier contact possible. **La seule ligne à changer est
+celle du provider.**
+
+⚠️ **`UnavailableStoreLauncher` n'ouvre rien**, et c'est assumé pour la même
+fenêtre : il n'y a ni fiche App Store ni fiche Play Store à ouvrir, et le dépôt
+n'a pas `url_launcher` (greffon natif de plus, `<queries>` dans le manifeste
+Android). Les deux se câblent **à la première soumission au magasin** — le
+chemin complet est écrit et testé, seule la dernière ligne attend, exactement
+comme `BestEffortDiskSpace` attend sa mesure.
+
+Le bandeau se tait dans trois cas de plus, et ils penchent tous du même côté :
+version locale inconnaissable, seuil illisible (`compareAppVersions` rend `null`
+sur `1.0.0-rc1`), bandeau déjà fermé. **La comparaison est numérique, segment par
+segment** — `1.10.0` est postérieure à `1.9.0`, alors que l'ordre alphabétique
+dit l'inverse — et le `+build` est ignoré des deux côtés.
+
+Hors périmètre, et dans l'autre dépôt (`server-portal#465`) : la table `devices`,
+l'écran *Appareils*, le comptage du parc.
+
 #### La barrière de consentement (#56) — `/legal/accept`, ADR-0036
 Spécification : `docs/documents-legaux.md` §4. **Une garde de route, pas une
 case de formulaire** : le parcours d'authentification est unifié et le

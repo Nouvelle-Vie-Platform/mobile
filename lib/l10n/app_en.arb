@@ -440,5 +440,9 @@
   "legalNoticeBody": "By using the app, you accept our terms of use and our privacy policy.",
   "legalNoticeTerms": "Terms of use",
   "legalNoticePrivacy": "Privacy",
-  "legalNoticeDismiss": "Got it"
+  "legalNoticeDismiss": "Got it",
+
+  "appUpdateBody": "A new version of the app is available.",
+  "appUpdateAction": "Update",
+  "appUpdateDismiss": "Later"
 }
