@@ -104,7 +104,8 @@ void main() {
       // écran *et* le retirer de `memberOnlyRoutes` ne peut pas tromper les
       // deux à la fois.
       const surface = <String>[
-        '/home', // accueil, annonces en lecture, communauté, Bible
+        '/home', // accueil, annonces en lecture, communauté, profil
+        '/bible', // la Bible, poussée depuis l'en-tête de l'accueil
         '/media', // médiathèque
         '/teaching/:id', // fiche d'enseignement
         '/gathering/:id', // fiche de rassemblement

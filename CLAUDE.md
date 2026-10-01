@@ -1097,21 +1097,43 @@ une suppression.
 dans une liste. Une absence, elle, occupe l'écran entier.
 
 ### Navigation principale
-`HomeShell` = `IndexedStack` de 4 onglets **Accueil · Annonces · Communauté ·
-Bible** + `BottomAppBar` à encoche + **FAB central** (→ médiathèque, route
+`HomeShell` = `IndexedStack` de 4 onglets **Accueil · Annonces · Échanges ·
+Profil** + `BottomAppBar` à encoche + **FAB central** (→ médiathèque, route
 poussée). Le FAB n'est PAS un onglet.
 
-**Le profil a quitté la barre** : c'est une route **poussée** (`/profile`), donc
-la barre du bas disparaît et une flèche de retour ramène à l'accueil — au lieu
-d'un onglet dont on ne sortait que par un autre onglet. L'onglet libéré est
-devenu **Bible**, avec un écran provisoire.
+**Les onglets portent un nom** (`lib/screens/home_tab.dart`, `enum HomeTab`), et
+l'index n'est plus qu'un **détail de rendu**. C'est la leçon de trois
+réordonnancements successifs : le numéro circulait entre la barre, la coquille,
+le tiroir et leurs tests, et permuter deux entrées changeait le sens de chacun
+**sans qu'aucun compilateur ne s'en aperçoive** — le tiroir ouvrait simplement
+le mauvais écran, et personne ne le voyait avant un retour de fidèle.
 
-⚠️ **L'index d'onglet reste un numéro nu**, et c'est un contrat partagé :
-`AppDrawerMenu.homeTab`, `AppBottomNav.currentIndex` et
-`test/screens/drawer_menu_test.dart` (« Accueil » depuis l'onglet **3**) en
-dépendent. Une barre à géométrie variable — un onglet qui disparaîtrait selon
-l'état de session — casserait ce vocabulaire. C'est l'une des raisons pour
-lesquelles l'onglet Communauté **reste visible** en mode invité (voir plus bas).
+Trois conséquences à tenir :
+
+1. **L'ordre d'affichage vit dans l'ordre de déclaration de `HomeTab`**, et
+   nulle part ailleurs. Un quatrième mouvement coûte une ligne.
+2. **Écran et libellé se résolvent par un `switch` exhaustif** —
+   `_HomeShellState._screenFor` et `AppBottomNav.itemFor`. C'étaient deux listes
+   parallèles, dont la discordance ne produisait aucune erreur de compilation :
+   on tapait « Bible » et Échanges s'ouvrait.
+3. **La garde de session vit sur l'onglet** (`HomeTab.requiresSession`), pas
+   dans un `if` de la coquille — même raison : un onglet neuf doit répondre à la
+   question, pas la contourner.
+
+⚠️ **Le nombre d'onglets est pair, et l'encoche du FAB en dépend** : elle est
+posée entre deux moitiés égales (`take(half)` / `skip(half)`). On n'en masque
+donc aucun — y compris en mode invité, où un onglet retiré serait de toute façon
+une fermeture invisible.
+
+**La Bible n'est plus un onglet** : c'est une icône en haut à droite de
+l'accueil (`HomeScreen.bibleButtonKey`) qui **pousse** `/bible`, route ouverte à
+tous. Elle ne survit donc plus en arrière-plan — sans conséquence pour un écran
+provisoire, à savoir le jour où il portera une position de lecture.
+
+**Le profil est un onglet *et* une route.** `/profile` reste servie (lien
+profond, cible web) avec sa flèche de retour ; l'onglet, lui, est la porte
+d'entrée. ⚠️ **`memberOnlyRoutes` ne protège que la route** : l'onglet est fermé
+par `requireSession()` au geste, et rien d'autre ne le ferme.
 
 ### Le mode invité (issue #398 côté serveur, ADR-0040/0041)
 
@@ -1160,11 +1182,15 @@ croit fermer.
 
 #### Ce qu'une garde de route ne peut pas fermer
 
-**Les onglets ne sont pas des routes.** Le hub Communauté est fermé par la
-coquille elle-même (`_selectTab` → `requireSession`), et l'onglet **reste
-visible** : un onglet retiré est une fermeture invisible, et personne ne réclame
-un écran qu'il n'a jamais vu. La barre devient l'endroit où l'on découvre qu'un
-compte existe.
+**Les onglets ne sont pas des routes.** Le hub Échanges **et le Profil** sont
+fermés par la coquille elle-même (`_selectTab` → `requireSession`, d'après
+`HomeTab.requiresSession`), et les onglets **restent visibles** : un onglet
+retiré est une fermeture invisible, et personne ne réclame un écran qu'il n'a
+jamais vu. La barre devient l'endroit où l'on découvre qu'un compte existe.
+
+**Le libellé ne change pas selon l'état** : « Profil » pour tout le monde,
+invité compris. La connexion se demande **au geste**, jamais par un libellé qui
+varie — la barre n'en porte aucun autre qui le fasse.
 
 #### `requireSession()` — le geste, pas l'écran
 
@@ -1296,7 +1322,7 @@ Spécification de rendu : `docs/documents-legaux.md` §1. Six points qui se
 ratent en silence :
 
 1. **Le `ZoomDrawer` se construit dans `HomeShell.build()`**, jamais dans la
-   route `/home` : c'est ce qui garde `_index` en `State` **local**. Le menu le
+   route `/home` : c'est ce qui garde l'onglet courant en `State` **local**. Le menu le
    change par un simple rappel — remonter l'onglet courant dans un provider
    global est interdit (« Riverpod = état **partagé** »).
 2. **Le `mainScreen` est le `Scaffold` entier** : les quatre onglets, la barre à
@@ -1327,8 +1353,7 @@ ratent en silence :
    est la seule ouverture** — et elle n'existe sur aucun des trois autres
    onglets.
 6. **Quatre entrées, rien d'autre** — Accueil · CGU · Confidentialité · À propos.
-   Ni mode sombre, ni aide, ni déconnexion (l'écran Profil les porte déjà, en
-   route poussée), ni
+   Ni mode sombre, ni aide, ni déconnexion (l'onglet Profil les porte déjà), ni
    entête utilisateur (`_ProfileHeader` fait cela). L'entête du menu porte la
    **marque**, et rien qu'elle : l'emblème seul (`BrandLogo.inverse`, à demi
    effacé), sans le nom de l'église qui y figurait — un bloc de marque qui

@@ -51,6 +51,7 @@ import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 import 'package:maison_du_miracle/widgets/app_bottom_nav.dart';
+import 'package:maison_du_miracle/widgets/home_tab.dart';
 
 import '../data/local/local_database_fixtures.dart';
 import 'playback_doubles.dart';
@@ -192,7 +193,13 @@ Future<void> untilSignedIn(
   fail('la session ne s\'est jamais ouverte');
 }
 
-/// **L'onglet réellement affiché par la coquille.**
+/// **L'onglet réellement affiché par la coquille** — un nom, pas un numéro.
+///
+/// L'index n'est plus que le véhicule de l'`IndexedStack` : on le retraduit ici,
+/// une fois pour toutes, de sorte qu'aucun test n'ait plus à savoir que
+/// « Échanges » se trouve en troisième position. C'est exactement l'erreur qu'on
+/// cherche à rendre impossible : un test qui attend `2` passe toujours après un
+/// réordonnancement, et il ne prouve plus rien.
 ///
 /// `IndexedStack.index` est nullable, et son nul a un sens : « n'affiche aucun
 /// enfant ». La coquille en pose toujours un, donc un nul ici n'est pas une
@@ -209,13 +216,28 @@ Future<void> untilSignedIn(
 /// veut : la question porte justement sur l'état de la coquille **sous** le
 /// parcours. La clé étant unique dans l'arbre, lever le filtre n'introduit
 /// aucune ambiguïté.
-int shellTab(WidgetTester tester) {
+HomeTab shellTab(WidgetTester tester) {
   final index = tester
       .widget<IndexedStack>(find.byKey(HomeShell.tabsKey, skipOffstage: false))
       .index;
   expect(index, isNotNull,
       reason: 'la coquille n\'affiche aucun onglet du tout');
-  return index!;
+  return HomeTab.values[index!];
+}
+
+/// **L'écran que la coquille affiche**, et non l'onglet qu'elle croit afficher.
+///
+/// Les deux ne se valent pas : `shellTab` lit l'intention de la coquille, celui-ci
+/// lit ce qui est réellement posé devant le fidèle. C'est la seule façon de
+/// prouver qu'une entrée du tiroir ouvre **l'écran qu'elle nomme** — un test qui
+/// se contente du numéro d'onglet passerait encore le jour où ce numéro désigne
+/// un autre écran, ce qui est précisément le bug que ce chantier efface.
+Widget shellScreen(WidgetTester tester) {
+  final stack = tester
+      .widget<IndexedStack>(find.byKey(HomeShell.tabsKey, skipOffstage: false));
+  expect(stack.index, isNotNull,
+      reason: 'la coquille n\'affiche aucun onglet du tout');
+  return stack.children[stack.index!];
 }
 
 /// Un libellé **de la barre du bas**, et de nulle part ailleurs.

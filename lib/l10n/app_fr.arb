@@ -12,9 +12,9 @@
   "@navGroups": { "description": "Bottom nav + titre du hub de conversations « Échanges » (ex-« Groupes »). Une seule clé : l'onglet pilule a disparu, elle ne sert plus que la barre de nav et le titre de la page" },
   "navProfile": "Profil",
   "navBible": "Bible",
-  "@navBible": { "description": "Onglet Bible de la barre de navigation inférieure" },
+  "@navBible": { "description": "La Bible : titre de son écran, et infobulle de l'icône en haut à droite de l'accueil qui l'ouvre. N'est plus un onglet de la barre du bas" },
   "pageUnderConstruction": "Page en construction",
-  "@pageUnderConstruction": { "description": "Placeholder d'un écran pas encore livré (onglet Bible)" },
+  "@pageUnderConstruction": { "description": "Placeholder d'un écran pas encore livré (écran Bible)" },
   "navAgenda": "Agenda",
   "navDonations": "Dons",
 

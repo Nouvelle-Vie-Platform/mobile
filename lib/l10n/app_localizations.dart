@@ -142,13 +142,13 @@ abstract class AppLocalizations {
   /// **'Profil'**
   String get navProfile;
 
-  /// Onglet Bible de la barre de navigation inférieure
+  /// La Bible : titre de son écran, et infobulle de l'icône en haut à droite de l'accueil qui l'ouvre. N'est plus un onglet de la barre du bas
   ///
   /// In fr, this message translates to:
   /// **'Bible'**
   String get navBible;
 
-  /// Placeholder d'un écran pas encore livré (onglet Bible)
+  /// Placeholder d'un écran pas encore livré (écran Bible)
   ///
   /// In fr, this message translates to:
   /// **'Page en construction'**

@@ -10,6 +10,7 @@ import '../screens/auth/code_screen.dart';
 import '../screens/auth/identifier_screen.dart';
 import '../screens/auth/profile_form_screen.dart';
 import '../screens/auth/welcome_screen.dart';
+import '../screens/bible_screen.dart';
 import '../screens/delete_account_screen.dart';
 import '../screens/donations_screen.dart';
 import '../screens/downloads_screen.dart';
@@ -50,6 +51,11 @@ abstract final class AppRoute {
   static const downloads = 'downloads';
   static const home = 'home';
   static const profile = 'profile';
+
+  /// **La Bible**, depuis l'icône en haut à droite de l'accueil. Une route neuve
+  /// : la Bible était un onglet, elle n'avait donc rien ici. Elle est
+  /// **ouverte** — la surface invitée décidée par le client la nomme.
+  static const bible = 'bible';
   static const media = 'media';
   static const live = 'live';
   static const teachingDetail = 'teaching';
@@ -320,13 +326,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/home',
         builder: (_, __) => const AppBackground(child: HomeShell()),
       ),
-      // Profil en **push** : plus un onglet, pour que la barre du bas disparaisse
-      // et qu'une flèche de retour ramène à l'accueil.
+      // Profil **en plus de l'onglet**, et non à sa place : l'onglet est la
+      // porte d'entrée, cette route-ci reste le lien profond (`/profile` est une
+      // URL servie sur la cible web) et sert le même écran avec une flèche de
+      // retour. Elle garde sa place dans `memberOnlyRoutes` ; l'onglet, lui, est
+      // gardé au geste par `requireSession()` — une garde de route n'a aucune
+      // prise sur un onglet.
       GoRoute(
         name: AppRoute.profile,
         path: '/profile',
         builder: (_, __) =>
             const AppBackground(child: ProfileScreen(showBack: true)),
+      ),
+      // La Bible, **poussée** depuis l'en-tête de l'accueil. Aucune garde : elle
+      // appartient à la surface invitée, et l'écran est provisoire.
+      GoRoute(
+        name: AppRoute.bible,
+        path: '/bible',
+        builder: (_, __) => const AppBackground(child: BibleScreen()),
       ),
       // Composeur d'annonce — deux chemins, un seul écran. Ils ne se disputent
       // rien : `/announcement/compose` a un segment, `/announcement/:id/edit`
