@@ -8,7 +8,7 @@
 /// | Forme | Route serveur | Source |
 /// |---|---|---|
 /// | manifeste | `GET /sync` | `app/sync/transformers/sync_manifest_transformer.ts` (ADR-0016/0017/0027) |
-/// | les 15 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
+/// | les 26 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
 /// | `full_resync_required` | `GET /sync` | `app/sync/actions/build_manifest.ts` (issues serveur #48/#49) |
 /// | tirage delta | `GET /sync/{collection}` | `app/sync/controllers/pull_collection_delta_controller.ts` |
 /// | `next_cursor` / `has_more` / `full_resync` | `GET /sync/{collection}` | `app/sync/actions/pull_delta.ts` (ADR-0017) |
@@ -27,6 +27,8 @@
 /// | ligne `official_accounts` | `GET /sync/official_accounts` | PRD `annonces-comptes-officiels.md` |
 /// | ligne `official_account_memberships` | `GET /sync/official_account_memberships` | idem — collection **scoppée sur l'acteur** |
 /// | ligne `legal_documents` | `GET /sync/legal_documents` | `app/legal/transformers/legal_document_transformer.ts` (ADR-0035 à ADR-0037) |
+/// | ligne `presentation_vocabulary` | `GET /sync/presentation_vocabulary` | `app/presentation/transformers/vocabulary_transformer.ts` + `database/migrations/*_create_presentation_vocabulary_table.ts` (issue serveur #466) |
+/// | clés du catalogue | — | `app/presentation/support/vocabulary_catalog.ts` |
 ///
 /// ## Pourquoi ce fichier existe
 ///
@@ -126,39 +128,40 @@ final String staleCursor = serverCursor(
 // `GET /sync` — le manifeste
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Les **dix-neuf** collections du registre serveur (`app/sync/descriptors/
-/// registry.ts`), dans l'ordre du registre, avec leur partition.
+/// Les **vingt-six** collections du registre serveur (`app/sync/descriptors/
+/// registry.ts`), **dans l'ordre du registre**, avec leur partition.
 ///
-/// Treize jusqu'à l'issue serveur #133, qui y a ajouté la seconde famille de la
-/// médiathèque — `gathering_types` (référentiel) juste après `teaching_types`,
-/// et `gatherings` (contenu) juste après `teachings`. Une **collection neuve**
-/// et non un élargissement : une collection neuve est ignorée par un client qui
-/// ne la demande pas, là où une collection élargie contamine ceux qui ne savent
-/// pas la lire.
+/// ⚠️ **Cette carte avait dérivé, et le test qui la gardait mentait.** Elle en
+/// déclarait dix-neuf quand le registre en comptait vingt-cinq : `seasons`,
+/// `decor`, `teaching_guests`, `group_members`, `profiles` et
+/// `group_join_requests` y manquaient, toutes livrées côté serveur et quatre
+/// d'entre elles répliquées par ce client. `sync_contract_test.dart` verrouillait
+/// donc `hasLength(19)` — un contrat qui n'était plus celui du serveur, et qui
+/// aurait rougi pour la mauvaise raison le jour d'un vrai désaccord. Remise
+/// d'aplomb en #81, en relevant `registry.ts` descripteur par descripteur.
 ///
-/// Trois de plus avec la refonte des annonces (PRD serveur
-/// `annonces-comptes-officiels.md`, ADR-0029 à ADR-0031) : `status_backgrounds`
-/// est un référentiel partagé, `official_accounts` est cloisonnée par branche —
-/// donc soumise au garde-fou « périmètre modifié », un fidèle qui change de
-/// branche ne doit pas garder en magasin les comptes de l'ancienne —, et
-/// `official_account_memberships` est **scoppée sur l'acteur** : le serveur n'y
-/// sert jamais l'appartenance de quelqu'un d'autre, d'où la partition `private`.
-/// `announcements`, elle, était déjà au registre.
+/// La partition de chaque entrée est relevée sur le champ `partition:` de son
+/// descripteur, jamais sur l'intuition de ce qu'une collection « devrait » être.
+/// Deux surprises à ce titre, et ce sont celles qu'on corrigerait de travers :
 ///
-/// Une dix-neuvième avec les **documents légaux** (issue serveur #172,
-/// ADR-0035 à ADR-0037) : `legal_documents`, un **référentiel** sans aucun
-/// filtre de périmètre — un document légal n'appartient à aucune branche, ne
-/// s'adresse à aucune audience, et les trois genres partent aux trois lecteurs
-/// de la même façon. Elle passe par le flux delta et non par un
-/// `GET /legal/:kind` parce que la barrière de consentement doit afficher
-/// **hors ligne** ce qu'elle demande d'accepter.
+/// - **`teaching_guests` est `reference`**, bien qu'elle ne porte que des
+///   contenus : le pivot n'a pas de `branch_id`, le client n'a rien à ranger par
+///   branche ;
+/// - **`group_members`, `profiles` et `group_join_requests` sont `private`**, pas
+///   `branch` : leur périmètre est **relationnel** (mes groupes, mes
+///   interlocuteurs), et un changement de branche ne le remet pas en cause.
 ///
-/// Le manifeste les liste **toutes**, pas seulement celles qui ont bougé. La
-/// partition n'est pas décorative : le garde-fou « droits changés » ne lève
+/// La partition n'est pas décorative : le garde-fou « droits changés » ne lève
 /// `full_resync_required` que sur les collections `branch` — les privées
 /// (`user_id = soi`) et les référentiels ne dépendent pas du périmètre.
+///
+/// Le manifeste les liste **toutes**, pas seulement celles qui ont bougé — et
+/// toutes ne sont pas répliquées par ce client : `syncedCollections()` en tire
+/// seize, les autres n'ont pas de table locale. Le manifeste les liste quand
+/// même, le moteur les ignore.
 const Map<String, String> kSyncCollections = {
   'announcements': 'branch',
+  // Référentiels — aucun filtre de périmètre.
   'branches': 'reference',
   'roles': 'reference',
   'modules': 'reference',
@@ -167,12 +170,27 @@ const Map<String, String> kSyncCollections = {
   'gathering_types': 'reference',
   'status_backgrounds': 'reference',
   'legal_documents': 'reference',
-  'official_accounts': 'branch',
-  'official_account_memberships': 'private',
+  'seasons': 'reference',
+  // Le vocabulaire réglé au portail (issue serveur #466, mobile #81) : rangé
+  // **ici**, avec les référentiels, et pas après les contenus — un mot doit
+  // arriver avant la liste qu'il intitule, et une collection sans filtre ni
+  // jointure est la moins susceptible de couper le cycle.
+  'presentation_vocabulary': 'reference',
+  'decor': 'reference',
+  // Privées — filtrées sur l'acteur, jamais sur une branche.
   'spiritual_notes': 'private',
   'playback_progress': 'private',
+  'group_members': 'private',
+  'profiles': 'private',
+  'group_join_requests': 'private',
+  'official_account_memberships': 'private',
+  // Partagées cloisonnées — filtre « branches visibles ∪ national ».
   'events': 'branch',
   'teachings': 'branch',
+  // Un pivot `reference` au milieu des contenus : il ne porte pas de
+  // `branch_id`, mais il se tire après les deux collections qu'il relie.
+  'teaching_guests': 'reference',
+  'official_accounts': 'branch',
   'gatherings': 'branch',
   'prayer_wall': 'branch',
   'groups': 'branch',
@@ -209,7 +227,7 @@ Map<String, Object?> manifestEntry(
   };
 }
 
-/// Manifeste complet : les treize collections, dans l'ordre du registre.
+/// Manifeste complet : les vingt-six collections, dans l'ordre du registre.
 ///
 /// [overrides] remplace, clé par clé, les champs d'une entrée — c'est ainsi
 /// qu'on écrit un cas particulier sans réécrire les douze autres lignes.
