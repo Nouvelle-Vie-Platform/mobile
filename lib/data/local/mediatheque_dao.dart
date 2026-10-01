@@ -168,6 +168,38 @@ class MediathequeDao extends DatabaseAccessor<AppDatabase>
     return _teachingsQuery(limit: limit);
   }
 
+  /// **Les enseignements que la destination d'une entrée de menu désigne** —
+  /// c'est ce qui fait enfin filtrer les onglets de la médiathèque (#82).
+  ///
+  /// Deux bornes, et elles se **composent** : la rubrique que l'entrée a
+  /// choisie, et la recherche. Le tri ne change pas d'un onglet à l'autre —
+  /// c'est le même `publishedAt DESC, recordedAt DESC, id DESC` que partout,
+  /// parce qu'un onglet borne un périmètre, il ne réordonne pas le catalogue.
+  ///
+  /// ⚠️ **Les cultes entiers ne sont pas écartés ici, et c'est une décision.**
+  /// Le modèle de menu ne porte aucune colonne qui les concerne : décider dans
+  /// le client qu'une entrée les exclut serait une règle éditoriale figée dans le
+  /// binaire, invisible depuis le portail et impossible à défaire sans
+  /// livraison — exactement ce que la décision 13 du cadrage refuse. Le portail
+  /// a déjà le moyen de les écarter là où il appartient, dans la donnée : les
+  /// ranger dans leur rubrique et ne pointer aucune entrée dessus. Le seul
+  /// endroit qui continue de les exclure est `latestTeachingsProvider`, et sa
+  /// raison lui est propre (voir son en-tête).
+  Selectable<TeachingWithRefs> teachingsMatching({
+    int? teachingTypeId,
+    String? searchPattern,
+  }) {
+    final clauses = <Expression<bool>>[
+      if (teachingTypeId != null)
+        teachings.teachingTypeId.equals(teachingTypeId),
+      if (searchPattern != null) teachings.title.like(searchPattern),
+    ];
+    if (clauses.isEmpty) return _teachingsQuery();
+    return _teachingsQuery(
+      where: clauses.reduce((a, b) => a & b),
+    );
+  }
+
   /// Un enseignement par son identifiant.
   ///
   /// **La navigation transporte l'identifiant ; l'écran observe le magasin.**
@@ -218,6 +250,17 @@ class MediathequeDao extends DatabaseAccessor<AppDatabase>
         contributor: row.readTableOrNull(contributors),
       ),
     );
+  }
+
+  /// **Une rubrique par son slug** — ce qui survit à son renommage, et ce que
+  /// portent les destinations de menu comme les URL publiques.
+  ///
+  /// Aucune contrainte d'unicité locale : le serveur la garantit, et le magasin
+  /// n'a pas à refuser ce qu'il reçoit. `watchSingleOrNull` suffit donc, et un
+  /// doublon serveur se verrait comme une erreur de lecture plutôt que comme un
+  /// choix arbitraire.
+  Selectable<TeachingTypeRow> teachingTypeBySlug(String slug) {
+    return select(teachingTypes)..where((t) => t.slug.equals(slug));
   }
 
   /// Toutes les branches connues, par ordre alphabétique.

@@ -1,4 +1,5 @@
 import '../../models/mediatheque_view.dart';
+import '../../utils/search_terms.dart';
 import '../../utils/server_values.dart';
 import '../local/mediatheque_dao.dart';
 import 'mediatheque_repository.dart';
@@ -42,6 +43,25 @@ class StoreMediathequeRepository implements MediathequeRepository {
         .watch()
         .map((rows) => _views(rows, locale));
   }
+
+  @override
+  Stream<List<TeachingView>> teachingsMatching({
+    required String locale,
+    int? teachingTypeId,
+    String? search,
+  }) {
+    return _dao
+        .teachingsMatching(
+          teachingTypeId: teachingTypeId,
+          searchPattern: searchPattern(search),
+        )
+        .watch()
+        .map((rows) => _views(rows, locale));
+  }
+
+  @override
+  Stream<int?> rubricIdOfSlug(String slug) =>
+      _dao.teachingTypeBySlug(slug).watchSingleOrNull().map((row) => row?.id);
 
   @override
   Stream<TeachingView?> teachingById(String id, {required String locale}) {

@@ -1,5 +1,6 @@
 import '../../models/mediatheque_view.dart';
 import '../../models/models.dart';
+import '../../utils/search_terms.dart';
 import '../sample_data.dart';
 
 /// Médiathèque — **repository dédié, asynchrone, et le seul chemin des écrans
@@ -45,6 +46,35 @@ abstract interface class MediathequeRepository {
     int teachingTypeId, {
     required String locale,
   });
+
+  /// **Les enseignements que la destination d'une entrée de menu désigne**
+  /// (#82) — ce qui fait enfin filtrer les onglets de la médiathèque.
+  ///
+  /// Les deux bornes se **composent** : la rubrique que l'entrée a choisie et la
+  /// recherche (celle de l'entrée, celle de la loupe, ou les deux). Aucune des
+  /// deux n'est obligatoire — sans bornes, c'est le catalogue entier, et c'est
+  /// exactement ce que désigne l'entrée indélébile de la médiathèque.
+  ///
+  /// ⚠️ **Les cultes entiers ne sont pas écartés** : le modèle de menu ne porte
+  /// aucune colonne qui les concerne, et en décider dans le client serait une
+  /// règle éditoriale figée dans le binaire, invisible depuis le portail. Le
+  /// portail a déjà le moyen de les écarter dans la donnée — les ranger dans
+  /// leur rubrique et ne pointer aucune entrée dessus.
+  Stream<List<TeachingView>> teachingsMatching({
+    required String locale,
+    int? teachingTypeId,
+    String? search,
+  });
+
+  /// **L'identifiant local d'une rubrique, depuis son slug** — `null` quand le
+  /// magasin ne la connaît pas (encore), ou plus.
+  ///
+  /// C'est ce qui permet à une destination de menu et à un « Voir tout » de
+  /// désigner une rubrique par ce qui survit à son renommage. `null` **n'est pas
+  /// une erreur** : c'est le slug inconnu, et le client en tire la même
+  /// conclusion que le site public d'un `?rubrique=` inconnu — rien, jamais
+  /// « tout le catalogue ».
+  Stream<int?> rubricIdOfSlug(String slug);
 
   /// Un enseignement par son identifiant, `null` s'il ne résout plus rien.
   ///
@@ -124,6 +154,32 @@ class InMemoryMediathequeRepository implements MediathequeRepository {
     final matching =
         _teachings.where((t) => t.teachingTypeId == teachingTypeId);
     return Stream.value(_views(_sorted(matching), locale));
+  }
+
+  @override
+  Stream<List<TeachingView>> teachingsMatching({
+    required String locale,
+    int? teachingTypeId,
+    String? search,
+  }) {
+    final term = normalizeSearchTerm(search)?.toLowerCase();
+    final matching = _teachings.where((t) {
+      if (teachingTypeId != null && t.teachingTypeId != teachingTypeId) {
+        return false;
+      }
+      if (term != null && !t.title.toLowerCase().contains(term)) return false;
+      return true;
+    });
+    return Stream.value(_views(_sorted(matching), locale));
+  }
+
+  /// La même règle qu'en magasin : le slug du référentiel, ou rien.
+  @override
+  Stream<int?> rubricIdOfSlug(String slug) {
+    for (final type in _types) {
+      if (type.slug == slug) return Stream.value(type.id);
+    }
+    return Stream.value(null);
   }
 
   @override

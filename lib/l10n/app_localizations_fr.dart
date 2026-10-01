@@ -253,19 +253,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mediaSearchHint => 'Rechercher un message...';
 
   @override
-  String get mediaRecommended => 'Recommandés pour vous';
-
-  @override
   String get filterAll => 'Tout';
 
   @override
-  String get filterSermons => 'Prêches';
-
-  @override
   String get filterTeachings => 'Messages';
-
-  @override
-  String get filterMusic => 'Musique';
 
   @override
   String get seriesTag => 'Thème';

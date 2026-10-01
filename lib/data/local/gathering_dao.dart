@@ -124,6 +124,26 @@ class GatheringDao extends DatabaseAccessor<AppDatabase>
     return _gatheringsQuery(limit: limit);
   }
 
+  /// **Les rassemblements que la destination d'une entrée de menu désigne**
+  /// (#82) — le pendant strict de `MediathequeDao.teachingsMatching`.
+  ///
+  /// Deux jeux de providers et deux DAO plutôt qu'un seul paramétré par la
+  /// famille : c'est ce qui rend impossible qu'un rassemblement se glisse dans
+  /// une liste d'enseignements. `destinationFamily` dit **quelle collection
+  /// lire** ; elle ne range pas une ligne.
+  Selectable<GatheringWithRefs> gatheringsMatching({
+    int? gatheringTypeId,
+    String? searchPattern,
+  }) {
+    final clauses = <Expression<bool>>[
+      if (gatheringTypeId != null)
+        gatherings.teachingTypeId.equals(gatheringTypeId),
+      if (searchPattern != null) gatherings.title.like(searchPattern),
+    ];
+    if (clauses.isEmpty) return _gatheringsQuery();
+    return _gatheringsQuery(where: clauses.reduce((a, b) => a & b));
+  }
+
   /// Un rassemblement par son identifiant.
   ///
   /// **La navigation transporte l'identifiant ; l'écran observe le magasin.**

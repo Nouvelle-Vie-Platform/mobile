@@ -1,5 +1,6 @@
 import '../../models/gathering_view.dart';
 import '../../models/models.dart';
+import '../../utils/search_terms.dart';
 import '../sample_data.dart';
 
 /// Rassemblements — **repository dédié, asynchrone, et le seul chemin des
@@ -37,6 +38,17 @@ abstract interface class GatheringRepository {
   ///
   /// `null` **n'est pas une erreur technique** : c'est l'une des quatre
   /// absences (« contenu retiré », cf. `ContentAbsence`).
+  /// **Les rassemblements que la destination d'une entrée de menu désigne**
+  /// (#82) — le pendant strict de `MediathequeRepository.teachingsMatching`, et
+  /// une méthode de ce contrat-ci et non du sien : `destinationFamily` dit
+  /// **quelle collection lire**, et c'est le système de types qui empêche la
+  /// réponse de se tromper d'écran.
+  Stream<List<GatheringView>> gatheringsMatching({
+    required String locale,
+    int? gatheringTypeId,
+    String? search,
+  });
+
   Stream<GatheringView?> gatheringById(String id, {required String locale});
 
   /// Les rubriques de rassemblement de l'accueil, dans l'ordre voulu par le
@@ -93,6 +105,23 @@ class InMemoryGatheringRepository implements GatheringRepository {
   }) {
     final matching =
         _gatherings.where((g) => g.teachingTypeId == gatheringTypeId);
+    return Stream.value(_views(_sorted(matching), locale));
+  }
+
+  @override
+  Stream<List<GatheringView>> gatheringsMatching({
+    required String locale,
+    int? gatheringTypeId,
+    String? search,
+  }) {
+    final term = normalizeSearchTerm(search)?.toLowerCase();
+    final matching = _gatherings.where((g) {
+      if (gatheringTypeId != null && g.teachingTypeId != gatheringTypeId) {
+        return false;
+      }
+      if (term != null && !g.title.toLowerCase().contains(term)) return false;
+      return true;
+    });
     return Stream.value(_views(_sorted(matching), locale));
   }
 

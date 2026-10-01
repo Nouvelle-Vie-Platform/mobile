@@ -1,4 +1,5 @@
 import '../../models/gathering_view.dart';
+import '../../utils/search_terms.dart';
 import '../../utils/server_values.dart';
 import '../local/gathering_dao.dart';
 import 'gathering_repository.dart';
@@ -38,6 +39,21 @@ class StoreGatheringRepository implements GatheringRepository {
   }) {
     return _dao
         .gatheringsOfType(gatheringTypeId)
+        .watch()
+        .map((rows) => _views(rows, locale));
+  }
+
+  @override
+  Stream<List<GatheringView>> gatheringsMatching({
+    required String locale,
+    int? gatheringTypeId,
+    String? search,
+  }) {
+    return _dao
+        .gatheringsMatching(
+          gatheringTypeId: gatheringTypeId,
+          searchPattern: searchPattern(search),
+        )
         .watch()
         .map((rows) => _views(rows, locale));
   }
