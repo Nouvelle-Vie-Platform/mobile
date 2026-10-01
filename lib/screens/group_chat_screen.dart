@@ -31,6 +31,19 @@ import '../widgets/content_absence.dart';
 /// false)` est un **auteur retiré** (ADR-0032), et c'est une bulle. Tester le nul
 /// seul afficherait les messages d'un membre parti comme des annonces du serveur —
 /// centrés, en gris, mêlés aux « X a rejoint le groupe ».
+///
+/// ## Le temps réel, pendant que ce fil est ouvert (#101)
+///
+/// Cet écran est le **seul** à ouvrir un canal SSE, et il ne le tient que tant
+/// qu'il est affiché (`openThreadChannelProvider`, `autoDispose`). Ce que ça
+/// achète : avec la conversation ouverte, les messages arrivent instantanément.
+/// Ce que ça n'achète pas : une notification — en arrière-plan ou application
+/// fermée, il n'y a **rien**, et les messages paraissent à la prochaine ouverture
+/// par le cycle de synchronisation.
+///
+/// Rien de ce canal ne descend jusqu'ici : un signal déclenche un cycle, le
+/// moteur écrit, le magasin repeint. L'écran est donc **exactement le même** avec
+/// ou sans SSE.
 class GroupChatScreen extends ConsumerStatefulWidget {
   const GroupChatScreen({super.key, required this.groupId});
 
@@ -62,6 +75,23 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+
+    // **Le canal temps réel du fil, ouvert tant que cet écran est à l'écran**
+    // (#101). Observé pour sa durée de vie et non pour sa valeur : le provider est
+    // `autoDispose`, donc la connexion se ferme d'elle-même au démontage — c'est
+    // ce qui garantit qu'elle ne survit pas à l'écran.
+    //
+    // Il n'y a **rien à peindre** avec : un signal déclenche un cycle de
+    // synchronisation, le moteur écrit dans le magasin, et le fil se redessine
+    // parce que `groupThreadProvider` observe le magasin. Rien ne descend du réseau
+    // vers cet écran, et c'est ce qui le rend identique avec ou sans SSE — serveur
+    // injoignable ou canal refusé, le fil se remplit au cycle suivant et aucune
+    // erreur ne paraît ici.
+    //
+    // Lu **avant** l'absence plus bas, délibérément : un identifiant que le magasin
+    // ne connaît pas encore est justement le cas où un cycle est utile.
+    ref.watch(openThreadChannelProvider(widget.groupId));
+
     // L'acteur est lu ici et passé en clé : voir l'en-tête
     // d'`echanges_providers.dart`.
     final me = ref.watch(echangesActorProvider);

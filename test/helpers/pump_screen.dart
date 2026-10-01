@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/data/legal_notice_store.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
+import 'package:maison_du_miracle/data/realtime/group_channel.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
@@ -99,6 +100,13 @@ import 'playback_doubles.dart';
 /// surtout pas se mettre à échouer parce qu'un bandeau est venu se poser entre
 /// deux de ses `tap`. Les tests **du** bandeau passent leur propre double
 /// ([legalNotice]), et seul le vrai magasin porte la réponse de production.
+///
+/// Le **canal temps réel d'un groupe** ([channel]) est posé **muet** (#101), pour
+/// la raison de l'auth et de l'envoyeur de messages : l'implémentation réelle est
+/// SSE dès que `AppEnv.useBackend` est vrai, donc ouvrir une conversation
+/// ouvrirait une socket que `flutter test` refuse — en laissant derrière elle la
+/// minuterie de réouverture. Le défaut (aucun signal) est exactement le régime
+/// « sans SSE » que l'application doit tenir sans rien changer à l'écran.
 /// Monte un **routeur** plutôt qu'un écran isolé, dans le même environnement.
 ///
 /// Nécessaire dès qu'un test porte sur la navigation : `context.pop()` et
@@ -125,6 +133,7 @@ Future<void> pumpRouter(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
+  GroupChannel? channel,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -144,6 +153,7 @@ Future<void> pumpRouter(
           authChannels: authChannels,
           updateThreshold: updateThreshold,
           echanges: echanges,
+          channel: channel,
         ),
         ...overrides,
       ],
@@ -179,10 +189,23 @@ List<Override> _commonOverrides(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
+  GroupChannel? channel,
   List<DownloadNotificationRow> notifications = const [],
 }) =>
     [
       appDatabaseProvider.overrideWithValue(db),
+      // **Le canal temps réel d'un groupe, posé muet** (#101), pour la raison de
+      // l'auth et de l'envoyeur de messages : l'implémentation réelle est SSE dès
+      // que `AppEnv.useBackend` est vrai — et il l'est hors surcharge —, donc
+      // ouvrir une conversation ouvrirait une socket que `flutter test` refuse, et
+      // laisserait derrière elle la minuterie de réouverture.
+      //
+      // Le défaut est **aucun signal**, ce qui est exactement le régime « sans
+      // SSE » que l'application doit tenir sans rien changer à l'écran.
+      // [channel] est un paramètre nommé et non un `Override` de plus — Riverpod 3
+      // refuse deux surcharges du même provider dans un même conteneur.
+      groupChannelProvider
+          .overrideWithValue(channel ?? const SilentGroupChannel()),
       // **La rubrique Échanges, posée sur un double vide** (#96), pour les deux
       // raisons qui valent déjà pour la médiathèque et les annonces : son
       // implémentation réelle lit le **magasin Drift** — donc ouvre des flux qu'une
@@ -310,6 +333,7 @@ Future<void> pumpScreen(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
+  GroupChannel? channel,
   List<DownloadNotificationRow> notifications = const [],
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
@@ -336,6 +360,7 @@ Future<void> pumpScreen(
           authChannels: authChannels,
           updateThreshold: updateThreshold,
           echanges: echanges,
+          channel: channel,
           notifications: notifications,
         ),
         ...overrides,

@@ -2,7 +2,9 @@
 ///
 /// Trois déclencheurs, posés par ADR-0017 : **ouverture** de l'application,
 /// **retour au premier plan**, **tirer-pour-rafraîchir**. Le nudge FCM viendra
-/// plus tard et se branchera ici, comme un quatrième appel à [trigger].
+/// plus tard et se branchera ici, comme un appel de plus à [trigger] — c'est
+/// exactement ce que fait déjà le signal d'un fil ouvert
+/// ([SyncTrigger.openThread], #101).
 ///
 /// **Jamais de polling.** Il n'y a aucun `Timer` dans ce fichier, et il ne doit
 /// pas en apparaître (`test/sync/sync_scheduler_test.dart` le vérifie). Un
@@ -16,8 +18,26 @@ import 'package:flutter/widgets.dart';
 import 'sync_engine.dart';
 
 /// Ce qui a déclenché un cycle. Diagnostic seulement — le moteur fait la même
-/// chose dans les trois cas.
-enum SyncTrigger { appStart, foreground, pullToRefresh }
+/// chose dans tous les cas.
+enum SyncTrigger {
+  appStart,
+  foreground,
+  pullToRefresh,
+
+  /// **Un signal reçu sur le canal d'un fil ouvert** (#101) : le temps réel par
+  /// SSE pendant qu'une conversation est affichée.
+  ///
+  /// Un quatrième appel à [SyncScheduler.trigger], pas un quatrième mécanisme :
+  /// le moteur fait exactement la même chose, et c'est tout l'intérêt — un signal
+  /// SSE est un **accélérateur de notification** (ADR-0006), jamais une source de
+  /// vérité. Le réveil push, quand la clé APNs existera, se branchera de la même
+  /// façon.
+  ///
+  /// ⚠️ Ce n'est **pas** une notification : le canal ne vit que tant que l'écran
+  /// est affiché. Application en arrière-plan ou fermée, il n'y a aucun signal —
+  /// voir `lib/data/realtime/group_channel.dart`.
+  openThread,
+}
 
 /// Sérialise les déclenchements et écoute le cycle de vie de l'application.
 ///
