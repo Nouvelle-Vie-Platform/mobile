@@ -6,10 +6,6 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<!-- Le nom **affiché**, celui que le fidèle lit sous l'icône. Il ne se
-	     confond ni avec le nom du paquet Dart (`maison_du_miracle`) ni avec
-	     `PRODUCT_BUNDLE_IDENTIFIER`, l'identité de l'app auprès de l'App Store
-	     et de la signature — aucun des deux ne bouge. -->
 	<key>CFBundleDisplayName</key>
 	<string>Nouvelle Vie</string>
 	<key>CFBundleExecutable</key>
@@ -18,10 +14,6 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
-	<!-- Le nom **court** (16 caractères au plus), distinct du nom affiché :
-	     iOS s'en sert là où la place manque. `maison_du_miracle` en faisait
-	     17 et portait des tirets bas — il est aligné sur le nom affiché, qui
-	     en fait douze. -->
 	<key>CFBundleName</key>
 	<string>Nouvelle Vie</string>
 	<key>CFBundlePackageType</key>
@@ -34,15 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<!-- Composeur d'annonces (#36) : l'image de fond d'un statut se choisit dans
-	     la photothèque. Sans cette clé, iOS **tue** l'application à l'ouverture
-	     du sélecteur — ce n'est pas un refus poli, c'est un plantage. -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choisissez une image pour illustrer l'annonce que vous publiez au nom de votre compte officiel.</string>
-	<!-- Ajout seul à la photothèque : enregistrer un média partagé dans une
-	     discussion (gal). Distincte de la clé de lecture ci-dessus. -->
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Enregistrez dans vos photos les médias partagés dans vos échanges.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choisissez une image pour illustrer l'annonce que vous publiez au nom de votre compte officiel.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -66,16 +53,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<!-- Lecture d'un enseignement en arrière-plan (#39) : sans ce mode, iOS
-	     suspend le processus dès que l'écran se verrouille, et le son s'arrête
-	     au milieu d'un prêche.
-	     **Aucun `NSAppTransportSecurity` ici, et ce n'est pas un oubli** : le
-	     serveur exige `HLS_PUBLIC_BASE_URL` et sert une URL HTTPS absolue.
-	     `NSAllowsArbitraryLoads` déclencherait une justification à l'App Review
-	     pour un besoin qui n'existe pas. -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
+		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
