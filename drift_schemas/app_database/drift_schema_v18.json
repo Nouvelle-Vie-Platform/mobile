@@ -2185,6 +2185,387 @@
       "references": [],
       "type": "table",
       "data": {
+        "name": "menu_entries",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "sync_stamp",
+            "getter_name": "syncStamp",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "parent_id",
+            "getter_name": "parentId",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "label_key",
+            "getter_name": "labelKey",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "label",
+            "getter_name": "label",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const I18nMapConverter()",
+              "dart_type_name": "Map<String, String>"
+            }
+          },
+          {
+            "name": "icon",
+            "getter_name": "icon",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "featured",
+            "getter_name": "featured",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"featured\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"featured\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "divided",
+            "getter_name": "divided",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"divided\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"divided\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "destination_kind",
+            "getter_name": "destinationKind",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "destination_page",
+            "getter_name": "destinationPage",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "destination_family",
+            "getter_name": "destinationFamily",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "destination_rubric",
+            "getter_name": "destinationRubric",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "destination_branch",
+            "getter_name": "destinationBranch",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "destination_search",
+            "getter_name": "destinationSearch",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "destination_series_id",
+            "getter_name": "destinationSeriesId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "destination_contributor_id",
+            "getter_name": "destinationContributorId",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "destination_url",
+            "getter_name": "destinationUrl",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "filter_rubric",
+            "getter_name": "filterRubric",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"filter_rubric\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"filter_rubric\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "filter_branch",
+            "getter_name": "filterBranch",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"filter_branch\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"filter_branch\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "filter_family",
+            "getter_name": "filterFamily",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"filter_family\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"filter_family\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "filter_search",
+            "getter_name": "filterSearch",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"filter_search\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"filter_search\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "media_visible",
+            "getter_name": "mediaVisible",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"media_visible\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"media_visible\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "media_position",
+            "getter_name": "mediaPosition",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "home_visible",
+            "getter_name": "homeVisible",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"home_visible\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"home_visible\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "home_position",
+            "getter_name": "homePosition",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "home_layout",
+            "getter_name": "homeLayout",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "published_from",
+            "getter_name": "publishedFrom",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "published_until",
+            "getter_name": "publishedUntil",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "page_title",
+            "getter_name": "pageTitle",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const I18nMapConverter()",
+              "dart_type_name": "Map<String, String>"
+            }
+          },
+          {
+            "name": "page_description",
+            "getter_name": "pageDescription",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const I18nMapConverter()",
+              "dart_type_name": "Map<String, String>"
+            }
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "updated_at",
+            "getter_name": "updatedAt",
+            "moor_type": "dateTime",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "id"
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "references": [],
+      "type": "table",
+      "data": {
         "name": "decor",
         "was_declared_in_moor": false,
         "columns": [
@@ -2258,7 +2639,7 @@
       }
     },
     {
-      "id": 20,
+      "id": 21,
       "references": [],
       "type": "table",
       "data": {
@@ -2357,7 +2738,7 @@
       }
     },
     {
-      "id": 21,
+      "id": 22,
       "references": [],
       "type": "table",
       "data": {
@@ -2424,7 +2805,7 @@
       }
     },
     {
-      "id": 22,
+      "id": 23,
       "references": [],
       "type": "table",
       "data": {
@@ -2491,7 +2872,7 @@
       }
     },
     {
-      "id": 23,
+      "id": 24,
       "references": [],
       "type": "table",
       "data": {
@@ -2680,7 +3061,7 @@
       }
     },
     {
-      "id": 24,
+      "id": 25,
       "references": [],
       "type": "table",
       "data": {
@@ -2767,7 +3148,7 @@
       }
     },
     {
-      "id": 25,
+      "id": 26,
       "references": [],
       "type": "table",
       "data": {
@@ -2854,7 +3235,7 @@
       }
     },
     {
-      "id": 26,
+      "id": 27,
       "references": [],
       "type": "table",
       "data": {
@@ -2965,7 +3346,7 @@
       }
     },
     {
-      "id": 27,
+      "id": 28,
       "references": [],
       "type": "table",
       "data": {
@@ -3036,7 +3417,7 @@
       }
     },
     {
-      "id": 28,
+      "id": 29,
       "references": [],
       "type": "table",
       "data": {
@@ -3073,7 +3454,7 @@
       }
     },
     {
-      "id": 29,
+      "id": 30,
       "references": [],
       "type": "table",
       "data": {
@@ -3204,7 +3585,7 @@
       }
     },
     {
-      "id": 30,
+      "id": 31,
       "references": [],
       "type": "table",
       "data": {
@@ -3241,7 +3622,7 @@
       }
     },
     {
-      "id": 31,
+      "id": 32,
       "references": [],
       "type": "table",
       "data": {
@@ -3470,6 +3851,15 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"presentation_vocabulary\" (\"sync_stamp\" INTEGER NOT NULL DEFAULT 0, \"id\" TEXT NOT NULL, \"kind\" TEXT NOT NULL, \"singular\" TEXT NULL, \"plural\" TEXT NULL, \"label\" TEXT NULL, \"created_at\" INTEGER NULL, \"updated_at\" INTEGER NULL, PRIMARY KEY (\"id\"));"
+        }
+      ]
+    },
+    {
+      "name": "menu_entries",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"menu_entries\" (\"sync_stamp\" INTEGER NOT NULL DEFAULT 0, \"id\" INTEGER NOT NULL, \"parent_id\" INTEGER NULL, \"label_key\" TEXT NULL, \"label\" TEXT NULL, \"icon\" TEXT NULL, \"featured\" INTEGER NOT NULL DEFAULT 0 CHECK (\"featured\" IN (0, 1)), \"divided\" INTEGER NOT NULL DEFAULT 0 CHECK (\"divided\" IN (0, 1)), \"destination_kind\" TEXT NOT NULL, \"destination_page\" TEXT NULL, \"destination_family\" TEXT NULL, \"destination_rubric\" TEXT NULL, \"destination_branch\" TEXT NULL, \"destination_search\" TEXT NULL, \"destination_series_id\" TEXT NULL, \"destination_contributor_id\" INTEGER NULL, \"destination_url\" TEXT NULL, \"filter_rubric\" INTEGER NOT NULL DEFAULT 0 CHECK (\"filter_rubric\" IN (0, 1)), \"filter_branch\" INTEGER NOT NULL DEFAULT 0 CHECK (\"filter_branch\" IN (0, 1)), \"filter_family\" INTEGER NOT NULL DEFAULT 0 CHECK (\"filter_family\" IN (0, 1)), \"filter_search\" INTEGER NOT NULL DEFAULT 0 CHECK (\"filter_search\" IN (0, 1)), \"media_visible\" INTEGER NOT NULL DEFAULT 0 CHECK (\"media_visible\" IN (0, 1)), \"media_position\" INTEGER NOT NULL DEFAULT 0, \"home_visible\" INTEGER NOT NULL DEFAULT 0 CHECK (\"home_visible\" IN (0, 1)), \"home_position\" INTEGER NOT NULL DEFAULT 0, \"home_layout\" TEXT NULL, \"published_from\" INTEGER NULL, \"published_until\" INTEGER NULL, \"page_title\" TEXT NULL, \"page_description\" TEXT NULL, \"created_at\" INTEGER NULL, \"updated_at\" INTEGER NULL, PRIMARY KEY (\"id\"));"
         }
       ]
     },

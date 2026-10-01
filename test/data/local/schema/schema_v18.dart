@@ -1645,6 +1645,240 @@ class PresentationVocabulary extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
+class MenuEntries extends Table with TableInfo {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  MenuEntries(this.attachedDatabase, [this._alias]);
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<int> parentId = GeneratedColumn<int>(
+      'parent_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<String> labelKey = GeneratedColumn<String>(
+      'label_key', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+      'label', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<String> icon = GeneratedColumn<String>(
+      'icon', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<int> featured = GeneratedColumn<int>(
+      'featured', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (featured IN (0, 1))',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<int> divided = GeneratedColumn<int>(
+      'divided', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (divided IN (0, 1))',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<String> destinationKind = GeneratedColumn<String>(
+      'destination_kind', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<String> destinationPage = GeneratedColumn<String>(
+      'destination_page', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<String> destinationFamily =
+      GeneratedColumn<String>('destination_family', aliasedName, true,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          $customConstraints: 'NULL');
+  late final GeneratedColumn<String> destinationRubric =
+      GeneratedColumn<String>('destination_rubric', aliasedName, true,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          $customConstraints: 'NULL');
+  late final GeneratedColumn<String> destinationBranch =
+      GeneratedColumn<String>('destination_branch', aliasedName, true,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          $customConstraints: 'NULL');
+  late final GeneratedColumn<String> destinationSearch =
+      GeneratedColumn<String>('destination_search', aliasedName, true,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          $customConstraints: 'NULL');
+  late final GeneratedColumn<String> destinationSeriesId =
+      GeneratedColumn<String>('destination_series_id', aliasedName, true,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          $customConstraints: 'NULL');
+  late final GeneratedColumn<int> destinationContributorId =
+      GeneratedColumn<int>('destination_contributor_id', aliasedName, true,
+          type: DriftSqlType.int,
+          requiredDuringInsert: false,
+          $customConstraints: 'NULL');
+  late final GeneratedColumn<String> destinationUrl = GeneratedColumn<String>(
+      'destination_url', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<int> filterRubric = GeneratedColumn<int>(
+      'filter_rubric', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (filter_rubric IN (0, 1))',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<int> filterBranch = GeneratedColumn<int>(
+      'filter_branch', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (filter_branch IN (0, 1))',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<int> filterFamily = GeneratedColumn<int>(
+      'filter_family', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (filter_family IN (0, 1))',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<int> filterSearch = GeneratedColumn<int>(
+      'filter_search', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (filter_search IN (0, 1))',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<int> mediaVisible = GeneratedColumn<int>(
+      'media_visible', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (media_visible IN (0, 1))',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<int> mediaPosition = GeneratedColumn<int>(
+      'media_position', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<int> homeVisible = GeneratedColumn<int>(
+      'home_visible', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (home_visible IN (0, 1))',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<int> homePosition = GeneratedColumn<int>(
+      'home_position', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NOT NULL DEFAULT 0',
+      defaultValue: const CustomExpression('0'));
+  late final GeneratedColumn<String> homeLayout = GeneratedColumn<String>(
+      'home_layout', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<int> publishedFrom = GeneratedColumn<int>(
+      'published_from', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<int> publishedUntil = GeneratedColumn<int>(
+      'published_until', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<String> pageTitle = GeneratedColumn<String>(
+      'page_title', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<String> pageDescription = GeneratedColumn<String>(
+      'page_description', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        parentId,
+        labelKey,
+        label,
+        icon,
+        featured,
+        divided,
+        destinationKind,
+        destinationPage,
+        destinationFamily,
+        destinationRubric,
+        destinationBranch,
+        destinationSearch,
+        destinationSeriesId,
+        destinationContributorId,
+        destinationUrl,
+        filterRubric,
+        filterBranch,
+        filterFamily,
+        filterSearch,
+        mediaVisible,
+        mediaPosition,
+        homeVisible,
+        homePosition,
+        homeLayout,
+        publishedFrom,
+        publishedUntil,
+        pageTitle,
+        pageDescription,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'menu_entries';
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
+    throw UnsupportedError('TableInfo.map in schema verification code');
+  }
+
+  @override
+  MenuEntries createAlias(String alias) {
+    return MenuEntries(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
 class Decor extends Table with TableInfo {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -2561,6 +2795,7 @@ class DatabaseAtV18 extends GeneratedDatabase {
   late final Seasons seasons = Seasons(this);
   late final PresentationVocabulary presentationVocabulary =
       PresentationVocabulary(this);
+  late final MenuEntries menuEntries = MenuEntries(this);
   late final Decor decor = Decor(this);
   late final AuthChannels authChannels = AuthChannels(this);
   late final DeviceSettings deviceSettings = DeviceSettings(this);
@@ -2600,6 +2835,7 @@ class DatabaseAtV18 extends GeneratedDatabase {
         legalDocuments,
         seasons,
         presentationVocabulary,
+        menuEntries,
         decor,
         authChannels,
         deviceSettings,
