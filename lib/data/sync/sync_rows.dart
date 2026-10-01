@@ -638,6 +638,82 @@ DeviceSettingsCompanion deviceSettingsRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/menu_entries` — **une entrée de menu** (#82).
+///
+/// **Trente et une clés**, relevées une à une sur
+/// `app/presentation/transformers/menu_entry_transformer.ts`, qui les énumère
+/// explicitement : `id`, `parentId`, `labelKey`, `label`, `icon`, `featured`,
+/// `divided`, les **neuf** colonnes de destination, les **quatre** cases de
+/// filtre, les deux colonnes de la surface médiathèque, les trois de la surface
+/// accueil, les deux bornes de publication, `pageTitle`, `pageDescription`,
+/// `createdAt`, `updatedAt`.
+///
+/// La table serveur en porte **trente-neuf** : huit ne descendent
+/// **délibérément** pas — `headerVisible`/`headerPosition`,
+/// `footerVisible`/`footerPosition` (les deux surfaces du site),
+/// `shareTitle`/`shareDescription` (des balises `og:`), `heroImageUrl` (stocké,
+/// rendu par aucune page) et `locked` (un garde-fou de l'écran
+/// d'administration). L'énumération côté serveur est le garde-fou : le jour où
+/// quelqu'un ajoute une colonne pour la vitrine, elle ne partira pas sur cinq
+/// mille appareils par accident.
+///
+/// Quatre points qui se ratent en silence :
+///
+/// 1. **`destinationKind` est exigé, et stocké tel quel.** C'est la seule clé
+///    sans laquelle la ligne ne veut rien dire. Mais elle n'est **pas** refermée
+///    sur un enum : un type inconnu doit faire disparaître l'entrée **à la
+///    lecture**, en silence et sans repli (décision 13 du cadrage). La refuser
+///    ici coûterait la page entière, donc les entrées que ce binaire sait rendre.
+/// 2. **`label` et `labelKey` sont indissociables**, et `label = null` est une
+///    **valeur** : il dit « le libellé du dépôt », porté par `labelKey`. D'où
+///    `_optionalI18nMap`, qui ne lève pas — c'est l'état de toutes les entrées
+///    reprises de l'ancienne barre.
+/// 3. **`parentId` est un entier nu, sans contrainte** (règle 4 du magasin) :
+///    une sous-entrée dont le parent n'est pas encore arrivé ne doit pas faire
+///    échouer `applyPage`. Elle paraîtra au cycle suivant.
+/// 4. **Les deux bornes de publication sont des instants**, pas des jours — à la
+///    différence de `seasons`, dont les bornes restent des chaînes `YYYY-MM-DD`.
+///    Le serveur sert des `timestamp` et `ReadMenu` les compare à l'heure
+///    courante : `_instant` est donc le bon lecteur ici, et ce serait le mauvais
+///    là-bas.
+MenuEntriesCompanion menuEntryRowOf(Map<String, Object?> item) {
+  const collection = 'menu_entries';
+  return MenuEntriesCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    parentId: Value(_optionalInt(item, 'parentId')),
+    labelKey: Value(_optionalText(item, 'labelKey')),
+    label: Value(_optionalI18nMap(item, 'label')),
+    icon: Value(_optionalText(item, 'icon')),
+    featured: Value(item['featured'] == true),
+    divided: Value(item['divided'] == true),
+    destinationKind: _text(collection, item, 'destinationKind'),
+    destinationPage: Value(_optionalText(item, 'destinationPage')),
+    destinationFamily: Value(_optionalText(item, 'destinationFamily')),
+    destinationRubric: Value(_optionalText(item, 'destinationRubric')),
+    destinationBranch: Value(_optionalText(item, 'destinationBranch')),
+    destinationSearch: Value(_optionalText(item, 'destinationSearch')),
+    destinationSeriesId: Value(_optionalText(item, 'destinationSeriesId')),
+    destinationContributorId:
+        Value(_optionalInt(item, 'destinationContributorId')),
+    destinationUrl: Value(_optionalText(item, 'destinationUrl')),
+    filterRubric: Value(item['filterRubric'] == true),
+    filterBranch: Value(item['filterBranch'] == true),
+    filterFamily: Value(item['filterFamily'] == true),
+    filterSearch: Value(item['filterSearch'] == true),
+    mediaVisible: Value(item['mediaVisible'] == true),
+    mediaPosition: Value(_optionalInt(item, 'mediaPosition') ?? 0),
+    homeVisible: Value(item['homeVisible'] == true),
+    homePosition: Value(_optionalInt(item, 'homePosition') ?? 0),
+    homeLayout: Value(_optionalText(item, 'homeLayout')),
+    publishedFrom: Value(_instant(item, 'publishedFrom')),
+    publishedUntil: Value(_instant(item, 'publishedUntil')),
+    pageTitle: Value(_optionalI18nMap(item, 'pageTitle')),
+    pageDescription: Value(_optionalI18nMap(item, 'pageDescription')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Rouages
 // ─────────────────────────────────────────────────────────────────────────────

@@ -14,7 +14,7 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les vingt-huit collections du registre, dans l\'ordre', () {
+    test('les vingt-neuf collections du registre, dans l\'ordre', () {
       // **Ce nombre avait menti.** Il disait dix-neuf quand le registre serveur
       // en comptait vingt-cinq, et le test passait au vert en gardant un contrat
       // périmé — `seasons`, `decor`, `teaching_guests`, `group_members`,
@@ -26,8 +26,10 @@ void main() {
       // « vingt-six » alors que son tableau en portait déjà vingt-sept,
       // `auth_channels` comprise. Ce nombre-ci est **compté sur les
       // descripteurs**, jamais lu dans la phrase qui les précède — recompté en
-      // #91, où `device_settings` devient la vingt-huitième.
-      expect(kSyncCollections, hasLength(28));
+      // #91, où `device_settings` devient la vingt-huitième, puis en #82, où
+      // `menu_entries` devient la vingt-neuvième. Cette fois l'en-tête et le
+      // tableau s'accordent, et c'est le **tableau** qui a été compté.
+      expect(kSyncCollections, hasLength(29));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
@@ -107,6 +109,37 @@ void main() {
       );
       expect(
         keys.indexOf('device_settings'),
+        lessThan(keys.indexOf('gatherings')),
+      );
+    });
+
+    test('les menus sont un référentiel, servi sans compte et sans tombstone',
+        () {
+      // `partition: 'reference'` : un menu n'appartient à aucune branche — il y a
+      // un site public et une application, et la barre réglée depuis Aného est
+      // celle de Lomé. `scopeFilter` est donc vide, et ce vide **est** la
+      // décision.
+      expect(kSyncCollections['menu_entries'], 'reference');
+
+      final keys = kSyncCollections.keys.toList();
+      // Rangée **immédiatement après le vocabulaire et avant `decor`** : c'est
+      // la position réelle du tableau `syncDescriptors`, relevée dessus et non
+      // sur l'intuition qu'un menu « devrait » venir avec les référentiels
+      // d'habillage.
+      expect(
+        keys.indexOf('menu_entries'),
+        keys.indexOf('presentation_vocabulary') + 1,
+      );
+      expect(keys.indexOf('menu_entries'), lessThan(keys.indexOf('decor')));
+      // Et avant tout contenu : un menu doit arriver avant les listes qu'il
+      // intitule, et toute erreur autre qu'un 404 coupe le cycle, donc toutes
+      // les collections rangées après la fautive.
+      expect(
+        keys.indexOf('menu_entries'),
+        lessThan(keys.indexOf('teachings')),
+      );
+      expect(
+        keys.indexOf('menu_entries'),
         lessThan(keys.indexOf('gatherings')),
       );
     });

@@ -25,6 +25,7 @@ import 'device_settings_dao.dart';
 import 'gathering_dao.dart';
 import 'legal_dao.dart';
 import 'mediatheque_dao.dart';
+import 'menu_dao.dart';
 import 'playback_dao.dart';
 import 'settings_dao.dart';
 import 'sync_dao.dart';
@@ -40,6 +41,7 @@ import 'tables/settings_tables.dart';
 import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
 import 'tables/device_tables.dart';
+import 'tables/menu_tables.dart';
 import 'tables/season_tables.dart';
 import 'tables/vocabulary_tables.dart';
 import 'vocabulary_dao.dart';
@@ -87,6 +89,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     LegalDocuments,
     Seasons,
     PresentationVocabulary,
+    MenuEntries,
     Decor,
     AuthChannels,
     DeviceSettings,
@@ -104,6 +107,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     LegalDao,
     SeasonDao,
     VocabularyDao,
+    MenuDao,
     AuthChannelsDao,
     DeviceSettingsDao,
     SettingsDao,
@@ -168,8 +172,17 @@ class AppDatabase extends _$AppDatabase {
   /// plus, une création de table, et rien d'autre. La table naît **vide**, et
   /// vide veut dire « pas de seuil », donc **aucun bandeau** — exactement ce que
   /// l'application affiche déjà, puisque son seuil rendait `null` en dur.
+  ///
+  /// **v17** — `menu_entries` (#82), les **entrées de menu** : une collection
+  /// répliquée de plus, une création de table, et rien d'autre. La table naît
+  /// **vide**, et vide veut dire « aucun menu reçu » — la médiathèque retombe
+  /// alors sur son unique onglet implicite (le catalogue entier) et l'accueil
+  /// reste piloté par les rubriques, exactement comme avant la migration. C'est
+  /// la **coexistence bornée** décrite par le cadrage § 14, et c'est elle qui
+  /// permet à un appareil de monter de version avant que le portail n'ait réglé
+  /// quoi que ce soit.
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -457,6 +470,28 @@ class AppDatabase extends _$AppDatabase {
           // colonne surnuméraire.
           if (from < 16) {
             await m.createTable(deviceSettings);
+          }
+
+          // v16 → v17 — les **entrées de menu** (#82). Une création de table, et
+          // rien d'autre : aucune colonne existante ne bouge, aucune ligne n'est
+          // réécrite, et ni la médiathèque ni l'accueil ne changent de
+          // comportement tant que le premier cycle n'a rien ramené.
+          //
+          // La table naît **vide**, et c'est un état plein de sens : vide veut
+          // dire « aucun menu reçu », jamais « aucun onglet ». La médiathèque
+          // montre alors son onglet implicite — le catalogue entier, sans
+          // filtre —, et l'accueil reste piloté par `teaching_types.visible_on_home`.
+          // Son curseur n'existe pas encore, le prochain manifeste l'annoncera
+          // `from_zero`, et le premier cycle ramènera le menu du portail. D'ici
+          // là — et si le serveur est en retard d'une version, auquel cas la
+          // collection prend un `404` et se saute — rien ne se dégrade.
+          //
+          // Pas de garde `to >= 17` pour la raison des paliers qui ne créent
+          // que des tables (v2 à v5, v7, v9, v11 à v16) : le vérificateur de
+          // schéma **ignore une table surnuméraire** et ne signale qu'une
+          // colonne surnuméraire.
+          if (from < 17) {
+            await m.createTable(menuEntries);
           }
         },
         beforeOpen: (details) async {

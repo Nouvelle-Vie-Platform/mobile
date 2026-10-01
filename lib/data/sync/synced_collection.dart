@@ -164,6 +164,26 @@ class _PageSplit<D> {
 /// collection sans rien dégrader — un serveur en retard d'une version laisse
 /// simplement l'application sur ses `.arb`.
 ///
+/// **`menu_entries` se range juste après le vocabulaire, et pour deux raisons**
+/// (#82). La première est celle des mots : **un menu doit arriver avant les
+/// listes qu'il intitule**, puisque c'est lui qui dit quels onglets existent et
+/// ce que chacun filtre — tiré après les contenus, la médiathèque s'ouvrirait
+/// une fois sans aucun onglet, puis en pousserait quatre sous les yeux du
+/// fidèle. La seconde est celle du risque : la collection ne filtre rien, ne
+/// joint rien et ne lit aucune date, elle est donc parmi les moins susceptibles
+/// d'échouer — et **toute erreur autre qu'un `404` coupe le cycle**, donc toutes
+/// les collections rangées après la fautive.
+///
+/// ⚠️ **Elle précède donc `branches`, et ce n'est pas un oubli.** Une entrée dont
+/// la destination nomme un slug de rubrique ou de branche a besoin du
+/// référentiel pour le résoudre — mais cette résolution se fait **à la lecture**,
+/// pas à l'écriture, et elle est tolérante dans le seul sens qui soit sûr : un
+/// slug qu'on ne sait pas résoudre ne ramène aucun contenu, donc l'entrée ne
+/// paraît pas (« pas de contenu, pas de section »). Le pire cas d'un ordre
+/// « trop tôt » est un onglet qui manque pendant un cycle ; le pire cas d'un
+/// ordre « trop tard » serait une médiathèque sans barre d'onglets à la toute
+/// première ouverture, qui est le seul moment où l'ordre compte vraiment.
+///
 /// **`auth_channels` se range avec les référentiels, et tôt** (#83). C'est la
 /// première chose qu'un porteur **sans compte** a besoin de savoir, puisque
 /// c'est tout ce que son écran lui propose de faire : par quelle porte entrer.
@@ -257,6 +277,15 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) =>
             contentId(SyncCollectionKey.presentationVocabulary, item),
         rowOf: presentationVocabularyRowOf,
+      ),
+      SyncedCollection<MenuEntryRow>(
+        key: SyncCollectionKey.menuEntries,
+        local: (dao) => dao.menuEntriesCollection,
+        // `referenceId` : la PK est un **SERIAL**, donc un entier dans le curseur
+        // composé — le patron des référentiels, pas celui du vocabulaire, dont
+        // la clé est la chaîne du catalogue.
+        idOf: (item) => referenceId(SyncCollectionKey.menuEntries, item),
+        rowOf: menuEntryRowOf,
       ),
       SyncedCollection<AuthChannelsRow>(
         key: SyncCollectionKey.authChannels,
