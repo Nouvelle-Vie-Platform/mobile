@@ -30,14 +30,27 @@ class HomeTeachingSection extends ConsumerWidget {
     final provider = teachingsOfTypeProvider(section.teachingTypeId);
 
     return HomeContentSection(
-      section: section,
+      title: section.label,
+      accent: Color(section.color),
+      layout: section.layout,
       items: ref.watch(provider),
       onOpen: (teaching) => context.pushNamed(
         AppRoute.teachingDetail,
         pathParameters: {'id': teaching.id},
       ),
       onRetry: () => ref.invalidate(provider),
-      onSeeAll: () => context.pushNamed(AppRoute.media),
+      // **Le « Voir tout » réparé** (#82) : il poussait `/media` nu, c'est-à-dire
+      // la médiathèque **non filtrée** — « Voir tout » de « Prières » affichait
+      // tout le catalogue. Le slug de la rubrique part désormais avec, et
+      // `MediaLibraryScreen` filtre dessus.
+      //
+      // Le **slug** et non `teachingTypeId` : c'est la clé stable qui survit au
+      // renommage du libellé, c'est ce que porte le modèle de menu, et c'est ce
+      // que le site public met déjà dans ses URL.
+      onSeeAll: () => context.pushNamed(
+        AppRoute.media,
+        queryParameters: {'rubrique': section.slug},
+      ),
     );
   }
 }

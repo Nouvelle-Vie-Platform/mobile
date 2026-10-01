@@ -13,6 +13,7 @@ import '../state/auth_providers.dart';
 import '../state/calendar_providers.dart';
 import '../state/gathering_providers.dart';
 import '../state/mediatheque_providers.dart';
+import '../state/menu_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -26,6 +27,7 @@ import '../widgets/app_list_skeleton.dart';
 import '../widgets/content_absence.dart';
 import '../widgets/home/home_content_cards.dart';
 import '../widgets/home/home_gathering_section.dart';
+import '../widgets/home/home_menu_section.dart';
 import '../widgets/home/home_section_layout.dart';
 import '../widgets/home/home_teaching_section.dart';
 import '../widgets/profile_completion_banner.dart';
@@ -632,16 +634,51 @@ class _UpcomingCard extends StatelessWidget {
   }
 }
 
+/// **Les sections de l'accueil** — et la **coexistence bornée** des deux
+/// mécanismes qui les décident (#82, cadrage § 14).
+///
+/// Deux sources peuvent peupler cet accueil, et **une seule parle à la fois** :
+///
+/// 1. **les entrées de menu** marquées « visible accueil », réglées sous
+///    *Présentation › Menus* ;
+/// 2. **les rubriques** (`teaching_types.visible_on_home` / `layout`), le
+///    mécanisme d'avant.
+///
+/// La bascule se lit dans la **donnée**, à un seul endroit — ici : dès que le
+/// menu de l'accueil porte au moins une entrée, **il fait foi et les rubriques se
+/// taisent**. Tant qu'il est vide, les rubriques font foi.
+///
+/// **Pourquoi pas les deux ensemble** : la même rubrique serait rendue deux fois,
+/// sous deux titres réglés à deux endroits — exactement la divergence que la
+/// décision 12 du cadrage interdit. **Pourquoi pas un drapeau** : l'état livré
+/// est le vide (`menu_seed.ts` pose `home_visible: false` sur les sept entrées
+/// reprises, et `mobile_home` n'est pas une surface gardée), donc un appareil qui
+/// monte de version avant que le portail n'ait rien réglé doit garder son
+/// accueil ; et une bascule qui vit dans la donnée s'annule en décochant.
+///
+/// **Quand cela finit** : le jour où le serveur retire `visible_on_home` et
+/// `layout` de `teaching_types` (la moitié serveur de cette tranche). Dès lors
+/// `homeSectionsProvider` ne rend plus rien, le repli est mort, et les quatre
+/// lignes qui le portent se retirent avec lui.
+///
+/// **Ce qui ne bascule pas** : « Dernières publications ». Ce n'est pas une
+/// rubrique mais un **tri**, il n'a jamais dépendu de `visible_on_home`, et aucune
+/// entrée de menu ne le décrit. Il reste, et c'est aussi le seul endroit qui
+/// continue d'écarter les cultes entiers — voir `latestTeachingsProvider`.
 class _MediathequeHome extends ConsumerWidget {
   const _MediathequeHome();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final latest = ref.watch(latestTeachingsProvider);
+    final menu = ref.watch(homeMenuProvider);
     final sections = ref.watch(homeSectionsProvider);
     final gatheringSections = ref.watch(gatheringSectionsProvider);
 
-    if (latest.hasError || sections.hasError || gatheringSections.hasError) {
+    if (latest.hasError ||
+        menu.hasError ||
+        sections.hasError ||
+        gatheringSections.hasError) {
       return Padding(
         padding: const EdgeInsets.only(top: AppSpacing.xl) +
             AppSpacing.screenPadding,
@@ -649,6 +686,7 @@ class _MediathequeHome extends ConsumerWidget {
           message: context.l10n.stateErrorMessage,
           onRetry: () {
             ref.invalidate(latestTeachingsProvider);
+            ref.invalidate(homeMenuProvider);
             ref.invalidate(homeSectionsProvider);
             ref.invalidate(gatheringSectionsProvider);
           },
@@ -656,7 +694,10 @@ class _MediathequeHome extends ConsumerWidget {
       );
     }
 
-    if (!latest.hasValue || !sections.hasValue || !gatheringSections.hasValue) {
+    if (!latest.hasValue ||
+        !menu.hasValue ||
+        !sections.hasValue ||
+        !gatheringSections.hasValue) {
       return const Padding(
         padding: EdgeInsets.only(top: AppSpacing.xl),
         child: AppListSkeleton(
@@ -667,9 +708,17 @@ class _MediathequeHome extends ConsumerWidget {
     }
 
     final teachings = latest.requireValue;
+    final entries = menu.requireValue;
     final rubrics = sections.requireValue;
     final gatherings = gatheringSections.requireValue;
-    if (teachings.isEmpty && rubrics.isEmpty && gatherings.isEmpty) {
+
+    // **La borne de la coexistence**, et c'est la seule ligne qui la porte.
+    final menuDecides = entries.isNotEmpty;
+
+    if (teachings.isEmpty &&
+        !menuDecides &&
+        rubrics.isEmpty &&
+        gatherings.isEmpty) {
       return const _NotSyncedYet();
     }
 
@@ -677,18 +726,22 @@ class _MediathequeHome extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (teachings.isNotEmpty) _LatestTeachingsShelf(teachings: teachings),
-        for (final section in rubrics) HomeTeachingSection(section: section),
-        if (gatherings.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.xl),
-          Padding(
-            padding: AppSpacing.screenPadding,
-            child: SectionHeader(
-              title: context.l10n.sectionGatherings,
-              icon: Icons.celebration_outlined,
+        if (menuDecides)
+          for (final entry in entries) HomeMenuSection(entry: entry)
+        else ...[
+          for (final section in rubrics) HomeTeachingSection(section: section),
+          if (gatherings.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xl),
+            Padding(
+              padding: AppSpacing.screenPadding,
+              child: SectionHeader(
+                title: context.l10n.sectionGatherings,
+                icon: Icons.celebration_outlined,
+              ),
             ),
-          ),
-          for (final section in gatherings)
-            HomeGatheringSection(section: section),
+            for (final section in gatherings)
+              HomeGatheringSection(section: section),
+          ],
         ],
       ],
     );

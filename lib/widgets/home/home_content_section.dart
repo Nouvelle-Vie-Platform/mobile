@@ -36,16 +36,34 @@ import 'home_section_layout.dart';
 class HomeContentSection extends StatelessWidget {
   const HomeContentSection({
     super.key,
-    required this.section,
+    required this.title,
+    required this.accent,
     required this.items,
     required this.onOpen,
     required this.onRetry,
+    this.layout,
     this.onSeeAll,
   });
 
-  /// La rubrique telle que le magasin la rend : déjà filtrée sur
-  /// `visibleOnHome`, déjà rangée, déjà repliée.
-  final SectionView section;
+  /// **Le titre, déjà replié** dans la langue courante. Une rubrique sert son
+  /// `label`, une entrée de menu sert le sien ; ce widget ne choisit ni l'un ni
+  /// l'autre, et ne sait pas lequel il a reçu.
+  ///
+  /// Trois paramètres nus plutôt qu'un `SectionView` : depuis #82 l'accueil a
+  /// **deux** sources de sections — le référentiel des rubriques et les entrées
+  /// de menu —, et une entrée de menu n'est pas une rubrique (elle n'a ni slug ni
+  /// couleur). Fabriquer un faux `SectionView` pour la faire passer ici aurait
+  /// donné au dessin une donnée inventée, et à qui le lit l'illusion que les deux
+  /// sont la même chose.
+  final String title;
+
+  /// La teinte de la pastille du titre, **déjà en bout de cascade**.
+  final Color accent;
+
+  /// Le gabarit **brut** (`hero` · `carousel` · `list`), traduit en dessin par
+  /// [HomeSectionLayout.of] — une forme inconnue se replie, elle ne fait pas
+  /// disparaître la section.
+  final String? layout;
 
   /// Les contenus de la rubrique, dans l'état où le flux les a laissés.
   ///
@@ -104,12 +122,12 @@ class HomeContentSection extends StatelessWidget {
         Padding(
           padding: AppSpacing.screenPadding,
           child: SectionHeader(
-            title: section.label,
+            title: title,
             // La teinte du référentiel, portée par une **pastille pleine** et
             // non par le texte du titre : une couleur administrable est sûre en
             // aplat (la forme la porte) et ne l'est pas en texte, où le fond
             // adaptatif clair/sombre en avalerait la moitié.
-            accent: Color(section.color),
+            accent: accent,
             actionLabel: onSeeAll == null ? null : context.l10n.actionSeeAll,
             onAction: onSeeAll,
           ),
@@ -121,7 +139,7 @@ class HomeContentSection extends StatelessWidget {
   }
 
   Widget _body(BuildContext context, List<ContentView> contents) {
-    switch (HomeSectionLayout.of(section.layout)) {
+    switch (HomeSectionLayout.of(layout)) {
       case HomeSectionLayout.hero:
         return _Shelf(
           height: kHeroCoverSize.height,

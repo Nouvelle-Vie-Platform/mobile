@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/local/sync_dao.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/store_mediatheque_repository.dart';
+import 'package:maison_du_miracle/data/repositories/store_menu_repository.dart';
+import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
 import 'package:maison_du_miracle/widgets/cards/content_cover.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
 import 'package:maison_du_miracle/widgets/home/home_section_layout.dart';
 import 'package:maison_du_miracle/widgets/home/home_content_cards.dart';
+import 'package:maison_du_miracle/widgets/home/home_menu_section.dart';
 import 'package:maison_du_miracle/widgets/home/home_teaching_section.dart';
 import 'package:maison_du_miracle/widgets/section_header.dart';
 
@@ -82,6 +86,14 @@ void main() {
   }) =>
       sync.applyPage(sync.teachingsCollection, upserts: rows, cursor: cursor);
 
+  /// Écrit un menu **tel que le serveur l'envoie** : entrées éteintes comprises.
+  /// La visibilité par surface est une colonne, pas un périmètre de livraison.
+  Future<void> putMenu(
+    List<MenuEntriesCompanion> rows, {
+    String cursor = 'menu-1',
+  }) =>
+      sync.applyPage(sync.menuEntriesCollection, upserts: rows, cursor: cursor);
+
   /// Monte l'accueil branché sur le magasin de ce test.
   ///
   /// Écran haut : les listes de l'app sont paresseuses, et une section jamais
@@ -94,7 +106,11 @@ void main() {
     await pumpScreen(
       tester,
       const Scaffold(body: HomeScreen()),
+      database: db,
       mediatheque: StoreMediathequeRepository(db.mediathequeDao),
+      // Le menu vient du **même** magasin : c'est lui qui décide désormais, et un
+      // double en mémoire rendrait un menu vide, donc ne prouverait que le repli.
+      menu: StoreMenuRepository(db.menuDao),
       // Les rassemblements sont **vides** ici : ce fichier vérifie les
       // rubriques d'enseignement, et le double par défaut y ajouterait ses
       // propres sections — donc des cartes qu'aucune assertion ne vise.
@@ -359,6 +375,164 @@ void main() {
     });
   });
 
+  group('L\'accueil migré aux menus (#82) — la coexistence bornée', () {
+    /// Deux rubriques garnies, dont **une seule** visible à l'accueil : c'est
+    /// l'état d'un parc avant cette tranche, et le point de départ des deux
+    /// régimes.
+    Future<void> seedRubrics() async {
+      await putTypes([
+        teachingTypeRow(1,
+            label: {'fr': 'Intercession'}, slug: 'prieres', position: 1),
+        teachingTypeRow(2,
+            label: {'fr': 'Culte'},
+            slug: 'dimanche',
+            position: 2,
+            visibleOnHome: false),
+      ]);
+      await putTeachings([
+        teachingRow('t-1', title: 'Prier sans cesse', teachingTypeId: 1),
+        teachingRow('t-2', title: 'Le pain du jour', teachingTypeId: 2),
+      ]);
+    }
+
+    homeTest('sans entrée allumée à l\'accueil, les rubriques font foi',
+        (tester) async {
+      await seedRubrics();
+      // Le menu existe, mais **aucune** de ses entrées n'est visible à l'accueil :
+      // c'est exactement l'état livré par la graine du portail
+      // (`home_visible: false` sur les sept entrées reprises), et `mobile_home`
+      // n'est pas une surface gardée. Un appareil qui monte de version avant que
+      // le portail n'ait rien réglé ne doit pas perdre son accueil.
+      await putMenu([
+        menuEntryRow(1,
+            label: {'fr': 'Messages'}, destinationRubric: 'dimanche'),
+      ]);
+
+      await pumpHome(tester);
+
+      expect(find.byType(HomeTeachingSection), findsOneWidget);
+      expect(find.text('INTERCESSION'), findsOneWidget);
+      expect(find.byType(HomeMenuSection), findsNothing);
+    });
+
+    homeTest('une entrée allumée fait taire les rubriques', (tester) async {
+      await seedRubrics();
+      await putMenu([
+        menuEntryRow(1,
+            label: {'fr': 'Messages du dimanche'},
+            destinationRubric: 'dimanche',
+            homeVisible: true,
+            homePosition: 1),
+      ]);
+
+      await pumpHome(tester);
+
+      // Le menu fait foi, et **les rubriques se taisent**. Les rendre toutes les
+      // deux montrerait la même rubrique deux fois, sous deux titres réglés à
+      // deux endroits — la divergence que la décision 12 du cadrage interdit.
+      expect(find.byType(HomeMenuSection), findsOneWidget);
+      expect(find.text('MESSAGES DU DIMANCHE'), findsOneWidget);
+      expect(find.byType(HomeTeachingSection), findsNothing);
+      expect(find.text('INTERCESSION'), findsNothing);
+      // Et la section du menu montre bien **sa** rubrique, celle que l'ancien
+      // mécanisme avait pourtant masquée de l'accueil : c'est le portail qui
+      // décide désormais, et il décide ailleurs.
+      expect(find.text('Le pain du jour'), findsWidgets);
+    });
+
+    homeTest('le gabarit de l\'entrée décide du dessin', (tester) async {
+      await seedRubrics();
+      await putMenu([
+        menuEntryRow(1,
+            label: {'fr': 'À la une'},
+            destinationRubric: 'prieres',
+            homeVisible: true,
+            homeLayout: 'hero'),
+      ]);
+
+      await pumpHome(tester);
+
+      expect(find.byType(HomeHeroCard), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(HomeHeroCard).first),
+        kHeroCoverSize,
+      );
+    });
+
+    homeTest('un gabarit inconnu se replie, l\'entrée reste', (tester) async {
+      await seedRubrics();
+      await putMenu([
+        menuEntryRow(1,
+            label: {'fr': 'Mosaïque'},
+            destinationRubric: 'prieres',
+            homeVisible: true,
+            homeLayout: 'mosaic'),
+      ]);
+
+      await pumpHome(tester);
+
+      // Le portail est plus récent que ce binaire : la section **reste**, sous le
+      // repli. C'est la doctrine de `HomeSectionLayout.of`, et elle ne change pas
+      // parce que la source a changé.
+      expect(find.text('MOSAÏQUE'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(HomeMenuSection),
+          matching: find.byType(HomeCarouselCard),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    homeTest('une entrée dont la destination ne ramène rien ne paraît pas',
+        (tester) async {
+      await seedRubrics();
+      await putTypes([
+        teachingTypeRow(1,
+            label: {'fr': 'Intercession'}, slug: 'prieres', position: 1),
+        teachingTypeRow(3, label: {'fr': 'Jeunesse'}, slug: 'jeunesse'),
+      ]);
+      await putMenu([
+        menuEntryRow(1,
+            label: {'fr': 'Garnie'},
+            homePosition: 1,
+            destinationRubric: 'prieres',
+            homeVisible: true),
+        menuEntryRow(2,
+            label: {'fr': 'Vide'},
+            homePosition: 2,
+            destinationRubric: 'jeunesse',
+            homeVisible: true),
+      ]);
+
+      await pumpHome(tester);
+
+      // « Pas de contenu, pas de section » : c'est la seule chose qui retire une
+      // entrée supprimée au portail, la collection n'ayant pas de tombstone.
+      expect(find.text('GARNIE'), findsOneWidget);
+      expect(find.text('VIDE'), findsNothing);
+    });
+
+    homeTest('« Dernières publications » survit aux deux régimes',
+        (tester) async {
+      await seedRubrics();
+      await putMenu([
+        menuEntryRow(1,
+            label: {'fr': 'Messages'},
+            destinationRubric: 'dimanche',
+            homeVisible: true),
+      ]);
+
+      await pumpHome(tester);
+
+      // Ce n'est pas une rubrique mais un **tri** : il n'a jamais dépendu de
+      // `visible_on_home`, aucune entrée de menu ne le décrit, et il reste donc
+      // des deux côtés de la bascule. C'est aussi le seul endroit qui continue
+      // d'écarter les cultes entiers.
+      expect(find.text('DERNIÈRES PUBLICATIONS'), findsOneWidget);
+    });
+  });
+
   group('Magasin vide', () {
     homeTest('le premier lancement se dit « pas encore synchronisé »',
         (tester) async {
@@ -386,6 +560,74 @@ void main() {
 
       expect(find.byType(ContentAbsenceView), findsNothing);
       expect(find.byType(HomeTeachingSection), findsOneWidget);
+    });
+  });
+
+  group('Le « Voir tout » d\'une rubrique (#82)', () {
+    /// Un routeur minimal : l'accueil, et une médiathèque **factice** qui ne fait
+    /// qu'afficher le paramètre reçu. On vérifie ici ce qu'`un slug qui voyage`
+    /// veut dire ; que la médiathèque en fasse un filtre est prouvé dans
+    /// `media_library_screen_test.dart`.
+    GoRouter seeAllRouter() => GoRouter(
+          initialLocation: '/home',
+          routes: [
+            GoRoute(
+              name: AppRoute.home,
+              path: '/home',
+              builder: (_, __) => const Scaffold(body: HomeScreen()),
+            ),
+            GoRoute(
+              name: AppRoute.media,
+              path: '/media',
+              builder: (_, state) => Scaffold(
+                body: Center(
+                  child: Text(
+                    'RUBRIQUE=${state.uri.queryParameters['rubrique']}',
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+
+    testWidgets('il emporte le slug de la rubrique, pas rien', (tester) async {
+      tester.view.physicalSize = const Size(900, 3600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await putTypes([
+        teachingTypeRow(1, label: {'fr': 'Intercession'}, slug: 'prieres'),
+      ]);
+      await putTeachings([teachingRow('t-1', teachingTypeId: 1)]);
+
+      final router = seeAllRouter();
+      addTearDown(router.dispose);
+      await pumpRouter(
+        tester,
+        router,
+        database: db,
+        mediatheque: StoreMediathequeRepository(db.mediathequeDao),
+        gatherings:
+            InMemoryGatheringRepository(gatherings: const [], types: const []),
+        overrides: [
+          calendarRepositoryProvider
+              .overrideWithValue(_EmptyCalendarRepository()),
+        ],
+      );
+
+      await tester.tap(find.text('Voir tout').last);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      // **Le bug réparé.** Le « Voir tout » poussait `/media` nu, donc la
+      // médiathèque **non filtrée** : appuyer sur « Voir tout » de « Prières »
+      // affichait tout le catalogue. Le slug part désormais avec, et c'est le
+      // slug — non l'identifiant — parce qu'il survit au renommage du libellé et
+      // qu'un lien partagé saurait le transporter.
+      expect(find.text('RUBRIQUE=prieres'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
     });
   });
 }
