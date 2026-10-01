@@ -5,6 +5,7 @@ import '../core/config/live_stream_config.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/gathering_view.dart';
 import '../state/player_providers.dart';
+import '../state/season_providers.dart';
 import '../widgets/content_player_view.dart';
 
 /// Provider synthétique du flux live.
@@ -40,7 +41,8 @@ class LivePlayerScreen extends ConsumerWidget {
       downloadContentType: null,
       isLive: true,
       // Le plancher de la cascade : la saison gagne quand le portail en a une.
-      fallbackBackgroundAsset: 'assets/images/live_bg.png',
+      // Même image que l'écran de démarrage et que le splash natif.
+      fallbackBackgroundAsset: kAppBackgroundAsset,
       onStop: () {
         ref.read(contentPlayerProvider).stop();
         Navigator.of(context).pop();

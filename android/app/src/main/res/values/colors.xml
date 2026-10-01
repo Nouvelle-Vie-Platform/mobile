@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Le fond de l'icône adaptative. Blanc, comme l'icône iOS : l'écusson est
+         un anneau bleu nuit, il disparaîtrait sur un fond de sa propre teinte. -->
+    <color name="ic_launcher_background">#FFFFFFFF</color>
+    <!-- Le socle du démarrage, sous `live_bg.png`. Le bleu nuit du décor et non
+         le blanc du gabarit : c'est ce qu'on voit le temps que le bitmap soit
+         décodé, et un blanc y ferait exactement le clignotement qu'on retire. -->
+    <color name="launch_background">#FF0E1C3F</color>
+</resources>

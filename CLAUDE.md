@@ -97,6 +97,7 @@ dart format lib/ test/       # formatage (CI le vérifie)
 make gen                     # OBLIGATOIRE après tout changement de table Drift
 make migrations              # + après un changement de schemaVersion
 make web-assets              # après une montée de drift / sqlite3 / hls.js
+make icons                   # après tout changement de brand_logo.webp / live_bg.png
 make hls-probe               # prouve dans Chrome que le lecteur web joue (réseau requis)
 ```
 La CI (`.github/workflows/flutter-ci.yml`) lance format + analyze + test.
@@ -625,9 +626,12 @@ pas un fond par contenu : un direct n'a pas de fiche où en déposer un.
 3. le **vertical du décor** par défaut (`decor`, le singleton des réglages de la
    vitrine), hors saison ;
 4. son **paysage** ;
-5. l'image du dépôt (`fallbackBackgroundAsset`, que seul l'écran du direct
-   fournit aujourd'hui) — le cinquième étage vit dans `ContentPlayerView`
-   (`_background()`, lu par les cinq états de l'écran).
+5. l'image du dépôt (`kAppBackgroundAsset`, `assets/images/live_bg.png`) — le
+   cinquième étage vit à **deux** endroits, parce qu'il y a deux chemins :
+   `ContentPlayerView._background()` pour les lecteurs (par
+   `fallbackBackgroundAsset`, que seul l'écran du direct fournit aujourd'hui),
+   et `startupBackgroundProvider` pour l'écran de démarrage. C'est la même
+   image, et c'est aussi celle du splash **natif** (voir juste après).
 
 Rien des cinq → l'aplat de couleur du contenu, exactement comme avant. C'est la
 cascade du site public, à ceci près que son premier étage à lui est le fond de
@@ -642,18 +646,46 @@ Il dure le temps de résoudre une session. Y déclencher une lecture Drift ou un
 descente d'image donnerait un fond qui apparaît après que l'écran a disparu —
 ou, pire, qui retarde l'ouverture. La lecture est donc remontée dans `main()`
 (`readStartupBackground`), **avant `runApp`**, et passée en surcharge de
-`startupBackgroundProvider` : exactement le motif de `readStartupVault`.
+`startupCachedBackgroundProvider` : exactement le motif de `readStartupVault`.
 
 Elle ne connaît pas l'adresse du fond et n'en a pas besoin : le dossier de cache
 ne contient **qu'un** fichier — la purge s'en charge —, et `cachedFile()` le
-rend sans réseau ni magasin. **Le premier lancement n'a donc pas de fond**, et
-c'est le contrat : on descend pendant que l'application tourne, on s'en sert à
-l'ouverture suivante.
+rend sans réseau ni magasin. **Le premier lancement n'a donc pas le décor du
+portail**, et c'est le contrat : on descend pendant que l'application tourne, on
+s'en sert à l'ouverture suivante.
 
-⚠️ Le dégradé de marque ne disparaît pas sous le fond : il devient un **voile
-sombre**. Sans lui, un fond clair rendrait l'emblème blanc, le nom de l'église
-et le témoin de chargement illisibles — et ça ne se verrait qu'avec ce fond-là,
+**Deux providers, et c'est la cascade qui l'exige** (#86) :
+`startupCachedBackgroundProvider` porte ce que le disque avait (`null` au
+premier lancement), `startupBackgroundProvider` applique le dernier étage —
+`?? const AssetImage(kAppBackgroundAsset)`. ⚠️ **L'ordre ne s'inverse pas** :
+ce que le portail a réglé passe devant, l'image du dépôt ne paraît que quand
+rien n'est réglé. L'inverser annulerait en silence un décor déposé, et ça
+s'afficherait parfaitement.
+
+L'écran n'a donc **plus de cas « sans image »** : le dégradé de marque n'y est
+plus qu'un repli d'`errorBuilder`, et le **voile sombre** est peint dans tous
+les cas. Sans lui, un fond clair rendrait l'emblème blanc, le nom de l'église et
+le témoin de chargement illisibles — et ça ne se verrait qu'avec ce fond-là,
 c'est-à-dire un jour, chez quelqu'un d'autre.
+
+#### Le démarrage **natif** porte la même image (#86)
+
+`android/app/src/main/res/drawable{,-v21}/launch_background.xml` et le
+`LaunchScreen.storyboard` d'iOS peignent `live_bg.png`, celle-là même que
+l'écran Dart pose juste après. Les deux étages portent la même image **exprès** :
+le fidèle en voit une seule, du premier pixel jusqu'à l'accueil. Le blanc uni du
+gabarit d'origine faisait un clignotement qui donnait l'application pour lente à
+ouvrir.
+
+Côté Android, le bitmap est en `drawable-nodpi/launch_image.png` (la définition
+native du décor) et posé en `android:gravity="fill"` : une image unique ne peut
+pas couvrir sans déformer les deux formats du parc, et toute autre gravité
+laisserait des bandes. Le socle `@color/launch_background` est le bleu nuit du
+décor, pas le blanc du gabarit — c'est lui qu'on voit le temps du décodage.
+
+⚠️ **Le splash natif est un fichier de ressources, pas un asset Flutter** : la
+même image vit donc deux fois dans le binaire, et un changement de décor se
+répercute par `make icons`.
 
 Cinq points qui se ratent en silence :
 
@@ -1580,6 +1612,42 @@ interdit `pick(` dans tout fichier de `lib/` dont le chemin porte « legal ».
 `languageSubtag` (`utils/i18n_text.dart`) est public pour cette fonction-là :
 découper `fr_FR` en `fr` est mécanique, la dérogation porte sur la **règle de
 repli**, pas sur la lecture d'une étiquette.
+
+## L'identité de l'application (#86) — **trois noms, et deux ne bougent pas**
+
+| ce que c'est | où | valeur | change ? |
+| --- | --- | --- | --- |
+| **nom affiché** — ce que le fidèle lit sous l'icône | `android:label`, `CFBundleDisplayName` (+ `CFBundleName`, le nom court) | « Nouvelle Vie » | oui, c'est le seul |
+| **nom du paquet Dart** | `pubspec.yaml`, chaque `import 'package:maison_du_miracle/…'` | `maison_du_miracle` | **non** — personne ne le voit |
+| **identifiant d'application** | `applicationId`, `PRODUCT_BUNDLE_IDENTIFIER` | `com.maisondumiracle.*` | **non** — c'est l'identité auprès des magasins et de la signature |
+
+⚠️ *Éviter* « renommer l'app » tout court : trois choses portent un nom ici, et
+deux ne doivent pas bouger. Changer l'identifiant après une soumission rend
+l'application introuvable pour qui l'a déjà installée ; avant, il oblige à
+refaire les fiches.
+
+**Les icônes et le splash natif se régénèrent, ils ne s'éditent pas** :
+`make icons` (`tool/app_icons.swift`, macOS) les reconstruit depuis
+`assets/images/brand_logo.webp` et `assets/images/live_bg.png`. Les fichiers
+produits sont **versionnés** ; ni le build ni la CI ne lancent le script.
+
+Trois contraintes y sont tenues, et chacune se raterait en silence :
+
+1. **Les icônes iOS n'ont aucun canal alpha** — un PNG transparent fait rejeter
+   la soumission. Elles sont peintes sur un fond blanc opaque, dans un contexte
+   `noneSkipLast` ; vérification : `sips -g hasAlpha` doit répondre « no » sur
+   les quinze.
+2. **Aucun coin arrondi n'est dessiné** : iOS applique son propre masque, et les
+   dessiner les doublerait.
+3. **La couche `monochrome`** (Android 13+) n'est pas le premier plan recopié.
+   Le système n'en garde que l'alpha ; l'écusson étant opaque de bord à bord, il
+   donnerait un disque plein. Elle est dérivée de la **luminance inversée** —
+   l'encre bleue devient la matière, le blanc des lettres devient le vide.
+
+`flutter_launcher_icons` n'a **pas** été ajouté : il ne sait faire ni le point 1
+ni le point 3, et le script maison ne met rien dans le binaire (il ne produit
+que des fichiers). Le `description:` du `pubspec.yaml` n'a pas été touché — il
+n'est lu par personne sur un téléphone, et le corriger est un autre sujet.
 
 ## Git
 - **Commits canoniques** : un commit par fonctionnalité, atomique, préfixes

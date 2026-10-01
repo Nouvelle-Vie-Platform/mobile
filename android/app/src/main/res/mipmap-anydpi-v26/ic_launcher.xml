@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- L'icône adaptative d'Android 8+. Le lanceur applique lui-même le masque
+     (cercle, carré arrondi, goutte…) : on ne dessine donc aucun contour.
+
+     La couche `monochrome` est lue par le thème dynamique d'Android 13+, qui
+     n'en garde que l'alpha et la teinte lui-même. Ce n'est pas le premier plan
+     recopié : l'écusson est opaque de bord à bord, il donnerait un disque
+     plein. C'est sa luminance inversée (voir `tool/app_icons.swift`). -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
+</adaptive-icon>
