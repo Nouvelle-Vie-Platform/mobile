@@ -25,6 +25,13 @@ const int kMinDeviceIdLength = 16;
 /// **survit à une déconnexion** : c'est ce qui permet de reprendre un jeton
 /// d'appareil pour le *même* appareil, sans en créer un second côté serveur.
 ///
+/// Deux lecteurs, et **un seul exemplaire** (`ApiClient.deviceIdentity`) :
+/// l'ouverture de session (`POST /devices/anonymous`, qui le poste dans son
+/// corps) et l'en-tête `X-Device-Id`, posé par l'intercepteur sur toutes les
+/// requêtes — y compris celles d'un membre connecté. Deux instances pourraient,
+/// à la toute première ouverture, fabriquer deux identifiants dont un seul
+/// serait rangé.
+///
 /// ⚠️ **Cet identifiant est falsifiable.** Il est fabriqué et rangé par le
 /// téléphone : n'importe qui peut en présenter un autre, ou le même mille fois.
 /// Il ne sert donc qu'à **compter** les appareils et à en **révoquer** un côté

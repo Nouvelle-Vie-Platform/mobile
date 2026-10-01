@@ -1,6 +1,7 @@
-/// **L'en-tête de version, sur le fil.**
+/// **Les en-têtes de présentation, sur le fil.**
 ///
-/// Trois choses s'y verrouillent, et aucune ne se voit ailleurs :
+/// Trois en-têtes — version, plateforme, **identifiant d'appareil** — et quatre
+/// choses s'y verrouillent, dont aucune ne se voit ailleurs :
 ///
 /// 1. **Il part sur toutes les requêtes du client, synchronisation comprise.**
 ///    C'est le point entier de la tranche : un en-tête ne renseigne que sur les
@@ -13,11 +14,18 @@
 ///    partir la requête sans en-tête ; elle ne lève pas, et ne fait échouer
 ///    personne. C'est la règle qui rend l'ajout sûr dans une chaîne qui porte
 ///    déjà le Bearer, le déballage d'enveloppe et le 401.
-/// 3. **Rien d'autre ne part.** La charge utile est la version, la plateforme et
-///    le système — aucun identifiant publicitaire, aucune empreinte d'appareil.
+/// 3. **Chacun manque seul.** Un coffre illisible fait disparaître le seul
+///    `X-Device-Id` ; une version illisible ne l'emporte pas avec elle. Les trois
+///    lectures sont indépendantes, et c'est ce qui rend l'ensemble inoffensif.
+/// 4. **Rien d'autre ne part.** La charge utile est la version, la plateforme et
+///    le système, plus l'identifiant d'appareil **qui existait déjà** dans le
+///    coffre — aucun identifiant publicitaire, aucune empreinte dérivée du
+///    matériel ou de l'agent utilisateur. La liste des `X-` est vérifiée
+///    **positivement** : ni plus, ni moins.
 library;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/core/network/api_client.dart';
@@ -44,9 +52,33 @@ class _ThrowingAppVersionReader implements AppVersionReader {
       throw StateError('canal de plugin absent');
 }
 
+/// Un coffre **illisible** — keychain verrouillé, canal de plugin absent.
+///
+/// C'est le seul moyen d'éprouver la règle 3 du côté de l'identifiant :
+/// `DeviceIdentity` ne rend jamais `null`, elle lève ce que le coffre lève.
+class _UnreadableVault extends FlutterSecureStorage {
+  const _UnreadableVault();
+
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async =>
+      throw PlatformException(
+          code: 'Unavailable', message: 'coffre verrouillé');
+}
+
 void main() {
   const version = AppVersionInfo(version: '1.4.0', build: '12');
   const platform = AppPlatformInfo(name: 'android', osVersion: '14');
+  // Un vrai identifiant est un UUID v4 : 36 caractères, bien au-delà du
+  // plancher de `kMinDeviceIdLength`.
+  const deviceId = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
 
   late ApiClient api;
 
@@ -59,11 +91,16 @@ void main() {
     api.deviceSession = null;
     api.appVersion = const FixedAppVersionReader(version);
     api.appPlatform = const FixedAppPlatformReader(platform);
+    // L'identité est **retenue** une fois lue : la remplacer est le seul moyen
+    // de repartir d'un coffre neuf d'un test à l'autre.
+    api.deviceIdentity = DeviceIdentity(mintId: () => deviceId);
   });
 
-  tearDown(() {
+  tearDown(() async {
     api.appVersion = const PackageInfoAppVersionReader();
     api.appPlatform = const RuntimeAppPlatformReader();
+    api.deviceIdentity = DeviceIdentity();
+    await api.deleteToken();
   });
 
   group('la forme de l\'en-tête', () {
@@ -78,6 +115,19 @@ void main() {
       expect(adapter.lastRequest.headers[kAppPlatformHeader], 'android 14');
     });
 
+    test('l\'identifiant d\'appareil part tel quel, sans rien autour',
+        () async {
+      final adapter = FakeAdapter((_) => jsonReply(200, const {'ok': true}));
+      api.dio.httpClientAdapter = adapter;
+
+      await api.dio.get<dynamic>('/sync/branches');
+
+      // La valeur opaque du coffre, telle quelle : ni préfixe, ni hachage, ni
+      // dérivation — c'est elle que le serveur compte, et la même que celle
+      // qui ouvre une session d'appareil.
+      expect(adapter.lastRequest.headers[kDeviceIdHeader], deviceId);
+    });
+
     test('un système inconnu laisse la plateforme partir seule', () async {
       api.appPlatform = const FixedAppPlatformReader(
         AppPlatformInfo(name: 'web'),
@@ -90,7 +140,7 @@ void main() {
       expect(adapter.lastRequest.headers[kAppPlatformHeader], 'web');
     });
 
-    test('rien d\'autre que ces deux en-têtes n\'est ajouté', () async {
+    test('rien d\'autre que ces trois en-têtes n\'est ajouté', () async {
       final adapter = FakeAdapter((_) => jsonReply(200, const {'ok': true}));
       api.dio.httpClientAdapter = adapter;
 
@@ -98,10 +148,39 @@ void main() {
 
       // Aucun identifiant publicitaire, aucune empreinte d'appareil : la liste
       // des en-têtes posés par ce client doit tenir dans ce qu'on a décidé.
+      // **Exactement** celle-ci, ni plus (une empreinte qui se glisserait dans
+      // la charge) ni moins (un en-tête qu'on croirait partir).
       final added = adapter.lastRequest.headers.keys
           .where((key) => key.toLowerCase().startsWith('x-'))
           .toList(growable: false);
-      expect(added, unorderedEquals([kAppVersionHeader, kAppPlatformHeader]));
+      expect(
+        added,
+        unorderedEquals([
+          kAppVersionHeader,
+          kAppPlatformHeader,
+          kDeviceIdHeader,
+        ]),
+      );
+    });
+
+    test('et la liste reste la même une fois connecté', () async {
+      await api.saveToken('oat_1.membre');
+      final adapter = FakeAdapter((_) => jsonReply(200, const {'ok': true}));
+      api.dio.httpClientAdapter = adapter;
+
+      await api.dio.get<dynamic>('/sync/branches');
+
+      final added = adapter.lastRequest.headers.keys
+          .where((key) => key.toLowerCase().startsWith('x-'))
+          .toList(growable: false);
+      expect(
+        added,
+        unorderedEquals([
+          kAppVersionHeader,
+          kAppPlatformHeader,
+          kDeviceIdHeader,
+        ]),
+      );
     });
   });
 
@@ -122,6 +201,7 @@ void main() {
       for (final request in server.requests) {
         expect(request.headers[kAppVersionHeader], '1.4.0+12');
         expect(request.headers[kAppPlatformHeader], 'android 14');
+        expect(request.headers[kDeviceIdHeader], deviceId);
       }
       expect(server.manifestRequests, hasLength(1));
       expect(server.requestsFor('branches'), hasLength(1));
@@ -139,10 +219,9 @@ void main() {
       );
       api.dio.httpClientAdapter = adapter;
 
-      await HttpDeviceRepository(
-        client: api,
-        identity: DeviceIdentity(mintId: () => 'appareil-de-test-0123456789'),
-      ).openSession();
+      // **Sans `identity:`** : le dépôt prend celle du client, et c'est le
+      // point — une seconde instance pourrait fabriquer un second identifiant.
+      await HttpDeviceRepository(client: api).openSession();
 
       final opened =
           adapter.requests.firstWhere((r) => r.path == '/devices/anonymous');
@@ -152,6 +231,30 @@ void main() {
       expect(opened.headers.containsKey('Authorization'), isFalse);
       expect(opened.headers[kAppVersionHeader], '1.4.0+12');
       expect(opened.headers[kAppPlatformHeader], 'android 14');
+      // L'en-tête ne remplace pas le porteur absent : il ne prouve rien
+      // (ADR-0040), il nomme seulement l'appareil.
+      expect(opened.headers[kDeviceIdHeader], deviceId);
+      // Et il dit **la même chose que le corps** : une seule vérité, sinon le
+      // serveur compterait deux appareils pour un téléphone.
+      expect((opened.data as Map)['deviceId'], deviceId);
+    });
+
+    test('y compris une requête de membre connecté', () async {
+      // Tout l'objet de la tranche : un membre authentifié doit continuer de
+      // dire quel téléphone il est, sinon ses deux appareils n'en font qu'un.
+      await api.saveToken('oat_1.membre');
+      final adapter = FakeAdapter((_) => jsonReply(200, const {'ok': true}));
+      api.dio.httpClientAdapter = adapter;
+
+      await api.dio.get<dynamic>('/sync/branches');
+
+      expect(
+        adapter.lastRequest.headers['Authorization'],
+        'Bearer oat_1.membre',
+      );
+      // Le porteur reste la seule preuve d'identité ; l'identifiant voyage
+      // **à côté** de lui, jamais à sa place.
+      expect(adapter.lastRequest.headers[kDeviceIdHeader], deviceId);
     });
   });
 
@@ -186,6 +289,44 @@ void main() {
         adapter.lastRequest.headers.containsKey(kAppVersionHeader),
         isFalse,
       );
+      // Et elle n'emporte pas l'identifiant avec elle : les trois lectures sont
+      // indépendantes.
+      expect(adapter.lastRequest.headers[kDeviceIdHeader], deviceId);
+    });
+
+    test('un coffre illisible retire CET en-tête seul, pas la requête',
+        () async {
+      api.deviceIdentity = DeviceIdentity(storage: const _UnreadableVault());
+      final adapter = FakeAdapter((_) => jsonReply(200, const {'ok': true}));
+      api.dio.httpClientAdapter = adapter;
+
+      final response = await api.dio.get<dynamic>('/sync/branches');
+
+      expect(response.statusCode, 200);
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.lastRequest.headers.containsKey(kDeviceIdHeader), isFalse);
+      // Les deux autres restent : un coffre verrouillé ne doit pas rendre
+      // l'application anonyme sur toute la ligne.
+      expect(adapter.lastRequest.headers[kAppVersionHeader], '1.4.0+12');
+      expect(adapter.lastRequest.headers[kAppPlatformHeader], 'android 14');
+    });
+
+    test('un coffre illisible ne se grave pas : la requête suivante retente',
+        () async {
+      api.deviceIdentity = DeviceIdentity(storage: const _UnreadableVault());
+      final adapter = FakeAdapter((_) => jsonReply(200, const {'ok': true}));
+      api.dio.httpClientAdapter = adapter;
+
+      await api.dio.get<dynamic>('/sync/branches');
+      // Le coffre redevient lisible (déverrouillage de l'appareil).
+      api.deviceIdentity = DeviceIdentity(mintId: () => deviceId);
+      await api.dio.get<dynamic>('/sync/branches');
+
+      expect(
+        adapter.requests.first.headers.containsKey(kDeviceIdHeader),
+        isFalse,
+      );
+      expect(adapter.requests.last.headers[kDeviceIdHeader], deviceId);
     });
 
     test('et la synchronisation continue de tourner sans en-tête', () async {
@@ -208,6 +349,7 @@ void main() {
 
   group('l\'intercepteur, isolé', () {
     test('la lecture est faite une fois et retenue', () async {
+      final identity = DeviceIdentity(mintId: () => deviceId);
       var reads = 0;
       final counting = _CountingAppVersionReader(() => reads++);
       final dio = Dio(BaseOptions(baseUrl: 'https://eenv.brainsial.com'))
@@ -215,6 +357,7 @@ void main() {
           AppVersionHeaderInterceptor(
             version: () => counting,
             platform: () => const FixedAppPlatformReader(platform),
+            identity: () => identity,
           ),
         );
       final adapter = FakeAdapter((_) => jsonReply(200, const {'ok': true}));
@@ -235,6 +378,7 @@ void main() {
 
     test('un échec ne se met pas en cache : la requête suivante retente',
         () async {
+      final identity = DeviceIdentity(mintId: () => deviceId);
       var attempts = 0;
       final flaky = _FlakyAppVersionReader(() => attempts++);
       final dio = Dio(BaseOptions(baseUrl: 'https://eenv.brainsial.com'))
@@ -242,6 +386,7 @@ void main() {
           AppVersionHeaderInterceptor(
             version: () => flaky,
             platform: () => const FixedAppPlatformReader(platform),
+            identity: () => identity,
           ),
         );
       final adapter = FakeAdapter((_) => jsonReply(200, const {'ok': true}));
@@ -254,6 +399,8 @@ void main() {
       expect(adapter.requests.first.headers.containsKey(kAppVersionHeader),
           isFalse);
       expect(adapter.requests.last.headers[kAppVersionHeader], '1.4.0+12');
+      // La version a manqué, l'identifiant non : chacun manque seul.
+      expect(adapter.requests.first.headers[kDeviceIdHeader], deviceId);
     });
   });
 

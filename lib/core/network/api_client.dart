@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../data/app_platform.dart';
 import '../../data/app_version.dart';
+import '../../data/devices/device_identity.dart';
 import 'app_version_header.dart';
 
 /// URL du backend, injectée au build.
@@ -118,8 +119,9 @@ abstract interface class DeviceSessionGuard {
 /// Client HTTP global, pré-configuré avec :
 /// - l'URL de base du backend ([kBaseUrl], injectée par `--dart-define`)
 /// - Headers JSON par défaut
-/// - Intercepteur de **version** : annonce la version du binaire et la
-///   plateforme sur toutes les requêtes ([AppVersionHeaderInterceptor])
+/// - Intercepteur de **présentation** : annonce la version du binaire, la
+///   plateforme et l'identifiant d'appareil sur toutes les requêtes
+///   ([AppVersionHeaderInterceptor])
 /// - Intercepteur d'auth : injecte automatiquement le token Bearer si présent
 /// - Déballage de l'enveloppe `data` posée par le serveur
 /// - Traitement global du 401 (purge du token + [onUnauthorized])
@@ -149,6 +151,7 @@ class ApiClient {
       AppVersionHeaderInterceptor(
         version: () => appVersion,
         platform: () => appPlatform,
+        identity: () => deviceIdentity,
       ),
       _AuthInterceptor(_storage),
       unwrapEnvelopeInterceptor,
@@ -213,6 +216,23 @@ class ApiClient {
 
   /// La plateforme et son système — voir [appVersion] pour le pourquoi du champ.
   AppPlatformReader appPlatform = const RuntimeAppPlatformReader();
+
+  /// **L'identité de l'appareil — un seul exemplaire pour toute l'application.**
+  ///
+  /// L'en-tête `X-Device-Id` la lit à chaque requête, et
+  /// `HttpDeviceRepository` l'utilise par défaut pour ouvrir une session : les
+  /// deux doivent lire **le même** objet, sinon deux instances pourraient, à la
+  /// toute première ouverture, fabriquer deux identifiants dont un seul serait
+  /// rangé — et le corps de `POST /devices/anonymous` ne dirait pas la même
+  /// chose que son en-tête.
+  ///
+  /// Champ mutable pour la raison d'[appVersion] : le singleton naît avant tout
+  /// câblage, et seuls les tests le remplacent (le remplacer périme aussi la
+  /// valeur retenue par l'instance précédente).
+  ///
+  /// ⚠️ Elle **mesure**, elle n'autorise rien (ADR-0040) : le jeton rangé dans
+  /// le coffre reste la seule preuve d'identité.
+  DeviceIdentity deviceIdentity = DeviceIdentity();
 
   /// Refuse une URL de base en HTTP clair dans un build **release**.
   ///

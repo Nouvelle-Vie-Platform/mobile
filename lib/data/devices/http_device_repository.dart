@@ -32,7 +32,10 @@ class HttpDeviceRepository implements DeviceRepository, DeviceSessionGuard {
     DateTime Function()? now,
   })  : _api = client ?? ApiClient.instance,
         _dio = (client ?? ApiClient.instance).dio,
-        _identity = identity ?? DeviceIdentity(),
+        // **La même identité que l'en-tête `X-Device-Id`**, et non une seconde :
+        // deux instances pourraient, à la première ouverture, fabriquer deux
+        // identifiants dont un seul serait rangé.
+        _identity = identity ?? (client ?? ApiClient.instance).deviceIdentity,
         _retryFloor = retryFloor,
         _now = now ?? DateTime.now;
 
