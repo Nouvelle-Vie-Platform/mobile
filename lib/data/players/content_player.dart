@@ -204,6 +204,7 @@ class ContentRequest {
     this.author,
     this.artUrl,
     this.filePath,
+    this.isLive = false,
   });
 
   final String contentId;
@@ -211,6 +212,14 @@ class ContentRequest {
   final String title;
   final String? author;
   final String? artUrl;
+
+  /// **Un flux continu, pas un enregistrement** (#104).
+  ///
+  /// Retenu ici comme le reste parce qu'une réouverture doit rejouer **la même
+  /// source dans le même régime** : le chien de garde et la reprise rouvrent sans
+  /// écran devant elles, et une antenne rouverte en « enregistrement » rendrait au
+  /// système les boutons qu'on vient de lui retirer.
+  final bool isLive;
 
   /// **Le fichier local à jouer**, quand la résolution offline-first (#191) a
   /// choisi la copie sur le disque plutôt que le HLS. `null` → on joue [url].
@@ -282,6 +291,16 @@ abstract interface class ContentPlayer
   ///
   /// Charger **ne démarre pas** la lecture : ouvrir un enseignement ne doit pas
   /// faire sortir du son dans une salle de culte.
+  ///
+  /// **[isLive] dit que la source est une antenne** (#104), et il ne sert qu'à une
+  /// chose : retirer de la notification et de l'écran verrouillé les boutons
+  /// « −30 s / +30 s » et le déplacement. Ils n'ont **aucun sens** sur un flux
+  /// continu — il n'y a ni position à reprendre ni durée à parcourir —, et un
+  /// « +30 s » qui ne fait rien est une promesse que personne ne tient.
+  ///
+  /// Il ne se déduit d'aucun autre champ : une durée nulle arrive aussi sur un
+  /// enseignement HLS dont le manifeste n'a pas encore répondu, et sur iOS elle
+  /// peut ne jamais arriver. C'est l'appelant qui sait, et lui seul.
   Future<void> load({
     required String contentId,
     required String url,
@@ -289,6 +308,7 @@ abstract interface class ContentPlayer
     String? author,
     String? artUrl,
     String? localFilePath,
+    bool isLive,
   });
 
   /// Démarre ou reprend la lecture.
@@ -407,6 +427,18 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   @visibleForTesting
   String? loadedAuthor;
 
+  /// **Le régime annoncé au dernier chargement** — `null` avant tout `load` et
+  /// après un [stop].
+  ///
+  /// Exposé pour la même raison que [loadedTitle] : ce que le lecteur annonce au
+  /// système ne se voit nulle part ailleurs sous `flutter test`. Le retrait des
+  /// boutons « ±30 s » pour une antenne (#104) se décide dans
+  /// `ContentAudioHandler`, qu'aucun test ne peut instancier — mais le **chemin**
+  /// qui porte le drapeau depuis l'écran jusqu'au lecteur, lui, peut se briser en
+  /// silence, et c'est ce champ qui l'en empêche.
+  @visibleForTesting
+  bool? loadedIsLive;
+
   /// Nombre de chargements — un rechargement en boucle se voit ici.
   @visibleForTesting
   int loadCount = 0;
@@ -439,12 +471,14 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     String? author,
     String? artUrl,
     String? localFilePath,
+    bool isLive = false,
   }) async {
     if (_disposed) return;
     loadedUrl = url;
     loadedFilePath = localFilePath;
     loadedTitle = title;
     loadedAuthor = author;
+    loadedIsLive = isLive;
     loadCount++;
     _request = ContentRequest(
       contentId: contentId,
@@ -453,6 +487,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
       author: author,
       artUrl: artUrl,
       filePath: localFilePath,
+      isLive: isLive,
     );
     // Valeur **neuve** et non `copyWith` : c'est le seul moyen d'effacer une
     // durée, une fin atteinte ou une panne héritées du contenu précédent.
@@ -528,6 +563,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     loadedFilePath = null;
     loadedTitle = null;
     loadedAuthor = null;
+    loadedIsLive = null;
     _request = null;
     value = const ContentPlayback();
   }

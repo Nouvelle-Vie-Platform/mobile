@@ -111,7 +111,7 @@ void main() {
         '/gathering/:id', // fiche de rassemblement
         '/agenda',
         '/event',
-        '/live', // direct
+        '/radio', // New Life Radio
         '/downloads', // téléchargements
         '/donations', // dons
         '/legal/:kind', // CGU et confidentialité, en consultation

@@ -72,6 +72,12 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
   /// Dernière panne connue, remise à zéro à chaque chargement.
   Object? _failure;
 
+  /// **La source en main est-elle une antenne ?** (#104)
+  ///
+  /// Posé à chaque [open] et lu par [_broadcastState] seul. Il décide des boutons
+  /// que le système affiche, et de rien d'autre.
+  bool _isLive = false;
+
   /// Ouvre un média et annonce ce que le système doit afficher.
   ///
   /// Ne démarre pas la lecture : c'est [play] qui le fait.
@@ -87,13 +93,17 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
   /// Un partiel (AAC-ADTS tronqué) s'arrête proprement à l'EOF des octets reçus
   /// — ExoPlayer et AVPlayer terminent en `completed`, sans boucle de tampon
   /// (Spike 1, F11) —, donc le chien de garde du décrochage ne s'arme pas.
+  /// [isLive] retire de la notification et de l'écran verrouillé les boutons de
+  /// recul, d'avance et le déplacement : voir [_broadcastState].
   Future<void> open({
     required MediaItem item,
     String? url,
     String? filePath,
     Duration? at,
+    bool isLive = false,
   }) async {
     _failure = null;
+    _isLive = isLive;
     mediaItem.add(item);
     if (filePath != null) {
       await _player.setFilePath(filePath, initialPosition: at);
@@ -127,19 +137,29 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
         // **Les trois boutons, et leur ordre.** C'est exactement ce que
         // `just_audio_background` ne permet pas de choisir, et la raison pour
         // laquelle `audio_service` est pris en direct.
+        //
+        // **Sur une antenne, il n'en reste qu'un** (#104) : reculer de trente
+        // secondes dans un direct n'a pas de sens, et la fenêtre HLS de New Life
+        // Radio ne porte de toute façon que **quarante secondes** de rattrapage
+        // (vingt segments de deux secondes, `docs/RADIO.md`). Un bouton qui
+        // ramènerait au-delà ne trouverait plus les segments qu'il demande :
+        // mieux vaut ne pas l'offrir que de le voir couper le son.
         controls: [
-          MediaControl.rewind,
+          if (!_isLive) MediaControl.rewind,
           if (_player.playing) MediaControl.pause else MediaControl.play,
-          MediaControl.fastForward,
+          if (!_isLive) MediaControl.fastForward,
         ],
-        systemActions: const {
-          MediaAction.seek,
-          MediaAction.rewind,
-          MediaAction.fastForward,
-        },
+        systemActions: _isLive
+            ? const <MediaAction>{}
+            : const {
+                MediaAction.seek,
+                MediaAction.rewind,
+                MediaAction.fastForward,
+              },
         // Les trois tiennent dans la vue compacte d'Android : un prêche
-        // s'écoute écran éteint, c'est là que les reculs servent.
-        androidCompactActionIndices: const [0, 1, 2],
+        // s'écoute écran éteint, c'est là que les reculs servent. Sur une
+        // antenne, le seul bouton qui reste est à l'indice 0.
+        androidCompactActionIndices: _isLive ? const [0] : const [0, 1, 2],
         processingState: _failure != null
             ? AudioProcessingState.error
             : _processingStates[_player.processingState]!,
@@ -247,6 +267,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     String? author,
     String? artUrl,
     String? localFilePath,
+    bool isLive = false,
   }) async {
     if (_disposed) return;
     final request = ContentRequest(
@@ -256,6 +277,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
       author: author,
       artUrl: artUrl,
       filePath: localFilePath,
+      isLive: isLive,
     );
     _request = request;
     // Valeur **neuve** : durée, fin atteinte et panne du contenu précédent
@@ -331,6 +353,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
             filePath == null ? variantPlaylistUrl(request.url, _variant) : null,
         filePath: filePath,
         at: at,
+        isLive: request.isLive,
         item: MediaItem(
           // L'identifiant du contenu, pas l'URL : c'est lui qui désigne un
           // enseignement dans tout le reste de l'application (routes,

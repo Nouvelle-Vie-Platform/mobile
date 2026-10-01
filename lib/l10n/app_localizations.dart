@@ -478,23 +478,47 @@ abstract class AppLocalizations {
   /// **'Cultes à venir'**
   String get sectionUpcomingServices;
 
-  /// Bouton d'accueil hors lecture : ouvre le lecteur du flux en direct
+  /// Bouton d'antenne de l'accueil, au repos : un appui lance le flux, deux ouvrent la page
   ///
   /// In fr, this message translates to:
-  /// **'Suivre le live'**
-  String get homeWatchLive;
+  /// **'Suivre New Life Radio'**
+  String get radioFollow;
 
-  /// Bouton d'accueil compact, affiché tant que le live joue en arrière-plan
+  /// Le nom de l'antenne — bouton d'accueil en connexion ou en lecture, titre de l'écran, et ligne annoncée à l'écran verrouillé. Nom propre : identique dans les trois langues
   ///
   /// In fr, this message translates to:
-  /// **'Live'**
-  String get homeLiveNow;
+  /// **'New Life Radio'**
+  String get radioTitle;
 
-  /// Info-bulle du bouton Stop du live, sur l'accueil
+  /// Bouton d'antenne éteint : la route publique a répondu que l'antenne ne diffuse pas. Il reste appuyable — l'information guide, elle n'interdit pas
   ///
   /// In fr, this message translates to:
-  /// **'Arrêter le live'**
-  String get homeStopLive;
+  /// **'Hors antenne'**
+  String get radioOffAir;
+
+  /// Bouton d'antenne pendant la reprise : il dit qu'il réessaie, sans nommer la panne qu'il combat encore
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle tentative…'**
+  String get radioRetrying;
+
+  /// Motif d'extinction du bouton d'antenne : rien n'a répondu (DNS, socket refusée, délai dépassé)
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifiez votre connexion'**
+  String get radioFailureConnection;
+
+  /// Motif d'extinction du bouton d'antenne : quelque chose a répondu, et ce n'était pas une playlist (404, 401, page HTML)
+  ///
+  /// In fr, this message translates to:
+  /// **'Antenne indisponible'**
+  String get radioFailureAntenna;
+
+  /// Écran d'antenne quand aucune adresse de flux n'est connue
+  ///
+  /// In fr, this message translates to:
+  /// **'New Life Radio ne diffuse pas pour le moment.'**
+  String get radioUnavailableMessage;
 
   /// No description provided for @actionSeeAll.
   ///
