@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
+<!-- L'écran de démarrage **natif** : ce que le système peint avant que Flutter
+     n'ait tracé sa première image. C'est la même image que le premier étage de
+     l'écran Dart (`live_bg.png`) — vu du fidèle, il n'y en a qu'une, du premier
+     pixel jusqu'à l'accueil. Le blanc du gabarit d'origine faisait un
+     clignotement qui donnait l'application pour lente à ouvrir.
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+     `gravity="fill"` plutôt qu'un cadrage : une image unique ne peut pas couvrir
+     sans déformer les deux formats d'écran du parc (16:9 et 19,5:9), et toute
+     autre gravité laisserait des bandes. L'étirement est de l'ordre de 20 % sur
+     un téléphone très allongé, pendant moins d'une seconde, sur un décor flou.
+     Le socle de couleur dessous est ce qui se voit le temps du décodage. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/launch_background" />
+    <item>
         <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:gravity="fill"
+            android:src="@drawable/launch_image" />
+    </item>
 </layer-list>

@@ -16,13 +16,25 @@
                     <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" image="LaunchImage" translatesAutoresizingMaskIntoConstraints="NO" id="YRO-k0-Ey4">
+                            <!-- `scaleAspectFill` et non `center` : le décor
+                                 couvre l'écran, comme le fait l'écran Dart qui
+                                 lui succède. Le débord est rogné
+                                 (`clipsSubviews`), jamais déformé. -->
+                            <imageView opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleAspectFill" image="LaunchImage" translatesAutoresizingMaskIntoConstraints="NO" id="YRO-k0-Ey4">
                             </imageView>
                         </subviews>
-                        <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <!-- Le bleu nuit du décor, et non le blanc du gabarit :
+                             c'est ce qui se voit sous l'image, et un blanc y
+                             ferait le clignotement qu'on retire. -->
+                        <color key="backgroundColor" red="0.054901960784313725" green="0.10980392156862745" blue="0.24705882352941178" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="1a2-6s-vTC"/>
-                            <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="4X2-HB-R7a"/>
+                            <!-- Les quatre bords, pour que l'image occupe la
+                                 vue entière : centrée seule, elle s'en tenait à
+                                 sa taille intrinsèque. -->
+                            <constraint firstAttribute="trailing" secondItem="YRO-k0-Ey4" secondAttribute="trailing" id="1a2-6s-vTC"/>
+                            <constraint firstAttribute="bottom" secondItem="YRO-k0-Ey4" secondAttribute="bottom" id="4X2-HB-R7a"/>
+                            <constraint firstItem="YRO-k0-Ey4" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="8Qf-7n-k2L"/>
+                            <constraint firstItem="YRO-k0-Ey4" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="9Rt-4m-pD3"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -32,6 +44,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="LaunchImage" width="168" height="185"/>
+        <image name="LaunchImage" width="314" height="557"/>
     </resources>
 </document>
