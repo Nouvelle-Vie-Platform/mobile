@@ -165,6 +165,17 @@ void main() {
           'gatherings',
           'announcements',
           'playback_progress',
+          // Les cinq d'« Échanges » (#96) ferment la marche, dans l'ordre que le
+          // cadrage donne. `profiles` avant `group_messages` est la seule
+          // contrainte d'ordre qu'il écrit en toutes lettres : elle nomme ce que
+          // les messages désignent. `group_members` après `groups`, par la règle
+          // du pivot. Et `group_messages` en dernier — la plus volumineuse des
+          // cinq, et celle dont le périmètre se calcule.
+          'profiles',
+          'groups',
+          'group_members',
+          'group_join_requests',
+          'group_messages',
         ],
         reason: 'ça ne supprime pas la fenêtre où un enseignement arrive sans '
             'son intervenant — la jointure de lecture reste tolérante pour '

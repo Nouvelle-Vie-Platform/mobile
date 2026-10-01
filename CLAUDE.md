@@ -115,14 +115,24 @@ serveur, amorcer la base) : `test/integration/README.md`.
 ## Architecture (à respecter)
 Couches claires, pensées pour brancher un backend sans toucher l'UI :
 
-- `lib/models/` — modèles immuables (`ChurchEvent`, `Teaching`, `CommunityGroup`,
-  `PrayerRequest`, `SpiritualNote`, `ChatMessage` — **fictif**, voir « La
-  messagerie de groupe ») et **modèles de lecture** (`content_view.dart`,
+- `lib/models/` — modèles immuables (`ChurchEvent`, `Teaching`, `PrayerRequest`,
+  `SpiritualNote`) et **modèles de lecture** (`content_view.dart`,
   `mediatheque_view.dart`, `gathering_view.dart`, `announcement_view.dart`,
-  `legal_document_view.dart`).
+  `legal_document_view.dart`, `echanges_view.dart`).
+
+  `CommunityGroup`, `Conversation`, `DiscoverGroup` et `ChatMessage` **ont
+  disparu** avec #96 : quatre modèles de maquette, remplacés par les modèles de
+  lecture d'`echanges_view.dart`. `ChatMessage` méritait de partir pour une raison
+  de plus — il portait `system` **sans** jumeau `authorId`, donc il ne pouvait pas
+  exprimer les trois origines d'un message, et le cas de l'auteur retiré n'avait
+  aucune place où exister.
 - `lib/data/` — `sample_data.dart` (données fictives) + `repositories/` :
   - `church_repository.dart` (`ChurchRepository` abstrait + `InMemoryChurchRepository`)
-    — **synchrone**, et il ne couvre que les domaines **encore fictifs**.
+    — **synchrone**, et il ne couvre plus que **deux** méthodes : les requêtes de
+    prière et les notes. C'est **le dernier reste fictif de l'application**
+    (#96, décision 10 du cadrage : `/prayers` garde sa route et son fictif, parce
+    que tout retirer aurait retiré une fonctionnalité aux membres pour une raison
+    d'hygiène de code). Rien de neuf ne doit s'y brancher.
   - `auth_repository.dart` / `http_auth_repository.dart`, `branch_repository.dart`,
     `calendar_repository.dart`, `mediatheque_repository.dart` /
     `store_mediatheque_repository.dart`, `gathering_repository.dart` /
@@ -130,6 +140,11 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
     `store_announcement_repository.dart`, `legal_repository.dart` /
     `store_legal_repository.dart` — repositories **dédiés et asynchrones**,
     chacun hors de `ChurchRepository`.
+  - `echanges_repository.dart` / `store_echanges_repository.dart` —
+    **la rubrique « Échanges »** (#96), lue depuis le magasin : conversations,
+    groupes à rejoindre, fil, roster, profils. `group_message_sender.dart` /
+    `group_message_composer.dart` portent l'**écriture** — voir « La messagerie de
+    groupe » plus bas.
   - `announcement_composer.dart` / `http_announcement_composer.dart` —
     **l'écriture** des annonces (#36), séparée de leur lecture ; voir « L'onglet
     Annonces ».
@@ -404,6 +419,14 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   est « pas de contenu, pas de section ». **Rien ne s'y filtre à l'écriture** : la
   visibilité par surface et la fenêtre de publication sont des **colonnes**, et
   c'est le décochage lui-même qui voyage.
+  `tables/group_tables.dart` — les cinq collections d'**« Échanges »** (#96) :
+  `profiles`, `groups`, `group_members`, `group_join_requests`, `group_messages`,
+  plus `pending_group_messages`, **locale seule** (l'écho optimiste d'un envoi,
+  même patron que `local_playback_positions`). Deux types de PK — UUID pour
+  `groups`/`group_messages`/`profiles`, **entier** pour `group_members` et
+  `group_join_requests` —, et deux collections **sans tombstone** (`groups`,
+  `profiles`), dont le coût est borné par la lecture : une conversation se lit sur
+  `group_members`, qui en a un.
   `tables/device_tables.dart` — `device_settings` (#91) : **une seule ligne**, le
   **réglage d'exploitation du parc** installé, et par lui le seuil du bandeau de
   mise à jour. **Sans tombstone** — retirer le seuil met la colonne à `null`, et
@@ -416,8 +439,10 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   là où une collection neuve est simplement ignorée par eux.
 - `sync_dao.dart` — primitives transactionnelles. `mediatheque_dao.dart`,
   `gathering_dao.dart`, `announcement_dao.dart`, `playback_dao.dart`,
-  `legal_dao.dart` et `menu_dao.dart` — lectures, **un DAO par domaine**. `playback_dao` est le
-  seul qui **écrive**, et seulement dans la table locale seule.
+  `legal_dao.dart`, `menu_dao.dart` et `group_dao.dart` — lectures, **un DAO par
+  domaine**. `playback_dao` et `group_dao` sont les seuls qui **écrivent**, et
+  seulement dans une table locale seule (`local_playback_positions`,
+  `pending_group_messages`).
 
 **Six règles qui ne se renégocient pas** (ADR-0026 en donne le *pourquoi*) :
 1. **Une page appliquée = une transaction** : ses lignes **et** son curseur, ou
@@ -459,13 +484,18 @@ qu'elle remplit. Le réseau ne peint jamais.
 - `sync_rows.dart` — JSON → companions Drift. **`camelCase` uniquement**
   (lignes). Les deux conventions vivent dans deux fichiers exprès : un
   désérialiseur à convention unique se trompe sur la moitié des clés.
-- `synced_collection.dart` — le registre local **ordonné** : `teaching_types`,
+- `synced_collection.dart` — le registre local **ordonné** (vingt-trois
+  collections depuis #96) : `teaching_types`,
   `gathering_types`, `status_backgrounds`, `official_accounts`,
   `official_account_memberships`, `legal_documents`, `seasons`,
   `presentation_vocabulary`, `menu_entries`, `auth_channels`, `device_settings`,
   `decor`, `contributors`,
   `branches`, puis `teachings`, `teaching_guests`, `gatherings`,
-  `announcements`, `playback_progress`.
+  `announcements`, `playback_progress`, et enfin les cinq d'« Échanges » —
+  `profiles`, `groups`, `group_members`, `group_join_requests`,
+  `group_messages`. **`profiles` passe avant `group_messages`** : elle nomme ce
+  que les messages désignent, et c'est la seule contrainte d'ordre que le cadrage
+  de #96 écrit en toutes lettres.
 - `sync_api.dart` — `GET /sync` et `GET /sync/{collection}`, sur le `Dio`
   d'`ApiClient`. Un **404** devient `UnknownSyncCollection`.
 - `sync_engine.dart` — la boucle. `sync_scheduler.dart` — les déclencheurs.
@@ -514,10 +544,14 @@ polling* — aucun `Timer` dans `lib/data/sync/`, et un test le vérifie.
 Le curseur du manifeste (`current_cursor`) est la **borne haute du périmètre**,
 pas un accusé de réception : il ne devient jamais le curseur local.
 - `lib/state/` — providers Riverpod :
-  - `repository_providers.dart` : `churchRepositoryProvider` + providers de données
-    (`groupsProvider`, `prayersProvider`, `notesProvider`,
-    `chatProvider.family`) et `eventsProvider` (hors `ChurchRepository`, cf.
-    ci-dessous).
+  - `repository_providers.dart` : `churchRepositoryProvider` + `prayersProvider` et
+    `notesProvider` — **tout ce qui reste de fictif** — et `eventsProvider` (hors
+    `ChurchRepository`, cf. ci-dessous). `groupsProvider`, `conversationsProvider`,
+    `groupsToJoinProvider` et `chatProvider.family` ont quitté ce fichier avec #96.
+  - `echanges_providers.dart` : la rubrique « Échanges ». `echangesActorProvider`,
+    `echangesRepositoryProvider` et les quatre lectures, **toutes des familles clés
+    sur l'acteur** (voir l'avertissement de « La messagerie de groupe »), plus
+    `groupMessageComposerProvider` — le seul de cette rubrique qui parle au réseau.
   - `announcement_providers.dart` : `announcementRepositoryProvider`,
     `announcementsProvider` et `canComposeAnnouncementProvider`. **C'est là que
     vivent les deux règles que le serveur ne prend pas** — le filtre
@@ -1145,10 +1179,9 @@ s'était arrêtée. La méthode boucle sur `allTables` — elle ne **nomme** don
 fichier : sur le web il n'y en a pas.
 
 ### La messagerie de groupe — l'origine se lit sur `(authorId, isSystem)`
-**Encore fictive** (`ChatMessage`, `chatProvider`, `InMemoryChurchRepository`) :
-le modèle mobile ne porte aujourd'hui **ni `authorId` ni `isSystem`**. Le
-contrat de branchement est écrit d'avance dans `docs/messagerie-groupe.md`, et
-il tient en une règle :
+**Branchée par #96** (`docs/messagerie-groupe.md` est le contrat, et il décrit
+désormais un code qui l'applique ; `server-portal/docs/echanges-branchement-plan.md`
+est le cadrage autoritaire des quatre tranches). Elle tient en une règle :
 
 | `authorId` | `isSystem` | origine |
 | --- | --- | --- |
@@ -1162,13 +1195,75 @@ système ».** Le nul a deux sens depuis la suppression de compte
 messages d'un membre parti comme des annonces du serveur — centrés, en gris,
 sans bulle. Rien ne plante, aucun test ne rougit.
 
-Deux corollaires qui se ratent aussi en silence : le détachement arrive **sur
-une ligne déjà stockée** (`author_id → NULL` avec `updated_at` bumpé, donc dans
-le flux delta), l'écriture du magasin doit donc **remplacer** et non fusionner —
-`Value(_optionalText(…))` + `InsertMode.insertOrReplace`, le patron existant ; et
-le mobile n'a **aucune source de nom de membre** (pas de collection `users`,
-ADR-0029), ce qui est un prérequis de branchement, pas un détail d'habillage
-(§6 du document).
+**Un seul endroit de l'application lit ce couple** : `messageOriginOf`
+(`lib/models/echanges_view.dart`), qui rend un `MessageOrigin` à trois valeurs. Les
+écrans lisent `origin.isBubble`, jamais `authorId == null`. La valeur de ce
+garde-fou est **mesurée** et non supposée : remplacer la fonction par un test du nul
+seul fait rougir trois tests, et pas un de moins.
+
+Quatre corollaires, dont deux se ratent en silence :
+
+1. **Le détachement arrive sur une ligne déjà stockée** (`author_id → NULL` avec
+   `updated_at` bumpé à la main, donc dans le flux delta) : l'écriture du magasin
+   doit **remplacer** et non fusionner — `Value(_optionalText(…))` +
+   `InsertMode.insertOrReplace`, le patron existant. Un `Value.absentIfNull`, un
+   `COALESCE` ou un « ne pas écraser par du vide » laisserait l'ancien uuid en place,
+   et l'effacement serait faux sur **tous les téléphones déjà synchronisés**.
+2. **Le domaine se lit en `Stream`** : une bulle affichée doit perdre son auteur
+   sous les yeux du lecteur, pas au prochain démarrage.
+3. **La source de nom existe désormais** : la collection `profiles`, réversion
+   assumée d'ADR-0029 côté serveur, dont le périmètre est **relationnel** (mes
+   co-membres, jamais un annuaire). Elle lève le prérequis que le §6.1 du contrat
+   déclarait bloquant. `displayName` y est **nullable par contrat** — un compte sans
+   nom se rend par une absence, jamais par un « Utilisateur inconnu ».
+4. **« Membre retiré » n'est pas un nom**, c'est un fait : il vit dans les `.arb`
+   (`chatAuthorRemoved`) et ne doit **jamais** entrer dans `AppAvatar(name:)`, qui en
+   tirerait les initiales « MR » et une teinte dérivée de la longueur du libellé.
+   C'est désormais **structurellement impossible** : `AppAvatar.neutral` est un
+   constructeur sans paramètre `name`.
+
+#### L'écho optimiste, et la clé qui va avec
+
+**Rupture assumée avec le composeur d'annonces**, qui attend la réponse du serveur :
+une conversation ne le supporte pas. Le message paraît avant d'être parti, et l'écran
+dit où il en est (`MessageDelivery` : `sent` / `sending` / `failed`).
+
+L'écho vit dans **`pending_group_messages`**, une table locale seule — pas un état en
+mémoire, qui serait perdu au premier passage en arrière-plan, c'est-à-dire au geste
+qui suit l'envoi. Sa clé primaire **est** la clé d'idempotence.
+
+⚠️ **La clé d'idempotence n'est pas une option.** Sans elle, le double appui que
+l'écho évite à l'écran se produit quand même au réseau. Le client frappe un
+**UUIDv7** (`clientMessageId`), le serveur l'attend déjà — unicité
+`(group_id, author_id, client_message_id)` — et renvoie l'existant plutôt que de
+créer un doublon. « Réessayer » repart sous la **même** clé, exprès : si le premier
+envoi avait en réalité abouti, c'est elle qui empêche le second message.
+
+La **réconciliation** est un `NOT EXISTS` à la lecture, pas une suppression au retour
+du `POST` : supprimer l'écho là ferait disparaître le message de l'écran pendant le
+temps qui sépare la réponse du cycle qui ramène la ligne. Un message qui clignote est
+pire qu'un message marqué « en cours ».
+
+#### Trois choses de plus, toutes vérifiées
+
+- **La barre de saisie n'existe que si l'on peut écrire.** Le serveur refuse un
+  simple membre dans un groupe en diffusion (`postPolicy == 'admins'`) ou sous verrou
+  (`isWriteLocked`) — deux régimes **indépendants et cumulatifs** —, et un
+  `leader`/`moderator` passe outre les deux. On le lit pour **ne pas offrir** un champ
+  dont chaque appui prendrait un 403, et c'est une **phrase** à la place, jamais un
+  champ grisé.
+- **Les cinq collections ne sont pas filtrées par la préférence de branche**, bien
+  que `groups` et `group_messages` soient `partition: 'branch'` côté serveur : leur
+  périmètre réel est l'**appartenance**, et filtrer ici retirerait du téléphone un
+  groupe dont je suis membre et qui est rattaché à une autre assemblée.
+- ⚠️ **L'acteur entre par un paramètre de famille, jamais par `ref.watch`.** Une
+  chaîne de providers **synchrones** entre `authProvider` et les flux d'Échanges fait
+  rougir l'application au retour du parcours de connexion (« setState() called during
+  build ») : le hub vit dans l'`IndexedStack`, ses abonnements sont mis en pause quand
+  `/auth` est poussé par-dessus, et Riverpod vide la chaîne pendant la construction de
+  l'overlay au dépilement. Un acteur différent est une **autre clé**, donc un élément
+  neuf — rien n'est invalidé. Les écrans lisent `echangesActorProvider` et le passent ;
+  `test/screens/guest_tabs_test.dart` verrouille les deux gestes qui l'avaient révélé.
 
 ### Brancher un vrai backend : **un repository dédié asynchrone par domaine**
 Surcharger `churchRepositoryProvider` **ne suffit pas** et n'est pas le motif :
@@ -1219,9 +1314,12 @@ vue : `utils/i18n_text.dart` (`pick`, repli de langue) et `utils/event_time.dart
 
 ### Navigation : **l'identifiant, jamais l'objet** (domaines branchés)
 Convention **abandonnée** (#27) : « les écrans de détail reçoivent leur objet
-via `extra`, avec repli sur le 1er élément si accès direct ». Elle survit
-seulement là où le domaine est encore fictif et sans identité (`/group-chat`,
-`/event`), et doit tomber avec chacun d'eux.
+via `extra`, avec repli sur le 1er élément si accès direct ». Elle ne survit plus
+que sur `/event` : `/group-chat`, `/group-info` et `/member-profile` sont passées
+au `pathParameter` avec #96, et leur repli « le premier élément » est tombé avec le
+fictif qui le rendait possible. Pour la messagerie, la deuxième raison ci-dessous
+est la plus concrète : **le réveil push de la tranche 2 n'a qu'une chaîne à
+transmettre.**
 
 La règle pour tout domaine porteur d'un `id` : **la route porte l'identifiant
 en `pathParameter`, l'écran résout la donnée depuis son provider** — voir
@@ -2059,8 +2157,10 @@ Elles ne peuvent plus arriver ici, mais le même diagnostic sert ailleurs :
 - Le premier build iOS/Android est long ; relances suivantes rapides.
 
 ## Statut
-Maquette UI riche et cohérente, **données fictives** + **auth factice** pour ce
-qui reste dans `ChurchRepository` (groupes, prières, notes, discussions).
+Maquette UI riche et cohérente. **Il ne reste de fictif que les prières et les
+notes** (`ChurchRepository`, deux méthodes) : la rubrique « Échanges » a été
+branchée par #96, et `InMemoryChurchRepository` — qui était le **seul** double en
+mémoire câblé en production sans condition — ne sert plus rien qui mente.
 Prochaines grandes étapes : backend + auth réels, dons/paiement, notifications,
 finir d'habiller les écrans restants (onboarding, login/register, live, dons,
 notes, nouvelle requête).

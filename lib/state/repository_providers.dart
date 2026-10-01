@@ -9,9 +9,10 @@ import '../models/models.dart';
 /// **Il rétrécit, et c'est voulu.** Son contrat est synchrone : chaque domaine
 /// que le back se met à servir en **sort** vers son propre repository
 /// asynchrone (`AuthRepository`, `BranchRepository`, `CalendarRepository`,
-/// `MediathequeRepository`, `GatheringRepository`, et désormais
-/// `AnnouncementRepository`). Ce qui reste ici n'est que ce qui est encore
-/// fictif : groupes, requêtes de prière, notes et discussions.
+/// `MediathequeRepository`, `GatheringRepository`, `AnnouncementRepository`, et
+/// désormais `EchangesRepository` — #96 lui a pris les groupes, les conversations
+/// et les discussions). Ce qui reste ici est **le dernier reste fictif de
+/// l'application** : les requêtes de prière et les notes.
 final churchRepositoryProvider = Provider<ChurchRepository>(
   (ref) => const InMemoryChurchRepository(),
 );
@@ -30,33 +31,17 @@ final churchRepositoryProvider = Provider<ChurchRepository>(
 /// dernier de ses deux lecteurs.
 final eventsProvider = Provider<List<ChurchEvent>>((ref) => SampleData.events);
 
-/// Groupes communautaires.
-final groupsProvider = Provider<List<CommunityGroup>>(
-  (ref) => ref.watch(churchRepositoryProvider).groups(),
-);
-
-/// Conversations du hub « Échanges » (groupes + messages privés mêlés).
-final conversationsProvider = Provider<List<Conversation>>(
-  (ref) => ref.watch(churchRepositoryProvider).conversations(),
-);
-
-/// Groupes **à rejoindre** de la rangée de découverte.
-final groupsToJoinProvider = Provider<List<DiscoverGroup>>(
-  (ref) => ref.watch(churchRepositoryProvider).groupsToJoin(),
-);
-
 /// Requêtes de prière.
+///
+/// ⚠️ **Fictif, et le dernier à l'être** — décision 10 du cadrage de #96 :
+/// `/prayers` garde sa route et son fictif, parce que tout retirer aurait retiré
+/// une fonctionnalité aux membres pour une raison d'hygiène de code. Voir
+/// `SampleData.prayers`, et ne rien brancher de neuf dessus.
 final prayersProvider = Provider<List<PrayerRequest>>(
   (ref) => ref.watch(churchRepositoryProvider).prayers(),
 );
 
-/// Notes spirituelles.
+/// Notes spirituelles. **Fictif**, pour la même raison.
 final notesProvider = Provider<List<SpiritualNote>>(
   (ref) => ref.watch(churchRepositoryProvider).notes(),
-);
-
-/// Messages d'une conversation (paramétré par la conversation ciblée).
-final chatProvider = Provider.family<List<ChatMessage>, Conversation>(
-  (ref, conversation) =>
-      ref.watch(churchRepositoryProvider).chatFor(conversation),
 );

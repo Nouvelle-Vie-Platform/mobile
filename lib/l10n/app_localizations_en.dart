@@ -330,6 +330,43 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get chatAuthorRemoved => 'Removed member';
+
+  @override
+  String get chatReadOnly => 'Only group hosts can post in this group.';
+
+  @override
+  String get chatEmpty => 'No messages yet. Be the first to write.';
+
+  @override
+  String get echangesEmptyTitle => 'No conversations';
+
+  @override
+  String get echangesEmpty =>
+      'Your groups and chats will show up here. Pull down to refresh.';
+
+  @override
+  String get echangesLoadError => 'Could not read your conversations.';
+
+  @override
+  String get echangesJoinOpen => 'Open to all';
+
+  @override
+  String get echangesJoinOnRequest => 'On request';
+
+  @override
+  String get echangesJoinPending => 'Request sent';
+
+  @override
+  String get groupRoleLeader => 'Host';
+
+  @override
+  String get groupRoleModerator => 'Moderator';
+
+  @override
+  String get groupRoleMember => 'Member';
+
+  @override
   String get chatMessageHint => 'Your message...';
 
   @override

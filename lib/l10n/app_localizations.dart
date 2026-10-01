@@ -664,6 +664,78 @@ abstract class AppLocalizations {
   /// **'{count} membres • {role}'**
   String groupMembersWithRole(int count, String role);
 
+  /// Fil de discussion : ligne d'auteur d'un message dont l'auteur a supprimé son compte (ADR-0032, couple (authorId: null, isSystem: false)). Ce n'est PAS un nom de repli, c'est un fait — et il ne doit jamais être passé à AppAvatar(name:), qui en tirerait les initiales « MR » et une teinte dérivée de la longueur du libellé
+  ///
+  /// In fr, this message translates to:
+  /// **'Membre retiré'**
+  String get chatAuthorRemoved;
+
+  /// Fil de discussion : remplace la barre de saisie quand le groupe est en diffusion (postPolicy=admins), sous verrou d'écriture, ou désactivé. Une phrase, jamais un champ grisé : une option désactivée reste une option offerte
+  ///
+  /// In fr, this message translates to:
+  /// **'Seuls les animateurs peuvent écrire dans ce groupe.'**
+  String get chatReadOnly;
+
+  /// Fil de discussion : état vide d'un groupe dont le magasin n'a encore reçu aucun message
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun message pour l\'instant. Soyez le premier à écrire.'**
+  String get chatEmpty;
+
+  /// Hub Échanges : titre de l'état vide (le magasin n'a pas encore reçu mes groupes, ou je n'appartiens à aucun)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune conversation'**
+  String get echangesEmptyTitle;
+
+  /// Hub Échanges : explication de l'état vide, qui nomme le geste de rattrapage (le réveil push est de la tranche 2)
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos groupes et discussions apparaîtront ici. Tirez vers le bas pour rafraîchir.'**
+  String get echangesEmpty;
+
+  /// Hub Échanges : échec de lecture du magasin local. C'est une base illisible, pas une panne de réseau
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de lire vos conversations.'**
+  String get echangesLoadError;
+
+  /// Carte d'un groupe à rejoindre : politique d'adhésion « open » — on entre sans demander
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvert à tous'**
+  String get echangesJoinOpen;
+
+  /// Carte d'un groupe à rejoindre : politique d'adhésion « request » — un animateur approuve
+  ///
+  /// In fr, this message translates to:
+  /// **'Sur demande'**
+  String get echangesJoinOnRequest;
+
+  /// Carte d'un groupe à rejoindre : ma demande est en attente (group_join_requests.status = pending). On le dit plutôt que de proposer un geste déjà fait
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande envoyée'**
+  String get echangesJoinPending;
+
+  /// Fiche de groupe : rôle « leader » d'un membre
+  ///
+  /// In fr, this message translates to:
+  /// **'Animateur'**
+  String get groupRoleLeader;
+
+  /// Fiche de groupe : rôle « moderator » d'un membre
+  ///
+  /// In fr, this message translates to:
+  /// **'Modérateur'**
+  String get groupRoleModerator;
+
+  /// Fiche de groupe : rôle « member », et repli de tout rôle que le serveur ajouterait — une chaîne brute à l'écran se lirait comme une donnée perdue
+  ///
+  /// In fr, this message translates to:
+  /// **'Membre'**
+  String get groupRoleMember;
+
   /// No description provided for @chatMessageHint.
   ///
   /// In fr, this message translates to:

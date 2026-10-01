@@ -153,6 +153,45 @@ void main() {
       expect(kSyncCollections['group_join_requests'], 'private');
     });
 
+    test('les cinq collections d\'Échanges sont là, et déjà au bon compte', () {
+      // Les cinq collections de la messagerie étaient **déjà** dans cette carte
+      // avant #96 : elles ont été relevées sur `registry.ts` en #81, au moment où
+      // ce test disait dix-neuf pour vingt-cinq descripteurs. #96 les **réplique**
+      // (une table locale, un DAO, un repository), elle ne les a pas découvertes.
+      //
+      // Le registre serveur en compte **vingt-neuf**, recompté descripteur par
+      // descripteur (`awk '/^export const syncDescriptors/,/^\]/' | grep -cE
+      // '^  [a-zA-Z]+Descriptor,$'`), jamais sur la phrase qui les précède — elle
+      // a déjà menti deux fois. `menu_entries` ferme l'écart : elle est livrée
+      // côté serveur par #480 et répliquée côté client par la tranche jumelle
+      // #82, fusionnée depuis. La carte est donc **complète**, et c'est ce que
+      // `hasLength(29)` plus haut affirme.
+      for (final key in const [
+        'profiles',
+        'groups',
+        'group_members',
+        'group_join_requests',
+        'group_messages',
+      ]) {
+        expect(kSyncCollections, contains(key));
+      }
+      expect(
+        kSyncCollections,
+        contains('menu_entries'),
+        reason: 'la tranche jumelle #82 l\'a apportée ; sans elle, le compte '
+            'retomberait à vingt-huit et la médiathèque n\'aurait plus d\'onglets',
+      );
+      expect(kSyncCollections['groups'], 'branch');
+      expect(kSyncCollections['group_messages'], 'branch');
+      // `profiles` précède `group_messages` **dans le registre serveur**, et c'est
+      // ce que le client reproduit : elle nomme ce que les messages désignent.
+      final order = kSyncCollections.keys.toList();
+      expect(
+        order.indexOf('profiles'),
+        lessThan(order.indexOf('group_messages')),
+      );
+    });
+
     test(
       'les deux familles de la médiathèque ont chacune leur paire de clés',
       () {

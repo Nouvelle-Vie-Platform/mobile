@@ -30,6 +30,7 @@ import '../data/local/auth_channels_dao.dart';
 import '../data/local/app_database.dart';
 import '../data/local/device_settings_dao.dart';
 import '../data/local/gathering_dao.dart';
+import '../data/local/group_dao.dart';
 import '../data/local/legal_dao.dart';
 import '../data/local/mediatheque_dao.dart';
 import '../data/local/menu_dao.dart';
@@ -144,6 +145,16 @@ final authChannelsDaoProvider = Provider<AuthChannelsDao>(
 /// en la même réponse : pas de seuil, donc pas de bandeau.
 final deviceSettingsDaoProvider = Provider<DeviceSettingsDao>(
   (ref) => ref.watch(appDatabaseProvider).deviceSettingsDao,
+);
+
+/// Les lectures du magasin, côté **« Échanges »** (#96) — et les seules écritures
+/// du domaine, qui ne touchent que la table locale seule de l'écho optimiste.
+///
+/// Un DAO de plus, même motif que les précédents : un par domaine, et c'est lui
+/// qui porte les règles de lecture que deux écrans partagent — au premier rang le
+/// fait qu'une conversation se lit sur `group_members` et non sur `groups`.
+final groupDaoProvider = Provider<GroupDao>(
+  (ref) => ref.watch(appDatabaseProvider).groupDao,
 );
 
 /// Les deux routes du protocole, sur le `Dio` d'`ApiClient` : la requête

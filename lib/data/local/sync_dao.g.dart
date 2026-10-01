@@ -31,6 +31,12 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
   $DecorTable get decor => attachedDatabase.decor;
   $AuthChannelsTable get authChannels => attachedDatabase.authChannels;
   $DeviceSettingsTable get deviceSettings => attachedDatabase.deviceSettings;
+  $ProfilesTable get profiles => attachedDatabase.profiles;
+  $GroupsTable get groups => attachedDatabase.groups;
+  $GroupMembersTable get groupMembers => attachedDatabase.groupMembers;
+  $GroupJoinRequestsTable get groupJoinRequests =>
+      attachedDatabase.groupJoinRequests;
+  $GroupMessagesTable get groupMessages => attachedDatabase.groupMessages;
   SyncDaoManager get managers => SyncDaoManager(this);
 }
 
@@ -91,4 +97,15 @@ class SyncDaoManager {
   $$DeviceSettingsTableTableManager get deviceSettings =>
       $$DeviceSettingsTableTableManager(
           _db.attachedDatabase, _db.deviceSettings);
+  $$ProfilesTableTableManager get profiles =>
+      $$ProfilesTableTableManager(_db.attachedDatabase, _db.profiles);
+  $$GroupsTableTableManager get groups =>
+      $$GroupsTableTableManager(_db.attachedDatabase, _db.groups);
+  $$GroupMembersTableTableManager get groupMembers =>
+      $$GroupMembersTableTableManager(_db.attachedDatabase, _db.groupMembers);
+  $$GroupJoinRequestsTableTableManager get groupJoinRequests =>
+      $$GroupJoinRequestsTableTableManager(
+          _db.attachedDatabase, _db.groupJoinRequests);
+  $$GroupMessagesTableTableManager get groupMessages =>
+      $$GroupMessagesTableTableManager(_db.attachedDatabase, _db.groupMessages);
 }
