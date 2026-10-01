@@ -95,12 +95,33 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
   /// (Spike 1, F11) —, donc le chien de garde du décrochage ne s'arme pas.
   /// [isLive] retire de la notification et de l'écran verrouillé les boutons de
   /// recul, d'avance et le déplacement : voir [_broadcastState].
+  /// [headers] porte la session de l'antenne (#108). Ils ne concernent que le
+  /// HLS — un fichier local n'a pas d'en-têtes — et `just_audio` les pose sur la
+  /// **source**, ce qui est exactement la portée qu'il faut :
+  ///
+  /// - **Android** : `buildDataSourceFactory` les donne à
+  ///   `DefaultHttpDataSource.Factory.setDefaultRequestProperties`, qui les
+  ///   applique à **toutes** les requêtes du `DataSource` — playlist,
+  ///   sous-playlists et segments compris (vérifié dans
+  ///   `AudioPlayer.java:731-750` de la version 0.10.6) ;
+  /// - **Darwin** : `UriAudioSource.m:33-72` les pose dans
+  ///   `AVURLAssetHTTPHeaderFieldsKey`. ⚠️ **Cette clé n'est pas documentée par
+  ///   Apple**, et ce qu'AVFoundation en fait sur les requêtes dérivées d'un
+  ///   manifeste HLS n'a **pas pu être mesuré** ici : il y faut un appareil réel.
+  ///   Elle est posée parce que c'est le seul levier que le greffon expose, pas
+  ///   parce qu'on l'a vue marcher.
+  ///
+  /// Un cas à connaître du source de `just_audio` : quand il n'y a **qu'un** seul
+  /// en-tête et qu'il s'appelle `User-Agent`, Darwin le déplace vers
+  /// `AVURLAssetHTTPUserAgentKey` et n'écrit plus la clé des en-têtes. Un
+  /// `Cookie:` seul ne tombe pas dans ce cas — il reste dans la clé des en-têtes.
   Future<void> open({
     required MediaItem item,
     String? url,
     String? filePath,
     Duration? at,
     bool isLive = false,
+    Map<String, String> headers = const {},
   }) async {
     _failure = null;
     _isLive = isLive;
@@ -108,7 +129,14 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
     if (filePath != null) {
       await _player.setFilePath(filePath, initialPosition: at);
     } else {
-      await _player.setUrl(url!, initialPosition: at);
+      await _player.setUrl(
+        url!,
+        // `null` et non une carte vide : le greffon mute la carte qu'on lui
+        // donne (il y cherche et en retire `User-Agent`), et une carte vide
+        // ferait quand même le détour par la branche des en-têtes côté Darwin.
+        headers: headers.isEmpty ? null : Map<String, String>.of(headers),
+        initialPosition: at,
+      );
     }
   }
 
@@ -268,6 +296,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     String? artUrl,
     String? localFilePath,
     bool isLive = false,
+    Map<String, String> headers = const {},
   }) async {
     if (_disposed) return;
     final request = ContentRequest(
@@ -278,6 +307,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
       artUrl: artUrl,
       filePath: localFilePath,
       isLive: isLive,
+      headers: headers,
     );
     _request = request;
     // Valeur **neuve** : durée, fin atteinte et panne du contenu précédent
@@ -354,6 +384,12 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
         filePath: filePath,
         at: at,
         isLive: request.isLive,
+        // **La session de l'antenne repart avec la source** (#108), parce que
+        // c'est ce chemin-ci que prennent la reprise après panne et le chien de
+        // garde : sans elle, une réouverture rendrait 401 là où l'ouverture
+        // initiale jouait. Voir [ContentRequest.headers] pour ce que cela ne
+        // règle pas — la **fraîcheur** du cookie appartient à l'appelant.
+        headers: request.headers,
         item: MediaItem(
           // L'identifiant du contenu, pas l'URL : c'est lui qui désigne un
           // enseignement dans tout le reste de l'application (routes,

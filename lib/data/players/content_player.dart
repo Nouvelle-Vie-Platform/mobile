@@ -205,6 +205,7 @@ class ContentRequest {
     this.artUrl,
     this.filePath,
     this.isLive = false,
+    this.headers = const {},
   });
 
   final String contentId;
@@ -212,6 +213,25 @@ class ContentRequest {
   final String title;
   final String? author;
   final String? artUrl;
+
+  /// **Les en-têtes HTTP de la source** (#108), `Cookie:` en pratique.
+  ///
+  /// Retenu ici pour une raison précise, et pas par symétrie avec le reste :
+  /// **sans ce champ, le chien de garde du décrochage rouvrirait sans le
+  /// cookie.** Il rouvre `_request` tel quel, sans écran devant lui et sans
+  /// personne à qui redemander — une antenne qui décroche une fois ne
+  /// repartirait plus jamais, et la trace de la cause serait un 401 que
+  /// personne ne relie à ça.
+  ///
+  /// ⚠️ **Ce que ce champ ne fait pas : rafraîchir la session.** Il porte ce que
+  /// la négociation a obtenu **à l'ouverture**, et une session MediaMTX expire.
+  /// Une réouverture faite par le lecteur seul rejoue donc un cookie qui peut
+  /// être mort — ce qui vaut toujours mieux que pas de cookie du tout, mais ne
+  /// remplace pas la renégociation. Celle-ci appartient à l'appelant, qui est le
+  /// seul à savoir où est l'antenne : `RadioListening.start` négocie **à chaque
+  /// fois**, et c'est ce qui rend honnête une reprise après deux minutes de
+  /// coupure.
+  final Map<String, String> headers;
 
   /// **Un flux continu, pas un enregistrement** (#104).
   ///
@@ -301,6 +321,14 @@ abstract interface class ContentPlayer
   /// Il ne se déduit d'aucun autre champ : une durée nulle arrive aussi sur un
   /// enseignement HLS dont le manifeste n'a pas encore répondu, et sur iOS elle
   /// peut ne jamais arriver. C'est l'appelant qui sait, et lui seul.
+  ///
+  /// **[headers] voyage avec la source, sur toutes ses requêtes** (#108) — la
+  /// playlist, les sous-playlists et les segments. C'est ce qui porte la session
+  /// de MediaMTX (`Cookie: hlsSession=…`), sans laquelle l'antenne de New Life
+  /// Radio rend `401 {"error":"session not found"}` dès la sous-playlist : ni
+  /// ExoPlayer ni AVFoundation ne gardent de cookies pour nous
+  /// (`radio_handshake.dart`). Le lecteur ne les lit pas, il les transmet — il
+  /// n'a aucune raison de savoir ce qu'il y a dedans.
   Future<void> load({
     required String contentId,
     required String url,
@@ -309,6 +337,7 @@ abstract interface class ContentPlayer
     String? artUrl,
     String? localFilePath,
     bool isLive,
+    Map<String, String> headers,
   });
 
   /// Démarre ou reprend la lecture.
@@ -439,6 +468,18 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   @visibleForTesting
   bool? loadedIsLive;
 
+  /// **Les en-têtes dont la source a été ouverte** (#108) — `null` avant tout
+  /// `load` et après un [stop].
+  ///
+  /// Exposé pour la raison de [loadedIsLive], et c'est le seul endroit où elle
+  /// soit vérifiable : ce qu'ExoPlayer ou AVFoundation font d'un en-tête ne se
+  /// voit que sur un appareil réel, mais le **chemin** qui porte le cookie
+  /// depuis le pré-vol jusqu'au lecteur, lui, peut se briser en silence — et
+  /// alors la radio se tait sans qu'aucun test ne rougisse. C'est exactement la
+  /// panne que #108 corrige, et c'est ce champ qui l'empêche de revenir.
+  @visibleForTesting
+  Map<String, String>? loadedHeaders;
+
   /// Nombre de chargements — un rechargement en boucle se voit ici.
   @visibleForTesting
   int loadCount = 0;
@@ -472,6 +513,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     String? artUrl,
     String? localFilePath,
     bool isLive = false,
+    Map<String, String> headers = const {},
   }) async {
     if (_disposed) return;
     loadedUrl = url;
@@ -479,6 +521,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     loadedTitle = title;
     loadedAuthor = author;
     loadedIsLive = isLive;
+    loadedHeaders = headers;
     loadCount++;
     _request = ContentRequest(
       contentId: contentId,
@@ -488,6 +531,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
       artUrl: artUrl,
       filePath: localFilePath,
       isLive: isLive,
+      headers: headers,
     );
     // Valeur **neuve** et non `copyWith` : c'est le seul moyen d'effacer une
     // durée, une fin atteinte ou une panne héritées du contenu précédent.
@@ -564,6 +608,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     loadedTitle = null;
     loadedAuthor = null;
     loadedIsLive = null;
+    loadedHeaders = null;
     _request = null;
     value = const ContentPlayback();
   }
