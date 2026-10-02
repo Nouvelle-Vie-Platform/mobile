@@ -2194,6 +2194,17 @@ jeton à la fois**, plus un **marqueur de nature** (`auth_token_kind`).
 au retour** : une connexion qui aboutit pendant qu'une requête d'invité est en
 vol ferait juger cette requête sur un coffre qui n'est plus le sien.
 
+⚠️ **Une requête partie sans porteur n'est jamais jugée « membre ».** C'est une
+requête d'invité, même quand aucune estampille `device` ne la marque : au tout
+premier lancement, le coffre est encore vide au moment où l'accueil demande
+`/events`, avant que `POST /devices/anonymous` ne soit revenu. Son 401 **ne purge
+pas le coffre** — sans porteur, il ne dit rien de ce qu'il contient — et, le mode
+invité étant câblé, il **renouvelle puis rejoue**. Le juger « membre » détruirait
+le jeton d'appareil rangé entre-temps, et cette course est **systématique sur un
+émulateur Android**, plus lent à écrire son coffre : l'accueil, la synchronisation
+et le push s'éteignaient tous en 401. La distinction voyage sur l'estampille
+`authTokenAttached` (`kAuthTokenAttachedExtra`), posée par `_AuthInterceptor`.
+
 Les deux erreurs n'ont pas le même coût, et le code le dit : appareil pris pour
 membre = éjection visible et rattrapable ; **membre pris pour appareil = jeton de
 membre écrasé en silence**, quelqu'un déconnecté sans le savoir. D'où une lecture

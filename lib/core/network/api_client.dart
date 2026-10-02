@@ -95,6 +95,25 @@ const String kDeviceSessionReplayExtra = 'deviceSessionReplay';
 /// elle n'éjecte personne et ne relance rien.
 const String kDeviceSessionRequestExtra = 'deviceSessionRequest';
 
+/// Clé d'`extra` : cette requête **portait un porteur** (`Authorization`) au
+/// moment où elle est partie.
+///
+/// Posée par `_AuthInterceptor` sur **chaque** requête (valeur `true` ou
+/// `false`), elle répond à une question qu'aucune autre estampille ne porte :
+/// non pas *quelle nature* de porteur, mais *s'il y en avait un*. Le 401 en a
+/// besoin, car il ne dit pas la même chose selon la réponse :
+///
+/// - **un porteur** a été envoyé puis refusé → l'éjecter vers `/auth` (membre)
+///   ou le renouveler (appareil) ;
+/// - **aucun porteur** n'est parti → le serveur n'a rien eu à refuser, et son
+///   « non » ne dit **rien du coffre**. Un 401 sur une requête nue — le tout
+///   premier `/events` d'un invité, avant que `POST /devices/anonymous` ne soit
+///   revenu — ne doit donc **jamais purger le coffre** : la session d'appareil
+///   peut s'y être rangée pendant que la requête était en vol, et la purger la
+///   transformerait en panne durable. Sur l'**émulateur Android**, plus lent à
+///   écrire son coffre, cette course est systématique — d'où ces trois lignes.
+const String kAuthTokenAttachedExtra = 'authTokenAttached';
+
 /// Ce que l'intercepteur 401 attend du **mode invité**, et rien de plus.
 ///
 /// Le contrat vit ici — dans la couche réseau — et son implémentation dans
@@ -346,6 +365,11 @@ class _AuthInterceptor extends Interceptor {
     );
 
     final token = await _storage.read(key: _kTokenKey);
+    // **Le porteur a-t-il réellement été posé ?** Note sur la requête, pour que
+    // le 401 sache distinguer « jeton refusé » de « requête partie nue » — voir
+    // [kAuthTokenAttachedExtra]. Sans cela, le 401 du tout premier `/events`
+    // d'un invité purgerait le jeton d'appareil rangé entre-temps.
+    options.extra[kAuthTokenAttachedExtra] = token != null;
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     } else {
@@ -411,6 +435,14 @@ final Interceptor unwrapEnvelopeInterceptor = InterceptorsWrapper(
 /// posée par `_AuthInterceptor` au moment où il posait le porteur — pas sur le
 /// coffre au retour du 401, qui peut avoir changé entre-temps.
 ///
+/// ## Requête partie **nue** : jamais « membre »
+///
+/// Quand aucun porteur n'a été posé ([kAuthTokenAttachedExtra]), la requête
+/// est celle d'un **invité**, quelle que soit l'estampille de nature : on ne
+/// purge pas le coffre — un 401 sans porteur ne dit rien de ce qu'il contient —
+/// et, si un mode invité est câblé, on renouvelle puis on rejoue. Voir la
+/// première branche d'[onError].
+///
 /// ## Les deux bornes
 ///
 /// 1. **La boucle.** Un renouvellement qui échoue, ou un rejeu qui échoue à son
@@ -449,12 +481,24 @@ class UnauthorizedInterceptor extends Interceptor {
 
     final options = err.requestOptions;
     final guard = _deviceSession();
+    // **Une requête partie sans porteur est une requête d'invité**, même quand
+    // aucune estampille « appareil » ne la marque. C'est le cas d'un tout
+    // premier lancement : au moment où l'accueil demande `/events`, le coffre
+    // est encore vide et la session d'appareil n'est pas revenue. La juger
+    // « membre » purgerait le coffre au retour de son 401, c'est-à-dire
+    // **détruirait le jeton d'appareil rangé entre-temps** — et cette course,
+    // systématique sur un émulateur Android (coffre plus lent à écrire),
+    // éteindrait ensuite `/sync`, le push et l'agenda. Sans porteur, il n'y a
+    // donc rien à purger ni personne à renvoyer se connecter : si un mode
+    // invité est câblé, on renouvelle et on rejoue ; sinon seulement, on
+    // retombe sur le comportement d'avant.
+    final carriedToken = options.extra[kAuthTokenAttachedExtra] == true;
     final carriedByDevice =
         options.extra[kAuthTokenKindExtra] == AuthTokenKind.device ||
-            options.extra[kDeviceSessionRequestExtra] == true;
+            options.extra[kDeviceSessionRequestExtra] == true ||
+            !carriedToken;
 
-    // Jeton de membre (ou aucune estampille, ou pas de mode invité câblé) :
-    // purge + retour à `/auth`, comme depuis toujours.
+    // Jeton de membre, ou pas de mode invité câblé : purge + retour à `/auth`.
     if (!carriedByDevice || guard == null) {
       await _onUnauthorized();
       handler.next(err);

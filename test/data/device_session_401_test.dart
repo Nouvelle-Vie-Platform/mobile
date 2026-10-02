@@ -197,6 +197,61 @@ void main() {
     expect(ejections, 0);
   });
 
+  // ── Le tout premier lancement : le coffre était vide au départ ────────────
+
+  test('un 401 sans porteur ne purge pas le coffre : renouvelle et rejoue',
+      () async {
+    // Le scénario du tout premier lancement d'un invité, celui que l'émulateur
+    // Android rend systématique : l'accueil demande `/events` **avant** que
+    // `POST /devices/anonymous` ne soit revenu. La requête part donc **nue**,
+    // sans aucune estampille « appareil » — et son 401 doit tout de même se
+    // renouveler en silence, et non purger le coffre.
+    await api.deleteToken();
+    serve((options) async {
+      if (options.path == '/devices/anonymous') {
+        return jsonReply(200, devicePayload('oat_1.appareil-${++issued}'));
+      }
+      return options.headers.containsKey('Authorization')
+          ? jsonReply(200, {'items': <dynamic>[]})
+          : errorReply(401, 'E_UNAUTHORIZED_ACCESS');
+    });
+
+    final res = await api.dio.get<Map<String, dynamic>>('/events');
+
+    // La requête a réussi : un renouvellement, puis le rejeu.
+    expect(res.data, {'items': <dynamic>[]});
+    expect(adapter.paths, ['/events', '/devices/anonymous', '/events']);
+    expect(sessionRequests(), 1);
+    expect(await api.readTokenKind(), AuthTokenKind.device);
+    expect(ejections, 0);
+  });
+
+  test('un 401 sans porteur ne détruit pas un jeton arrivé entre-temps',
+      () async {
+    // La course exacte : le jeton d'appareil se range dans le coffre **pendant**
+    // que la requête nue est en vol. Au retour, son 401 ne portait aucun jeton
+    // et ne doit donc rien supprimer.
+    await api.deleteToken();
+    serve((options) async {
+      if (options.path == '/devices/anonymous') {
+        return errorReply(500, 'E_INTERNAL_SERVER_ERROR');
+      }
+      await api.saveToken('oat_1.appareil-survivant',
+          kind: AuthTokenKind.device);
+      return errorReply(401, 'E_UNAUTHORIZED_ACCESS');
+    });
+
+    await expectLater(
+      api.dio.get<Map<String, dynamic>>('/events'),
+      throwsA(isA<DioException>()),
+    );
+
+    // Le jeton de l'appareil survit : la requête fautive n'en portait aucun.
+    expect(await api.readToken(), 'oat_1.appareil-survivant');
+    expect(await api.readTokenKind(), AuthTokenKind.device);
+    expect(ejections, 0);
+  });
+
   test('sans garde câblé, un 401 retombe sur l\'ancien comportement', () async {
     // Mode invité non installé (`HttpDeviceRepository.wire` jamais appelé) :
     // se taire rendrait l'application muette pour toujours.
