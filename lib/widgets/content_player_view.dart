@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -833,13 +834,7 @@ class _PlayerStage extends ConsumerWidget {
 
     return switch (stage) {
       _Stage.artwork => Center(child: artworkWidget),
-      _Stage.buffering => Stack(
-          fit: StackFit.expand,
-          children: [
-            Center(child: artworkWidget),
-            const Center(child: _BufferingBadge()),
-          ],
-        ),
+      _Stage.buffering => Center(child: artworkWidget), // Plus de loader centré - le bouton play sert d'indicateur
       _Stage.interrupted => _room(
           AppErrorState(
             title: l10n.playerErrorTitle,
@@ -858,27 +853,6 @@ class _PlayerStage extends ConsumerWidget {
 
   static Widget _room(Widget child) =>
       Center(child: SingleChildScrollView(child: child));
-}
-
-class _BufferingBadge extends StatelessWidget {
-  const _BufferingBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      key: ContentPlayerView.bufferingKey,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.35),
-        shape: BoxShape.circle,
-      ),
-      child: const SizedBox(
-        width: 26,
-        height: 26,
-        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-      ),
-    );
-  }
 }
 
 class _Controls extends ConsumerWidget {
@@ -930,26 +904,10 @@ class _Controls extends ConsumerWidget {
               Expanded(child: _ProgressLine(contentId: contentId, onSeek: onSeek)),
               const SizedBox(width: AppSpacing.lg),
             ],
-            // Bouton Play/Pause avec bouton Stop optionnel superposé en dessous
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.topCenter,
-              children: [
-                _PlayButton(
-                  contentId: contentId,
-                  accent: accent,
-                  onPressed: onPlayPause,
-                ),
-                // Bouton Stop positionné sous le bouton Play, sans affecter la disposition
-                if (!isLive && isPlaying)
-                  Positioned(
-                    top: 70 + AppSpacing.sm,
-                    child: _GlassCircleButton(
-                      icon: Icons.stop_rounded,
-                      onPressed: () => ref.read(contentPlayerProvider).stop(),
-                    ),
-                  ),
-              ],
+            _PlayButton(
+              contentId: contentId,
+              accent: accent,
+              onPressed: onPlayPause,
             ),
           ],
         ),
@@ -979,6 +937,13 @@ class _Controls extends ConsumerWidget {
                 const SizedBox(width: AppSpacing.md),
                 downloadButton!,
               ],
+              const Spacer(),
+              // Bouton Stop à droite quand un enseignement est en lecture
+              if (isPlaying)
+                _GlassCircleButton(
+                  icon: Icons.stop_rounded,
+                  onPressed: () => ref.read(contentPlayerProvider).stop(),
+                ),
             ],
           ],
         ),
@@ -1070,7 +1035,11 @@ class _ProgressLineState extends ConsumerState<_ProgressLine> {
 }
 
 class _PlayButton extends ConsumerWidget {
-  const _PlayButton({required this.contentId, required this.accent, required this.onPressed});
+  const _PlayButton({
+    required this.contentId,
+    required this.accent,
+    required this.onPressed,
+  });
 
   final String contentId;
   final Color accent;
@@ -1079,27 +1048,192 @@ class _PlayButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final playback = ref.watch(contentPlaybackProvider);
-    final playing = playback.contentId == contentId && playback.isPlaying;
-    return Container(
-      width: 70,
-      height: 70,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+    final isCurrent = playback.contentId == contentId;
+    final playing = isCurrent && playback.isPlaying;
+    final buffering = isCurrent && playback.isBuffering;
+
+    return _AnimatedPlayButton(
+      isPlaying: playing,
+      isLoading: buffering,
+      accent: accent,
+      onPressed: onPressed,
+    );
+  }
+}
+
+/// Bouton play avec animation de remplissage progressif pendant le chargement.
+///
+/// États :
+/// - `isLoading = true` : cercle avec bordure blanche, remplissage progressif blanc
+/// - `isLoading = false` : cercle plein blanc avec icône play/pause
+class _AnimatedPlayButton extends StatefulWidget {
+  const _AnimatedPlayButton({
+    required this.isPlaying,
+    required this.isLoading,
+    required this.accent,
+    required this.onPressed,
+  });
+
+  final bool isPlaying;
+  final bool isLoading;
+  final Color accent;
+  final VoidCallback onPressed;
+
+  @override
+  State<_AnimatedPlayButton> createState() => _AnimatedPlayButtonState();
+}
+
+class _AnimatedPlayButtonState extends State<_AnimatedPlayButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fillController;
+  late final Animation<double> _fillAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fillController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _fillAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _fillController, curve: Curves.easeInOut),
+    );
+    if (widget.isLoading) {
+      _fillController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_AnimatedPlayButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isLoading && !oldWidget.isLoading) {
+      _fillController.repeat();
+    } else if (!widget.isLoading && oldWidget.isLoading) {
+      _fillController.stop();
+      _fillController.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _fillController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = 70.0;
+    final iconSize = 36.0;
+
+    return GestureDetector(
+      onTap: widget.onPressed,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: AnimatedBuilder(
+          animation: _fillAnimation,
+          builder: (context, child) {
+            return CustomPaint(
+              painter: widget.isLoading
+                  ? _LoadingButtonPainter(
+                      progress: _fillAnimation.value,
+                      accentColor: widget.accent,
+                    )
+                  : _FilledButtonPainter(accentColor: widget.accent),
+              child: child,
+            );
+          },
+          child: Center(
+            child: Icon(
+              widget.isPlaying ? Icons.pause : Icons.play_arrow,
+              size: iconSize,
+              color: widget.isLoading ? Colors.white : widget.accent,
+            ),
           ),
-        ],
-      ),
-      child: IconButton(
-        icon: Icon(playing ? Icons.pause : Icons.play_arrow, size: 36),
-        color: accent,
-        onPressed: onPressed,
+        ),
       ),
     );
+  }
+}
+
+/// Peinture pour le bouton rempli (état normal).
+class _FilledButtonPainter extends CustomPainter {
+  _FilledButtonPainter({required this.accentColor});
+
+  final Color accentColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // Cercle plein blanc
+    final fillPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius, fillPaint);
+
+    // Ombre portée
+    canvas.drawShadow(
+      Path()..addOval(Rect.fromCircle(center: center, radius: radius)),
+      Colors.black.withValues(alpha: 0.2),
+      8,
+      true,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FilledButtonPainter oldDelegate) => false;
+}
+
+/// Peinture personnalisée pour le bouton en mode chargement.
+///
+/// Dessine un cercle avec une bordure blanche et un remplissage progressif blanc.
+class _LoadingButtonPainter extends CustomPainter {
+  _LoadingButtonPainter({
+    required this.progress,
+    required this.accentColor,
+  });
+
+  final double progress;
+  final Color accentColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // Cercle de fond (couleur d'accent semi-transparente)
+    final bgPaint = Paint()
+      ..color = accentColor.withValues(alpha: 0.4)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius, bgPaint);
+
+    // Remplissage progressif blanc (angle -90° pour commencer en haut)
+    if (progress > 0) {
+      final fillPaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.6)
+        ..style = PaintingStyle.fill;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2, // Commencer en haut
+        2 * math.pi * progress,
+        true,
+        fillPaint,
+      );
+    }
+
+    // Bordure blanche fine
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawCircle(center, radius - 1, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(_LoadingButtonPainter oldDelegate) {
+    return progress != oldDelegate.progress;
   }
 }
 

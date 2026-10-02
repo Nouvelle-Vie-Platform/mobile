@@ -105,7 +105,7 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
     )..repeat(reverse: true);
 
     _iconColorAnim = ColorTween(
-      begin: AppColors.primary,
+      begin: AppColors.danger.withValues(alpha: 0.3),
       end: AppColors.danger,
     ).animate(_animController);
   }
@@ -172,6 +172,13 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
     }
     context.pushNamed(AppRoute.radio);
   }
+  
+  Color? _getIconColor(RadioStatus status) {
+    if (status.phase == RadioPhase.playing) {
+      return AppColors.success;
+    }
+    return _iconColorAnim.value;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -200,12 +207,7 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
                   vertical: AppSpacing.sm + 2,
                 ),
                 decoration: BoxDecoration(
-                  // **La couleur change en lecture** — c'est la ligne du tableau
-                  // d'apparence. Éteint, le bouton s'efface sans disparaître :
-                  // il reste lisible, et il reste appuyable.
-                  color: status.phase == RadioPhase.playing
-                      ? AppColors.accent
-                      : Colors.white.withValues(alpha: dimmed ? 0.55 : 1),
+                  color: Colors.white.withValues(alpha: dimmed ? 0.55 : 1),
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   boxShadow: [
                     BoxShadow(
@@ -225,14 +227,14 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: _iconColorAnim.value,
+                          color: _getIconColor(status),
                         ),
                       )
                     else
                       Icon(
                         Icons.sensors,
                         size: 18,
-                        color: _iconColorAnim.value,
+                        color: _getIconColor(status),
                       ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
@@ -246,66 +248,13 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
                 ),
               ),
             ),
-
-            // Le bouton d'arrêt indépendant, hérité : il n'existe que quand il y
-            // a quelque chose à arrêter. Pendant la connexion initiale, il n'est
-            // pas grisé — il n'est **pas là**, pour la raison du sélecteur de
-            // canaux (#83) : une commande offerte qui ne répond pas est une
-            // promesse que personne ne tient.
-            if (status.offersStop) ...[
-              const SizedBox(width: AppSpacing.sm),
-              GestureDetector(
-                key: RadioCtaPill.stopKey,
-                onTap: () => ref.read(radioListeningProvider.notifier).stop(),
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm + 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.stop_rounded,
-                    size: 18,
-                    color: AppColors.danger,
-                  ),
-                ),
-              ),
-            ],
           ],
         );
       },
     );
   }
 
-  /// **Les six phrases du bouton**, dans l'ordre de priorité qui les départage.
-  ///
-  /// L'échec passe devant tout : c'est le seul moment où le bouton a une cause à
-  /// donner. « Hors antenne » vient après ce que l'application fait — une antenne
-  /// annoncée muette qu'on est en train d'écouter n'est plus muette, et c'est
-  /// l'écoute qui a raison.
-  ///
-  /// ⚠️ La troisième cause (`unknown`) ne nomme ni le réseau ni l'antenne, parce
-  /// qu'on ne sait pas lequel des deux a lâché — voir `radio_failure.dart`. C'est
-  /// la phrase qui remplace le « vérifiez votre connexion » mesuré sur iPhone
-  /// alors que le téléphone était connecté.
   String _label(BuildContext context, RadioStatus status, bool silent) {
-    final l10n = context.l10n;
-    return switch (status.phase) {
-      RadioPhase.failed => switch (status.failure!) {
-          RadioFailureKind.connection => l10n.radioFailureConnection,
-          RadioFailureKind.antenna => l10n.radioFailureAntenna,
-          RadioFailureKind.unknown => l10n.radioFailureUnknown,
-        },
-      RadioPhase.retrying => l10n.radioRetrying,
-      RadioPhase.playing || RadioPhase.connecting => l10n.radioTitle,
-      RadioPhase.idle => silent ? l10n.radioOffAir : l10n.radioFollow,
-    };
+    return 'New life radio';
   }
 }
