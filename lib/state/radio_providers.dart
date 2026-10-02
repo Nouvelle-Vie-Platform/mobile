@@ -72,7 +72,7 @@ final radioRepositoryProvider = Provider<RadioRepository>(
 /// ce provider ne regarde pas `AppEnv.useBackend` ; les tests le surchargent
 /// eux-mêmes (`pumpScreen(handshake: …)`).
 final radioHandshakeProvider = Provider<RadioHandshakeResolver>(
-  (ref) => kIsWeb ? const DirectRadioHandshake() : HttpRadioHandshakeResolver(),
+  (ref) => const DirectRadioHandshake(),
 );
 
 /// **L'état de l'antenne, lu au lancement et au retour à l'écran.**
