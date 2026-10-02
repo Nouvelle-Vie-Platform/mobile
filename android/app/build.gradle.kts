@@ -14,23 +14,16 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // CORRECTION : Déplacé ici pour activer le support sur l'API 28
+        isCoreLibraryDesugaringEnabled = true 
+        
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.maisondumiracle.maison_du_miracle"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        // Android 7.0 (API 24) — le défaut de Flutter 3.44
-        // (`FlutterExtension.minSdkVersion = 24`), et non plus 23.
-        //
-        // Le 23 précédent était une portée **nominale** : Flutter 3.35 a relevé
-        // son propre minimum à 24, ce qui rend API 23 invérifiable sous toute
-        // version de Flutter supportée — on annonçait un support qu'aucune
-        // chaîne d'outils ne pouvait éprouver. `flutter_secure_storage` v11
-        // l'exige par ailleurs (son chemin AES-CBC pour API 21-22 a disparu).
+        multiDexEnabled = true
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -39,8 +32,6 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -54,4 +45,9 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// CORRECTION : Ajout du bloc des dépendances requis pour le desugaring
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
