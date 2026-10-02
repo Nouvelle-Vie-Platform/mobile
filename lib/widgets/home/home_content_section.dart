@@ -39,11 +39,19 @@ Future<void> playHomeContent(
   }
 
   final resolver = ref.read(downloadResolverProvider);
-  await _loadHomeContent(context, player, resolver, content, url);
+  await _loadHomeContent(
+    ScaffoldMessenger.of(context),
+    context.l10n.stateErrorMessage,
+    player,
+    resolver,
+    content,
+    url,
+  );
 }
 
 Future<void> _loadHomeContent(
-  BuildContext context,
+  ScaffoldMessengerState messenger,
+  String errorMessage,
   ContentPlayer player,
   DownloadResolver resolver,
   ContentView content,
@@ -63,20 +71,21 @@ Future<void> _loadHomeContent(
       artUrl: content.squareOrLandscape,
     );
     if (player.value.hasError) {
-      _showHomePlaybackError(context);
+      _showHomePlaybackError(messenger, errorMessage);
       return;
     }
     player.play();
   } catch (_) {
-    _showHomePlaybackError(context);
+    _showHomePlaybackError(messenger, errorMessage);
   }
 }
 
-void _showHomePlaybackError(BuildContext context) {
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(context.l10n.stateErrorMessage)),
-  );
+void _showHomePlaybackError(
+  ScaffoldMessengerState messenger,
+  String message,
+) {
+  if (!messenger.mounted) return;
+  messenger.showSnackBar(SnackBar(content: Text(message)));
 }
 
 /// **Une rubrique du référentiel, rendue à l'accueil** — le dessin, sans la
