@@ -17,6 +17,7 @@ import 'state/startup_providers.dart';
 import 'state/sync_providers.dart';
 import 'state/theme_provider.dart';
 import 'state/vocabulary_providers.dart';
+import 'theme/app_responsive.dart';
 import 'theme/app_theme.dart';
 
 /// Widget racine de l'application « Maison du Miracle ».
@@ -245,8 +246,16 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
       // les surcharges du portail sur l'arbre, et `context.words` y lit la
       // locale que le framework vient de résoudre — `Localizations` n'existe pas
       // au-dessus. Même motif que `_ContentLocaleSync`, à côté duquel il vit.
-      builder: (context, child) => VocabularyBoundary(
-        child: _ContentLocaleSync(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        // **Le texte suit le réglage système, mais pas jusqu'à la démesure.**
+        // Au-delà de [kMaxTextScale], des mises en page écrites pour 1.0
+        // débordent — lignes coupées, boutons qui se chevauchent. Le réglage de
+        // la personne reste respecté jusqu'au plafond ; c'est le seul endroit de
+        // l'application où l'échelle de texte est décidée.
+        maxScaleFactor: kMaxTextScale,
+        child: VocabularyBoundary(
+          child: _ContentLocaleSync(child: child ?? const SizedBox.shrink()),
+        ),
       ),
     );
   }

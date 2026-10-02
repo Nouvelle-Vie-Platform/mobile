@@ -7,6 +7,7 @@ import '../models/legal_document_view.dart';
 import '../router/app_router.dart';
 import '../state/auth_providers.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_responsive.dart';
 import '../widgets/app_background.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_drawer_menu.dart';
@@ -205,15 +206,22 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          IndexedStack(
-            key: HomeShell.tabsKey,
-            // **L'index, enfin réduit à ce qu'il est** : la position de l'onglet
-            // dans l'ordre déclaré. Il ne circule plus, il se calcule.
-            index: _tab.index,
-            children: [
-              for (final tab in HomeTab.values)
-                _screenFor(tab, isGuest: isGuest),
-            ],
+          ContentMaxWidth(
+            // **Le contenu, pas la barre.** Sur un grand écran, la largeur de
+            // lecture est bornée et centrée ; la barre du bas et le FAB, eux,
+            // restent à l'échelle de l'écran. Inerte sur téléphone — voir
+            // `ContentMaxWidth`.
+            child: IndexedStack(
+              key: HomeShell.tabsKey,
+              // **L'index, enfin réduit à ce qu'il est** : la position de
+              // l'onglet dans l'ordre déclaré. Il ne circule plus, il se
+              // calcule.
+              index: _tab.index,
+              children: [
+                for (final tab in HomeTab.values)
+                  _screenFor(tab, isGuest: isGuest),
+              ],
+            ),
           ),
           // **La mention légale du premier lancement**, posée par-dessus les
           // onglets et non dans l'un d'eux : elle parle de l'application, pas de
