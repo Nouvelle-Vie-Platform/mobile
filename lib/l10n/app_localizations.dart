@@ -469,7 +469,7 @@ abstract class AppLocalizations {
   /// Bouton d'antenne de l'accueil, au repos : un appui lance le flux, deux ouvrent la page
   ///
   /// In fr, this message translates to:
-  /// **'Suivre New Life Radio'**
+  /// **'New life'**
   String get radioFollow;
 
   /// Le nom de l'antenne — bouton d'accueil en connexion ou en lecture, titre de l'écran, et ligne annoncée à l'écran verrouillé. Nom propre : identique dans les trois langues
@@ -525,6 +525,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Écouter'**
   String get actionListen;
+
+  /// No description provided for @actionPause.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pause'**
+  String get actionPause;
+
+  /// No description provided for @actionLoading.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargement…'**
+  String get actionLoading;
 
   /// Accueil : titre de la section des contenus les plus récents. La clé garde son nom historique ; le libellé, lui, ne nomme plus un type de contenu — « publications » couvre ce que la section mélange déjà
   ///

@@ -27,6 +27,7 @@ import '../widgets/app_error_state.dart';
 import '../widgets/app_list_skeleton.dart';
 import '../widgets/content_absence.dart';
 import '../widgets/home/home_content_cards.dart';
+import '../widgets/home/home_content_section.dart';
 import '../widgets/home/home_gathering_section.dart';
 import '../widgets/home/home_menu_section.dart';
 import '../widgets/home/home_section_layout.dart';
@@ -647,13 +648,13 @@ class _NotSyncedYet extends StatelessWidget {
   }
 }
 
-class _LatestTeachingsShelf extends StatelessWidget {
+class _LatestTeachingsShelf extends ConsumerWidget {
   const _LatestTeachingsShelf({required this.teachings});
 
   final List<TeachingView> teachings;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -682,6 +683,7 @@ class _LatestTeachingsShelf extends StatelessWidget {
                 AppRoute.teachingDetail,
                 pathParameters: {'id': teachings[i].id},
               ),
+              onPlay: () => playHomeContent(context, ref, teachings[i]),
             ),
           ),
         ),

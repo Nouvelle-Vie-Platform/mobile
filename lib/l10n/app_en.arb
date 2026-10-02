@@ -83,7 +83,7 @@
   "liveBannerSubtitle": "Join now",
   "sectionUpcoming": "Upcoming",
   "sectionUpcomingServices": "Upcoming services",
-  "radioFollow": "Follow New Life Radio",
+  "radioFollow": "New life",
   "radioTitle": "New Life Radio",
   "radioOffAir": "Off air",
   "radioRetrying": "Trying again…",
@@ -93,6 +93,8 @@
   "radioUnavailableMessage": "New Life Radio is not broadcasting right now.",
   "actionSeeAll": "See all",
   "actionListen": "Listen",
+  "actionPause": "Pause",
+  "actionLoading": "Loading…",
   "sectionLatestTeachings": "Latest publications",
 
   "mediaTitle": "Media library",

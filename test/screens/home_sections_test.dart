@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/local/sync_dao.dart';
+import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/store_mediatheque_repository.dart';
@@ -10,6 +12,7 @@ import 'package:maison_du_miracle/data/repositories/store_menu_repository.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
+import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/widgets/cards/content_cover.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
 import 'package:maison_du_miracle/widgets/home/home_section_layout.dart';
@@ -235,6 +238,52 @@ void main() {
         CoverOrientation.portrait,
       );
       expect(find.byType(HomeHeroCard), findsNothing);
+    });
+
+    homeTest('« Écouter » lance le player sans ouvrir la fiche', (tester) async {
+      const playlistUrl = 'https://media.example.test/enseignement/master.m3u8';
+      await putTypes([
+        teachingTypeRow(1,
+            label: {'fr': 'Dimanche'}, slug: 'dim', layout: 'carousel'),
+      ]);
+      await putTeachings([
+        teachingRow('t-1', teachingTypeId: 1, playlistUrl: playlistUrl),
+      ]);
+
+      await pumpHome(tester);
+      final card = find.descendant(
+        of: find.byType(HomeTeachingSection),
+        matching: find.byType(HomeCarouselCard),
+      );
+      expect(
+        tester.widget<HomeCarouselCard>(card).content.playlistUrl,
+        playlistUrl,
+      );
+      final playButton = find.descendant(
+        of: card,
+        matching: find.byType(OutlinedButton),
+      );
+      await tester.tap(playButton);
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(HomeScreen)),
+      );
+      final player = container.read(contentPlayerProvider) as InertContentPlayer;
+      expect(player.loadedUrl, playlistUrl);
+      expect(player.value.contentId, 't-1');
+      expect(player.value.isPlaying, isTrue);
+      expect(find.byType(HomeScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(playButton);
+      await tester.pump();
+      expect(player.value.isPlaying, isFalse);
+      expect(tester.takeException(), isNull);
     });
 
     homeTest('`list` rend des lignes verticales', (tester) async {

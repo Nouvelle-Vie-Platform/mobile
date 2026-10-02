@@ -221,7 +221,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionUpcomingServices => 'Upcoming services';
 
   @override
-  String get radioFollow => 'Follow New Life Radio';
+  String get radioFollow => 'New life';
 
   @override
   String get radioTitle => 'New Life Radio';
@@ -250,6 +250,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionListen => 'Listen';
+
+  @override
+  String get actionPause => 'Pause';
+
+  @override
+  String get actionLoading => 'Loading…';
 
   @override
   String get sectionLatestTeachings => 'Latest publications';

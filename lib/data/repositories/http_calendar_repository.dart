@@ -9,7 +9,7 @@ import 'calendar_repository.dart';
 ///
 /// ```
 /// GET /events?from=<ISO8601>&to=<ISO8601>&branch_id=<int?>&limit=<int?>
-/// guard `api` — le Bearer est injecté par ApiClient
+/// guards `api` (membre) et `device` (invité) — le Bearer est injecté par ApiClient
 /// 200 → { data: { items: [...], horizon: "2027-07-28" } }
 /// ```
 ///
@@ -20,9 +20,7 @@ import 'calendar_repository.dart';
 /// **remonté** ici, sous [CalendarErrorCode.unauthorized] : l'appel en cours a
 /// échoué, l'écran doit le savoir pour ne pas afficher un agenda vide.
 ///
-/// ⚠️ L'endpoint n'est pas encore déployé (issue serveur #80). Le contrat
-/// ci-dessus fait foi ; en attendant, `InMemoryCalendarRepository` fait tourner
-/// l'agenda.
+/// En mode maquette, `InMemoryCalendarRepository` remplace cet endpoint.
 class HttpCalendarRepository implements CalendarRepository {
   HttpCalendarRepository({ApiClient? client})
       : _client = (client ?? ApiClient.instance).dio;

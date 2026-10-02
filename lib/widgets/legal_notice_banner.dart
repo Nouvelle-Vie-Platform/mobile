@@ -113,22 +113,23 @@ class _LegalNoticeBannerState extends ConsumerState<LegalNoticeBanner> {
                     AppTypography.body.copyWith(color: palette.textSecondary),
               ),
               const SizedBox(height: AppSpacing.xs),
-              // Les deux liens et la sortie sur une seule ligne : le bandeau
-              // recouvre l'accueil, il doit rester aussi bas que possible.
-              Row(
+              // Les actions passent sur plusieurs lignes quand la largeur ne
+              // suffit pas, au lieu de déborder hors du bandeau.
+              Wrap(
+                spacing: AppSpacing.md,
+                runSpacing: AppSpacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _NoticeLink(
                     key: LegalNoticeBanner.termsKey,
                     label: l10n.legalNoticeTerms,
                     onTap: () => _open(LegalDocumentKind.terms),
                   ),
-                  const SizedBox(width: AppSpacing.md),
                   _NoticeLink(
                     key: LegalNoticeBanner.privacyKey,
                     label: l10n.legalNoticePrivacy,
                     onTap: () => _open(LegalDocumentKind.privacy),
                   ),
-                  const Spacer(),
                   TextButton(
                     key: LegalNoticeBanner.dismissKey,
                     onPressed: _dismiss,

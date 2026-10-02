@@ -34,6 +34,7 @@ import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/screens/profile_screen.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
 import 'package:maison_du_miracle/widgets/home_tab.dart';
+import 'package:maison_du_miracle/widgets/legal_notice_banner.dart';
 
 import '../helpers/guest_app.dart';
 
@@ -42,6 +43,23 @@ import '../helpers/guest_app.dart';
 final _fr = AppLocalizationsFr();
 
 void main() {
+  testWidgets('le bandeau légal se replie sans débordement sur petit écran',
+      (tester) async {
+    tester.view.physicalSize = const Size(750, 1600);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await pumpGuestApp(
+      tester,
+      guestContainer(legalNotice: InMemoryLegalNoticeStore(seen: false)),
+    );
+
+    expect(find.byKey(LegalNoticeBanner.termsKey), findsOneWidget);
+    expect(find.byKey(LegalNoticeBanner.privacyKey), findsOneWidget);
+    expect(find.byKey(LegalNoticeBanner.dismissKey), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   group('La barre du bas', () {
     testWidgets('porte les quatre onglets, traduits, dans l\'ordre',
         (tester) async {

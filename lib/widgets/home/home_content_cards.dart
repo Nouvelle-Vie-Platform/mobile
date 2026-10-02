@@ -1,17 +1,4 @@
-/// Les trois dessins d'un **contenu de médiathèque** à l'accueil — un par
-/// [HomeSectionLayout], et les mêmes pour un enseignement et un rassemblement.
-///
-/// Ils reçoivent un [ContentView] et **n'appliquent aucune règle** : la
-/// couleur est déjà en bout de cascade, le libellé de rubrique déjà replié dans
-/// la langue courante, les deux URL déjà absolues, et `authorName` déjà `null`
-/// quand l'intervenant manque. Ce qui leur reste est du dessin : un cadre, un
-/// cadrage, une hiérarchie de texte — et c'est précisément ce qui n'a aucune
-/// raison de différer d'une famille à l'autre. La famille se décide en amont,
-/// dans le provider et la route ; ici il n'y a plus qu'un contenu à dessiner.
-///
-/// La seule règle qu'ils portent est celle de la **quatrième absence** : une
-/// ligne d'auteur nulle ne se rend pas du tout. Jamais d'« Auteur inconnu » —
-/// ça ressemble à une donnée et sera pris pour une erreur de saisie.
+/// Les trois dessins d'un contenu de médiathèque à l'accueil.
 library;
 
 import 'package:flutter/material.dart';
@@ -24,10 +11,9 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../cards/content_cover.dart';
-import '../cards/playing_indicator.dart';
 import 'home_section_layout.dart';
 
-/// Grande carte **paysage** ([kHeroCoverSize]) : le visuel porte le texte.
+/// Grande carte paysage : le visuel porte le texte.
 class HomeHeroCard extends StatelessWidget {
   const HomeHeroCard({super.key, required this.content, this.onTap});
 
@@ -50,15 +36,11 @@ class HomeHeroCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Cadrage **paysage** : c'est l'unique décision de ce widget sur
-              // l'image, et elle est portée par `TeachingCover`.
               ContentCover(
                 content: content,
                 radius: AppRadius.xl,
                 orientation: CoverOrientation.landscape,
               ),
-              // Voile du bas : sans lui, un titre blanc posé sur une photo
-              // claire disparaît. Il ne teinte pas la moitié haute du visuel.
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.xl),
                 child: const DecoratedBox(
@@ -110,205 +92,312 @@ class HomeHeroCard extends StatelessWidget {
   }
 }
 
-/// Carte d'étagère : vignette **portrait** ([kCarouselCoverSize]) à gauche,
-/// texte et bouton d'écoute à droite.
+/// Carte portrait : le tap sur le contenu ouvre la fiche, le bouton joue sur place.
 class HomeCarouselCard extends ConsumerWidget {
-  const HomeCarouselCard({super.key, required this.content, this.onTap});
+  const HomeCarouselCard({
+    super.key,
+    required this.content,
+    this.onTap,
+    this.onPlay,
+  });
 
   final ContentView content;
   final VoidCallback? onTap;
+  final Future<void> Function()? onPlay;
 
-  /// Largeur totale : la vignette plus la colonne de texte.
   static const double width = 264;
+
+  static Key playButtonKey(String contentId) =>
+      ValueKey('home_content_play_$contentId');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
     final author = content.authorName;
-
     final playback = ref.watch(
       contentPlaybackProvider.select(
-        (p) => (contentId: p.contentId, isPlaying: p.isPlaying),
+        (state) => (
+          contentId: state.contentId,
+          isPlaying: state.isPlaying,
+          isBuffering: state.isBuffering,
+        ),
       ),
     );
     final isThisPlaying =
-        playback.contentId == content.id && playback.isPlaying;
+      playback.contentId == content.id && playback.isPlaying;
+    final isThisBuffering =
+      playback.contentId == content.id && playback.isBuffering;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: width,
-        height: kCarouselCoverSize.height,
-        decoration: BoxDecoration(
-          color: palette.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: palette.divider),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Row(
-          children: [
-            SizedBox(
+    return Container(
+      width: width,
+      height: kCarouselCoverSize.height,
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: palette.divider),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: [
+          InkWell(
+            onTap: onTap,
+            child: SizedBox(
               width: kCarouselCoverSize.width,
               child: ContentCover(content: content, radius: 0),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      content.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodyStrong
-                          .copyWith(color: palette.textPrimary),
-                    ),
-                    if (author != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      Row(
-                        children: [
-                          Icon(Icons.person_outline,
-                              size: 13, color: palette.textSecondary),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              author,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.caption
-                                  .copyWith(color: palette.textSecondary),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.md),
-                    // Pilule « Écouter » / indicateur de lecture en cours.
-                    if (isThisPlaying)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          PlayingIndicator(color: palette.primary),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            context.l10n.actionListen,
-                            style: AppTypography.caption.copyWith(
-                              color: palette.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      )
-                    else
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          border: Border.all(
-                            color: palette.primary.withValues(alpha: 0.45),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: onTap,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.play_arrow_rounded,
-                                size: 16, color: palette.primary),
-                            const SizedBox(width: 4),
                             Text(
-                              context.l10n.actionListen,
-                              style: AppTypography.caption.copyWith(
-                                color: palette.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              content.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.bodyStrong
+                                  .copyWith(color: palette.textPrimary),
                             ),
+                            if (author != null) ...[
+                              const SizedBox(height: AppSpacing.sm),
+                              Row(
+                                children: [
+                                  Icon(Icons.person_outline,
+                                      size: 13, color: palette.textSecondary),
+                                  const SizedBox(width: AppSpacing.xs),
+                                  Expanded(
+                                    child: Text(
+                                      author,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.caption.copyWith(
+                                        color: palette.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _HomeListenButton(
+                    key: playButtonKey(content.id),
+                    onPlay: onPlay,
+                    isPlaying: isThisPlaying,
+                    isBuffering: isThisBuffering,
+                    listenLabel: context.l10n.actionListen,
+                    pauseLabel: context.l10n.actionPause,
+                    loadingLabel: context.l10n.actionLoading,
+                    color: palette.primary,
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Ligne de liste : vignette **portrait** réduite ([kListCoverSize]), titre,
-/// intervenant, et le bouton de lecture au bout.
+/// Ligne de liste : le contenu ouvre la fiche, le bouton agit sur la lecture.
 class HomeListRow extends ConsumerWidget {
-  const HomeListRow({super.key, required this.content, this.onTap});
+  const HomeListRow({
+    super.key,
+    required this.content,
+    this.onTap,
+    this.onPlay,
+  });
 
   final ContentView content;
   final VoidCallback? onTap;
+  final Future<void> Function()? onPlay;
+
+  static Key playButtonKey(String contentId) =>
+      ValueKey('home_content_play_$contentId');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
     final author = content.authorName;
-
     final playback = ref.watch(
       contentPlaybackProvider.select(
-        (p) => (contentId: p.contentId, isPlaying: p.isPlaying),
+        (state) => (
+          contentId: state.contentId,
+          isPlaying: state.isPlaying,
+          isBuffering: state.isBuffering,
+        ),
       ),
     );
     final isThisPlaying =
-        playback.contentId == content.id && playback.isPlaying;
+      playback.contentId == content.id && playback.isPlaying;
+    final isThisBuffering =
+      playback.contentId == content.id && playback.isBuffering;
 
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm,
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: kListCoverSize.width,
-              height: kListCoverSize.height,
-              child: ContentCover(content: content, radius: AppRadius.md),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: onTap,
+              child: Row(
                 children: [
-                  Text(
-                    content.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodyStrong
-                        .copyWith(color: palette.textPrimary),
+                  SizedBox(
+                    width: kListCoverSize.width,
+                    height: kListCoverSize.height,
+                    child: ContentCover(content: content, radius: AppRadius.md),
                   ),
-                  if (author != null) ...[
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      author,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.caption
-                          .copyWith(color: palette.textSecondary),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          content.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodyStrong
+                              .copyWith(color: palette.textPrimary),
+                        ),
+                        if (author != null) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            author,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.caption
+                                .copyWith(color: palette.textSecondary),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            if (isThisPlaying)
-              PlayingIndicator(color: palette.primary)
-            else
-              Icon(Icons.play_circle_fill, color: palette.primary, size: 30),
-          ],
-        ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          _HomeListenButton(
+            key: playButtonKey(content.id),
+            onPlay: onPlay,
+            isPlaying: isThisPlaying,
+            isBuffering: isThisBuffering,
+            listenLabel: context.l10n.actionListen,
+            pauseLabel: context.l10n.actionPause,
+            loadingLabel: context.l10n.actionLoading,
+            color: palette.primary,
+            iconOnly: true,
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _HomeListenButton extends StatefulWidget {
+  const _HomeListenButton({
+    super.key,
+    required this.onPlay,
+    required this.isPlaying,
+    required this.isBuffering,
+    required this.listenLabel,
+    required this.pauseLabel,
+    required this.loadingLabel,
+    required this.color,
+    this.iconOnly = false,
+  });
+
+  final Future<void> Function()? onPlay;
+  final bool isPlaying;
+  final bool isBuffering;
+  final String listenLabel;
+  final String pauseLabel;
+  final String loadingLabel;
+  final Color color;
+  final bool iconOnly;
+
+  @override
+  State<_HomeListenButton> createState() => _HomeListenButtonState();
+}
+
+class _HomeListenButtonState extends State<_HomeListenButton> {
+  bool _requestPending = false;
+
+  Future<void> _play() async {
+    final action = widget.onPlay;
+    if (action == null || _requestPending || widget.isBuffering) return;
+
+    setState(() => _requestPending = true);
+    try {
+      await action();
+    } finally {
+      if (mounted) setState(() => _requestPending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loading = _requestPending || (widget.isBuffering && !widget.isPlaying);
+    final label = widget.isPlaying ? widget.pauseLabel : widget.listenLabel;
+    final Widget icon = loading
+        ? SizedBox.square(
+            dimension: widget.iconOnly ? 22 : 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: widget.color,
+            ),
+          )
+        : Icon(
+            widget.isPlaying
+                ? widget.iconOnly
+                    ? Icons.pause_circle_filled_rounded
+                    : Icons.pause_rounded
+                : widget.iconOnly
+                    ? Icons.play_circle_fill
+                    : Icons.play_arrow_rounded,
+            size: widget.iconOnly ? 30 : 18,
+          );
+
+    if (widget.iconOnly) {
+      return IconButton(
+        tooltip: loading ? widget.loadingLabel : label,
+        onPressed: loading ? null : _play,
+        color: widget.color,
+        icon: icon,
+      );
+    }
+
+    return OutlinedButton.icon(
+      onPressed: loading ? null : _play,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: widget.color,
+        side: BorderSide(color: widget.color.withValues(alpha: 0.45)),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+        visualDensity: VisualDensity.compact,
+      ),
+      icon: icon,
+      label: Text(label),
     );
   }
 }

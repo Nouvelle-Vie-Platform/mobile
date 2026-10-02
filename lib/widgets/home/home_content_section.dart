@@ -1,14 +1,83 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/downloads/download_resolver.dart';
+import '../../data/players/content_player.dart';
 import '../../l10n/l10n_extension.dart';
 import '../../models/content_view.dart';
+import '../../state/downloads_providers.dart';
+import '../../state/player_providers.dart';
 import '../../theme/app_spacing.dart';
 import '../app_error_state.dart';
 import '../app_list_skeleton.dart';
 import '../section_header.dart';
 import 'home_content_cards.dart';
 import 'home_section_layout.dart';
+
+/// Lance ou met en pause un contenu depuis une carte de l'accueil.
+Future<void> playHomeContent(
+  BuildContext context,
+  WidgetRef ref,
+  ContentView content,
+) async {
+  final url = content.playlistUrl;
+  if (url == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.absenceNoMediaMessage)),
+    );
+    return;
+  }
+
+  final player = ref.read(contentPlayerProvider);
+  if (player.value.contentId == content.id) {
+    if (player.value.isPlaying || player.value.isBuffering) {
+      player.pause();
+    } else {
+      player.play();
+    }
+    return;
+  }
+
+  final resolver = ref.read(downloadResolverProvider);
+  await _loadHomeContent(context, player, resolver, content, url);
+}
+
+Future<void> _loadHomeContent(
+  BuildContext context,
+  ContentPlayer player,
+  DownloadResolver resolver,
+  ContentView content,
+  String url,
+) async {
+  try {
+    final resolution = await resolver.resolve(
+      contentId: content.id,
+      hlsUrl: url,
+    );
+    await player.load(
+      contentId: content.id,
+      url: url,
+      localFilePath: resolution.localFilePath,
+      title: content.title,
+      author: content.authorName,
+      artUrl: content.squareOrLandscape,
+    );
+    if (player.value.hasError) {
+      _showHomePlaybackError(context);
+      return;
+    }
+    player.play();
+  } catch (_) {
+    _showHomePlaybackError(context);
+  }
+}
+
+void _showHomePlaybackError(BuildContext context) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(context.l10n.stateErrorMessage)),
+  );
+}
 
 /// **Une rubrique du référentiel, rendue à l'accueil** — le dessin, sans la
 /// famille.
@@ -20,11 +89,10 @@ import 'home_section_layout.dart';
 /// administrateur crée une rubrique, la place, choisit sa mise en page — et
 /// l'accueil suit, sans livraison.
 ///
-/// Ce widget ne lit **aucun provider** et ne connaît **aucune route** : c'est ce
-/// qui lui permet de servir les deux familles sans les mélanger. Les
-/// enveloppes qui le câblent (`HomeTeachingSection`, `HomeGatheringSection`)
-/// choisissent le flux et la destination ; lui ne voit qu'une liste de
-/// [ContentView].
+/// Il ne connaît **aucune route** : les enveloppes qui le câblent
+/// (`HomeTeachingSection`, `HomeGatheringSection`) choisissent la destination.
+/// La lecture, elle, est commune aux deux familles : elle passe par le player
+/// global et le résolveur offline-first.
 ///
 /// **Une rubrique sans contenu ne se rend pas du tout**, en-tête compris. Le
 /// magasin applique déjà la règle en amont (`itemCount` est toujours strictement
@@ -33,7 +101,7 @@ import 'home_section_layout.dart';
 /// suppriment durement et sans tombstone — aucun message de retrait ne voyage
 /// jamais — et sans cette règle l'accueil garderait une section fantôme
 /// définitivement vide.
-class HomeContentSection extends StatelessWidget {
+class HomeContentSection extends ConsumerWidget {
   const HomeContentSection({
     super.key,
     required this.title,
@@ -82,7 +150,7 @@ class HomeContentSection extends StatelessWidget {
   final VoidCallback? onSeeAll;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return items.when(
       // La rubrique est **connue non vide** (le magasin ne l'aurait pas rendue
       // sinon) : annoncer son titre pendant la lecture ne promet rien de faux.
@@ -108,7 +176,7 @@ class HomeContentSection extends StatelessWidget {
         // deux, une rétractation a pu vider la rubrique. Elle disparaît alors
         // entièrement, comme si elle n'avait jamais été rendue.
         if (contents.isEmpty) return const SizedBox.shrink();
-        return _framed(context, _body(context, contents));
+        return _framed(context, _body(context, ref, contents));
       },
     );
   }
@@ -138,7 +206,11 @@ class HomeContentSection extends StatelessWidget {
     );
   }
 
-  Widget _body(BuildContext context, List<ContentView> contents) {
+  Widget _body(
+    BuildContext context,
+    WidgetRef ref,
+    List<ContentView> contents,
+  ) {
     switch (HomeSectionLayout.of(layout)) {
       case HomeSectionLayout.hero:
         return _Shelf(
@@ -156,6 +228,7 @@ class HomeContentSection extends StatelessWidget {
           itemBuilder: (_, i) => HomeCarouselCard(
             content: contents[i],
             onTap: () => onOpen(contents[i]),
+            onPlay: () => playHomeContent(context, ref, contents[i]),
           ),
         );
       case HomeSectionLayout.list:
@@ -168,7 +241,11 @@ class HomeContentSection extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final content in shown)
-              HomeListRow(content: content, onTap: () => onOpen(content)),
+              HomeListRow(
+                content: content,
+                onTap: () => onOpen(content),
+                onPlay: () => playHomeContent(context, ref, content),
+              ),
           ],
         );
     }

@@ -17,7 +17,7 @@ enum HomeSectionLayout {
   hero,
 
   /// **Étagère compacte** : vignette portrait ([kCarouselCoverSize],
-  /// 104 × 172) et texte à côté.
+  /// 104 × 152) et texte à côté.
   carousel,
 
   /// **Liste verticale** de lignes basses, plafonnée à
@@ -59,7 +59,7 @@ const Size kHeroCoverSize = Size(320, 188);
 
 /// Cadre du visuel d'une vignette d'étagère — **portrait**. Voir
 /// [kHeroCoverSize] pour la raison des deux ratios.
-const Size kCarouselCoverSize = Size(104, 172);
+const Size kCarouselCoverSize = Size(104, 152);
 
 /// Cadre du visuel d'une ligne de liste : le **même ratio portrait** que
 /// [kCarouselCoverSize], en plus petit. La liste n'introduit pas un troisième
