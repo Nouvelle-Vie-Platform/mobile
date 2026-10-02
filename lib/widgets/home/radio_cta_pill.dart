@@ -49,7 +49,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/radio/radio_failure.dart';
 import '../../data/radio/radio_status.dart';
 import '../../l10n/l10n_extension.dart';
 import '../../router/app_router.dart';
