@@ -15,13 +15,16 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n_extension.dart';
 import '../../models/content_view.dart';
+import '../../state/player_providers.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../cards/content_cover.dart';
+import '../cards/playing_indicator.dart';
 import 'home_section_layout.dart';
 
 /// Grande carte **paysage** ([kHeroCoverSize]) : le visuel porte le texte.
@@ -109,7 +112,7 @@ class HomeHeroCard extends StatelessWidget {
 
 /// Carte d'étagère : vignette **portrait** ([kCarouselCoverSize]) à gauche,
 /// texte et bouton d'écoute à droite.
-class HomeCarouselCard extends StatelessWidget {
+class HomeCarouselCard extends ConsumerWidget {
   const HomeCarouselCard({super.key, required this.content, this.onTap});
 
   final ContentView content;
@@ -119,9 +122,18 @@ class HomeCarouselCard extends StatelessWidget {
   static const double width = 264;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
     final author = content.authorName;
+
+    final playback = ref.watch(
+      contentPlaybackProvider.select(
+        (p) => (contentId: p.contentId, isPlaying: p.isPlaying),
+      ),
+    );
+    final isThisPlaying =
+        playback.contentId == content.id && playback.isPlaying;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -173,24 +185,13 @@ class HomeCarouselCard extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: AppSpacing.md),
-                    // Pilule « Écouter » contournée (façon maquette).
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(
-                          color: palette.primary.withValues(alpha: 0.45),
-                        ),
-                      ),
-                      child: Row(
+                    // Pilule « Écouter » / indicateur de lecture en cours.
+                    if (isThisPlaying)
+                      Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.play_arrow_rounded,
-                              size: 16, color: palette.primary),
-                          const SizedBox(width: 4),
+                          PlayingIndicator(color: palette.primary),
+                          const SizedBox(width: AppSpacing.sm),
                           Text(
                             context.l10n.actionListen,
                             style: AppTypography.caption.copyWith(
@@ -199,8 +200,35 @@ class HomeCarouselCard extends StatelessWidget {
                             ),
                           ),
                         ],
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          border: Border.all(
+                            color: palette.primary.withValues(alpha: 0.45),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.play_arrow_rounded,
+                                size: 16, color: palette.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              context.l10n.actionListen,
+                              style: AppTypography.caption.copyWith(
+                                color: palette.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -214,16 +242,25 @@ class HomeCarouselCard extends StatelessWidget {
 
 /// Ligne de liste : vignette **portrait** réduite ([kListCoverSize]), titre,
 /// intervenant, et le bouton de lecture au bout.
-class HomeListRow extends StatelessWidget {
+class HomeListRow extends ConsumerWidget {
   const HomeListRow({super.key, required this.content, this.onTap});
 
   final ContentView content;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
     final author = content.authorName;
+
+    final playback = ref.watch(
+      contentPlaybackProvider.select(
+        (p) => (contentId: p.contentId, isPlaying: p.isPlaying),
+      ),
+    );
+    final isThisPlaying =
+        playback.contentId == content.id && playback.isPlaying;
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -265,7 +302,10 @@ class HomeListRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Icon(Icons.play_circle_fill, color: palette.primary, size: 30),
+            if (isThisPlaying)
+              PlayingIndicator(color: palette.primary)
+            else
+              Icon(Icons.play_circle_fill, color: palette.primary, size: 30),
           ],
         ),
       ),

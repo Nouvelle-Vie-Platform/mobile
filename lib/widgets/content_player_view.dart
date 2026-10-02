@@ -324,20 +324,17 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     );
   }
 
-  /// **Confie le contenu au lecteur, une fois par contenu.**
-  ///
-  /// Appelée à chaque build de l'écran rempli, elle ne fait quelque chose que la
-  /// première fois : sans cette garde, chaque reconstruction — et il y en a une
-  /// à chaque cycle de synchronisation — rouvrirait le média.
-  ///
-  /// **Elle ouvre, elle ne joue pas** — sauf pour le direct, où il n'y a rien
-  /// d'autre à faire d'un flux que de le suivre. C'est la règle d'ouverture, et
-  /// `autoplay` en est le seul porteur : voir [_open].
   void _loadOnce(ContentView content) {
     if (_stoppedByRetraction || _requested == content.id) return;
     _requested = content.id;
+
+    // Do NOT load automatically for teachings/gatherings unless it's live
+    if (!widget.isLive) {
+      return;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_open(content, autoplay: widget.isLive));
+      if (mounted) unawaited(_open(content, autoplay: true));
     });
   }
 
@@ -422,7 +419,11 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
       player.seek(resume.position);
     }
 
-    if (autoplay) player.play();
+    if (autoplay) {
+      player.play();
+    } else {
+      player.pause();
+    }
   }
 
   Future<void> _openRecorder(String contentId) async {
@@ -611,6 +612,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
             ],
             const SizedBox(height: AppSpacing.xl),
             _Controls(
+              contentId: content.id,
               isLive: widget.isLive,
               onStop: widget.onStop,
               liked: _liked,
@@ -759,27 +761,21 @@ class _Artwork extends StatelessWidget {
     // veut : un carré rogné reste plus informatif qu'un aplat de couleur.
     return Hero(
       tag: 'content_art_${content.id}',
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: ShaderMask(
-          blendMode: BlendMode.dstIn,
-          shaderCallback: (rect) => const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.white,
-              Colors.white,
-              Colors.transparent,
-            ],
-            stops: [0.0, 0.12, 0.6, 1.0],
-          ).createShader(rect),
-          child: Image(
-            image: image,
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _placeholder(),
+      child: Center(
+        child: FractionallySizedBox(
+          widthFactor: 0.92,
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image(
+                image: image,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(),
+              ),
+            ),
           ),
         ),
       ),
@@ -885,8 +881,9 @@ class _BufferingBadge extends StatelessWidget {
   }
 }
 
-class _Controls extends StatelessWidget {
+class _Controls extends ConsumerWidget {
   const _Controls({
+    required this.contentId,
     required this.liked,
     required this.accent,
     required this.onSeek,
@@ -898,6 +895,7 @@ class _Controls extends StatelessWidget {
     this.onStop,
   });
 
+  final String contentId;
   final bool liked;
   final Color accent;
   final ValueChanged<Duration> onSeek;
@@ -909,7 +907,11 @@ class _Controls extends StatelessWidget {
   final VoidCallback? onStop;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final playback = ref.watch(contentPlaybackProvider);
+    final isCurrent = playback.contentId == contentId;
+    final isPlaying = isCurrent && playback.isPlaying;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -925,14 +927,34 @@ class _Controls extends StatelessWidget {
             if (isLive)
               const Spacer()
             else ...[
-              Expanded(child: _ProgressLine(onSeek: onSeek)),
+              Expanded(child: _ProgressLine(contentId: contentId, onSeek: onSeek)),
               const SizedBox(width: AppSpacing.lg),
             ],
-            _PlayButton(accent: accent, onPressed: onPlayPause),
+            // Bouton Play/Pause avec bouton Stop optionnel superposé en dessous
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.topCenter,
+              children: [
+                _PlayButton(
+                  contentId: contentId,
+                  accent: accent,
+                  onPressed: onPlayPause,
+                ),
+                // Bouton Stop positionné sous le bouton Play, sans affecter la disposition
+                if (!isLive && isPlaying)
+                  Positioned(
+                    top: 70 + AppSpacing.sm,
+                    child: _GlassCircleButton(
+                      icon: Icons.stop_rounded,
+                      onPressed: () => ref.read(contentPlayerProvider).stop(),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        // Rangée d'icônes inférieures (Bouton Stop en mode Live)
+        // Rangée d'icônes inférieures
         Row(
           children: [
             const SizedBox(width: AppSpacing.md),
@@ -966,8 +988,9 @@ class _Controls extends StatelessWidget {
 }
 
 class _ProgressLine extends ConsumerStatefulWidget {
-  const _ProgressLine({required this.onSeek});
+  const _ProgressLine({required this.contentId, required this.onSeek});
 
+  final String contentId;
   final ValueChanged<Duration> onSeek;
 
   @override
@@ -979,12 +1002,11 @@ class _ProgressLineState extends ConsumerState<_ProgressLine> {
 
   @override
   Widget build(BuildContext context) {
-    final position =
-        ref.watch(contentPlaybackProvider.select((p) => p.position));
-    final duration =
-        ref.watch(contentPlaybackProvider.select((p) => p.duration));
-    final progress =
-        ContentPlayback(position: position, duration: duration).progress;
+    final playback = ref.watch(contentPlaybackProvider);
+    final isCurrent = playback.contentId == widget.contentId;
+    final position = isCurrent ? playback.position : Duration.zero;
+    final duration = isCurrent ? playback.duration : null;
+    final progress = isCurrent ? playback.progress : 0.0;
     final dragged = _dragged;
     final elapsed =
         dragged != null && duration != null ? duration * dragged : position;
@@ -1048,15 +1070,16 @@ class _ProgressLineState extends ConsumerState<_ProgressLine> {
 }
 
 class _PlayButton extends ConsumerWidget {
-  const _PlayButton({required this.accent, required this.onPressed});
+  const _PlayButton({required this.contentId, required this.accent, required this.onPressed});
 
+  final String contentId;
   final Color accent;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playing =
-        ref.watch(contentPlaybackProvider.select((p) => p.isPlaying));
+    final playback = ref.watch(contentPlaybackProvider);
+    final playing = playback.contentId == contentId && playback.isPlaying;
     return Container(
       width: 70,
       height: 70,
