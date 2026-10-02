@@ -23,7 +23,9 @@
 /// `test/screens/guest_sign_in_tab_test.dart`.
 library;
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/legal_notice_store.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/screens/announcements_screen.dart';
 import 'package:maison_du_miracle/screens/auth/identifier_screen.dart';
