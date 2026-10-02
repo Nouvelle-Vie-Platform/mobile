@@ -424,6 +424,11 @@ class _UpcomingCard extends StatelessWidget {
     final palette = context.palette;
     final locale = context.l10n.localeName;
     final startTime = formatEventTime(event, locale, startOnly: true);
+    // **Le lieu est optionnel.** `null`, vide, ou réduit à des espaces : il n'y
+    // a alors rien à montrer, et la ligne de localisation — épingle comprise —
+    // disparaît (voir plus bas). Une épingle devant une chaîne vide ferait
+    // croire à un lieu manquant.
+    final place = event.place?.trim();
 
     final boxColor = current ? palette.primary : palette.surfaceAlt;
     final fg = current ? Colors.white : palette.textPrimary;
@@ -492,21 +497,25 @@ class _UpcomingCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.bodyStrong
                             .copyWith(color: palette.textPrimary)),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Icon(Icons.place_outlined,
-                            size: 13, color: palette.textSecondary),
-                        const SizedBox(width: 3),
-                        Expanded(
-                          child: Text(event.place ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.caption
-                                  .copyWith(color: palette.textSecondary)),
-                        ),
-                      ],
-                    ),
+                    // **Pas de lieu, pas d'icône** : le champ est optionnel, et
+                    // une épingle sans texte ne dit rien.
+                    if (place != null && place.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(Icons.place_outlined,
+                              size: 13, color: palette.textSecondary),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(place,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.caption
+                                    .copyWith(color: palette.textSecondary)),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
