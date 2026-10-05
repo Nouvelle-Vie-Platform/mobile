@@ -68,9 +68,10 @@ enum PublicationTiming { now, scheduled, draft }
 /// apprendre qu'on n'a rien écrit gaspille la connexion de quelqu'un qui, par
 /// définition, en a une mauvaise.
 enum DraftIssue {
-  /// **Ni titre, ni corps, ni image.** Une annonce valide en porte au moins un
-  /// (PRD §18) — et une **affiche**, image seule sans texte, est le cas le plus
-  /// courant en pratique, pas une exception à tolérer.
+  /// **Ni titre, ni corps, ni image, ni média.** Une annonce valide en porte
+  /// au moins un (PRD §18) — et une **affiche**, image seule sans texte, est le
+  /// cas le plus courant en pratique, pas une exception à tolérer. Un audio ou
+  /// une vidéo **seuls** suffisent aussi (décision du 05/10/2026, #130).
   nothingToPublish,
 
   /// [PublicationTiming.scheduled] sans instant choisi.
@@ -106,6 +107,7 @@ class AnnouncementDraft {
     this.expiresAt,
     this.image,
     this.hasBackgroundImage = false,
+    this.hasMedia = false,
   })  : title = _blankToNull(title),
         body = _blankToNull(body);
 
@@ -141,6 +143,14 @@ class AnnouncementDraft {
   /// déposée.
   final bool hasBackgroundImage;
 
+  /// **L'annonce porte déjà un audio ou une vidéo côté serveur.**
+  ///
+  /// Même raison que [hasBackgroundImage] : ce client ne dépose pas de média,
+  /// mais un statut qui n'est **qu'un** média (sans titre, corps ni image) est
+  /// valide, et le rouvrir pour corriger sa date de fin ne doit pas le faire
+  /// refuser comme « rien à publier ».
+  final bool hasMedia;
+
   /// L'instant de publication **effectif**, ou `null` quand il n'y en a pas
   /// encore (brouillon) ou qu'il appartient au serveur ([PublicationTiming.now],
   /// où [now] tient lieu d'approximation le temps de la validation).
@@ -153,7 +163,11 @@ class AnnouncementDraft {
   /// Ce qui bloque, à l'instant [now]. Vide = le brouillon peut partir.
   Set<DraftIssue> issuesAt(DateTime now) {
     final issues = <DraftIssue>{};
-    if (title == null && body == null && image == null && !hasBackgroundImage) {
+    if (title == null &&
+        body == null &&
+        image == null &&
+        !hasBackgroundImage &&
+        !hasMedia) {
       issues.add(DraftIssue.nothingToPublish);
     }
     if (timing == PublicationTiming.scheduled && publishedAt == null) {

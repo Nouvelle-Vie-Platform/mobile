@@ -82,6 +82,13 @@ Le magasin les stocke **bruts**, en colonnes (schéma v19). Ils deviennent
   le serveur la sert sur **tout** statut vidéo ;
 - une durée nulle vaut inconnue.
 
+**Un statut peut n'être qu'un média** (décision utilisateur du 05/10/2026) :
+un audio ou une vidéo **seuls**, sans titre, sans corps, sans image, sont un
+statut complet. Rien ne les retient en route — ni le flux, ni le magasin, ni le
+repository, ni le rendu, qui n'empile que ce qui existe — et l'affiche d'une
+vidéo seule vient de `mediaPosterUrl`. Couvert de bout en bout
+(`announcement_media_collection_test.dart`, `announcements_screen_test.dart`).
+
 Le palier v18 → v19 **efface le curseur** d'`announcements` : un téléphone resté
 en v18 a pu recevoir une annonce à média et en jeter le média faute de colonne,
 et rien ne la lui aurait renvoyée.
@@ -405,8 +412,12 @@ traitement des refus. Deux écrans jumeaux auraient divergé au premier correcti
   **omis** (l'horloge est celle du serveur, pas celle d'un téléphone qui dérive).
   Programmer ⇒ l'instant choisi, en UTC. Brouillon ⇒ `publishedAt` **nul
   explicite**. La nuance « clé absente / clé nulle » décide si l'annonce paraît.
-- **Validité, vérifiée avant tout appel réseau** : au moins un titre, un corps ou
-  une image ; `expiresAt > publishedAt`. Titre et corps vides après `trim`
+- **Validité, vérifiée avant tout appel réseau** : au moins un titre, un corps,
+  une image ou un média ; `expiresAt > publishedAt`. Le composeur ne dépose
+  pas de média, mais une annonce rouverte qui n'est **qu'un** audio ou une
+  vidéo reste valide (`AnnouncementDraft.hasMedia`, lu par `readStatusMedia` :
+  un genre inconnu ne compte pas), comme une affiche rouverte sans ses octets
+  (`hasBackgroundImage`). Titre et corps vides après `trim`
   valent `null`, jamais `''`.
 
 #### Modifier et supprimer

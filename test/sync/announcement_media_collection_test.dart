@@ -144,6 +144,45 @@ void main() {
       expect(view.kind, StatusKind.text);
     });
 
+    // **Un statut peut n'être qu'un média** (décision du 05/10/2026) : ni
+    // titre, ni corps, ni image. Rien ne doit le retenir en route.
+    test('une annonce audio seule arrive jusqu\'au mur', () async {
+      final view = await stored({
+        ...audioAnnouncementPayload,
+        'title': null,
+        'body': null,
+        'backgroundImageUrl': null,
+      });
+
+      expect(view.kind, StatusKind.audio);
+      expect(view.title, isNull);
+      expect(view.body, isNull);
+      expect(view.backgroundImageUrl, isNull);
+      expect(view.audio?.durationMs, 42000);
+    });
+
+    test(
+      'une annonce vidéo seule arrive jusqu\'au mur, affiche tirée de '
+      'mediaPosterUrl',
+      () async {
+        final view = await stored({
+          ...videoAnnouncementPayload,
+          'title': null,
+          'body': null,
+          'backgroundImageUrl': null,
+        });
+
+        expect(view.kind, StatusKind.video);
+        expect(view.title, isNull);
+        expect(view.body, isNull);
+        expect(view.backgroundImageUrl, isNull);
+        expect(
+          view.video?.poster,
+          'https://eenv.brainsial.com/uploads/announcements/convention-affiche.webp',
+        );
+      },
+    );
+
     test('un genre sans URL s\'affiche comme un statut sans média', () async {
       final view = await stored({
         ...videoAnnouncementPayload,

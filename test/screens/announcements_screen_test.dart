@@ -509,6 +509,44 @@ void main() {
       expect(find.text('Convention 2026'), findsOneWidget);
     });
 
+    testWidgets(
+        'un statut qui n\'est qu\'un média s\'affiche : audio seul, puis '
+        'vidéo seule sur son affiche', (tester) async {
+      final player = inert();
+      await pumpViewer(
+        tester,
+        [
+          _status(id: 'vocal-seul', audio: vocal),
+          _status(
+            id: 'clip-seul',
+            video: clip,
+            age: const Duration(hours: 3),
+          ),
+        ],
+        player: player,
+      );
+
+      expect(player.mediaKind, StatusMediaKind.audio);
+      expect(find.byType(StatusWaveform), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      final size = tester.getSize(find.byType(AnnouncementsScreen));
+      await tester.tapAt(Offset(size.width * 0.8, size.height / 2));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(player.mediaKind, StatusMediaKind.video);
+      expect(player.mediaUrl, 'https://media.example.test/clip/master.m3u8');
+      expect(find.byKey(StatusVideoLayer.posterKey), findsOneWidget);
+      expect(
+        tester
+            .widget<StatusVideoLayer>(find.byType(StatusVideoLayer).first)
+            .posterUrl,
+        'https://example.org/affiche.jpg',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('maintenir le doigt met le son en pause, le relâcher reprend',
         (tester) async {
       final player = inert();

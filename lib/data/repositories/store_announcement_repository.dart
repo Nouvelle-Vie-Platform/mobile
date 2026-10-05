@@ -114,8 +114,17 @@ class StoreAnnouncementRepository implements AnnouncementRepository {
                     // qu'on rouvre pour changer sa date de fin n'a ni titre ni
                     // corps, et serait refusée à tort comme « rien à publier ».
                     hasBackgroundImage: row.backgroundImageUrl != null,
+                    // De même pour un audio ou une vidéo : un statut qui n'est
+                    // qu'un média est valide. Lu par la règle unique, pour qu'un
+                    // genre inconnu ne compte pas plus ici qu'à l'écran.
+                    hasMedia: _hasMedia(kind: row.mediaKind, url: row.mediaUrl),
                   ),
           );
+
+  static bool _hasMedia({String? kind, String? url}) {
+    final media = readStatusMedia(kind: kind, url: url);
+    return media.audio != null || media.video != null;
+  }
 
   AnnouncementView _view(AnnouncementWithRefs row) {
     final background = row.background;
