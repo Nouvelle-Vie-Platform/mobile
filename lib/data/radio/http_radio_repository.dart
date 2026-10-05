@@ -3,7 +3,8 @@
 /// ```
 /// GET /radio/antenna
 /// aucune garde — les invités écoutent (décision 7 du cadrage)
-/// 200 → { data: { streamUrl: "https://…/antenne/index.m3u8", onAir: true } }
+/// 200 → { data: { streamUrl: "https://…/antenne/index.m3u8", onAir: true,
+///                  listeners: 128 | null, live: { startedAt } | null } }
 /// ```
 ///
 /// Deux choses dont cette classe **n'a pas** à s'occuper, traitées une fois dans

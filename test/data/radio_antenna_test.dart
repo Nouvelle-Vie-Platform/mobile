@@ -24,7 +24,7 @@ void main() {
       // lirait comme une antenne éteinte.
       final antenna = RadioAntenna.fromJson(const {
         'url': 'https://stream.example/antenne/index.m3u8',
-        'live': false,
+        'isOnAir': false,
       });
       expect(antenna.streamUrl, 'https://stream.example/antenne/index.m3u8');
       expect(antenna.isSilent, isTrue);
@@ -67,5 +67,58 @@ void main() {
     expect(RadioAntenna.unknown.streamUrl, isNull);
     expect(RadioAntenna.unknown.onAir, isNull);
     expect(RadioAntenna.unknown.isSilent, isFalse);
+  });
+
+  group('Le compteur et le direct (#135)', () {
+    test('lit la forme du contrat fusionné', () {
+      final antenna = RadioAntenna.fromJson(const {
+        'streamUrl': 'https://stream.example/antenne/index.m3u8',
+        'onAir': true,
+        'listeners': 128,
+        'live': {'startedAt': '2026-10-05T18:00:00.000Z'},
+      });
+      expect(antenna.listeners, 128);
+      expect(antenna.live, isNotNull);
+      expect(antenna.live!.startedAt, DateTime.utc(2026, 10, 5, 18));
+      // Le direct n'éteint ni n'allume l'antenne : `onAir` reste le sien.
+      expect(antenna.onAir, isTrue);
+    });
+
+    test('compteur nul : rien à afficher, et jamais zéro', () {
+      final antenna = RadioAntenna.fromJson(const {
+        'streamUrl': 'https://stream.example/antenne/index.m3u8',
+        'onAir': true,
+        'listeners': null,
+        'live': null,
+      });
+      expect(antenna.listeners, isNull);
+      expect(antenna.live, isNull);
+    });
+
+    test('un compteur ou un direct illisible ne s\'affiche pas', () {
+      for (final body in <Map<String, dynamic>>[
+        const {'listeners': 'beaucoup'},
+        const {'listeners': -3},
+        const {'live': true},
+        const {
+          'live': {'startedAt': 42},
+        },
+      ]) {
+        final antenna = RadioAntenna.fromJson(body);
+        expect(antenna.listeners, isNull, reason: 'corps : $body');
+        expect(antenna.live, isNull, reason: 'corps : $body');
+      }
+    });
+
+    test('« live » n\'est plus un synonyme d\'« onAir »', () {
+      // Une fin de direct (`live: null`) ne doit jamais se lire comme une
+      // antenne éteinte, et un direct comme une antenne allumée.
+      final antenna = RadioAntenna.fromJson(const {
+        'streamUrl': 'https://stream.example/antenne/index.m3u8',
+        'live': {'startedAt': '2026-10-05T18:00:00.000Z'},
+      });
+      expect(antenna.onAir, isNull);
+      expect(antenna.isSilent, isFalse);
+    });
   });
 }

@@ -11,10 +11,12 @@ library;
 
 import 'package:flutter/foundation.dart';
 
+import 'radio_live.dart';
+
 /// L'état d'antenne, tel qu'une route publique le rend.
 @immutable
 class RadioAntenna {
-  const RadioAntenna({this.streamUrl, this.onAir});
+  const RadioAntenna({this.streamUrl, this.onAir, this.listeners, this.live});
 
   /// **Ce qu'on sait avant la première réponse** : rien.
   ///
@@ -40,6 +42,22 @@ class RadioAntenna {
   /// confonde pas avec `false`.
   bool get isSilent => onAir == false;
 
+  /// **Le compteur d'auditeurs, ou `null` : ne rien afficher** (#135, décision
+  /// 8 du plan radio live).
+  ///
+  /// Le serveur rend `null` quand le relevé manque, date de plus de 30 s, ou
+  /// passe sous le seuil d'affichage (défaut 10). Le téléphone ne cherche pas à
+  /// savoir lequel : « 2 à l'écoute » fait vide, et « non mesuré » ne
+  /// s'affiche pas davantage. ⚠️ **Jamais `0` à la place de `null`** — zéro
+  /// serait une affirmation.
+  final int? listeners;
+
+  /// **Le direct en cours**, ou `null` (#135, décision 2) : badge « EN DIRECT »
+  /// et fil de commentaires. Déduit des sessions de la régie côté serveur,
+  /// **jamais** de [onAir] — « l'antenne sort » n'est pas « un humain est à
+  /// l'antenne ».
+  final RadioLive? live;
+
   /// **Lit la charge utile de la route publique.**
   ///
   /// ⚠️ **La forme exacte n'est pas tranchée** : la route est écrite par
@@ -52,7 +70,14 @@ class RadioAntenna {
   /// | ce qu'on cherche | clés acceptées |
   /// | --- | --- |
   /// | l'adresse | `streamUrl`, `url`, `hlsUrl` |
-  /// | l'état | `onAir`, `isOnAir`, `live` |
+  /// | l'état | `onAir`, `isOnAir` |
+  /// | le compteur (#135) | `listeners` |
+  /// | le direct (#135) | `live` |
+  ///
+  /// ⚠️ **`live` n'est plus un synonyme d'`onAir`** depuis que la route est
+  /// fusionnée (#135) : c'est le direct de la régie, `{ startedAt }` ou `null`.
+  /// Le lire comme un booléen d'antenne aurait éteint le bouton à chaque fin de
+  /// direct.
   ///
   /// Ce n'est pas de la tolérance de confort : un seul mot deviné de travers
   /// rendrait la radio muette **sans qu'aucun test rougisse**, et la panne se
@@ -66,8 +91,31 @@ class RadioAntenna {
     return RadioAntenna(
       streamUrl: _url(body),
       onAir: _onAir(body),
+      listeners: _listeners(body['listeners']),
+      live: RadioLive.fromJson(body['live']),
     );
   }
+
+  /// Un entier positif ou nul, sinon `null` — un compteur illisible ne
+  /// s'affiche pas.
+  static int? _listeners(Object? raw) {
+    if (raw is int && raw >= 0) return raw;
+    if (raw is double && raw.isFinite && raw >= 0) return raw.round();
+    return null;
+  }
+
+  /// La même antenne, avec un autre compteur ou un autre direct — ce que le
+  /// canal temps réel pousse entre deux lectures de la route.
+  RadioAntenna withAudience({
+    required int? listeners,
+    required RadioLive? live,
+  }) =>
+      RadioAntenna(
+        streamUrl: streamUrl,
+        onAir: onAir,
+        listeners: listeners,
+        live: live,
+      );
 
   static String? _url(Map<String, dynamic> body) {
     for (final key in const ['streamUrl', 'url', 'hlsUrl']) {
@@ -78,7 +126,7 @@ class RadioAntenna {
   }
 
   static bool? _onAir(Map<String, dynamic> body) {
-    for (final key in const ['onAir', 'isOnAir', 'live']) {
+    for (final key in const ['onAir', 'isOnAir']) {
       final raw = body[key];
       if (raw is bool) return raw;
     }
@@ -89,11 +137,14 @@ class RadioAntenna {
   bool operator ==(Object other) =>
       other is RadioAntenna &&
       other.streamUrl == streamUrl &&
-      other.onAir == onAir;
+      other.onAir == onAir &&
+      other.listeners == listeners &&
+      other.live == live;
 
   @override
-  int get hashCode => Object.hash(streamUrl, onAir);
+  int get hashCode => Object.hash(streamUrl, onAir, listeners, live);
 
   @override
-  String toString() => 'RadioAntenna(streamUrl: $streamUrl, onAir: $onAir)';
+  String toString() => 'RadioAntenna(streamUrl: $streamUrl, onAir: $onAir, '
+      'listeners: $listeners, live: $live)';
 }
