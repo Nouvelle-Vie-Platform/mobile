@@ -8,7 +8,7 @@
 /// | Forme | Route serveur | Source |
 /// |---|---|---|
 /// | manifeste | `GET /sync` | `app/sync/transformers/sync_manifest_transformer.ts` (ADR-0016/0017/0027) |
-/// | les 29 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
+/// | les 30 collections | `GET /sync` | `app/sync/descriptors/registry.ts` |
 /// | `full_resync_required` | `GET /sync` | `app/sync/actions/build_manifest.ts` (issues serveur #48/#49) |
 /// | tirage delta | `GET /sync/{collection}` | `app/sync/controllers/pull_collection_delta_controller.ts` |
 /// | `next_cursor` / `has_more` / `full_resync` | `GET /sync/{collection}` | `app/sync/actions/pull_delta.ts` (ADR-0017) |
@@ -135,7 +135,7 @@ final String staleCursor = serverCursor(
 // `GET /sync` — le manifeste
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Les **vingt-neuf** collections du registre serveur (`app/sync/descriptors/
+/// Les **trente** collections du registre serveur (`app/sync/descriptors/
 /// registry.ts`), **dans l'ordre du registre**, avec leur partition.
 ///
 /// ⚠️ **Cette carte avait dérivé, et le test qui la gardait mentait.** Elle en
@@ -157,7 +157,7 @@ final String staleCursor = serverCursor(
 /// Vingt-neuvième en #82 — `menu_entries` —, recomptée de la même façon : le
 /// tableau `syncDescriptors` en porte **vingt-neuf**, et son en-tête dit
 /// « vingt-neuf » ; les deux s'accordent cette fois, et c'est le tableau qui a
-/// été cru.
+/// été cru. Trentième en #140 (serveur M1a) — `group_reads`.
 ///
 /// La partition de chaque entrée est relevée sur le champ `partition:` de son
 /// descripteur, jamais sur l'intuition de ce qu'une collection « devrait » être.
@@ -272,7 +272,7 @@ Map<String, Object?> manifestEntry(
   };
 }
 
-/// Manifeste complet : les vingt-neuf collections, dans l'ordre du registre.
+/// Manifeste complet : les trente collections, dans l'ordre du registre.
 ///
 /// [overrides] remplace, clé par clé, les champs d'une entrée — c'est ainsi
 /// qu'on écrit un cas particulier sans réécrire les douze autres lignes.
