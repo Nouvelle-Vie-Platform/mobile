@@ -770,5 +770,20 @@
   "appUpdateAction": "Mettre à jour",
   "@appUpdateAction": { "description": "Ouvre la fiche de l'application dans le magasin. Un verbe d'action et non « Ouvrir le magasin » : ce qu'on vient faire est la mise à jour, le magasin n'en est que le chemin" },
   "appUpdateDismiss": "Plus tard",
-  "@appUpdateDismiss": { "description": "Ferme le bandeau pour la session en cours — pas définitivement, contrairement à legalNoticeDismiss. Pas « J'ai compris » : il n'y a rien à comprendre ici, seulement un geste qu'on remet à plus tard, et le bandeau reviendra au prochain lancement tant que la version n'aura pas monté" }
+  "@appUpdateDismiss": { "description": "Ferme le bandeau pour la session en cours — pas définitivement, contrairement à legalNoticeDismiss. Pas « J'ai compris » : il n'y a rien à comprendre ici, seulement un geste qu'on remet à plus tard, et le bandeau reviendra au prochain lancement tant que la version n'aura pas monté" },
+
+  "miniPlayerLiveBadge": "EN DIRECT",
+  "@miniPlayerLiveBadge": { "description": "Mini-lecteur : badge de l'antenne en direct, à la place de la ligne d'orateur. Capitales voulues, comme un voyant d'antenne ; court, il tient dans une pastille rouge" },
+  "miniPlayerOpen": "Ouvrir le lecteur : {title}",
+  "@miniPlayerOpen": { "description": "Mini-lecteur : libellé d'accessibilité de la vignette et du titre, qui ouvrent la fiche (ou l'écran de l'antenne). {title} est le titre de ce qui joue", "placeholders": { "title": { "type": "String" } } },
+  "miniPlayerSkipBackward": "Reculer de 30 secondes",
+  "@miniPlayerSkipBackward": { "description": "Mini-lecteur : libellé d'accessibilité du bouton −30 s. Le pas est celui de la notification et de la fiche (kContentSkipInterval) ; si la constante change, ce texte change avec elle" },
+  "miniPlayerSkipForward": "Avancer de 30 secondes",
+  "@miniPlayerSkipForward": { "description": "Mini-lecteur : libellé d'accessibilité du bouton +30 s. Même pas que miniPlayerSkipBackward" },
+  "miniPlayerReplay": "Rejouer",
+  "@miniPlayerReplay": { "description": "Mini-lecteur : le gros bouton en fin de lecture. Relance depuis le début" },
+  "miniPlayerRelaunch": "Relancer l'écoute",
+  "@miniPlayerRelaunch": { "description": "Mini-lecteur : le gros bouton quand l'écoute a échoué avant d'avoir jamais commencé (pas de réseau à l'ouverture). Pas « Reprendre » : il n'y a aucune position à retrouver. Pas « Réessayer » non plus, mot banni du lecteur" },
+  "miniPlayerClose": "Fermer le lecteur",
+  "@miniPlayerClose": { "description": "Mini-lecteur : libellé d'accessibilité de la croix. Arrête le son, retire la notification et ferme le mini-lecteur ; la position de reprise est gardée" }
 }
