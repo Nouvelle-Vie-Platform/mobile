@@ -197,7 +197,8 @@ void main() {
             id: '019a3000-0000-7000-8000-000000000001',
             groupId: groupId,
             authorId: const Value(me),
-            body: 'Amen',
+            // Nullable depuis la v20 (#140) : un message-média n'a pas de texte.
+            body: const Value('Amen'),
             clientMessageId: const Value(mintedKey),
             createdAt: Value(DateTime.utc(2026, 9, 10, 10, 0, 2)),
           ),

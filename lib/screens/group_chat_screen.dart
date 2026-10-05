@@ -162,13 +162,23 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         .send(groupId: widget.groupId, body: text);
   }
 
+  /// **Y a-t-il une pile sous ce fil ?** Lu sur la `GoRouter` quand il y en a
+  /// une — c'est sa pile qui compte —, sur le `Navigator` sinon (un écran monté
+  /// seul, dans un test).
+  bool get _canPop {
+    final router = GoRouter.maybeOf(context);
+    return router?.canPop() ?? Navigator.of(context).canPop();
+  }
+
   /// **Le retour** : dépiler s'il y a une pile, sinon la liste des Échanges.
   void _leave() {
-    if (context.canPop()) {
-      context.pop();
+    final router = GoRouter.maybeOf(context);
+    if (_canPop) {
+      router != null ? router.pop() : Navigator.of(context).pop();
       return;
     }
-    context.goNamed(
+    if (router == null) return;
+    router.goNamed(
       AppRoute.home,
       queryParameters: {'tab': HomeTab.community.name},
     );
@@ -377,7 +387,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     return PopScope(
       // Pas de pile dessous (ouvert par une notification) : le geste système
       // mène à la liste des Échanges au lieu de quitter l'application.
-      canPop: context.canPop(),
+      canPop: _canPop,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _leave();
       },
@@ -430,7 +440,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
   Widget _absence(String title, ContentAbsence absence) {
     return PopScope(
-      canPop: context.canPop(),
+      canPop: _canPop,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _leave();
       },

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../models/legal_document_view.dart';
 import '../router/app_router.dart';
 import '../state/auth_providers.dart';
+import '../state/echanges_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_responsive.dart';
 import '../widgets/app_background.dart';

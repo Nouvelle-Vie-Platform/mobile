@@ -800,6 +800,91 @@ void main() {
     expect(await db.syncDao.cursorFor('teachings'), 'un-autre-curseur');
   });
 
+  test('v19 → v20 : le corps nul, la lecture et son outbox', () async {
+    // Le palier de la messagerie fiable (#140) : `group_messages.body` perd son
+    // `NOT NULL` (recréation de table), `group_reads` et `pending_group_reads`
+    // naissent.
+    final connection = await verifier.startAt(19);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 20);
+  });
+
+  test('v1 → v20 : un appareil resté en v1 rejoue tous les paliers', () async {
+    // ⚠️ `group_messages` naît au palier v17 → v18 **dans sa forme courante**,
+    // donc déjà nullable : le palier v19 → v20 ne doit pas la recréer (garde
+    // `from >= 18`).
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 20);
+  });
+
+  test('v18 → v20 : deux paliers d\'un coup', () async {
+    final connection = await verifier.startAt(18);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 20);
+  });
+
+  test(
+      'v19 → v20 : le fil survit à la recréation de la table, curseur compris, '
+      'et un message-média s\'y range enfin', () async {
+    // Ce qu'un fidèle hors ligne risquerait de perdre, c'est sa conversation :
+    // `alterTable` recrée `group_messages` et **recopie** chaque ligne. Le
+    // curseur reste — une page refusée par l'ancienne contrainte n'avait pas
+    // avancé le curseur, elle sera re-tirée et acceptée.
+    final schema = await verifier.schemaAt(19);
+    schema.rawDatabase.execute(
+      "INSERT INTO group_messages (id, group_id, author_id, is_system, body, "
+      "created_at, sync_stamp) VALUES ('m-1', 'g-1', 'u-1', 0, 'Amen', "
+      "1700000000, 7)",
+    );
+    schema.rawDatabase.execute(
+      "INSERT INTO pending_group_messages (client_message_id, group_id, body, "
+      "created_at, failed) VALUES ('c-1', 'g-1', 'Gloire', 1700000001, 1)",
+    );
+    schema.rawDatabase.execute(
+      "INSERT INTO sync_cursors (collection, cursor, synced_at) "
+      "VALUES ('group_messages', 'un-curseur-opaque', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 20);
+
+    final kept = (await db.select(db.groupMessages).get()).single;
+    expect(kept.body, 'Amen');
+    expect(kept.authorId, 'u-1');
+    expect(kept.syncStamp, 7, reason: 'le jeton d\'écriture est recopié');
+    expect(
+      (await db.select(db.pendingGroupMessages).get()).single.failed,
+      isTrue,
+      reason: 'un écho en échec doit encore pouvoir repartir',
+    );
+    expect(
+      await db.syncDao.cursorFor('group_messages'),
+      'un-curseur-opaque',
+    );
+
+    // Et le corps nul passe — c'est tout l'objet du palier.
+    await db.into(db.groupMessages).insert(
+          GroupMessagesCompanion.insert(id: 'm-2', groupId: 'g-1'),
+        );
+    final voice = await (db.select(db.groupMessages)
+          ..where((m) => m.id.equals('m-2')))
+        .getSingle();
+    expect(voice.body, isNull);
+
+    // Les deux tables neuves naissent vides, sans curseur.
+    expect(await db.select(db.groupReads).get(), isEmpty);
+    expect(await db.select(db.pendingGroupReads).get(), isEmpty);
+    expect(await db.syncDao.cursorFor('group_reads'), isNull);
+  });
+
   test('la version de schéma couvre bien toutes les versions exportées', () {
     final db = openTestDatabase();
     addTearDown(db.close);

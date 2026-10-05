@@ -225,6 +225,9 @@ const Map<String, String> kSyncCollections = {
   'group_members': 'private',
   'profiles': 'private',
   'group_join_requests': 'private',
+  // Ma position de lecture (serveur M1a, mobile #140) : privée — seule ma
+  // lecture voyage, et seulement chez moi.
+  'group_reads': 'private',
   'official_account_memberships': 'private',
   // Partagées cloisonnées — filtre « branches visibles ∪ national ».
   'events': 'branch',

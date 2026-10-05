@@ -28,8 +28,9 @@ void main() {
       // descripteurs**, jamais lu dans la phrase qui les précède — recompté en
       // #91, où `device_settings` devient la vingt-huitième, puis en #82, où
       // `menu_entries` devient la vingt-neuvième. Cette fois l'en-tête et le
-      // tableau s'accordent, et c'est le **tableau** qui a été compté.
-      expect(kSyncCollections, hasLength(29));
+      // tableau s'accordent, et c'est le **tableau** qui a été compté. Recompté
+      // en #140 (serveur M1a), où `group_reads` devient la trentième.
+      expect(kSyncCollections, hasLength(30));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
