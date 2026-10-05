@@ -227,7 +227,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radioOffAir => 'Off air';
 
   @override
-  String get radioLive => 'Live';
+  String get radioLive => 'On air';
 
   @override
   String get radioRetrying => 'Trying again…';
@@ -255,6 +255,151 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radioOpenLiveHint => 'open the live page';
+
+  @override
+  String get radioLiveBadge => 'LIVE';
+
+  @override
+  String radioListeners(int count) {
+    return '$count listening';
+  }
+
+  @override
+  String get radioReactionHeart => 'Send a heart';
+
+  @override
+  String get radioReactionPray => 'Send a prayer';
+
+  @override
+  String get radioReactionPraise => 'Send praise';
+
+  @override
+  String get radioReactionFire => 'Send fire';
+
+  @override
+  String get radioReactionAmen => 'Amen';
+
+  @override
+  String get radioReactionAmenLabel => 'Say Amen';
+
+  @override
+  String get radioCommentsLabel => 'Live comments';
+
+  @override
+  String radioCommentSemantics(String name, String body) {
+    return '$name: $body';
+  }
+
+  @override
+  String get radioMessageOptionsHint => 'message options';
+
+  @override
+  String get radioNewMessages => 'New messages';
+
+  @override
+  String get radioCommentHint => 'Write…';
+
+  @override
+  String get radioSilencedNotice =>
+      'A moderator has paused your comments until the end of this live.';
+
+  @override
+  String get radioCommentClosed => 'The live has ended: comments are closed.';
+
+  @override
+  String get radioCommentThrottled =>
+      'Slow down: one message every five seconds.';
+
+  @override
+  String get radioCommentInvalid =>
+      'Your message must be 1 to 200 characters long.';
+
+  @override
+  String get radioCommentFailed => 'Message not sent. Try again.';
+
+  @override
+  String get radioPseudonymTitle => 'Choose a display name';
+
+  @override
+  String get radioPseudonymMessage =>
+      'It will appear next to your messages during live broadcasts.';
+
+  @override
+  String get radioPseudonymHint => 'Your display name';
+
+  @override
+  String get radioPseudonymConfirm => 'Confirm';
+
+  @override
+  String get radioPseudonymInvalid => 'Between 2 and 24 characters.';
+
+  @override
+  String get radioPseudonymThrottled => 'Too many attempts. Try again later.';
+
+  @override
+  String get radioPseudonymFailed => 'Display name not saved. Try again.';
+
+  @override
+  String get radioReportAction => 'Report this message';
+
+  @override
+  String get radioReported => 'Thanks, a moderator will review it.';
+
+  @override
+  String get radioAlreadyReported => 'You have already reported this message.';
+
+  @override
+  String get radioMessageGone => 'This message is no longer available.';
+
+  @override
+  String get radioActionFailed => 'Couldn\'t do that. Try again.';
+
+  @override
+  String get radioModHide => 'Hide';
+
+  @override
+  String get radioModKeep => 'Keep';
+
+  @override
+  String get radioModSilence => 'Silence the author';
+
+  @override
+  String get radioModResetPseudonym => 'Reset display name';
+
+  @override
+  String get radioModHidden => 'Message hidden.';
+
+  @override
+  String get radioModKept => 'Message kept.';
+
+  @override
+  String get radioModSilenced => 'Author silenced until the end of this live.';
+
+  @override
+  String get radioModPseudonymReset => 'Display name reset.';
+
+  @override
+  String get radioModNotGuest => 'Only a guest\'s display name can be reset.';
+
+  @override
+  String get radioReportedQueue => 'Reported messages';
+
+  @override
+  String radioReportedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reports',
+      one: '1 report',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get radioReportedEmpty => 'No messages waiting.';
+
+  @override
+  String get radioStopListening => 'Stop listening';
 
   @override
   String get actionSeeAll => 'See all';

@@ -160,7 +160,9 @@ void main() {
   /// nomme aucune cause, c'est ici qu'elle se lit.
   group('L\'état de l\'antenne se lit sur /radio', () {
     const offAir = 'Hors antenne';
-    const live = 'En direct';
+    // « À l'antenne » et non plus « En direct » (#135) : ce mot-là est le badge
+    // d'un direct de la régie, et la radio tourne 24 h/24 sans direct.
+    const live = 'À l\'antenne';
     const retrying = 'Nouvelle tentative…';
 
     /// Peint « le son sort » : le lecteur inerte ne pose jamais `hasStarted` de

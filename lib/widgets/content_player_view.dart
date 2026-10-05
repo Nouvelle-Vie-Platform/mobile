@@ -44,23 +44,28 @@ class ContentPlayerView extends ConsumerStatefulWidget {
     this.onStop,
     this.fallbackBackgroundAsset,
     this.openSource,
-    this.stage,
+    this.scene,
   });
 
-  /// **Ce que la scène centrale dit, quand l'appelant sait mieux qu'elle**
-  /// (#125).
+  /// **La mise en page de l'appelant, à la place de celle de la fiche** (#135).
   ///
-  /// `null` — le cas de la médiathèque — garde la scène d'origine : le visuel,
-  /// puis « Lecture interrompue » ou « il faut du réseau » quand le lecteur
-  /// porte une panne.
+  /// `null` — le cas de la médiathèque — garde la fiche : visuel carré, titre,
+  /// orateur, commandes.
   ///
-  /// Non nul, il **remplace entièrement** cette scène, et c'est le pendant
-  /// d'[openSource] : quand l'appelant ouvre la source lui-même, c'est aussi lui
-  /// qui sait pourquoi elle ne joue pas. Sur l'antenne, les deux phrases
-  /// génériques mentaient par omission — la panne y est classée et reprise par
-  /// `RadioListening`, et « Reprendre » appelait `resume()` sans pré-vol, donc
-  /// sans le cookie de MediaMTX (#108).
-  final Widget? stage;
+  /// Non nul, il **remplace entièrement** le corps de l'écran lecteur, et
+  /// **seulement** lui : le chargement (`_loadOnce`, [openSource]), le geste de
+  /// lecture (`_togglePlayback`), la rétractation, les états de chargement,
+  /// d'échec et d'absence, et la cascade du fond restent ici. L'appelant reçoit
+  /// les pièces déjà câblées ([ContentPlayerSceneParts]) et les dispose à sa
+  /// façon. Seule la page live de la radio s'en sert : sa forme plein écran
+  /// (décision 12 du plan radio live) n'a rien d'une fiche, mais son écoute doit
+  /// rester exactement celle que #108, #110 et #125 ont rendue sûre.
+  ///
+  /// Il succède au paramètre `stage` de #125, dont l'unique appelant était
+  /// cette même page : la scène centrale « dit l'état réel de l'antenne » vit
+  /// désormais dans la mise en page de la radio, avec le reste.
+  final Widget Function(BuildContext context, ContentPlayerSceneParts parts)?
+      scene;
 
   /// **Comment la source s'ouvre, quand cet écran ne doit pas l'ouvrir
   /// lui-même** (#110).
@@ -130,6 +135,9 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   /// vérifie, et chercher `Icons.play_arrow` dans tout l'écran trouverait aussi
   /// celui du mini-lecteur.
   static const Key playButtonKey = Key('content_player_play');
+
+  /// Le bouton d'arrêt d'un direct, quand une [scene] le dispose (#135).
+  static const Key stopButtonKey = Key('content_player_stop');
 
   /// Le bouton « prendre une note » — **le seul geste réservé de cet écran**, et
   /// donc le seul qui ait besoin d'être désigné depuis un test. Une clé plutôt
@@ -494,6 +502,32 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
     final base = Color(content.color);
     final author = content.authorName;
 
+    final scene = widget.scene;
+    if (scene != null) {
+      final onStop = widget.onStop;
+      return _PlayerScaffold(
+        base: base,
+        background: _background(),
+        child: scene(
+          context,
+          ContentPlayerSceneParts(
+            playButton: _PlayButton(
+              contentId: content.id,
+              accent: base,
+              onPressed: () => _togglePlayback(content),
+            ),
+            stopButton: onStop == null
+                ? null
+                : _GlassCircleButton(
+                    key: ContentPlayerView.stopButtonKey,
+                    icon: Icons.stop_rounded,
+                    onPressed: onStop,
+                  ),
+          ),
+        ),
+      );
+    }
+
     return _PlayerScaffold(
       base: base,
       background: _background(),
@@ -509,13 +543,12 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
                   widget.isLive ? null : () => _showInfoSheet(context, content),
             ),
             Expanded(
-              child: widget.stage ??
-                  _PlayerStage(
-                    content: content,
-                    onResume: () => unawaited(
-                      ref.read(playbackControllerProvider.notifier).resume(),
-                    ),
-                  ),
+              child: _PlayerStage(
+                content: content,
+                onResume: () => unawaited(
+                  ref.read(playbackControllerProvider.notifier).resume(),
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
@@ -578,6 +611,23 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
       ),
     );
   }
+}
+
+/// **Les pièces de l'écran lecteur, déjà câblées**, pour une [ContentPlayerView.scene]
+/// (#135).
+///
+/// Le gros bouton porte tout le geste de la fiche — rouvrir par `openSource`,
+/// relancer après une panne, mettre en pause — et s'abonne au lecteur par
+/// `select` : une scène qui le place n'a rien à savoir de l'écoute.
+@immutable
+class ContentPlayerSceneParts {
+  const ContentPlayerSceneParts({required this.playButton, this.stopButton});
+
+  /// Lecture / pause, clé [ContentPlayerView.playButtonKey].
+  final Widget playButton;
+
+  /// L'arrêt du direct ([ContentPlayerView.onStop]), `null` sans rappel.
+  final Widget? stopButton;
 }
 
 class _PlayerScaffold extends StatelessWidget {
