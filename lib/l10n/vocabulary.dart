@@ -109,6 +109,12 @@ class AppWords {
   String get teachingAppBarTitle =>
       label('teachingAppBarTitle', _l10n.teachingAppBarTitle);
 
+  /// Le nom de l'onglet des annonces, dans la barre du bas (#132). C'est par
+  /// lui que le libellé de façade réglé au portail arrive à l'écran — le
+  /// domaine, lui, reste `announcements` partout.
+  String get navAnnouncements =>
+      label('navAnnouncements', _l10n.navAnnouncements);
+
   /// L'onglet des enseignements, dans les filtres de la médiathèque.
   String get filterTeachings => label('filterTeachings', _l10n.filterTeachings);
 

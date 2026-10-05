@@ -74,7 +74,10 @@ class AppBottomNav extends StatelessWidget {
         HomeTab.announcements => NavItem(
             icon: Icons.campaign_outlined,
             activeIcon: Icons.campaign,
-            label: context.l10n.navAnnouncements,
+            // **`context.words`, pas `context.l10n`** (#132) : le nom de cet
+            // onglet est réglé au portail (clé `navAnnouncements` du catalogue
+            // du vocabulaire), et le `.arb` n'en est que le repli.
+            label: context.words.navAnnouncements,
           ),
         HomeTab.community => NavItem(
             icon: Icons.forum_outlined,
