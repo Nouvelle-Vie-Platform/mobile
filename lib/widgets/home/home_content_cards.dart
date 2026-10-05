@@ -124,9 +124,9 @@ class HomeCarouselCard extends ConsumerWidget {
       ),
     );
     final isThisPlaying =
-      playback.contentId == content.id && playback.isPlaying;
+        playback.contentId == content.id && playback.isPlaying;
     final isThisBuffering =
-      playback.contentId == content.id && playback.isBuffering;
+        playback.contentId == content.id && playback.isBuffering;
 
     return Container(
       width: width,
@@ -243,9 +243,9 @@ class HomeListRow extends ConsumerWidget {
       ),
     );
     final isThisPlaying =
-      playback.contentId == content.id && playback.isPlaying;
+        playback.contentId == content.id && playback.isPlaying;
     final isThisBuffering =
-      playback.contentId == content.id && playback.isBuffering;
+        playback.contentId == content.id && playback.isBuffering;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -355,7 +355,8 @@ class _HomeListenButtonState extends State<_HomeListenButton> {
 
   @override
   Widget build(BuildContext context) {
-    final loading = _requestPending || (widget.isBuffering && !widget.isPlaying);
+    final loading =
+        _requestPending || (widget.isBuffering && !widget.isPlaying);
     final label = widget.isPlaying ? widget.pauseLabel : widget.listenLabel;
     final Widget icon = loading
         ? SizedBox.square(
