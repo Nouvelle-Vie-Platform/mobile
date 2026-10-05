@@ -57,9 +57,10 @@ enum SyncTrigger {
 /// Sérialise les déclenchements et écoute le cycle de vie de l'application.
 ///
 /// **Un seul cycle à la fois** : un retour au premier plan pendant qu'un
-/// tirer-pour-rafraîchir est en cours ne lance pas un second cycle, il rejoint
-/// celui qui tourne. Deux cycles concurrents se disputeraient les mêmes
-/// curseurs et les mêmes jetons de resync.
+/// tirer-pour-rafraîchir est en cours ne lance pas un second cycle **en même
+/// temps** — deux cycles concurrents se disputeraient les mêmes curseurs et les
+/// mêmes jetons de resync. Il en programme un **après** (#140, voir
+/// [trigger]) : rejoindre le cycle en vol pouvait perdre le signal.
 class SyncScheduler with WidgetsBindingObserver {
   SyncScheduler(this._synchronize, {WidgetsBinding? binding})
       : _binding = binding;
@@ -144,13 +145,54 @@ class SyncScheduler with WidgetsBindingObserver {
     }
   }
 
-  /// Lance un cycle, ou rejoint celui qui tourne déjà.
+  /// Lance un cycle — ou, si un cycle tourne déjà, **en promet un second
+  /// juste après lui**.
   ///
-  /// Rend le rapport, ou `null` si le cycle a échoué — voir [lastFailure].
+  /// Rend le rapport du cycle qui couvre ce déclencheur, ou `null` s'il a
+  /// échoué — voir [lastFailure].
+  ///
+  /// ## Pourquoi rejoindre le cycle en vol ne suffisait pas (#140)
+  ///
+  /// Ce planificateur se contentait de rendre le cycle en cours. Or un cycle
+  /// parcourt les collections **une à une** : un déclencheur reçu pendant qu'il
+  /// tire `announcements` dit peut-être qu'un message vient d'arriver, et
+  /// `group_messages` est déjà passé. Le déclencheur était alors « rejoint »…
+  /// par un cycle qui ne le verrait jamais. Le message attendait le déclencheur
+  /// suivant — un retour au premier plan, des minutes plus tard. Le plan
+  /// (`messagerie-whatsapp-plan.md` §2) l'a relevé : `trigger()` pouvait perdre
+  /// un signal.
+  ///
+  /// Désormais, un déclencheur reçu pendant un cycle en **programme un autre**,
+  /// lancé dès que le premier rend la main. Il est **coalescé** : dix
+  /// déclencheurs pendant le même cycle n'en programment qu'un, qui les couvre
+  /// tous puisqu'il part après eux. Deux cycles ne tournent toujours jamais en
+  /// même temps — ils se disputeraient les mêmes curseurs.
+  ///
+  /// Le planificateur ne sait pas quelle collection un déclencheur concerne, et
+  /// il n'a pas à le savoir : le second cycle ne coûte qu'un manifeste quand rien
+  /// n'a bougé (`has_changes: false` partout), et c'est ce qu'un signal perdu
+  /// coûtait de plus qu'on ne le paie.
   Future<SyncReport?> trigger(SyncTrigger reason) {
     final running = _inFlight;
-    if (running != null) return running;
+    if (running == null) return _start(reason);
 
+    _followUpReason = reason;
+    return _followUp ??= running.then((_) {
+      final followUpReason = _followUpReason ?? reason;
+      _followUp = null;
+      _followUpReason = null;
+      // Un cycle a pu repartir entre la fin du premier et ce rappel : il est
+      // parti **après** le déclencheur, il le couvre donc. Le rejoindre suffit.
+      return _inFlight ?? _start(followUpReason);
+    });
+  }
+
+  /// Le cycle promis à la fin du cycle en vol, s'il y en a un — partagé par
+  /// tous les déclencheurs reçus pendant ce cycle-là.
+  Future<SyncReport?>? _followUp;
+  SyncTrigger? _followUpReason;
+
+  Future<SyncReport?> _start(SyncTrigger reason) {
     lastTrigger = reason;
     final cycle = _run();
     _inFlight = cycle;
