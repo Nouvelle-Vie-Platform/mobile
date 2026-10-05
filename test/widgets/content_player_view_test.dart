@@ -16,9 +16,14 @@ import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/local/tables/download_tables.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
+import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
+import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
+import 'package:maison_du_miracle/state/gathering_providers.dart';
+import 'package:maison_du_miracle/state/measurement_providers.dart';
+import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/playback_controller.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
@@ -975,6 +980,16 @@ Future<ProviderContainer> _pump(
       contentPlayerProvider.overrideWithValue(player),
       playbackProgressReporterProvider
           .overrideWithValue(reporter ?? FakePlaybackProgressReporter()),
+      // Le suivi d'écoute vit dans le contrôleur global (#115) : un appui sur
+      // lecture ouvre une mesure, qui doit rester muette, et une surveillance de
+      // la rétractation, qui lit les deux catalogues — en mémoire, plutôt que
+      // des flux Drift ouverts pour rien.
+      playReporterProvider.overrideWithValue(FakePlayReporter()),
+      playSpoolProvider.overrideWithValue(FakePlaySpool()),
+      mediathequeRepositoryProvider
+          .overrideWithValue(InMemoryMediathequeRepository()),
+      gatheringRepositoryProvider
+          .overrideWithValue(InMemoryGatheringRepository()),
       if (networkStatus != null)
         networkStatusProvider.overrideWithValue(networkStatus),
     ],

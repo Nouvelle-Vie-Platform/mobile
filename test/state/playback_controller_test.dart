@@ -4,13 +4,30 @@
 /// Tout se lit sur l'[InertContentPlayer] : ce que le lecteur a reçu, jamais
 /// la façon dont le contrôleur l'a transmis. Et la requête courante se lit
 /// comme le mini-lecteur la lira, par le provider.
+///
+/// Le suivi d'écoute (#115) vit dans ce contrôleur : charger un enseignement
+/// ouvre un enregistreur de progression et une mesure. Le conteneur porte donc
+/// un magasin en mémoire et des rapporteurs muets — sans eux, le premier
+/// chargement ouvrirait un fichier de base sur la machine. Ce que fait ce suivi
+/// se vérifie au niveau de l'application, dans `playback_tracking_test.dart`.
 library;
 
+import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
+import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
+import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
+import 'package:maison_du_miracle/state/gathering_providers.dart';
+import 'package:maison_du_miracle/state/measurement_providers.dart';
+import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/playback_controller.dart';
+import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
+import 'package:maison_du_miracle/state/sync_providers.dart';
+
+import '../helpers/playback_doubles.dart';
 
 const _sermon = ContentRequest(
   contentId: 't-1',
@@ -29,11 +46,29 @@ const _antenna = ContentRequest(
 );
 
 /// Un conteneur sur un lecteur inerte fourni par le test.
+///
+/// Le magasin est en mémoire et les deux rapporteurs sont muets : voir l'en-tête.
+/// Les deux catalogues sont des doubles en mémoire, parce que le contrôleur
+/// surveille la rétractation du contenu chargé — et un flux Drift ouvert pour
+/// rien n'a pas sa place dans un test de transport.
 ({ProviderContainer container, InertContentPlayer player}) _setUp() {
   final player = InertContentPlayer();
   addTearDown(player.dispose);
+  final database = AppDatabase(NativeDatabase.memory());
+  addTearDown(database.close);
   final container = ProviderContainer(
-    overrides: [contentPlayerProvider.overrideWithValue(player)],
+    overrides: [
+      contentPlayerProvider.overrideWithValue(player),
+      appDatabaseProvider.overrideWithValue(database),
+      playbackProgressReporterProvider
+          .overrideWithValue(FakePlaybackProgressReporter()),
+      playReporterProvider.overrideWithValue(FakePlayReporter()),
+      playSpoolProvider.overrideWithValue(FakePlaySpool()),
+      mediathequeRepositoryProvider
+          .overrideWithValue(InMemoryMediathequeRepository()),
+      gatheringRepositoryProvider
+          .overrideWithValue(InMemoryGatheringRepository()),
+    ],
   );
   addTearDown(container.dispose);
   return (container: container, player: player);
@@ -43,6 +78,10 @@ PlaybackController _controller(ProviderContainer container) =>
     container.read(playbackControllerProvider.notifier);
 
 void main() {
+  // Le suivi pose un observateur du cycle de vie au premier enseignement
+  // chargé : il lui faut un moteur Flutter, même sans écran.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('La requête courante', () {
     test('vaut `null` tant que rien n\'est chargé', () {
       final (:container, player: _) = _setUp();

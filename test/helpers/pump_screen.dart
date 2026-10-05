@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/data/legal_notice_store.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/measurement/play_reporter.dart';
+import 'package:maison_du_miracle/data/measurement/play_spool.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
 import 'package:maison_du_miracle/data/radio/radio_handshake.dart';
@@ -19,6 +21,7 @@ import 'package:maison_du_miracle/data/repositories/group_message_composer.dart'
 import 'package:maison_du_miracle/data/repositories/group_message_sender.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
+import 'package:maison_du_miracle/data/repositories/playback_progress_reporter.dart';
 import 'package:maison_du_miracle/data/repositories/menu_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
@@ -27,6 +30,7 @@ import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/echanges_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/legal_notice_providers.dart';
+import 'package:maison_du_miracle/state/measurement_providers.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
 import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
@@ -97,6 +101,15 @@ import 'playback_doubles.dart';
 /// pour l'auth : son implémentation par défaut est HTTP dès que
 /// `AppEnv.useBackend` est vrai — et il l'est hors surcharge.
 ///
+/// Le **rapporteur d'écoute** et sa **file d'attente** le sont aussi, et pour la
+/// même raison (#115) : le suivi d'écoute vit dans le contrôleur global, donc
+/// tout test qui lance un enseignement — depuis la fiche **ou** depuis une carte
+/// de l'accueil — ouvre une mesure, et trente secondes poussées au lecteur
+/// enverraient un `POST /teachings/:id/plays`. [progress], [plays] et
+/// [playSpool] sont des paramètres nommés pour qu'un test puisse **lire** ce que
+/// ses doubles ont reçu — et non des `Override` de plus, que Riverpod 3
+/// refuserait.
+///
 /// La **mention légale du premier lancement** est posée « déjà vue », et c'est le
 /// seul repli de cette liste qui cache quelque chose plutôt que d'éviter une
 /// socket. Motif : la coquille la monte, comme elle monte les quatre onglets, et
@@ -166,6 +179,9 @@ Future<void> pumpRouter(
   GroupChannel? channel,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
+  PlaybackProgressReporter? progress,
+  PlayReporter? plays,
+  PlaySpool? playSpool,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -188,6 +204,9 @@ Future<void> pumpRouter(
           channel: channel,
           radio: radio,
           handshake: handshake,
+          progress: progress,
+          plays: plays,
+          playSpool: playSpool,
         ),
         ...overrides,
       ],
@@ -226,6 +245,9 @@ List<Override> _commonOverrides(
   GroupChannel? channel,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
+  PlaybackProgressReporter? progress,
+  PlayReporter? plays,
+  PlaySpool? playSpool,
   List<DownloadNotificationRow> notifications = const [],
 }) =>
     [
@@ -320,7 +342,10 @@ List<Override> _commonOverrides(
         (ref) => Stream.value(updateThreshold),
       ),
       playbackProgressReporterProvider
-          .overrideWithValue(FakePlaybackProgressReporter()),
+          .overrideWithValue(progress ?? FakePlaybackProgressReporter()),
+      // **La mesure d'écoute, muette** (#115) — voir l'en-tête.
+      playReporterProvider.overrideWithValue(plays ?? FakePlayReporter()),
+      playSpoolProvider.overrideWithValue(playSpool ?? FakePlaySpool()),
       networkTransportProvider.overrideWithValue(FixedNetworkTransport()),
       // Les réglages d'apparence sont posés **par un flux nu**, et pour la
       // raison la plus coûteuse de ce dépôt : lus depuis le magasin, ils
@@ -380,6 +405,9 @@ Future<void> pumpScreen(
   GroupChannel? channel,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
+  PlaybackProgressReporter? progress,
+  PlayReporter? plays,
+  PlaySpool? playSpool,
   List<DownloadNotificationRow> notifications = const [],
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
@@ -409,6 +437,9 @@ Future<void> pumpScreen(
           channel: channel,
           radio: radio,
           handshake: handshake,
+          progress: progress,
+          plays: plays,
+          playSpool: playSpool,
           notifications: notifications,
         ),
         ...overrides,
