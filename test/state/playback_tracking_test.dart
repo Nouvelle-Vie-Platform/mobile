@@ -43,6 +43,7 @@ import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/widgets/home/home_content_cards.dart';
 import 'package:maison_du_miracle/widgets/home/home_teaching_section.dart';
+import 'package:maison_du_miracle/widgets/mini_player.dart';
 
 import '../helpers/playback_doubles.dart';
 import '../helpers/pump_screen.dart';
@@ -385,6 +386,74 @@ void main() {
         await database().playbackDao.localPositionFor(RadioConfig.contentId),
         isNull,
       );
+    });
+  });
+
+  group('Depuis le mini-lecteur (#116)', () {
+    Finder inMini(Finder finder) =>
+        find.descendant(of: find.byKey(MiniPlayer.cardKey), matching: finder);
+
+    testWidgets('la ✕ enregistre la position avant de fermer', (tester) async {
+      await pumpApp(tester);
+      await launchFromHome(tester);
+      await reach(tester, const Duration(seconds: 12));
+      expect(find.byKey(MiniPlayer.cardKey), findsOneWidget,
+          reason: 'prémisse : le mini-lecteur est là');
+
+      await tester.tap(find.byKey(MiniPlayer.closeKey));
+      await settle(tester);
+
+      expect(find.byKey(MiniPlayer.cardKey), findsNothing);
+      expect(player.value, const ContentPlayback());
+      expect(await savedSeconds(tester), 12);
+      expect(progress.reports.single.contentId, _id);
+      expect(progress.reports.single.positionSeconds, 12);
+    });
+
+    testWidgets('la pause enregistre la position, sans fermer', (tester) async {
+      await pumpApp(tester);
+      await launchFromHome(tester);
+      await reach(tester, const Duration(seconds: 12));
+
+      await tester.tap(find.byKey(MiniPlayer.mainButtonKey));
+      await settle(tester);
+
+      expect(player.value.isPlaying, isFalse);
+      expect(find.byKey(MiniPlayer.cardKey), findsOneWidget);
+      expect(await savedSeconds(tester), 12);
+      expect(progress.reports.single.positionSeconds, 12);
+    });
+
+    testWidgets(
+        'la radio lancée par-dessus un enseignement : la carte passe en '
+        'variante antenne, et la position du prêche est écrite',
+        (tester) async {
+      await pumpApp(tester);
+      await launchFromHome(tester);
+      await reach(tester, const Duration(seconds: 12));
+      expect(inMini(find.text(_title)), findsOneWidget, reason: 'prémisse');
+      expect(find.byKey(MiniPlayer.skipForwardKey), findsOneWidget,
+          reason: 'prémisse');
+
+      final starting = container
+          .read(radioListeningProvider.notifier)
+          .start(title: 'New Life Radio');
+      await settle(tester);
+      await starting;
+      await settle(tester);
+
+      // La carte est celle de l'antenne : son titre, son badge, ni barre ni
+      // sauts.
+      expect(inMini(find.text('New Life Radio')), findsOneWidget);
+      expect(inMini(find.text(_title)), findsNothing);
+      expect(find.byKey(MiniPlayer.onAirBadgeKey), findsOneWidget);
+      expect(find.byKey(MiniPlayer.progressKey), findsNothing);
+      expect(find.byKey(MiniPlayer.skipBackwardKey), findsNothing);
+      expect(find.byKey(MiniPlayer.skipForwardKey), findsNothing);
+      // Et le prêche a gardé sa place.
+      expect(await savedSeconds(tester), 12);
+      expect(progress.reports.single.contentId, _id);
+      expect(progress.reports.single.positionSeconds, 12);
     });
   });
 
