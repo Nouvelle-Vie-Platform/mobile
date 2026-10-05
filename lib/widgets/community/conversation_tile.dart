@@ -8,6 +8,7 @@ import '../../theme/app_typography.dart';
 import '../../utils/event_time.dart';
 import '../app_avatar.dart';
 import '../app_card.dart';
+import '../unread_badge.dart';
 
 /// Tuile d'une conversation du hub « Échanges » : avatar, nom, aperçu du
 /// dernier message et horodatage. Le tap ouvre le chat (décision D7).
@@ -32,8 +33,12 @@ class ConversationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l = context.l10n;
-    final preview = conversation.lastMessagePreview;
     final stamp = conversation.lastMessageAt;
+    // **Un dernier message sans texte est un média** (#140) : il y a un instant,
+    // mais pas de phrase. On le dit, plutôt que de laisser croire au vide.
+    final preview = conversation.lastMessagePreview ??
+        (stamp != null ? l.echangesMediaPreview : null);
+    final unread = conversation.unreadCount;
 
     return AppCard(
       onTap: onTap,
@@ -50,7 +55,12 @@ class ConversationTile extends StatelessWidget {
                   conversation.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.bodyStrong,
+                  // Une conversation qui attend une lecture se voit : titre
+                  // plus appuyé, comme l'heure et la pastille à droite.
+                  style: unread > 0
+                      ? AppTypography.bodyStrong
+                          .copyWith(fontWeight: FontWeight.w800)
+                      : AppTypography.bodyStrong,
                 ),
                 if (preview != null && preview.isNotEmpty) ...[
                   const SizedBox(height: 2),
@@ -68,12 +78,22 @@ class ConversationTile extends StatelessWidget {
               ],
             ),
           ),
-          if (stamp != null) ...[
+          if (stamp != null || unread > 0) ...[
             const SizedBox(width: AppSpacing.sm),
-            Text(
-              formatConversationStamp(stamp, l.localeName),
-              style:
-                  AppTypography.caption.copyWith(color: palette.textSecondary),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (stamp != null)
+                  Text(
+                    formatConversationStamp(stamp, l.localeName),
+                    style: AppTypography.caption
+                        .copyWith(color: palette.textSecondary),
+                  ),
+                if (unread > 0) ...[
+                  const SizedBox(height: 4),
+                  UnreadBadge(count: unread),
+                ],
+              ],
             ),
           ],
         ],

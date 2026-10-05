@@ -36,6 +36,7 @@ import '../state/auth_providers.dart';
 import '../state/legal_providers.dart';
 import '../state/repository_providers.dart';
 import '../widgets/app_background.dart';
+import '../widgets/home_tab.dart';
 import '../widgets/mini_player_host.dart';
 
 /// Noms des routes nommées (à utiliser avec `context.goNamed` / `pushNamed`).
@@ -345,7 +346,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: AppRoute.home,
         path: '/home',
-        builder: (_, __) => const AppBackground(child: HomeShell()),
+        // `?tab=<nom>` (#140) : l'onglet de départ. Seul le retour d'un fil
+        // ouvert par une notification s'en sert — `/home?tab=community`, la
+        // liste des Échanges. Un nom inconnu retombe sur l'accueil.
+        builder: (_, state) => AppBackground(
+          child: HomeShell(
+            initialTab: HomeTab.values
+                .asNameMap()[state.uri.queryParameters['tab']],
+          ),
+        ),
       ),
       // Profil **en plus de l'onglet**, et non à sa place : l'onglet est la
       // porte d'entrée, cette route-ci reste le lien profond (`/profile` est une

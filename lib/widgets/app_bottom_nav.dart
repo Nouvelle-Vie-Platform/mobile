@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../l10n/l10n_extension.dart';
 import '../theme/app_palette.dart';
 import 'home_tab.dart';
+import 'unread_badge.dart';
 import '../theme/app_typography.dart';
 
 /// Élément de la barre de navigation (icône au repos / active + libellé).
@@ -43,7 +44,12 @@ class AppBottomNav extends StatelessWidget {
     super.key,
     required this.current,
     required this.onSelect,
+    this.badges = const {},
   });
+
+  /// **Les pastilles des onglets** (#140) : aujourd'hui le seul total des
+  /// non-lus d'Échanges. Un onglet absent, ou à zéro, n'en porte pas.
+  final Map<HomeTab, int> badges;
 
   /// Hauteur de la barre, **nommée parce qu'un autre widget en dépend** : la
   /// coquille pose la mention légale du premier lancement juste au-dessus, et
@@ -149,7 +155,19 @@ class AppBottomNav extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(selected ? item.activeIcon : item.icon, color: color, size: 24),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(selected ? item.activeIcon : item.icon,
+                  color: color, size: 24),
+              if ((badges[tab] ?? 0) > 0)
+                Positioned(
+                  top: -6,
+                  right: -12,
+                  child: UnreadBadge(count: badges[tab]!, size: 18),
+                ),
+            ],
+          ),
           const SizedBox(height: 3),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),

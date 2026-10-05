@@ -113,7 +113,10 @@ class _Body extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
-              l.groupMembers(group.members.length),
+              // L'effectif **servi par le serveur** (#140), comme l'en-tête —
+              // jamais la longueur du roster local, qui garde la ligne d'un
+              // compte effacé (contrat M1a §4).
+              l.groupMembers(group.memberCount),
               style: AppTypography.h5,
             ),
           ),
