@@ -204,6 +204,8 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
   - `local/` — **le magasin local Drift**, voir ci-dessous.
   - `realtime/` — **le canal SSE d'un fil ouvert** (#101) : un *signal* qui pousse
     le moteur, et qui n'écrit jamais. Voir « Le temps réel par SSE » plus bas.
+    Le canal **radio** (#135), dont la charge *est* la donnée, vit à part dans
+    `radio/` — voir « La page live ».
   - `pickers/status_image_picker.dart` — le choix d'une image de fond, derrière
     une abstraction (les tests injectent un sélecteur inerte).
   - `app_version.dart` — `AppVersionReader` : la version et le build du binaire,
@@ -595,7 +597,8 @@ revenus avec #125, parce que `/radio` les appelle.
 #### Ce que `/radio` affiche (#125)
 
 `RadioAirStatus` (`screens/radio_screen.dart`) **remplace la scène centrale** de
-la fiche, par le paramètre additif `stage:` de `ContentPlayerView` (pendant
+la fiche — d'abord par le paramètre `stage:` de `ContentPlayerView`, depuis #135
+par la **scène** de la page live, qui lui garde la place centrale (pendant
 d'`openSource` : qui ouvre la source sait pourquoi elle ne joue pas). Il lit
 `radioListeningProvider` et `radioAntennaProvider`, par ordre de priorité :
 
@@ -603,7 +606,7 @@ d'`openSource` : qui ouvre la source sait pourquoi elle ne joue pas). Il lit
 | --- | --- |
 | abandon (`RadioPhase.failed`) | carte `AppErrorState` : la cause (`radioFailure*`), `radioGaveUpMessage`, « Réessayer » |
 | reprise (`retrying`) | pastille « Nouvelle tentative… », **sans** nommer la panne |
-| lecture (`playing`) | pastille « En direct » (`radioLive`) |
+| lecture (`playing`) | pastille « À l'antenne » (`radioLive`) — **plus « En direct »** depuis #135 : ce mot est le badge d'un direct de la régie, et la radio tourne 24 h/24 sans direct |
 | repos ou connexion, `isSilent` | pastille « Hors antenne » |
 | sinon | rien — le bouton de lecture montre déjà qu'il cherche |
 
@@ -624,8 +627,94 @@ Trois règles à ne pas défaire :
    restait affichée — c'est le test « Réessayer relance par le pré-vol » de
    `radio_screen_test.dart` qui l'a révélé.
 
-La médiathèque ne passe pas `stage:` et garde sa scène (« Lecture
+La médiathèque ne passe pas `scene:` et garde sa fiche (« Lecture
 interrompue », « il faut du réseau »).
+
+#### La page live (#135) — la couche sociale au-dessus du son
+
+Plan : `server-portal/docs/radio-live-plan.md` (décisions 2, 4, 5, 6, 8, 9, 12,
+13). Contrat : `GET /radio/antenna` (`listeners`, `live`), `GET|POST
+/radio/comments`, `PUT /radio/pseudonym`, `POST /radio/reactions`,
+`/radio/comments/:id/reports`, `/radio/moderation/comments[/:id/…]`, et les
+canaux Transmit `radio` (membres **et invités**) et `radio/moderation` (privé).
+
+```
+ ←  ● EN DIRECT  👁 128         ⚑      badge en direct seulement ; compteur absent si null ;
+ New Life Radio                         ⚑ = file des signalements, modérateur seulement
+      (RadioAirStatus)
+                                 ❤️     réactions qui montent (agrégats du canal)
+ Ama K.  Amen !                  🙏     fil sur un voile, en direct seulement
+ [ Écrire…                  ] ➤  🔥     champ en direct ; cinq boutons toujours
+          ■       ⏸
+```
+
+**L'écoute n'a pas bougé, et c'est la règle de la tranche.** `ContentPlayerView`
+garde le chargement (`openSource`), la relance (`RadioListening.start`), la
+rétractation et ses états ; il **dispose** ses pièces dans une scène
+(`scene:`, `ContentPlayerSceneParts` : le gros bouton déjà câblé, l'arrêt), qui
+a succédé à `stage:`. La couche sociale est **à côté** : `radioLiveProvider`
+(`state/radio_live_providers.dart`) peut perdre son canal ou ses routes, le son
+continue. Fichiers : `data/radio/radio_live.dart` (modèles),
+`radio_channel.dart` + `sse_radio_channel.dart` (canal),
+`radio_live_repository.dart` + `http_radio_live_repository.dart` (routes),
+`widgets/radio_live/` (scène, fil, réactions, feuilles).
+
+Six points qui se ratent en silence :
+
+1. **Le canal radio n'est pas dans `lib/data/realtime/`**, et ce n'est pas un
+   oubli : ici la charge de l'événement **est** la donnée (un cœur, un message,
+   un compteur), et le garde-fou de `realtime/` interdit tout `jsonDecode` pour
+   une raison qui ne vaut pas ici — la radio n'a pas de magasin, donc pas de
+   chemin mixte possible. Le **protocole** est repris à l'identique de
+   `sse_group_channel.dart` (même `Dio`, ordre `events` → `subscribe`, `uid` neuf,
+   `receiveTimeout` désarmé, refus jamais réessayé). Une seule connexion porte
+   les deux abonnements d'un modérateur ; un refus de `radio/moderation` ne coupe
+   pas `radio`.
+2. **Une source de vérité par moment.** À l'ouverture de la page **et** à chaque
+   connexion réussie (`RadioChannelOpened`, émis par le client après
+   l'abonnement), `GET /radio/antenna` + `GET /radio/comments` (+ la file d'un
+   modérateur) **remplacent** l'affichage ; entre les deux, les événements
+   s'appliquent en mémoire. Une bascule bleu/vert coupe Transmit ~120 s : sans
+   cette relecture, un message masqué pendant la coupure resterait à l'écran.
+3. **Jamais de sondage.** La seule minuterie rouvre un canal tombé
+   (`kRadioChannelRetryDelay`, **10 s, valeur à confirmer**), et une réouverture
+   ne relit rien tant qu'elle n'a pas réussi. Garde-fou de source :
+   `radio_live_controller_test.dart` interdit `Timer.periodic` et
+   `Stream.periodic` dans les fichiers de la page live.
+4. **`autoDispose`, tenu par l'écran** : `RadioScreen` fait un `ref.listen` (et
+   non un `watch` : un cœur ne reconstruit pas le lecteur), y compris pendant
+   que la route d'antenne charge. Quitter la page rend la socket ; l'arrière-plan
+   ferme, le retour **relit puis rouvre**.
+5. **Les réactions montent dans le geste** (flux `bursts` **synchrone**) ; le
+   décompte `_ownPending` empêche la mienne de remonter avec l'agrégat suivant,
+   sans horloge (un refus la retire du décompte). Un lot d'agrégat est plafonné
+   (`kRadioReactionBurstCap`), l'écran à `kRadioMaxParticles`, et une seule
+   horloge (`Ticker`) s'arrête dès la dernière particule sortie. 429 silencieux.
+   Animations réduites du système : rien ne monte.
+6. **Le pseudo d'un invité se demande au premier refus**, pas avant :
+   `canComment` est faux pour un invité sans pseudo alors qu'il doit pouvoir
+   écrire. Le champ est offert dès qu'il y a un direct et pas de silence ;
+   `E_RADIO_PSEUDONYM_REQUIRED` ouvre « Choisissez un pseudo », et le message
+   (ou le signalement) **repart seul**. Le serveur se souvient du pseudo, lié au
+   jeton d'appareil.
+
+**Les invités n'ont rien de particulier à faire** : le coffre ne tient qu'un
+jeton, et `ApiClient` pose le jeton d'appareil sur le flux SSE comme sur les
+routes. Le serveur admet le garde `device` sur le canal `radio` et les cinq
+routes de l'audience, et sur elles seulement.
+
+**Les outils de modération ne s'affichent que sur `viewer.moderator`** — appui
+long sur un message : masquer, réduire au silence, réinitialiser le pseudo
+(invité) ; file « signalés » avec badge : garder ou masquer. Un auditeur
+ordinaire n'a que « Signaler ».
+
+Côté tests : `pumpScreen` / `pumpRouter` posent un canal **muet**
+(`SilentRadioChannel`) et des routes **inertes** (`InertRadioLiveRepository` :
+hors direct), par les paramètres nommés `radioChannel:` et `radioLive:`. Les
+doubles pilotables sont dans `test/helpers/radio_live_doubles.dart`. Trois
+images de référence (`test/screens/goldens/`, 390 × 844) se génèrent par
+`flutter test --update-goldens test/screens/radio_live_golden_test.dart` ; les
+emojis y sont des rectangles (aucune police emoji dans le harnais).
 
 #### L'URL vient d'une route publique, jamais d'une constante
 
@@ -641,8 +730,9 @@ rien, puisqu'on ne peut pas écouter hors ligne*.
 `server-portal#493`, en parallèle. `kRadioAntennaPath` et
 `RadioAntenna.fromJson` sont les **deux seuls** endroits à réconcilier, et le
 lecteur accepte une poignée de synonymes nommés (`streamUrl`/`url`/`hlsUrl`,
-`onAir`/`isOnAir`/`live`) : un mot deviné de travers rendrait la radio muette
-**sans qu'aucun test rougisse**.
+`onAir`/`isOnAir` — `live` en est sorti avec #135 : c'est le direct de la
+régie) : un mot deviné de travers rendrait la radio muette **sans qu'aucun test
+rougisse**.
 
 ⚠️ **`onAir` nul n'est pas `onAir` faux.** « Je ne sais pas » laisse le bouton
 **au repos** ; seul un `false` reçu l'atténue. Un corps illisible,
