@@ -1,0 +1,102 @@
+name: APK sur tag
+
+# Un tag `vX.Y.Z` poussé construit l'APK et le publie dans une Release GitHub.
+#
+# **Le tag fixe la version** : `v1.2.0` donne `versionName` 1.2.0, sans toucher
+# au pubspec. Le `versionCode` est le numéro de run de ce workflow : il ne fait
+# que croître, ce qu'Android exige d'une mise à jour.
+#
+# ⚠️ **Signé avec la clé de debug** (choix du 2026-10-05, en attendant une clé de
+# release). Elle est régénérée sur chaque runner : deux APK successifs ne portent
+# donc PAS la même signature, et Android refuse d'installer l'un par-dessus
+# l'autre. Il faut désinstaller l'app avant chaque nouvel APK — on perd alors la
+# session et les téléchargements. Le jour où une clé de release existera, c'est
+# `signingConfig` dans `android/app/build.gradle.kts` et ce workflow qui changent.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    name: Construire et publier l'APK
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Lire la version dans le tag
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          # Trois nombres, rien d'autre : `versionName` s'affiche dans « À
+          # propos », et le bandeau de mise à jour compare les versions segment
+          # par segment — un `1.2.0-rc1` le rendrait muet.
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag « $tag » invalide : attendu vX.Y.Z (ex. v1.2.0)."
+            exit 1
+          fi
+          echo "name=$version" >> "$GITHUB_OUTPUT"
+          echo "code=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # AGP 9 exige un JDK 17 au moins ; 21 est celui de la machine de dev
+      # (CLAUDE.md, « Environnement »).
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.2'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Un tag ne publie jamais ce que la CI de `main` refuserait.
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build APK
+        run: >
+          flutter build apk --release
+          --build-name=${{ steps.version.outputs.name }}
+          --build-number=${{ steps.version.outputs.code }}
+          --dart-define=API_BASE_URL=https://eenv.brainsial.com
+
+      - name: Nommer l'APK
+        id: apk
+        run: |
+          file="nouvelle-vie-${{ steps.version.outputs.name }}.apk"
+          mv build/app/outputs/flutter-apk/app-release.apk "$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+
+      - name: Publier la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notes.md <<EOF
+          APK Android ${{ steps.version.outputs.name }} (versionCode ${{ steps.version.outputs.code }}).
+
+          ⚠️ Signé avec une clé de debug : pour installer cet APK sur un téléphone qui a déjà l'app, il faut d'abord la désinstaller.
+          EOF
+          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.file }}" \
+            --title "Nouvelle Vie ${{ steps.version.outputs.name }}" \
+            --notes-file notes.md \
+            --generate-notes \
+            --verify-tag
