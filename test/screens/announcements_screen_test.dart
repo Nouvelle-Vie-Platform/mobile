@@ -150,6 +150,31 @@ void main() {
       },
     );
 
+    testWidgets(
+      'le premier statut est chargé et signalé quand le mur arrive après la '
+      'première image',
+      (tester) async {
+        // Le magasin répond de façon asynchrone, après la première image : le
+        // chargement posé à cette image-là trouvait une liste vide, et rien
+        // n'était signalé à la coquille avant le premier glissement.
+        final reports = <bool>[];
+        await pumpScreen(
+          tester,
+          Scaffold(body: AnnouncementsScreen(onVideoChanged: reports.add)),
+          announcements: _FakeRepository([
+            _status(id: 'a', body: 'Paix sur vous.'),
+          ]),
+          overrides: [
+            statusPlayerProvider.overrideWithValue(InertStatusPlayer()),
+          ],
+        );
+        await tester.pump();
+
+        expect(find.text('Paix sur vous.'), findsOneWidget);
+        expect(reports, [false]);
+      },
+    );
+
     testWidgets('sans annonce, affiche l’état vide', (tester) async {
       await pumpViewer(tester, const []);
 

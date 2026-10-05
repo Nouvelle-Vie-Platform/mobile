@@ -318,6 +318,18 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     ref.listen<bool>(
         statusMutedProvider, (_, muted) => _player.setMuted(muted));
 
+    // **Le premier statut se charge quand le mur arrive**, pas seulement à la
+    // première image : le magasin répond de façon asynchrone, presque toujours
+    // après elle, et `_loadCurrent` y trouvait une liste vide. Rien n'était
+    // alors chargé ni signalé (`onVideoChanged`) avant le premier glissement —
+    // ni lecture, ni bouton central estompé, ni mini-lecteur masqué (#117).
+    ref.listen<AsyncValue<List<AnnouncementView>>>(announcementsProvider,
+        (previous, next) {
+      final had = previous?.value?.isNotEmpty ?? false;
+      final has = next.value?.isNotEmpty ?? false;
+      if (!had && has) _loadCurrent();
+    });
+
     // Le mur vient du magasin local : sa lecture est asynchrone, et les trois
     // états sont **distincts**. Un magasin vide au premier lancement est la
     // réponse normale — la synchronisation ne l'a pas encore rempli —, jamais
