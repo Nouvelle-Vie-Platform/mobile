@@ -41,6 +41,9 @@ const Duration kRadioParticleLife = Duration(milliseconds: 2400);
 /// monter en bloc.
 const Duration kRadioParticleStagger = Duration(milliseconds: 140);
 
+/// La marge minimale entre une réaction en vol et le bord droit de l'écran.
+const double _kEdgeMargin = 6;
+
 class RadioReactionParticles extends ConsumerStatefulWidget {
   const RadioReactionParticles({super.key});
 
@@ -156,7 +159,12 @@ class _RadioReactionParticlesState extends ConsumerState<RadioReactionParticles>
     final rise = box.maxHeight * 0.85;
     final phase = (p.seed * 2.399) % (2 * math.pi);
     final sway = 10 + (p.seed % 3) * 4.0;
-    final x = lane / 2 - 18 + math.sin(t * 2 * math.pi + phase) * sway;
+    // Ancrée par la DROITE : une réaction large (« Amen ») déborde vers le fil,
+    // jamais hors de l'écran.
+    final right = math.max(
+      _kEdgeMargin,
+      lane / 2 - 18 - math.sin(t * 2 * math.pi + phase) * sway,
+    );
     final y = t * rise;
     final opacity = t < 0.1
         ? t / 0.1
@@ -165,7 +173,7 @@ class _RadioReactionParticlesState extends ConsumerState<RadioReactionParticles>
             : 1.0;
     final scale = 0.8 + 0.4 * math.min(1.0, t * 3);
     return Positioned(
-      left: x,
+      right: right,
       bottom: y,
       child: Opacity(
         opacity: opacity.clamp(0.0, 1.0),

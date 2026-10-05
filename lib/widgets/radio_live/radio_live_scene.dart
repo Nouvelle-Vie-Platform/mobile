@@ -24,10 +24,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/radio_config.dart';
 import '../../data/radio/radio_live.dart';
+import '../../data/radio/radio_status.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_extension.dart';
 import '../../state/player_providers.dart';
 import '../../state/radio_live_providers.dart';
+import '../../state/radio_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -74,6 +76,12 @@ class RadioLiveScene extends ConsumerWidget {
         ref.watch(radioLiveProvider.select((s) => s.offersComposer));
     final silenced = ref
         .watch(radioLiveProvider.select((s) => s.isLive && s.viewer.silenced));
+    // En direct, une écoute qui va bien n'a rien à dire de plus que le badge
+    // EN DIRECT : la pastille ne revient que pour une reprise, une panne ou
+    // « hors antenne ».
+    final playing = ref.watch(
+        radioListeningProvider.select((s) => s.phase == RadioPhase.playing));
+    final showsStatus = !(isLive && playing);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -95,16 +103,15 @@ class RadioLiveScene extends ConsumerWidget {
             child: LayoutBuilder(
               builder: (context, box) => Stack(
                 children: [
-                  Positioned(
-                    left: 0,
-                    right: _kReactionColumn,
-                    top: 0,
-                    bottom: 0,
-                    child: Align(
-                      alignment: const Alignment(0, -0.4),
-                      child: status,
+                  // Centrée sur toute la largeur, pas sur celle que laisse
+                  // la colonne des réactions : décentrée, elle se voyait.
+                  if (showsStatus)
+                    Positioned.fill(
+                      child: Align(
+                        alignment: const Alignment(0, -0.4),
+                        child: status,
+                      ),
                     ),
-                  ),
                   if (isLive)
                     Positioned(
                       left: 0,
