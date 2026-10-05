@@ -459,13 +459,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get requestsTitle => 'Requêtes';
 
   @override
+  String get echangesTabMessages => 'Messages';
+
+  @override
+  String get echangesTabRequests => 'Requêtes';
+
+  @override
   String get requestsEmptyTitle => 'Aucune requête';
 
   @override
-  String get requestsEmpty => 'Vos requêtes et suggestions apparaîtront ici.';
+  String get requestsEmpty =>
+      'Vos demandes de prière, suggestions et réclamations apparaîtront ici, avec leur suivi.';
 
   @override
   String get requestsAdd => 'Nouvelle requête';
+
+  @override
+  String get requestsLoadError => 'Impossible de lire vos requêtes.';
+
+  @override
+  String get requestStatusNew => 'Nouvelle';
+
+  @override
+  String get requestStatusInProgress => 'En cours';
+
+  @override
+  String get requestStatusResolved => 'Traitée';
+
+  @override
+  String get requestStatusArchived => 'Archivée';
+
+  @override
+  String requestSentOn(String date) {
+    return 'Envoyée le $date';
+  }
 
   @override
   String get memberMessage => 'Message';
@@ -791,16 +818,42 @@ class AppLocalizationsFr extends AppLocalizations {
   String get newRequestTypeLabel => 'Type de requête';
 
   @override
+  String get requestTypePrayer => 'Demande de prière';
+
+  @override
   String get requestTypeSuggestion => 'Suggestion';
 
   @override
-  String get requestTypeComplaint => 'Plainte';
+  String get requestTypeComplaint => 'Réclamation';
 
   @override
-  String get requestTypeReport => 'Signalement';
+  String get newRequestTitleLabel => 'Objet';
 
   @override
-  String get requestTypeOther => 'Autre';
+  String get newRequestTitleHint => 'En quelques mots';
+
+  @override
+  String get newRequestTitleTooShort => 'Au moins 3 caractères.';
+
+  @override
+  String get newRequestContentEmpty => 'Écrivez votre message.';
+
+  @override
+  String get newRequestShareLabel => 'Partager avec la communauté';
+
+  @override
+  String get newRequestShareSubtitle =>
+      'Elle apparaîtra sur le mur de prière. Sinon, seule l\'équipe pastorale la lira.';
+
+  @override
+  String get newRequestSent => 'Requête envoyée.';
+
+  @override
+  String get newRequestErrorNetwork =>
+      'Envoi impossible : vérifiez votre connexion.';
+
+  @override
+  String get newRequestErrorGeneric => 'L\'envoi a échoué. Réessayez.';
 
   @override
   String get newRequestDescribeLabel => 'Décrivez votre requête';

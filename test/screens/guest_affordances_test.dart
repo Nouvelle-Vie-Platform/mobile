@@ -56,6 +56,11 @@ const _screensBehindTheGuard = <String, String>{
   // montait jusqu'ici hors de l'écran, un `IndexedStack` construisant tous ses
   // enfants.
   'lib/screens/groups_screen.dart': 'onglet 2, remplacé par le formulaire',
+  // L'onglet « Requêtes » de la page Échanges (#148) : monté par
+  // `GroupsScreen` pour un membre seulement — la page elle-même ne l'est pas
+  // pour un invité — et par `/requests`, route réservée.
+  'lib/widgets/community/my_requests_tab.dart':
+      'onglet de membre, sous Échanges ou /requests',
   // Le bandeau de complétion de profil ne se rend que si `authProvider.user`
   // n'est pas nul (`showBanner` dans `HomeScreen`, et son jumeau dans le Profil).
   // Il vit sur un écran ouvert, mais il n'existe que pour un membre — et un
