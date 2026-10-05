@@ -234,6 +234,23 @@ class AppDatabase extends _$AppDatabase {
         announcements.mediaWaveform,
       ];
 
+  /// `group_messages` dans sa forme v18 et v19 — `body` encore `NOT NULL`.
+  /// Pour les migrations de test vers une version antérieure à la v20
+  /// seulement (palier v17 → v18) ; un téléphone migre toujours jusqu'à
+  /// `schemaVersion`, où `createTable` donne la forme courante.
+  static const String _groupMessagesV18 =
+      'CREATE TABLE IF NOT EXISTS "group_messages" ('
+      '"sync_stamp" INTEGER NOT NULL DEFAULT 0, '
+      '"id" TEXT NOT NULL, '
+      '"group_id" TEXT NOT NULL, '
+      '"author_id" TEXT NULL, '
+      '"is_system" INTEGER NOT NULL DEFAULT 0 CHECK ("is_system" IN (0, 1)), '
+      '"body" TEXT NOT NULL, '
+      '"client_message_id" TEXT NULL, '
+      '"client_created_at" INTEGER NULL, '
+      '"created_at" INTEGER NULL, '
+      'PRIMARY KEY ("id"))';
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
@@ -586,7 +603,18 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(groups);
             await m.createTable(groupMembers);
             await m.createTable(groupJoinRequests);
-            await m.createTable(groupMessages);
+            // `createTable` emploie la forme **courante**, où `body` est
+            // nullable depuis la v20. Sur un téléphone, `to` vaut toujours
+            // `schemaVersion` ; seule une migration de test vers une version
+            // intermédiaire (v1 → v18, v16 → v19…) doit retrouver la forme
+            // d'alors, `NOT NULL` compris — même raison que les colonnes du
+            // média des annonces au palier v2 → v3. SQLite ne sait pas
+            // resserrer une contrainte : la table d'alors s'écrit telle quelle.
+            if (to < 20) {
+              await customStatement(_groupMessagesV18);
+            } else {
+              await m.createTable(groupMessages);
+            }
             await m.createTable(pendingGroupMessages);
           }
 
