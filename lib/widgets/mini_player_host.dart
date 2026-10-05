@@ -145,7 +145,22 @@ class _MiniPlayerHostState extends ConsumerState<MiniPlayerHost> {
 
   void _attach(GoRouter router) {
     router.routerDelegate.addListener(_refresh);
-    _popups = MiniPlayerPopupObserver.of(router)?..addListener(_refresh);
+    _findPopups();
+    // Au premier montage, le `Navigator` n'est pas encore construit — il l'est
+    // **sous** l'hôte. On le cherche donc aussi après la première image, avant
+    // qu'aucune fenêtre ne puisse s'ouvrir.
+    if (_popups == null) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _popups == null) _findPopups();
+      });
+    }
+  }
+
+  /// Retrouve l'observateur des fenêtres surgissantes, s'il n'est pas déjà
+  /// branché et que le `Navigator` du routeur existe.
+  void _findPopups() {
+    if (_popups != null) return;
+    _popups = MiniPlayerPopupObserver.of(widget.router)?..addListener(_refresh);
   }
 
   void _detach(GoRouter router) {
@@ -162,6 +177,7 @@ class _MiniPlayerHostState extends ConsumerState<MiniPlayerHost> {
   /// la fin de l'image.
   void _refresh() {
     if (!mounted) return;
+    _findPopups();
     final binding = SchedulerBinding.instance;
     if (binding.schedulerPhase != SchedulerPhase.persistentCallbacks) {
       setState(() {});
@@ -385,8 +401,15 @@ class MiniPlayerPopupObserver extends NavigatorObserver with ChangeNotifier {
   bool get hasPopup => _count > 0;
 
   /// L'observateur posé sur [router], s'il y en a un.
+  ///
+  /// Lu sur le `Navigator` racine (`navigatorKey.currentState.widget`), seule
+  /// voie publique : go_router ne rend ses `observers` qu'aux tests. `null`
+  /// tant que ce `Navigator` n'est pas construit (premier montage, routeur
+  /// sans route résolue) — l'hôte réessaie alors plus tard.
   static MiniPlayerPopupObserver? of(GoRouter router) {
-    for (final observer in router.routerDelegate.builder.observers) {
+    final navigator = router.routerDelegate.navigatorKey.currentState;
+    if (navigator == null) return null;
+    for (final observer in navigator.widget.observers) {
       if (observer is MiniPlayerPopupObserver) return observer;
     }
     return null;
