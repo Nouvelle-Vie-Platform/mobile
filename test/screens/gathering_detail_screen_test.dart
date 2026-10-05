@@ -290,6 +290,10 @@ void main() {
       // rétractation doit provoquer.
       expect(find.text('Nuit de gloire'), findsOneWidget);
       await tester.tap(find.byIcon(Icons.play_arrow));
+      // Deux `pump` : l'appui ouvre le média de façon asynchrone (reprise,
+      // résolution, chargement) — l'ouverture ne le fait plus d'avance — et
+      // l'écran ne peint le son qu'à la frame suivante.
+      await tester.pump();
       await tester.pump();
       expect(find.byIcon(Icons.pause), findsOneWidget);
       expect(find.byType(Slider), findsOneWidget);
@@ -320,6 +324,10 @@ void main() {
       // Même prémisse : il faut un son qui joue pour que « ne redémarre pas »
       // dise quelque chose.
       await tester.tap(find.byIcon(Icons.play_arrow));
+      // Deux `pump` : l'appui ouvre le média de façon asynchrone (reprise,
+      // résolution, chargement) — l'ouverture ne le fait plus d'avance — et
+      // l'écran ne peint le son qu'à la frame suivante.
+      await tester.pump();
       await tester.pump();
       expect(find.byIcon(Icons.pause), findsOneWidget);
 
