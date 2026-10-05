@@ -290,20 +290,20 @@ void main() {
       expect(mini, findsNothing);
     });
 
-    testWidgets('un statut vidéo plein écran dans Annonces le masque',
-        (tester) async {
+    testWidgets(
+        'la visionneuse d\'Annonces le masque, même sur un statut image, '
+        'et il revient quand on la quitte', (tester) async {
+      // Une **image**, pas une vidéo : c'est toute la visionneuse qui masque la
+      // carte, pas la condition qui estompe le bouton central.
       await pumpApp(
         tester,
         announcements: InMemoryAnnouncementRepository(
           announcements: [
             AnnouncementView(
-              id: 'statut-video',
+              id: 'statut-image',
               publishedAt: DateTime.utc(2026, 10, 1),
               accountName: 'Maison du Miracle',
-              video: const StatusVideo(
-                url: 'https://media.test/statut.mp4',
-                poster: 'https://media.test/statut.jpg',
-              ),
+              backgroundImageUrl: 'https://media.test/statut.jpg',
             ),
           ],
         ),
@@ -318,6 +318,12 @@ void main() {
       await tester.tap(tab('Annonces'));
       await settle(tester);
       expect(mini, findsNothing);
+      // Masqué, pas arrêté : la lecture continue sous la visionneuse.
+      expect(
+        ProviderScope.containerOf(tester.element(find.byType(MiniPlayerHost)))
+            .read(playbackControllerProvider),
+        isNotNull,
+      );
 
       await tester.tap(tab('Accueil'));
       await settle(tester);

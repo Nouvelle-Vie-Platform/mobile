@@ -34,8 +34,11 @@ pilote depuis n'importe quel écran. Aujourd'hui, la lecture survit déjà au `c
 - **Mise en page** : carte flottante arrondie avec ombre, au-dessus de la barre, en suivant le
   précédent des bandeaux de `HomeShell` (`bottom: paddingOf.bottom + AppBottomNav.barHeight`). Les
   listes reçoivent une marge basse pour que le mini-lecteur ne masque pas leurs derniers éléments.
-- **Statut vidéo plein écran (Annonces)** : le mini-lecteur est masqué tant que le statut est ouvert
-  (#117 : la condition qui estompe déjà le bouton central — onglet Annonces actif et statut vidéo).
+- **Visionneuse de statuts (Annonces)** : le mini-lecteur est masqué dès qu'un statut est affiché —
+  image, texte ou vidéo — tant que l'onglet Annonces est actif, et revient quand on le quitte (ou que
+  le mur se vide). La lecture continue dessous. Le masquage est posé par `AnnouncementsScreen`
+  (`MiniPlayerShield`), indépendamment du bouton central, qui ne s'estompe, lui, que sur un statut
+  vidéo.
 - **Masquages ajoutés par #117** : `/gathering/:id` (sa fiche est un `ContentPlayerView`), les parcours
   bloquants (`/`, `/auth*`, `/legal/accept`), la visionneuse `/media-viewer`, le menu latéral ouvert,
   toute fenêtre surgissante (dialogue, feuille du bas) et le clavier ouvert.

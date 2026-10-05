@@ -296,11 +296,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
     // **Le mini-lecteur s'efface** (#117) pendant que le menu latéral est
     // ouvert — la coquille rétrécie glisse de côté, et une carte restée en bas
-    // de l'écran flotterait par-dessus le menu, détachée de tout — et pendant
-    // qu'Annonces montre un statut vidéo plein écran, la condition même qui
-    // estompe le bouton central.
+    // de l'écran flotterait par-dessus le menu, détachée de tout. La
+    // visionneuse d'Annonces le masque elle-même (`AnnouncementsScreen`), sur
+    // tout statut et pas seulement une vidéo : `dimFab` ne règle que le bouton
+    // central.
     return MiniPlayerShield(
-      hidden: _menuOpen || dimFab,
+      hidden: _menuOpen,
       child: PopScope(
         canPop: !_menuOpen,
         onPopInvokedWithResult: (didPop, _) {

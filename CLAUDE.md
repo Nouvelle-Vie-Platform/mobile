@@ -508,14 +508,19 @@ Cinq points qui se ratent en silence :
 2. **Les fenêtres surgissantes ne changent pas la route.** Dialogues, feuilles
    du bas et menus sont comptés par un `MiniPlayerPopupObserver` posé dans les
    `observers` de `routerProvider` ; la carte s'efface tant qu'il y en a un —
-   sinon elle flotterait **par-dessus** leur barrière. Un routeur de test sans
-   cet observateur garde la carte sous ses dialogues.
+   sinon elle flotterait **par-dessus** leur barrière. L'hôte le retrouve sur le
+   `Navigator` racine (`navigatorKey.currentState.widget.observers`) — jamais
+   par `routerDelegate.builder`, réservé aux tests par go_router —, après la
+   première image puisque ce `Navigator` se construit sous lui. Un routeur de
+   test sans cet observateur garde la carte sous ses dialogues.
 3. **Un écran masque la carte par `MiniPlayerShield(hidden: …)`**, déclaratif,
    et qui ne vaut que si sa route est au sommet (`ModalRoute.isCurrentOf`). La
    coquille l'emploie pour le **menu latéral ouvert** (la coquille rétrécie
-   glisse de côté ; une carte restée en bas flotterait détachée de tout) et
-   pour le **statut vidéo plein écran** d'Annonces — la condition même qui
-   estompe le bouton central (`docs/mini-lecteur.md`, « Statut vidéo »).
+   glisse de côté ; une carte restée en bas flotterait détachée de tout), et
+   `AnnouncementsScreen` pour **toute la visionneuse de statuts** — image,
+   texte ou vidéo — tant que l'onglet est actif : la carte revient quand on le
+   quitte ou que le mur se vide, et la lecture continue dessous. ⚠️ Ce n'est
+   **pas** `dimFab` (statut vidéo), qui ne règle que le bouton central.
 4. **La marge des listes passe par `MediaQuery.padding.bottom`** (et
    `viewPadding`) : l'hôte y ajoute la hauteur **mesurée** de la carte, marges
    comprises, quand elle est visible. Les listes qui finissent déjà par la
