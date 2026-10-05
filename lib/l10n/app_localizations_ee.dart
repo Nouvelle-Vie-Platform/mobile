@@ -1539,6 +1539,9 @@ class AppLocalizationsEe extends AppLocalizations {
   String get miniPlayerLiveBadge => 'EN DIRECT';
 
   @override
+  String get miniPlayerOnAirBadge => 'À l\'antenne';
+
+  @override
   String miniPlayerOpen(String title) {
     return 'Ouvrir le lecteur : $title';
   }

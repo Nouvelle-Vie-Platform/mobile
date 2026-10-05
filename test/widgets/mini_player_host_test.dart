@@ -15,8 +15,11 @@ import 'package:maison_du_miracle/models/announcement_view.dart';
 import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
+import 'package:maison_du_miracle/screens/announcements_screen.dart';
+import 'package:maison_du_miracle/screens/groups_screen.dart';
 import 'package:maison_du_miracle/screens/home_shell.dart';
 import 'package:maison_du_miracle/screens/media_library_screen.dart';
+import 'package:maison_du_miracle/screens/profile_screen.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/app_version_providers.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
@@ -430,6 +433,86 @@ void main() {
       final contentEnd = tester.getRect(list).bottom - padding;
       expect(padding, greaterThan(before));
       expect(contentEnd, lessThanOrEqualTo(tester.getRect(mini).top));
+    });
+  });
+
+  group('Marges des onglets', () {
+    Finder tab(String label) => find.descendant(
+          of: find.byType(AppBottomNav),
+          matching: find.text(label),
+        );
+
+    /// La marge basse de la liste verticale de [screen] — la première
+    /// `ListView` rencontrée, avant les rangées horizontales qu'elle porte.
+    Finder listOf(Type screen) => find
+        .descendant(of: find.byType(screen), matching: find.byType(ListView))
+        .first;
+
+    double bottomPadding(WidgetTester tester, Finder list) =>
+        (tester.widget<ListView>(list).padding! as EdgeInsets).bottom;
+
+    /// **La carte au-dessus de la barre**, bouton central dégagé — la même
+    /// règle que sur l'accueil.
+    void expectAboveBar(WidgetTester tester) {
+      final bar = tester.getRect(find.byType(AppBottomNav));
+      expect(mini, findsOneWidget);
+      expect(tester.getRect(mini).bottom, lessThanOrEqualTo(bar.top - 56 / 2));
+      expect(bar.height, lessThan(AppBottomNav.barHeight + 1));
+    }
+
+    /// **La fin du contenu**, liste tirée jusqu'au bout, tombe au-dessus de la
+    /// carte : le bas de la vue moins sa marge basse — et cette marge a grandi
+    /// quand la carte est apparue.
+    Future<void> expectListClears(
+      WidgetTester tester, {
+      required String label,
+      required Type screen,
+    }) async {
+      await tester.tap(tab(label));
+      await settle(tester);
+      final before = bottomPadding(tester, listOf(screen));
+
+      await load(tester);
+      expectAboveBar(tester);
+      final list = listOf(screen);
+      final padding = bottomPadding(tester, list);
+      expect(padding, greaterThan(before));
+      expect(
+        tester.getRect(list).bottom - padding,
+        lessThanOrEqualTo(tester.getRect(mini).top),
+      );
+    }
+
+    testWidgets('Échanges : au-dessus de la barre, la liste dégagée',
+        (tester) async {
+      await pumpApp(tester, auth: SignedInAuthRepository());
+      await expectListClears(tester, label: 'Échanges', screen: GroupsScreen);
+    });
+
+    testWidgets('Profil : au-dessus de la barre, la liste dégagée',
+        (tester) async {
+      await pumpApp(tester, auth: SignedInAuthRepository());
+      await expectListClears(tester, label: 'Profil', screen: ProfileScreen);
+    });
+
+    testWidgets(
+        'Annonces, mur vide : pas de visionneuse, donc la carte reste, '
+        'au-dessus de la barre et sous le message', (tester) async {
+      // `pumpApp` pose un mur vide par défaut.
+      await pumpApp(tester);
+      await tester.tap(tab('Annonces'));
+      await settle(tester);
+      expect(find.text('Aucune annonce'), findsOneWidget);
+
+      await load(tester);
+
+      expect(find.byType(AnnouncementsScreen), findsOneWidget);
+      expectAboveBar(tester);
+      // Le message du mur vide n'est pas recouvert.
+      expect(
+        tester.getRect(find.text('Aucune annonce')).bottom,
+        lessThanOrEqualTo(tester.getRect(mini).top),
+      );
     });
   });
 

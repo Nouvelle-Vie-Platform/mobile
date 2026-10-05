@@ -1527,6 +1527,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get miniPlayerLiveBadge => 'LIVE';
 
   @override
+  String get miniPlayerOnAirBadge => 'On air';
+
+  @override
   String miniPlayerOpen(String title) {
     return 'Open player: $title';
   }

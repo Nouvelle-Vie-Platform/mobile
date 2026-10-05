@@ -865,7 +865,9 @@
   "@appUpdateDismiss": { "description": "Ferme le bandeau pour la session en cours — pas définitivement, contrairement à legalNoticeDismiss. Pas « J'ai compris » : il n'y a rien à comprendre ici, seulement un geste qu'on remet à plus tard, et le bandeau reviendra au prochain lancement tant que la version n'aura pas monté" },
 
   "miniPlayerLiveBadge": "EN DIRECT",
-  "@miniPlayerLiveBadge": { "description": "Mini-lecteur : badge de l'antenne en direct, à la place de la ligne d'orateur. Capitales voulues, comme un voyant d'antenne ; court, il tient dans une pastille rouge" },
+  "@miniPlayerLiveBadge": { "description": "Mini-lecteur : badge d'un direct de la régie (#149), à la place de la ligne d'orateur. Affiché seulement quand l'antenne connue signale un direct (RadioAntenna.live) — jamais pour dire que la radio tourne, c'est miniPlayerOnAirBadge. Capitales voulues, comme un voyant d'antenne ; court, il tient dans une pastille rouge" },
+  "miniPlayerOnAirBadge": "À l'antenne",
+  "@miniPlayerOnAirBadge": { "description": "Mini-lecteur : badge de la radio hors direct (#149), à la place de la ligne d'orateur. Le mot de la page radio (radioLive) : la radio tourne 24 h/24, « EN DIRECT » est réservé au direct de la régie. Dit ce qu'on écoute, pas que le son sort — il reste en pause. Court : il tient dans une pastille" },
   "miniPlayerOpen": "Ouvrir le lecteur : {title}",
   "@miniPlayerOpen": { "description": "Mini-lecteur : libellé d'accessibilité de la vignette et du titre, qui ouvrent la fiche (ou l'écran de l'antenne). {title} est le titre de ce qui joue", "placeholders": { "title": { "type": "String" } } },
   "miniPlayerSkipBackward": "Reculer de 30 secondes",

@@ -484,7 +484,17 @@ Six points qui se ratent en silence :
    gestes : la ✕ (`RadioListening.stop`, qui annule les tentatives de reprise
    programmées — sans quoi elles rouvriraient le son après coup) et la reprise
    après panne (`start`, qui renégocie le cookie de MediaMTX, #108). Variante
-   « EN DIRECT » : badge, ni barre ni sauts ; un appui ouvre `/radio`.
+   antenne : badge, ni barre ni sauts ; un appui ouvre `/radio`. **Le badge dit
+   « À l'antenne »** (`miniPlayerOnAirBadge`, pastille bleue) et **« EN DIRECT »
+   seulement pendant un direct de la régie** (`miniPlayerLiveBadge`, pastille
+   rouge, #149) — le partage des mots de la page live (#135). Le direct se lit
+   dans l'antenne **déjà connue**, `radioAntennaProvider` (`live != null`),
+   **jamais** dans `radioLiveProvider` : le seul fait de l'observer ouvrirait le
+   canal SSE. Ni canal ni sondage, donc un direct ouvert pendant l'écoute ne
+   s'affiche qu'à la prochaine lecture de l'antenne (retour au premier plan,
+   bouton d'antenne) ; une antenne en erreur ou pas encore lue dit « À
+   l'antenne ». Un direct qui ne serait pas l'antenne (`isLive` sur un autre
+   contenu) garde « EN DIRECT ».
 5. **Ouvrir la fiche ne recharge rien** : `pushNamed(teachingDetail)`, et
    `ContentPlayerView._open` ne charge pas un contenu que le lecteur tient
    déjà. Le routeur se lit par `GoRouter.maybeOf`, sinon `routerProvider` —

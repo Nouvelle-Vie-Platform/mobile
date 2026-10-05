@@ -16,7 +16,7 @@ pilote depuis n'importe quel écran. Aujourd'hui, la lecture survit déjà au `c
 | 1 | Déclenchement | Il apparaît dès qu'un contenu est chargé, qu'il ait été lancé depuis l'écran de détail ou depuis une carte de l'accueil (`playHomeContent`). |
 | 2 | Contenu | Vignette carrée, titre, orateur, barre de progression, puis **−30 s / play-pause / +30 s**, puis ✕. Les boutons ⏮/⏭ de la maquette deviennent des sauts : il n'existe aucune file et il ne faut pas en inventer une (voir CLAUDE.md). |
 | 3 | Portée | Au-dessus de `AppBottomNav` dans les 4 onglets ; collé en bas sur les écrans empilés (médiathèque, recherche…). **Masqué** sur `/teaching/:id`, qui a déjà le lecteur plein, et sur `/radio`. |
-| 4 | Radio | Variante « direct » : logo et titre de l'antenne, badge EN DIRECT, ni progression ni sauts (même logique que `isLive` sur l'écran verrouillé). |
+| 4 | Radio | Variante « antenne » : logo et titre de l'antenne, ni progression ni sauts (même logique que `isLive` sur l'écran verrouillé). Badge **« À l'antenne »** par défaut, **« EN DIRECT »** seulement quand l'antenne connue signale un direct de la régie (`radioAntennaProvider`, `live != null`) — les mots de la page live (#135). Lecture de l'état déjà connu : ni canal, ni sondage (#149). |
 | 5 | Bouton central | Inchangé : il ouvre toujours la médiathèque. Le play/pause ne se fait que dans le mini-lecteur. |
 | 6 | Appui sur la vignette ou le titre | Ouvre `/teaching/:id` sans recharger ni redémarrer (`_open` ne recharge pas un contenu déjà chargé). Pour la radio, ouvre `/radio`. |
 | 7 | ✕ | Arrête le son, retire la notification système et ferme le mini-lecteur. La position de reprise est enregistrée. |
