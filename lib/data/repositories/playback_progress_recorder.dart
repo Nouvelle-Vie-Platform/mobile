@@ -65,7 +65,9 @@ bool readsAsCompleted({required Duration position, Duration? duration}) {
 
 /// **Les déclencheurs du rapport de progression, et rien d'autre.**
 ///
-/// Un enregistreur par ouverture de contenu. Il ne joue rien, ne dessine rien,
+/// Un enregistreur par chargement de contenu dans le lecteur global — c'est le
+/// contrôleur global (`PlaybackController`, #115) qui l'ouvre et le pousse, quel
+/// que soit l'écran affiché. Il ne joue rien, ne dessine rien,
 /// n'a pas d'horloge : le lecteur lui **pousse** sa position ([onPosition]) et
 /// ses événements, il décide quoi écrire et quand parler au serveur. C'est ce
 /// qui le rend pilotable depuis un test sans moteur audio — et c'est le même
@@ -83,7 +85,7 @@ bool readsAsCompleted({required Duration position, Duration? duration}) {
 ///   | Déclencheur | Méthode |
 ///   |---|---|
 ///   | pause | [onPaused] |
-///   | sortie de l'écran | [onLeft] |
+///   | contenu arrêté ou remplacé (l'ancienne « sortie d'écran ») | [onLeft] |
 ///   | complétion | [onTerminated], ou le seuil atteint dans [onPosition] |
 ///   | ~30 s de temps **joué** et plus de 5 s de déplacement | [onPosition] |
 ///   | `AppLifecycleState.paused` | [onAppPaused] — **sans arrêter la lecture** |
@@ -157,8 +159,8 @@ class PlaybackProgressRecorder {
   /// L'UUIDv7 sous lequel ce contenu se rapporte, pour toute la session.
   final String progressId;
 
-  /// Où reprendre, `null` si ce contenu n'a jamais été écouté. C'est l'écran
-  /// qui décide d'y aller ou non — un contenu déjà terminé se rouvre
+  /// Où reprendre, `null` si ce contenu n'a jamais été écouté. C'est le
+  /// contrôleur global qui décide d'y aller ou non — un contenu déjà terminé se rouvre
   /// vraisemblablement pour être réécouté.
   final PlaybackResume? resume;
 
@@ -223,7 +225,9 @@ class PlaybackProgressRecorder {
   /// serveur, quelle que soit la durée jouée depuis le dernier rapport.
   Future<void> onPaused() => _reportOnEvent();
 
-  /// **Sortie de l'écran du lecteur.**
+  /// **Le contenu est arrêté ou remplacé** — arrêt, radio qui prend le
+  /// lecteur, autre contenu chargé. C'était la « sortie de l'écran » tant que le
+  /// suivi vivait sur la fiche ; quitter un écran n'arrête plus rien (#115).
   Future<void> onLeft() => _reportOnEvent();
 
   /// **`AppLifecycleState.paused`** — le cas le **plus fréquent** : le fidèle

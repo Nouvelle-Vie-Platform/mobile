@@ -1,8 +1,9 @@
 /// **Quand une écoute est comptée** — la seule décision de ce dossier, et elle
 /// est révocable.
 ///
-/// Un traqueur par **ouverture de contenu**, exactement comme
-/// `PlaybackProgressRecorder` : il ne joue rien, ne dessine rien, n'a pas
+/// Un traqueur par **ouverture de contenu** — un chargement dans le lecteur
+/// global, ouvert par le contrôleur global (#115) quel que soit l'écran —,
+/// exactement comme `PlaybackProgressRecorder` : il ne joue rien, ne dessine rien, n'a pas
 /// d'horloge. Le lecteur lui **pousse** sa position, il décide s'il y a lieu de
 /// parler au serveur.
 ///
