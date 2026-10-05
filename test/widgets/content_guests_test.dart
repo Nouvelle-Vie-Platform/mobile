@@ -203,6 +203,11 @@ void main() {
         player: player,
         guests: const ['Pasteur Kossi', 'Sœur Afi'],
       );
+      // Ce qui part au système ne part qu'à l'appui sur lecture : depuis
+      // d777833, ouvrir la fiche ne charge plus rien dans le lecteur.
+      await tester.tap(find.byIcon(Icons.play_arrow));
+      await tester.pump();
+      await tester.pump();
 
       // Ce qui part au système (notification, écran verrouillé) : le titre et
       // **l'animateur seul**. Une notification n'a pas la place d'une
@@ -293,20 +298,24 @@ void main() {
       // du contenu qui ne les regarde pas.
       expect(lu.guests, ['Sœur Afi']);
 
+      // Sous un `ProviderScope` : depuis d777833, les cartes et la tuile
+      // écoutent le lecteur global pour montrer l'indicateur « en lecture ».
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light,
-          locale: const Locale('fr'),
-          localizationsDelegates: appLocalizationsDelegates,
-          supportedLocales: appSupportedLocales,
-          home: Scaffold(
-            body: ListView(
-              children: [
-                HomeHeroCard(content: view),
-                HomeCarouselCard(content: view),
-                HomeListRow(content: view),
-                TeachingTile(teaching: view),
-              ],
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.light,
+            locale: const Locale('fr'),
+            localizationsDelegates: appLocalizationsDelegates,
+            supportedLocales: appSupportedLocales,
+            home: Scaffold(
+              body: ListView(
+                children: [
+                  HomeHeroCard(content: view),
+                  HomeCarouselCard(content: view),
+                  HomeListRow(content: view),
+                  TeachingTile(teaching: view),
+                ],
+              ),
             ),
           ),
         ),

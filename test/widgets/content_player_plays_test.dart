@@ -81,6 +81,18 @@ void main() {
     }
   }
 
+  /// **L'appui sur lecture** — c'est lui, et non plus l'ouverture de la fiche
+  /// (d777833), qui charge le contenu et ouvre la mesure de cette écoute. Sans
+  /// lui, l'écran n'a aucun traqueur à qui pousser la position, et ces tests
+  /// ne mesureraient rien.
+  Future<void> demarrer(WidgetTester tester, InertContentPlayer player) async {
+    await tester.tap(find.byIcon(Icons.play_arrow));
+    await tester.pump();
+    expect(player.value.contentId, _id,
+        reason: 'prémisse : le contenu est chargé');
+    await tester.pump();
+  }
+
   Future<ProviderContainer> pump(
     WidgetTester tester, {
     required InertContentPlayer player,
@@ -141,6 +153,7 @@ void main() {
     final player = InertContentPlayer();
     addTearDown(player.dispose);
     await pump(tester, player: player);
+    await demarrer(tester, player);
 
     await play(tester, player, 28);
     expect(plays.reported, isEmpty, reason: 'le seuil n\'est pas atteint');
@@ -168,6 +181,7 @@ void main() {
     plays.delivered = false;
 
     await pump(tester, player: player);
+    await demarrer(tester, player);
     await play(tester, player, 120);
 
     // L'écoute continue : le lecteur joue toujours, à la position poussée.
@@ -188,6 +202,7 @@ void main() {
     final player = InertContentPlayer();
     addTearDown(player.dispose);
     final container = await pump(tester, player: player);
+    await demarrer(tester, player);
     final db = container.read(appDatabaseProvider);
 
     await play(tester, player, 120);
@@ -211,6 +226,7 @@ void main() {
     progress.delivered = false;
 
     await pump(tester, player: player);
+    await demarrer(tester, player);
     await play(tester, player, 60);
 
     // Les deux mesures sont **indépendantes en panne aussi**. C'est ce que la
