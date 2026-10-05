@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -134,7 +135,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     _player.pause();
     // Quitter la visionneuse, c'est aussi la démonter : ce qu'un statut à son a
     // tu reprend.
-    unawaited(_listening.resumeAfterStatus());
+    _onMainPlayer(() => unawaited(_listening.resumeAfterStatus()));
     _pageController.dispose();
     super.dispose();
   }
@@ -318,11 +319,31 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
   void _syncPlayback() {
     if (!mounted) return;
     if (_shouldPlay) {
-      if (_currentIsAudible) _listening.interruptForStatus();
+      if (_currentIsAudible) _onMainPlayer(_listening.interruptForStatus);
       _player.play();
     } else {
       _player.pause();
-      if (!widget.isActive) unawaited(_listening.resumeAfterStatus());
+      if (!widget.isActive) {
+        _onMainPlayer(() => unawaited(_listening.resumeAfterStatus()));
+      }
+    }
+  }
+
+  /// **Toucher au lecteur principal, jamais pendant la construction.**
+  ///
+  /// Mettre en pause ou relancer la radio réécrit l'état de lecture, un
+  /// provider ; Riverpod refuse qu'on le fasse pendant que l'arbre se
+  /// construit. Or deux chemins y passent : le changement d'onglet arrive par
+  /// [didUpdateWidget], le démontage par [dispose]. Ceux-là sont repoussés à la
+  /// fin de l'image — l'ordre est gardé, la file de microtâches est FIFO ; les
+  /// autres (geste, page, bouton muet, cycle de vie) restent immédiats, pour que
+  /// le statut ne parle jamais par-dessus le prêche.
+  void _onMainPlayer(VoidCallback action) {
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      scheduleMicrotask(action);
+    } else {
+      action();
     }
   }
 
