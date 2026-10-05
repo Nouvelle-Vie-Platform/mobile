@@ -6595,6 +6595,37 @@ class $AnnouncementsTable extends Announcements
   late final GeneratedColumn<String> backgroundImageUrl =
       GeneratedColumn<String>('background_image_url', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaKindMeta =
+      const VerificationMeta('mediaKind');
+  @override
+  late final GeneratedColumn<String> mediaKind = GeneratedColumn<String>(
+      'media_kind', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaUrlMeta =
+      const VerificationMeta('mediaUrl');
+  @override
+  late final GeneratedColumn<String> mediaUrl = GeneratedColumn<String>(
+      'media_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaPosterUrlMeta =
+      const VerificationMeta('mediaPosterUrl');
+  @override
+  late final GeneratedColumn<String> mediaPosterUrl = GeneratedColumn<String>(
+      'media_poster_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaDurationMsMeta =
+      const VerificationMeta('mediaDurationMs');
+  @override
+  late final GeneratedColumn<int> mediaDurationMs = GeneratedColumn<int>(
+      'media_duration_ms', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  @override
+  late final GeneratedColumnWithTypeConverter<List<int>?, String>
+      mediaWaveform = GeneratedColumn<String>(
+              'media_waveform', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<List<int>?>(
+              $AnnouncementsTable.$convertermediaWaveformn);
   static const VerificationMeta _isPinnedMeta =
       const VerificationMeta('isPinned');
   @override
@@ -6635,6 +6666,11 @@ class $AnnouncementsTable extends Announcements
         expiresAt,
         backgroundId,
         backgroundImageUrl,
+        mediaKind,
+        mediaUrl,
+        mediaPosterUrl,
+        mediaDurationMs,
+        mediaWaveform,
         isPinned,
         ownerId,
         createdAt,
@@ -6701,6 +6737,26 @@ class $AnnouncementsTable extends Announcements
           backgroundImageUrl.isAcceptableOrUnknown(
               data['background_image_url']!, _backgroundImageUrlMeta));
     }
+    if (data.containsKey('media_kind')) {
+      context.handle(_mediaKindMeta,
+          mediaKind.isAcceptableOrUnknown(data['media_kind']!, _mediaKindMeta));
+    }
+    if (data.containsKey('media_url')) {
+      context.handle(_mediaUrlMeta,
+          mediaUrl.isAcceptableOrUnknown(data['media_url']!, _mediaUrlMeta));
+    }
+    if (data.containsKey('media_poster_url')) {
+      context.handle(
+          _mediaPosterUrlMeta,
+          mediaPosterUrl.isAcceptableOrUnknown(
+              data['media_poster_url']!, _mediaPosterUrlMeta));
+    }
+    if (data.containsKey('media_duration_ms')) {
+      context.handle(
+          _mediaDurationMsMeta,
+          mediaDurationMs.isAcceptableOrUnknown(
+              data['media_duration_ms']!, _mediaDurationMsMeta));
+    }
     if (data.containsKey('is_pinned')) {
       context.handle(_isPinnedMeta,
           isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta));
@@ -6746,6 +6802,17 @@ class $AnnouncementsTable extends Announcements
           .read(DriftSqlType.int, data['${effectivePrefix}background_id']),
       backgroundImageUrl: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}background_image_url']),
+      mediaKind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_kind']),
+      mediaUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_url']),
+      mediaPosterUrl: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}media_poster_url']),
+      mediaDurationMs: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}media_duration_ms']),
+      mediaWaveform: $AnnouncementsTable.$convertermediaWaveformn.fromSql(
+          attachedDatabase.typeMapping.read(
+              DriftSqlType.string, data['${effectivePrefix}media_waveform'])),
       isPinned: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_pinned'])!,
       ownerId: attachedDatabase.typeMapping
@@ -6761,6 +6828,11 @@ class $AnnouncementsTable extends Announcements
   $AnnouncementsTable createAlias(String alias) {
     return $AnnouncementsTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<List<int>, String> $convertermediaWaveform =
+      const WaveformConverter();
+  static TypeConverter<List<int>?, String?> $convertermediaWaveformn =
+      NullAwareTypeConverter.wrap($convertermediaWaveform);
 }
 
 class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
@@ -6803,6 +6875,38 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
 
   /// Image de fond, URL **relative** comme partout ailleurs.
   final String? backgroundImageUrl;
+
+  /// **Le média temporel** (issue #130, schéma v19) — `audio`, `video` ou
+  /// `null`, et **au plus un** : une vidéo porte déjà son son.
+  ///
+  /// Stocké **en chaîne, jamais en enum** côté magasin, pour la raison de
+  /// `ink` sur les fonds : une valeur que ce client ne connaît pas encore se
+  /// replie à la lecture (« pas de média ») au lieu de faire échouer
+  /// l'application d'une page entière.
+  ///
+  /// Les cinq colonnes `media*` arrivent **à plat**, comme le serveur les sert
+  /// (`announcement_transformer.ts`) : le magasin stocke ce que le serveur
+  /// envoie, en colonnes, et un objet imbriqué aurait demandé un décodage de
+  /// plus pour une valeur que la ligne porte déjà.
+  final String? mediaKind;
+
+  /// Playlist HLS **maître** du média (deux rendus, segments de 5 s, son
+  /// normalisé). Le serveur ne laisse jamais transiter une annonce dont le
+  /// média n'est pas prêt — mais la lecture ne s'y fie pas pour autant : un
+  /// [mediaKind] sans URL se lit « pas de média » (`readStatusMedia`).
+  final String? mediaUrl;
+
+  /// Affiche d'une vidéo : l'image déposée, sinon la vignette extraite par le
+  /// transcodeur. Servie sur **tout** statut vidéo.
+  final String? mediaPosterUrl;
+
+  /// Durée mesurée par le transcodeur, en millisecondes, ou `null`. Second
+  /// maillon de la durée effective : la durée réelle du lecteur prime.
+  final int? mediaDurationMs;
+
+  /// Trente-six hauteurs de 0 à 100 (audio), en tableau JSON. `null` = rien de
+  /// servi : l'écran retombe sur la forme dérivée de l'identifiant.
+  final List<int>? mediaWaveform;
   final bool isPinned;
 
   /// Auteur humain de la publication — l'identité derrière le compte. Elle ne
@@ -6821,6 +6925,11 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
       this.expiresAt,
       this.backgroundId,
       this.backgroundImageUrl,
+      this.mediaKind,
+      this.mediaUrl,
+      this.mediaPosterUrl,
+      this.mediaDurationMs,
+      this.mediaWaveform,
       required this.isPinned,
       this.ownerId,
       this.createdAt,
@@ -6849,6 +6958,22 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
     }
     if (!nullToAbsent || backgroundImageUrl != null) {
       map['background_image_url'] = Variable<String>(backgroundImageUrl);
+    }
+    if (!nullToAbsent || mediaKind != null) {
+      map['media_kind'] = Variable<String>(mediaKind);
+    }
+    if (!nullToAbsent || mediaUrl != null) {
+      map['media_url'] = Variable<String>(mediaUrl);
+    }
+    if (!nullToAbsent || mediaPosterUrl != null) {
+      map['media_poster_url'] = Variable<String>(mediaPosterUrl);
+    }
+    if (!nullToAbsent || mediaDurationMs != null) {
+      map['media_duration_ms'] = Variable<int>(mediaDurationMs);
+    }
+    if (!nullToAbsent || mediaWaveform != null) {
+      map['media_waveform'] = Variable<String>(
+          $AnnouncementsTable.$convertermediaWaveformn.toSql(mediaWaveform));
     }
     map['is_pinned'] = Variable<bool>(isPinned);
     if (!nullToAbsent || ownerId != null) {
@@ -6884,6 +7009,21 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
       backgroundImageUrl: backgroundImageUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(backgroundImageUrl),
+      mediaKind: mediaKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaKind),
+      mediaUrl: mediaUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaUrl),
+      mediaPosterUrl: mediaPosterUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaPosterUrl),
+      mediaDurationMs: mediaDurationMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaDurationMs),
+      mediaWaveform: mediaWaveform == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaWaveform),
       isPinned: Value(isPinned),
       ownerId: ownerId == null && nullToAbsent
           ? const Value.absent()
@@ -6912,6 +7052,11 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
       backgroundId: serializer.fromJson<int?>(json['backgroundId']),
       backgroundImageUrl:
           serializer.fromJson<String?>(json['backgroundImageUrl']),
+      mediaKind: serializer.fromJson<String?>(json['mediaKind']),
+      mediaUrl: serializer.fromJson<String?>(json['mediaUrl']),
+      mediaPosterUrl: serializer.fromJson<String?>(json['mediaPosterUrl']),
+      mediaDurationMs: serializer.fromJson<int?>(json['mediaDurationMs']),
+      mediaWaveform: serializer.fromJson<List<int>?>(json['mediaWaveform']),
       isPinned: serializer.fromJson<bool>(json['isPinned']),
       ownerId: serializer.fromJson<String?>(json['ownerId']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
@@ -6932,6 +7077,11 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
       'expiresAt': serializer.toJson<DateTime?>(expiresAt),
       'backgroundId': serializer.toJson<int?>(backgroundId),
       'backgroundImageUrl': serializer.toJson<String?>(backgroundImageUrl),
+      'mediaKind': serializer.toJson<String?>(mediaKind),
+      'mediaUrl': serializer.toJson<String?>(mediaUrl),
+      'mediaPosterUrl': serializer.toJson<String?>(mediaPosterUrl),
+      'mediaDurationMs': serializer.toJson<int?>(mediaDurationMs),
+      'mediaWaveform': serializer.toJson<List<int>?>(mediaWaveform),
       'isPinned': serializer.toJson<bool>(isPinned),
       'ownerId': serializer.toJson<String?>(ownerId),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
@@ -6950,6 +7100,11 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
           Value<DateTime?> expiresAt = const Value.absent(),
           Value<int?> backgroundId = const Value.absent(),
           Value<String?> backgroundImageUrl = const Value.absent(),
+          Value<String?> mediaKind = const Value.absent(),
+          Value<String?> mediaUrl = const Value.absent(),
+          Value<String?> mediaPosterUrl = const Value.absent(),
+          Value<int?> mediaDurationMs = const Value.absent(),
+          Value<List<int>?> mediaWaveform = const Value.absent(),
           bool? isPinned,
           Value<String?> ownerId = const Value.absent(),
           Value<DateTime?> createdAt = const Value.absent(),
@@ -6968,6 +7123,15 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
         backgroundImageUrl: backgroundImageUrl.present
             ? backgroundImageUrl.value
             : this.backgroundImageUrl,
+        mediaKind: mediaKind.present ? mediaKind.value : this.mediaKind,
+        mediaUrl: mediaUrl.present ? mediaUrl.value : this.mediaUrl,
+        mediaPosterUrl:
+            mediaPosterUrl.present ? mediaPosterUrl.value : this.mediaPosterUrl,
+        mediaDurationMs: mediaDurationMs.present
+            ? mediaDurationMs.value
+            : this.mediaDurationMs,
+        mediaWaveform:
+            mediaWaveform.present ? mediaWaveform.value : this.mediaWaveform,
         isPinned: isPinned ?? this.isPinned,
         ownerId: ownerId.present ? ownerId.value : this.ownerId,
         createdAt: createdAt.present ? createdAt.value : this.createdAt,
@@ -6990,6 +7154,17 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
       backgroundImageUrl: data.backgroundImageUrl.present
           ? data.backgroundImageUrl.value
           : this.backgroundImageUrl,
+      mediaKind: data.mediaKind.present ? data.mediaKind.value : this.mediaKind,
+      mediaUrl: data.mediaUrl.present ? data.mediaUrl.value : this.mediaUrl,
+      mediaPosterUrl: data.mediaPosterUrl.present
+          ? data.mediaPosterUrl.value
+          : this.mediaPosterUrl,
+      mediaDurationMs: data.mediaDurationMs.present
+          ? data.mediaDurationMs.value
+          : this.mediaDurationMs,
+      mediaWaveform: data.mediaWaveform.present
+          ? data.mediaWaveform.value
+          : this.mediaWaveform,
       isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
       ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -7010,6 +7185,11 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
           ..write('expiresAt: $expiresAt, ')
           ..write('backgroundId: $backgroundId, ')
           ..write('backgroundImageUrl: $backgroundImageUrl, ')
+          ..write('mediaKind: $mediaKind, ')
+          ..write('mediaUrl: $mediaUrl, ')
+          ..write('mediaPosterUrl: $mediaPosterUrl, ')
+          ..write('mediaDurationMs: $mediaDurationMs, ')
+          ..write('mediaWaveform: $mediaWaveform, ')
           ..write('isPinned: $isPinned, ')
           ..write('ownerId: $ownerId, ')
           ..write('createdAt: $createdAt, ')
@@ -7030,6 +7210,11 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
       expiresAt,
       backgroundId,
       backgroundImageUrl,
+      mediaKind,
+      mediaUrl,
+      mediaPosterUrl,
+      mediaDurationMs,
+      mediaWaveform,
       isPinned,
       ownerId,
       createdAt,
@@ -7048,6 +7233,11 @@ class AnnouncementRow extends DataClass implements Insertable<AnnouncementRow> {
           other.expiresAt == this.expiresAt &&
           other.backgroundId == this.backgroundId &&
           other.backgroundImageUrl == this.backgroundImageUrl &&
+          other.mediaKind == this.mediaKind &&
+          other.mediaUrl == this.mediaUrl &&
+          other.mediaPosterUrl == this.mediaPosterUrl &&
+          other.mediaDurationMs == this.mediaDurationMs &&
+          other.mediaWaveform == this.mediaWaveform &&
           other.isPinned == this.isPinned &&
           other.ownerId == this.ownerId &&
           other.createdAt == this.createdAt &&
@@ -7065,6 +7255,11 @@ class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
   final Value<DateTime?> expiresAt;
   final Value<int?> backgroundId;
   final Value<String?> backgroundImageUrl;
+  final Value<String?> mediaKind;
+  final Value<String?> mediaUrl;
+  final Value<String?> mediaPosterUrl;
+  final Value<int?> mediaDurationMs;
+  final Value<List<int>?> mediaWaveform;
   final Value<bool> isPinned;
   final Value<String?> ownerId;
   final Value<DateTime?> createdAt;
@@ -7081,6 +7276,11 @@ class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
     this.expiresAt = const Value.absent(),
     this.backgroundId = const Value.absent(),
     this.backgroundImageUrl = const Value.absent(),
+    this.mediaKind = const Value.absent(),
+    this.mediaUrl = const Value.absent(),
+    this.mediaPosterUrl = const Value.absent(),
+    this.mediaDurationMs = const Value.absent(),
+    this.mediaWaveform = const Value.absent(),
     this.isPinned = const Value.absent(),
     this.ownerId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -7098,6 +7298,11 @@ class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
     this.expiresAt = const Value.absent(),
     this.backgroundId = const Value.absent(),
     this.backgroundImageUrl = const Value.absent(),
+    this.mediaKind = const Value.absent(),
+    this.mediaUrl = const Value.absent(),
+    this.mediaPosterUrl = const Value.absent(),
+    this.mediaDurationMs = const Value.absent(),
+    this.mediaWaveform = const Value.absent(),
     this.isPinned = const Value.absent(),
     this.ownerId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -7117,6 +7322,11 @@ class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
     Expression<DateTime>? expiresAt,
     Expression<int>? backgroundId,
     Expression<String>? backgroundImageUrl,
+    Expression<String>? mediaKind,
+    Expression<String>? mediaUrl,
+    Expression<String>? mediaPosterUrl,
+    Expression<int>? mediaDurationMs,
+    Expression<String>? mediaWaveform,
     Expression<bool>? isPinned,
     Expression<String>? ownerId,
     Expression<DateTime>? createdAt,
@@ -7135,6 +7345,11 @@ class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
       if (backgroundId != null) 'background_id': backgroundId,
       if (backgroundImageUrl != null)
         'background_image_url': backgroundImageUrl,
+      if (mediaKind != null) 'media_kind': mediaKind,
+      if (mediaUrl != null) 'media_url': mediaUrl,
+      if (mediaPosterUrl != null) 'media_poster_url': mediaPosterUrl,
+      if (mediaDurationMs != null) 'media_duration_ms': mediaDurationMs,
+      if (mediaWaveform != null) 'media_waveform': mediaWaveform,
       if (isPinned != null) 'is_pinned': isPinned,
       if (ownerId != null) 'owner_id': ownerId,
       if (createdAt != null) 'created_at': createdAt,
@@ -7154,6 +7369,11 @@ class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
       Value<DateTime?>? expiresAt,
       Value<int?>? backgroundId,
       Value<String?>? backgroundImageUrl,
+      Value<String?>? mediaKind,
+      Value<String?>? mediaUrl,
+      Value<String?>? mediaPosterUrl,
+      Value<int?>? mediaDurationMs,
+      Value<List<int>?>? mediaWaveform,
       Value<bool>? isPinned,
       Value<String?>? ownerId,
       Value<DateTime?>? createdAt,
@@ -7170,6 +7390,11 @@ class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
       expiresAt: expiresAt ?? this.expiresAt,
       backgroundId: backgroundId ?? this.backgroundId,
       backgroundImageUrl: backgroundImageUrl ?? this.backgroundImageUrl,
+      mediaKind: mediaKind ?? this.mediaKind,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      mediaPosterUrl: mediaPosterUrl ?? this.mediaPosterUrl,
+      mediaDurationMs: mediaDurationMs ?? this.mediaDurationMs,
+      mediaWaveform: mediaWaveform ?? this.mediaWaveform,
       isPinned: isPinned ?? this.isPinned,
       ownerId: ownerId ?? this.ownerId,
       createdAt: createdAt ?? this.createdAt,
@@ -7211,6 +7436,23 @@ class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
     if (backgroundImageUrl.present) {
       map['background_image_url'] = Variable<String>(backgroundImageUrl.value);
     }
+    if (mediaKind.present) {
+      map['media_kind'] = Variable<String>(mediaKind.value);
+    }
+    if (mediaUrl.present) {
+      map['media_url'] = Variable<String>(mediaUrl.value);
+    }
+    if (mediaPosterUrl.present) {
+      map['media_poster_url'] = Variable<String>(mediaPosterUrl.value);
+    }
+    if (mediaDurationMs.present) {
+      map['media_duration_ms'] = Variable<int>(mediaDurationMs.value);
+    }
+    if (mediaWaveform.present) {
+      map['media_waveform'] = Variable<String>($AnnouncementsTable
+          .$convertermediaWaveformn
+          .toSql(mediaWaveform.value));
+    }
     if (isPinned.present) {
       map['is_pinned'] = Variable<bool>(isPinned.value);
     }
@@ -7242,6 +7484,11 @@ class AnnouncementsCompanion extends UpdateCompanion<AnnouncementRow> {
           ..write('expiresAt: $expiresAt, ')
           ..write('backgroundId: $backgroundId, ')
           ..write('backgroundImageUrl: $backgroundImageUrl, ')
+          ..write('mediaKind: $mediaKind, ')
+          ..write('mediaUrl: $mediaUrl, ')
+          ..write('mediaPosterUrl: $mediaPosterUrl, ')
+          ..write('mediaDurationMs: $mediaDurationMs, ')
+          ..write('mediaWaveform: $mediaWaveform, ')
           ..write('isPinned: $isPinned, ')
           ..write('ownerId: $ownerId, ')
           ..write('createdAt: $createdAt, ')
@@ -19516,6 +19763,11 @@ typedef $$AnnouncementsTableCreateCompanionBuilder = AnnouncementsCompanion
   Value<DateTime?> expiresAt,
   Value<int?> backgroundId,
   Value<String?> backgroundImageUrl,
+  Value<String?> mediaKind,
+  Value<String?> mediaUrl,
+  Value<String?> mediaPosterUrl,
+  Value<int?> mediaDurationMs,
+  Value<List<int>?> mediaWaveform,
   Value<bool> isPinned,
   Value<String?> ownerId,
   Value<DateTime?> createdAt,
@@ -19534,6 +19786,11 @@ typedef $$AnnouncementsTableUpdateCompanionBuilder = AnnouncementsCompanion
   Value<DateTime?> expiresAt,
   Value<int?> backgroundId,
   Value<String?> backgroundImageUrl,
+  Value<String?> mediaKind,
+  Value<String?> mediaUrl,
+  Value<String?> mediaPosterUrl,
+  Value<int?> mediaDurationMs,
+  Value<List<int>?> mediaWaveform,
   Value<bool> isPinned,
   Value<String?> ownerId,
   Value<DateTime?> createdAt,
@@ -19580,6 +19837,25 @@ class $$AnnouncementsTableFilterComposer
   ColumnFilters<String> get backgroundImageUrl => $composableBuilder(
       column: $table.backgroundImageUrl,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaKind => $composableBuilder(
+      column: $table.mediaKind, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaUrl => $composableBuilder(
+      column: $table.mediaUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaPosterUrl => $composableBuilder(
+      column: $table.mediaPosterUrl,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mediaDurationMs => $composableBuilder(
+      column: $table.mediaDurationMs,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<List<int>?, List<int>, String>
+      get mediaWaveform => $composableBuilder(
+          column: $table.mediaWaveform,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<bool> get isPinned => $composableBuilder(
       column: $table.isPinned, builder: (column) => ColumnFilters(column));
@@ -19635,6 +19911,24 @@ class $$AnnouncementsTableOrderingComposer
       column: $table.backgroundImageUrl,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get mediaKind => $composableBuilder(
+      column: $table.mediaKind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaUrl => $composableBuilder(
+      column: $table.mediaUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaPosterUrl => $composableBuilder(
+      column: $table.mediaPosterUrl,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mediaDurationMs => $composableBuilder(
+      column: $table.mediaDurationMs,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaWaveform => $composableBuilder(
+      column: $table.mediaWaveform,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isPinned => $composableBuilder(
       column: $table.isPinned, builder: (column) => ColumnOrderings(column));
 
@@ -19687,6 +19981,22 @@ class $$AnnouncementsTableAnnotationComposer
   GeneratedColumn<String> get backgroundImageUrl => $composableBuilder(
       column: $table.backgroundImageUrl, builder: (column) => column);
 
+  GeneratedColumn<String> get mediaKind =>
+      $composableBuilder(column: $table.mediaKind, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaUrl =>
+      $composableBuilder(column: $table.mediaUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaPosterUrl => $composableBuilder(
+      column: $table.mediaPosterUrl, builder: (column) => column);
+
+  GeneratedColumn<int> get mediaDurationMs => $composableBuilder(
+      column: $table.mediaDurationMs, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<int>?, String> get mediaWaveform =>
+      $composableBuilder(
+          column: $table.mediaWaveform, builder: (column) => column);
+
   GeneratedColumn<bool> get isPinned =>
       $composableBuilder(column: $table.isPinned, builder: (column) => column);
 
@@ -19736,6 +20046,11 @@ class $$AnnouncementsTableTableManager extends RootTableManager<
             Value<DateTime?> expiresAt = const Value.absent(),
             Value<int?> backgroundId = const Value.absent(),
             Value<String?> backgroundImageUrl = const Value.absent(),
+            Value<String?> mediaKind = const Value.absent(),
+            Value<String?> mediaUrl = const Value.absent(),
+            Value<String?> mediaPosterUrl = const Value.absent(),
+            Value<int?> mediaDurationMs = const Value.absent(),
+            Value<List<int>?> mediaWaveform = const Value.absent(),
             Value<bool> isPinned = const Value.absent(),
             Value<String?> ownerId = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -19753,6 +20068,11 @@ class $$AnnouncementsTableTableManager extends RootTableManager<
             expiresAt: expiresAt,
             backgroundId: backgroundId,
             backgroundImageUrl: backgroundImageUrl,
+            mediaKind: mediaKind,
+            mediaUrl: mediaUrl,
+            mediaPosterUrl: mediaPosterUrl,
+            mediaDurationMs: mediaDurationMs,
+            mediaWaveform: mediaWaveform,
             isPinned: isPinned,
             ownerId: ownerId,
             createdAt: createdAt,
@@ -19770,6 +20090,11 @@ class $$AnnouncementsTableTableManager extends RootTableManager<
             Value<DateTime?> expiresAt = const Value.absent(),
             Value<int?> backgroundId = const Value.absent(),
             Value<String?> backgroundImageUrl = const Value.absent(),
+            Value<String?> mediaKind = const Value.absent(),
+            Value<String?> mediaUrl = const Value.absent(),
+            Value<String?> mediaPosterUrl = const Value.absent(),
+            Value<int?> mediaDurationMs = const Value.absent(),
+            Value<List<int>?> mediaWaveform = const Value.absent(),
             Value<bool> isPinned = const Value.absent(),
             Value<String?> ownerId = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -19787,6 +20112,11 @@ class $$AnnouncementsTableTableManager extends RootTableManager<
             expiresAt: expiresAt,
             backgroundId: backgroundId,
             backgroundImageUrl: backgroundImageUrl,
+            mediaKind: mediaKind,
+            mediaUrl: mediaUrl,
+            mediaPosterUrl: mediaPosterUrl,
+            mediaDurationMs: mediaDurationMs,
+            mediaWaveform: mediaWaveform,
             isPinned: isPinned,
             ownerId: ownerId,
             createdAt: createdAt,
