@@ -845,8 +845,9 @@ ne faut pas en inventer une : ce serait une règle éditoriale invisible, prise 
 le premier écran qui en a eu besoin.
 
 **Une exception, et elle est décidée et écrite** (#130, décision utilisateur du
-05/10/2026) : un **statut à son** (audio ou vidéo) met le lecteur principal en
-**pause**, et la sortie de la visionneuse le fait **reprendre** — l'antenne
+05/10/2026) : un **statut à son** (audio ou vidéo) **joué son actif** met le lecteur
+principal en **pause** (son coupé : rien n'est interrompu ; le réactiver
+interrompt à ce moment-là), et la sortie de la visionneuse le fait **reprendre** — l'antenne
 **au direct** (`RadioListening.rejoinLive` rouvre la source, cookie renégocié),
 un enseignement à sa position. Elle vit dans le contrôleur global
 (`PlaybackController.interruptForStatus` / `resumeAfterStatus`), ne survit pas

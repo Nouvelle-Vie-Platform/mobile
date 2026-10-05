@@ -653,6 +653,55 @@ void main() {
       expect(sermon.value.isPlaying, isFalse);
     });
 
+    testWidgets(
+        'un statut à son coupé n\'interrompt rien ; réactiver le son '
+        'interrompt, le recouper ne fait rien reprendre avant la sortie',
+        (tester) async {
+      final active = ValueNotifier<bool>(true);
+      addTearDown(active.dispose);
+      await pumpViewer(
+        tester,
+        [
+          _status(id: 'texte', body: 'Paix sur vous.'),
+          _status(
+            id: 'vocal',
+            body: 'Un mot du pasteur.',
+            audio: vocal,
+            age: const Duration(hours: 3),
+          ),
+        ],
+        screen: ValueListenableBuilder<bool>(
+          valueListenable: active,
+          builder: (_, isActive, __) => AnnouncementsScreen(isActive: isActive),
+        ),
+      );
+      final sermon = playingSermon(tester);
+
+      // Son coupé dès le statut texte, puis passage au statut vocal : on le
+      // regarde sans l'entendre, l'enseignement continue dessous.
+      await tester.tap(find.byIcon(Icons.volume_up_rounded));
+      await tester.pump();
+      await nextStatus(tester);
+      expect(find.text('Un mot du pasteur.'), findsOneWidget);
+      expect(sermon.value.isPlaying, isTrue);
+
+      // Le fidèle réactive le son : l'enseignement se tait à ce moment-là.
+      await tester.tap(find.byIcon(Icons.volume_off_rounded));
+      await tester.pump();
+      expect(sermon.value.isPlaying, isFalse);
+
+      // Il le recoupe : rien ne reprend tant qu'on est dans la visionneuse.
+      await tester.tap(find.byIcon(Icons.volume_up_rounded));
+      await tester.pump();
+      expect(sermon.value.isPlaying, isFalse);
+
+      // La sortie fait reprendre, à la position.
+      active.value = false;
+      await tester.pump();
+      expect(sermon.value.isPlaying, isTrue);
+      expect(sermon.value.position, const Duration(minutes: 12, seconds: 7));
+    });
+
     testWidgets('un mur sans statut à son ne touche jamais au lecteur',
         (tester) async {
       final active = ValueNotifier<bool>(true);

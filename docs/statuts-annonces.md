@@ -221,7 +221,8 @@ central reste translucide sur un statut vidéo.
   quitté s'arrête avec son chargement).
 - **Cohabitation avec la radio et les enseignements** (décision utilisateur du
   05/10/2026) : si le lecteur principal joue quand un statut **à son** (audio
-  ou vidéo) démarre, il se met **en pause** — avant que le statut ne parle —,
+  ou vidéo) démarre **avec le son actif**, il se met **en pause** — avant que
+  le statut ne parle —,
   puis **reprend tout seul quand on quitte la visionneuse** (changement
   d'onglet, démontage) : **la radio au direct** (la source est rouverte et le
   cookie renégocié, `RadioListening.rejoinLive`), **un enseignement à sa
@@ -232,9 +233,13 @@ central reste translucide sur un statut vidéo.
   (`PlaybackController.interruptForStatus` / `resumeAfterStatus`), pas un
   second contrôleur. Le lecteur reste juge : un contenu arrêté, remplacé ou
   déjà relancé pendant le statut ne revient pas.
-- Le statut joue son son **muet ou non** selon le bouton muet ; le bouton muet
-  ne change pas la règle de cohabitation — un statut audio ou vidéo
-  interrompt, qu'il soit muet ou non.
+- **Le bouton muet entre dans la règle** (décision utilisateur du
+  05/10/2026) : un statut audio ou vidéo **dont le son est coupé n'interrompt
+  rien** — on le regarde, on entend la radio ou le prêche. **Réactiver le son**
+  d'un statut à son qui joue interrompt à ce moment-là. Le **recouper** ne
+  fait rien reprendre : la reprise reste à la sortie de la visionneuse, règle
+  unique et simple. L'état muet étant mémorisé pour la session, un fidèle qui
+  a coupé le son parcourt tous les statuts sans jamais taire l'antenne.
 
 ## 5. Waveform
 

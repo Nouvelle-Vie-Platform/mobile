@@ -290,13 +290,23 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     return status.audio != null || status.video != null;
   }
 
-  /// **La cohabitation avec le lecteur principal** (#130, décision du
+  /// **Le statut courant fait-il entendre quelque chose ?** — il a du son
+  /// ([_currentHasSound]) et le fidèle ne l'a pas coupé. Un audio ou une
+  /// vidéo dont le son est coupé se regarde par-dessus la radio sans la taire.
+  bool get _currentIsAudible =>
+      _currentHasSound && !ref.read(statusMutedProvider);
+
+  /// **La cohabitation avec le lecteur principal** (#130, décisions du
   /// 05/10/2026) :
   ///
-  /// - un statut **à son** qui démarre met en pause la radio ou l'enseignement
-  ///   qui jouait — *avant* de lancer son propre son, pour qu'aucune image ne
-  ///   les fasse entendre ensemble ;
-  /// - un statut **muet** (texte, image) n'interrompt rien ;
+  /// - un statut **à son** qui démarre **son actif** met en pause la radio ou
+  ///   l'enseignement qui jouait — *avant* de lancer son propre son, pour
+  ///   qu'aucune image ne les fasse entendre ensemble ;
+  /// - un statut **sans son** (texte, image) n'interrompt rien, ni un statut
+  ///   à son **dont le son est coupé** : on n'entend que le lecteur principal ;
+  /// - **réactiver le son** d'un statut à son qui joue interrompt à ce
+  ///   moment-là ; le recouper ne fait rien reprendre — la reprise reste à la
+  ///   sortie de la visionneuse, règle simple et unique ;
   /// - en **quittant la visionneuse** (autre onglet, ou démontage), ce qui a
   ///   été tu reprend tout seul : la radio au direct, l'enseignement à sa
   ///   position. Passer d'un statut à son à un statut muet ne fait rien
@@ -308,7 +318,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
   void _syncPlayback() {
     if (!mounted) return;
     if (_shouldPlay) {
-      if (_currentHasSound) _listening.interruptForStatus();
+      if (_currentIsAudible) _listening.interruptForStatus();
       _player.play();
     } else {
       _player.pause();
@@ -359,8 +369,14 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     // L'état « muet » vit dans un provider (partagé, mémorisé pour la session) ;
     // le lecteur en est seulement informé — il ne le rediffuse pas, pour ne pas
     // faire repeindre toute la visionneuse à chaque bascule.
-    ref.listen<bool>(
-        statusMutedProvider, (_, muted) => _player.setMuted(muted));
+    //
+    // Réactiver le son peut aussi faire taire le lecteur principal : la règle
+    // de cohabitation est rejouée ([_syncPlayback]), qui n'interrompt que si
+    // le statut courant est désormais audible.
+    ref.listen<bool>(statusMutedProvider, (_, muted) {
+      _player.setMuted(muted);
+      _syncPlayback();
+    });
 
     // **Le premier statut se charge quand le mur arrive**, pas seulement à la
     // première image : le magasin répond de façon asynchrone, presque toujours
