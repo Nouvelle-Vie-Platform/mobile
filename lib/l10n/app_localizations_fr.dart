@@ -229,7 +229,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radioOffAir => 'Hors antenne';
 
   @override
-  String get radioLive => 'En direct';
+  String get radioLive => 'À l\'antenne';
 
   @override
   String get radioRetrying => 'Nouvelle tentative…';
@@ -257,6 +257,154 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get radioOpenLiveHint => 'ouvrir le live';
+
+  @override
+  String get radioLiveBadge => 'EN DIRECT';
+
+  @override
+  String radioListeners(int count) {
+    return '$count à l\'écoute';
+  }
+
+  @override
+  String get radioReactionHeart => 'Envoyer un cœur';
+
+  @override
+  String get radioReactionPray => 'Envoyer une prière';
+
+  @override
+  String get radioReactionPraise => 'Envoyer une louange';
+
+  @override
+  String get radioReactionFire => 'Envoyer une flamme';
+
+  @override
+  String get radioReactionAmen => 'Amen';
+
+  @override
+  String get radioReactionAmenLabel => 'Dire Amen';
+
+  @override
+  String get radioCommentsLabel => 'Commentaires du direct';
+
+  @override
+  String radioCommentSemantics(String name, String body) {
+    return '$name : $body';
+  }
+
+  @override
+  String get radioMessageOptionsHint => 'options du message';
+
+  @override
+  String get radioNewMessages => 'Nouveaux messages';
+
+  @override
+  String get radioCommentHint => 'Écrire…';
+
+  @override
+  String get radioSilencedNotice =>
+      'Un modérateur a suspendu vos commentaires jusqu\'à la fin du direct.';
+
+  @override
+  String get radioCommentClosed =>
+      'Le direct est terminé : les commentaires sont fermés.';
+
+  @override
+  String get radioCommentThrottled =>
+      'Doucement : un message toutes les cinq secondes.';
+
+  @override
+  String get radioCommentInvalid =>
+      'Votre message doit faire de 1 à 200 caractères.';
+
+  @override
+  String get radioCommentFailed => 'Message non envoyé. Réessayez.';
+
+  @override
+  String get radioPseudonymTitle => 'Choisissez un pseudo';
+
+  @override
+  String get radioPseudonymMessage =>
+      'Il s\'affichera à côté de vos messages pendant les directs.';
+
+  @override
+  String get radioPseudonymHint => 'Votre pseudo';
+
+  @override
+  String get radioPseudonymConfirm => 'Valider';
+
+  @override
+  String get radioPseudonymInvalid => 'Entre 2 et 24 caractères.';
+
+  @override
+  String get radioPseudonymThrottled => 'Trop d\'essais. Réessayez plus tard.';
+
+  @override
+  String get radioPseudonymFailed => 'Pseudo non enregistré. Réessayez.';
+
+  @override
+  String get radioReportAction => 'Signaler ce message';
+
+  @override
+  String get radioReported => 'Merci, un modérateur va le regarder.';
+
+  @override
+  String get radioAlreadyReported => 'Vous avez déjà signalé ce message.';
+
+  @override
+  String get radioMessageGone => 'Ce message n\'est plus disponible.';
+
+  @override
+  String get radioActionFailed => 'Action impossible. Réessayez.';
+
+  @override
+  String get radioModHide => 'Masquer';
+
+  @override
+  String get radioModKeep => 'Garder';
+
+  @override
+  String get radioModSilence => 'Réduire au silence';
+
+  @override
+  String get radioModResetPseudonym => 'Réinitialiser le pseudo';
+
+  @override
+  String get radioModHidden => 'Message masqué.';
+
+  @override
+  String get radioModKept => 'Message gardé.';
+
+  @override
+  String get radioModSilenced =>
+      'Auteur réduit au silence jusqu\'à la fin du direct.';
+
+  @override
+  String get radioModPseudonymReset => 'Pseudo réinitialisé.';
+
+  @override
+  String get radioModNotGuest =>
+      'Seul le pseudo d\'un invité peut être réinitialisé.';
+
+  @override
+  String get radioReportedQueue => 'Messages signalés';
+
+  @override
+  String radioReportedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count signalements',
+      one: '1 signalement',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get radioReportedEmpty => 'Aucun message en attente.';
+
+  @override
+  String get radioStopListening => 'Arrêter l\'écoute';
 
   @override
   String get actionSeeAll => 'Voir tout';

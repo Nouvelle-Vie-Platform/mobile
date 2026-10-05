@@ -478,10 +478,10 @@ abstract class AppLocalizations {
   /// **'Hors antenne'**
   String get radioOffAir;
 
-  /// Écran /radio : le son de l'antenne sort vraiment (RadioPhase.playing)
+  /// Écran /radio : le son de l'antenne sort vraiment (RadioPhase.playing). Pas « En direct » depuis #135 : ce mot-là est réservé au badge d'un direct de la régie (radioLiveBadge), et la radio tourne 24 h/24 sans direct
   ///
   /// In fr, this message translates to:
-  /// **'En direct'**
+  /// **'À l\'antenne'**
   String get radioLive;
 
   /// Écran /radio pendant la reprise (les six attentes) : il dit qu'il réessaie, sans nommer la panne qu'il combat encore
@@ -531,6 +531,264 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'ouvrir le live'**
   String get radioOpenLiveHint;
+
+  /// Page live : badge du direct (une régie tient l'antenne). Affiché seulement pendant un direct — jamais pour dire que le son sort. Capitales voulues
+  ///
+  /// In fr, this message translates to:
+  /// **'EN DIRECT'**
+  String get radioLiveBadge;
+
+  /// Page live : le compteur d'auditeurs, affiché seulement quand le serveur rend un nombre (au-dessus du seuil réglé au portail, 10 par défaut)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} à l\'écoute'**
+  String radioListeners(int count);
+
+  /// Page live : libellé d'accessibilité du bouton de réaction ❤️
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer un cœur'**
+  String get radioReactionHeart;
+
+  /// Page live : libellé d'accessibilité du bouton de réaction 🙏
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer une prière'**
+  String get radioReactionPray;
+
+  /// Page live : libellé d'accessibilité du bouton de réaction 🙌
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer une louange'**
+  String get radioReactionPraise;
+
+  /// Page live : libellé d'accessibilité du bouton de réaction 🔥
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer une flamme'**
+  String get radioReactionFire;
+
+  /// Page live : la réaction « Amen », rendue en mot sur son bouton (les quatre autres sont des emojis). Court : il tient dans un bouton rond
+  ///
+  /// In fr, this message translates to:
+  /// **'Amen'**
+  String get radioReactionAmen;
+
+  /// Page live : libellé d'accessibilité du bouton « Amen »
+  ///
+  /// In fr, this message translates to:
+  /// **'Dire Amen'**
+  String get radioReactionAmenLabel;
+
+  /// Page live : nom du fil de commentaires pour le lecteur d'écran
+  ///
+  /// In fr, this message translates to:
+  /// **'Commentaires du direct'**
+  String get radioCommentsLabel;
+
+  /// Page live : un commentaire lu par le lecteur d'écran — l'auteur puis le texte
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} : {body}'**
+  String radioCommentSemantics(String name, String body);
+
+  /// Page live : indice d'accessibilité de l'appui long sur un commentaire (signaler, et pour un modérateur masquer, réduire au silence, réinitialiser le pseudo)
+  ///
+  /// In fr, this message translates to:
+  /// **'options du message'**
+  String get radioMessageOptionsHint;
+
+  /// Page live : pastille qui ramène en bas du fil quand l'auditeur est remonté et que des messages arrivent
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveaux messages'**
+  String get radioNewMessages;
+
+  /// Page live : texte indicatif du champ de commentaire (pendant un direct seulement)
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrire…'**
+  String get radioCommentHint;
+
+  /// Page live : remplace le champ de saisie quand le porteur a été réduit au silence
+  ///
+  /// In fr, this message translates to:
+  /// **'Un modérateur a suspendu vos commentaires jusqu\'à la fin du direct.'**
+  String get radioSilencedNotice;
+
+  /// Page live : refus d'un commentaire hors direct (409 E_RADIO_COMMENTS_CLOSED)
+  ///
+  /// In fr, this message translates to:
+  /// **'Le direct est terminé : les commentaires sont fermés.'**
+  String get radioCommentClosed;
+
+  /// Page live : refus d'un commentaire trop rapproché (429)
+  ///
+  /// In fr, this message translates to:
+  /// **'Doucement : un message toutes les cinq secondes.'**
+  String get radioCommentThrottled;
+
+  /// Page live : refus d'un commentaire vide ou trop long (422)
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre message doit faire de 1 à 200 caractères.'**
+  String get radioCommentInvalid;
+
+  /// Page live : échec d'envoi d'un commentaire sans cause lisible (réseau, réponse inattendue)
+  ///
+  /// In fr, this message translates to:
+  /// **'Message non envoyé. Réessayez.'**
+  String get radioCommentFailed;
+
+  /// Page live : titre du formulaire qui s'ouvre quand un invité écrit ou signale pour la première fois (403 E_RADIO_PSEUDONYM_REQUIRED)
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez un pseudo'**
+  String get radioPseudonymTitle;
+
+  /// Page live : sous le titre du formulaire de pseudo
+  ///
+  /// In fr, this message translates to:
+  /// **'Il s\'affichera à côté de vos messages pendant les directs.'**
+  String get radioPseudonymMessage;
+
+  /// Page live : texte indicatif du champ de pseudo
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre pseudo'**
+  String get radioPseudonymHint;
+
+  /// Page live : bouton du formulaire de pseudo — enregistre, puis renvoie le message
+  ///
+  /// In fr, this message translates to:
+  /// **'Valider'**
+  String get radioPseudonymConfirm;
+
+  /// Page live : pseudo refusé (422 E_RADIO_PSEUDONYM_INVALID, ou vérifié avant l'envoi)
+  ///
+  /// In fr, this message translates to:
+  /// **'Entre 2 et 24 caractères.'**
+  String get radioPseudonymInvalid;
+
+  /// Page live : pseudo refusé pour trop d'essais (429, 5 par heure)
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop d\'essais. Réessayez plus tard.'**
+  String get radioPseudonymThrottled;
+
+  /// Page live : échec de l'enregistrement du pseudo sans cause lisible
+  ///
+  /// In fr, this message translates to:
+  /// **'Pseudo non enregistré. Réessayez.'**
+  String get radioPseudonymFailed;
+
+  /// Page live : action de l'appui long sur un commentaire, pour tout auditeur
+  ///
+  /// In fr, this message translates to:
+  /// **'Signaler ce message'**
+  String get radioReportAction;
+
+  /// Page live : signalement accepté — le message reste visible jusqu'à la décision d'un modérateur
+  ///
+  /// In fr, this message translates to:
+  /// **'Merci, un modérateur va le regarder.'**
+  String get radioReported;
+
+  /// Page live : 409 E_RADIO_COMMENT_ALREADY_REPORTED
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez déjà signalé ce message.'**
+  String get radioAlreadyReported;
+
+  /// Page live : le message a été masqué entre-temps, ou le direct est fini (404 / 409)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce message n\'est plus disponible.'**
+  String get radioMessageGone;
+
+  /// Page live : échec d'un signalement ou d'un geste de modération sans cause lisible
+  ///
+  /// In fr, this message translates to:
+  /// **'Action impossible. Réessayez.'**
+  String get radioActionFailed;
+
+  /// Page live, modérateur : masquer un message (il disparaît du fil de tous)
+  ///
+  /// In fr, this message translates to:
+  /// **'Masquer'**
+  String get radioModHide;
+
+  /// Page live, modérateur : garder un message signalé (il quitte la file, reste au fil)
+  ///
+  /// In fr, this message translates to:
+  /// **'Garder'**
+  String get radioModKeep;
+
+  /// Page live, modérateur : empêcher l'auteur d'écrire jusqu'à la fin du direct. Rien n'est annoncé à l'audience
+  ///
+  /// In fr, this message translates to:
+  /// **'Réduire au silence'**
+  String get radioModSilence;
+
+  /// Page live, modérateur : obliger un invité à choisir un autre pseudo (invités seulement)
+  ///
+  /// In fr, this message translates to:
+  /// **'Réinitialiser le pseudo'**
+  String get radioModResetPseudonym;
+
+  /// Page live, modérateur : confirmation du masquage
+  ///
+  /// In fr, this message translates to:
+  /// **'Message masqué.'**
+  String get radioModHidden;
+
+  /// Page live, modérateur : confirmation après « Garder »
+  ///
+  /// In fr, this message translates to:
+  /// **'Message gardé.'**
+  String get radioModKept;
+
+  /// Page live, modérateur : confirmation du silence
+  ///
+  /// In fr, this message translates to:
+  /// **'Auteur réduit au silence jusqu\'à la fin du direct.'**
+  String get radioModSilenced;
+
+  /// Page live, modérateur : confirmation de la réinitialisation
+  ///
+  /// In fr, this message translates to:
+  /// **'Pseudo réinitialisé.'**
+  String get radioModPseudonymReset;
+
+  /// Page live, modérateur : 409 E_RADIO_COMMENT_AUTHOR_NOT_GUEST
+  ///
+  /// In fr, this message translates to:
+  /// **'Seul le pseudo d\'un invité peut être réinitialisé.'**
+  String get radioModNotGuest;
+
+  /// Page live, modérateur : titre de la file des signalements, et libellé du bouton qui l'ouvre
+  ///
+  /// In fr, this message translates to:
+  /// **'Messages signalés'**
+  String get radioReportedQueue;
+
+  /// Page live, modérateur : nombre de signalements en attente sur un message
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 signalement} other{{count} signalements}}'**
+  String radioReportedCount(int count);
+
+  /// Page live, modérateur : la file des signalements est vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun message en attente.'**
+  String get radioReportedEmpty;
+
+  /// Page live : libellé d'accessibilité du bouton d'arrêt (il arrête l'antenne et ferme la page)
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter l\'écoute'**
+  String get radioStopListening;
 
   /// No description provided for @actionSeeAll.
   ///
