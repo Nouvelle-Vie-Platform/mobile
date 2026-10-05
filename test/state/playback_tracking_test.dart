@@ -236,6 +236,24 @@ void main() {
     }
   }
 
+  /// Ouvre la fiche du prêche et laisse finir la transition de la route :
+  /// `settle` n'avance pas l'horloge, et un bouton encore en glissement hors de
+  /// l'écran ne reçoit pas le toucher.
+  Future<void> openDetail(WidgetTester tester) async {
+    router.pushNamed(AppRoute.teachingDetail, pathParameters: {'id': _id});
+    await settle(tester);
+    await tester.pump(const Duration(seconds: 1));
+    await settle(tester);
+  }
+
+  /// Referme la fiche, transition comprise : sans elle, la fiche reste montée.
+  Future<void> closeDetail(WidgetTester tester) async {
+    router.pop();
+    await settle(tester);
+    await tester.pump(const Duration(seconds: 1));
+    await settle(tester);
+  }
+
   Future<int?> savedSeconds(WidgetTester tester) async {
     await settle(tester);
     final row = await database().playbackDao.localPositionFor(_id);
@@ -511,8 +529,7 @@ void main() {
       await launchFromHome(tester);
       await reach(tester, const Duration(seconds: 12));
 
-      router.pushNamed(AppRoute.teachingDetail, pathParameters: {'id': _id});
-      await settle(tester);
+      await openDetail(tester);
       expect(find.byType(TeachingDetailScreen), findsOneWidget);
       // Ouvrir la fiche d'un prêche en cours ne le recharge pas.
       expect(player.loadCount, 1);
@@ -531,12 +548,10 @@ void main() {
       await pumpApp(tester);
       await launchFromHome(tester);
 
-      router.pushNamed(AppRoute.teachingDetail, pathParameters: {'id': _id});
-      await settle(tester);
+      await openDetail(tester);
       await playThrough(tester, 0, 10);
 
-      router.pop();
-      await settle(tester);
+      await closeDetail(tester);
       expect(find.byType(TeachingDetailScreen), findsNothing);
 
       // La sortie d'écran n'est plus un déclencheur : rien n'est rapporté, et
