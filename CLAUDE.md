@@ -2702,6 +2702,22 @@ Six points qui se ratent en silence :
    rend « 14 (API 34) » et « Version 17.0 (Build 21A329) ». Sur le web, **pas de
    version de système** : la lire serait une empreinte d'appareil.
 
+**La langue part à côté, par son propre intercepteur** (#131).
+`AcceptLanguageInterceptor` (`lib/core/network/accept_language_header.dart`)
+pose `Accept-Language: fr|en|ee` sur toutes les requêtes, juste après les
+en-têtes de présentation. Ce n'est pas un quatrième en-tête de présentation, et
+il ne vit pas dans `AppVersionHeaderInterceptor` : la version est **retenue**
+(un binaire ne change pas de version), la langue est **relue à chaque requête
+et jamais retenue** — elle change en cours de session, et la requête suivante
+doit la suivre sans redémarrage. Le lecteur est `ApiClient.interfaceLanguage`,
+câblé dans `initState` de `MaisonDuMiracleApp` sur `contentLocaleProvider` (la
+copie de la locale que `MaterialApp` a **réellement** résolue, tenue par
+`_ContentLocaleSync`) et débranché au `dispose`. **Ne jamais re-résoudre la
+langue côté réseau** (`PlatformDispatcher`) : ce serait une seconde vérité.
+Lecteur absent ou qui lève ⇒ en-tête absent, et le serveur répond en français.
+La requête qui compte est `POST /auth/request-code` : sans l'en-tête, le mail du
+code partait dans une langue que la personne n'avait pas choisie.
+
 ⚠️ **L'identifiant d'appareil mesure, il n'autorise rien** (ADR-0040). Il part
 **aussi quand un membre est connecté** — c'est tout l'objet de #87 : sans lui le
 serveur dérive une fiche *synthétique* du compte, et un membre à deux téléphones

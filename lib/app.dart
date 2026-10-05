@@ -47,6 +47,16 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
     // acquérir. C'est ici, où les deux existent, qu'on branche la réaction.
     ApiClient.instance.onUnauthorized = _handleUnauthorized;
 
+    // **La langue annoncée au serveur** (`Accept-Language`, #131) : celle que
+    // `_ContentLocaleSync` recopie depuis la locale que `MaterialApp` a
+    // réellement résolue. Un lecteur, relu à chaque requête — un changement de
+    // langue est suivi dès la suivante —, et branché sur cette copie plutôt
+    // que sur une résolution de plus : `PlatformDispatcher` relu ici
+    // divergerait de l'écran. Avant la première image, le provider vaut le
+    // français, qui est aussi ce que le serveur suppose sans en-tête.
+    ApiClient.instance.interfaceLanguage =
+        () => ref.read(contentLocaleProvider);
+
     // **L'intention en attente doit rester vivante**, et c'est la seule raison
     // de cette ligne. `requireSession()` met un geste de côté et le rejoue à
     // l'ouverture de la session ; cette réaction est un `ref.listen` **interne**
@@ -183,6 +193,7 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
     _intents?.close();
     unawaited(_wakes?.cancel());
     ApiClient.instance.onUnauthorized = null;
+    ApiClient.instance.interfaceLanguage = null;
     super.dispose();
   }
 
@@ -273,6 +284,11 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
 
 /// Recopie dans [contentLocaleProvider] la locale que `MaterialApp` a
 /// **réellement résolue**.
+///
+/// Deux lecteurs en vivent : le repli des contenus, et l'en-tête
+/// `Accept-Language` d'`ApiClient` (#131), branché dans `initState` de
+/// l'application. Une seule copie, donc une seule langue sur l'écran et sur le
+/// fil.
 ///
 /// C'est le seul endroit de l'application où les deux existent : la résolution
 /// de locale (langues du système ✕ [appSupportedLocales]) appartient au
