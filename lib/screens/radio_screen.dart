@@ -10,14 +10,28 @@
 /// **autre** fonctionnalité, qui n'existe pas vraiment aujourd'hui et qui méritera
 /// son propre chantier ; garder le nom « live » sur un écran qui diffuse la radio
 /// aurait installé le mensonge pour longtemps.
+///
+/// ## C'est ici que la cause se lit (#125)
+///
+/// Le bouton de l'accueil porte un libellé fixe (44092f0) : il ne nomme aucune
+/// panne. C'est donc cet écran qui dit pourquoi l'antenne ne joue pas, à la
+/// place de la scène centrale de la fiche ([RadioAirStatus]).
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/radio/radio_failure.dart';
+import '../data/radio/radio_status.dart';
+import '../l10n/app_localizations.dart';
 import '../l10n/l10n_extension.dart';
 import '../state/radio_providers.dart';
 import '../state/season_providers.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../widgets/app_error_state.dart';
 import '../widgets/content_player_view.dart';
 
 class RadioScreen extends ConsumerWidget {
@@ -30,6 +44,8 @@ class RadioScreen extends ConsumerWidget {
     // arriver jusqu'au lecteur, donc jusqu'à la notification et à l'écran
     // verrouillé, sans sortir des `.arb`. Voir `radioContentProvider`.
     final title = l10n.radioTitle;
+    Future<void> start() =>
+        ref.read(radioListeningProvider.notifier).start(title: title);
 
     return ContentPlayerView(
       content: radioContentProvider(title),
@@ -55,8 +71,12 @@ class RadioScreen extends ConsumerWidget {
       // un démarrage déjà en vol le fait rendre tout de suite, et un lecteur qui
       // tient déjà l'antenne reçoit un simple `play()`. Rien n'est pris de plus
       // sur la fenêtre de rattrapage de 40 secondes de l'antenne.
-      openSource: () =>
-          ref.read(radioListeningProvider.notifier).start(title: title),
+      openSource: start,
+      // **La scène dit l'état réel de l'antenne** (#125), à la place de « Lecture
+      // interrompue » et d'« il faut du réseau » : ces deux phrases ignoraient la
+      // reprise en cours et la cause classée, et leur « Reprendre » rouvrait
+      // sans pré-vol. Ici, toute relance passe par `start`.
+      stage: RadioAirStatus(onRetry: start),
       // Le plancher de la cascade : la saison gagne quand le portail en a une.
       // Même image que l'écran de démarrage et que le splash natif.
       fallbackBackgroundAsset: kAppBackgroundAsset,
@@ -70,4 +90,163 @@ class RadioScreen extends ConsumerWidget {
       },
     );
   }
+}
+
+/// **Ce que l'antenne fait, dit en une ligne — ou, après abandon, sa cause.**
+///
+/// Quatre états, lus sur [RadioStatus] et sur la route d'antenne, par ordre de
+/// priorité :
+///
+/// | état | ce qui s'affiche |
+/// | --- | --- |
+/// | abandon | la cause (`radio_failure.dart`), et « Réessayer » |
+/// | reprise | « Nouvelle tentative… » — **sans** nommer la panne qu'on combat |
+/// | lecture | « En direct » |
+/// | hors antenne | « Hors antenne », quand la route a dit `onAir: false` |
+///
+/// Sinon — au repos ou en connexion sur une antenne qui émet ou dont on ne sait
+/// rien —, rien : le bouton de lecture montre déjà qu'il cherche, et le fond de
+/// l'écran reste visible, comme avant.
+///
+/// ⚠️ **`onAir` nul n'est pas `onAir` faux** : seul [RadioAntenna.isSilent]
+/// affiche « Hors antenne ». Un échec de lecture de la route, un premier
+/// lancement, un corps illisible rendent une antenne inconnue, et dire « Hors
+/// antenne » sur cette base affirmerait que l'église ne diffuse pas.
+///
+/// ⚠️ **La lecture et la reprise passent avant « hors antenne »** : l'état n'est
+/// lu qu'au lancement et au retour à l'écran, et l'antenne a pu reprendre
+/// entre-temps — le son qui sort l'emporte sur ce que la route disait.
+class RadioAirStatus extends ConsumerWidget {
+  const RadioAirStatus({super.key, required this.onRetry});
+
+  /// La relance. **Toujours `RadioListening.start`**, jamais le contrôleur seul :
+  /// c'est lui qui fait le pré-vol et porte le cookie (#108, #110), et c'est
+  /// aussi lui qui efface le renoncement.
+  final VoidCallback onRetry;
+
+  /// Les témoins de chaque état, visés par clé dans les tests : c'est « l'écran
+  /// montre la reprise » qu'on vérifie, pas la forme du widget qui la montre.
+  static const Key offAirKey = Key('radio_air_off');
+  static const Key liveKey = Key('radio_air_live');
+  static const Key retryingKey = Key('radio_air_retrying');
+  static const Key failedKey = Key('radio_air_failed');
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final status = ref.watch(radioListeningProvider);
+    final silent = ref.watch(
+      radioAntennaProvider.select((a) => a.value?.isSilent ?? false),
+    );
+
+    final Widget line = switch (status.phase) {
+      RadioPhase.failed => AppErrorState(
+          key: failedKey,
+          title: _cause(status.failure, l10n),
+          message: l10n.radioGaveUpMessage,
+          icon: _causeIcon(status.failure),
+          onRetry: onRetry,
+        ),
+      RadioPhase.retrying => _StatusPill(
+          key: retryingKey,
+          leading: SizedBox.square(
+            dimension: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: context.palette.textSecondary,
+            ),
+          ),
+          label: l10n.radioRetrying,
+        ),
+      RadioPhase.playing => _StatusPill(
+          key: liveKey,
+          leading: const _LiveDot(),
+          label: l10n.radioLive,
+        ),
+      RadioPhase.idle || RadioPhase.connecting when silent => _StatusPill(
+          key: offAirKey,
+          leading: Icon(
+            Icons.sensors_off_rounded,
+            size: 16,
+            color: context.palette.textSecondary,
+          ),
+          label: l10n.radioOffAir,
+        ),
+      _ => const SizedBox.shrink(),
+    };
+
+    return Center(child: SingleChildScrollView(child: line));
+  }
+
+  /// Les trois phrases de `radio_failure.dart`. `null` ne devrait pas arriver
+  /// sur un abandon — `_abandon` tombe sur « connexion » faute de cause — mais le
+  /// type le permet, et le repli suit la même règle.
+  static String _cause(RadioFailureKind? kind, AppLocalizations l10n) =>
+      switch (kind) {
+        RadioFailureKind.antenna => l10n.radioFailureAntenna,
+        RadioFailureKind.unknown => l10n.radioFailureUnknown,
+        RadioFailureKind.connection || null => l10n.radioFailureConnection,
+      };
+
+  static IconData _causeIcon(RadioFailureKind? kind) => switch (kind) {
+        RadioFailureKind.antenna => Icons.sensors_off_rounded,
+        RadioFailureKind.unknown => Icons.error_outline_rounded,
+        RadioFailureKind.connection || null => Icons.wifi_off_rounded,
+      };
+}
+
+/// Une ligne d'état courte, sur une pastille aux couleurs du thème : lisible
+/// sur le fond sombre de la fiche, en clair comme en sombre.
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({super.key, required this.leading, required this.label});
+
+  final Widget leading;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: palette.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            leading,
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(
+              child: Text(
+                label,
+                style: AppTypography.bodyStrong
+                    .copyWith(color: palette.textPrimary),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Le voyant d'antenne : un point rouge fixe. Fixe, et pas clignotant — une
+/// animation continue de plus interdirait `pumpAndSettle` à tous les tests qui
+/// montent cet écran, et le bouton de lecture dit déjà que ça joue.
+class _LiveDot extends StatelessWidget {
+  const _LiveDot();
+
+  @override
+  Widget build(BuildContext context) => const DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.danger,
+          shape: BoxShape.circle,
+        ),
+        child: SizedBox.square(dimension: 10),
+      );
 }

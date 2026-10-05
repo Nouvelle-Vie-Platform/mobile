@@ -182,7 +182,16 @@ class RadioListening extends Notifier<RadioStatus> {
     _title = title;
     // Un geste efface le renoncement : c'est l'auditeur qui décide de réessayer,
     // et un bouton éteint qui refuserait de repartir serait un interdit de plus.
+    //
+    // ⚠️ **Après un abandon, le geste repart de zéro** (#125) : la cause est
+    // oubliée — sans quoi l'écran garderait la panne affichée pendant la
+    // connexion — et la source est **rouverte**, pré-vol compris. Le lecteur peut
+    // en effet tenir l'antenne *sans* panne : la dernière tentative a effacé
+    // l'erreur (`resume()` publie `isPlaying` et `isBuffering`) puis s'est
+    // enlisée. Un simple `play()` y relancerait un tampon mort.
+    final wasAbandoned = _abandoned;
     _abandoned = false;
+    if (wasAbandoned) _cause = null;
 
     // **Le transport passe par le contrôleur global** (#114), comme partout :
     // ce qui reste propre à l'antenne — l'adresse, le pré-vol, l'insistance —
@@ -190,7 +199,7 @@ class RadioListening extends Notifier<RadioStatus> {
     final controller = ref.read(playbackControllerProvider.notifier);
     final playback = controller.playback;
     final held = playback.contentId == RadioConfig.contentId;
-    if (held && !playback.hasError) {
+    if (held && !playback.hasError && !wasAbandoned) {
       // Déjà en main — mis en pause depuis l'écran d'antenne ou la notification.
       // On ne recharge pas : rouvrir la source couperait le tampon déjà rempli.
       if (_cause == null) state = RadioStatus.connecting;

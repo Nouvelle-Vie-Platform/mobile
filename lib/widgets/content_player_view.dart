@@ -44,7 +44,23 @@ class ContentPlayerView extends ConsumerStatefulWidget {
     this.onStop,
     this.fallbackBackgroundAsset,
     this.openSource,
+    this.stage,
   });
+
+  /// **Ce que la scène centrale dit, quand l'appelant sait mieux qu'elle**
+  /// (#125).
+  ///
+  /// `null` — le cas de la médiathèque — garde la scène d'origine : le visuel,
+  /// puis « Lecture interrompue » ou « il faut du réseau » quand le lecteur
+  /// porte une panne.
+  ///
+  /// Non nul, il **remplace entièrement** cette scène, et c'est le pendant
+  /// d'[openSource] : quand l'appelant ouvre la source lui-même, c'est aussi lui
+  /// qui sait pourquoi elle ne joue pas. Sur l'antenne, les deux phrases
+  /// génériques mentaient par omission — la panne y est classée et reprise par
+  /// `RadioListening`, et « Reprendre » appelait `resume()` sans pré-vol, donc
+  /// sans le cookie de MediaMTX (#108).
+  final Widget? stage;
 
   /// **Comment la source s'ouvre, quand cet écran ne doit pas l'ouvrir
   /// lui-même** (#110).
@@ -423,7 +439,21 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
       unawaited(_open(content));
       return;
     }
-    playback.isPlaying ? controller.pause() : controller.play();
+    if (playback.isPlaying) {
+      controller.pause();
+      return;
+    }
+    // **Quand l'appelant ouvre la source, c'est lui qui relance** (#125) : sur
+    // l'antenne, un `play()` nu après un abandon ne ferait rien — le lecteur
+    // porte encore sa panne, et `RadioListening` ne réessaie plus. `start` sait
+    // reconnaître une antenne en pause (simple `play()`) d'une antenne en panne
+    // (pré-vol, puis réouverture).
+    final opener = widget.openSource;
+    if (opener != null) {
+      unawaited(opener());
+      return;
+    }
+    controller.play();
   }
 
   /// **Prendre une note exige un compte**, et l'écran de lecture n'en exige pas.
@@ -465,12 +495,13 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
                   widget.isLive ? null : () => _showInfoSheet(context, content),
             ),
             Expanded(
-              child: _PlayerStage(
-                content: content,
-                onResume: () => unawaited(
-                  ref.read(playbackControllerProvider.notifier).resume(),
-                ),
-              ),
+              child: widget.stage ??
+                  _PlayerStage(
+                    content: content,
+                    onResume: () => unawaited(
+                      ref.read(playbackControllerProvider.notifier).resume(),
+                    ),
+                  ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
