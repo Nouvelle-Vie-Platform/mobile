@@ -3,15 +3,19 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/core/config/radio_config.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
+import 'package:maison_du_miracle/data/radio/radio_failure.dart';
 import 'package:maison_du_miracle/data/radio/radio_handshake.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
+import 'package:maison_du_miracle/data/radio/radio_status.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
+import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/widgets/home/radio_cta_pill.dart';
 
@@ -38,6 +42,46 @@ void main() {
   /// vérifie est **qu'on y va**, pas ce qu'elle dessine (`feature_screens_test`
   /// s'en charge).
   const pageMarker = 'page-antenne';
+
+  /// **Le libellé du bouton ne varie plus** (44092f0) : « New life radio » dans
+  /// tous les états. Les six phrases d'avant — « Suivre », « Hors antenne »,
+  /// « Nouvelle tentative… » et les trois causes d'échec — ont quitté le bouton.
+  ///
+  /// La règle que ces phrases rendaient visibles, elle, n'a pas bougé : c'est
+  /// [RadioListening] qui décide de la phase et qui classe la cause d'un échec.
+  /// Les tests la lisent donc là où elle vit désormais, sur l'état que le bouton
+  /// observe — et vérifient, à chaque fois, que le bouton est bien là avec son
+  /// libellé.
+  const label = 'New life radio';
+
+  RadioStatus status(WidgetTester tester) => ProviderScope.containerOf(
+        tester.element(find.byType(RadioCtaPill, skipOffstage: false)),
+      ).read(radioListeningProvider);
+
+  void expectPhase(
+    WidgetTester tester,
+    RadioPhase phase, {
+    RadioFailureKind? failure,
+  }) {
+    expect(find.text(label), findsOneWidget);
+    expect(status(tester).phase, phase);
+    if (phase == RadioPhase.failed) expect(status(tester).failure, failure);
+  }
+
+  /// **Le bouton s'efface sans disparaître** — la seule trace visible, depuis
+  /// 44092f0, d'une antenne annoncée muette ou d'un renoncement : le fond du
+  /// bouton passe à 55 % d'opacité, et il reste appuyable.
+  bool dimmed(WidgetTester tester) {
+    final box = tester
+        .widgetList<Container>(
+          find.descendant(
+            of: find.byKey(RadioCtaPill.buttonKey),
+            matching: find.byType(Container),
+          ),
+        )
+        .first;
+    return (box.decoration! as BoxDecoration).color!.a < 1;
+  }
 
   late InertContentPlayer player;
   late DateTime clock;
@@ -141,7 +185,7 @@ void main() {
   group('Le geste — trois lignes, et le premier appui agit tout de suite', () {
     testWidgets('à l\'arrêt, un appui lance le flux', (tester) async {
       await pumpPill(tester);
-      expect(find.text('Suivre New Life Radio'), findsOneWidget);
+      expectPhase(tester, RadioPhase.idle);
 
       await tapOnce(tester);
 
@@ -172,13 +216,13 @@ void main() {
       await pumpPill(tester);
       await tapOnce(tester);
       await paintPlaying(tester);
-      expect(find.text('New Life Radio'), findsOneWidget);
+      expectPhase(tester, RadioPhase.playing);
 
       await tapAgainLater(tester);
 
       expect(player.loadedUrl, isNull);
       expect(player.value.contentId, isNull);
-      expect(find.text('Suivre New Life Radio'), findsOneWidget);
+      expectPhase(tester, RadioPhase.idle);
       expect(find.text(pageMarker), findsNothing);
     });
 
@@ -240,7 +284,7 @@ void main() {
       // Le lecteur tient l'antenne mais le son n'est pas encore sorti : c'est
       // l'état « en connexion », et le bouton montre qu'il travaille.
       expect(find.byKey(RadioCtaPill.workingKey), findsOneWidget);
-      expect(find.text('New Life Radio'), findsOneWidget);
+      expectPhase(tester, RadioPhase.connecting);
 
       await tapOnce(tester); // 2ᵉ
 
@@ -302,7 +346,7 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(RadioCtaPill.workingKey), findsNothing);
-      expect(find.text('Suivre New Life Radio'), findsOneWidget);
+      expectPhase(tester, RadioPhase.idle);
 
       // Et un appui redémarre sans rouvrir la source : le tampon déjà rempli
       // n'est pas jeté.
@@ -311,27 +355,35 @@ void main() {
       expect(player.loadCount, 1);
     });
 
-    testWidgets('en connexion, il n\'y a pas de bouton d\'arrêt à offrir',
+    testWidgets('en connexion, il n\'y a pas d\'arrêt à offrir',
         (tester) async {
       // Absence, pas grisage — la règle du sélecteur de canaux (#83) : une
       // commande offerte qui ne répond pas est une promesse que personne ne tient.
+      //
+      // Le bouton d'arrêt indépendant a quitté l'accueil (44092f0) : l'arrêt
+      // passe par le simple appui (« en lecture, un appui arrête »). La règle
+      // se lit donc sur `offersStop`, que l'appui consulte — et le bouton
+      // retiré ne doit pas revenir pendant la connexion.
       await pumpPill(tester);
       await tapOnce(tester);
       expect(find.byKey(RadioCtaPill.stopKey), findsNothing);
+      expect(status(tester).offersStop, isFalse);
 
       await paintPlaying(tester);
-      expect(find.byKey(RadioCtaPill.stopKey), findsOneWidget);
+      expect(status(tester).offersStop, isTrue);
     });
   });
 
   group('Hors antenne : le bouton le dit, et lance quand même', () {
-    testWidgets('il annonce « Hors antenne »', (tester) async {
+    testWidgets('il se montre éteint', (tester) async {
+      // « Hors antenne » n'est plus écrit (44092f0) : le bouton le dit en
+      // s'effaçant, au repos.
       await pumpPill(
         tester,
         radio: const FixedRadioRepository(kTestAntennaSilent),
       );
-      expect(find.text('Hors antenne'), findsOneWidget);
-      expect(find.text('Suivre New Life Radio'), findsNothing);
+      expectPhase(tester, RadioPhase.idle);
+      expect(dimmed(tester), isTrue);
     });
 
     testWidgets('et l\'appui lance quand même, et marche', (tester) async {
@@ -355,8 +407,8 @@ void main() {
       // l'église ne diffuse pas.
       await pumpPill(tester,
           radio: const FixedRadioRepository(RadioAntenna.unknown));
-      expect(find.text('Suivre New Life Radio'), findsOneWidget);
-      expect(find.text('Hors antenne'), findsNothing);
+      expectPhase(tester, RadioPhase.idle);
+      expect(dimmed(tester), isFalse);
     });
   });
 
@@ -368,7 +420,7 @@ void main() {
 
       // Chaque échec est instantané : ce sont les six attentes qui bornent.
       await paintFailure(tester, 'Response code: 500');
-      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+      expectPhase(tester, RadioPhase.retrying);
 
       // ⚠️ Les six attentes sont écrites **ici, en clair**, et pas relues depuis
       // `kRadioRetryDelays` : la constante est ce qu'on éprouve. Un test qui la
@@ -387,14 +439,15 @@ void main() {
         // ramène, et c'est lui qui programme l'attente d'après.
         if (fired < expected.length) {
           await paintFailure(tester, 'Response code: 500');
-          expect(find.text('Nouvelle tentative…'), findsOneWidget);
+          expectPhase(tester, RadioPhase.retrying);
         }
       }
       expect(fired, 6);
 
       // Le septième échec ne trouve plus d'attente : on renonce.
       await paintFailure(tester, 'Response code: 500');
-      expect(find.text('Antenne indisponible'), findsOneWidget);
+      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
+      expect(dimmed(tester), isTrue);
       await tester.pump(const Duration(minutes: 10));
       expect(player.resumeCount, 6, reason: 'aucune septième tentative');
     });
@@ -432,19 +485,21 @@ void main() {
       await advance(const Duration(seconds: 16));
       expect(player.resumeCount, 5);
       expect(elapsed, const Duration(seconds: 111));
-      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+      expectPhase(tester, RadioPhase.retrying);
 
       // Encore huit secondes : on en est à 119, et le bouton essaie toujours.
       await advance(const Duration(seconds: 8));
       expect(elapsed, const Duration(seconds: 119));
-      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+      expectPhase(tester, RadioPhase.retrying);
 
       // La seconde suivante : deux minutes pile, et le bouton s'éteint en disant
       // pourquoi — alors qu'il restait une attente à consommer.
       await advance(const Duration(seconds: 1));
       expect(elapsed, const Duration(minutes: 2));
-      expect(find.text('Vérifiez votre connexion'), findsOneWidget);
-      expect(find.text('Nouvelle tentative…'), findsNothing);
+      expectPhase(tester, RadioPhase.failed,
+          failure: RadioFailureKind.connection);
+      expect(dimmed(tester), isTrue);
+      expect(status(tester).phase, isNot(RadioPhase.retrying));
 
       await advance(const Duration(minutes: 5));
       expect(player.resumeCount, 5,
@@ -459,7 +514,8 @@ void main() {
       await paintFailure(tester, 'Response code: 404');
       // On laisse les deux minutes s'écouler sans qu'aucune tentative n'aboutisse.
       await tester.pump(const Duration(minutes: 2));
-      expect(find.text('Antenne indisponible'), findsOneWidget);
+      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
+      expect(dimmed(tester), isTrue);
 
       await tapAgainLater(tester);
 
@@ -484,10 +540,12 @@ void main() {
       // Aucune adresse n'a pu être lue : la rafale part sans que le lecteur ait
       // jamais rien reçu.
       expect(player.loadCount, 0);
-      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+      expectPhase(tester, RadioPhase.retrying);
 
       await tester.pump(const Duration(minutes: 2));
-      expect(find.text('Vérifiez votre connexion'), findsOneWidget);
+      expectPhase(tester, RadioPhase.failed,
+          failure: RadioFailureKind.connection);
+      expect(dimmed(tester), isTrue);
     });
 
     testWidgets('une antenne sans adresse → « antenne indisponible »',
@@ -498,10 +556,11 @@ void main() {
           radio: const FixedRadioRepository(RadioAntenna.unknown));
 
       await tapOnce(tester);
-      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+      expectPhase(tester, RadioPhase.retrying);
 
       await tester.pump(const Duration(minutes: 2));
-      expect(find.text('Antenne indisponible'), findsOneWidget);
+      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
+      expect(dimmed(tester), isTrue);
     });
 
     testWidgets(
@@ -519,18 +578,19 @@ void main() {
         'AVFoundationErrorDomain, -11800)',
       );
 
-      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+      expectPhase(tester, RadioPhase.retrying);
 
       await tester.pump(const Duration(minutes: 2));
-      expect(find.text('Écoute impossible'), findsOneWidget);
+      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.unknown);
+      expect(dimmed(tester), isTrue);
       expect(
-        find.text('Vérifiez votre connexion'),
-        findsNothing,
+        status(tester).failure,
+        isNot(RadioFailureKind.connection),
         reason: 'rien ne dit que le réseau de l\'auditeur soit en cause',
       );
       expect(
-        find.text('Antenne indisponible'),
-        findsNothing,
+        status(tester).failure,
+        isNot(RadioFailureKind.antenna),
         reason: 'et rien ne dit que l\'église ait cessé de diffuser',
       );
     });
@@ -676,10 +736,12 @@ void main() {
       await tapOnce(tester);
 
       expect(player.loadCount, 0, reason: 'aucune source n\'a été ouverte');
-      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+      expectPhase(tester, RadioPhase.retrying);
 
       await tester.pump(const Duration(minutes: 2));
-      expect(find.text('Vérifiez votre connexion'), findsOneWidget);
+      expectPhase(tester, RadioPhase.failed,
+          failure: RadioFailureKind.connection);
+      expect(dimmed(tester), isTrue);
     });
 
     testWidgets('un 401 « session not found » → « antenne indisponible »',
@@ -706,10 +768,11 @@ void main() {
       await tapOnce(tester);
 
       expect(player.loadCount, 0);
-      expect(find.text('Nouvelle tentative…'), findsOneWidget);
+      expectPhase(tester, RadioPhase.retrying);
 
       await tester.pump(const Duration(minutes: 2));
-      expect(find.text('Antenne indisponible'), findsOneWidget);
+      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
+      expect(dimmed(tester), isTrue);
     });
   });
 }
