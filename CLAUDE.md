@@ -131,6 +131,14 @@ La CI (`.github/workflows/flutter-ci.yml`) lance format + analyze + test.
 **Elle ne lance pas `build_runner`** : les `.g.dart` et `drift_schemas/` sont
 **versionnés**. Oublier `make gen` fait passer la CI sur du code périmé.
 
+**Un tag `vX.Y.Z` publie l'APK** (`.github/workflows/android-release.yml`) :
+analyze et test, puis `flutter build apk --release`, puis une Release GitHub qui
+porte `nouvelle-vie-X.Y.Z.apk`. **Le tag fixe la version** (`versionName`), et le
+`versionCode` est le numéro de run : le `version:` du pubspec n'est pas lu par
+ce chemin. Un tag hors de la forme `vX.Y.Z` est refusé. ⚠️ L'APK est **signé avec
+la clé de debug**, régénérée sur chaque runner : deux APK successifs ne
+s'installent pas l'un par-dessus l'autre, il faut désinstaller entre les deux.
+
 ### `test/integration/` — contre un **vrai** serveur
 Les tests qui parlent en HTTP à une instance `new-life-server` en marche, sans
 aucun double d'`HttpClientAdapter` : ils vérifient ce qu'une fixture ne peut pas
