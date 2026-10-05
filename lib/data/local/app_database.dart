@@ -17,6 +17,9 @@ import 'converters/i18n_map_converter.dart';
 // Idem : le convertisseur du contrat de téléchargement (`teachings.download`,
 // ADR-0038) est instancié par le code généré.
 import 'converters/teaching_download_converter.dart';
+// Idem : le convertisseur de la forme d'onde d'un statut audio
+// (`announcements.media_waveform`, #130) est instancié par le code généré.
+import 'converters/waveform_converter.dart';
 import 'downloads_dao.dart';
 // Idem : le convertisseur des sections d'un document légal est instancié par le
 // code généré.
