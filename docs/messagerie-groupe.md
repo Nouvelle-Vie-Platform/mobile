@@ -283,3 +283,31 @@ qui **choisit** entre eux qui change, et c'est exactement le §1.
 > **sans paramètre `name`**. Le §5 avertissait de ne pas passer « Membre retiré » à
 > `AppAvatar(name:)` ; un avertissement se rate, une signature qui n'accepte pas de
 > nom ne se rate pas.
+
+## 9. Le retour au premier plan après un réveil de fond (#138)
+
+**Une écriture faite par le réveil de fond n'est jamais vue par les flux de
+l'isolate principal.** Le réveil push d'une application en arrière-plan
+(`lib/data/push/push_background.dart`) ouvre une **seconde** `AppDatabase` sur le
+même fichier, tire `profiles`, `groups`, `group_members` et `group_messages`,
+écrit les lignes **et avance le curseur**. Drift ne prévient que les écouteurs de
+**sa** connexion : `conversationsOf` et `threadOf`, écoutés par l'isolate
+principal, gardent leur ancien résultat. Et le cycle du retour au premier plan,
+trouvant un curseur déjà avancé, n'a plus rien à écrire — donc rien ne les
+relit. La liste des Échanges restait périmée jusqu'au redémarrage, tirer-pour-
+rafraîchir compris (surtout sur Android, application en arrière-plan mais vivante).
+
+Le correctif : au passage à `resumed`, `SyncScheduler.onForeground` est appelé
+**immédiatement**, puis **de nouveau à la fin du cycle du retour** (un réveil de
+fond peut être encore en cours). `syncSchedulerProvider` y branche un
+`markTablesUpdated` sur les tables de toutes les collections synchronisées, plus
+`pending_group_messages`. Le rappel est injecté : le planificateur ne dépend pas
+de drift.
+
+`shareAcrossIsolates` n'est **pas** la solution : le gestionnaire de fond FCM
+tourne dans un moteur Flutter séparé, que `IsolateNameServer` ne relie pas.
+
+Test de non-régression : `test/sync/foreground_foreign_writes_test.dart` — deux
+connexions sur un même fichier temporaire, le vrai moteur restreint du réveil sur
+l'une, le vrai `syncSchedulerProvider` sur l'autre, et les deux flux qui doivent
+émettre la ligne du réveil après le retour.
