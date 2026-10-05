@@ -108,7 +108,6 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   /// Rappel pour arrêter la lecture du live.
   final VoidCallback? onStop;
 
-  static const Key bufferingKey = Key('content_player_buffering');
   static const Key downloadButtonKey = Key('content_player_download');
 
   /// Le bouton « prendre une note » — **le seul geste réservé de cet écran**, et
@@ -297,37 +296,32 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
     );
   }
 
+  /// **L'arrivée sur l'écran**, une fois par contenu.
+  ///
+  /// Sur un enseignement ou un rassemblement, elle **ne charge rien** : ouvrir
+  /// une fiche n'est pas l'acte d'écouter — le son, le réseau et la batterie
+  /// attendent le premier appui, qui charge et joue ([_togglePlayback]). Seul
+  /// le direct s'ouvre et joue dès l'arrivée : un flux qu'on ouvre sans le
+  /// suivre n'a pas de sens.
   void _loadOnce(ContentView content) {
     if (_stoppedByRetraction || _requested == content.id) return;
     _requested = content.id;
-
-    // Do NOT load automatically for teachings/gatherings unless it's live
-    if (!widget.isLive) {
-      return;
-    }
+    if (!widget.isLive) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_open(content, autoplay: true));
+      if (mounted) unawaited(_open(content));
     });
   }
 
-  /// Ouvre le contenu : reprise résolue, média chargé — et lecture démarrée
-  /// **seulement si on la demande**.
+  /// Ouvre le contenu et **le joue** : média chargé, reprise appliquée par le
+  /// contrôleur, puis lecture.
   ///
-  /// [autoplay] porte toute la règle, et il n'a que deux appelants :
-  ///
-  /// - [_loadOnce], à l'arrivée sur l'écran : **faux** sur un enseignement ou un
-  ///   rassemblement (ouvrir une fiche n'est plus l'acte d'écouter — le son, le
-  ///   réseau et la batterie attendent qu'on les demande), **vrai** sur le
-  ///   direct, où un flux qu'on ouvre sans le suivre n'a pas de sens ;
-  /// - [_togglePlayback], quand le geste vient du bouton : **toujours vrai**.
-  ///   Ce paramètre existe pour ça — le média peut avoir à être rouvert avant de
-  ///   jouer (contenu rétracté puis republié, lecteur arrêté depuis la
-  ///   notification, ou fiche simplement ouverte sans démarrage automatique), et
-  ///   l'intention explicite ne doit pas se perdre dans cette réouverture. Sans
-  ///   lui, le premier appui rechargeait en silence et il fallait **appuyer deux
-  ///   fois** pour entendre quelque chose.
-  Future<void> _open(ContentView content, {required bool autoplay}) async {
+  /// Deux appelants, et tous deux veulent entendre : [_loadOnce] sur le direct,
+  /// et [_togglePlayback] au premier appui sur la fiche — ou quand le média
+  /// doit être rouvert (contenu rétracté puis republié, lecteur arrêté depuis
+  /// la notification). Charger et jouer tiennent en un seul appui ; il n'y a
+  /// plus d'ouverture silencieuse.
+  Future<void> _open(ContentView content) async {
     final url = content.playlistUrl;
     if (url == null) return;
 
@@ -388,11 +382,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
     // ce temps — un autre contenu, ou un arrêt — n'a plus rien à jouer ici.
     if (!mounted || controller.playback.contentId != content.id) return;
 
-    if (autoplay) {
-      controller.play();
-    } else {
-      controller.pause();
-    }
+    controller.play();
   }
 
   void _stopForRetraction() {
@@ -430,7 +420,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
     if (playback.contentId != content.id) {
       _stoppedByRetraction = false;
       _requested = content.id;
-      unawaited(_open(content, autoplay: true));
+      unawaited(_open(content));
       return;
     }
     playback.isPlaying ? controller.pause() : controller.play();
@@ -790,9 +780,12 @@ class _Controls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playback = ref.watch(contentPlaybackProvider);
-    final isCurrent = playback.contentId == contentId;
-    final isPlaying = isCurrent && playback.isPlaying;
+    // **Par `select`** : seul « ce contenu joue » fait apparaître ou disparaître
+    // le bouton d'arrêt. La position qui avance ne reconstruit pas cette rangée.
+    final isPlaying = ref.watch(
+      contentPlaybackProvider
+          .select((p) => p.contentId == contentId && p.isPlaying),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -877,11 +870,19 @@ class _ProgressLineState extends ConsumerState<_ProgressLine> {
 
   @override
   Widget build(BuildContext context) {
-    final playback = ref.watch(contentPlaybackProvider);
-    final isCurrent = playback.contentId == widget.contentId;
-    final position = isCurrent ? playback.position : Duration.zero;
-    final duration = isCurrent ? playback.duration : null;
-    final progress = isCurrent ? playback.progress : 0.0;
+    // Un autre contenu chargé — ou rien — se lit comme un début : zéro écoulé,
+    // pas de durée. Trois `select` plutôt que la valeur entière : la panne, le
+    // tampon ou la lecture qui basculent ne redessinent pas la barre.
+    final contentId = widget.contentId;
+    final position = ref.watch(contentPlaybackProvider.select(
+      (p) => p.contentId == contentId ? p.position : Duration.zero,
+    ));
+    final duration = ref.watch(contentPlaybackProvider.select(
+      (p) => p.contentId == contentId ? p.duration : null,
+    ));
+    final progress = ref.watch(contentPlaybackProvider.select(
+      (p) => p.contentId == contentId ? p.progress : 0.0,
+    ));
     final dragged = _dragged;
     final elapsed =
         dragged != null && duration != null ? duration * dragged : position;
@@ -957,10 +958,11 @@ class _PlayButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playback = ref.watch(contentPlaybackProvider);
-    final isCurrent = playback.contentId == contentId;
-    final playing = isCurrent && playback.isPlaying;
-    final buffering = isCurrent && playback.isBuffering;
+    // Deux `select` : la position qui avance ne reconstruit pas le bouton.
+    final playing = ref.watch(contentPlaybackProvider
+        .select((p) => p.contentId == contentId && p.isPlaying));
+    final buffering = ref.watch(contentPlaybackProvider
+        .select((p) => p.contentId == contentId && p.isBuffering));
 
     return _AnimatedPlayButton(
       isPlaying: playing,

@@ -43,8 +43,8 @@ void main() {
   /// s'en charge).
   const pageMarker = 'page-antenne';
 
-  /// **Le libellé du bouton ne varie plus** (44092f0) : « New life radio » dans
-  /// tous les états. Les six phrases d'avant — « Suivre », « Hors antenne »,
+  /// **Le libellé du bouton ne varie plus** (44092f0) : le nom de l'antenne
+  /// (`radioTitle`, « New Life Radio ») dans tous les états. Les six phrases d'avant — « Suivre », « Hors antenne »,
   /// « Nouvelle tentative… » et les trois causes d'échec — ont quitté le bouton.
   ///
   /// La règle que ces phrases rendaient visibles, elle, n'a pas bougé : c'est
@@ -52,7 +52,7 @@ void main() {
   /// Les tests la lisent donc là où elle vit désormais, sur l'état que le bouton
   /// observe — et vérifient, à chaque fois, que le bouton est bien là avec son
   /// libellé.
-  const label = 'New life radio';
+  const label = 'New Life Radio';
 
   RadioStatus status(WidgetTester tester) => ProviderScope.containerOf(
         tester.element(find.byType(RadioCtaPill, skipOffstage: false)),
@@ -67,6 +67,18 @@ void main() {
     expect(status(tester).phase, phase);
     if (phase == RadioPhase.failed) expect(status(tester).failure, failure);
   }
+
+  /// **Tout ce qui se touche dans le bouton**, par clé : le bouton lui-même, et
+  /// rien d'autre. Un bouton d'arrêt indépendant y ajouterait son propre
+  /// détecteur — c'est son absence qu'on lit ici, sans dépendre de son
+  /// pictogramme.
+  List<Key?> gestures(WidgetTester tester) => tester
+      .widgetList<GestureDetector>(find.descendant(
+        of: find.byType(RadioCtaPill),
+        matching: find.byType(GestureDetector),
+      ))
+      .map((detector) => detector.key)
+      .toList();
 
   /// **Le bouton s'efface sans disparaître** — la seule trace visible, depuis
   /// 44092f0, d'une antenne annoncée muette ou d'un renoncement : le fond du
@@ -366,7 +378,7 @@ void main() {
       // retiré ne doit pas revenir pendant la connexion.
       await pumpPill(tester);
       await tapOnce(tester);
-      expect(find.byKey(RadioCtaPill.stopKey), findsNothing);
+      expect(gestures(tester), [RadioCtaPill.buttonKey]);
       expect(status(tester).offersStop, isFalse);
 
       await paintPlaying(tester);

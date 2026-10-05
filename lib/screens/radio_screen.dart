@@ -35,8 +35,8 @@ class RadioScreen extends ConsumerWidget {
       content: radioContentProvider(title),
       chromeTitle: title,
       // Une antenne dont on ne connaît pas l'adresse n'est pas « un contenu
-      // retiré » : c'est l'antenne qui manque, et c'est la même phrase que porte
-      // le bouton de l'accueil quand il renonce.
+      // retiré » : c'est l'antenne qui manque. Le bouton de l'accueil, lui, ne
+      // nomme aucune cause — c'est ici qu'elle se lit.
       retractedTitle: l10n.radioFailureAntenna,
       retractedMessage: l10n.radioUnavailableMessage,
       onRetry: () => ref.invalidate(radioAntennaProvider),

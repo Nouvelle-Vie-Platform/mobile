@@ -466,47 +466,17 @@ abstract class AppLocalizations {
   /// **'Cultes à venir'**
   String get sectionUpcomingServices;
 
-  /// Bouton d'antenne de l'accueil, au repos : un appui lance le flux, deux ouvrent la page
-  ///
-  /// In fr, this message translates to:
-  /// **'New life'**
-  String get radioFollow;
-
-  /// Le nom de l'antenne — bouton d'accueil en connexion ou en lecture, titre de l'écran, et ligne annoncée à l'écran verrouillé. Nom propre : identique dans les trois langues
+  /// Le nom de l'antenne — libellé fixe du bouton d'accueil (dans tous les états), titre de l'écran, et ligne annoncée à l'écran verrouillé. Nom propre : identique dans les trois langues
   ///
   /// In fr, this message translates to:
   /// **'New Life Radio'**
   String get radioTitle;
 
-  /// Bouton d'antenne éteint : la route publique a répondu que l'antenne ne diffuse pas. Il reste appuyable — l'information guide, elle n'interdit pas
-  ///
-  /// In fr, this message translates to:
-  /// **'Hors antenne'**
-  String get radioOffAir;
-
-  /// Bouton d'antenne pendant la reprise : il dit qu'il réessaie, sans nommer la panne qu'il combat encore
-  ///
-  /// In fr, this message translates to:
-  /// **'Nouvelle tentative…'**
-  String get radioRetrying;
-
-  /// Motif d'extinction du bouton d'antenne : rien n'a répondu (DNS, socket refusée, délai dépassé)
-  ///
-  /// In fr, this message translates to:
-  /// **'Vérifiez votre connexion'**
-  String get radioFailureConnection;
-
-  /// Motif d'extinction du bouton d'antenne : quelque chose a répondu, et ce n'était pas une playlist (404, 401, page HTML)
+  /// Titre de l'écran /radio quand la route d'antenne ne donne aucune adresse de flux : c'est l'antenne qui manque, pas un contenu retiré
   ///
   /// In fr, this message translates to:
   /// **'Antenne indisponible'**
   String get radioFailureAntenna;
-
-  /// Motif d'extinction du bouton d'antenne quand on ignore s'il y a eu une réponse — la panne du lecteur iOS n'en porte aucune trace lisible. Ne nomme ni le réseau ni l'antenne : affirmer l'un des deux serait inventer la moitié du diagnostic
-  ///
-  /// In fr, this message translates to:
-  /// **'Écoute impossible'**
-  String get radioFailureUnknown;
 
   /// Écran d'antenne quand aucune adresse de flux n'est connue
   ///
