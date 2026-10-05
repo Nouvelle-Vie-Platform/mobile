@@ -149,8 +149,35 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> seek(Duration position) => _player.seek(position);
 
+  /// **Prévenu quand le système arrête la lecture** — la notification qu'on
+  /// balaie, le bouton « arrêter » de l'écran verrouillé ou d'un casque.
+  ///
+  /// [JustAudioContentPlayer] s'y branche pour **oublier ce qu'il tenait**,
+  /// comme après son propre [JustAudioContentPlayer.stop]. Sans quoi un arrêt
+  /// venu du système relâchait le média en laissant `contentId` posé : le
+  /// contrôleur global gardait sa requête, et le mini-lecteur (#116) restait
+  /// affiché sur un lecteur vide, son bouton lecture sans rien à jouer.
+  VoidCallback? onSystemStop;
+
+  /// **L'arrêt demandé par le système** — c'est `audio_service` qui l'appelle,
+  /// jamais l'application.
+  ///
+  /// L'application, elle, passe par [release] : un arrêt qu'elle a demandé est
+  /// déjà oublié de son côté, et la prévenir après coup pourrait effacer un
+  /// contenu chargé **entre-temps** — la ✕ suivie aussitôt d'un appui sur une
+  /// carte de l'accueil.
   @override
   Future<void> stop() async {
+    try {
+      await release();
+    } finally {
+      onSystemStop?.call();
+    }
+  }
+
+  /// **Relâche le média et vide ce que le système affiche**, sans prévenir
+  /// personne : c'est le chemin de [JustAudioContentPlayer.stop].
+  Future<void> release() async {
     await _player.stop();
     mediaItem.add(null);
     await super.stop();
@@ -223,6 +250,10 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     // `playbackEventStream` : la position bat plusieurs fois par seconde, la
     // durée une fois par média, l'état à chaque transition. Les recomposer à la
     // main ferait payer le rythme de la position à tout le reste.
+    // **Un arrêt venu du système vaut un [stop]** : le lecteur oublie ce qu'il
+    // tenait, `contentId` retombe à `null`, et le contrôleur global lâche sa
+    // requête en le voyant. Voir [ContentAudioHandler.onSystemStop].
+    _handler.onSystemStop = _forget;
     _subscriptions.addAll([
       player.positionStream.listen((position) {
         _emit(value.copyWith(position: position));
@@ -459,9 +490,21 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   @override
   void stop() {
     if (_disposed) return;
+    _forget();
+    unawaited(_handler.release());
+  }
+
+  /// **Oublie ce que le lecteur tenait** : plus rien à reprendre, plus rien à
+  /// surveiller, et une valeur vide — `contentId` à `null`, que le contrôleur
+  /// global lit comme un arrêt.
+  ///
+  /// Le chien de garde se désarme de lui-même sur cette valeur (rien ne joue),
+  /// et il n'aurait de toute façon plus de requête à rouvrir. La reprise après
+  /// panne non plus : `resume` ne rouvre que ce que `_request` désigne.
+  void _forget() {
+    if (_disposed) return;
     _request = null;
     _emit(const ContentPlayback());
-    unawaited(_handler.stop());
   }
 
   @override
@@ -473,6 +516,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
       unawaited(subscription.cancel());
     }
     _subscriptions.clear();
+    if (_handler.onSystemStop == _forget) _handler.onSystemStop = null;
     unawaited(_handler.close());
     super.dispose();
   }
