@@ -71,7 +71,8 @@ final _contentProvider =
 
 void main() {
   group('Le branchement', () {
-    testWidgets('charger le contenu à l\'ouverture, sans démarrer', (
+    testWidgets('l\'ouverture ne charge rien, le premier appui charge et joue',
+        (
       tester,
     ) async {
       final player = InertContentPlayer();
@@ -79,18 +80,24 @@ void main() {
 
       await _pump(tester, player: player);
 
-      // Le média est **tenu** : la résolution offline-first a tranché, la
-      // reprise est posée, le curseur est là.
-      expect(player.loadedUrl, _url);
-      expect(player.loadedTitle, 'La foi qui déplace');
-      expect(player.loadCount, 1);
-      // Et le son attend qu'on le demande. **Ouvrir une fiche n'est plus l'acte
-      // d'aller écouter** : c'était un choix assumé, ce n'en est plus un — le
-      // réseau et la batterie d'un prêche d'une heure ne partent plus sur un
-      // simple coup d'œil. Le direct est la seule exception (test suivant).
+      // **Ouvrir une fiche ne touche plus au lecteur** (d777833, « Do NOT load
+      // automatically ») : ni son, ni chargement. Le lecteur est global — il
+      // peut tenir un autre prêche, qu'un coup d'œil à une fiche ne doit pas
+      // remplacer, et le mini-lecteur (#116) ne doit apparaître que pour un
+      // contenu qu'on a vraiment lancé. Le direct est la seule exception (test
+      // suivant).
+      expect(player.loadCount, 0);
+      expect(player.loadedUrl, isNull);
       expect(player.value.isPlaying, isFalse);
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
       expect(find.byIcon(Icons.pause), findsNothing);
+
+      // Le geste, lui, tient le média : la résolution offline-first a tranché,
+      // la reprise est posée — et le son part, en un seul appui.
+      await _demarrer(tester, player);
+      expect(player.loadedUrl, _url);
+      expect(player.loadedTitle, 'La foi qui déplace');
+      expect(player.loadCount, 1);
     });
 
     testWidgets('le direct, lui, démarre seul', (tester) async {
@@ -229,8 +236,7 @@ void main() {
       // Le bouton part sur « lecture » : l'ouverture ne joue plus. Le premier
       // appui doit donc **lancer** le son, les suivants l'alterner — et chaque
       // état se lit dans le lecteur, jamais dans un booléen de ce widget.
-      await tester.tap(find.byIcon(Icons.play_arrow));
-      await tester.pump();
+      await _demarrer(tester, player);
       expect(player.value.isPlaying, isTrue);
       expect(find.byIcon(Icons.pause), findsOneWidget);
 
@@ -256,6 +262,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       // Le lecteur est arrêté depuis la notification : il ne tient plus rien.
       player.stop();
@@ -298,6 +305,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
       player.emit(player.value.copyWith(duration: const Duration(minutes: 40)));
       await tester.pump();
 
@@ -315,6 +323,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
       player.emit(player.value.copyWith(duration: const Duration(minutes: 40)));
       await tester.pump();
 
@@ -343,6 +352,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       player.emit(
         player.value.copyWith(
@@ -360,6 +370,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       // Le cas **courant** en HLS sur iOS, pas l'exception : la durée arrive
       // après le manifeste, et peut ne jamais arriver.
@@ -383,6 +394,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       final titreAvant = tester.widget<Text>(find.text('La foi qui déplace'));
       player.emit(player.value.copyWith(position: const Duration(seconds: 1)));
@@ -489,6 +501,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       interrompre(player);
       await tester.pump();
@@ -510,6 +523,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       interrompre(player);
       await tester.pump();
@@ -527,6 +541,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       interrompre(player);
       await tester.pump();
@@ -548,6 +563,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       // Le manifeste n'a jamais répondu : rien n'a jamais joué. Il n'y a
       // aucune position à défendre, donc rien à « reprendre ».
@@ -585,6 +601,7 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       player.emit(
         player.value.copyWith(
@@ -595,7 +612,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byKey(ContentPlayerView.bufferingKey), findsOneWidget);
+      expect(_attente, findsOneWidget);
       // Basculer sur l'état « chargement » perdrait le titre et les commandes,
       // et ressemblerait à un redémarrage. Ce n'en est pas un : c'est une
       // attente au milieu d'une écoute.
@@ -608,19 +625,21 @@ void main() {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       player.emit(player.value.copyWith(isBuffering: true));
       await tester.pump();
       player.emit(player.value.copyWith(isBuffering: false));
       await tester.pump();
 
-      expect(find.byKey(ContentPlayerView.bufferingKey), findsNothing);
+      expect(_attente, findsNothing);
     });
 
     testWidgets('une panne n\'est pas une attente', (tester) async {
       final player = InertContentPlayer();
       addTearDown(player.dispose);
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       player.emit(
         player.value.copyWith(hasStarted: true, error: 'réseau coupé'),
@@ -629,7 +648,7 @@ void main() {
 
       // Un indicateur qui tourne à côté d'un bouton « Reprendre » dirait deux
       // choses contraires.
-      expect(find.byKey(ContentPlayerView.bufferingKey), findsNothing);
+      expect(_attente, findsNothing);
     });
   });
 
@@ -648,6 +667,7 @@ void main() {
       );
 
       await _pump(tester, player: player, database: database);
+      await _demarrer(tester, player);
 
       expect(player.value.position, const Duration(seconds: 754));
     });
@@ -752,10 +772,11 @@ void main() {
       final db = await dbWithDownload(state: DownloadState.complete);
 
       await _pump(tester, player: player, database: db);
+      await _demarrer(tester, player);
 
-      // La copie sur le disque prend le pas sur le `playlistUrl`. Ce test ne
-      // dit plus rien de la lecture — l'ouverture ne démarre pas le son, et
-      // c'est la **source** qu'il verrouille, pas le fait qu'elle sonne.
+      // La copie sur le disque prend le pas sur le `playlistUrl`. C'est la
+      // **source** que ce test verrouille, pas le fait qu'elle sonne : depuis
+      // que l'ouverture ne charge plus, c'est l'appui sur lecture qui la choisit.
       expect(player.loadedFilePath, localPath);
       expect(player.loadCount, 1);
     });
@@ -776,6 +797,7 @@ void main() {
         database: db,
         networkStatus: const FixedNetworkStatus(offline: true),
       );
+      await _demarrer(tester, player);
 
       expect(player.loadedFilePath, localPath);
     });
@@ -796,6 +818,7 @@ void main() {
         database: db,
         networkStatus: const FixedNetworkStatus(),
       );
+      await _demarrer(tester, player);
 
       // On ne sert pas un tronqué quand on peut streamer en entier (F11).
       expect(player.loadedFilePath, isNull);
@@ -809,6 +832,7 @@ void main() {
       addTearDown(player.dispose);
 
       await _pump(tester, player: player);
+      await _demarrer(tester, player);
 
       expect(player.loadedFilePath, isNull);
       expect(player.loadedUrl, _url);
@@ -891,7 +915,24 @@ Future<void> _demarrer(WidgetTester tester, InertContentPlayer player) async {
     isTrue,
     reason: 'prémisse de ce test : le son joue',
   );
+  // L'ouverture est asynchrone (reprise, résolution, chargement) : le son part
+  // pendant la frame de l'appui, et l'écran ne le peint qu'à la suivante.
+  await tester.pump();
 }
+
+/// **Le témoin d'attente** : le bouton de lecture en état « chargement ».
+///
+/// L'indicateur centré sur le visuel (`ContentPlayerView.bufferingKey`) a été
+/// retiré par 44092f0 — « le bouton play sert d'indicateur » : son disque se
+/// remplit en boucle tant que le lecteur regarnit son tampon. Le peintre est
+/// privé au fichier de production ; c'est lui, et lui seul, qui dessine cet
+/// état, d'où la lecture par son type.
+final Finder _attente = find.byWidgetPredicate(
+  (widget) =>
+      widget is CustomPaint &&
+      widget.painter.runtimeType.toString() == '_LoadingButtonPainter',
+  description: 'le bouton de lecture en attente',
+);
 
 /// La couleur dont le cadre du lecteur est habillé.
 ///
