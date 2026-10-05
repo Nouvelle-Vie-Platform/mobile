@@ -15,3 +15,9 @@
 tags:
   live-server:
     skip: 'exige un serveur new-life-server en marche — `flutter test --run-skipped test/integration/`'
+  # `golden` — les images de référence de la page live
+  # (`test/screens/radio_live_golden_test.dart`). Sautées par défaut, donc en
+  # CI : le rendu des polices change d'une machine à l'autre, et des PNG faits
+  # sur macOS échoueraient en CI Linux sans que la page ait changé.
+  golden:
+    skip: 'images de référence, propres à la machine qui les produit — `flutter test --run-skipped test/screens/radio_live_golden_test.dart`'

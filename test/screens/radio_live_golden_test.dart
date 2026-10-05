@@ -5,19 +5,34 @@
 /// Taille téléphone (390 × 844 points, densité 1), texte en Atkinson
 /// Hyperlegible et pictogrammes Material chargés pour de vrai — sans quoi le
 /// harnais peint des rectangles (police Ahem). ⚠️ **Les emojis restent des
-/// rectangles** : aucune police emoji n'est embarquée dans le dépôt, et le
-/// harnais n'en a pas. Ce n'est pas un défaut de la page ; sur un téléphone,
-/// la police du système les dessine.
+/// rectangles** sans `GOLDEN_EMOJI_FONT` (voir plus bas) : aucune police emoji
+/// n'est embarquée dans le dépôt, et le harnais n'en a pas. Ce n'est pas un
+/// défaut de la page ; sur un téléphone, la police du système les dessine.
 ///
-/// Générer ou régénérer les images :
+/// **Étiqueté `golden`, donc sauté par défaut** (`dart_test.yaml`) : les images
+/// dépendent du rendu des polices de la machine qui les produit, et des PNG
+/// faits sur macOS échoueraient en CI Linux sur un anticrénelage, pas sur un
+/// défaut de la page.
+///
+/// Générer ou régénérer les images, sur sa machine :
 ///
 /// ```sh
-/// flutter test --update-goldens test/screens/radio_live_golden_test.dart
+/// flutter test --run-skipped --update-goldens test/screens/radio_live_golden_test.dart
 /// ```
 ///
-/// Elles dépendent du rendu des polices de la machine qui les produit : à
-/// régénérer sur la même machine que la CI si elles y sont un jour vérifiées.
+/// Pour voir les emojis plutôt que des rectangles, désigner une police emoji
+/// **en couleurs COLR** (Twemoji ou OpenMoji « glyf_colr_0 ») : le `.ttc` du
+/// système ne se charge pas, et Noto Color Emoji (bitmaps CBDT) reste vide
+/// sous le rendu macOS du harnais.
+///
+/// ```sh
+/// GOLDEN_EMOJI_FONT=/chemin/vers/Twemoji-glyf_colr_0.ttf \
+///   flutter test --run-skipped --update-goldens test/screens/radio_live_golden_test.dart
+/// ```
+@Tags(['golden'])
 library;
+
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +50,10 @@ import '../helpers/pump_screen.dart';
 import '../helpers/radio_live_doubles.dart';
 
 const _url = 'https://antenne.test/antenne/index.m3u8';
+
+/// Vrai quand une police emoji a été chargée (`GOLDEN_EMOJI_FONT`).
+var _emojiLoaded = false;
+const _emojiFamily = 'GoldenEmoji';
 
 Future<void> _loadFonts() async {
   Future<void> load(String family, List<String> assets) async {
@@ -55,6 +74,35 @@ Future<void> _loadFonts() async {
     'assets/fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Bold.ttf',
   ]);
   await load('MaterialIcons', const ['fonts/MaterialIcons-Regular.otf']);
+
+  final emoji = Platform.environment['GOLDEN_EMOJI_FONT'];
+  if (emoji != null && File(emoji).existsSync()) {
+    final bytes = File(emoji).readAsBytesSync();
+    final loader = FontLoader(_emojiFamily)
+      ..addFont(Future.value(ByteData.sublistView(bytes)));
+    await loader.load();
+    _emojiLoaded = true;
+  }
+}
+
+/// L'écran, avec la police emoji en **repli** du thème quand elle est chargée :
+/// le harnais n'a aucun repli système, et un glyphe absent d'Atkinson y reste
+/// un rectangle.
+Widget _screen() {
+  const screen = RadioScreen();
+  if (!_emojiLoaded) return screen;
+  return Builder(
+    builder: (context) {
+      final base = Theme.of(context);
+      return Theme(
+        data: base.copyWith(
+          textTheme:
+              base.textTheme.apply(fontFamilyFallback: const [_emojiFamily]),
+        ),
+        child: screen,
+      );
+    },
+  );
 }
 
 void main() {
@@ -78,7 +126,7 @@ void main() {
 
     await pumpScreen(
       tester,
-      const RadioScreen(),
+      _screen(),
       radio: FixedRadioRepository(antenna),
       radioChannel: channel,
       radioLive: repo,
@@ -174,7 +222,11 @@ void main() {
       RadioReaction.fire: 1,
       RadioReaction.amen: 2,
     }));
-    await tester.pump(const Duration(milliseconds: 900));
+    // Image par image : un seul `pump` de 900 ms ne donnerait à l'horloge des
+    // particules qu'une image, à l'instant zéro — toutes encore invisibles.
+    for (var i = 0; i < 45; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
 
     await expectLater(
       find.byType(RadioScreen),
