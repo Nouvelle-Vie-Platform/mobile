@@ -5,17 +5,21 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../app_avatar.dart';
 
-/// Barre d'application d'une discussion : dégradé de marque, retour, avatar
-/// avec pastille de présence, titre + sous-titre et actions.
+/// Barre d'application d'une discussion : dégradé de marque, retour, avatar,
+/// titre + sous-titre et actions.
 ///
 /// Composant autonome (implémente [PreferredSizeWidget]) réutilisable par tout
 /// écran de messagerie.
+///
+/// **Aucune pastille de présence** (#140). Elle était là, verte, pour tout le
+/// monde et tout le temps : un « en ligne » qui ne mesure rien est un mensonge
+/// visuel. La présence reviendra avec sa tranche (M3, « en ligne / vu à »),
+/// mesurée par le serveur et soumise à la réciprocité — pas avant.
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   const ChatAppBar({
     super.key,
     required this.title,
     this.subtitle,
-    this.online = true,
     this.onBack,
     this.onTitleTap,
     this.actions,
@@ -23,7 +27,9 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   final String title;
   final String? subtitle;
-  final bool online;
+
+  /// Le retour. `null` = dépiler (`context.pop()`) — ce qui suppose une pile :
+  /// un écran ouvert par `goNamed` (une notification) doit passer le sien.
   final VoidCallback? onBack;
 
   /// Tap sur le titre (nom + sous-titre) — ouvre p.ex. la liste des membres d'un
@@ -54,7 +60,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             color: Colors.white,
             onPressed: onBack ?? () => context.pop(),
           ),
-          _AvatarWithStatus(name: title, online: online),
+          AppAvatar(name: title, size: 36),
         ],
       ),
       title: InkWell(
@@ -81,38 +87,6 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: actions,
-    );
-  }
-}
-
-/// Avatar du correspondant avec pastille de présence en surimpression.
-class _AvatarWithStatus extends StatelessWidget {
-  const _AvatarWithStatus({required this.name, required this.online});
-
-  final String name;
-  final bool online;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        AppAvatar(name: name, size: 36),
-        if (online)
-          Positioned(
-            right: -1,
-            bottom: -1,
-            child: Container(
-              width: 11,
-              height: 11,
-              decoration: BoxDecoration(
-                color: AppColors.success,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

@@ -125,7 +125,8 @@ void main() {
     expect(scheduler.lastTrigger, SyncTrigger.pullToRefresh);
   });
 
-  test('deux déclencheurs concurrents ne lancent qu\'un seul cycle', () async {
+  test('deux déclencheurs concurrents ne font jamais tourner deux cycles',
+      () async {
     final scheduler = SyncScheduler(deferred);
     addTearDown(scheduler.dispose);
 
@@ -133,13 +134,80 @@ void main() {
     final second = scheduler.refresh();
 
     // Deux cycles concurrents se disputeraient les mêmes curseurs et les mêmes
-    // jetons de resync : le second rejoint le premier.
+    // jetons de resync : le second attend que le premier rende la main.
     expect(cycles, 1);
     expect(scheduler.isRunning, isTrue);
 
     pending.single.complete(report);
-    expect(await first, same(await second));
+    expect(await first, same(report));
+    await pumpEventQueue();
+
+    // … puis part (#140) : il a été reçu pendant le premier, qui a pu passer la
+    // collection qu'il concernait avant qu'il n'arrive.
+    expect(cycles, 2);
+    expect(scheduler.lastTrigger, SyncTrigger.pullToRefresh);
+    pending.last.complete(report);
+    expect(await second, same(report));
     expect(scheduler.isRunning, isFalse);
+  });
+
+  test(
+      'un signal reçu pendant un cycle n\'est plus perdu : un cycle le suit, '
+      'et un seul pour toute une rafale', () async {
+    // Le cas du plan (§2) : un message arrive pendant que le cycle tire une
+    // collection d'après `group_messages`. Rejoindre ce cycle-là ne l'aurait
+    // jamais ramené.
+    final scheduler = SyncScheduler(deferred);
+    addTearDown(scheduler.dispose);
+
+    final running = scheduler.trigger(SyncTrigger.foreground);
+    final signals = [
+      for (var i = 0; i < 5; i++) scheduler.trigger(SyncTrigger.realtime),
+    ];
+    expect(cycles, 1, reason: 'aucun cycle ne part pendant le premier');
+
+    pending.single.complete(report);
+    await running;
+    await pumpEventQueue();
+
+    expect(cycles, 2, reason: 'cinq signaux, un seul cycle de rattrapage');
+    expect(scheduler.lastTrigger, SyncTrigger.realtime);
+
+    pending.last.complete(report);
+    for (final signal in signals) {
+      expect(await signal, same(report));
+    }
+    await pumpEventQueue();
+    expect(cycles, 2, reason: 'le rattrapage ne se relance pas de lui-même');
+    expect(scheduler.isRunning, isFalse);
+  });
+
+  test('un cycle échoué ne coûte pas le cycle promis', () async {
+    var calls = 0;
+    final failing = Completer<SyncReport>();
+    final scheduler = SyncScheduler(() {
+      calls++;
+      return calls == 1 ? failing.future : Future.value(report);
+    });
+    addTearDown(scheduler.dispose);
+
+    final first = scheduler.trigger(SyncTrigger.appStart);
+    final second = scheduler.trigger(SyncTrigger.pushWake);
+
+    failing.completeError(const SocketException('hors ligne'));
+    expect(await first, isNull);
+    expect(await second, same(report));
+    expect(calls, 2);
+  });
+
+  test('sans cycle en vol, un déclencheur ne programme rien de plus', () async {
+    final scheduler = SyncScheduler(immediate);
+    addTearDown(scheduler.dispose);
+
+    await scheduler.trigger(SyncTrigger.pullToRefresh);
+    await pumpEventQueue();
+
+    expect(cycles, 1);
   });
 
   test('un cycle échoué est retenu, jamais propagé', () async {

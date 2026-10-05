@@ -175,6 +175,9 @@ void main() {
           'groups',
           'group_members',
           'group_join_requests',
+          // Ma lecture (#140), **avant** le fil : arrivée après lui, elle
+          // allumerait tout l'historique en non-lu le temps d'un tirage.
+          'group_reads',
           'group_messages',
         ],
         reason: 'ça ne supprime pas la fenêtre où un enseignement arrive sans '

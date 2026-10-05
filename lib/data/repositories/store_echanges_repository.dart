@@ -63,8 +63,8 @@ class StoreEchangesRepository implements EchangesRepository {
   }
 
   @override
-  Stream<List<GroupMessageView>> thread(String groupId) {
-    return _dao.threadOf(groupId, userId).watch().map(
+  Stream<List<GroupMessageView>> thread(String groupId, {int? limit}) {
+    return _dao.threadOf(groupId, userId, limit: limit).watch().map(
           (rows) => [for (final row in rows) _message(groupId, row)],
         );
   }
@@ -130,6 +130,10 @@ class StoreEchangesRepository implements EchangesRepository {
     });
   }
 
+  @override
+  Future<int> unreadCount(String groupId) =>
+      _dao.unreadCountOf(groupId, userId);
+
   ConversationView _conversation(ConversationRecord row) {
     return ConversationView(
       groupId: row.groupId,
@@ -149,6 +153,7 @@ class StoreEchangesRepository implements EchangesRepository {
       avatarUrl: row.isDirect ? row.peerAvatarUrl : null,
       lastMessagePreview: row.lastBody,
       lastMessageAt: row.lastCreatedAt,
+      unreadCount: row.unreadCount,
     );
   }
 
@@ -187,6 +192,7 @@ class StoreEchangesRepository implements EchangesRepository {
       authorAvatarUrl:
           origin == MessageOrigin.member ? row.authorAvatarUrl : null,
       createdAt: row.createdAt,
+      unread: row.isUnread,
     );
   }
 

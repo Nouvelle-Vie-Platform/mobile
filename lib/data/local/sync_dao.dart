@@ -217,6 +217,16 @@ abstract final class SyncCollectionKey {
   /// nomment, et un référentiel sans filtre ni jointure est le moins susceptible
   /// d'échouer.
   static const String groupMessages = 'group_messages';
+
+  /// **Ma position de lecture** dans chacun de mes groupes (#140, serveur M1a).
+  /// `partition: 'private'` : seule ma lecture voyage, et seulement chez moi —
+  /// la mettre dans `group_members` l'aurait envoyée à tous les co-membres.
+  ///
+  /// **Sans tombstone.** Rangée par `groupId`, et rangée **avant**
+  /// [groupMessages] dans le registre : à la toute première synchronisation, la
+  /// lecture arrivée d'abord évite que tout l'historique ne s'allume en non-lu
+  /// le temps que le fil soit tiré.
+  static const String groupReads = 'group_reads';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -279,6 +289,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     GroupMembers,
     GroupJoinRequests,
     GroupMessages,
+    GroupReads,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -417,6 +428,12 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   LocalCollection<GroupMessageRow> get groupMessagesCollection =>
       LocalCollection._(SyncCollectionKey.groupMessages, groupMessages);
 
+  /// **Sans tombstone**, rangée par `groupId` (#140). Le canal `users/{id}`
+  /// l'écrit aussi (`read.advanced`), mais seulement vers l'avant — voir
+  /// `MessagingStoreWriter`.
+  LocalCollection<GroupReadRow> get groupReadsCollection =>
+      LocalCollection._(SyncCollectionKey.groupReads, groupReads);
+
   /// **La seule collection `private` de ce registre.** Elle se remplit comme
   /// les dix autres — par le flux delta, jamais par l'application — et rien
   /// dans ce DAO ne permet d'en retirer une ligne autrement qu'en obéissant à
@@ -460,6 +477,28 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
       await crashBetweenRowsAndCursor?.call();
       await _writeCursor(collection.key, cursor, syncedAt);
     });
+  }
+
+  /// **Range des lignes arrivées par un autre chemin que le tirage** — le canal
+  /// `users/{id}` et l'historique par pages (#140) — **sans toucher au
+  /// curseur**.
+  ///
+  /// Les lignes sont celles du flux delta, mot pour mot (le serveur les produit
+  /// par la même fonction, `group_sync_rows.ts`), et elles passent donc par la
+  /// même écriture que [applyPage] : même `insertOrReplace`, même jeton
+  /// d'écriture. Seul le curseur reste où il est, et c'est l'invariant central
+  /// qui l'exige : un curseur ne couvre que ce que le **tirage** a livré. Une
+  /// ligne rangée ici sera re-tirée au cycle suivant, et réécrite à l'identique —
+  /// l'écriture est idempotente.
+  ///
+  /// Le jeton est neuf : une ligne rangée pendant un remplacement complet porte
+  /// un jeton postérieur au sien, et le balayage final ne l'emporte donc pas.
+  Future<void> applyLiveRows<D>(
+    LocalCollection<D> collection, {
+    List<Insertable<D>> upserts = const [],
+    List<Object> deletedIds = const [],
+  }) {
+    return transaction(() => _writeRows(collection, upserts, deletedIds));
   }
 
   // ───────────────────────────────────────────────────────────────────────────

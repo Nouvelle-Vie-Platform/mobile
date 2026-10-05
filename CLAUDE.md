@@ -202,10 +202,12 @@ Couches claires, pensées pour brancher un backend sans toucher l'UI :
     le contrat de rapport, son implémentation HTTP muette, et les cinq
     déclencheurs. Voir « La reprise de lecture » plus bas.
   - `local/` — **le magasin local Drift**, voir ci-dessous.
-  - `realtime/` — **le canal SSE d'un fil ouvert** (#101) : un *signal* qui pousse
-    le moteur, et qui n'écrit jamais. Voir « Le temps réel par SSE » plus bas.
-    Le canal **radio** (#135), dont la charge *est* la donnée, vit à part dans
-    `radio/` — voir « La page live ».
+  - `messaging/` — **le temps réel de la messagerie** (#140) : le canal
+    `users/{monId}`, dont la charge **est** la ligne, rangée par le descripteur
+    du registre ; l'outbox de la lecture et l'historique par pages. Voir « Le
+    temps réel : le canal `users/{id}` » plus bas. Il remplace `realtime/` (le
+    canal par groupe de #101, un simple signal), **retiré**. Le canal **radio**
+    (#135) vit à part dans `radio/` — voir « La page live ».
   - `pickers/status_image_picker.dart` — le choix d'une image de fond, derrière
     une abstraction (les tests injectent un sélecteur inerte).
   - `app_version.dart` — `AppVersionReader` : la version et le build du binaire,
@@ -671,12 +673,13 @@ continue. Fichiers : `data/radio/radio_live.dart` (modèles),
 
 Six points qui se ratent en silence :
 
-1. **Le canal radio n'est pas dans `lib/data/realtime/`**, et ce n'est pas un
-   oubli : ici la charge de l'événement **est** la donnée (un cœur, un message,
-   un compteur), et le garde-fou de `realtime/` interdit tout `jsonDecode` pour
-   une raison qui ne vaut pas ici — la radio n'a pas de magasin, donc pas de
-   chemin mixte possible. Le **protocole** est repris à l'identique de
-   `sse_group_channel.dart` (même `Dio`, ordre `events` → `subscribe`, `uid` neuf,
+1. **Le canal radio vit dans `lib/data/radio/`**, et ce n'est pas un oubli : ici
+   la charge de l'événement **est** la donnée (un cœur, un message, un
+   compteur), et la radio n'a pas de magasin, donc pas de chemin mixte possible.
+   (`lib/data/realtime/`, qui interdisait tout `jsonDecode`, a été retiré par
+   #140 ; la messagerie a suivi ce même découpage dans `lib/data/messaging/`, et
+   réemploie son `SseEventReader`.) Le **protocole** est celui de Transmit
+   (même `Dio`, ordre `events` → `subscribe`, `uid` neuf,
    `receiveTimeout` désarmé, refus jamais réessayé). Une seule connexion porte
    les deux abonnements d'un modérateur ; un refus de `radio/moderation` ne coupe
    pas `radio`.
@@ -1231,14 +1234,21 @@ son `catch` donne la réponse en une exécution. Ensuite, **un fixture de
 client** : un fixture qui recopie l'hypothèse du client ne teste plus rien
 (l'en-tête du fichier donne la source de chaque forme, colonne par colonne).
 
-Déclenchement : **ouverture, foreground, tirer-pour-rafraîchir**, plus le **signal
-d'un fil ouvert** (`SyncTrigger.openThread`, #101) et le **réveil push**
-(`SyncTrigger.pushWake`, #97). Tous deux se sont branchés là où le fichier
-l'annonçait — un appel de plus à `trigger`, et rien d'autre. *Jamais de
-polling* — aucun `Timer` dans `lib/data/sync/`, et un test le vérifie ; la
-minuterie de réouverture d'un canal SSE vit dans `lib/data/realtime/`, ne demande
-**aucun** cycle quand elle échoue, et ne tourne que pendant qu'un écran est
-affiché.
+Déclenchement : **ouverture, foreground, tirer-pour-rafraîchir**, plus le
+**rattrapage du canal temps réel** (`SyncTrigger.realtime`, #140 — à chaque
+(re)connexion de `users/{id}` et quand une ligne cite un groupe inconnu) et le
+**réveil push** (`SyncTrigger.pushWake`, #97). Tous deux se sont branchés là où
+le fichier l'annonçait — un appel de plus à `trigger`, et rien d'autre. *Jamais
+de polling* — aucun `Timer` dans `lib/data/sync/`, et un test le vérifie ; les
+minuteries du canal (réouverture, constat de silence) vivent dans
+`lib/data/messaging/`, ne demandent **aucun** cycle quand une réouverture échoue,
+et ne tournent qu'au premier plan.
+
+⚠️ **Un déclencheur reçu pendant un cycle en programme un second** (#140), lancé
+dès que le premier rend la main, **coalescé** (dix déclencheurs → un cycle).
+Rejoindre le cycle en vol, comme avant, **perdait le signal** quand la collection
+qu'il concernait était déjà passée. Deux cycles ne tournent toujours jamais
+ensemble.
 
 Le réveil d'une application **fermée**, lui, ne passe pas par le planificateur :
 il vit dans un autre isolate et monte son propre moteur, **restreint** aux
@@ -1257,8 +1267,11 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `echangesRepositoryProvider` et les quatre lectures, **toutes des familles clés
     sur l'acteur** (voir l'avertissement de « La messagerie de groupe »), plus
     `groupMessageComposerProvider` — le seul de cette rubrique qui **écrit** au
-    réseau — et, depuis #101, `groupChannelProvider` / `openThreadChannelProvider`
-    (le temps réel d'un fil ouvert, `autoDispose` et clé par groupe).
+    réseau —, et depuis #140 le temps réel et ses outbox :
+    `messagingChannelProvider`, `messagingStoreWriterProvider`,
+    `messagingLinkProvider` (le lien `users/{id}`, écouté par `app.dart`),
+    `groupReadAdvancerProvider`, `groupHistoryProvider`, `messagingOutboxProvider`
+    et `unreadTotalProvider` (le badge de l'onglet).
   - `announcement_providers.dart` : `announcementRepositoryProvider`,
     `announcementsProvider` et `canComposeAnnouncementProvider`. **C'est là que
     vivent les deux règles que le serveur ne prend pas** — le filtre
@@ -1302,7 +1315,7 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `gatheringDaoProvider`, `announcementDaoProvider`, `playbackDaoProvider`,
     `legalDaoProvider`, `seasonDaoProvider`, `vocabularyDaoProvider`,
     `authChannelsDaoProvider`, `menuDaoProvider`, `pullToRefreshProvider`,
-    `openThreadSyncProvider` (le quatrième déclencheur, #101).
+    `realtimeSyncProvider` (le quatrième déclencheur, #140).
     Les trois DAO de lecture sont lus par les trois repositories de magasin.
     **Les trois déclencheurs d'ADR-0017 sont câblés** : `app.dart` appelle
     `SyncScheduler.start()` au premier frame sous `AppEnv.useBackend` (et c'est ce même appel qui abonne le planificateur au
@@ -2018,85 +2031,146 @@ du `POST` : supprimer l'écho là ferait disparaître le message de l'écran pen
 temps qui sépare la réponse du cycle qui ramène la ligne. Un message qui clignote est
 pire qu'un message marqué « en cours ».
 
-#### Le temps réel par SSE (#101) — un **signal**, jamais une source de vérité
+#### Le temps réel : le canal `users/{id}` (#140) — la ligne, rangée comme la synchro
 
-Il existe parce qu'il n'y a **pas de compte Apple Developer Program**, donc pas de
-clé APNs — et sur iOS, FCM passe par APNs : un iPhone n'a aujourd'hui aucun moyen
-d'apprendre qu'un message est arrivé. Il faut être exact sur ce qu'il achète :
+Tranche M1b du plan `server-portal/docs/messagerie-whatsapp-plan.md` ; le contrat
+serveur est `server-portal/docs/messagerie-temps-reel-contrat.md` (M1a). Il
+**remplace** le canal par groupe de #101 (`groups/{id}`, un *signal* vide qui
+relançait une synchro, ouvert seulement dans le fil affiché) : ce client ne s'y
+abonne plus, et un garde-fou de source (`messaging_channel_test.dart`) interdit
+de reconstruire un nom de canal `groups/…`.
 
 | état de l'application | ce qui arrive |
 | --- | --- |
-| conversation **ouverte à l'écran** | les messages arrivent **instantanément**, sur les deux plateformes |
-| arrière-plan ou fermée | **rien** — iOS suspend le réseau, Android aussi sous contrainte de batterie |
+| **premier plan**, session ouverte | les lignes arrivent et sont **rangées aussitôt** : fil, liste, badge |
+| arrière-plan ou fermée | **rien** par ce canal — le réveil push (Android), ou la synchro du retour |
 
-**Ce n'est donc pas un substitut au push, c'est un complément**, et rien — ni un
-nom de classe, ni un commentaire — ne doit laisser croire que les notifications
-marchent sur iPhone. Elles ne marchent pas.
+**La charge est la donnée, et elle se range par la même fonction que la ligne de
+synchronisation.** Le serveur produit la ligne du tirage, du canal et de
+l'historique par **une** fonction (`group_sync_rows.ts`) ; le client la range
+par **un** chemin : `MessagingStoreWriter` → `syncedCollectionFor(key)` →
+`SyncedCollection.applyLive` → `SyncDao.applyLiveRows` (même désérialisation,
+même tri tombstone/ligne, même `insertOrReplace`, **sans curseur** — un curseur
+ne couvre que ce que le tirage a livré). C'est pourquoi ce n'est pas le « chemin
+mixte » refusé par la décision 1 d'Échanges : deux chemins, une seule écriture,
+et **la synchronisation reste la vérité de rattrapage** (piège 4 : la bascule
+bleu/vert coupe tous les flux ~120 s).
 
-⚠️ **LA contrainte, celle qui décide si le code est bon : l'événement n'écrit
-jamais dans Drift.** Il déclenche un cycle de synchronisation
-(`SyncTrigger.openThread`), et c'est **le moteur** qui écrit — exactement comme le
-fera le réveil push. Écrire depuis l'événement donnerait deux écritures
-concurrentes dans la même table, deux curseurs qui se croisent, et un message qui
-arrive par les deux chemins : le chemin mixte que la décision 1 du cadrage
-d'Échanges a refusé, et la classe de bogue la plus coûteuse à diagnostiquer. **Se
-surprendre à désérialiser le corps d'un message depuis l'événement, c'est avoir
-pris le mauvais chemin.**
+`lib/data/messaging/` :
 
-C'est **structurel** et non seulement vérifié : `GroupChannelSignal` est une
-classe **vide** — il n'y a rien à lire dedans —, et un garde-fou de source
-(`test/data/open_thread_channel_test.dart`) interdit à tout fichier de
-`lib/data/realtime/` d'importer Drift, un DAO, ou `jsonDecode`.
+- `messaging_channel.dart` — le contrat : `userChannelName`, les événements
+  (`MessagingChannelOpened`, `MessagingHeartbeat`, `MessagingRowEvent`), la table
+  type → collection, `decodeMessagingData`, `MessagingChannelRefused`,
+  `SilentMessagingChannel` ;
+- `sse_messaging_channel.dart` — le transport Transmit (réemploie le
+  `SseEventReader` de la radio) ;
+- `messaging_store_writer.dart` — le rangement (voir plus haut) ;
+- `messaging_link.dart` — la durée de vie, le cycle de vie, la reconnexion, le
+  constat de silence ;
+- `group_read_advancer.dart` — l'outbox de la lecture (`POST /groups/:id/read`) ;
+- `group_history.dart` — l'historique par pages (`GET /groups/:id/messages?before=`).
 
-`lib/data/realtime/`, quatre fichiers et une seule règle (« tout signal déclenche
-un cycle ») :
+Sept points qui se ratent en silence :
 
-- `group_channel.dart` — le contrat, le nom de canal (`groups/{groupId}`, la seule
-  copie côté client du motif que le serveur construit dans
-  `group_broadcaster.ts`), le signal **vide**, `GroupChannelRefused`, et
-  `SilentGroupChannel` (le défaut sans backend et dans tous les tests d'écran) ;
-- `sse_frames.dart` — le lecteur de `text/event-stream`. Il **compte des frontières
-  d'événements** et ne décode aucun JSON. Il retient l'état entre deux fragments :
-  une socket rend des octets, pas des lignes, et un lecteur sans mémoire perdrait
-  un événement sur deux dès que le réseau hoquette ;
-- `sse_group_channel.dart` — l'implémentation, sur le `Dio` d'`ApiClient`. **Aucun
-  paquet nouveau** : SSE est du HTTP en flux (`ResponseType.stream`) ;
-- `open_thread_channel.dart` — la durée de vie, le cycle de vie et la réouverture.
+1. **Le chien de garde est adaptatif** : il ne s'arme qu'après un battement
+   (`$$transmit/ping`) vu sur la connexion **courante**. Le serveur n'en émet
+   pas pour l'instant (`pingInterval` retiré : l'application installée
+   prendrait chaque trame pour un signal) ; sans battement, un canal calme est
+   muet par nature, et reconnecter sur ce silence rouvrirait le canal — avec un
+   cycle — chaque minute. Battement vu : toute trame — même illisible — est un
+   signe de vie, **60 s sans rien** (`kMessagingSilenceLimit`) et la connexion
+   est rouverte, `uid` neuf, **désarmée** jusqu'au prochain battement. Le jour
+   où le serveur rebat, le client s'y met seul. La reconnexion sur erreur ou
+   fermeture ne dépend pas du battement. Le battement passe sur la même
+   connexion : on lit `channel` et on ignore ce qui n'est pas `users/<mon id>`.
+2. **Chaque (re)connexion lance un cycle** (`SyncTrigger.realtime`), posé **après**
+   l'abonnement réussi : une tentative ratée n'en lance aucun (pas de sondage).
+3. **Un groupe inconnu** (DM ouvert par l'autre, ajout au portail) : la ligne est
+   rangée, **puis** un cycle ramène le reste (profils, roster).
+4. **La lecture ne recule jamais** : `read.advanced` n'est rangé que s'il avance —
+   jugé sur l'**identifiant** du message lu (UUIDv7), pas sur `lastReadAt`, que le
+   magasin arrondit à la seconde.
+5. **L'écho se réconcilie par `clientMessageId`** : l'appareil émetteur reçoit
+   aussi `message.created` ; `threadOf` cesse d'afficher l'écho dès que la ligne
+   est là, et le rangement ramasse la table des échos.
+6. **Les lignes se rangent dans l'ordre d'arrivée** (une file de `Future`) : un
+   message créé puis supprimé dans la même seconde ne se range pas à l'envers.
+7. **Le lien vit avec la session, et au premier plan seulement.**
+   `messagingLinkProvider` n'est pas `autoDispose` ; `app.dart` l'écoute
+   (`listenManual`) après l'attente du porteur. Un changement de session le
+   reconstruit ; l'arrière-plan (`paused`/`hidden`/`detached`, jamais
+   `inactive`) ferme la connexion, le retour la rouvre. Un **refus** (invité :
+   `guestOnlyOnRadio`) ne se réessaie jamais. Il lit l'acteur par
+   `ref.watch(authProvider.select(…))`, ce que l'avertissement plus bas interdit
+   aux **lectures d'écran** — la raison ne vaut pas ici : aucun widget ne
+   l'observe.
 
-Cinq points qui se ratent en silence :
+#### Ce qui n'est pas parti repart — jamais deux fois (#140)
 
-1. **L'ordre des deux requêtes.** `POST /__transmit/subscribe` cherche le flux par
-   son `uid` : il doit partir **après** que `GET /__transmit/events?uid=` a rendu
-   ses en-têtes. L'inverse fait refuser un abonnement légitime.
-2. **`receiveTimeout` doit être désarmé** (`Duration.zero`). Le défaut d'`ApiClient`
-   est de 15 s, et un canal silencieux quinze secondes est le cas **normal** d'une
-   conversation : sans ça, la connexion se fait tuer en boucle par son propre client.
-3. **Une ouverture réussie est elle-même un signal.** Un canal neuf n'a aucune
-   mémoire de ce qui s'est diffusé avant lui — c'est ce qui fait qu'une reconnexion
-   rattrape sa coupure. Posé **après** l'abonnement, jamais avant : une tentative
-   qui échoue ne déclenche aucun cycle, sinon la réouverture périodique deviendrait
-   un **sondage du moteur**, ce qu'ADR-0017 interdit.
-4. **`openThreadChannelProvider` est `autoDispose`**, et c'est *ça* qui ferme la
-   connexion. L'écran l'observe dans son `build` ; dès qu'il quitte l'arbre,
-   Riverpod jette l'élément et `onDispose` rend la socket. Le contraire exact de
-   `contentPlayerProvider`, qui n'est **pas** `autoDispose` parce que la lecture doit
-   survivre au `context.pop()` — un fil qu'on quitte, lui, n'a plus rien à écouter.
-   Sans ça, la connexion survit à l'écran et le harnais de test attend une minuterie
-   que plus personne ne possède.
-5. **Un refus ne se réessaie jamais** (le canal est réservé aux membres,
-   `CheckGroupMembership`) ; une panne de **transport**, si, après
-   `kGroupChannelRetryDelay` (**10 s**, nommé à un seul endroit, **valeur à
-   confirmer**). L'arrière-plan **ferme proprement** — `paused`/`hidden`/`detached`,
-   jamais `inactive`, qui est transitoire — et le retour déclenche un cycle **avant**
-   de rouvrir : le rattrapage ne doit pas dépendre de la réussite d'une réouverture.
+**Après chaque cycle réussi** (`onCycleSucceeded`, câblé dans `app.dart`),
+`messagingOutboxProvider` rejoue : un cycle réussi dit que le réseau répond — au
+retour du réseau (la reconnexion du canal lance un cycle), au retour au premier
+plan, à l'ouverture.
 
-**Une connexion à la fois, et seulement pendant que l'écran est affiché.** Pas
-d'abonnement permanent à tous ses groupes : une connexion ouverte coûte de la
-batterie et du forfait, et au Togo le second compte autant que la première.
+- **Les messages** : `GroupMessageComposer.resendUnconfirmed` renvoie chaque écho
+  non réconcilié — `failed`, **et** `sending` (une application tuée en plein
+  envoi le laisserait tel quel pour toujours) —, dans l'ordre de rédaction, sous
+  sa **clé d'origine** (piège 5). Un envoi encore en vol est sauté. L'écho
+  repasse « en cours » pendant l'essai. Le geste manuel : toucher le message en
+  échec → **Réessayer / Supprimer**.
+- **La lecture** : `pending_group_reads` (table locale seule) est l'outbox de
+  `POST /groups/:id/read`. Posée **avant** l'appel — la pastille s'éteint sans
+  attendre le réseau, le compteur prend la plus avancée des deux lectures —,
+  retirée à la confirmation **après** avoir rangé la ligne servie (sinon la
+  pastille se rallume un instant), retirée aussi sur un `4xx`, gardée sur une
+  panne. La route est idempotente et monotone : rejouer est sûr.
 
-Côté tests, `pumpScreen` / `pumpRouter` posent `SilentGroupChannel` par défaut — un
-flux vide et **jamais clos**, pour qu'un canal muet ne se lise pas comme un canal
-tombé — et les tests passent par le paramètre nommé `channel:`.
+#### Les non-lus — calculés chez le client (#140)
+
+La formule du contrat M1a, écrite **une fois** dans `GroupDao._isUnread` et
+partagée par la liste (`conversationsOf.unread_count`), le fil
+(`threadOf.is_unread`, qui place le séparateur) et `unreadCountOf` : un message
+non lu n'est ni du serveur, ni de moi, et il est postérieur, dans l'ordre du fil
+`(createdAt, id)`, **aux deux** lectures — servie (`group_reads`) et locale
+(`pending_group_reads`). Sans lecture servie, tout compte ; message lu absent du
+magasin → repli sur `lastReadAt`. ⚠️ `author_id IS NULL OR author_id <> moi` :
+un `<>` nu perdrait les messages d'un **auteur retiré** (`NULL <> x` est
+`NULL`). Badge global = somme des pastilles (`totalUnread`, `unreadTotalProvider`).
+`group_reads` est rangée **avant** `group_messages` dans le registre : à la
+première synchro, une lecture arrivée après le fil allumerait tout l'historique.
+
+#### Le fil comme WhatsApp (#140) — `group_chat_screen.dart`
+
+- **Liste inversée** : sa position zéro est le bas, le fil s'ouvre sur le dernier
+  message et **suit le clavier** (`resizeToAvoidBottomInset`, le bas reste en
+  place). Envoyer ramène en bas.
+- **Ouverture sur le premier non-lu**, sous un séparateur « N messages non lus »
+  **figé à l'ouverture**. La fenêtre de départ est élargie pour le contenir
+  (`unreadCount` + 10).
+- **Historique par pages** : la fenêtre (`ThreadKey.limit`, pas de
+  `kThreadWindow`) s'élargit en remontant ; magasin épuisé → `GET ?before=` rangé
+  dans le magasin. La fenêtre précédente reste peinte pendant que la nouvelle se
+  charge.
+- **La lecture avance** quand le bas du fil est visible et qu'il reste du non-lu,
+  au plus une fois par message (`_readUpTo`).
+- **Plus membre** (roster présent, je n'y suis plus) : le fil ne s'affiche plus.
+- **Le retour** : ouvert par une notification (`goNamed`, sans pile), la flèche
+  **et** le geste système (`PopScope`) mènent à `/home?tab=community` — la liste
+  des Échanges —, jamais hors de l'application. `HomeShell.initialTab` lit ce
+  paramètre ; l'onglet courant reste un état local.
+- **Ce qui a disparu** : la pastille « en ligne » toujours verte de
+  `ChatAppBar`, et les trois boutons inertes (emoji, pièce jointe, photo) de
+  `MessageInputBar` — l'absence, pas le grisage. Ils reviendront avec M3/M4.
+- **L'effectif** est `groups.memberCount` servi par le serveur (frais depuis M1a,
+  `group.updated` à chaque entrée/sortie), jamais un compte des lignes
+  `group_members` — y compris dans la fiche du groupe.
+- **Le corps nul** (piège 1) : `group_messages.body` est nullable depuis la v20 ;
+  un message-média se dit (`chatMediaUnsupported`, aperçu « Pièce jointe »),
+  jamais une bulle vide. La notification de réveil se tait sur un média.
+
+Côté tests, `pumpScreen` / `pumpRouter` posent `SilentMessagingChannel`, un
+envoi de lecture inerte et aucun historique (paramètres nommés `channel:`,
+`readSender:`, `history:`).
 
 #### Trois choses de plus, toutes vérifiées
 
@@ -2243,7 +2317,8 @@ la réponse — c'est exactement là que la tranche 4 se branchera.
    propre connexion, et le cycle du retour n'a ensuite plus rien à écrire. D'où
    `SyncScheduler.onForeground`, appelé au passage à `resumed` puis de nouveau à
    la fin du cycle du retour, et branché par `syncSchedulerProvider` sur un
-   `markTablesUpdated` des tables synchronisées (+ `pending_group_messages`).
+   `markTablesUpdated` des tables synchronisées (+ `pending_group_messages`
+   et, depuis #140, `pending_group_reads`, que lit le compteur de non-lus).
    Toute table qu'un réveil de fond viendrait à écrire **hors** du registre
    `synced_collection.dart` doit y être ajoutée. `shareAcrossIsolates` n'y peut
    rien : le moteur Flutter de fond de FCM n'est pas relié par

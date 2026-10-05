@@ -36,7 +36,15 @@ abstract interface class EchangesRepository {
   /// [MessageDelivery] : c'est ce qui fait qu'un « amen » paraît avant que le
   /// réseau ait fini d'y penser, et qu'un envoi perdu le dise au lieu de rester
   /// « en cours » pour toujours.
-  Stream<List<GroupMessageView>> thread(String groupId);
+  ///
+  /// [limit] borne le fil à ses **derniers** messages (#140) : l'historique
+  /// s'affiche par pages, et l'écran élargit la fenêtre en remontant. `null` =
+  /// tout ce que le magasin possède.
+  Stream<List<GroupMessageView>> thread(String groupId, {int? limit});
+
+  /// **Le nombre de non-lus** d'une conversation, une fois (#140) — de quoi
+  /// ouvrir le fil sur le premier non-lu.
+  Future<int> unreadCount(String groupId);
 
   /// **La fiche d'un groupe**, roster compris. `null` = le magasin ne connaît pas
   /// cet identifiant — ce qui s'affiche comme une absence, jamais comme une
@@ -90,8 +98,20 @@ class InMemoryEchangesRepository implements EchangesRepository {
       Stream.value(_discoverGroups);
 
   @override
-  Stream<List<GroupMessageView>> thread(String groupId) =>
-      Stream.value(_threads[groupId] ?? const []);
+  Stream<List<GroupMessageView>> thread(String groupId, {int? limit}) {
+    final all = _threads[groupId] ?? const <GroupMessageView>[];
+    return Stream.value(
+      limit == null || all.length <= limit
+          ? all
+          : all.sublist(all.length - limit),
+    );
+  }
+
+  @override
+  Future<int> unreadCount(String groupId) async =>
+      (_threads[groupId] ?? const <GroupMessageView>[])
+          .where((m) => m.unread)
+          .length;
 
   @override
   Stream<GroupDetailView?> group(String groupId) =>

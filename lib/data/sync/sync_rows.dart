@@ -798,11 +798,43 @@ GroupMessagesCompanion groupMessageRowOf(Map<String, Object?> item) {
     // Nul **explicite** : voir l'en-tête. Ces deux lignes-ci sont le contrat.
     authorId: Value(_optionalText(item, 'authorId')),
     isSystem: Value(item['isSystem'] == true),
-    body: _text(collection, item, 'body'),
+    // **Nullable** (#140, piège 1) : un message-média arrive avec `body: null`,
+    // et l'exiger ici rejetait la page — donc coupait le cycle à chaque tour.
+    body: Value(_optionalText(item, 'body')),
     clientMessageId: Value(_optionalText(item, 'clientMessageId')),
     clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
     createdAt: Value(_instant(item, 'createdAt')),
   );
+}
+
+/// `GET /sync/group_reads` — **quatre clés** : `id`, `groupId`,
+/// `lastReadMessageId`, `lastReadAt` (#140, serveur M1a, `groupReadSyncRow`).
+///
+/// La même fonction range la ligne venue du tirage, celle du canal
+/// (`read.advanced`) et celle que rend `POST /groups/:id/read` — dont la réponse
+/// porte une cinquième clé, `advanced`, qui n'est pas stockée.
+///
+/// **Rangée par `groupId`**, exigé : c'est la clé locale. `id` est l'entier de
+/// l'appartenance, gardé tel quel et toléré absent. Les deux colonnes de lecture
+/// sont nulles ou renseignées ensemble côté serveur (`CHECK`) ; on n'en suppose
+/// rien ici.
+GroupReadsCompanion groupReadRowOf(Map<String, Object?> item) {
+  const collection = 'group_reads';
+  return GroupReadsCompanion.insert(
+    groupId: _text(collection, item, 'groupId'),
+    membershipId: Value(_optionalInt(item, 'id')),
+    lastReadMessageId: Value(_optionalText(item, 'lastReadMessageId')),
+    lastReadAt: Value(_instant(item, 'lastReadAt')),
+  );
+}
+
+/// L'identifiant **local** d'une ligne `group_reads` : son `groupId`, et non son
+/// `id` serveur. Sert au tri « rétractation ou ligne » du moteur — la collection
+/// n'a pas de tombstone, il n'est donc jamais réellement employé à supprimer.
+String groupReadKey(Map<String, Object?> item) {
+  final id = item['groupId'];
+  if (id is String) return id;
+  throw MalformedSyncRow('group_reads', 'groupId', id);
 }
 
 /// `GET /sync/menu_entries` — **une entrée de menu** (#82).

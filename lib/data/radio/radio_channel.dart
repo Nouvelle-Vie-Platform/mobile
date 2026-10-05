@@ -1,12 +1,12 @@
 /// **Le canal temps réel de la radio** (#135) — et ici, contrairement aux
 /// groupes, **la charge de l'événement EST la donnée**.
 ///
-/// ## Pourquoi ce fichier n'est pas dans `lib/data/realtime/`
+/// ## Pourquoi ce fichier vit dans `lib/data/radio/`
 ///
-/// Le canal d'un groupe ne transporte qu'un **signal** vide : le message est
-/// écrit dans Drift par le moteur de synchronisation, jamais par l'événement
-/// (ADR-0006, `group_channel.dart`). Un garde-fou de source interdit d'ailleurs
-/// à `lib/data/realtime/` tout `jsonDecode`.
+/// Le canal par groupe de #101 (`lib/data/realtime/`, retiré par #140) ne
+/// transportait qu'un **signal** vide, et un garde-fou de source y interdisait
+/// tout `jsonDecode`. La messagerie a depuis suivi le découpage de ce fichier-ci
+/// (`lib/data/messaging/`).
 ///
 /// La radio n'a pas de magasin : ni table, ni curseur, ni cycle à déclencher
 /// (`radio_live.dart`). Un cœur qui monte, un commentaire qui arrive, un

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../models/legal_document_view.dart';
 import '../router/app_router.dart';
 import '../state/auth_providers.dart';
+import '../state/echanges_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_responsive.dart';
 import '../widgets/app_background.dart';
@@ -74,7 +75,16 @@ import 'profile_screen.dart';
 /// pas de geste à rejouer : la session s'ouvre, la coquille se repeint, et
 /// l'écran de l'onglet prend la place du formulaire.
 class HomeShell extends ConsumerStatefulWidget {
-  const HomeShell({super.key});
+  const HomeShell({super.key, this.initialTab});
+
+  /// **L'onglet à montrer en arrivant** (#140), lu dans `/home?tab=<nom>`.
+  ///
+  /// Il existe pour un seul chemin : un fil ouvert depuis une **notification**
+  /// est ouvert par `goNamed`, sans pile dessous ; son retour mène ici, sur la
+  /// liste des Échanges, et non sur l'accueil — ni dans le vide. L'onglet
+  /// courant reste un état **local** (« Riverpod = état partagé ») ; ce
+  /// paramètre n'en est que la valeur de départ.
+  final HomeTab? initialTab;
 
   static const Key tabsKey = Key('home_shell_tabs');
 
@@ -83,7 +93,17 @@ class HomeShell extends ConsumerStatefulWidget {
 }
 
 class _HomeShellState extends ConsumerState<HomeShell> {
-  HomeTab _tab = HomeTab.home;
+  late HomeTab _tab = widget.initialTab ?? HomeTab.home;
+
+  @override
+  void didUpdateWidget(HomeShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Une navigation vers `/home?tab=…` alors que la coquille est déjà montée.
+    final requested = widget.initialTab;
+    if (requested != null && requested != oldWidget.initialTab) {
+      _tab = requested;
+    }
+  }
 
   bool _videoStatus = false;
 
@@ -291,6 +311,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       bottomNavigationBar: AppBottomNav(
         current: _tab,
         onSelect: _showTab,
+        // **Le badge global des non-lus** (#140) — la somme des pastilles des
+        // conversations, lue sur le même flux que la liste. Rien pour un invité :
+        // il n'a pas de conversation.
+        badges: {
+          if (!isGuest)
+            HomeTab.community: ref
+                .watch(unreadTotalProvider(ref.watch(echangesActorProvider))),
+        },
       ),
     ));
 

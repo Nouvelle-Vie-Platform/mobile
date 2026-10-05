@@ -14507,8 +14507,8 @@ class $GroupMessagesTable extends GroupMessages
   static const VerificationMeta _bodyMeta = const VerificationMeta('body');
   @override
   late final GeneratedColumn<String> body = GeneratedColumn<String>(
-      'body', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+      'body', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _clientMessageIdMeta =
       const VerificationMeta('clientMessageId');
   @override
@@ -14575,8 +14575,6 @@ class $GroupMessagesTable extends GroupMessages
     if (data.containsKey('body')) {
       context.handle(
           _bodyMeta, body.isAcceptableOrUnknown(data['body']!, _bodyMeta));
-    } else if (isInserting) {
-      context.missing(_bodyMeta);
     }
     if (data.containsKey('client_message_id')) {
       context.handle(
@@ -14614,7 +14612,7 @@ class $GroupMessagesTable extends GroupMessages
       isSystem: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_system'])!,
       body: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}body'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}body']),
       clientMessageId: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}client_message_id']),
       clientCreatedAt: attachedDatabase.typeMapping.read(
@@ -14651,7 +14649,19 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
   /// **Vrai = le serveur parle** (adhésion, changement de rôle). Jamais produit
   /// par un client.
   final bool isSystem;
-  final String body;
+
+  /// **Nullable depuis la v20** (#140, piège 1 du plan
+  /// `messagerie-whatsapp-plan.md`), et c'est un garde-fou, pas une commodité.
+  ///
+  /// Un message-média (vocal, image) n'a pas de texte : le serveur le sert avec
+  /// `body: null` dès que l'application annonce une version au-delà du plancher
+  /// de compatibilité (`GROUP_MEDIA_COMPAT_FLOOR_VERSION`), et **toujours** sur le
+  /// canal `users/{id}`, qui n'a pas de requête où lire la version. Une colonne
+  /// `NOT NULL` faisait lever `groupMessageRowOf` — donc rejeter la page, donc
+  /// **couper le cycle de synchronisation** à chaque tour, sans que rien ne le
+  /// dise. Le nul se rend à l'écran comme un message que cette version ne sait
+  /// pas encore montrer (`chatMediaUnsupported`), jamais comme un vide.
+  final String? body;
 
   /// **La clé d'idempotence**, telle que ce client l'a frappée (UUIDv7) — ou nul
   /// pour un message qu'un autre client a envoyé sans clé.
@@ -14675,7 +14685,7 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       required this.groupId,
       this.authorId,
       required this.isSystem,
-      required this.body,
+      this.body,
       this.clientMessageId,
       this.clientCreatedAt,
       this.createdAt});
@@ -14689,7 +14699,9 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       map['author_id'] = Variable<String>(authorId);
     }
     map['is_system'] = Variable<bool>(isSystem);
-    map['body'] = Variable<String>(body);
+    if (!nullToAbsent || body != null) {
+      map['body'] = Variable<String>(body);
+    }
     if (!nullToAbsent || clientMessageId != null) {
       map['client_message_id'] = Variable<String>(clientMessageId);
     }
@@ -14711,7 +14723,7 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
           ? const Value.absent()
           : Value(authorId),
       isSystem: Value(isSystem),
-      body: Value(body),
+      body: body == null && nullToAbsent ? const Value.absent() : Value(body),
       clientMessageId: clientMessageId == null && nullToAbsent
           ? const Value.absent()
           : Value(clientMessageId),
@@ -14733,7 +14745,7 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       groupId: serializer.fromJson<String>(json['groupId']),
       authorId: serializer.fromJson<String?>(json['authorId']),
       isSystem: serializer.fromJson<bool>(json['isSystem']),
-      body: serializer.fromJson<String>(json['body']),
+      body: serializer.fromJson<String?>(json['body']),
       clientMessageId: serializer.fromJson<String?>(json['clientMessageId']),
       clientCreatedAt: serializer.fromJson<DateTime?>(json['clientCreatedAt']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
@@ -14748,7 +14760,7 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       'groupId': serializer.toJson<String>(groupId),
       'authorId': serializer.toJson<String?>(authorId),
       'isSystem': serializer.toJson<bool>(isSystem),
-      'body': serializer.toJson<String>(body),
+      'body': serializer.toJson<String?>(body),
       'clientMessageId': serializer.toJson<String?>(clientMessageId),
       'clientCreatedAt': serializer.toJson<DateTime?>(clientCreatedAt),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
@@ -14761,7 +14773,7 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
           String? groupId,
           Value<String?> authorId = const Value.absent(),
           bool? isSystem,
-          String? body,
+          Value<String?> body = const Value.absent(),
           Value<String?> clientMessageId = const Value.absent(),
           Value<DateTime?> clientCreatedAt = const Value.absent(),
           Value<DateTime?> createdAt = const Value.absent()}) =>
@@ -14771,7 +14783,7 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
         groupId: groupId ?? this.groupId,
         authorId: authorId.present ? authorId.value : this.authorId,
         isSystem: isSystem ?? this.isSystem,
-        body: body ?? this.body,
+        body: body.present ? body.value : this.body,
         clientMessageId: clientMessageId.present
             ? clientMessageId.value
             : this.clientMessageId,
@@ -14838,7 +14850,7 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
   final Value<String> groupId;
   final Value<String?> authorId;
   final Value<bool> isSystem;
-  final Value<String> body;
+  final Value<String?> body;
   final Value<String?> clientMessageId;
   final Value<DateTime?> clientCreatedAt;
   final Value<DateTime?> createdAt;
@@ -14861,14 +14873,13 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
     required String groupId,
     this.authorId = const Value.absent(),
     this.isSystem = const Value.absent(),
-    required String body,
+    this.body = const Value.absent(),
     this.clientMessageId = const Value.absent(),
     this.clientCreatedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
-        groupId = Value(groupId),
-        body = Value(body);
+        groupId = Value(groupId);
   static Insertable<GroupMessageRow> custom({
     Expression<int>? syncStamp,
     Expression<String>? id,
@@ -14901,7 +14912,7 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
       Value<String>? groupId,
       Value<String?>? authorId,
       Value<bool>? isSystem,
-      Value<String>? body,
+      Value<String?>? body,
       Value<String?>? clientMessageId,
       Value<DateTime?>? clientCreatedAt,
       Value<DateTime?>? createdAt,
@@ -15297,6 +15308,594 @@ class PendingGroupMessagesCompanion
           ..write('body: $body, ')
           ..write('createdAt: $createdAt, ')
           ..write('failed: $failed, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $GroupReadsTable extends GroupReads
+    with TableInfo<$GroupReadsTable, GroupReadRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GroupReadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _membershipIdMeta =
+      const VerificationMeta('membershipId');
+  @override
+  late final GeneratedColumn<int> membershipId = GeneratedColumn<int>(
+      'membership_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _lastReadMessageIdMeta =
+      const VerificationMeta('lastReadMessageId');
+  @override
+  late final GeneratedColumn<String> lastReadMessageId =
+      GeneratedColumn<String>('last_read_message_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lastReadAtMeta =
+      const VerificationMeta('lastReadAt');
+  @override
+  late final GeneratedColumn<DateTime> lastReadAt = GeneratedColumn<DateTime>(
+      'last_read_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, groupId, membershipId, lastReadMessageId, lastReadAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'group_reads';
+  @override
+  VerificationContext validateIntegrity(Insertable<GroupReadRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('membership_id')) {
+      context.handle(
+          _membershipIdMeta,
+          membershipId.isAcceptableOrUnknown(
+              data['membership_id']!, _membershipIdMeta));
+    }
+    if (data.containsKey('last_read_message_id')) {
+      context.handle(
+          _lastReadMessageIdMeta,
+          lastReadMessageId.isAcceptableOrUnknown(
+              data['last_read_message_id']!, _lastReadMessageIdMeta));
+    }
+    if (data.containsKey('last_read_at')) {
+      context.handle(
+          _lastReadAtMeta,
+          lastReadAt.isAcceptableOrUnknown(
+              data['last_read_at']!, _lastReadAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId};
+  @override
+  GroupReadRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GroupReadRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      membershipId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}membership_id']),
+      lastReadMessageId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}last_read_message_id']),
+      lastReadAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_read_at']),
+    );
+  }
+
+  @override
+  $GroupReadsTable createAlias(String alias) {
+    return $GroupReadsTable(attachedDatabase, alias);
+  }
+}
+
+class GroupReadRow extends DataClass implements Insertable<GroupReadRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String groupId;
+
+  /// L'identifiant de l'appartenance côté serveur (un entier). Non lu.
+  final int? membershipId;
+
+  /// Le dernier message lu. **Pas de clé étrangère**, ni ici ni côté serveur :
+  /// un message purgé ne remet pas la lecture à zéro.
+  final String? lastReadMessageId;
+
+  /// L'instant de la lecture. C'est le repli du calcul des non-lus quand le
+  /// message lu n'est pas (ou plus) dans le magasin.
+  final DateTime? lastReadAt;
+  const GroupReadRow(
+      {required this.syncStamp,
+      required this.groupId,
+      this.membershipId,
+      this.lastReadMessageId,
+      this.lastReadAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['group_id'] = Variable<String>(groupId);
+    if (!nullToAbsent || membershipId != null) {
+      map['membership_id'] = Variable<int>(membershipId);
+    }
+    if (!nullToAbsent || lastReadMessageId != null) {
+      map['last_read_message_id'] = Variable<String>(lastReadMessageId);
+    }
+    if (!nullToAbsent || lastReadAt != null) {
+      map['last_read_at'] = Variable<DateTime>(lastReadAt);
+    }
+    return map;
+  }
+
+  GroupReadsCompanion toCompanion(bool nullToAbsent) {
+    return GroupReadsCompanion(
+      syncStamp: Value(syncStamp),
+      groupId: Value(groupId),
+      membershipId: membershipId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(membershipId),
+      lastReadMessageId: lastReadMessageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastReadMessageId),
+      lastReadAt: lastReadAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastReadAt),
+    );
+  }
+
+  factory GroupReadRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GroupReadRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+      membershipId: serializer.fromJson<int?>(json['membershipId']),
+      lastReadMessageId:
+          serializer.fromJson<String?>(json['lastReadMessageId']),
+      lastReadAt: serializer.fromJson<DateTime?>(json['lastReadAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'groupId': serializer.toJson<String>(groupId),
+      'membershipId': serializer.toJson<int?>(membershipId),
+      'lastReadMessageId': serializer.toJson<String?>(lastReadMessageId),
+      'lastReadAt': serializer.toJson<DateTime?>(lastReadAt),
+    };
+  }
+
+  GroupReadRow copyWith(
+          {int? syncStamp,
+          String? groupId,
+          Value<int?> membershipId = const Value.absent(),
+          Value<String?> lastReadMessageId = const Value.absent(),
+          Value<DateTime?> lastReadAt = const Value.absent()}) =>
+      GroupReadRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        groupId: groupId ?? this.groupId,
+        membershipId:
+            membershipId.present ? membershipId.value : this.membershipId,
+        lastReadMessageId: lastReadMessageId.present
+            ? lastReadMessageId.value
+            : this.lastReadMessageId,
+        lastReadAt: lastReadAt.present ? lastReadAt.value : this.lastReadAt,
+      );
+  GroupReadRow copyWithCompanion(GroupReadsCompanion data) {
+    return GroupReadRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      membershipId: data.membershipId.present
+          ? data.membershipId.value
+          : this.membershipId,
+      lastReadMessageId: data.lastReadMessageId.present
+          ? data.lastReadMessageId.value
+          : this.lastReadMessageId,
+      lastReadAt:
+          data.lastReadAt.present ? data.lastReadAt.value : this.lastReadAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupReadRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('groupId: $groupId, ')
+          ..write('membershipId: $membershipId, ')
+          ..write('lastReadMessageId: $lastReadMessageId, ')
+          ..write('lastReadAt: $lastReadAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp, groupId, membershipId, lastReadMessageId, lastReadAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GroupReadRow &&
+          other.syncStamp == this.syncStamp &&
+          other.groupId == this.groupId &&
+          other.membershipId == this.membershipId &&
+          other.lastReadMessageId == this.lastReadMessageId &&
+          other.lastReadAt == this.lastReadAt);
+}
+
+class GroupReadsCompanion extends UpdateCompanion<GroupReadRow> {
+  final Value<int> syncStamp;
+  final Value<String> groupId;
+  final Value<int?> membershipId;
+  final Value<String?> lastReadMessageId;
+  final Value<DateTime?> lastReadAt;
+  final Value<int> rowid;
+  const GroupReadsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.membershipId = const Value.absent(),
+    this.lastReadMessageId = const Value.absent(),
+    this.lastReadAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GroupReadsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String groupId,
+    this.membershipId = const Value.absent(),
+    this.lastReadMessageId = const Value.absent(),
+    this.lastReadAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : groupId = Value(groupId);
+  static Insertable<GroupReadRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? groupId,
+    Expression<int>? membershipId,
+    Expression<String>? lastReadMessageId,
+    Expression<DateTime>? lastReadAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (groupId != null) 'group_id': groupId,
+      if (membershipId != null) 'membership_id': membershipId,
+      if (lastReadMessageId != null) 'last_read_message_id': lastReadMessageId,
+      if (lastReadAt != null) 'last_read_at': lastReadAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GroupReadsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? groupId,
+      Value<int?>? membershipId,
+      Value<String?>? lastReadMessageId,
+      Value<DateTime?>? lastReadAt,
+      Value<int>? rowid}) {
+    return GroupReadsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      groupId: groupId ?? this.groupId,
+      membershipId: membershipId ?? this.membershipId,
+      lastReadMessageId: lastReadMessageId ?? this.lastReadMessageId,
+      lastReadAt: lastReadAt ?? this.lastReadAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (membershipId.present) {
+      map['membership_id'] = Variable<int>(membershipId.value);
+    }
+    if (lastReadMessageId.present) {
+      map['last_read_message_id'] = Variable<String>(lastReadMessageId.value);
+    }
+    if (lastReadAt.present) {
+      map['last_read_at'] = Variable<DateTime>(lastReadAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupReadsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('groupId: $groupId, ')
+          ..write('membershipId: $membershipId, ')
+          ..write('lastReadMessageId: $lastReadMessageId, ')
+          ..write('lastReadAt: $lastReadAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PendingGroupReadsTable extends PendingGroupReads
+    with TableInfo<$PendingGroupReadsTable, PendingGroupReadRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingGroupReadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _messageIdMeta =
+      const VerificationMeta('messageId');
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+      'message_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _messageCreatedAtMeta =
+      const VerificationMeta('messageCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> messageCreatedAt =
+      GeneratedColumn<DateTime>('message_created_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [groupId, messageId, messageCreatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_group_reads';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<PendingGroupReadRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(_messageIdMeta,
+          messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
+    } else if (isInserting) {
+      context.missing(_messageIdMeta);
+    }
+    if (data.containsKey('message_created_at')) {
+      context.handle(
+          _messageCreatedAtMeta,
+          messageCreatedAt.isAcceptableOrUnknown(
+              data['message_created_at']!, _messageCreatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_messageCreatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId};
+  @override
+  PendingGroupReadRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingGroupReadRow(
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      messageId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
+      messageCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}message_created_at'])!,
+    );
+  }
+
+  @override
+  $PendingGroupReadsTable createAlias(String alias) {
+    return $PendingGroupReadsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingGroupReadRow extends DataClass
+    implements Insertable<PendingGroupReadRow> {
+  final String groupId;
+
+  /// Le message le plus récent que le fil a affiché.
+  final String messageId;
+
+  /// Son instant **serveur** : la position se compare dans l'ordre du fil,
+  /// `(createdAt, id)`, et il faut donc les deux.
+  final DateTime messageCreatedAt;
+  const PendingGroupReadRow(
+      {required this.groupId,
+      required this.messageId,
+      required this.messageCreatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_id'] = Variable<String>(groupId);
+    map['message_id'] = Variable<String>(messageId);
+    map['message_created_at'] = Variable<DateTime>(messageCreatedAt);
+    return map;
+  }
+
+  PendingGroupReadsCompanion toCompanion(bool nullToAbsent) {
+    return PendingGroupReadsCompanion(
+      groupId: Value(groupId),
+      messageId: Value(messageId),
+      messageCreatedAt: Value(messageCreatedAt),
+    );
+  }
+
+  factory PendingGroupReadRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingGroupReadRow(
+      groupId: serializer.fromJson<String>(json['groupId']),
+      messageId: serializer.fromJson<String>(json['messageId']),
+      messageCreatedAt: serializer.fromJson<DateTime>(json['messageCreatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<String>(groupId),
+      'messageId': serializer.toJson<String>(messageId),
+      'messageCreatedAt': serializer.toJson<DateTime>(messageCreatedAt),
+    };
+  }
+
+  PendingGroupReadRow copyWith(
+          {String? groupId, String? messageId, DateTime? messageCreatedAt}) =>
+      PendingGroupReadRow(
+        groupId: groupId ?? this.groupId,
+        messageId: messageId ?? this.messageId,
+        messageCreatedAt: messageCreatedAt ?? this.messageCreatedAt,
+      );
+  PendingGroupReadRow copyWithCompanion(PendingGroupReadsCompanion data) {
+    return PendingGroupReadRow(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      messageCreatedAt: data.messageCreatedAt.present
+          ? data.messageCreatedAt.value
+          : this.messageCreatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingGroupReadRow(')
+          ..write('groupId: $groupId, ')
+          ..write('messageId: $messageId, ')
+          ..write('messageCreatedAt: $messageCreatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, messageId, messageCreatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingGroupReadRow &&
+          other.groupId == this.groupId &&
+          other.messageId == this.messageId &&
+          other.messageCreatedAt == this.messageCreatedAt);
+}
+
+class PendingGroupReadsCompanion extends UpdateCompanion<PendingGroupReadRow> {
+  final Value<String> groupId;
+  final Value<String> messageId;
+  final Value<DateTime> messageCreatedAt;
+  final Value<int> rowid;
+  const PendingGroupReadsCompanion({
+    this.groupId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.messageCreatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingGroupReadsCompanion.insert({
+    required String groupId,
+    required String messageId,
+    required DateTime messageCreatedAt,
+    this.rowid = const Value.absent(),
+  })  : groupId = Value(groupId),
+        messageId = Value(messageId),
+        messageCreatedAt = Value(messageCreatedAt);
+  static Insertable<PendingGroupReadRow> custom({
+    Expression<String>? groupId,
+    Expression<String>? messageId,
+    Expression<DateTime>? messageCreatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'group_id': groupId,
+      if (messageId != null) 'message_id': messageId,
+      if (messageCreatedAt != null) 'message_created_at': messageCreatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingGroupReadsCompanion copyWith(
+      {Value<String>? groupId,
+      Value<String>? messageId,
+      Value<DateTime>? messageCreatedAt,
+      Value<int>? rowid}) {
+    return PendingGroupReadsCompanion(
+      groupId: groupId ?? this.groupId,
+      messageId: messageId ?? this.messageId,
+      messageCreatedAt: messageCreatedAt ?? this.messageCreatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (messageCreatedAt.present) {
+      map['message_created_at'] = Variable<DateTime>(messageCreatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingGroupReadsCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('messageId: $messageId, ')
+          ..write('messageCreatedAt: $messageCreatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -16616,6 +17215,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GroupMessagesTable groupMessages = $GroupMessagesTable(this);
   late final $PendingGroupMessagesTable pendingGroupMessages =
       $PendingGroupMessagesTable(this);
+  late final $GroupReadsTable groupReads = $GroupReadsTable(this);
+  late final $PendingGroupReadsTable pendingGroupReads =
+      $PendingGroupReadsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $DownloadsTable downloads = $DownloadsTable(this);
   late final $DownloadTitlesTable downloadTitles = $DownloadTitlesTable(this);
@@ -16675,6 +17277,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         groupJoinRequests,
         groupMessages,
         pendingGroupMessages,
+        groupReads,
+        pendingGroupReads,
         appSettings,
         downloads,
         downloadTitles,
@@ -23316,7 +23920,7 @@ typedef $$GroupMessagesTableCreateCompanionBuilder = GroupMessagesCompanion
   required String groupId,
   Value<String?> authorId,
   Value<bool> isSystem,
-  required String body,
+  Value<String?> body,
   Value<String?> clientMessageId,
   Value<DateTime?> clientCreatedAt,
   Value<DateTime?> createdAt,
@@ -23329,7 +23933,7 @@ typedef $$GroupMessagesTableUpdateCompanionBuilder = GroupMessagesCompanion
   Value<String> groupId,
   Value<String?> authorId,
   Value<bool> isSystem,
-  Value<String> body,
+  Value<String?> body,
   Value<String?> clientMessageId,
   Value<DateTime?> clientCreatedAt,
   Value<DateTime?> createdAt,
@@ -23482,7 +24086,7 @@ class $$GroupMessagesTableTableManager extends RootTableManager<
             Value<String> groupId = const Value.absent(),
             Value<String?> authorId = const Value.absent(),
             Value<bool> isSystem = const Value.absent(),
-            Value<String> body = const Value.absent(),
+            Value<String?> body = const Value.absent(),
             Value<String?> clientMessageId = const Value.absent(),
             Value<DateTime?> clientCreatedAt = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -23506,7 +24110,7 @@ class $$GroupMessagesTableTableManager extends RootTableManager<
             required String groupId,
             Value<String?> authorId = const Value.absent(),
             Value<bool> isSystem = const Value.absent(),
-            required String body,
+            Value<String?> body = const Value.absent(),
             Value<String?> clientMessageId = const Value.absent(),
             Value<DateTime?> clientCreatedAt = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -23727,6 +24331,329 @@ typedef $$PendingGroupMessagesTableProcessedTableManager
         ),
         PendingGroupMessageRow,
         PrefetchHooks Function()>;
+typedef $$GroupReadsTableCreateCompanionBuilder = GroupReadsCompanion Function({
+  Value<int> syncStamp,
+  required String groupId,
+  Value<int?> membershipId,
+  Value<String?> lastReadMessageId,
+  Value<DateTime?> lastReadAt,
+  Value<int> rowid,
+});
+typedef $$GroupReadsTableUpdateCompanionBuilder = GroupReadsCompanion Function({
+  Value<int> syncStamp,
+  Value<String> groupId,
+  Value<int?> membershipId,
+  Value<String?> lastReadMessageId,
+  Value<DateTime?> lastReadAt,
+  Value<int> rowid,
+});
+
+class $$GroupReadsTableFilterComposer
+    extends Composer<_$AppDatabase, $GroupReadsTable> {
+  $$GroupReadsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get membershipId => $composableBuilder(
+      column: $table.membershipId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastReadMessageId => $composableBuilder(
+      column: $table.lastReadMessageId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastReadAt => $composableBuilder(
+      column: $table.lastReadAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$GroupReadsTableOrderingComposer
+    extends Composer<_$AppDatabase, $GroupReadsTable> {
+  $$GroupReadsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get membershipId => $composableBuilder(
+      column: $table.membershipId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastReadMessageId => $composableBuilder(
+      column: $table.lastReadMessageId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastReadAt => $composableBuilder(
+      column: $table.lastReadAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$GroupReadsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GroupReadsTable> {
+  $$GroupReadsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<int> get membershipId => $composableBuilder(
+      column: $table.membershipId, builder: (column) => column);
+
+  GeneratedColumn<String> get lastReadMessageId => $composableBuilder(
+      column: $table.lastReadMessageId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastReadAt => $composableBuilder(
+      column: $table.lastReadAt, builder: (column) => column);
+}
+
+class $$GroupReadsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $GroupReadsTable,
+    GroupReadRow,
+    $$GroupReadsTableFilterComposer,
+    $$GroupReadsTableOrderingComposer,
+    $$GroupReadsTableAnnotationComposer,
+    $$GroupReadsTableCreateCompanionBuilder,
+    $$GroupReadsTableUpdateCompanionBuilder,
+    (
+      GroupReadRow,
+      BaseReferences<_$AppDatabase, $GroupReadsTable, GroupReadRow>
+    ),
+    GroupReadRow,
+    PrefetchHooks Function()> {
+  $$GroupReadsTableTableManager(_$AppDatabase db, $GroupReadsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GroupReadsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GroupReadsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GroupReadsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> groupId = const Value.absent(),
+            Value<int?> membershipId = const Value.absent(),
+            Value<String?> lastReadMessageId = const Value.absent(),
+            Value<DateTime?> lastReadAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupReadsCompanion(
+            syncStamp: syncStamp,
+            groupId: groupId,
+            membershipId: membershipId,
+            lastReadMessageId: lastReadMessageId,
+            lastReadAt: lastReadAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String groupId,
+            Value<int?> membershipId = const Value.absent(),
+            Value<String?> lastReadMessageId = const Value.absent(),
+            Value<DateTime?> lastReadAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupReadsCompanion.insert(
+            syncStamp: syncStamp,
+            groupId: groupId,
+            membershipId: membershipId,
+            lastReadMessageId: lastReadMessageId,
+            lastReadAt: lastReadAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$GroupReadsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $GroupReadsTable,
+    GroupReadRow,
+    $$GroupReadsTableFilterComposer,
+    $$GroupReadsTableOrderingComposer,
+    $$GroupReadsTableAnnotationComposer,
+    $$GroupReadsTableCreateCompanionBuilder,
+    $$GroupReadsTableUpdateCompanionBuilder,
+    (
+      GroupReadRow,
+      BaseReferences<_$AppDatabase, $GroupReadsTable, GroupReadRow>
+    ),
+    GroupReadRow,
+    PrefetchHooks Function()>;
+typedef $$PendingGroupReadsTableCreateCompanionBuilder
+    = PendingGroupReadsCompanion Function({
+  required String groupId,
+  required String messageId,
+  required DateTime messageCreatedAt,
+  Value<int> rowid,
+});
+typedef $$PendingGroupReadsTableUpdateCompanionBuilder
+    = PendingGroupReadsCompanion Function({
+  Value<String> groupId,
+  Value<String> messageId,
+  Value<DateTime> messageCreatedAt,
+  Value<int> rowid,
+});
+
+class $$PendingGroupReadsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingGroupReadsTable> {
+  $$PendingGroupReadsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+      column: $table.messageId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get messageCreatedAt => $composableBuilder(
+      column: $table.messageCreatedAt,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$PendingGroupReadsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingGroupReadsTable> {
+  $$PendingGroupReadsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+      column: $table.messageId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get messageCreatedAt => $composableBuilder(
+      column: $table.messageCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$PendingGroupReadsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingGroupReadsTable> {
+  $$PendingGroupReadsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get messageCreatedAt => $composableBuilder(
+      column: $table.messageCreatedAt, builder: (column) => column);
+}
+
+class $$PendingGroupReadsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PendingGroupReadsTable,
+    PendingGroupReadRow,
+    $$PendingGroupReadsTableFilterComposer,
+    $$PendingGroupReadsTableOrderingComposer,
+    $$PendingGroupReadsTableAnnotationComposer,
+    $$PendingGroupReadsTableCreateCompanionBuilder,
+    $$PendingGroupReadsTableUpdateCompanionBuilder,
+    (
+      PendingGroupReadRow,
+      BaseReferences<_$AppDatabase, $PendingGroupReadsTable,
+          PendingGroupReadRow>
+    ),
+    PendingGroupReadRow,
+    PrefetchHooks Function()> {
+  $$PendingGroupReadsTableTableManager(
+      _$AppDatabase db, $PendingGroupReadsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingGroupReadsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingGroupReadsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingGroupReadsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> groupId = const Value.absent(),
+            Value<String> messageId = const Value.absent(),
+            Value<DateTime> messageCreatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PendingGroupReadsCompanion(
+            groupId: groupId,
+            messageId: messageId,
+            messageCreatedAt: messageCreatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String groupId,
+            required String messageId,
+            required DateTime messageCreatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PendingGroupReadsCompanion.insert(
+            groupId: groupId,
+            messageId: messageId,
+            messageCreatedAt: messageCreatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PendingGroupReadsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PendingGroupReadsTable,
+    PendingGroupReadRow,
+    $$PendingGroupReadsTableFilterComposer,
+    $$PendingGroupReadsTableOrderingComposer,
+    $$PendingGroupReadsTableAnnotationComposer,
+    $$PendingGroupReadsTableCreateCompanionBuilder,
+    $$PendingGroupReadsTableUpdateCompanionBuilder,
+    (
+      PendingGroupReadRow,
+      BaseReferences<_$AppDatabase, $PendingGroupReadsTable,
+          PendingGroupReadRow>
+    ),
+    PendingGroupReadRow,
+    PrefetchHooks Function()>;
 typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
     Function({
   required String key,
@@ -24468,6 +25395,10 @@ class $AppDatabaseManager {
       $$GroupMessagesTableTableManager(_db, _db.groupMessages);
   $$PendingGroupMessagesTableTableManager get pendingGroupMessages =>
       $$PendingGroupMessagesTableTableManager(_db, _db.pendingGroupMessages);
+  $$GroupReadsTableTableManager get groupReads =>
+      $$GroupReadsTableTableManager(_db, _db.groupReads);
+  $$PendingGroupReadsTableTableManager get pendingGroupReads =>
+      $$PendingGroupReadsTableTableManager(_db, _db.pendingGroupReads);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$DownloadsTableTableManager get downloads =>

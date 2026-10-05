@@ -30,9 +30,19 @@ import '../app_avatar.dart';
 /// absences : l'absence s'affiche comme une absence, mais ici la personne est
 /// **partie**, et le dire est plus juste que ne rien dire.
 class ChatBubble extends StatelessWidget {
-  const ChatBubble({super.key, required this.message, this.onAuthorTap});
+  const ChatBubble({
+    super.key,
+    required this.message,
+    this.onAuthorTap,
+    this.onFailedTap,
+  });
 
   final GroupMessageView message;
+
+  /// **Toucher un message à moi qui n'est pas parti** (#140) — l'écran ouvre
+  /// « Réessayer / Supprimer ». N'a d'effet que sur un message
+  /// [MessageDelivery.failed] : une bulle envoyée ne répond pas au toucher.
+  final VoidCallback? onFailedTap;
 
   /// Tap sur l'auteur (avatar + nom) d'un message **reçu** — ouvre son profil,
   /// d'où l'on peut lui répondre en privé. `null` = non interactif.
@@ -90,10 +100,14 @@ class ChatBubble extends StatelessWidget {
             ),
             const SizedBox(height: 2),
           ],
+          // **Un message-média n'a pas de texte** (#140, piège 1) : on le dit,
+          // en italique, plutôt que de rendre une bulle vide qui se lirait comme
+          // un message effacé.
           Text(
-            message.body,
+            message.body ?? l.chatMediaUnsupported,
             style: AppTypography.body.copyWith(
               fontSize: 14,
+              fontStyle: message.body == null ? FontStyle.italic : null,
               color: mine ? Colors.white : palette.textPrimary,
             ),
           ),
@@ -125,7 +139,9 @@ class ChatBubble extends StatelessWidget {
       ),
     );
 
-    return Padding(
+    final failed = mine && message.delivery == MessageDelivery.failed;
+
+    final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment:
@@ -144,6 +160,30 @@ class ChatBubble extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
           ],
           Flexible(child: bubble),
+        ],
+      ),
+    );
+
+    if (!failed) return row;
+
+    // **Un message qui n'est pas parti le dit, et offre le geste** (#140). Le
+    // renvoi est aussi automatique (au retour du réseau, au premier plan, à la
+    // reconnexion) ; le toucher n'attend pas.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onFailedTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          row,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              l.chatMessageFailed,
+              style: AppTypography.caption
+                  .copyWith(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
         ],
       ),
     );

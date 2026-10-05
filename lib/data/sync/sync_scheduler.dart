@@ -1,10 +1,10 @@
 /// **Quand on synchronise — et quand on ne synchronise pas.**
 ///
 /// Trois déclencheurs, posés par ADR-0017 : **ouverture** de l'application,
-/// **retour au premier plan**, **tirer-pour-rafraîchir**. Le **signal d'un fil
-/// ouvert** ([SyncTrigger.openThread], #101) est le quatrième, et le **réveil
-/// push** ([SyncTrigger.pushWake], #97) le cinquième. Tous deux se sont branchés
-/// ici comme annoncé : un appel de plus à [trigger], et rien d'autre.
+/// **retour au premier plan**, **tirer-pour-rafraîchir**. Le **canal temps
+/// réel** ([SyncTrigger.realtime], #101 puis #140) est le quatrième, et le
+/// **réveil push** ([SyncTrigger.pushWake], #97) le cinquième. Tous deux se sont
+/// branchés ici comme annoncé : un appel de plus à [trigger], et rien d'autre.
 ///
 /// **Jamais de polling.** Il n'y a aucun `Timer` dans ce fichier, et il ne doit
 /// pas en apparaître (`test/sync/sync_scheduler_test.dart` le vérifie). Un
@@ -24,19 +24,19 @@ enum SyncTrigger {
   foreground,
   pullToRefresh,
 
-  /// **Un signal reçu sur le canal d'un fil ouvert** (#101) : le temps réel par
-  /// SSE pendant qu'une conversation est affichée.
+  /// **Le canal temps réel `users/{id}` le demande** (#140) : il vient de
+  /// s'ouvrir (première fois ou reconnexion — un canal neuf n'a aucune mémoire
+  /// de la coupure), ou il a rangé une ligne qui cite un groupe que le magasin ne
+  /// connaît pas.
   ///
-  /// Un quatrième appel à [SyncScheduler.trigger], pas un quatrième mécanisme :
-  /// le moteur fait exactement la même chose, et c'est tout l'intérêt — un signal
-  /// SSE est un **accélérateur de notification** (ADR-0006), jamais une source de
-  /// vérité. Le réveil push ([SyncTrigger.pushWake]) s'y est branché de la même
-  /// façon.
+  /// Le canal **range lui-même** ses lignes (`MessagingStoreWriter`) ; ce
+  /// déclencheur n'est que le **rattrapage**, la synchronisation restant la
+  /// vérité (ADR-0006, piège 4 du plan). Il remplace le signal du canal par
+  /// groupe de #101 (`openThread`), retiré avec ce canal.
   ///
-  /// ⚠️ Ce n'est **pas** une notification : le canal ne vit que tant que l'écran
-  /// est affiché. Application en arrière-plan ou fermée, il n'y a aucun signal —
-  /// voir `lib/data/realtime/group_channel.dart`.
-  openThread,
+  /// ⚠️ Ce n'est **pas** une notification : le canal ne vit qu'au premier plan.
+  /// Application en arrière-plan ou fermée, c'est le réveil push.
+  realtime,
 
   /// **Un réveil push reçu application ouverte** (#97).
   ///
@@ -57,9 +57,10 @@ enum SyncTrigger {
 /// Sérialise les déclenchements et écoute le cycle de vie de l'application.
 ///
 /// **Un seul cycle à la fois** : un retour au premier plan pendant qu'un
-/// tirer-pour-rafraîchir est en cours ne lance pas un second cycle, il rejoint
-/// celui qui tourne. Deux cycles concurrents se disputeraient les mêmes
-/// curseurs et les mêmes jetons de resync.
+/// tirer-pour-rafraîchir est en cours ne lance pas un second cycle **en même
+/// temps** — deux cycles concurrents se disputeraient les mêmes curseurs et les
+/// mêmes jetons de resync. Il en programme un **après** (#140, voir
+/// [trigger]) : rejoindre le cycle en vol pouvait perdre le signal.
 class SyncScheduler with WidgetsBindingObserver {
   SyncScheduler(this._synchronize, {WidgetsBinding? binding})
       : _binding = binding;
@@ -144,13 +145,54 @@ class SyncScheduler with WidgetsBindingObserver {
     }
   }
 
-  /// Lance un cycle, ou rejoint celui qui tourne déjà.
+  /// Lance un cycle — ou, si un cycle tourne déjà, **en promet un second
+  /// juste après lui**.
   ///
-  /// Rend le rapport, ou `null` si le cycle a échoué — voir [lastFailure].
+  /// Rend le rapport du cycle qui couvre ce déclencheur, ou `null` s'il a
+  /// échoué — voir [lastFailure].
+  ///
+  /// ## Pourquoi rejoindre le cycle en vol ne suffisait pas (#140)
+  ///
+  /// Ce planificateur se contentait de rendre le cycle en cours. Or un cycle
+  /// parcourt les collections **une à une** : un déclencheur reçu pendant qu'il
+  /// tire `announcements` dit peut-être qu'un message vient d'arriver, et
+  /// `group_messages` est déjà passé. Le déclencheur était alors « rejoint »…
+  /// par un cycle qui ne le verrait jamais. Le message attendait le déclencheur
+  /// suivant — un retour au premier plan, des minutes plus tard. Le plan
+  /// (`messagerie-whatsapp-plan.md` §2) l'a relevé : `trigger()` pouvait perdre
+  /// un signal.
+  ///
+  /// Désormais, un déclencheur reçu pendant un cycle en **programme un autre**,
+  /// lancé dès que le premier rend la main. Il est **coalescé** : dix
+  /// déclencheurs pendant le même cycle n'en programment qu'un, qui les couvre
+  /// tous puisqu'il part après eux. Deux cycles ne tournent toujours jamais en
+  /// même temps — ils se disputeraient les mêmes curseurs.
+  ///
+  /// Le planificateur ne sait pas quelle collection un déclencheur concerne, et
+  /// il n'a pas à le savoir : le second cycle ne coûte qu'un manifeste quand rien
+  /// n'a bougé (`has_changes: false` partout), et c'est ce qu'un signal perdu
+  /// coûtait de plus qu'on ne le paie.
   Future<SyncReport?> trigger(SyncTrigger reason) {
     final running = _inFlight;
-    if (running != null) return running;
+    if (running == null) return _start(reason);
 
+    _followUpReason = reason;
+    return _followUp ??= running.then((_) {
+      final followUpReason = _followUpReason ?? reason;
+      _followUp = null;
+      _followUpReason = null;
+      // Un cycle a pu repartir entre la fin du premier et ce rappel : il est
+      // parti **après** le déclencheur, il le couvre donc. Le rejoindre suffit.
+      return _inFlight ?? _start(followUpReason);
+    });
+  }
+
+  /// Le cycle promis à la fin du cycle en vol, s'il y en a un — partagé par
+  /// tous les déclencheurs reçus pendant ce cycle-là.
+  Future<SyncReport?>? _followUp;
+  SyncTrigger? _followUpReason;
+
+  Future<SyncReport?> _start(SyncTrigger reason) {
     lastTrigger = reason;
     final cycle = _run();
     _inFlight = cycle;

@@ -13,10 +13,10 @@
 /// | retour au premier plan | l'abonnement au cycle de vie posé par `SyncScheduler.start()` |
 /// | tirer-pour-rafraîchir | [pullToRefreshProvider], passé à un `RefreshIndicator` |
 ///
-/// Un quatrième s'y est ajouté depuis (#101), et il n'est pas d'ADR-0017 : le
-/// **signal d'un fil ouvert** ([openThreadSyncProvider]), c'est-à-dire le temps
-/// réel par SSE pendant qu'une conversation est affichée. Même mécanisme, même
-/// moteur, même écriture — seul le déclencheur est neuf.
+/// Un quatrième s'y est ajouté depuis (#101, refait par #140), et il n'est pas
+/// d'ADR-0017 : le **rattrapage du canal temps réel** ([realtimeSyncProvider]) —
+/// à chaque (re)connexion du canal `users/{id}`, et quand il cite un groupe
+/// inconnu. Même mécanisme, même moteur — seul le déclencheur est neuf.
 ///
 /// **Jamais de polling** : aucun `Timer`, et `test/sync/sync_scheduler_test.dart`
 /// le vérifie sur la source.
@@ -224,6 +224,9 @@ final syncSchedulerProvider = Provider<SyncScheduler>((ref) {
           for (final collection in syncedCollections())
             collection.tableIn(database.syncDao),
           database.pendingGroupMessages,
+          // L'outbox de la lecture (#140) entre dans le calcul des non-lus :
+          // ses flux se relisent avec les autres.
+          database.pendingGroupReads,
         });
   ref.onDispose(scheduler.dispose);
   return scheduler;
@@ -250,22 +253,17 @@ final pullToRefreshProvider = Provider<Future<void> Function()>((ref) {
   return () => ref.read(syncSchedulerProvider).refresh();
 });
 
-/// **Le déclencheur « un signal est arrivé sur le canal d'un fil ouvert »**
-/// (#101), sous la même forme que [pullToRefreshProvider].
+/// **Le déclencheur du canal temps réel** (#140), sous la même forme que
+/// [pullToRefreshProvider] : un cycle de **rattrapage**, demandé par
+/// `MessagingLink` à chaque (re)connexion du canal `users/{id}` et quand une
+/// ligne reçue cite un groupe que le magasin ne connaît pas.
 ///
-/// C'est le seul effet qu'un événement SSE produit : un cycle, le même que les
-/// trois autres déclencheurs. L'événement n'écrit **jamais** dans le magasin —
-/// voir `lib/data/realtime/group_channel.dart`, et `SyncTrigger.openThread` pour
-/// le pourquoi d'un quatrième nom.
+/// Le canal range lui-même les lignes qu'il porte ; ce cycle comble ce qu'il a
+/// pu manquer (coupure, bascule bleu/vert — piège 4 du plan).
 ///
-/// Le drapeau `AppEnv.useBackend` se lit **ici et non dans l'écran**, comme pour
-/// le tirer-pour-rafraîchir : sans backend il n'y a rien à synchroniser, et lire
-/// [syncSchedulerProvider] ouvrirait une base Drift pour ne rien tirer.
-///
-/// Rend le cycle **en cours** s'il y en a un : une rafale de messages dans une
-/// conversation animée rejoint le cycle qui tourne plutôt que d'en lancer un par
-/// message, ce qui ferait se disputer les mêmes curseurs.
-final openThreadSyncProvider = Provider<Future<void> Function()>((ref) {
+/// Le drapeau `AppEnv.useBackend` se lit **ici**, comme pour le
+/// tirer-pour-rafraîchir : sans backend il n'y a rien à synchroniser.
+final realtimeSyncProvider = Provider<Future<void> Function()>((ref) {
   if (!AppEnv.useBackend) return () async {};
-  return () => ref.read(syncSchedulerProvider).trigger(SyncTrigger.openThread);
+  return () => ref.read(syncSchedulerProvider).trigger(SyncTrigger.realtime);
 });

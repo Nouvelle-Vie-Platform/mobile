@@ -39,6 +39,8 @@ part 'group_dao.g.dart';
     GroupMessages,
     Profiles,
     PendingGroupMessages,
+    GroupReads,
+    PendingGroupReads,
     OfficialAccounts,
     Contributors,
   ],
@@ -59,6 +61,45 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
   /// ferait échouer aucun test, il montrerait simplement une carte de trop ou de
   /// moins.
   static const Set<String> joinablePolicies = {'open', 'request'};
+
+  /// **Les jointures de la position de lecture d'un groupe** (#140), à poser
+  /// derrière un `FROM … AS g` : la lecture servie (`r`), son message s'il est en
+  /// magasin (`rm`), et la lecture locale pas encore confirmée (`pr`).
+  ///
+  /// Écrites **une fois** et partagées par la liste des conversations et par le
+  /// fil : le compteur de la tuile et le séparateur « N messages non lus » ne
+  /// doivent jamais pouvoir dire deux choses différentes.
+  static const String _readJoins = '''
+LEFT JOIN group_reads AS r ON r.group_id = g.id
+LEFT JOIN group_messages AS rm ON rm.id = r.last_read_message_id
+LEFT JOIN pending_group_reads AS pr ON pr.group_id = g.id''';
+
+  /// **La formule des non-lus du contrat serveur** (M1a §2), pour un message
+  /// d'alias [m], **moi** étant la variable `?[me]`. Exige [_readJoins].
+  ///
+  /// Un message est non lu s'il n'est pas du serveur, pas de moi, et
+  /// **postérieur aux deux lectures** — la servie et la locale —, c'est-à-dire à
+  /// la plus avancée des deux. « Postérieur » se juge dans l'ordre du fil,
+  /// `(createdAt, id)` :
+  ///
+  /// - aucune lecture servie → tout est non lu (le premier message direct reçu) ;
+  /// - le message lu est en magasin → comparaison exacte au couple ;
+  /// - il n'y est pas (purgé, hors historique) → repli sur `lastReadAt`.
+  ///
+  /// ⚠️ `author_id IS NULL OR …` et non `author_id <> moi` seul : en SQL, une
+  /// comparaison à `NULL` est `NULL`, et le message d'un **auteur retiré**
+  /// (ADR-0032) cesserait silencieusement de compter. Les tombstones, eux, ont
+  /// quitté le magasin.
+  static String _isUnread(String m, int me) => '''
+($m.is_system = 0
+ AND ($m.author_id IS NULL OR $m.author_id <> ?$me)
+ AND (r.group_id IS NULL
+      OR COALESCE(rm.created_at, r.last_read_at) IS NULL
+      OR $m.created_at > COALESCE(rm.created_at, r.last_read_at)
+      OR (rm.id IS NOT NULL AND $m.created_at = rm.created_at AND $m.id > rm.id))
+ AND (pr.group_id IS NULL
+      OR $m.created_at > pr.message_created_at
+      OR ($m.created_at = pr.message_created_at AND $m.id > pr.message_id)))''';
 
   /// **Mes conversations**, groupes et tête-à-tête mêlés, triées par récence.
   ///
@@ -102,9 +143,12 @@ SELECT
   last.is_system      AS last_is_system,
   last.author_id      AS last_author_id,
   last.created_at     AS last_created_at,
-  COALESCE(last.created_at, g.updated_at, g.created_at) AS activity_at
+  COALESCE(last.created_at, g.updated_at, g.created_at) AS activity_at,
+  (SELECT COUNT(*) FROM group_messages AS u
+    WHERE u.group_id = g.id AND ${_isUnread('u', 1)}) AS unread_count
 FROM group_members AS me
 JOIN "groups" AS g ON g.id = me.group_id
+$_readJoins
 LEFT JOIN profiles AS peer ON peer.id = (
   SELECT other.user_id FROM group_members AS other
    WHERE other.group_id = g.id AND other.user_id <> me.user_id
@@ -119,7 +163,14 @@ WHERE me.user_id = ?1
 ORDER BY activity_at DESC, g.id DESC
 ''',
       variables: [Variable<String>(userId)],
-      readsFrom: {groups, groupMembers, groupMessages, profiles},
+      readsFrom: {
+        groups,
+        groupMembers,
+        groupMessages,
+        profiles,
+        groupReads,
+        pendingGroupReads,
+      },
     ).map(
       (row) => ConversationRecord(
         groupId: row.read<String>('group_id'),
@@ -138,6 +189,7 @@ ORDER BY activity_at DESC, g.id DESC
         lastIsSystem: row.read<bool?>('last_is_system'),
         lastAuthorId: row.read<String?>('last_author_id'),
         lastCreatedAt: row.read<DateTime?>('last_created_at'),
+        unreadCount: row.read<int>('unread_count'),
       ),
     );
   }
@@ -240,6 +292,13 @@ ORDER BY g.member_count DESC, g.name ASC, g.id ASC
   /// une fois, par SQLite, sur un `created_at` que les deux tables stockent dans
   /// la même unité.
   ///
+  /// ## Les [limit] plus récents seulement (#140)
+  ///
+  /// L'historique s'affiche **par pages** : le fil s'ouvre sur les derniers
+  /// messages, et l'écran élargit la fenêtre quand on remonte. Le tri descendant
+  /// borné est fait à l'intérieur, l'ordre chronologique rétabli à l'extérieur.
+  /// `null` = tout le fil.
+  ///
   /// ## La jointure d'auteur est **externe**, et c'est tout le contrat d'ADR-0032
   ///
   /// Un message dont `author_id` est nul — le serveur, ou un **auteur retiré** —
@@ -250,14 +309,25 @@ ORDER BY g.member_count DESC, g.name ASC, g.id ASC
   /// ## La réconciliation est un `NOT EXISTS`, pas une suppression
   ///
   /// Une ligne en attente cesse de paraître dès qu'une ligne de `group_messages`
-  /// porte le même `clientMessageId`. La supprimer au retour du `POST` aurait fait
+  /// porte le même `clientMessageId` — qu'elle arrive par le tirage ou par le
+  /// canal `users/{id}` (#140). La supprimer au retour du `POST` aurait fait
   /// **disparaître** le message de l'écran pendant le temps — court mais réel —
-  /// qui sépare la réponse du cycle de synchronisation qui ramène la ligne. Un
-  /// message qui clignote est pire qu'un message marqué « en cours d'envoi ».
-  /// [purgeReconciled] ramasse ensuite ; aucun écran n'en dépend.
-  Selectable<ThreadEntryRecord> threadOf(String groupId, String userId) {
+  /// qui sépare la réponse de l'arrivée de la ligne. Un message qui clignote est
+  /// pire qu'un message marqué « en cours d'envoi ». [purgeReconciled] ramasse
+  /// ensuite ; aucun écran n'en dépend.
+  ///
+  /// ## `is_unread` porte la formule des non-lus (#140)
+  ///
+  /// La même que le compteur de la liste ([_isUnread]) : c'est elle qui place le
+  /// séparateur « N messages non lus ». Un écho n'est jamais non lu.
+  Selectable<ThreadEntryRecord> threadOf(
+    String groupId,
+    String userId, {
+    int? limit,
+  }) {
     return customSelect(
       '''
+SELECT * FROM (
 SELECT
   m.id            AS entry_id,
   m.body          AS body,
@@ -267,8 +337,11 @@ SELECT
   0               AS is_pending,
   0               AS has_failed,
   author.display_name AS author_name,
-  author.avatar_url   AS author_avatar_url
+  author.avatar_url   AS author_avatar_url,
+  CASE WHEN ${_isUnread('m', 2)} THEN 1 ELSE 0 END AS is_unread
 FROM group_messages AS m
+JOIN (SELECT ?1 AS id) AS g
+$_readJoins
 LEFT JOIN profiles AS author ON author.id = m.author_id
 WHERE m.group_id = ?1
 UNION ALL
@@ -281,22 +354,37 @@ SELECT
   1,
   p.failed,
   me.display_name,
-  me.avatar_url
+  me.avatar_url,
+  0
 FROM pending_group_messages AS p
 LEFT JOIN profiles AS me ON me.id = ?2
 WHERE p.group_id = ?1
   AND NOT EXISTS (
-    SELECT 1 FROM group_messages AS g
-     WHERE g.client_message_id = p.client_message_id
+    SELECT 1 FROM group_messages AS gm
+     WHERE gm.client_message_id = p.client_message_id
   )
+ORDER BY created_at DESC, entry_id DESC
+LIMIT ?3
+)
 ORDER BY created_at ASC, entry_id ASC
 ''',
-      variables: [Variable<String>(groupId), Variable<String>(userId)],
-      readsFrom: {groupMessages, profiles, pendingGroupMessages},
+      variables: [
+        Variable<String>(groupId),
+        Variable<String>(userId),
+        // `LIMIT -1` : sans borne, en SQLite.
+        Variable<int>(limit ?? -1),
+      ],
+      readsFrom: {
+        groupMessages,
+        profiles,
+        pendingGroupMessages,
+        groupReads,
+        pendingGroupReads,
+      },
     ).map(
       (row) => ThreadEntryRecord(
         id: row.read<String>('entry_id'),
-        body: row.read<String>('body'),
+        body: row.read<String?>('body'),
         authorId: row.read<String?>('author_id'),
         isSystem: row.read<bool>('is_system'),
         createdAt: row.read<DateTime?>('created_at'),
@@ -304,8 +392,36 @@ ORDER BY created_at ASC, entry_id ASC
         hasFailed: row.read<bool>('has_failed'),
         authorName: row.read<String?>('author_name'),
         authorAvatarUrl: row.read<String?>('author_avatar_url'),
+        isUnread: row.read<bool>('is_unread'),
       ),
     );
+  }
+
+  /// **Le nombre de non-lus d'un groupe**, une fois (#140) — la formule de
+  /// [_isUnread]. Sert à l'ouverture du fil : la fenêtre de l'historique doit
+  /// être assez large pour contenir le premier non-lu, sur lequel le fil s'ouvre.
+  Future<int> unreadCountOf(String groupId, String userId) {
+    return customSelect(
+      '''
+SELECT COUNT(*) AS n
+FROM group_messages AS m
+JOIN (SELECT ?1 AS id) AS g
+$_readJoins
+WHERE m.group_id = ?1 AND ${_isUnread('m', 2)}
+''',
+      variables: [Variable<String>(groupId), Variable<String>(userId)],
+      readsFrom: {groupMessages, groupReads, pendingGroupReads},
+    ).map((row) => row.read<int>('n')).getSingle();
+  }
+
+  /// **Le magasin connaît-il ce groupe ?** (#140) Un événement du canal
+  /// `users/{id}` qui cite un groupe inconnu — un tête-à-tête ouvert par l'autre,
+  /// un ajout fait au portail — doit déclencher une synchronisation, qui ramène
+  /// le reste (profils, roster).
+  Future<bool> knowsGroup(String groupId) async {
+    final row = await (select(groups)..where((g) => g.id.equals(groupId)))
+        .getSingleOrNull();
+    return row != null;
   }
 
   /// **Le groupe**, avec le nom de son animateur quand le magasin le connaît.
@@ -455,6 +571,97 @@ LIMIT 1
         .write(const PendingGroupMessagesCompanion(failed: Value(true)));
   }
 
+  /// **L'envoi repart** (#140) : l'écho repasse « en cours », et l'écran cesse
+  /// de dire « pas parti » pendant qu'on réessaie.
+  Future<void> markPendingSending(String clientMessageId) {
+    return (update(pendingGroupMessages)
+          ..where((p) => p.clientMessageId.equals(clientMessageId)))
+        .write(const PendingGroupMessagesCompanion(failed: Value(false)));
+  }
+
+  /// **Les échos que le serveur n'a pas encore confirmés** (#140) — ceux que le
+  /// renvoi automatique rejoue, du plus ancien au plus récent : l'ordre de
+  /// rédaction est celui dans lequel ils doivent repartir.
+  ///
+  /// Ceux que le magasin a déjà réconciliés (la ligne serveur est arrivée) sont
+  /// écartés : les renvoyer ne créerait pas de doublon — la clé d'idempotence
+  /// l'interdit —, mais coûterait un aller-retour pour rien.
+  Future<List<PendingGroupMessageRow>> unconfirmedPending() {
+    return (select(pendingGroupMessages)
+          ..where(
+            (p) => notExistsQuery(
+              select(groupMessages)
+                ..where((g) => g.clientMessageId.equalsExp(p.clientMessageId)),
+            ),
+          )
+          ..orderBy([(p) => OrderingTerm.asc(p.createdAt)]))
+        .get();
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // La lecture — l'outbox `pending_group_reads` (#140)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// **Pose une lecture locale**, si elle avance sur la précédente.
+  ///
+  /// Monotone, comme la route serveur : un fil rouvert sur un message plus
+  /// ancien (une page d'historique) ne recule pas la lecture. Rend `true` si la
+  /// lecture a avancé, c'est-à-dire s'il y a quelque chose à envoyer.
+  Future<bool> rememberRead({
+    required String groupId,
+    required String messageId,
+    required DateTime messageCreatedAt,
+  }) {
+    return transaction(() async {
+      final current = await (select(pendingGroupReads)
+            ..where((r) => r.groupId.equals(groupId)))
+          .getSingleOrNull();
+      if (current != null && !_after(messageCreatedAt, messageId, current)) {
+        return false;
+      }
+      await into(pendingGroupReads).insert(
+        PendingGroupReadsCompanion.insert(
+          groupId: groupId,
+          messageId: messageId,
+          messageCreatedAt: messageCreatedAt,
+        ),
+        mode: InsertMode.insertOrReplace,
+      );
+      return true;
+    });
+  }
+
+  static bool _after(DateTime at, String id, PendingGroupReadRow current) {
+    final byTime = at.compareTo(current.messageCreatedAt);
+    if (byTime != 0) return byTime > 0;
+    return id.compareTo(current.messageId) > 0;
+  }
+
+  /// Les lectures locales encore à confirmer — ce que le renvoi rejoue.
+  Future<List<PendingGroupReadRow>> pendingReads() =>
+      select(pendingGroupReads).get();
+
+  /// **La lecture est confirmée** : la ligne locale part — mais seulement si
+  /// elle désigne toujours ce message. Une lecture plus récente posée pendant
+  /// l'aller-retour reste, et partira à son tour.
+  Future<void> forgetRead({
+    required String groupId,
+    required String messageId,
+  }) {
+    return (delete(pendingGroupReads)
+          ..where(
+            (r) => r.groupId.equals(groupId) & r.messageId.equals(messageId),
+          ))
+        .go();
+  }
+
+  /// **La lecture servie d'un groupe**, ou `null` — pour juger si une ligne
+  /// arrivée par le canal avance (`read.advanced` est monotone, l'ordre
+  /// d'arrivée ne l'est pas).
+  Future<GroupReadRow?> readOf(String groupId) =>
+      (select(groupReads)..where((r) => r.groupId.equals(groupId)))
+          .getSingleOrNull();
+
   /// Retire l'écho d'un message **abandonné** par qui l'avait écrit.
   Future<void> forgetPending(String clientMessageId) {
     return (delete(pendingGroupMessages)
@@ -538,7 +745,7 @@ WHERE m.id = ?1
         // contrainte d'ordre écrite par le cadrage de #96).
         groupName: row.read<String?>('group_name'),
         isDirect: row.read<bool?>('is_direct') ?? false,
-        body: row.read<String>('body'),
+        body: row.read<String?>('body'),
         authorId: row.read<String?>('author_id'),
         isSystem: row.read<bool>('is_system'),
         authorName: row.read<String?>('author_name'),
@@ -575,7 +782,9 @@ class MessageAnnouncement {
   final String? groupName;
 
   final bool isDirect;
-  final String body;
+
+  /// `null` pour un message-média (#140) : il n'y a pas de phrase à annoncer.
+  final String? body;
   final String? authorId;
   final bool isSystem;
 
@@ -609,6 +818,7 @@ class ConversationRecord {
     this.lastIsSystem,
     this.lastAuthorId,
     this.lastCreatedAt,
+    this.unreadCount = 0,
   });
 
   final String groupId;
@@ -625,10 +835,16 @@ class ConversationRecord {
   final String? peerName;
   final String? peerAvatarUrl;
 
+  /// `null` aussi quand le dernier message est un **média** (#140) : la tuile
+  /// le sait par [lastCreatedAt], qui reste renseigné.
   final String? lastBody;
   final bool? lastIsSystem;
   final String? lastAuthorId;
   final DateTime? lastCreatedAt;
+
+  /// Les messages non lus de cette conversation — la formule du contrat serveur
+  /// (`GroupDao._isUnread`).
+  final int unreadCount;
 }
 
 /// Une carte de la rangée « groupes à rejoindre ».
@@ -670,21 +886,24 @@ class DiscoverRecord {
 class ThreadEntryRecord {
   const ThreadEntryRecord({
     required this.id,
-    required this.body,
     required this.isSystem,
     required this.isPending,
     required this.hasFailed,
+    this.body,
     this.authorId,
     this.createdAt,
     this.authorName,
     this.authorAvatarUrl,
+    this.isUnread = false,
   });
 
   /// L'UUIDv7 serveur pour un message confirmé, le `clientMessageId` pour un
   /// écho.
   final String id;
 
-  final String body;
+  /// `null` pour un message-média (#140, piège 1). Un écho porte toujours un
+  /// texte.
+  final String? body;
   final String? authorId;
   final bool isSystem;
   final DateTime? createdAt;
@@ -698,6 +917,9 @@ class ThreadEntryRecord {
 
   final String? authorName;
   final String? authorAvatarUrl;
+
+  /// Non lu au sens du contrat (#140) — jamais vrai pour un écho.
+  final bool isUnread;
 }
 
 /// Un groupe et les trois propriétaires possibles, dont un seul est renseigné.

@@ -5,8 +5,13 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 
-/// Barre de saisie d'un message : champ arrondi (emoji, pièce jointe, photo)
-/// et bouton d'envoi circulaire de marque.
+/// Barre de saisie d'un message : champ arrondi et bouton d'envoi circulaire
+/// de marque.
+///
+/// **Ni emoji, ni pièce jointe, ni photo** (#140) : trois boutons étaient là, et
+/// aucun ne faisait rien. La règle est celle du sélecteur de canaux de
+/// connexion (#83) — **l'absence, pas le grisage** : un bouton qui ne répond pas
+/// est une promesse que personne ne tient. Ils reviendront avec les médias (M4).
 class MessageInputBar extends StatelessWidget {
   const MessageInputBar({
     super.key,
@@ -47,13 +52,9 @@ class MessageInputBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   border: Border.all(color: palette.border),
                 ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Row(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.emoji_emotions_outlined),
-                      color: palette.textSecondary,
-                      onPressed: () {},
-                    ),
                     Expanded(
                       child: TextField(
                         controller: controller,
@@ -76,17 +77,6 @@ class MessageInputBar extends StatelessWidget {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.attach_file),
-                      color: palette.textSecondary,
-                      onPressed: () {},
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.photo_camera_outlined),
-                      color: palette.textSecondary,
-                      onPressed: () {},
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
                   ],
                 ),
               ),

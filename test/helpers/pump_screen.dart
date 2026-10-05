@@ -14,7 +14,12 @@ import 'package:maison_du_miracle/data/radio/radio_channel.dart';
 import 'package:maison_du_miracle/data/radio/radio_handshake.dart';
 import 'package:maison_du_miracle/data/radio/radio_live_repository.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
-import 'package:maison_du_miracle/data/realtime/group_channel.dart';
+import 'package:maison_du_miracle/data/local/sync_dao.dart'
+    show SyncCollectionKey;
+import 'package:maison_du_miracle/data/messaging/group_history.dart';
+import 'package:maison_du_miracle/data/messaging/group_read_advancer.dart';
+import 'package:maison_du_miracle/data/messaging/messaging_channel.dart';
+import 'package:maison_du_miracle/data/messaging/messaging_store_writer.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
@@ -148,12 +153,11 @@ import 'playback_doubles.dart';
 /// Le **contrôleur d'écoute**, lui, n'est pas doublé : il observe le lecteur, et
 /// `contentPlayerProvider` est déjà inerte par défaut.
 ///
-/// Le **canal temps réel d'un groupe** ([channel]) est posé **muet** (#101), pour
-/// la raison de l'auth et de l'envoyeur de messages : l'implémentation réelle est
-/// SSE dès que `AppEnv.useBackend` est vrai, donc ouvrir une conversation
-/// ouvrirait une socket que `flutter test` refuse — en laissant derrière elle la
-/// minuterie de réouverture. Le défaut (aucun signal) est exactement le régime
-/// « sans SSE » que l'application doit tenir sans rien changer à l'écran.
+/// Le **canal temps réel `users/{id}`** ([channel]) est posé **muet** (#140),
+/// et l'envoi de la lecture ([readSender]) et l'historique ([history]) inertes,
+/// pour la raison de l'auth et de l'envoyeur de messages : les implémentations
+/// réelles parlent au réseau dès que `AppEnv.useBackend` est vrai, et
+/// `flutter test` répond 400 à tout accès réseau.
 /// Monte un **routeur** plutôt qu'un écran isolé, dans le même environnement.
 ///
 /// Nécessaire dès qu'un test porte sur la navigation : `context.pop()` et
@@ -180,7 +184,9 @@ Future<void> pumpRouter(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
-  GroupChannel? channel,
+  MessagingChannel? channel,
+  GroupReadSender? readSender,
+  GroupHistory? history,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
   RadioChannel? radioChannel,
@@ -209,6 +215,8 @@ Future<void> pumpRouter(
           updateThreshold: updateThreshold,
           echanges: echanges,
           channel: channel,
+          readSender: readSender,
+          history: history,
           radio: radio,
           handshake: handshake,
           radioChannel: radioChannel,
@@ -259,7 +267,9 @@ List<Override> _commonOverrides(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
-  GroupChannel? channel,
+  MessagingChannel? channel,
+  GroupReadSender? readSender,
+  GroupHistory? history,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
   RadioChannel? radioChannel,
@@ -293,18 +303,30 @@ List<Override> _commonOverrides(
       radioLiveRepositoryProvider.overrideWithValue(
         radioLive ?? const InertRadioLiveRepository(),
       ),
-      // **Le canal temps réel d'un groupe, posé muet** (#101), pour la raison de
-      // l'auth et de l'envoyeur de messages : l'implémentation réelle est SSE dès
-      // que `AppEnv.useBackend` est vrai — et il l'est hors surcharge —, donc
-      // ouvrir une conversation ouvrirait une socket que `flutter test` refuse, et
-      // laisserait derrière elle la minuterie de réouverture.
-      //
-      // Le défaut est **aucun signal**, ce qui est exactement le régime « sans
-      // SSE » que l'application doit tenir sans rien changer à l'écran.
-      // [channel] est un paramètre nommé et non un `Override` de plus — Riverpod 3
-      // refuse deux surcharges du même provider dans un même conteneur.
-      groupChannelProvider
-          .overrideWithValue(channel ?? const SilentGroupChannel()),
+      // **Le canal temps réel `users/{id}`, posé muet** (#140), pour la raison
+      // de l'auth et de l'envoyeur de messages : l'implémentation réelle est SSE
+      // dès que `AppEnv.useBackend` est vrai — et il l'est hors surcharge —, donc
+      // l'ouvrir ouvrirait une socket que `flutter test` refuse, et laisserait
+      // derrière elle la minuterie de réouverture. Le défaut est **aucun
+      // événement** : le régime « sans temps réel » que l'application doit tenir
+      // sans rien changer à l'écran. [channel] est un paramètre nommé et non un
+      // `Override` de plus — Riverpod 3 refuse deux surcharges du même provider.
+      messagingChannelProvider
+          .overrideWithValue(channel ?? const SilentMessagingChannel()),
+      // **La lecture et l'historique, sans réseau** (#140) — même raison :
+      // ouvrir un fil qui porte des non-lus ferait avancer la lecture, donc
+      // poster. La lecture locale est posée dans le vrai magasin (on peut la
+      // relire), l'envoi est inerte ([readSender] le remplace) ; l'historique ne
+      // va pas au-delà du magasin ([history] le remplace).
+      groupReadAdvancerProvider.overrideWith(
+        (ref) => GroupReadAdvancer(
+          dao: db.groupDao,
+          sender: readSender ?? const InertGroupReadSender(),
+          storeRead: (row) =>
+              MessagingStoreWriter(db).store(SyncCollectionKey.groupReads, row),
+        ),
+      ),
+      groupHistoryProvider.overrideWithValue(history ?? const NoGroupHistory()),
       // **La rubrique Échanges, posée sur un double vide** (#96), pour les deux
       // raisons qui valent déjà pour la médiathèque et les annonces : son
       // implémentation réelle lit le **magasin Drift** — donc ouvre des flux qu'une
@@ -435,7 +457,9 @@ Future<void> pumpScreen(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
-  GroupChannel? channel,
+  MessagingChannel? channel,
+  GroupReadSender? readSender,
+  GroupHistory? history,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
   RadioChannel? radioChannel,
@@ -470,6 +494,8 @@ Future<void> pumpScreen(
           updateThreshold: updateThreshold,
           echanges: echanges,
           channel: channel,
+          readSender: readSender,
+          history: history,
           radio: radio,
           handshake: handshake,
           radioChannel: radioChannel,
