@@ -4,8 +4,9 @@
 /// Il paraît dès que le contrôleur global tient une requête
 /// (`playbackControllerProvider != null`), d'où qu'elle vienne : la fiche, une
 /// carte de l'accueil, l'antenne. Il ne sait rien de l'écran qui a lancé la
-/// lecture, et rien non plus de l'écran qui le porte : c'est ce qui permettra de
-/// le remonter au niveau de l'application (#117) sans le réécrire.
+/// lecture, et rien non plus de l'écran qui le porte : c'est ce qui a permis de
+/// le remonter au niveau de l'application (#117, `MiniPlayerHost`) sans le
+/// réécrire. Où il se pose, et où il s'efface, c'est l'hôte qui le décide.
 ///
 /// Trois règles qui se ratent en silence :
 ///
@@ -134,8 +135,10 @@ class MiniPlayer extends ConsumerWidget {
 /// **Ouvre l'écran complet** de ce qui joue — la fiche, ou l'antenne.
 ///
 /// `GoRouter.maybeOf` d'abord, le routeur de l'application ensuite : posé au
-/// niveau de l'application (#117), le mini-lecteur vivra **au-dessus** du
-/// `Navigator`, là où aucun `GoRouter` ne se lit dans le contexte.
+/// niveau de l'application (#117), le mini-lecteur vit **au-dessus** du
+/// `Navigator`, là où le routeur ne se lit dans le contexte que parce que
+/// `MiniPlayerHost` l'y repose (`InheritedGoRouter`). Le repli ne sert qu'à un
+/// mini-lecteur monté sans hôte.
 ///
 /// Pousser la fiche ne recharge rien : `ContentPlayerView` ne charge pas un
 /// contenu que le lecteur tient déjà. C'est ce qui garde la place de l'auditeur.

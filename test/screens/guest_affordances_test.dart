@@ -70,6 +70,9 @@ const _notNavigation = <String>{
   'lib/router/app_router.dart',
   // Un exemple d'appel dans un commentaire de documentation.
   'lib/state/session_gate.dart',
+  // Les routes où le mini-lecteur s'efface (`MiniPlayerHost.hiddenRoutes`) :
+  // il compare leur nom à celui du sommet de la pile, il n'y pousse rien.
+  'lib/widgets/mini_player_host.dart',
 };
 
 /// `member-profile` → `memberProfile` : le nom de route tel que le routeur le

@@ -45,6 +45,7 @@ import 'package:maison_du_miracle/state/device_settings_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/state/vocabulary_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
+import 'package:maison_du_miracle/widgets/mini_player_host.dart';
 
 import 'playback_doubles.dart';
 
@@ -182,6 +183,7 @@ Future<void> pumpRouter(
   PlaybackProgressReporter? progress,
   PlayReporter? plays,
   PlaySpool? playSpool,
+  AnnouncementRepository? announcements,
 }) async {
   final db = database ?? AppDatabase(NativeDatabase.memory());
   if (database == null) addTearDown(db.close);
@@ -207,6 +209,7 @@ Future<void> pumpRouter(
           progress: progress,
           plays: plays,
           playSpool: playSpool,
+          announcements: announcements,
         ),
         ...overrides,
       ],
@@ -218,8 +221,15 @@ Future<void> pumpRouter(
         routerConfig: router,
         // Comme `app.dart` : la frontière vit **sous** `MaterialApp`, parce que
         // `context.words` y lit la locale que le framework vient de résoudre.
-        builder: (context, child) =>
-            VocabularyBoundary(child: child ?? const SizedBox.shrink()),
+        //
+        // **Le mini-lecteur aussi** (#117) : `app.dart` le pose au-dessus du
+        // `Navigator`, et un test de navigation doit voir ce que voit le fidèle.
+        builder: (context, child) => VocabularyBoundary(
+          child: MiniPlayerHost(
+            router: router,
+            child: child ?? const SizedBox.shrink(),
+          ),
+        ),
       ),
     ),
   );

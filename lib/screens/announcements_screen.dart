@@ -12,6 +12,7 @@ import '../state/session_gate.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_error_state.dart';
+import '../widgets/mini_player_host.dart';
 import '../widgets/status/status_background.dart';
 import '../widgets/status/status_content.dart';
 import '../widgets/status/status_list_sheet.dart';
@@ -318,6 +319,18 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     ref.listen<bool>(
         statusMutedProvider, (_, muted) => _player.setMuted(muted));
 
+    // **Le premier statut se charge quand le mur arrive**, pas seulement à la
+    // première image : le magasin répond de façon asynchrone, presque toujours
+    // après elle, et `_loadCurrent` y trouvait une liste vide. Rien n'était
+    // alors chargé ni signalé (`onVideoChanged`) avant le premier glissement —
+    // ni lecture, ni bouton central estompé, ni mini-lecteur masqué (#117).
+    ref.listen<AsyncValue<List<AnnouncementView>>>(announcementsProvider,
+        (previous, next) {
+      final had = previous?.value?.isNotEmpty ?? false;
+      final has = next.value?.isNotEmpty ?? false;
+      if (!had && has) _loadCurrent();
+    });
+
     // Le mur vient du magasin local : sa lecture est asynchrone, et les trois
     // états sont **distincts**. Un magasin vide au premier lancement est la
     // réponse normale — la synchronisation ne l'a pas encore rempli —, jamais
@@ -374,66 +387,74 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
         (myAccounts?.any((account) => account.id == current.accountId) ??
             false);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapUp: (details) => _onTapUp(details, width),
-      onLongPressStart: (_) => _setHeld(true),
-      onLongPressEnd: (_) => _setHeld(false),
-      onLongPressCancel: () => _setHeld(false),
-      child: Stack(
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: statuses.length,
-            onPageChanged: (index) {
-              setState(() => _index = index);
-              _loadCurrent();
-            },
-            itemBuilder: (context, index) => _StatusPage(
-              status: statuses[index],
-              isCurrent: index == _index,
-              player: _player,
-              topInset: _contentTopInset,
-              bottomInset: bottomInset,
-              actionsWidth: _actionsWidth(
-                compose: canCompose,
-                edit: canEditCurrent,
-              ),
-              onBodyScroll: _setScrolling,
-            ),
-          ),
-          Positioned(
-            top: MediaQuery.paddingOf(context).top + _progressTop,
-            left: AppSpacing.lg,
-            right: AppSpacing.lg,
-            child: ValueListenableBuilder<StatusPlayback>(
-              valueListenable: _player,
-              builder: (context, playback, _) {
-                final onCurrent = playback.statusId == statuses[_index].id;
-                return StatusSegmentedProgress(
-                  count: statuses.length,
-                  index: _index,
-                  progress: onCurrent ? playback.progress : 0,
-                  height: _progressHeight,
-                  color: overlayColor,
-                );
+    // **Le mini-lecteur s'efface sur toute la visionneuse** (#117), qu'un
+    // statut soit une image, un texte ou une vidéo : elle occupe l'écran, et la
+    // carte cacherait le bas du statut. La lecture continue ; la carte revient
+    // quand on quitte l'onglet, ou quand le mur se vide (cet arbre est alors
+    // remplacé par l'état vide, et la demande tombe avec lui).
+    return MiniPlayerShield(
+      hidden: widget.isActive,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapUp: (details) => _onTapUp(details, width),
+        onLongPressStart: (_) => _setHeld(true),
+        onLongPressEnd: (_) => _setHeld(false),
+        onLongPressCancel: () => _setHeld(false),
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              itemCount: statuses.length,
+              onPageChanged: (index) {
+                setState(() => _index = index);
+                _loadCurrent();
               },
+              itemBuilder: (context, index) => _StatusPage(
+                status: statuses[index],
+                isCurrent: index == _index,
+                player: _player,
+                topInset: _contentTopInset,
+                bottomInset: bottomInset,
+                actionsWidth: _actionsWidth(
+                  compose: canCompose,
+                  edit: canEditCurrent,
+                ),
+                onBodyScroll: _setScrolling,
+              ),
             ),
-          ),
-          Positioned(
-            top: MediaQuery.paddingOf(context).top + AppSpacing.lg,
-            right: AppSpacing.sm,
-            child: _Actions(
-              foreground: overlayColor,
-              muted: ref.watch(statusMutedProvider),
-              onToggleMute: () =>
-                  ref.read(statusMutedProvider.notifier).toggle(),
-              onOpenList: _openList,
-              onCompose: canCompose ? _requireCompose : null,
-              onEdit: canEditCurrent ? () => _requireEdit(current.id) : null,
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + _progressTop,
+              left: AppSpacing.lg,
+              right: AppSpacing.lg,
+              child: ValueListenableBuilder<StatusPlayback>(
+                valueListenable: _player,
+                builder: (context, playback, _) {
+                  final onCurrent = playback.statusId == statuses[_index].id;
+                  return StatusSegmentedProgress(
+                    count: statuses.length,
+                    index: _index,
+                    progress: onCurrent ? playback.progress : 0,
+                    height: _progressHeight,
+                    color: overlayColor,
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + AppSpacing.lg,
+              right: AppSpacing.sm,
+              child: _Actions(
+                foreground: overlayColor,
+                muted: ref.watch(statusMutedProvider),
+                onToggleMute: () =>
+                    ref.read(statusMutedProvider.notifier).toggle(),
+                onOpenList: _openList,
+                onCompose: canCompose ? _requireCompose : null,
+                onEdit: canEditCurrent ? () => _requireEdit(current.id) : null,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

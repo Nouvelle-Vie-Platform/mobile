@@ -443,12 +443,9 @@ Une carte flottante — vignette, titre, orateur, barre de progression, −30 s,
 lecture/pause, +30 s, ✕ — qui paraît **dès que le contrôleur tient une
 requête** (`ref.watch(playbackControllerProvider) != null`), d'où qu'elle
 vienne : la fiche, une carte de l'accueil, l'antenne. Cadrage :
-`docs/mini-lecteur.md`. Il vit pour l'instant dans `HomeShell`, dans le
-`Positioned` des bandeaux, **au plus bas** de la colonne (au-dessus de la
-barre) ; sa marge basse dégage la moitié du bouton central, qui déborde de la
-barre. Il ne dépend pas de la coquille : #117 le remontera au niveau de
-l'application (écrans empilés, masquage sur la fiche et la radio, marges des
-listes).
+`docs/mini-lecteur.md`. Il ne sait rien de l'écran qui le porte : **où il se
+pose et où il s'efface, c'est `MiniPlayerHost` qui le décide** (#117, voir
+plus bas).
 
 Six points qui se ratent en silence :
 
@@ -487,8 +484,64 @@ Six points qui se ratent en silence :
    sur une carte). Ce chemin ne se teste pas : le handler ne s'instancie pas
    sous `flutter test`.
 
+#### Le mini-lecteur partout (#117) — `widgets/mini_player_host.dart`
+
+Les routes sont plates (pas de `ShellRoute`) : un écran poussé recouvre `/home`
+et sa barre. Le mini-lecteur est donc monté **au-dessus du `Navigator`**, par
+le `builder` de `MaterialApp.router` (`app.dart`) — et **par celui de
+`pumpRouter`**, pour que les tests de navigation voient ce que voit le fidèle.
+Cinq points qui se ratent en silence :
+
+1. **La route du sommet se lit dans le routeur**
+   (`routerDelegate.currentConfiguration.last.route.name`, le délégué prévient
+   à chaque `push`/`pop`/`go`) — jamais par `GoRouterState.of`, introuvable
+   au-dessus du `Navigator`. Sur `/home`, la carte se pose au-dessus de la
+   barre (marge basse qui dégage la moitié du bouton central) ; ailleurs, au
+   ras de la zone sûre. **Masqué** (`MiniPlayerHost.hiddenRoutes`) sur
+   `/teaching/:id` et `/gathering/:id` (la fiche a déjà le lecteur complet ;
+   le rassemblement sans condition, sa fiche **est** un `ContentPlayerView`),
+   `/radio`, `/media-viewer`, et sur les parcours bloquants : `/`, `/auth*`,
+   `/legal/accept`. Il revient au dépilement. Masqué aussi **clavier ouvert**.
+   Tout changement d'état de l'hôte venu du routeur est **différé à la fin de
+   l'image** : le délégué prévient pendant que le `Navigator` se construit, et
+   un `setState` d'ancêtre y lève.
+2. **Les fenêtres surgissantes ne changent pas la route.** Dialogues, feuilles
+   du bas et menus sont comptés par un `MiniPlayerPopupObserver` posé dans les
+   `observers` de `routerProvider` ; la carte s'efface tant qu'il y en a un —
+   sinon elle flotterait **par-dessus** leur barrière. L'hôte le retrouve sur le
+   `Navigator` racine (`navigatorKey.currentState.widget.observers`) — jamais
+   par `routerDelegate.builder`, réservé aux tests par go_router —, après la
+   première image puisque ce `Navigator` se construit sous lui. Un routeur de
+   test sans cet observateur garde la carte sous ses dialogues.
+3. **Un écran masque la carte par `MiniPlayerShield(hidden: …)`**, déclaratif,
+   et qui ne vaut que si sa route est au sommet (`ModalRoute.isCurrentOf`). La
+   coquille l'emploie pour le **menu latéral ouvert** (la coquille rétrécie
+   glisse de côté ; une carte restée en bas flotterait détachée de tout), et
+   `AnnouncementsScreen` pour **toute la visionneuse de statuts** — image,
+   texte ou vidéo — tant que l'onglet est actif : la carte revient quand on le
+   quitte ou que le mur se vide, et la lecture continue dessous. ⚠️ Ce n'est
+   **pas** `dimFab` (statut vidéo), qui ne règle que le bouton central.
+4. **La marge des listes passe par `MediaQuery.padding.bottom`** (et
+   `viewPadding`) : l'hôte y ajoute la hauteur **mesurée** de la carte, marges
+   comprises, quand elle est visible. Les listes qui finissent déjà par la
+   marge basse de l'écran (médiathèque, accueil, Échanges, Profil, Annonces) et
+   les `SafeArea` du bas (la saisie d'un fil) s'écartent seules. Un écran qui
+   pose sa marge en dur la lit par `MiniPlayerHost.insetOf` (le formulaire
+   d'un onglet réservé). ⚠️ **La coquille retire cette marge autour de son
+   `Scaffold`** (`WithoutMiniPlayerInset`) — sa `BottomAppBar` porte une
+   `SafeArea` et grandirait d'autant — et la rend à ses onglets
+   (`WithMiniPlayerInset`). Les bandeaux de mise à jour et de mention légale
+   lisent ce padding sur le contexte de la coquille : ils montent donc au-dessus
+   de la carte d'eux-mêmes.
+5. **Au-dessus du `Navigator`, aucun `GoRouter` dans le contexte** : l'hôte
+   repose le sien par `InheritedGoRouter`, pour que l'appui sur la carte pousse
+   dans le bon routeur (celui d'un test, notamment). Et pas d'`Overlay` non
+   plus : aucun `Tooltip` dans le mini-lecteur.
+
 Côté tests : `test/widgets/mini_player_test.dart`, par `pumpRouter` (vraie
-coquille, vrai accueil, vraie fiche, lecteur inerte). Le lecteur inerte ne
+coquille, vrai accueil, vraie fiche, lecteur inerte), et
+`test/widgets/mini_player_host_test.dart` pour #117 (écrans empilés, masquages,
+marges, bandeaux, invité = membre). Le lecteur inerte ne
 décode rien : les états (durée, fin, panne) se **peignent** par
 `InertContentPlayer.emit`. Et jamais `pumpAndSettle` : le bouton de l'antenne
 et la barre indéterminée tournent sans fin.

@@ -8,14 +8,13 @@ import '../router/app_router.dart';
 import '../state/auth_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_responsive.dart';
-import '../theme/app_spacing.dart';
 import '../widgets/app_background.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_drawer_menu.dart';
 import '../widgets/app_update_banner.dart';
 import '../widgets/home_tab.dart';
 import '../widgets/legal_notice_banner.dart';
-import '../widgets/mini_player.dart';
+import '../widgets/mini_player_host.dart';
 import 'announcements_screen.dart';
 import 'auth/sign_in_tab.dart';
 import 'groups_screen.dart';
@@ -82,17 +81,6 @@ class HomeShell extends ConsumerStatefulWidget {
   @override
   ConsumerState<HomeShell> createState() => _HomeShellState();
 }
-
-/// La marge du mini-lecteur dans la coquille : la gouttière de l'écran sur les
-/// côtés, et en bas de quoi dégager le bouton central — la moitié d'un
-/// `FloatingActionButton` standard (56 px) dépasse au-dessus de la barre, plus
-/// un intervalle.
-const EdgeInsets _miniPlayerMargin = EdgeInsets.fromLTRB(
-  AppSpacing.sm,
-  AppSpacing.sm,
-  AppSpacing.sm,
-  56 / 2 + AppSpacing.sm,
-);
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   HomeTab _tab = HomeTab.home;
@@ -214,7 +202,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     // et personne n'a à y retoucher. C'est ce qui remplace le geste rejoué.
     final isGuest = ref.watch(authProvider.select((state) => state.isGuest));
 
-    final main = Scaffold(
+    // **Sans la place du mini-lecteur** : la `BottomAppBar` porte une
+    // `SafeArea`, et grandirait de la hauteur de la carte (#117).
+    final main = WithoutMiniPlayerInset(
+        child: Scaffold(
       extendBody: true,
       body: Stack(
         fit: StackFit.expand,
@@ -224,16 +215,23 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             // lecture est bornée et centrée ; la barre du bas et le FAB, eux,
             // restent à l'échelle de l'écran. Inerte sur téléphone — voir
             // `ContentMaxWidth`.
-            child: IndexedStack(
-              key: HomeShell.tabsKey,
-              // **L'index, enfin réduit à ce qu'il est** : la position de
-              // l'onglet dans l'ordre déclaré. Il ne circule plus, il se
-              // calcule.
-              index: _tab.index,
-              children: [
-                for (final tab in HomeTab.values)
-                  _screenFor(tab, isGuest: isGuest),
-              ],
+            //
+            // **La place du mini-lecteur, rendue aux onglets** (#117) : retirée
+            // autour du `Scaffold` pour que la barre ne grandisse pas, elle est
+            // rajoutée ici, et l'accueil, Échanges, Profil et Annonces, qui
+            // finissent déjà par la marge basse de l'écran, s'écartent d'eux-mêmes.
+            child: WithMiniPlayerInset(
+              child: IndexedStack(
+                key: HomeShell.tabsKey,
+                // **L'index, enfin réduit à ce qu'il est** : la position de
+                // l'onglet dans l'ordre déclaré. Il ne circule plus, il se
+                // calcule.
+                index: _tab.index,
+                children: [
+                  for (final tab in HomeTab.values)
+                    _screenFor(tab, isGuest: isGuest),
+                ],
+              ),
             ),
           ),
           // **La mention légale du premier lancement**, posée par-dessus les
@@ -255,15 +253,13 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           // en masqueraient un. Chacun se retire de lui-même quand il n'a rien
           // à dire, la colonne est alors vide et ne mesure rien.
           //
-          // **Le mini-lecteur (#116) prend la place la plus basse**, juste
-          // au-dessus de la barre : il revient à chaque écoute, les bandeaux une
-          // fois, et c'est lui que le pouce cherche. Les bandeaux montent
-          // au-dessus de lui quand il est là, et retrouvent leur place quand il
-          // s'en va — il ne mesure rien quand rien n'est chargé.
-          //
-          // Sa marge basse laisse passer le **bouton central**, docké à cheval
-          // sur le bord de la barre : la moitié de sa hauteur dépasse
-          // au-dessus, et une carte posée à ras de la barre passerait dessous.
+          // **Le mini-lecteur prend la place la plus basse**, juste au-dessus
+          // de la barre : il revient à chaque écoute, les bandeaux une fois, et
+          // c'est lui que le pouce cherche. Il ne vit plus ici mais au-dessus du
+          // `Navigator` (#117, `MiniPlayerHost`), qui ajoute sa hauteur à
+          // `MediaQuery.padding.bottom` : lu sur le contexte de la coquille, ce
+          // padding monte donc les bandeaux au-dessus de lui quand il est là, et
+          // les rend à leur place quand il s'en va.
           Positioned(
             left: 0,
             right: 0,
@@ -274,7 +270,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               children: [
                 AppUpdateBanner(),
                 LegalNoticeBanner(),
-                MiniPlayer(margin: _miniPlayerMargin),
               ],
             ),
           ),
@@ -297,35 +292,44 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         current: _tab,
         onSelect: _showTab,
       ),
-    );
+    ));
 
-    return PopScope(
-      canPop: !_menuOpen,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        _drawer.close?.call();
-      },
-      child: ZoomDrawer(
-        controller: _drawer,
-        menuScreen: AppDrawerMenu(
-          currentTab: _tab,
-          onHome: _goHome,
-          onTerms: () => _openDocument(
-            AppRoute.legalDocument,
-            kind: LegalDocumentKind.terms,
+    // **Le mini-lecteur s'efface** (#117) pendant que le menu latéral est
+    // ouvert — la coquille rétrécie glisse de côté, et une carte restée en bas
+    // de l'écran flotterait par-dessus le menu, détachée de tout. La
+    // visionneuse d'Annonces le masque elle-même (`AnnouncementsScreen`), sur
+    // tout statut et pas seulement une vidéo : `dimFab` ne règle que le bouton
+    // central.
+    return MiniPlayerShield(
+      hidden: _menuOpen,
+      child: PopScope(
+        canPop: !_menuOpen,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          _drawer.close?.call();
+        },
+        child: ZoomDrawer(
+          controller: _drawer,
+          menuScreen: AppDrawerMenu(
+            currentTab: _tab,
+            onHome: _goHome,
+            onTerms: () => _openDocument(
+              AppRoute.legalDocument,
+              kind: LegalDocumentKind.terms,
+            ),
+            onPrivacy: () => _openDocument(
+              AppRoute.legalDocument,
+              kind: LegalDocumentKind.privacy,
+            ),
+            onAbout: () => _openDocument(AppRoute.about),
           ),
-          onPrivacy: () => _openDocument(
-            AppRoute.legalDocument,
-            kind: LegalDocumentKind.privacy,
-          ),
-          onAbout: () => _openDocument(AppRoute.about),
+          mainScreen: AppBackground(child: main),
+          disableDragGesture: true,
+          mainScreenTapClose: true,
+          angle: 0,
+          menuBackgroundColor: AppColors.primary,
+          showShadow: true,
         ),
-        mainScreen: AppBackground(child: main),
-        disableDragGesture: true,
-        mainScreenTapClose: true,
-        angle: 0,
-        menuBackgroundColor: AppColors.primary,
-        showShadow: true,
       ),
     );
   }
