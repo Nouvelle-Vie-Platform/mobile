@@ -886,7 +886,6 @@ class DiscoverRecord {
 class ThreadEntryRecord {
   const ThreadEntryRecord({
     required this.id,
-    required this.body,
     required this.isSystem,
     required this.isPending,
     required this.hasFailed,
