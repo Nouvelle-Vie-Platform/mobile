@@ -114,11 +114,32 @@ class StoreAnnouncementRepository implements AnnouncementRepository {
                     // qu'on rouvre pour changer sa date de fin n'a ni titre ni
                     // corps, et serait refusée à tort comme « rien à publier ».
                     hasBackgroundImage: row.backgroundImageUrl != null,
+                    // De même pour un audio ou une vidéo : un statut qui n'est
+                    // qu'un média est valide. Lu par la règle unique, pour qu'un
+                    // genre inconnu ne compte pas plus ici qu'à l'écran.
+                    hasMedia: _hasMedia(kind: row.mediaKind, url: row.mediaUrl),
                   ),
           );
 
+  static bool _hasMedia({String? kind, String? url}) {
+    final media = readStatusMedia(kind: kind, url: url);
+    return media.audio != null || media.video != null;
+  }
+
   AnnouncementView _view(AnnouncementWithRefs row) {
     final background = row.background;
+    final announcement = row.announcement;
+    // Le média se lit **une fois**, par la fonction qui porte le contrat
+    // serveur : genre inconnu ou URL absente ⇒ pas de média, affiche repliée sur
+    // l'image de fond, au plus un des deux.
+    final media = readStatusMedia(
+      kind: announcement.mediaKind,
+      url: announcement.mediaUrl,
+      posterUrl: announcement.mediaPosterUrl,
+      durationMs: announcement.mediaDurationMs,
+      waveform: announcement.mediaWaveform,
+      backgroundImageUrl: announcement.backgroundImageUrl,
+    );
     return AnnouncementView.resolve(
       id: row.announcement.id,
       publishedAt: row.announcement.publishedAt,
@@ -152,8 +173,8 @@ class StoreAnnouncementRepository implements AnnouncementRepository {
       // un statut expiré, à la seconde.
       expiresAt: row.announcement.expiresAt,
       isPinned: row.announcement.isPinned,
-      // `audio` et `video` restent nuls : le serveur ne sert aucun média de
-      // statut tant que le transcodage n'est pas livré (phase 2).
+      audio: media.audio,
+      video: media.video,
     );
   }
 }

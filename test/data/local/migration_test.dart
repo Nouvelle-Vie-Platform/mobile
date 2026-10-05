@@ -722,6 +722,84 @@ void main() {
     expect(await db.syncDao.cursorFor('menu_entries'), isNull);
   });
 
+  test('v18 → v19 : les cinq colonnes du média des annonces naissent',
+      () async {
+    // Le palier du média des annonces (#130) : cinq colonnes nullables sur
+    // `announcements`, et rien d'autre côté schéma.
+    final connection = await verifier.startAt(18);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 19);
+  });
+
+  test('v1 → v19 : un appareil resté en v1 rejoue tous les paliers', () async {
+    // ⚠️ Le cas qui compte : `announcements` naît au palier v2 → v3 **dans sa
+    // forme courante**, colonnes du média comprises. Le palier v18 → v19 ne
+    // doit donc pas les ajouter une seconde fois (« duplicate column »).
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 19);
+  });
+
+  test('v2 → v19 : la table des annonces, créée en route, a son média',
+      () async {
+    final connection = await verifier.startAt(2);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 19);
+  });
+
+  test(
+      'v18 → v19 : les annonces survivent sans média, et leur curseur part '
+      'pour que le média jeté revienne', () async {
+    // Un téléphone resté en v18 a pu recevoir une annonce audio ou vidéo du
+    // serveur (`server-portal#477`) : il en a gardé le texte et **jeté le
+    // média**, faute de colonne, et son curseur est passé dessus. Sans
+    // l'effacer, l'annonce resterait muette jusqu'à sa prochaine modification
+    // au portail — c'est-à-dire, presque toujours, pour toujours.
+    final schema = await verifier.schemaAt(18);
+    schema.rawDatabase.execute(
+      "INSERT INTO announcements (id, account_id, body, published_at, "
+      "is_pinned, sync_stamp) "
+      "VALUES ('a-1', 1, 'Un mot du pasteur.', 1700000000, 0, 1)",
+    );
+    schema.rawDatabase.execute(
+      "INSERT INTO sync_cursors (collection, cursor, synced_at) "
+      "VALUES ('announcements', 'un-curseur-opaque', 1)",
+    );
+    schema.rawDatabase.execute(
+      "INSERT INTO sync_cursors (collection, cursor, synced_at) "
+      "VALUES ('teachings', 'un-autre-curseur', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 19);
+
+    // La ligne reste : remplacer, jamais purger d'abord (règle 3). Le mur ne
+    // se vide pas pendant la reprise.
+    final row = (await db.select(db.announcements).get()).single;
+    expect(row.body, 'Un mot du pasteur.');
+    expect(row.mediaKind, isNull);
+    expect(row.mediaUrl, isNull);
+    expect(row.mediaPosterUrl, isNull);
+    expect(row.mediaDurationMs, isNull);
+    expect(row.mediaWaveform, isNull);
+
+    expect(
+      await db.syncDao.cursorFor('announcements'),
+      isNull,
+      reason: 'sans effacement, la collection ne serait jamais re-tirée et le '
+          'média jeté en v18 ne reviendrait pas',
+    );
+    // Le palier ne vise qu'une collection : les autres gardent leur place.
+    expect(await db.syncDao.cursorFor('teachings'), 'un-autre-curseur');
+  });
+
   test('la version de schéma couvre bien toutes les versions exportées', () {
     final db = openTestDatabase();
     addTearDown(db.close);

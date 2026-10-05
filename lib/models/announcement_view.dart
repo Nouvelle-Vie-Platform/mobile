@@ -127,9 +127,8 @@ enum StatusKind { text, image, audio, video }
 
 /// Piste audio d'un statut (message vocal).
 ///
-/// **Hors périmètre tant que le transcodage n'est pas livré** : le serveur ne
-/// sert aujourd'hui aucun média de statut. Le type survit pour la maquette et
-/// pour la phase 2 ; le magasin, lui, ne le peuple jamais.
+/// Servie par le serveur depuis la tranche 2 de « Sparks » (`server-portal#477`)
+/// et peuplée par le magasin depuis #130 — voir [readStatusMedia].
 @immutable
 class StatusAudio {
   const StatusAudio({
@@ -138,35 +137,104 @@ class StatusAudio {
     this.waveform = const [],
   });
 
+  /// Playlist HLS maître, **URL absolue**.
   final String url;
 
-  /// Durée annoncée par le back, en millisecondes (`null` = inconnue).
+  /// Durée mesurée par le transcodeur, en millisecondes (`null` = inconnue).
+  ///
+  /// Second maillon de la durée effective : la durée **réelle** du lecteur
+  /// prime dès qu'il la connaît, et le défaut par type (`StatusDurations`) ne
+  /// sert qu'en dernier.
   final int? durationMs;
 
-  /// Hauteurs de barres précalculées (0–100).
+  /// Hauteurs de barres servies (0–100) — trente-six, tirées par le serveur de
+  /// la passe de normalisation.
   ///
   /// Peut être vide : l'UI replie alors sur une forme déterministe dérivée de
   /// l'identifiant du statut (jamais de `Random()`).
   final List<int> waveform;
 }
 
-/// Piste vidéo d'un statut. **Hors périmètre**, comme [StatusAudio].
+/// Piste vidéo d'un statut. Peuplée depuis #130, comme [StatusAudio].
 @immutable
 class StatusVideo {
   const StatusVideo({
     required this.url,
-    required this.poster,
+    this.poster,
     this.durationMs,
   });
 
+  /// Playlist HLS maître, **URL absolue**.
   final String url;
 
-  /// Image d'aperçu — **requise** : elle porte tout l'affichage en phase 1 et
-  /// couvre le temps de chargement en phase 2.
-  final String poster;
+  /// Image d'aperçu, **URL absolue** : elle couvre le temps de chargement,
+  /// jusqu'à la première image de la vidéo.
+  ///
+  /// Le serveur la sert sur **tout** statut vidéo — l'image déposée, sinon la
+  /// vignette extraite par le transcodeur. Elle n'est nullable que parce que le
+  /// magasin ne refuse pas une ligne pour une affiche manquante : sans elle,
+  /// c'est l'image de fond, puis le dégradé du statut, qui couvrent l'attente.
+  final String? poster;
 
-  /// Durée annoncée par le back, en millisecondes (`null` = inconnue).
+  /// Durée mesurée par le transcodeur, en millisecondes (`null` = inconnue).
   final int? durationMs;
+}
+
+/// **Les cinq champs `media*` servis à plat, lus en un média de statut** — ou en
+/// aucun.
+///
+/// C'est **le seul endroit** où ce contrat se lit (`announcement_transformer.ts`
+/// côté serveur), pour le magasin comme pour toute autre source :
+///
+/// - `mediaKind` vaut `'audio'` ou `'video'` ; toute autre valeur — un genre
+///   que ce client ne connaît pas encore — se lit **« pas de média »**, et le
+///   statut s'affiche avec ce qu'il a d'autre (texte, image) ;
+/// - un genre **sans URL** se lit aussi « pas de média ». Le serveur ne laisse
+///   jamais transiter une telle annonce (ADR-0034 étendu), mais un lecteur qui
+///   recevrait une URL vide n'aurait rien d'honnête à jouer ;
+/// - les URL passent par [resolveMediaUrl], comme toutes celles du domaine : le
+///   serveur peut les servir relatives ;
+/// - **au plus un** des deux est rendu : une vidéo porte déjà son son ;
+/// - l'affiche d'une vidéo se replie sur `backgroundImageUrl` (« une seule
+///   image, deux rôles », décision 5 du plan « Sparks ») ;
+/// - une durée nulle ou négative vaut inconnue : elle passerait sinon devant
+///   le défaut par type et finirait le statut à la seconde où il commence ;
+/// - la forme d'onde est recopiée telle quelle — vide quand absente — et ne
+///   concerne que l'audio.
+({StatusAudio? audio, StatusVideo? video}) readStatusMedia({
+  String? kind,
+  String? url,
+  String? posterUrl,
+  int? durationMs,
+  List<int>? waveform,
+  String? backgroundImageUrl,
+}) {
+  final resolved = resolveMediaUrl(url);
+  if (resolved == null) return (audio: null, video: null);
+  final duration = (durationMs != null && durationMs > 0) ? durationMs : null;
+  switch (kind) {
+    case 'audio':
+      return (
+        audio: StatusAudio(
+          url: resolved,
+          durationMs: duration,
+          waveform: List<int>.unmodifiable(waveform ?? const <int>[]),
+        ),
+        video: null,
+      );
+    case 'video':
+      return (
+        audio: null,
+        video: StatusVideo(
+          url: resolved,
+          poster:
+              resolveMediaUrl(posterUrl) ?? resolveMediaUrl(backgroundImageUrl),
+          durationMs: duration,
+        ),
+      );
+    default:
+      return (audio: null, video: null);
+  }
 }
 
 /// Une **annonce telle qu'un écran l'affiche** : un statut, signé par un compte
@@ -281,8 +349,8 @@ class AnnouncementView {
   /// Épinglé en tête du mur.
   final bool isPinned;
 
-  /// **Hors périmètre** : le serveur ne sert aucun média de statut (phase 2,
-  /// transcodage). Toujours nuls quand la source est le magasin.
+  /// Le média temporel, **au plus un** des deux (voir [readStatusMedia]).
+  /// `null` pour un statut texte ou image — le cas le plus courant.
   final StatusAudio? audio;
   final StatusVideo? video;
 

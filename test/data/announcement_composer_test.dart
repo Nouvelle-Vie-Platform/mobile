@@ -376,6 +376,12 @@ void main() {
       },
     );
 
+    test('un statut qui n\'est qu\'un média est valide', () {
+      final draft = AnnouncementDraft(accountId: 3, hasMedia: true);
+
+      expect(draft.issuesAt(now), isEmpty);
+    });
+
     test('une fin antérieure au début est refusée', () {
       final draft = AnnouncementDraft(
         accountId: 3,

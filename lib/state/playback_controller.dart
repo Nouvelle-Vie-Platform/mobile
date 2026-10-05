@@ -64,6 +64,7 @@ import 'measurement_providers.dart';
 import 'mediatheque_providers.dart';
 import 'playback_progress_providers.dart';
 import 'player_providers.dart';
+import 'radio_providers.dart';
 
 /// **Le contrôleur, et la requête courante qu'il publie.**
 ///
@@ -142,6 +143,13 @@ class PlaybackController extends Notifier<ContentRequest?> {
 
   /// L'observateur du cycle de vie, posé au premier contenu suivi.
   _AppPausedObserver? _lifecycle;
+
+  /// **Ce qu'un statut à son a mis en pause** (#130), `null` sinon.
+  ///
+  /// Retenu par son identifiant, et lu **sur le lecteur** à la reprise : le
+  /// lecteur reste juge de ce qu'il tient. Un contenu arrêté ou remplacé
+  /// pendant le statut ne revient pas.
+  ({String contentId, String? title})? _interruptedByStatus;
 
   /// L'état du lecteur **à cet instant** — pour l'appelant qui doit le relire
   /// après un `await`, quand son propre `ref` n'est peut-être plus monté.
@@ -358,6 +366,59 @@ class PlaybackController extends Notifier<ContentRequest?> {
   /// **Repart d'une panne à la position atteinte**, jamais du début : c'est la
   /// promesse du bouton « Reprendre » (#42).
   Future<void> resume() => _player.resume();
+
+  /// **Un statut à son commence : ce qui joue se tait** (#130, décision du
+  /// 05/10/2026).
+  ///
+  /// Une annonce vocale ou vidéo par-dessus un prêche ou l'antenne, c'est deux
+  /// voix à la fois : on n'entend ni l'une ni l'autre. Le lecteur principal se
+  /// met donc en **pause** — pas en arrêt : la notification reste, la position
+  /// aussi, et l'enregistreur de reprise écrit sur cette pause comme sur toute
+  /// autre (#115).
+  ///
+  /// Sans effet quand rien ne joue — une lecture déjà en pause n'a pas à
+  /// reprendre ensuite, et la relancer serait faire sortir du son que personne
+  /// n'a demandé — et idempotent : chaque statut à son du même passage dans la
+  /// visionneuse le rappelle, seule la première interruption compte.
+  ///
+  /// Un statut **sans son** (texte, image) n'appelle pas cette méthode : il
+  /// n'interrompt rien. C'est l'écran qui en décide (`AnnouncementsScreen`).
+  void interruptForStatus() {
+    if (_interruptedByStatus != null) return;
+    final playback = _player.value;
+    final contentId = playback.contentId;
+    if (contentId == null || !playback.isPlaying) return;
+    _interruptedByStatus = (contentId: contentId, title: state?.title);
+    _player.pause();
+  }
+
+  /// **La visionneuse se ferme : ce qu'elle a mis en pause reprend tout seul**
+  /// (#130).
+  ///
+  /// - l'**antenne** reprend **au direct** : rouvrir la source, cookie
+  ///   renégocié ([RadioListening.rejoinLive]). Un `play()` repartirait là où le
+  ///   tampon s'est arrêté, en retard sur l'église — ou dans le vide, la
+  ///   fenêtre de rattrapage ne portant que quarante secondes ;
+  /// - un **enseignement** reprend **à sa position** : la pause l'y a laissé.
+  ///
+  /// Rien ne reprend si le lecteur ne tient plus ce qui a été interrompu
+  /// (arrêté depuis la notification, ou remplacé), ni s'il joue déjà (relancé
+  /// depuis l'écran verrouillé). Sans interruption en cours, sans effet.
+  Future<void> resumeAfterStatus() async {
+    final interrupted = _interruptedByStatus;
+    _interruptedByStatus = null;
+    if (interrupted == null || !ref.mounted) return;
+    final playback = _player.value;
+    if (playback.contentId != interrupted.contentId) return;
+    if (playback.isPlaying) return;
+    if (interrupted.contentId == RadioConfig.contentId) {
+      await ref
+          .read(radioListeningProvider.notifier)
+          .rejoinLive(title: interrupted.title);
+      return;
+    }
+    _player.play();
+  }
 }
 
 /// **Le suivi d'un contenu chargé** : son enregistreur de progression et sa

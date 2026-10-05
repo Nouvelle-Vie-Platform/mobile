@@ -1,6 +1,9 @@
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderFittedBox;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/players/status_player.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/models/announcement_draft.dart';
@@ -10,6 +13,8 @@ import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/widgets/app_error_state.dart';
 import 'package:maison_du_miracle/widgets/status/status_background.dart';
+import 'package:maison_du_miracle/widgets/status/status_segmented_progress.dart';
+import 'package:maison_du_miracle/widgets/status/status_video_layer.dart';
 import 'package:maison_du_miracle/widgets/status/status_waveform.dart';
 
 import '../helpers/pump_screen.dart';
@@ -60,13 +65,15 @@ Future<void> pumpViewer(
   List<AnnouncementView> statuses, {
   bool member = false,
   ComposerOptions options = ComposerOptions.empty,
+  StatusPlayer? player,
+  Widget screen = const AnnouncementsScreen(),
 }) async {
   await pumpScreen(
     tester,
-    const Scaffold(body: AnnouncementsScreen()),
+    Scaffold(body: screen),
     announcements: _FakeRepository(statuses, member: member, options: options),
     overrides: [
-      statusPlayerProvider.overrideWithValue(InertStatusPlayer()),
+      statusPlayerProvider.overrideWithValue(player ?? InertStatusPlayer()),
     ],
   );
   // Une image de plus : les comptes ne sont lus **qu'une fois** l'appartenance
@@ -89,6 +96,7 @@ AnnouncementView _status({
   String? title,
   String? body,
   StatusAudio? audio,
+  StatusVideo? video,
   String? backgroundImageUrl,
   StatusBackdrop? backdrop,
   int? accountId,
@@ -105,6 +113,7 @@ AnnouncementView _status({
     accountId: accountId,
     accountName: accountName,
     audio: audio,
+    video: video,
     backgroundImageUrl: backgroundImageUrl,
     backdrop: backdrop,
     expiresAt: expiresAt,
@@ -330,6 +339,434 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  });
+
+  group('Les médias (#130) — de vrais lecteurs derrière StatusPlayer', () {
+    const vocal = StatusAudio(
+      url: 'https://media.example.test/vocal/master.m3u8',
+      durationMs: 42000,
+      waveform: [10, 40, 80, 30, 60],
+    );
+    const clip = StatusVideo(
+      url: 'https://media.example.test/clip/master.m3u8',
+      poster: 'https://example.org/affiche.jpg',
+      durationMs: 58000,
+    );
+
+    InertStatusPlayer inert() {
+      final player = InertStatusPlayer();
+      addTearDown(player.dispose);
+      return player;
+    }
+
+    testWidgets(
+        'un statut audio charge son son, avec la durée mesurée par le '
+        'transcodeur', (tester) async {
+      final player = inert();
+      await pumpViewer(
+        tester,
+        [_status(id: 'vocal', body: 'Un mot du pasteur.', audio: vocal)],
+        player: player,
+      );
+
+      expect(player.mediaKind, StatusMediaKind.audio);
+      expect(player.mediaUrl, 'https://media.example.test/vocal/master.m3u8');
+      expect(player.value.duration, const Duration(seconds: 42));
+      expect(player.value.isPlaying, isTrue);
+    });
+
+    testWidgets('sans durée servie, un média dure 30 s par défaut',
+        (tester) async {
+      final player = inert();
+      await pumpViewer(
+        tester,
+        [
+          _status(
+            id: 'vocal',
+            body: 'Un mot.',
+            audio: const StatusAudio(url: 'https://media.example.test/v.m3u8'),
+          ),
+        ],
+        player: player,
+      );
+
+      expect(player.value.duration, StatusDurations.media);
+    });
+
+    testWidgets('un statut texte ne charge aucun média, et dure 5 s',
+        (tester) async {
+      final player = inert();
+      await pumpViewer(
+        tester,
+        [_status(id: 'texte', body: 'Paix sur vous.')],
+        player: player,
+      );
+
+      expect(player.mediaKind, isNull);
+      expect(player.mediaUrl, isNull);
+      expect(player.value.duration, StatusDurations.still);
+    });
+
+    testWidgets(
+        'la durée réelle du lecteur pilote la barre, pas la durée annoncée',
+        (tester) async {
+      // Le transcodeur annonçait 42 s ; le lecteur en lit 20 dans le média.
+      // C'est lui qui fait foi : à 10 s, la barre est à moitié.
+      final player = inert();
+      await pumpViewer(
+        tester,
+        [_status(id: 'vocal', body: 'Un mot.', audio: vocal)],
+        player: player,
+      );
+
+      player.emit(player.value.copyWith(
+        duration: const Duration(seconds: 20),
+        position: const Duration(seconds: 10),
+      ));
+      await tester.pump();
+
+      final bar = tester.widget<StatusSegmentedProgress>(
+        find.byType(StatusSegmentedProgress),
+      );
+      expect(bar.progress, 0.5);
+    });
+
+    testWidgets('la waveform est celle que le serveur a servie',
+        (tester) async {
+      await pumpViewer(
+        tester,
+        [_status(id: 'vocal', body: 'Un mot.', audio: vocal)],
+      );
+
+      final waveform =
+          tester.widget<StatusWaveform>(find.byType(StatusWaveform));
+      expect(waveform.bars, [10, 40, 80, 30, 60]);
+      expect(
+        waveform.resolveBars(),
+        resampleWaveform(const [10, 40, 80, 30, 60], waveform.barCount),
+      );
+    });
+
+    testWidgets(
+        'sans waveform servie, le repli déterministe dérive de l\'identifiant',
+        (tester) async {
+      await pumpViewer(
+        tester,
+        [
+          _status(
+            id: 'vocal-sans-forme',
+            body: 'Un mot.',
+            audio: const StatusAudio(url: 'https://media.example.test/v.m3u8'),
+          ),
+        ],
+      );
+
+      final waveform =
+          tester.widget<StatusWaveform>(find.byType(StatusWaveform));
+      expect(waveform.bars, isEmpty);
+      expect(
+        waveform.resolveBars(),
+        waveformFromSeed('vocal-sans-forme', count: waveform.barCount),
+      );
+    });
+
+    testWidgets(
+        'un statut vidéo charge la vidéo, montre son affiche, puis sa '
+        'première image', (tester) async {
+      final player = inert();
+      player.surface = const ColoredBox(key: Key('video'), color: Colors.red);
+      await pumpViewer(
+        tester,
+        [_status(id: 'clip', title: 'Convention 2026', video: clip)],
+        player: player,
+      );
+
+      expect(player.mediaKind, StatusMediaKind.video);
+      expect(player.mediaUrl, 'https://media.example.test/clip/master.m3u8');
+      expect(player.value.duration, const Duration(seconds: 58));
+      // L'affiche couvre le chargement : pas de carré noir.
+      expect(find.byKey(StatusVideoLayer.posterKey), findsOneWidget);
+      expect(find.byKey(const Key('video')), findsNothing);
+
+      // Première image d'une vidéo **horizontale** : elle remplace l'affiche,
+      // gardée entière sur le fond du statut.
+      player.emit(player.value.copyWith(
+        hasVideoFrame: true,
+        videoSize: const Size(1920, 1080),
+      ));
+      await tester.pump();
+
+      expect(find.byKey(const Key('video')), findsOneWidget);
+      expect(find.byKey(StatusVideoLayer.posterKey), findsNothing);
+      expect(
+        tester
+            .renderObject<RenderFittedBox>(
+                find.byKey(StatusVideoLayer.videoKey))
+            .fit,
+        BoxFit.contain,
+      );
+      // Le texte reste par-dessus : le rendu empile ce qui existe.
+      expect(find.text('Convention 2026'), findsOneWidget);
+    });
+
+    testWidgets(
+        'un statut qui n\'est qu\'un média s\'affiche : audio seul, puis '
+        'vidéo seule sur son affiche', (tester) async {
+      final player = inert();
+      await pumpViewer(
+        tester,
+        [
+          _status(id: 'vocal-seul', audio: vocal),
+          _status(
+            id: 'clip-seul',
+            video: clip,
+            age: const Duration(hours: 3),
+          ),
+        ],
+        player: player,
+      );
+
+      expect(player.mediaKind, StatusMediaKind.audio);
+      expect(find.byType(StatusWaveform), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      final size = tester.getSize(find.byType(AnnouncementsScreen));
+      await tester.tapAt(Offset(size.width * 0.8, size.height / 2));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(player.mediaKind, StatusMediaKind.video);
+      expect(player.mediaUrl, 'https://media.example.test/clip/master.m3u8');
+      expect(find.byKey(StatusVideoLayer.posterKey), findsOneWidget);
+      expect(
+        tester
+            .widget<StatusVideoLayer>(find.byType(StatusVideoLayer).first)
+            .posterUrl,
+        'https://example.org/affiche.jpg',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('maintenir le doigt met le son en pause, le relâcher reprend',
+        (tester) async {
+      final player = inert();
+      await pumpViewer(
+        tester,
+        [_status(id: 'vocal', body: 'Un mot du pasteur.', audio: vocal)],
+        player: player,
+      );
+      expect(player.value.isPlaying, isTrue);
+
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.byType(AnnouncementsScreen)));
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      expect(player.value.isPlaying, isFalse);
+
+      await gesture.up();
+      await tester.pump();
+      expect(player.value.isPlaying, isTrue);
+    });
+
+    testWidgets('quitter l\'onglet met le son en pause, y revenir reprend',
+        (tester) async {
+      final player = inert();
+      final active = ValueNotifier<bool>(true);
+      addTearDown(active.dispose);
+      await pumpViewer(
+        tester,
+        [_status(id: 'vocal', body: 'Un mot du pasteur.', audio: vocal)],
+        player: player,
+        screen: ValueListenableBuilder<bool>(
+          valueListenable: active,
+          builder: (_, isActive, __) => AnnouncementsScreen(isActive: isActive),
+        ),
+      );
+      expect(player.value.isPlaying, isTrue);
+
+      active.value = false;
+      await tester.pump();
+      expect(player.value.isPlaying, isFalse);
+
+      active.value = true;
+      await tester.pump();
+      expect(player.value.isPlaying, isTrue);
+    });
+  });
+
+  group('La cohabitation avec le lecteur principal (#130)', () {
+    const vocal = StatusAudio(
+      url: 'https://media.example.test/vocal/master.m3u8',
+      durationMs: 42000,
+    );
+
+    /// Le lecteur de la médiathèque, tel que l'écran le voit — inerte, et
+    /// peint en train de jouer un enseignement à 12 min 7 s.
+    InertContentPlayer playingSermon(WidgetTester tester) {
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AnnouncementsScreen)),
+      );
+      final player =
+          container.read(contentPlayerProvider) as InertContentPlayer;
+      player.emit(const ContentPlayback(
+        contentId: 't-1',
+        isPlaying: true,
+        hasStarted: true,
+        position: Duration(minutes: 12, seconds: 7),
+      ));
+      return player;
+    }
+
+    Future<void> nextStatus(WidgetTester tester) async {
+      final size = tester.getSize(find.byType(AnnouncementsScreen));
+      await tester.tapAt(Offset(size.width * 0.8, size.height / 2));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    testWidgets(
+        'un statut muet n\'interrompt rien ; un statut à son met en pause, et '
+        'quitter l\'onglet fait reprendre à la position', (tester) async {
+      final active = ValueNotifier<bool>(true);
+      addTearDown(active.dispose);
+      await pumpViewer(
+        tester,
+        [
+          _status(id: 'texte', body: 'Paix sur vous.'),
+          _status(
+            id: 'vocal',
+            body: 'Un mot du pasteur.',
+            audio: vocal,
+            age: const Duration(hours: 3),
+          ),
+        ],
+        screen: ValueListenableBuilder<bool>(
+          valueListenable: active,
+          builder: (_, isActive, __) => AnnouncementsScreen(isActive: isActive),
+        ),
+      );
+      final sermon = playingSermon(tester);
+
+      // Un statut texte : l'enseignement continue dessous.
+      await tester.pump();
+      expect(find.text('Paix sur vous.'), findsOneWidget);
+      expect(sermon.value.isPlaying, isTrue);
+
+      // Un statut vocal : l'enseignement se tait avant que le statut parle.
+      await nextStatus(tester);
+      expect(find.text('Un mot du pasteur.'), findsOneWidget);
+      expect(sermon.value.isPlaying, isFalse);
+
+      // On quitte l'onglet : l'enseignement reprend, là où il en était.
+      active.value = false;
+      await tester.pump();
+      expect(sermon.value.isPlaying, isTrue);
+      expect(sermon.value.contentId, 't-1');
+      expect(sermon.value.position, const Duration(minutes: 12, seconds: 7));
+    });
+
+    testWidgets(
+        'revenir d\'un statut à son vers un statut muet ne fait rien reprendre '
+        '— on est toujours dans la visionneuse', (tester) async {
+      await pumpViewer(tester, [
+        _status(id: 'texte', body: 'Paix sur vous.'),
+        _status(
+          id: 'vocal',
+          body: 'Un mot du pasteur.',
+          audio: vocal,
+          age: const Duration(hours: 3),
+        ),
+      ]);
+      final sermon = playingSermon(tester);
+
+      await nextStatus(tester);
+      expect(sermon.value.isPlaying, isFalse);
+
+      // Tap à gauche : retour au statut texte.
+      final size = tester.getSize(find.byType(AnnouncementsScreen));
+      await tester.tapAt(Offset(size.width * 0.1, size.height / 2));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Paix sur vous.'), findsOneWidget);
+      expect(sermon.value.isPlaying, isFalse);
+    });
+
+    testWidgets(
+        'un statut à son coupé n\'interrompt rien ; réactiver le son '
+        'interrompt, le recouper ne fait rien reprendre avant la sortie',
+        (tester) async {
+      final active = ValueNotifier<bool>(true);
+      addTearDown(active.dispose);
+      await pumpViewer(
+        tester,
+        [
+          _status(id: 'texte', body: 'Paix sur vous.'),
+          _status(
+            id: 'vocal',
+            body: 'Un mot du pasteur.',
+            audio: vocal,
+            age: const Duration(hours: 3),
+          ),
+        ],
+        screen: ValueListenableBuilder<bool>(
+          valueListenable: active,
+          builder: (_, isActive, __) => AnnouncementsScreen(isActive: isActive),
+        ),
+      );
+      final sermon = playingSermon(tester);
+
+      // Son coupé dès le statut texte, puis passage au statut vocal : on le
+      // regarde sans l'entendre, l'enseignement continue dessous.
+      await tester.tap(find.byIcon(Icons.volume_up_rounded));
+      await tester.pump();
+      await nextStatus(tester);
+      expect(find.text('Un mot du pasteur.'), findsOneWidget);
+      expect(sermon.value.isPlaying, isTrue);
+
+      // Le fidèle réactive le son : l'enseignement se tait à ce moment-là.
+      await tester.tap(find.byIcon(Icons.volume_off_rounded));
+      await tester.pump();
+      expect(sermon.value.isPlaying, isFalse);
+
+      // Il le recoupe : rien ne reprend tant qu'on est dans la visionneuse.
+      await tester.tap(find.byIcon(Icons.volume_up_rounded));
+      await tester.pump();
+      expect(sermon.value.isPlaying, isFalse);
+
+      // La sortie fait reprendre, à la position.
+      active.value = false;
+      await tester.pump();
+      expect(sermon.value.isPlaying, isTrue);
+      expect(sermon.value.position, const Duration(minutes: 12, seconds: 7));
+    });
+
+    testWidgets('un mur sans statut à son ne touche jamais au lecteur',
+        (tester) async {
+      final active = ValueNotifier<bool>(true);
+      addTearDown(active.dispose);
+      await pumpViewer(
+        tester,
+        [
+          _status(
+            id: 'affiche',
+            backgroundImageUrl: 'https://example.org/affiche.jpg',
+          ),
+        ],
+        screen: ValueListenableBuilder<bool>(
+          valueListenable: active,
+          builder: (_, isActive, __) => AnnouncementsScreen(isActive: isActive),
+        ),
+      );
+      final sermon = playingSermon(tester);
+      // Un enseignement mis en pause par le fidèle lui-même, ailleurs : la
+      // sortie de la visionneuse ne doit pas le relancer.
+      sermon.pause();
+
+      active.value = false;
+      await tester.pump();
+
+      expect(sermon.value.isPlaying, isFalse);
+    });
   });
 
   group('Le cycle de vie du mur — ce que le serveur ne fait pas', () {

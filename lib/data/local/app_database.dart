@@ -17,6 +17,9 @@ import 'converters/i18n_map_converter.dart';
 // Idem : le convertisseur du contrat de téléchargement (`teachings.download`,
 // ADR-0038) est instancié par le code généré.
 import 'converters/teaching_download_converter.dart';
+// Idem : le convertisseur de la forme d'onde d'un statut audio
+// (`announcements.media_waveform`, #130) est instancié par le code généré.
+import 'converters/waveform_converter.dart';
 import 'downloads_dao.dart';
 // Idem : le convertisseur des sections d'un document légal est instancié par le
 // code généré.
@@ -203,8 +206,25 @@ class AppDatabase extends _$AppDatabase {
   /// n'y a donc rien à reprendre. Les six tables naissent **vides**, et vide veut
   /// dire ici « je n'ai pas encore reçu mes conversations » — ce que les écrans
   /// rendent déjà comme une absence, jamais comme une erreur.
+  ///
+  /// **v19** — le **média des annonces** (#130) : cinq colonnes nullables sur
+  /// `announcements` (`media_kind`, `media_url`, `media_poster_url`,
+  /// `media_duration_ms`, `media_waveform`), et l'oubli de son curseur — un
+  /// téléphone en v18 a pu recevoir une annonce audio ou vidéo et en jeter le
+  /// média faute de colonne. Voir le palier.
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
+
+  /// Les cinq colonnes du média d'une annonce, ajoutées ensemble au palier
+  /// v18 → v19 — et retirées ensemble d'une table créée pour une version
+  /// antérieure (palier v2 → v3, migrations de test seulement).
+  List<GeneratedColumn<Object>> get _announcementMediaColumns => [
+        announcements.mediaKind,
+        announcements.mediaUrl,
+        announcements.mediaPosterUrl,
+        announcements.mediaDurationMs,
+        announcements.mediaWaveform,
+      ];
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -240,6 +260,17 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(officialAccounts);
             await m.createTable(officialAccountMemberships);
             await m.createTable(announcements);
+            // `createTable` emploie la forme **courante** de la table, qui porte
+            // depuis la v19 les cinq colonnes du média. Sur un téléphone, `to`
+            // vaut toujours `schemaVersion` et elles y sont attendues ; seule une
+            // migration de test vers une version intermédiaire (v1 → v3…v18) doit
+            // retrouver la forme d'alors, que le vérificateur compare colonne par
+            // colonne. Voir le palier v18 → v19.
+            if (to < 19) {
+              for (final column in _announcementMediaColumns) {
+                await m.dropColumn(announcements, column.name);
+              }
+            }
           }
 
           // v3 → v4 — la reprise de lecture (issue #43). **Deux créations de
@@ -549,6 +580,43 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(groupJoinRequests);
             await m.createTable(groupMessages);
             await m.createTable(pendingGroupMessages);
+          }
+
+          // v18 → v19 — le **média des annonces** (#130, tranche 4/4 de
+          // « Sparks »). **Cinq ajouts de colonne, nullables**, et l'oubli du
+          // curseur d'`announcements`.
+          //
+          // 1. `media_kind`, `media_url`, `media_poster_url`,
+          //    `media_duration_ms`, `media_waveform` s'ajoutent, toutes
+          //    nullables : aucune ligne n'est réécrite, et une annonce déjà en
+          //    magasin les porte à `NULL` — « pas de média », ce qu'elle était.
+          // 2. **Le curseur d'`announcements` est effacé**, et c'est la moitié
+          //    du palier. Le serveur sert ces champs depuis `server-portal#477` ;
+          //    un téléphone resté en v18 a donc pu recevoir une annonce audio ou
+          //    vidéo, en a gardé le texte et **jeté le média** faute de colonne.
+          //    Son curseur est passé dessus : sans le remettre à zéro, cette
+          //    annonce resterait muette jusqu'à ce que quelqu'un la modifie au
+          //    portail — c'est-à-dire, le plus souvent, pour toujours. Effacé, le
+          //    manifeste suivant annonce la collection `from_zero` et le premier
+          //    cycle réécrit chaque ligne **par-dessus** (règle 3 : remplacer,
+          //    jamais purger d'abord). Les lignes restent : le mur ne se vide pas
+          //    pendant la reprise.
+          //
+          // ⚠️ **`from >= 3` n'est pas décoratif** : un appareil venu d'avant la
+          // v3 vient de créer `announcements` **dans sa forme courante** (palier
+          // v2 → v3), colonnes du média comprises — les ajouter une seconde fois
+          // lèverait « duplicate column ». Et la garde `to >= 19` a la raison
+          // des paliers v7 → v8 et v9 → v10 : le vérificateur de schéma signale
+          // une colonne surnuméraire.
+          if (from >= 3 && from < 19 && to >= 19) {
+            for (final column in _announcementMediaColumns) {
+              await m.addColumn(announcements, column);
+            }
+          }
+          if (from < 19 && to >= 19) {
+            await (delete(syncCursors)
+                  ..where((c) => c.collection.equals('announcements')))
+                .go();
           }
         },
         beforeOpen: (details) async {

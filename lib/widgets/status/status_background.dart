@@ -8,7 +8,10 @@ import '../../theme/status_palette.dart';
 ///
 /// 1. le **dégradé** du statut — toujours présent : il sert aussi de repli
 ///    image et couvre le temps de chargement ;
-/// 2. l'**image** de fond éventuelle, en `BoxFit.cover` ;
+/// 2. l'**image** de fond éventuelle, en `BoxFit.cover` — ou, à sa place, le
+///    [media] d'un statut vidéo (`StatusVideoLayer`, #130), qui cadre lui-même
+///    son affiche et sa vidéo : une vidéo horizontale y est gardée entière, et
+///    c'est ce dégradé qui subsiste autour d'elle ;
 /// 3. le **voile** de lisibilité, plus dense en bas (là où vivent le texte et
 ///    la waveform) ;
 /// 4. le [child].
@@ -24,6 +27,7 @@ class StatusBackground extends StatelessWidget {
     required this.id,
     this.backdrop,
     this.imageUrl,
+    this.media,
     this.scrim = true,
     required this.child,
   });
@@ -41,6 +45,11 @@ class StatusBackground extends StatelessWidget {
   /// Image de fond éventuelle. Un échec (hors-ligne, 404, ou test — le réseau
   /// renvoie 400 sous `flutter test`) retombe silencieusement sur le dégradé.
   final String? imageUrl;
+
+  /// Ce qui remplace l'image de fond sur un statut vidéo : l'affiche, puis la
+  /// vidéo. [imageUrl] reste alors l'affiche, pour décider de l'encre — le
+  /// texte reste clair sur une vidéo, et c'est le voile qui le rend lisible.
+  final Widget? media;
 
   /// Voile sombre de lisibilité derrière le contenu.
   final bool scrim;
@@ -133,7 +142,7 @@ class StatusBackground extends StatelessWidget {
         DecoratedBox(
           decoration: BoxDecoration(gradient: gradientFor(id, backdrop)),
         ),
-        if (url != null) _buildImage(url),
+        if (media != null) media! else if (url != null) _buildImage(url),
         if (scrim)
           DecoratedBox(
             decoration: BoxDecoration(

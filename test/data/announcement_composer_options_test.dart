@@ -7,6 +7,7 @@
 // deux requêtes en une seule émission, ce qui mérite d'être prouvé plutôt que
 // supposé.
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/repositories/store_announcement_repository.dart';
@@ -131,6 +132,38 @@ void main() {
         expect(draft.issuesAt(DateTime.utc(2026, 5, 2)), isEmpty);
       },
     );
+
+    test(
+      'un audio ou une vidéo déjà déposés sont comptés comme du contenu',
+      () async {
+        // Un statut qui n'est qu'un média : le rouvrir pour changer sa date de
+        // fin ne doit pas le faire refuser comme « rien à publier ».
+        await db.into(db.announcements).insert(
+              announcementRow('a-1').copyWith(
+                mediaKind: const Value('video'),
+                mediaUrl: const Value('https://media.example.test/v.m3u8'),
+              ),
+            );
+
+        final draft = await repository.draftOf('a-1').first;
+
+        expect(draft!.hasMedia, isTrue);
+        expect(draft.issuesAt(DateTime.utc(2026, 5, 2)), isEmpty);
+      },
+    );
+
+    test('un genre de média inconnu ne compte pas comme du contenu', () async {
+      await db.into(db.announcements).insert(
+            announcementRow('a-1').copyWith(
+              mediaKind: const Value('hologramme'),
+              mediaUrl: const Value('https://media.example.test/v.m3u8'),
+            ),
+          );
+
+      final draft = await repository.draftOf('a-1').first;
+
+      expect(draft!.hasMedia, isFalse);
+    });
 
     test('rend null quand l\'annonce a été rétractée', () async {
       expect(await repository.draftOf('absente').first, isNull);

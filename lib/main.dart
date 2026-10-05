@@ -16,6 +16,7 @@ import 'data/players/bitrate_cap_controller.dart';
 import 'data/players/content_player.dart';
 import 'models/media_preferences.dart';
 import 'data/players/just_audio_content_player.dart';
+import 'data/players/media_status_player.dart';
 import 'data/players/playback_notifications.dart';
 import 'data/players/web_content_player.dart';
 import 'data/push/fcm_push_transport.dart';
@@ -110,6 +111,17 @@ Future<void> main() async {
   final container = ProviderContainer(
     overrides: [
       if (player != null) contentPlayerProvider.overrideWithValue(player),
+      // **Les lecteurs réels des statuts** (#130) : `just_audio` pour l'audio,
+      // `video_player` pour la vidéo. Pas sur le web, où ni l'un ni l'autre ne
+      // lit le HLS hors Safari (#46) : le provider y garde `FakeStatusPlayer`,
+      // et un statut média y défile avec son affiche, sans son. Construit à la
+      // demande — rien ne s'ouvre avant le premier statut affiché.
+      if (!kIsWeb)
+        statusPlayerProvider.overrideWith((ref) {
+          final statusPlayer = MediaStatusPlayer();
+          ref.onDispose(statusPlayer.dispose);
+          return statusPlayer;
+        }),
       // Les deux seules choses que `main()` sait et que l'arbre de widgets ne
       // pourrait pas apprendre à temps : ce que portait le coffre, et le porteur
       // d'appareil de cette exécution.

@@ -4,6 +4,14 @@ Spécification issue de la session de cadrage. Fait autorité sur le **rendu** :
 la forme de la visionneuse, les gestes, les fonds, le texte, l'horodatage.
 Tout écart doit être signalé, pas silencieusement corrigé.
 
+> **Amendé par #130** (tranche 4/4 du chantier « Sparks », plan
+> `server-portal/docs/sparks-annonces-audio-video-plan.md`) : la « phase 2 »
+> est **livrée** — l'audio et la vidéo des statuts sont servis, stockés et
+> joués. Les **deux écarts** que le plan demandait de signaler sont écrits en
+> toutes lettres là où ils s'appliquent : la vidéo horizontale garde le fond du
+> statut autour d'elle (§4 « Vidéo », §8), et la durée réelle du lecteur prime
+> sur les défauts (§4, règle 2).
+
 > **Ce document ne fait plus autorité sur la donnée** (issue #35). Le contrat de
 > donnée est celui du serveur — PRD `annonces-comptes-officiels.md`, ADR-0029 à
 > ADR-0031 — et il a retiré au mobile trois valeurs que ce document décrivait :
@@ -51,7 +59,39 @@ identifiants nus qui se **joignent** à la lecture.
 | `backgroundImageUrl` | `String?` | image de fond (`Image.network` + `errorBuilder` obligatoire) |
 | `expiresAt` | `DateTime?` | `null` = n'expire jamais (défaut) |
 | `isPinned` | `bool` | épinglé en tête de liste |
-| `audio` / `video` | `StatusAudio?` / `StatusVideo?` | **hors périmètre** — phase 2, transcodage |
+| `audio` / `video` | `StatusAudio?` / `StatusVideo?` | **livré (#130)** — au plus un des deux, lu des cinq champs `media*` (voir ci-dessous) |
+
+### Le média — cinq champs à plat, un seul lecteur de contrat
+
+Le serveur sert, sur chaque annonce, `mediaKind` (`'audio'`, `'video'` ou
+`null`), `mediaUrl` (playlist HLS maître : deux rendus, segments de 5 s, son
+normalisé à −16 LUFS), `mediaPosterUrl` (affiche d'une vidéo : l'image déposée,
+sinon la vignette extraite), `mediaDurationMs` (mesurée par le transcodeur) et
+`mediaWaveform` (36 hauteurs de 0 à 100, audio). Une annonce dont le média n'est
+pas prêt **ne transite pas**.
+
+Le magasin les stocke **bruts**, en colonnes (schéma v19). Ils deviennent
+`StatusAudio` / `StatusVideo` à la lecture, par **une seule fonction**,
+`readStatusMedia` (`lib/models/announcement_view.dart`) :
+
+- un genre inconnu, ou un genre **sans URL**, se lit « pas de média » — le
+  statut s'affiche avec ce qu'il a d'autre ;
+- les URL passent par `resolveMediaUrl` ;
+- l'affiche d'une vidéo se replie sur `backgroundImageUrl` (« une image, deux
+  rôles », décision 5 du plan) ; `StatusVideo.poster` est donc nullable, mais
+  le serveur la sert sur **tout** statut vidéo ;
+- une durée nulle vaut inconnue.
+
+**Un statut peut n'être qu'un média** (décision utilisateur du 05/10/2026) :
+un audio ou une vidéo **seuls**, sans titre, sans corps, sans image, sont un
+statut complet. Rien ne les retient en route — ni le flux, ni le magasin, ni le
+repository, ni le rendu, qui n'empile que ce qui existe — et l'affiche d'une
+vidéo seule vient de `mediaPosterUrl`. Couvert de bout en bout
+(`announcement_media_collection_test.dart`, `announcements_screen_test.dart`).
+
+Le palier v18 → v19 **efface le curseur** d'`announcements` : un téléphone resté
+en v18 a pu recevoir une annonce à média et en jeter le média faute de colonne,
+et rien ne la lui aurait renvoyée.
 
 ### Trois champs sont partis, et ne reviendront pas par l'affichage
 
@@ -121,8 +161,19 @@ l'horloge de l'appareil pour arbitre.
 Abstraction `StatusPlayer` exposée par `statusPlayerProvider`, sur le modèle
 déjà en place de `churchRepositoryProvider` :
 
-- **phase 1** : implémentation factice (`FakeStatusPlayer`) ;
-- **phase 2** : `just_audio` / `video_player`, **sans qu'aucun écran ne change**.
+- **phase 1** : implémentation factice (`FakeStatusPlayer`) — toujours le
+  défaut du provider, donc celle des tests, et celle du **web** ;
+- **phase 2 — livrée (#130)** : `MediaStatusPlayer`
+  (`lib/data/players/media_status_player.dart`), `just_audio` pour l'audio,
+  `video_player` pour la vidéo HLS, une horloge pour le reste. Branchée par
+  `main.dart` sur mobile. **Aucun écran n'a changé de structure** : le contrat
+  s'est élargi de ce que la vidéo exige — le genre du média à `load`, les
+  dimensions et la première image dans la valeur observée, et
+  `videoSurface()`, le widget qui peint l'image décodée.
+
+Le web garde le lecteur factice : ni `just_audio` ni le `<video>` de Chrome ne
+lisent le HLS hors Safari (#46). Un statut média y défile avec son affiche, sans
+son — un défaut assumé, pas un oubli.
 
 Règles non négociables :
 
@@ -131,24 +182,79 @@ Règles non négociables :
    rend les tests déterministes (un timer dans le `State` survit à l'override du
    provider et fait échouer les tests sur « pending timer »).
 2. **Durée effective** = durée réelle du lecteur → sinon la durée du média
-   annoncée par le back → sinon défaut par type : **5 s** (texte / image),
-   **30 s** (audio / vidéo). La **durée d'affichage** par statut (`durationMs`)
-   a disparu du modèle : le serveur n'en sert aucune.
+   mesurée par le transcodeur (`mediaDurationMs`) → sinon défaut par type :
+   **5 s** (texte / image), **30 s** (audio / vidéo). La **durée d'affichage**
+   par statut (`durationMs`) a disparu du modèle : le serveur n'en sert aucune.
+
+   ⚠️ **Écart signalé (plan « Sparks », §4) — confirmé à la livraison** : les
+   défauts restent, mais **la durée réelle du lecteur prime** dès qu'il la lit
+   dans le média, sur la durée annoncée comme sur le défaut. La chaîne est
+   écrite une fois, `effectiveStatusDuration` (`status_player.dart`) : l'écran
+   l'appelle sans durée réelle pour la durée de repli qu'il passe à `load`, le
+   lecteur réel l'appelle quand le média dit la sienne. Une durée nulle ne
+   compte pour aucun maillon.
 3. Les médias **vont jusqu'à leur fin** ; un tap coupe court.
 4. **Fin du dernier statut** : on reste figé dessus, barre pleine. Pas de boucle.
 
-### Vidéo en phase 1
+5. **Un média qui ne s'ouvre pas ne bloque pas le mur** (#130) : hors ligne ou
+   sur une playlist refusée, le statut retombe sur l'horloge avec sa durée de
+   repli, et défile comme un statut sans média.
 
-Poster (image d'aperçu) + badge « vidéo » + barre de progression qui avance.
-Rien ne bouge à l'écran, c'est assumé : l'objectif est de valider **maintenant**
-la mise en page coûteuse (bandes d'une vidéo verticale, voile derrière le texte,
-FAB translucide). Un `poster` est **requis** sur tout statut vidéo, phase 2
-comprise.
+### Vidéo — livrée (#130)
+
+`StatusVideoLayer` (`widgets/status/status_video_layer.dart`) prend la place de
+l'image de fond dans `StatusBackground` :
+
+1. **l'affiche** couvre le chargement, jusqu'à la **première image** de la
+   vidéo — jamais un carré noir ; les pages voisines du pager n'affichent que
+   leur affiche ;
+2. puis **la vidéo**, et l'affiche s'efface ;
+3. **le cadrage** (décision 11 du plan, règle `statusVideoFraming`) : une vidéo
+   **verticale occupe le fond** ; une vidéo **horizontale** — ou carrée — est
+   **gardée entière, centrée sur le fond du statut, jamais recadrée**. La même
+   règle cadre l'affiche, d'après ses propres dimensions.
+
+⚠️ **Écart signalé (plan « Sparks », §4)** : pour une vidéo horizontale, « le
+fond *est* la vidéo » (§8) devient faux — **le dégradé du statut subsiste
+autour d'elle**. On ne coupe jamais ce que quelqu'un a cadré.
+
+Le texte reste clair sur une vidéo, rendu lisible par le voile ; le bouton
+central reste translucide sur un statut vidéo.
+
+### Le son, et le lecteur principal (#130)
+
+- **Les gestes s'appliquent au son** sans rien de neuf : doigt maintenu = pause
+  du son, quitter l'onglet = pause, tap = statut suivant (le son du statut
+  quitté s'arrête avec son chargement).
+- **Cohabitation avec la radio et les enseignements** (décision utilisateur du
+  05/10/2026) : si le lecteur principal joue quand un statut **à son** (audio
+  ou vidéo) démarre **avec le son actif**, il se met **en pause** — avant que
+  le statut ne parle —,
+  puis **reprend tout seul quand on quitte la visionneuse** (changement
+  d'onglet, démontage) : **la radio au direct** (la source est rouverte et le
+  cookie renégocié, `RadioListening.rejoinLive`), **un enseignement à sa
+  position**. Un statut **texte ou image n'interrompt rien**. Revenir d'un
+  statut à son vers un statut muet ne fait rien reprendre : on est toujours
+  dans la visionneuse. Un doigt maintenu, la liste ou l'arrière-plan non plus.
+- C'est le **contrôleur global** qui tient la parenthèse
+  (`PlaybackController.interruptForStatus` / `resumeAfterStatus`), pas un
+  second contrôleur. Le lecteur reste juge : un contenu arrêté, remplacé ou
+  déjà relancé pendant le statut ne revient pas.
+- **Le bouton muet entre dans la règle** (décision utilisateur du
+  05/10/2026) : un statut audio ou vidéo **dont le son est coupé n'interrompt
+  rien** — on le regarde, on entend la radio ou le prêche. **Réactiver le son**
+  d'un statut à son qui joue interrompt à ce moment-là. Le **recouper** ne
+  fait rien reprendre : la reprise reste à la sortie de la visionneuse, règle
+  unique et simple. L'état muet étant mémorisé pour la session, un fidèle qui
+  a coupé le son parcourt tous les statuts sans jamais taire l'antenne.
 
 ## 5. Waveform
 
 - **28 à 40 barres**, volontairement grossières.
-- Hauteurs **précalculées par le back** (`List<int>`, 0–100).
+- Hauteurs **précalculées par le back** (`List<int>`, 0–100) — **livré
+  (#130)** : trente-six, tirées de la passe de normalisation du transcodeur,
+  stockées telles quelles et bornées à 0..100 à la lecture. L'écran les
+  ré-échantillonne au nombre de barres qu'il dessine.
 - **Repli déterministe** dérivé d'un hash de l'`id` — **jamais `Random()`**,
   qui changerait les barres à chaque `build`. Même esprit que le `seed` de
   `Teaching`.
@@ -213,8 +319,10 @@ au lancement de l'app.
   repli sur le dégradé déjà peint dessous, plus un voile dégradé derrière le
   texte. En présence d'une image, le texte est **toujours clair** : c'est le
   voile qui garantit alors la lisibilité.
-- **Vidéo** : le fond est la vidéo ; la couleur ne sert qu'aux bandes et au
-  temps de chargement.
+- **Vidéo** : une vidéo **verticale** est le fond ; une vidéo **horizontale**
+  est gardée entière, centrée, et **le dégradé du statut subsiste autour
+  d'elle** (écart signalé, #130 — voir §4 « Vidéo »). La couleur couvre aussi
+  le temps de chargement quand il n'y a pas d'affiche.
 
 ## 9. Texte
 
@@ -304,8 +412,12 @@ traitement des refus. Deux écrans jumeaux auraient divergé au premier correcti
   **omis** (l'horloge est celle du serveur, pas celle d'un téléphone qui dérive).
   Programmer ⇒ l'instant choisi, en UTC. Brouillon ⇒ `publishedAt` **nul
   explicite**. La nuance « clé absente / clé nulle » décide si l'annonce paraît.
-- **Validité, vérifiée avant tout appel réseau** : au moins un titre, un corps ou
-  une image ; `expiresAt > publishedAt`. Titre et corps vides après `trim`
+- **Validité, vérifiée avant tout appel réseau** : au moins un titre, un corps,
+  une image ou un média ; `expiresAt > publishedAt`. Le composeur ne dépose
+  pas de média, mais une annonce rouverte qui n'est **qu'un** audio ou une
+  vidéo reste valide (`AnnouncementDraft.hasMedia`, lu par `readStatusMedia` :
+  un genre inconnu ne compte pas), comme une affiche rouverte sans ses octets
+  (`hasBackgroundImage`). Titre et corps vides après `trim`
   valent `null`, jamais `''`.
 
 #### Modifier et supprimer
@@ -373,9 +485,17 @@ donc pas redevenir un statut texte depuis le mobile.
 
 ### Hors périmètre assumé
 
-**Médias de statut** (`audio`, `video`) — phase 2, transcodage : le serveur n'en
-sert aucun, le modèle garde les types mais le magasin ne les peuple jamais.
-Réactions et réponses · partage / lien profond · état « déjà vu » persistant.
+Réactions et réponses · partage / lien profond · état « déjà vu » persistant ·
+**le dépôt d'un média depuis l'application** : le serveur le refuse par
+décision éditoriale (décision 8 du plan « Sparks » — de la vidéo non relue
+partirait à toute l'église). Les médias de statut, eux, sont **livrés** (#130).
+
+Le libellé de l'onglet (« Sparks » côté portail, décision 1 du plan) n'est
+**pas** écrit dans le dépôt : il doit venir du vocabulaire réglable. ⚠️ À la
+livraison de #130, l'onglet lit encore `context.l10n.navAnnouncements` et le
+catalogue serveur (`vocabulary_catalog.ts`) n'a pas de clé `mobile` pour lui :
+le mot réglé au portail n'y arrive donc pas encore. Il faut une entrée de
+catalogue côté serveur, puis `context.words` côté mobile.
 
 ## 12. Tests
 
@@ -406,9 +526,22 @@ Tests attendus :
 Les données fictives doivent contenir **un exemplaire de chaque forme** : texte
 seul, texte long qui déborde, image seule, fond servi, **fond absent**,
 **compte absent du magasin**, un avec `expiresAt` à venir, un expiré, un
-épinglé. Elles ne contiennent **ni audio ni vidéo** : le serveur n'en sert pas,
-et une fixture plus riche que la source fabrique un écran qui marche en maquette
-et se vide en production.
+épinglé. `SampleData` ne contient **ni audio ni vidéo**, même depuis #130 : un
+média de statut est une playlist **transcodée**, et une URL inventée ne
+jouerait rien. Les fixtures de synchronisation, elles, en portent
+(`audioAnnouncementPayload`, `videoAnnouncementPayload`), relevées sur le
+transformer du serveur.
+
+Tests de #130 : `test/models/status_media_test.dart` (lecture des champs
+`media*`), `test/sync/announcement_media_collection_test.dart` (du flux au
+modèle de lecture), `test/data/local/migration_test.dart` (palier v19),
+`test/data/status_player_test.dart` (durée effective, contrat),
+`test/widgets/status_video_layer_test.dart` (cadrage, affiche puis vidéo),
+`test/screens/announcements_screen_test.dart` (chargement des médias,
+waveform servie et repli, gestes, cohabitation) et
+`test/state/status_interruption_test.dart` (pause et reprise du lecteur
+principal). **Aucun ne monte de vrai lecteur** : les états se peignent par
+`InertStatusPlayer.emit` et une surface témoin.
 
 ## 13. Découpage en commits
 

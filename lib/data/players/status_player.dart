@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show Size, Widget;
 
 /// Durées d'affichage par défaut d'un statut, dernier maillon de la chaîne de
-/// résolution : durée réelle du lecteur → `durationMs` envoyé par le back →
-/// défaut par type.
+/// résolution : durée réelle du lecteur → durée mesurée par le transcodeur
+/// (`mediaDurationMs`) → défaut par type. Voir [effectiveStatusDuration].
 abstract final class StatusDurations {
   /// Statut sans média temporel (texte, image).
   static const Duration still = Duration(seconds: 5);
@@ -12,6 +13,37 @@ abstract final class StatusDurations {
   /// Statut porteur d'un média temporel (audio, vidéo).
   static const Duration media = Duration(seconds: 30);
 }
+
+/// **La durée effective d'un statut — la chaîne écrite une fois** (§4.2 de
+/// `docs/statuts-annonces.md`) :
+///
+/// 1. la durée **réelle** que le lecteur a lue dans le média ([real]) ;
+/// 2. sinon la durée **mesurée par le transcodeur** et servie
+///    ([announcedMs], `mediaDurationMs`) ;
+/// 3. sinon le défaut par type ([StatusDurations]) — 30 s avec un média,
+///    5 s sans.
+///
+/// Une durée nulle ou négative ne compte pour aucun des deux premiers
+/// maillons : elle finirait le statut à la seconde où il commence.
+///
+/// Le lecteur réel l'appelle quand le média lui dit sa durée ; l'écran
+/// l'appelle **sans** [real] pour la durée de repli qu'il passe à
+/// [StatusPlayer.load]. Deux appelants, une seule règle.
+Duration effectiveStatusDuration({
+  Duration? real,
+  int? announcedMs,
+  required bool hasMedia,
+}) {
+  if (real != null && real > Duration.zero) return real;
+  if (announcedMs != null && announcedMs > 0) {
+    return Duration(milliseconds: announcedMs);
+  }
+  return hasMedia ? StatusDurations.media : StatusDurations.still;
+}
+
+/// Ce que le lecteur doit jouer pour un statut : **rien** (`null` — texte,
+/// image), un son, ou une vidéo (qui porte son son).
+enum StatusMediaKind { audio, video }
 
 /// Instantané de l'état de lecture d'un statut.
 ///
@@ -25,6 +57,8 @@ class StatusPlayback {
     this.duration = Duration.zero,
     this.isPlaying = false,
     this.isCompleted = false,
+    this.videoSize,
+    this.hasVideoFrame = false,
   });
 
   /// Identifiant du statut chargé, `null` tant qu'aucun `load` n'a eu lieu.
@@ -42,6 +76,17 @@ class StatusPlayback {
   /// Vrai lorsque la lecture a atteint [duration] (le statut est terminé).
   final bool isCompleted;
 
+  /// Dimensions **natives** de la vidéo chargée, `null` tant qu'elle ne les a
+  /// pas dites (ou pour un statut sans vidéo). C'est ce qui décide du cadrage :
+  /// une vidéo verticale occupe le fond, une horizontale est gardée entière
+  /// (`statusVideoFraming`).
+  final Size? videoSize;
+
+  /// Vrai dès que la vidéo a une **image à montrer**. Jusque-là, c'est
+  /// l'affiche qui couvre le chargement : un carré noir à la place d'un poster
+  /// serait la seule chose que verrait un fidèle sur un réseau lent.
+  final bool hasVideoFrame;
+
   /// Progression 0..1 (0 si [duration] est nulle).
   double get progress {
     if (duration <= Duration.zero) return 0;
@@ -55,6 +100,8 @@ class StatusPlayback {
     Duration? duration,
     bool? isPlaying,
     bool? isCompleted,
+    Size? videoSize,
+    bool? hasVideoFrame,
   }) {
     return StatusPlayback(
       statusId: statusId ?? this.statusId,
@@ -62,6 +109,8 @@ class StatusPlayback {
       duration: duration ?? this.duration,
       isPlaying: isPlaying ?? this.isPlaying,
       isCompleted: isCompleted ?? this.isCompleted,
+      videoSize: videoSize ?? this.videoSize,
+      hasVideoFrame: hasVideoFrame ?? this.hasVideoFrame,
     );
   }
 
@@ -72,24 +121,28 @@ class StatusPlayback {
         other.position == position &&
         other.duration == duration &&
         other.isPlaying == isPlaying &&
-        other.isCompleted == isCompleted;
+        other.isCompleted == isCompleted &&
+        other.videoSize == videoSize &&
+        other.hasVideoFrame == hasVideoFrame;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(statusId, position, duration, isPlaying, isCompleted);
+  int get hashCode => Object.hash(statusId, position, duration, isPlaying,
+      isCompleted, videoSize, hasVideoFrame);
 
   @override
   String toString() =>
       'StatusPlayback(statusId: $statusId, position: $position, '
-      'duration: $duration, isPlaying: $isPlaying, isCompleted: $isCompleted)';
+      'duration: $duration, isPlaying: $isPlaying, isCompleted: $isCompleted, '
+      'videoSize: $videoSize, hasVideoFrame: $hasVideoFrame)';
 }
 
 /// Lecteur d'un statut.
 ///
 /// Contrat unique dont dépend l'UI, sur le modèle de `ChurchRepository` :
-/// brancher `just_audio` / `video_player` consistera à fournir une autre
-/// implémentation via `statusPlayerProvider`, **sans toucher un seul écran**.
+/// `just_audio` et `video_player` sont branchés derrière lui
+/// (`MediaStatusPlayer`, #130) par `main.dart`, **sans qu'aucun écran ne
+/// sache lequel tourne**.
 ///
 /// Implémente [ValueListenable] pour que l'UI se contente d'un
 /// [ValueListenableBuilder] : **l'horloge et l'auto-avance appartiennent au
@@ -100,14 +153,28 @@ abstract interface class StatusPlayer
     implements ValueListenable<StatusPlayback> {
   /// Charge un statut et remet la lecture à zéro.
   ///
-  /// [fallbackDuration] s'applique quand le média ne déclare pas la sienne
-  /// (chaîne de résolution : durée réelle du lecteur → `durationMs` du back →
-  /// défaut par type, cf. [StatusDurations]).
+  /// [mediaKind] dit ce que [mediaUrl] désigne ; `null` (ou une URL absente)
+  /// = un statut sans média, que seule l'horloge fait avancer.
+  ///
+  /// [fallbackDuration] s'applique tant que le média n'a pas dit la sienne, et
+  /// pour toujours s'il ne la dit jamais (chaîne de résolution :
+  /// [effectiveStatusDuration]).
   void load({
     required String statusId,
     String? mediaUrl,
+    StatusMediaKind? mediaKind,
     required Duration fallbackDuration,
   });
+
+  /// **Ce qui peint la vidéo chargée**, ou `null` (pas de vidéo, ou lecteur
+  /// qui n'en joue pas).
+  ///
+  /// Le seul point de ce contrat qui rende un widget, et il le faut : une image
+  /// décodée par la plateforme ne se peint que par le widget de son greffon. Le
+  /// rendu (`StatusVideoLayer`) le pose dans son cadre ; il ne sait pas ce qu'il
+  /// contient. Sans dimensions intrinsèques : le cadre lui donne
+  /// [StatusPlayback.videoSize].
+  Widget? videoSurface();
 
   /// Démarre ou reprend la lecture.
   void play();
@@ -137,9 +204,33 @@ abstract base class _BaseStatusPlayer extends ValueNotifier<StatusPlayback>
   bool _disposed = false;
   bool _muted = false;
 
-  /// URL du média courant — inutilisée en phase 1, elle documente le point
-  /// d'accroche des implémentations réelles.
+  /// URL du média courant — rien n'y est lu ici : elle est retenue pour que
+  /// les tests constatent ce qu'on aurait joué.
   String? mediaUrl;
+
+  /// Ce que [mediaUrl] désigne, retenu pour la même raison.
+  @visibleForTesting
+  StatusMediaKind? mediaKind;
+
+  /// Ce que [videoSurface] rend — rien par défaut, puisque rien n'est décodé.
+  ///
+  /// Les tests y posent un widget témoin pour constater que la vidéo remplace
+  /// l'affiche à la première image, et pas avant.
+  @visibleForTesting
+  Widget? surface;
+
+  @override
+  Widget? videoSurface() => surface;
+
+  /// Pose un état arbitraire, sans lecture réelle — le pinceau des tests
+  /// d'écran, comme `InertContentPlayer.emit` : une durée réelle, une première
+  /// image, des dimensions de vidéo se demandent ici au lieu d'être attendues
+  /// d'un média qui n'existe pas.
+  @visibleForTesting
+  void emit(StatusPlayback playback) {
+    if (_disposed) return;
+    value = playback;
+  }
 
   bool get isDisposed => _disposed;
 
@@ -156,11 +247,13 @@ abstract base class _BaseStatusPlayer extends ValueNotifier<StatusPlayback>
   void load({
     required String statusId,
     String? mediaUrl,
+    StatusMediaKind? mediaKind,
     required Duration fallbackDuration,
   }) {
     if (_disposed) return;
     onStop();
     this.mediaUrl = mediaUrl;
+    this.mediaKind = mediaKind;
     // Aucun média réel ici : la durée effective est toujours celle fournie par
     // l'appelant. Une implémentation réelle préférera la durée annoncée par le
     // média et ne retombera sur [fallbackDuration] qu'à défaut.
@@ -207,9 +300,13 @@ abstract base class _BaseStatusPlayer extends ValueNotifier<StatusPlayback>
   }
 }
 
-/// Implémentation factice de phase 1 : aucune lecture réelle, mais une horloge
-/// qui fait avancer la position pour que toute l'UI (barre de segments,
-/// waveform, auto-avance) soit pilotée par les mêmes signaux qu'en phase 2.
+/// Implémentation factice : aucune lecture réelle, mais une horloge qui fait
+/// avancer la position pour que toute l'UI (barre de segments, waveform,
+/// auto-avance) soit pilotée par les mêmes signaux que le lecteur réel.
+///
+/// Elle reste le **défaut du provider** — donc ce que voient les tests qui ne
+/// le surchargent pas — et le lecteur du **web**, où `just_audio` ne joue pas
+/// le HLS hors Safari (#46) : un statut y défile avec son affiche, sans son.
 final class FakeStatusPlayer extends _BaseStatusPlayer {
   FakeStatusPlayer({this.tick = const Duration(milliseconds: 50)});
 

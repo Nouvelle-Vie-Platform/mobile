@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart' show Size;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/players/status_player.dart';
@@ -203,6 +204,90 @@ void main() {
 
       container.read(statusMutedProvider.notifier).set(false);
       expect(container.read(statusMutedProvider), isFalse);
+    });
+  });
+
+  group('La durée effective — réelle, puis annoncée, puis par défaut', () {
+    test('la durée réelle du lecteur prime sur celle du transcodeur', () {
+      expect(
+        effectiveStatusDuration(
+          real: const Duration(seconds: 41, milliseconds: 870),
+          announcedMs: 42000,
+          hasMedia: true,
+        ),
+        const Duration(seconds: 41, milliseconds: 870),
+      );
+    });
+
+    test('sans durée réelle, celle mesurée par le transcodeur', () {
+      expect(
+        effectiveStatusDuration(announcedMs: 42000, hasMedia: true),
+        const Duration(seconds: 42),
+      );
+    });
+
+    test('sans rien, 30 s pour un média', () {
+      expect(effectiveStatusDuration(hasMedia: true), StatusDurations.media);
+      expect(StatusDurations.media, const Duration(seconds: 30));
+    });
+
+    test('sans rien, 5 s pour un texte ou une image', () {
+      expect(effectiveStatusDuration(hasMedia: false), StatusDurations.still);
+      expect(StatusDurations.still, const Duration(seconds: 5));
+    });
+
+    test('une durée nulle ne compte pour aucun maillon', () {
+      // Elle finirait le statut à la seconde où il commence.
+      expect(
+        effectiveStatusDuration(
+          real: Duration.zero,
+          announcedMs: 0,
+          hasMedia: true,
+        ),
+        StatusDurations.media,
+      );
+    });
+  });
+
+  group('Le contrat du média', () {
+    test('load retient ce que l\'URL désigne', () {
+      final player = InertStatusPlayer();
+      addTearDown(player.dispose);
+
+      player.load(
+        statusId: 'v',
+        mediaUrl: 'https://media.example.test/v/master.m3u8',
+        mediaKind: StatusMediaKind.video,
+        fallbackDuration: StatusDurations.media,
+      );
+
+      expect(player.mediaUrl, 'https://media.example.test/v/master.m3u8');
+      expect(player.mediaKind, StatusMediaKind.video);
+      // Rien n'est décodé : ni image, ni dimensions, ni surface.
+      expect(player.value.hasVideoFrame, isFalse);
+      expect(player.value.videoSize, isNull);
+      expect(player.videoSurface(), isNull);
+    });
+
+    test('un chargement efface l\'image et les dimensions du précédent', () {
+      final player = InertStatusPlayer();
+      addTearDown(player.dispose);
+      player.emit(const StatusPlayback(
+        statusId: 'v',
+        hasVideoFrame: true,
+        videoSize: Size(1920, 1080),
+      ));
+
+      player.load(statusId: 't', fallbackDuration: StatusDurations.still);
+
+      expect(player.value.hasVideoFrame, isFalse);
+      expect(player.value.videoSize, isNull);
+    });
+
+    test('l\'égalité porte aussi l\'image et les dimensions', () {
+      const a = StatusPlayback(statusId: 'v', videoSize: Size(1, 2));
+      expect(a, const StatusPlayback(statusId: 'v', videoSize: Size(1, 2)));
+      expect(a == a.copyWith(hasVideoFrame: true), isFalse);
     });
   });
 }

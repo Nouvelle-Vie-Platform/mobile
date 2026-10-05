@@ -101,11 +101,12 @@ abstract final class SampleData {
   /// (en-tête qui ne se rend pas), une expiration à venir et une expiration
   /// dépassée.
   ///
-  /// Ce qu'il ne contient **pas** : ni piste audio, ni vidéo, ni durée
-  /// d'affichage, ni bouton d'action. Le serveur n'en sert aucun — les médias de
-  /// statut attendent le transcodage (phase 2) —, et une fixture plus riche que
-  /// la source fabrique des écrans qui marchent en maquette et se vident en
-  /// production (#33).
+  /// Ce qu'il ne contient **pas** : ni durée d'affichage ni bouton d'action — le
+  /// serveur n'en sert aucun, et une fixture plus riche que la source fabrique
+  /// des écrans qui marchent en maquette et se vident en production (#33). Ni
+  /// piste audio ni vidéo non plus, alors que le serveur en sert depuis #130 :
+  /// un média de statut est une playlist HLS **transcodée**, et une URL
+  /// inventée ne jouerait rien — le lecteur réel retomberait sur l'horloge.
   static final List<AnnouncementView> announcements = [
     // Épinglé, fond de marque.
     AnnouncementView.resolve(

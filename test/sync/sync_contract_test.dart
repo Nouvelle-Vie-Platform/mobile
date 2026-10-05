@@ -610,8 +610,9 @@ void main() {
   });
 
   group('GET /sync/announcements — la ligne', () {
-    test('treize clés : deux identifiants à joindre, aucune valeur résolue',
-        () {
+    test(
+        'dix-huit clés : deux identifiants à joindre, aucune valeur résolue, '
+        'et les cinq champs média à plat (#130)', () {
       for (final announcement in _announcements) {
         expect(announcement.keys.toSet(), {
           'id',
@@ -623,6 +624,11 @@ void main() {
           'expiresAt',
           'backgroundId',
           'backgroundImageUrl',
+          'mediaKind',
+          'mediaUrl',
+          'mediaPosterUrl',
+          'mediaDurationMs',
+          'mediaWaveform',
           'isPinned',
           'ownerId',
           'createdAt',

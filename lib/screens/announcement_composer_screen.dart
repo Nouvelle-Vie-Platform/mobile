@@ -77,6 +77,10 @@ class _AnnouncementComposerScreenState
   StatusImageUpload? _image;
   bool _hasBackgroundImage = false;
 
+  /// L'annonce rouverte porte un audio ou une vidéo : il compte comme contenu
+  /// (voir [AnnouncementDraft.hasMedia]).
+  bool _hasMedia = false;
+
   /// Envoi en cours : le bouton tourne et le formulaire ne part pas deux fois.
   bool _sending = false;
 
@@ -122,6 +126,7 @@ class _AnnouncementComposerScreenState
       expiresAt: _expiresAt,
       image: _image,
       hasBackgroundImage: _hasBackgroundImage,
+      hasMedia: _hasMedia,
     );
   }
 
@@ -295,6 +300,7 @@ class _AnnouncementComposerScreenState
     _publishedAt = draft.publishedAt?.toLocal();
     _expiresAt = draft.expiresAt?.toLocal();
     _hasBackgroundImage = draft.hasBackgroundImage;
+    _hasMedia = draft.hasMedia;
   }
 
   Widget _form(ComposerOptions options, {required bool showDelete}) {
