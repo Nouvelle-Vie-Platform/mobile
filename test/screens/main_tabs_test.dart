@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
+import 'package:maison_du_miracle/models/vocabulary.dart';
 import 'package:maison_du_miracle/screens/home_shell.dart';
 import 'package:maison_du_miracle/screens/groups_screen.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
@@ -74,9 +75,14 @@ void main() {
           matching: find.text(label),
         );
 
-    Future<void> pumpShell(WidgetTester tester) => pumpScreen(
+    Future<void> pumpShell(
+      WidgetTester tester, {
+      VocabularyOverrides? vocabulary,
+    }) =>
+        pumpScreen(
           tester,
           const HomeShell(),
+          vocabulary: vocabulary,
           overrides: [
             calendarRepositoryProvider
                 .overrideWithValue(InMemoryCalendarRepository()),
@@ -104,6 +110,47 @@ void main() {
       // Et c'est bien cet ordre-là qui est peint, de gauche à droite.
       final xs = [for (final l in labels) tester.getCenter(navTab(l)).dx];
       expect(xs, orderedEquals(<double>[...xs]..sort()));
+    });
+
+    group('Le nom de l\'onglet des annonces vient du portail (#132)', () {
+      testWidgets('le mot réglé au portail recouvre « Annonces »',
+          (tester) async {
+        // Un mot de test quelconque : le libellé de façade réel se règle au
+        // portail, il n'est écrit nulle part dans ce dépôt.
+        await pumpShell(
+          tester,
+          vocabulary: const VocabularyOverrides(labels: {
+            'navAnnouncements': {'fr': 'Étincelles', 'en': 'Embers'},
+          }),
+        );
+
+        expect(navTab('Étincelles'), findsOneWidget);
+        expect(navTab(AppLocalizationsFr().navAnnouncements), findsNothing);
+        expect(
+          AppBottomNav.itemFor(
+            tester.element(find.byType(AppBottomNav)),
+            HomeTab.announcements,
+          ).label,
+          'Étincelles',
+        );
+      });
+
+      testWidgets('sans surcharge, l\'onglet garde le mot du dépôt',
+          (tester) async {
+        // Aucun cycle passé (aucun réseau) : c'est le `.arb` qui parle.
+        await pumpShell(tester);
+        expect(navTab(AppLocalizationsFr().navAnnouncements), findsOneWidget);
+      });
+
+      testWidgets('une surcharge vide ne vide pas l\'onglet', (tester) async {
+        await pumpShell(
+          tester,
+          vocabulary: const VocabularyOverrides(labels: {
+            'navAnnouncements': {'fr': '   '},
+          }),
+        );
+        expect(navTab(AppLocalizationsFr().navAnnouncements), findsOneWidget);
+      });
     });
 
     testWidgets('l\'encoche du bouton central tombe entre deux moitiés égales',
