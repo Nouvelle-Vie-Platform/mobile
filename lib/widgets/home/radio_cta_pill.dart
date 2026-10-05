@@ -2,8 +2,8 @@
 ///
 /// Il portait un libellé en dur (« Suivre le live ») et ne faisait qu'**ouvrir une
 /// page**, laquelle démarrait un flux de radio publique belge. Il lance désormais
-/// New Life Radio, au premier contact, et dit avant qu'on appuie si l'antenne
-/// émet.
+/// New Life Radio, au premier contact, et montre avant qu'on appuie si l'antenne
+/// émet : il s'atténue quand elle se tait.
 ///
 /// ## Le geste, et pourquoi il est écrit à la main
 ///
@@ -38,7 +38,11 @@
 ///
 /// ## Le bouton éteint reste appuyable
 ///
-/// « Hors antenne » **informe, il n'interdit pas**. Si l'antenne a repris sans
+/// Le libellé ne change pas — c'est le nom de l'antenne, dans tous les états.
+/// Une antenne annoncée muette, ou un renoncement, se voit à l'**atténuation**
+/// du bouton ; la cause d'une panne se lit sur `/radio`, pas ici.
+///
+/// L'atténuation **informe, elle n'interdit pas**. Si l'antenne a repris sans
 /// qu'on le sache — l'état n'est lu qu'au lancement et au retour à l'écran —,
 /// l'appui lance quand même, et marche. Même esprit qu'ADR-0040 pour
 /// l'identifiant d'appareil, qui « sert à mesurer et à couper, jamais à
@@ -71,9 +75,6 @@ class RadioCtaPill extends ConsumerStatefulWidget {
   /// c'est « le bouton montre qu'il travaille » qu'on vérifie, pas le choix du
   /// widget qui tourne.
   static const Key workingKey = Key('radio_cta_working');
-
-  /// Le bouton d'arrêt indépendant, hérité de l'ancien `_LiveCtaPill`.
-  static const Key stopKey = Key('radio_cta_stop');
 
   @override
   ConsumerState<RadioCtaPill> createState() => _RadioCtaPillState();
@@ -187,7 +188,9 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
     // s'afficher au repos.
     final silent = ref.watch(radioAntennaProvider).value?.isSilent ?? false;
 
-    final label = _label(context, status, silent);
+    // **Un libellé fixe** : le nom de l'antenne, dans tous les états. La phase se
+    // lit sur l'icône et l'atténuation ; la cause d'une panne, sur `/radio`.
+    final label = context.l10n.radioTitle;
     final dimmed =
         status.phase == RadioPhase.failed || (silent && !status.isOn);
 
@@ -261,9 +264,5 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
         );
       },
     );
-  }
-
-  String _label(BuildContext context, RadioStatus status, bool silent) {
-    return 'New life radio';
   }
 }

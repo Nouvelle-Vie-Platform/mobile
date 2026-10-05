@@ -221,25 +221,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionUpcomingServices => 'Upcoming services';
 
   @override
-  String get radioFollow => 'New life';
-
-  @override
   String get radioTitle => 'New Life Radio';
 
   @override
-  String get radioOffAir => 'Off air';
-
-  @override
-  String get radioRetrying => 'Trying again…';
-
-  @override
-  String get radioFailureConnection => 'Check your connection';
-
-  @override
   String get radioFailureAntenna => 'Station unavailable';
-
-  @override
-  String get radioFailureUnknown => 'Can\'t listen right now';
 
   @override
   String get radioUnavailableMessage =>
