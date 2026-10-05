@@ -46,8 +46,7 @@ void main() {
       );
     });
 
-    testWidgets('au seuil exact, la marge ne se déclenche pas',
-        (tester) async {
+    testWidgets('au seuil exact, la marge ne se déclenche pas', (tester) async {
       await _pumpAt(
         tester,
         const Size(840, 800),
