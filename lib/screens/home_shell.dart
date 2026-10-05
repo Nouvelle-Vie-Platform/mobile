@@ -88,9 +88,9 @@ class HomeShell extends ConsumerStatefulWidget {
 /// `FloatingActionButton` standard (56 px) dépasse au-dessus de la barre, plus
 /// un intervalle.
 const EdgeInsets _miniPlayerMargin = EdgeInsets.fromLTRB(
-  AppSpacing.lg,
   AppSpacing.sm,
-  AppSpacing.lg,
+  AppSpacing.sm,
+  AppSpacing.sm,
   56 / 2 + AppSpacing.sm,
 );
 

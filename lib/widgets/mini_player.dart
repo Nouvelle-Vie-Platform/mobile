@@ -105,34 +105,25 @@ class MiniPlayer extends ConsumerWidget {
           type: MaterialType.transparency,
           borderRadius: BorderRadius.circular(AppRadius.xl),
           clipBehavior: Clip.antiAlias,
-          child: Stack(
-            children: [
-              Padding(
-                // À droite, la place de la ✕ : sans elle, le bouton « +30 s »
-                // passerait sous la croix et l'un des deux gestes tomberait sur
-                // l'autre.
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.sm,
-                  AppSpacing.sm,
-                  AppSpacing.xl,
-                  AppSpacing.sm,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.sm,
+            ),
+            // **La ✕ est dans la rangée**, centrée comme dans la maquette :
+            // posée en coin, elle chevauchait la carte et rognait le « +30 s ».
+            child: Row(
+              children: [
+                Expanded(
+                  child: _OpenArea(request: request, isLive: isLive),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _OpenArea(request: request, isLive: isLive),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    _Controls(request: request, isLive: isLive),
-                  ],
-                ),
-              ),
-              Positioned(
-                top: 0,
-                right: 0,
-                child: _CloseButton(request: request),
-              ),
-            ],
+                const SizedBox(width: AppSpacing.xs),
+                _Controls(request: request, isLive: isLive),
+                _CloseButton(request: request),
+              ],
+            ),
           ),
         ),
       ),
@@ -484,7 +475,7 @@ class _SkipButton extends StatelessWidget {
         iconSize: 24,
         visualDensity: VisualDensity.compact,
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+        constraints: const BoxConstraints.tightFor(width: 36, height: 40),
       ),
     );
   }
@@ -608,7 +599,7 @@ class _CloseButton extends ConsumerWidget {
         key: MiniPlayer.closeKey,
         customBorder: const CircleBorder(),
         onTap: () => _close(ref),
-        // Une cible de 32 px pour un cercle de 20 : la croix reste discrète,
+        // Une cible de 36 px pour un cercle de 26 : la croix reste discrète,
         // le doigt n'a pas à viser.
         child: SizedBox.square(
           dimension: 32,
@@ -622,7 +613,7 @@ class _CloseButton extends ConsumerWidget {
               ),
               child: Icon(
                 Icons.close_rounded,
-                size: 14,
+                size: 16,
                 color: palette.textSecondary,
               ),
             ),
