@@ -64,6 +64,24 @@ dependencies:
   just_audio: ^0.10.6
   audio_service: ^0.18.19
   audio_session: ^0.2.4
+  # **La vidéo des statuts** (#130, tranche 4/4 de « Sparks »). Le profil
+  # `sparks` du transcodeur sert une playlist HLS maître à deux rendus ;
+  # `video_player` la lit nativement des deux côtés (ExoPlayer + HLS sur
+  # Android, AVPlayer sur iOS). L'audio des statuts, lui, passe par
+  # `just_audio`, déjà là.
+  #
+  # **Un seul fichier du dépôt l'importe** (`lib/data/players/
+  # media_status_player.dart`), derrière `StatusPlayer` : sous `flutter test`
+  # son canal lève `MissingPluginException`, et les tests gardent
+  # `FakeStatusPlayer` / `InertStatusPlayer`. Un test de source le vérifie.
+  #
+  # **Swift Package** (`darwin/video_player_avfoundation/Package.swift`) :
+  # CocoaPods ne ressuscite pas. **Aucune permission** sur aucune plateforme ;
+  # Android déclare `INTERNET` dans le manifeste du greffon, et les URL servies
+  # sont en HTTPS — ni `usesCleartextTraffic` ni `NSAppTransportSecurity`.
+  # Sur le web, il n'est pas monté : `main.dart` garde `FakeStatusPlayer`
+  # (le `<video>` de Chrome ne lit pas le HLS, comme le `<audio>` de #46).
+  video_player: ^2.11.1
   # Le lecteur **web** (#46) n'utilise aucun des trois ci-dessus :
   # `just_audio_web` pose l'URL `.m3u8` dans un `<audio>` sans lecteur HLS, et
   # ne joue donc rien hors Safari. `HlsContentPlayer` pilote l'élément par

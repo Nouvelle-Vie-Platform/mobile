@@ -304,7 +304,9 @@ void main() {
     });
   });
 
-  test('la couture tient : un seul fichier de `lib/` importe just_audio', () {
+  test(
+      'la couture tient : deux fichiers de `lib/` importent just_audio, un par '
+      'lecteur', () {
     // Garde-fou de **source**, sur le modèle de « jamais de polling »
     // (`sync_scheduler_test.dart`). Un `import 'package:just_audio/…'` glissé
     // dans un écran ne casserait aucun test de comportement — il rendrait la
@@ -328,11 +330,40 @@ void main() {
       if (code.contains('package:just_audio/')) coupables.add(source.path);
     }
 
+    // Deux lecteurs réels, deux contrats : la médiathèque derrière
+    // `ContentPlayer`, les statuts derrière `StatusPlayer` (#130). Aucun écran.
+    expect(
+      coupables..sort(),
+      [
+        'lib/data/players/just_audio_content_player.dart',
+        'lib/data/players/media_status_player.dart',
+      ],
+      reason: 'seules les implémentations réelles connaissent le moteur ; tout '
+          'le reste du dépôt ne connaît que ContentPlayer et StatusPlayer',
+    );
+  });
+
+  test('la couture tient : un seul fichier de `lib/` importe video_player', () {
+    // Même garde-fou pour le moteur vidéo des statuts (#130) : un
+    // `VideoPlayerController` construit dans un `State` lèverait
+    // `MissingPluginException` sous `flutter test`, et l'écran ne serait plus
+    // branchable sur un double.
+    final coupables = <String>[];
+    for (final source in Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.dart'))) {
+      final code = source
+          .readAsLinesSync()
+          .where((line) => !line.trimLeft().startsWith('///'))
+          .join('\n');
+      if (code.contains('package:video_player/')) coupables.add(source.path);
+    }
+
     expect(
       coupables,
-      ['lib/data/players/just_audio_content_player.dart'],
-      reason: 'seule l\'implémentation réelle connaît le moteur ; tout le '
-          'reste du dépôt ne connaît que ContentPlayer',
+      ['lib/data/players/media_status_player.dart'],
+      reason: 'seul le lecteur réel des statuts connaît le moteur vidéo',
     );
   });
 }
