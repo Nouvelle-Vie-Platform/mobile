@@ -471,6 +471,9 @@ void main() {
     await settle(tester);
 
     page.close();
+    // Riverpod jette un provider resté **une image entière** sans auditeur,
+    // sur une minuterie : des `pump()` sans durée ne la font pas partir.
+    await tester.pump(const Duration(milliseconds: 16));
     await settle(tester);
     expect(channel.cancels, 1);
     expect(channel.isOpen, isFalse);
