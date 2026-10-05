@@ -37,10 +37,14 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
+import '../data/local/sync_dao.dart' show SyncCollectionKey;
+import '../data/messaging/group_history.dart';
+import '../data/messaging/group_read_advancer.dart';
+import '../data/messaging/messaging_channel.dart';
+import '../data/messaging/messaging_link.dart';
+import '../data/messaging/messaging_store_writer.dart';
+import '../data/messaging/sse_messaging_channel.dart';
 import '../data/repositories/echanges_repository.dart';
-import '../data/realtime/group_channel.dart';
-import '../data/realtime/open_thread_channel.dart';
-import '../data/realtime/sse_group_channel.dart';
 import '../data/repositories/group_message_composer.dart';
 import '../data/repositories/group_message_sender.dart';
 import '../data/repositories/store_echanges_repository.dart';
@@ -109,15 +113,35 @@ final discoverGroupsProvider =
   retry: _noAutomaticRetry,
 );
 
-/// **Le fil d'un groupe**, écho optimiste compris.
+/// **La clé du fil** : l'acteur, le groupe, et la **fenêtre** — le nombre de
+/// messages les plus récents à montrer (#140, historique par pages).
+typedef ThreadKey = ({String? actor, String id, int limit});
+
+/// La fenêtre d'ouverture d'un fil, et le pas dont elle s'élargit quand on
+/// remonte. Le même nombre que la page de `GET /groups/:id/messages`.
+const int kThreadWindow = kHistoryPageSize;
+
+/// **Le fil d'un groupe**, écho optimiste compris, borné à ses [ThreadKey.limit]
+/// derniers messages.
 ///
 /// Un `StreamProvider` et non un `FutureProvider`, et ici cette règle porte un
 /// nom : le **détachement d'auteur** (ADR-0032) arrive sur une ligne déjà
 /// stockée. Une bulle affichée doit perdre son auteur sous les yeux du lecteur.
 final groupThreadProvider =
-    StreamProvider.family<List<GroupMessageView>, EchangesKey>(
-  (ref, key) => ref.watch(echangesRepositoryProvider(key.actor)).thread(key.id),
+    StreamProvider.family<List<GroupMessageView>, ThreadKey>(
+  (ref, key) => ref
+      .watch(echangesRepositoryProvider(key.actor))
+      .thread(key.id, limit: key.limit),
   retry: _noAutomaticRetry,
+);
+
+/// **Le badge de l'onglet Échanges** (#140) : la somme des non-lus de mes
+/// conversations, lue sur le même flux que la liste — le badge et les
+/// pastilles des tuiles ne peuvent pas se contredire.
+final unreadTotalProvider = Provider.family<int, String?>(
+  (ref, actor) => totalUnread(
+    ref.watch(conversationsProvider(actor)).value ?? const [],
+  ),
 );
 
 /// **La fiche d'un groupe**, roster compris. `null` = le magasin ne connaît pas
@@ -158,47 +182,83 @@ final groupMessageComposerProvider = Provider<GroupMessageComposer>(
   ),
 );
 
-/// **Le canal temps réel d'un groupe** (#101) — SSE avec backend, muet sinon.
-///
-/// Sans backend il n'y a pas de canal, donc **aucun signal**, donc aucun cycle :
-/// c'est exactement le régime que l'application doit savoir tenir, et c'est le
-/// défaut de tous les tests d'écran (`pumpScreen` le pose, paramètre `channel:`).
-///
-/// ⚠️ **Ce n'est pas une notification**, et rien ici ne doit être nommé comme si
-/// c'en était une : le canal ne vit que tant qu'un fil est affiché. Voir
-/// `lib/data/realtime/group_channel.dart`.
-final groupChannelProvider = Provider<GroupChannel>(
-  (ref) => AppEnv.useBackend ? SseGroupChannel() : const SilentGroupChannel(),
+/// **Le canal temps réel de la messagerie** (#140) — SSE avec backend, muet
+/// sinon. Le défaut de tous les tests (`pumpScreen` le pose muet).
+final messagingChannelProvider = Provider<MessagingChannel>(
+  (ref) => AppEnv.useBackend
+      ? SseMessagingChannel()
+      : const SilentMessagingChannel(),
 );
 
-/// **Le canal du fil affiché** : ouvert au montage de l'écran, fermé au démontage.
+/// **Range dans le magasin les lignes reçues hors du tirage** (#140) — canal,
+/// historique, réponse de lecture —, par la même fonction que le tirage.
+final messagingStoreWriterProvider = Provider<MessagingStoreWriter>(
+  (ref) => MessagingStoreWriter(ref.watch(appDatabaseProvider)),
+);
+
+/// **Le lien `users/{monId}`** (#140), ouvert tant que la session est active —
+/// et, par son observateur du cycle de vie, tant que l'application est au
+/// premier plan. `null` sans backend ou sans session : un invité n'a pas de
+/// canal (le serveur le lui refuse, `guestOnlyOnRadio`).
 ///
-/// `autoDispose` et clé par groupe, et les deux portent la portée décidée au
-/// cadrage (décision 12) :
+/// **Pas `autoDispose`** : personne ne l'affiche, il doit vivre aussi longtemps
+/// que la session. `app.dart` l'écoute (`listenManual`), et c'est cet
+/// abonnement qui le construit et le garde. Un changement de session (connexion,
+/// déconnexion, autre compte) **reconstruit** le provider : `onDispose` ferme
+/// l'ancien lien, et le nouveau s'ouvre sur le bon canal.
 ///
-/// - **`autoDispose`** *est* la fermeture de la connexion. L'écran l'observe dans
-///   son `build` ; dès qu'il quitte l'arbre, plus personne ne l'écoute, Riverpod
-///   jette l'élément et `onDispose` rend la socket. C'est le piège 2 de l'issue,
-///   réglé structurellement plutôt que par un `dispose()` qu'un écran pourrait
-///   oublier. ⚠️ Le contraire exact de `contentPlayerProvider`, qui n'est **pas**
-///   `autoDispose` parce que la lecture doit survivre au `context.pop()` : un fil
-///   qu'on quitte, lui, n'a plus rien à écouter.
-/// - **une famille par groupe**, donc une seule connexion à la fois : on ne
-///   s'abonne pas aux huit groupes d'un membre pour lire un fil. Une connexion
-///   ouverte coûte de la batterie et du forfait, et au Togo le second compte
-///   autant que la première.
-///
-/// Il ne dépend **pas** de l'acteur, contrairement aux lectures de cette rubrique :
-/// le serveur lit l'appartenance sur le porteur de la requête, et un non-membre est
-/// simplement refusé — sans conséquence visible.
-final openThreadChannelProvider =
-    Provider.autoDispose.family<OpenThreadChannel, String>((ref, groupId) {
-  final channel = OpenThreadChannel(
-    groupId: groupId,
-    channel: ref.watch(groupChannelProvider),
-    resynchronize: ref.watch(openThreadSyncProvider),
+/// ⚠️ Il lit l'acteur par `ref.watch(authProvider.select(…))`, ce que l'en-tête de
+/// ce fichier interdit aux **lectures d'écran**. La raison de l'interdit ne vaut
+/// pas ici : aucun widget ne l'observe pendant un `build` — seul `app.dart`
+/// l'écoute, hors de tout arbre de widgets —, il n'y a donc aucune chaîne à
+/// vider pendant la construction d'un overlay.
+final messagingLinkProvider = Provider<MessagingLink?>((ref) {
+  if (!AppEnv.useBackend) return null;
+  final userId = ref.watch(authProvider.select((state) => state.user?.id));
+  if (userId == null) return null;
+
+  final writer = ref.watch(messagingStoreWriterProvider);
+  final link = MessagingLink(
+    userId: userId,
+    channel: ref.watch(messagingChannelProvider),
+    apply: (event) => writer.store(event.collection, event.row),
+    resynchronize: ref.watch(realtimeSyncProvider),
   );
-  ref.onDispose(channel.close);
-  channel.open();
-  return channel;
+  ref.onDispose(link.close);
+  link.open();
+  return link;
+});
+
+/// **L'outbox de la lecture** (#140) : `POST /groups/:id/read`, posé d'abord en
+/// local, rejoué tant qu'il n'est pas confirmé. Inerte sans backend.
+final groupReadAdvancerProvider = Provider<GroupReadAdvancer>((ref) {
+  final writer = ref.watch(messagingStoreWriterProvider);
+  return GroupReadAdvancer(
+    dao: ref.watch(groupDaoProvider),
+    sender: AppEnv.useBackend
+        ? HttpGroupReadSender()
+        : const InertGroupReadSender(),
+    storeRead: (row) => writer.store(SyncCollectionKey.groupReads, row),
+  );
+});
+
+/// **L'historique par pages** (#140), rangé dans le magasin. Sans backend : rien
+/// au-delà de ce que le magasin possède.
+final groupHistoryProvider = Provider<GroupHistory>((ref) {
+  if (!AppEnv.useBackend) return const NoGroupHistory();
+  final writer = ref.watch(messagingStoreWriterProvider);
+  return HttpGroupHistory(store: writer.storeMessages);
+});
+
+/// **Le renvoi de tout ce qui n'est pas parti** (#140) : les messages en échec
+/// (ou restés « en cours » par une application tuée) et les lectures non
+/// confirmées. `app.dart` l'appelle après **chaque cycle réussi** — donc au
+/// retour du réseau (la reconnexion du canal lance un cycle), au retour au
+/// premier plan, et à l'ouverture. Jamais de doublon : chaque geste porte sa
+/// clé (`clientMessageId`) ou est idempotent (la lecture).
+final messagingOutboxProvider = Provider<Future<void> Function()>((ref) {
+  return () async {
+    await ref.read(groupMessageComposerProvider).resendUnconfirmed();
+    await ref.read(groupReadAdvancerProvider).replay();
+  };
 });

@@ -1,10 +1,10 @@
 /// **Quand on synchronise — et quand on ne synchronise pas.**
 ///
 /// Trois déclencheurs, posés par ADR-0017 : **ouverture** de l'application,
-/// **retour au premier plan**, **tirer-pour-rafraîchir**. Le **signal d'un fil
-/// ouvert** ([SyncTrigger.openThread], #101) est le quatrième, et le **réveil
-/// push** ([SyncTrigger.pushWake], #97) le cinquième. Tous deux se sont branchés
-/// ici comme annoncé : un appel de plus à [trigger], et rien d'autre.
+/// **retour au premier plan**, **tirer-pour-rafraîchir**. Le **canal temps
+/// réel** ([SyncTrigger.realtime], #101 puis #140) est le quatrième, et le
+/// **réveil push** ([SyncTrigger.pushWake], #97) le cinquième. Tous deux se sont
+/// branchés ici comme annoncé : un appel de plus à [trigger], et rien d'autre.
 ///
 /// **Jamais de polling.** Il n'y a aucun `Timer` dans ce fichier, et il ne doit
 /// pas en apparaître (`test/sync/sync_scheduler_test.dart` le vérifie). Un
@@ -24,19 +24,19 @@ enum SyncTrigger {
   foreground,
   pullToRefresh,
 
-  /// **Un signal reçu sur le canal d'un fil ouvert** (#101) : le temps réel par
-  /// SSE pendant qu'une conversation est affichée.
+  /// **Le canal temps réel `users/{id}` le demande** (#140) : il vient de
+  /// s'ouvrir (première fois ou reconnexion — un canal neuf n'a aucune mémoire
+  /// de la coupure), ou il a rangé une ligne qui cite un groupe que le magasin ne
+  /// connaît pas.
   ///
-  /// Un quatrième appel à [SyncScheduler.trigger], pas un quatrième mécanisme :
-  /// le moteur fait exactement la même chose, et c'est tout l'intérêt — un signal
-  /// SSE est un **accélérateur de notification** (ADR-0006), jamais une source de
-  /// vérité. Le réveil push ([SyncTrigger.pushWake]) s'y est branché de la même
-  /// façon.
+  /// Le canal **range lui-même** ses lignes (`MessagingStoreWriter`) ; ce
+  /// déclencheur n'est que le **rattrapage**, la synchronisation restant la
+  /// vérité (ADR-0006, piège 4 du plan). Il remplace le signal du canal par
+  /// groupe de #101 (`openThread`), retiré avec ce canal.
   ///
-  /// ⚠️ Ce n'est **pas** une notification : le canal ne vit que tant que l'écran
-  /// est affiché. Application en arrière-plan ou fermée, il n'y a aucun signal —
-  /// voir `lib/data/realtime/group_channel.dart`.
-  openThread,
+  /// ⚠️ Ce n'est **pas** une notification : le canal ne vit qu'au premier plan.
+  /// Application en arrière-plan ou fermée, c'est le réveil push.
+  realtime,
 
   /// **Un réveil push reçu application ouverte** (#97).
   ///

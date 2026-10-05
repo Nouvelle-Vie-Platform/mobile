@@ -59,6 +59,13 @@ class GroupMessageComposer {
   /// corps posté.
   final String Function() _mintId;
 
+  /// **Les clés dont l'envoi est en cours** (#140) : le renvoi automatique ne
+  /// reposte pas un message que l'envoi d'origine est encore en train de
+  /// poster. Ce ne serait pas un doublon — la clé d'idempotence l'interdit au
+  /// serveur —, mais un aller-retour pour rien, et un écho qui clignoterait
+  /// entre « en cours » et « pas parti ».
+  final Set<String> _inFlight = {};
+
   /// Envoie [body] dans [groupId]. Rend la **clé d'idempotence** du message, ou
   /// `null` si le texte était vide — un bouton d'envoi qui part sur une chaîne
   /// vide ne doit rien poser du tout.
@@ -79,12 +86,18 @@ class GroupMessageComposer {
       createdAt: createdAt,
     );
 
-    final sent = await _sender.send(
-      groupId: groupId,
-      body: trimmed,
-      clientMessageId: clientMessageId,
-      clientCreatedAt: createdAt,
-    );
+    _inFlight.add(clientMessageId);
+    final bool sent;
+    try {
+      sent = await _sender.send(
+        groupId: groupId,
+        body: trimmed,
+        clientMessageId: clientMessageId,
+        clientCreatedAt: createdAt,
+      );
+    } finally {
+      _inFlight.remove(clientMessageId);
+    }
 
     if (!sent) {
       await _dao.markPendingFailed(clientMessageId);
@@ -105,22 +118,53 @@ class GroupMessageComposer {
   /// abouti — réponse perdue, coupure après le `POST` —, le serveur reconnaît la
   /// clé et renvoie le message existant au lieu d'en créer un second. Frapper une
   /// clé neuve ferait du « réessayer » le doublon que la clé existe pour éviter.
+  ///
+  /// L'écho repasse « en cours » le temps de l'essai (#140) — un « pas parti »
+  /// affiché pendant qu'on réessaie mentirait —, et redevient « pas parti » si
+  /// l'essai échoue.
   Future<bool> retry(String clientMessageId) async {
-    final pending = await _dao.pendingById(clientMessageId);
-    if (pending == null) return false;
-
-    final sent = await _sender.send(
-      groupId: pending.groupId,
-      body: pending.body,
-      clientMessageId: pending.clientMessageId,
-      clientCreatedAt: pending.createdAt,
-    );
-
-    if (!sent) return false;
-
+    if (!await _resend(clientMessageId)) return false;
     await _resynchronize();
     await _dao.purgeReconciled();
     return true;
+  }
+
+  /// **Renvoie tout ce qui n'est pas confirmé** (#140) — le renvoi
+  /// automatique, appelé après chaque cycle de synchronisation réussi : au
+  /// retour du réseau, au retour au premier plan, à la reconnexion du canal.
+  ///
+  /// Sous la **même** clé, message par message et dans l'ordre de rédaction :
+  /// jamais de doublon (piège 5 du plan). Les échos « en cours » sont rejoués
+  /// aussi : une application tuée pendant l'envoi les aurait laissés tels quels
+  /// pour toujours. Ceux dont l'envoi d'origine tourne encore sont sautés.
+  ///
+  /// Ne déclenche **pas** de cycle : il est lui-même appelé à la fin d'un cycle,
+  /// et la ligne serveur arrive par le canal `users/{id}` — ou au cycle suivant.
+  Future<void> resendUnconfirmed() async {
+    for (final pending in await _dao.unconfirmedPending()) {
+      await _resend(pending.clientMessageId);
+    }
+    await _dao.purgeReconciled();
+  }
+
+  Future<bool> _resend(String clientMessageId) async {
+    if (!_inFlight.add(clientMessageId)) return false;
+    try {
+      final pending = await _dao.pendingById(clientMessageId);
+      if (pending == null) return false;
+
+      await _dao.markPendingSending(clientMessageId);
+      final sent = await _sender.send(
+        groupId: pending.groupId,
+        body: pending.body,
+        clientMessageId: pending.clientMessageId,
+        clientCreatedAt: pending.createdAt,
+      );
+      if (!sent) await _dao.markPendingFailed(clientMessageId);
+      return sent;
+    } finally {
+      _inFlight.remove(clientMessageId);
+    }
   }
 
   /// **Abandonner** un message qui n'est pas parti : l'écho quitte le fil.

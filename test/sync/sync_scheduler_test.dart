@@ -162,7 +162,7 @@ void main() {
 
     final running = scheduler.trigger(SyncTrigger.foreground);
     final signals = [
-      for (var i = 0; i < 5; i++) scheduler.trigger(SyncTrigger.openThread),
+      for (var i = 0; i < 5; i++) scheduler.trigger(SyncTrigger.realtime),
     ];
     expect(cycles, 1, reason: 'aucun cycle ne part pendant le premier');
 
@@ -171,7 +171,7 @@ void main() {
     await pumpEventQueue();
 
     expect(cycles, 2, reason: 'cinq signaux, un seul cycle de rattrapage');
-    expect(scheduler.lastTrigger, SyncTrigger.openThread);
+    expect(scheduler.lastTrigger, SyncTrigger.realtime);
 
     pending.last.complete(report);
     for (final signal in signals) {

@@ -10,6 +10,7 @@ import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
 import 'state/auth_providers.dart';
 import 'state/downloads_providers.dart';
+import 'state/echanges_providers.dart';
 import 'state/locale_providers.dart';
 import 'state/push_providers.dart';
 import 'state/session_gate.dart';
@@ -38,6 +39,11 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
 
   /// L'abonnement aux réveils reçus **application ouverte** — voir [_handleWake].
   StreamSubscription<Map<String, Object?>>? _wakes;
+
+  /// L'abonnement qui **construit et tient** le lien temps réel `users/{id}`
+  /// (#140) — voir `messagingLinkProvider`. Personne d'autre ne l'écoute : sans
+  /// lui, le canal ne s'ouvrirait jamais.
+  ProviderSubscription<Object?>? _messaging;
 
   @override
   void initState() {
@@ -114,13 +120,27 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
         // le moteur de transfert (canaux natifs) n'est instancié qu'une fois la
         // première synchronisation passée. Un échec est avalé par le
         // planificateur — ce n'est pas une panne de synchronisation.
+        //
+        // **Le renvoi de la messagerie** (#140) suit le même câblage : un cycle
+        // réussi dit que le réseau répond, c'est le moment de renvoyer les
+        // messages en échec et les lectures non confirmées — au retour du
+        // réseau (la reconnexion du canal lance un cycle), au retour au premier
+        // plan, à l'ouverture. Chaque geste porte sa clé : jamais de doublon.
         scheduler.onCycleSucceeded = (_) async {
           await ref.read(downloadLifecycleProvider).reconcile();
           await ref.read(downloadManagerProvider).reconcile();
+          await ref.read(messagingOutboxProvider)();
         };
         // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
         // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.
         unawaited(scheduler.start());
+
+        // **Le canal temps réel de la messagerie** (#140), ouvert après le
+        // premier cycle demandé et sous la même attente de porteur : un
+        // abonnement sans jeton serait refusé. Le provider suit la session
+        // (ouvert à la connexion, fermé à la déconnexion) et son lien suit le
+        // cycle de vie (fermé en arrière-plan, rouvert au retour).
+        _messaging = ref.listenManual(messagingLinkProvider, (_, __) {});
 
         // **Le réveil push** (#97), posé au même endroit et pour la même raison que
         // le premier cycle : il a besoin d'un porteur, et `awaitToken()` vient de
@@ -191,6 +211,7 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   @override
   void dispose() {
     _intents?.close();
+    _messaging?.close();
     unawaited(_wakes?.cancel());
     ApiClient.instance.onUnauthorized = null;
     ApiClient.instance.interfaceLanguage = null;
