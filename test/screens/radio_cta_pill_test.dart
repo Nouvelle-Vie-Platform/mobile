@@ -63,7 +63,15 @@ void main() {
     RadioPhase phase, {
     RadioFailureKind? failure,
   }) {
-    expect(find.text(label), findsOneWidget);
+    // Dans le bouton : le mini-lecteur (#117) porte le même titre pendant que
+    // l'antenne joue, et chercher dans tout l'écran le compterait deux fois.
+    expect(
+      find.descendant(
+        of: find.byType(RadioCtaPill),
+        matching: find.text(label),
+      ),
+      findsOneWidget,
+    );
     expect(status(tester).phase, phase);
     if (phase == RadioPhase.failed) expect(status(tester).failure, failure);
   }
