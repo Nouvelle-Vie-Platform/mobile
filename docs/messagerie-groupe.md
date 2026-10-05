@@ -205,12 +205,12 @@ que ne rien dire.
    d'idempotence **obligatoire** (un UUIDv7 frappé par le client), et rupture
    assumée avec le composeur d'annonces — une conversation ne supporte pas
    d'attendre le réseau. Voir `lib/data/repositories/group_message_composer.dart`.
-   Le **temps réel par SSE** est arrivé depuis, par #101, et il ne change **rien**
-   à la règle du §1 : l'événement reçu est un **signal**, il ne porte aucune donnée
-   lisible et n'écrit jamais dans le magasin — il déclenche un cycle de
-   synchronisation, et c'est le moteur qui écrit. Le canal ne vit que tant qu'une
-   conversation est **affichée** ; ce n'est donc pas une notification, et le réveil
-   push reste de la tranche 2. Voir `lib/data/realtime/`.
+   Le **temps réel par SSE** est arrivé depuis, par #101 (un signal par groupe,
+   ouvert dans le fil affiché), puis a été **refait** par #140 : le canal
+   `users/{id}` porte la ligne elle-même, rangée par la même fonction que la
+   synchronisation. Il ne change **rien** à la règle du §1 — la ligne est celle
+   du flux delta, couple `(authorId, isSystem)` compris. Voir le §10 et
+   `lib/data/messaging/`.
 
 ## 7. Tests attendus au branchement — **écrits**
 
@@ -301,7 +301,8 @@ Le correctif : au passage à `resumed`, `SyncScheduler.onForeground` est appelé
 **immédiatement**, puis **de nouveau à la fin du cycle du retour** (un réveil de
 fond peut être encore en cours). `syncSchedulerProvider` y branche un
 `markTablesUpdated` sur les tables de toutes les collections synchronisées, plus
-`pending_group_messages`. Le rappel est injecté : le planificateur ne dépend pas
+`pending_group_messages` (et, depuis #140, `pending_group_reads`). Le rappel est
+injecté : le planificateur ne dépend pas
 de drift.
 
 `shareAcrossIsolates` n'est **pas** la solution : le gestionnaire de fond FCM
@@ -311,3 +312,75 @@ Test de non-régression : `test/sync/foreground_foreign_writes_test.dart` — de
 connexions sur un même fichier temporaire, le vrai moteur restreint du réveil sur
 l'une, le vrai `syncSchedulerProvider` sur l'autre, et les deux flux qui doivent
 émettre la ligne du réveil après le retour.
+
+## 10. Un fil fiable, comme WhatsApp (#140, tranche M1b)
+
+Le plan est `server-portal/docs/messagerie-whatsapp-plan.md` (décisions 11 et 12,
+pièges 1, 2, 4 et 5) ; le contrat serveur consommé est
+`server-portal/docs/messagerie-temps-reel-contrat.md` (M1a). `CLAUDE.md` détaille
+le code ; voici ce que ce contrat-ci en retient.
+
+### Le corps nul (piège 1)
+
+`group_messages.body` est **nullable** depuis le schéma v20. Un message-média
+(vocal, image) arrive avec `body: null` au-delà du plancher de compatibilité
+(`GROUP_MEDIA_COMPAT_FLOOR_VERSION`) et **toujours** sur le canal ; la colonne
+`NOT NULL` faisait lever `groupMessageRowOf`, donc rejeter la page, donc couper le
+cycle à chaque tour. Le palier v19 → v20 recrée la table (`alterTable`), recopie
+le fil et garde le curseur. À l'écran, un corps nul se **dit**
+(`chatMediaUnsupported`), jamais une bulle vide ; la notification de réveil se
+tait. **À faire avant toute montée de `X-App-Version` au-delà de 1.14.0.**
+
+### Le canal `users/{monId}`
+
+Un seul canal pour toutes les discussions, ouvert tant que l'application est au
+premier plan **et** la session ouverte (`messagingLinkProvider`, écouté par
+`app.dart`), fermé en arrière-plan. Le canal par groupe `groups/{id}` n'est plus
+ouvert (il reste servi pour le parc installé, contrat M1a §1).
+
+| événement | collection | rangement |
+| --- | --- | --- |
+| `message.created` / `.updated` / `.deleted` | `group_messages` | remplace la ligne ; un tombstone la retire ; l'écho de même `clientMessageId` cède |
+| `membership.changed` | `group_members` | remplace ; **ma** ligne tombstonée retire la conversation |
+| `group.updated` | `groups` | remplace — c'est ainsi qu'arrivent l'effectif juste et un groupe rejoint |
+| `read.advanced` | `group_reads` | **seulement s'il avance** (identifiant du message lu) |
+| `$$transmit/ping` | — | signe de vie ; 60 s de silence → reconnexion |
+
+Chaque ligne passe par `MessagingStoreWriter` → le descripteur du registre →
+`SyncDao.applyLiveRows` : **la même fonction que la ligne de synchronisation**,
+sans curseur. Une ligne qui cite un groupe inconnu est rangée, **puis** un cycle
+est lancé ; chaque (re)connexion lance un cycle de rattrapage. La
+synchronisation reste la vérité (piège 4).
+
+### Non-lus, lecture et badge
+
+`group_reads` (collection `private`, rangée par `groupId`, **avant**
+`group_messages` dans le registre) porte ma position servie ;
+`pending_group_reads` (locale seule) celle que ce téléphone a avancée sans
+confirmation. Le compteur — la formule du contrat, écrite une fois dans
+`GroupDao` — prend la plus avancée des deux : un message lu hors ligne cesse
+aussitôt de compter. La lecture avance (`POST /groups/:id/read`) quand le fil
+montre son message le plus récent ; elle est rejouée après chaque cycle réussi
+jusqu'à confirmation. Badge de l'onglet = somme des pastilles des conversations.
+
+### Renvoi sans doublon (piège 5)
+
+Après chaque cycle réussi, les échos non réconciliés (`failed` **et** `sending`)
+repartent sous **leur** `clientMessageId`, dans l'ordre de rédaction ; le geste
+manuel (toucher le message en échec → Réessayer / Supprimer) fait de même. Le
+serveur reconnaît la clé : jamais de second message.
+
+### Un déclencheur n'est plus perdu
+
+`SyncScheduler.trigger()` rejoignait le cycle en vol, même quand ce cycle avait
+déjà passé la collection concernée : le signal était perdu jusqu'au déclencheur
+suivant. Un déclencheur reçu pendant un cycle en programme désormais un second,
+coalescé, lancé dès la fin du premier.
+
+### Ce qui reste à vérifier sur appareil
+
+- l'ouverture sur le premier non-lu (alignement d'`ensureVisible` dans une liste
+  inversée) et le maintien du dernier message au-dessus du clavier ;
+- la reconnexion après une bascule bleu/vert (~120 s sans flux) et après un
+  passage en arrière-plan ;
+- le retour depuis une notification (flèche et geste système Android).
