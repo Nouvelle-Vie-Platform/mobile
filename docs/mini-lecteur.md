@@ -34,7 +34,11 @@ pilote depuis n'importe quel écran. Aujourd'hui, la lecture survit déjà au `c
 - **Mise en page** : carte flottante arrondie avec ombre, au-dessus de la barre, en suivant le
   précédent des bandeaux de `HomeShell` (`bottom: paddingOf.bottom + AppBottomNav.barHeight`). Les
   listes reçoivent une marge basse pour que le mini-lecteur ne masque pas leurs derniers éléments.
-- **Statut vidéo plein écran (Annonces)** : le mini-lecteur est masqué tant que le statut est ouvert.
+- **Statut vidéo plein écran (Annonces)** : le mini-lecteur est masqué tant que le statut est ouvert
+  (#117 : la condition qui estompe déjà le bouton central — onglet Annonces actif et statut vidéo).
+- **Masquages ajoutés par #117** : `/gathering/:id` (sa fiche est un `ContentPlayerView`), les parcours
+  bloquants (`/`, `/auth*`, `/legal/accept`), la visionneuse `/media-viewer`, le menu latéral ouvert,
+  toute fenêtre surgissante (dialogue, feuille du bas) et le clavier ouvert.
 - **Mode invité** : même comportement que pour un compte connecté.
 - **Position** : la progression change plusieurs fois par seconde, donc on lit `contentPlaybackProvider`
   avec `select`.
@@ -42,8 +46,11 @@ pilote depuis n'importe quel écran. Aujourd'hui, la lecture survit déjà au `c
 ## Points d'attention
 
 - Les routes sont plates (pas de `ShellRoute`). Pour que le mini-lecteur apparaisse sur les écrans
-  empilés, il doit être monté au-dessus du `Navigator` (`MaterialApp.router` → `builder`), et non dans
-  `HomeShell`. Il lui faut aussi connaître la route courante pour se masquer sur le détail et sur la radio.
+  empilés, il est monté au-dessus du `Navigator` (`MaterialApp.router` → `builder`, `MiniPlayerHost`,
+  #117), et non dans `HomeShell`. Il lit la route du sommet dans `routerDelegate.currentConfiguration`.
+- Marges des listes (#117) : la hauteur mesurée de la carte est ajoutée à `MediaQuery.padding.bottom`
+  de toute la pile ; la coquille la retire autour de son `Scaffold` (sa barre grandirait) et la rend à
+  ses onglets. Voir CLAUDE.md, « Le mini-lecteur partout ».
 - Le CLAUDE.md fait de `ContentPlayerView` « le seul endroit qui pilote le lecteur ». Le mini-lecteur
   y déroge, comme `playHomeContent` y déroge déjà. Il faut donc réécrire cette règle (transport
   centralisé dans un contrôleur global, et non plus dans un widget), et non la contourner en silence.
