@@ -39,6 +39,7 @@ import '../../l10n/l10n_extension.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/home_tab.dart';
+import '../../widgets/mini_player_host.dart';
 import 'identifier_screen.dart';
 
 /// **Pourquoi on demande un compte sur cet onglet-ci**, en une phrase.
@@ -79,7 +80,11 @@ class SignInTab extends StatelessWidget {
           reason: signInReasonFor(tab, context.l10n),
           padding: AppSpacing.screenPadding.copyWith(
             top: AppSpacing.xxl,
-            bottom: AppSpacing.xxl + AppBottomNav.barHeight,
+            // La place du mini-lecteur (#117) s'y ajoute : ce formulaire pose
+            // sa marge en dur, sans lire `MediaQuery.padding`.
+            bottom: AppSpacing.xxl +
+                AppBottomNav.barHeight +
+                MiniPlayerHost.insetOf(context),
           ),
         ),
       ),

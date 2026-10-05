@@ -36,6 +36,7 @@ import '../state/auth_providers.dart';
 import '../state/legal_providers.dart';
 import '../state/repository_providers.dart';
 import '../widgets/app_background.dart';
+import '../widgets/mini_player_host.dart';
 
 /// Noms des routes nommées (à utiliser avec `context.goNamed` / `pushNamed`).
 abstract final class AppRoute {
@@ -279,6 +280,11 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     refreshListenable: Listenable.merge([authListenable, legalGateListenable]),
+    // **Les fenêtres surgissantes, comptées pour le mini-lecteur** (#117) : un
+    // dialogue ou une feuille du bas ne change pas la route, et la carte posée
+    // au-dessus du `Navigator` flotterait sinon par-dessus leur barrière.
+    // L'hôte le retrouve ici (`MiniPlayerPopupObserver.of`).
+    observers: [MiniPlayerPopupObserver()],
     // La garde n'a plus de corps ici : elle vit dans [redirectFor], pour se
     // vérifier route par route sans monter un écran. Ce `redirect` ne fait que
     // lui passer ce que seul le routeur sait.

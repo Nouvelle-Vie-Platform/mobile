@@ -19,6 +19,7 @@ import 'state/theme_provider.dart';
 import 'state/vocabulary_providers.dart';
 import 'theme/app_responsive.dart';
 import 'theme/app_theme.dart';
+import 'widgets/mini_player_host.dart';
 
 /// Widget racine de l'application « Maison du Miracle ».
 ///
@@ -254,7 +255,16 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
         // l'application où l'échelle de texte est décidée.
         maxScaleFactor: kMaxTextScale,
         child: VocabularyBoundary(
-          child: _ContentLocaleSync(child: child ?? const SizedBox.shrink()),
+          child: _ContentLocaleSync(
+            // **Le mini-lecteur (#117), au-dessus du `Navigator`** : les routes
+            // sont plates, et un écran poussé recouvre la coquille d'onglets.
+            // Sous la frontière de vocabulaire et l'échelle de texte bornée,
+            // comme n'importe quel écran. Voir `MiniPlayerHost`.
+            child: MiniPlayerHost(
+              router: router,
+              child: child ?? const SizedBox.shrink(),
+            ),
+          ),
         ),
       ),
     );
