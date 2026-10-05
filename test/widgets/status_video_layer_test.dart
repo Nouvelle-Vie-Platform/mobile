@@ -80,8 +80,10 @@ void main() {
         tester.pumpWidget(
           Center(
             child: SizedBox(
-              width: 390,
-              height: 760,
+              // Plus petit que la surface de test (800 × 600) : un cadre
+              // plus haut qu'elle serait rogné, et la mesure mentirait.
+              width: 300,
+              height: 560,
               child: StatusFramedMedia(
                 key: const Key('cadre'),
                 child: SizedBox.fromSize(size: child),
@@ -103,7 +105,7 @@ void main() {
       // Le cadre occupe tout le fond : c'est la peinture de l'enfant qui est
       // réduite et centrée, et le fond du statut subsiste autour.
       expect(
-          tester.getSize(find.byKey(const Key('cadre'))), const Size(390, 760));
+          tester.getSize(find.byKey(const Key('cadre'))), const Size(300, 560));
     });
   });
 
