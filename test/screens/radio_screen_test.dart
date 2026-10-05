@@ -7,7 +7,9 @@ import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/screens/radio_screen.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
+import 'package:flutter/material.dart';
 import 'package:maison_du_miracle/widgets/app_error_state.dart';
+import 'package:maison_du_miracle/widgets/content_player_view.dart';
 
 import '../helpers/pump_screen.dart';
 import '../helpers/radio_doubles.dart';
@@ -324,6 +326,43 @@ void main() {
 
       // Une nouvelle négociation, puis une réouverture avec le cookie neuf :
       // c'est `RadioListening.start`, pas un `resume()` nu.
+      expect(handshake.count, 2);
+      expect(player.loadCount, 2);
+      expect(player.loadedHeaders, {
+        'Cookie': RecordingRadioHandshake.sessionAt(2),
+      });
+      expect(player.resumeCount, resumes);
+      expect(find.byKey(RadioAirStatus.failedKey), findsNothing);
+    });
+
+    testWidgets(
+        'après abandon, le gros bouton offre ▶ et un appui relance par le pré-vol',
+        (tester) async {
+      final handshake = await pumpRadio(tester);
+      // Le lecteur porte la panne **et** `isPlaying` : c'est l'état qui
+      // affichait ⏸ et dont le premier appui « mettait en pause » un silence.
+      await abandonOn(tester, 'Response code: 404');
+      await paintFailure(tester, 'Response code: 404');
+      expect(handshake.count, 1);
+
+      final button = find.byKey(ContentPlayerView.playButtonKey);
+      expect(
+        find.descendant(of: button, matching: find.byIcon(Icons.play_arrow)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: button, matching: find.byIcon(Icons.pause)),
+        findsNothing,
+      );
+      final resumes = player.resumeCount;
+
+      await tester.tap(button);
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      // **Un seul appui** : nouvelle négociation, réouverture avec le cookie
+      // neuf, jamais un `resume()` nu.
       expect(handshake.count, 2);
       expect(player.loadCount, 2);
       expect(player.loadedHeaders, {

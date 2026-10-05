@@ -562,6 +562,51 @@ void main() {
       expect(player.loadCount, 1);
     });
 
+    testWidgets('en panne, le gros bouton offre ▶ et un appui reprend', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      await _pump(tester, player: player);
+      await _demarrer(tester, player);
+
+      // **Le piège** : la valeur en panne porte encore `isPlaying` et
+      // `isBuffering` (`copyWith` ne sait pas les effacer). Le bouton ne doit
+      // montrer ni ⏸ ni l'anneau d'attente sur un silence.
+      player.emit(
+        player.value.copyWith(
+          position: const Duration(minutes: 37),
+          duration: const Duration(minutes: 58),
+          hasStarted: true,
+          isPlaying: true,
+          isBuffering: true,
+          error: 'réseau coupé',
+        ),
+      );
+      await tester.pump();
+
+      final button = find.byKey(ContentPlayerView.playButtonKey);
+      expect(
+        find.descendant(of: button, matching: find.byIcon(Icons.play_arrow)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: button, matching: find.byIcon(Icons.pause)),
+        findsNothing,
+      );
+
+      await tester.tap(button);
+      await tester.pump();
+
+      // Le geste de « Reprendre » : même écoute, même position — pas une
+      // pause, pas un rechargement.
+      expect(player.resumeCount, 1);
+      expect(player.loadCount, 1);
+      expect(player.value.hasError, isFalse);
+      expect(player.value.isPlaying, isTrue);
+      expect(player.value.position, const Duration(minutes: 37));
+    });
+
     testWidgets('un échec avant tout son dit qu\'il faut du réseau', (
       tester,
     ) async {
