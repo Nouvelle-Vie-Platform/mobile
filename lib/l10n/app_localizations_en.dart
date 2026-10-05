@@ -1366,4 +1366,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appUpdateDismiss => 'Later';
+
+  @override
+  String get miniPlayerLiveBadge => 'LIVE';
+
+  @override
+  String miniPlayerOpen(String title) {
+    return 'Open player: $title';
+  }
+
+  @override
+  String get miniPlayerSkipBackward => 'Back 30 seconds';
+
+  @override
+  String get miniPlayerSkipForward => 'Forward 30 seconds';
+
+  @override
+  String get miniPlayerReplay => 'Replay';
+
+  @override
+  String get miniPlayerRelaunch => 'Start listening again';
+
+  @override
+  String get miniPlayerClose => 'Close player';
 }

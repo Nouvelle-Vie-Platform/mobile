@@ -1377,4 +1377,27 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get appUpdateDismiss => 'Plus tard';
+
+  @override
+  String get miniPlayerLiveBadge => 'EN DIRECT';
+
+  @override
+  String miniPlayerOpen(String title) {
+    return 'Ouvrir le lecteur : $title';
+  }
+
+  @override
+  String get miniPlayerSkipBackward => 'Reculer de 30 secondes';
+
+  @override
+  String get miniPlayerSkipForward => 'Avancer de 30 secondes';
+
+  @override
+  String get miniPlayerReplay => 'Rejouer';
+
+  @override
+  String get miniPlayerRelaunch => 'Relancer l\'écoute';
+
+  @override
+  String get miniPlayerClose => 'Fermer le lecteur';
 }

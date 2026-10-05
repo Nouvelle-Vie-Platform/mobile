@@ -8,12 +8,14 @@ import '../router/app_router.dart';
 import '../state/auth_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_responsive.dart';
+import '../theme/app_spacing.dart';
 import '../widgets/app_background.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_drawer_menu.dart';
 import '../widgets/app_update_banner.dart';
 import '../widgets/home_tab.dart';
 import '../widgets/legal_notice_banner.dart';
+import '../widgets/mini_player.dart';
 import 'announcements_screen.dart';
 import 'auth/sign_in_tab.dart';
 import 'groups_screen.dart';
@@ -80,6 +82,17 @@ class HomeShell extends ConsumerStatefulWidget {
   @override
   ConsumerState<HomeShell> createState() => _HomeShellState();
 }
+
+/// La marge du mini-lecteur dans la coquille : la gouttière de l'écran sur les
+/// côtés, et en bas de quoi dégager le bouton central — la moitié d'un
+/// `FloatingActionButton` standard (56 px) dépasse au-dessus de la barre, plus
+/// un intervalle.
+const EdgeInsets _miniPlayerMargin = EdgeInsets.fromLTRB(
+  AppSpacing.lg,
+  AppSpacing.sm,
+  AppSpacing.lg,
+  56 / 2 + AppSpacing.sm,
+);
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   HomeTab _tab = HomeTab.home;
@@ -241,6 +254,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           // neuve sur une version dépassée), et deux bandeaux au même endroit
           // en masqueraient un. Chacun se retire de lui-même quand il n'a rien
           // à dire, la colonne est alors vide et ne mesure rien.
+          //
+          // **Le mini-lecteur (#116) prend la place la plus basse**, juste
+          // au-dessus de la barre : il revient à chaque écoute, les bandeaux une
+          // fois, et c'est lui que le pouce cherche. Les bandeaux montent
+          // au-dessus de lui quand il est là, et retrouvent leur place quand il
+          // s'en va — il ne mesure rien quand rien n'est chargé.
+          //
+          // Sa marge basse laisse passer le **bouton central**, docké à cheval
+          // sur le bord de la barre : la moitié de sa hauteur dépasse
+          // au-dessus, et une carte posée à ras de la barre passerait dessous.
           Positioned(
             left: 0,
             right: 0,
@@ -248,7 +271,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 MediaQuery.paddingOf(context).bottom + AppBottomNav.barHeight,
             child: const Column(
               mainAxisSize: MainAxisSize.min,
-              children: [AppUpdateBanner(), LegalNoticeBanner()],
+              children: [
+                AppUpdateBanner(),
+                LegalNoticeBanner(),
+                MiniPlayer(margin: _miniPlayerMargin),
+              ],
             ),
           ),
         ],

@@ -2529,6 +2529,48 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Plus tard'**
   String get appUpdateDismiss;
+
+  /// Mini-lecteur : badge de l'antenne en direct, à la place de la ligne d'orateur. Capitales voulues, comme un voyant d'antenne ; court, il tient dans une pastille rouge
+  ///
+  /// In fr, this message translates to:
+  /// **'EN DIRECT'**
+  String get miniPlayerLiveBadge;
+
+  /// Mini-lecteur : libellé d'accessibilité de la vignette et du titre, qui ouvrent la fiche (ou l'écran de l'antenne). {title} est le titre de ce qui joue
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir le lecteur : {title}'**
+  String miniPlayerOpen(String title);
+
+  /// Mini-lecteur : libellé d'accessibilité du bouton −30 s. Le pas est celui de la notification et de la fiche (kContentSkipInterval) ; si la constante change, ce texte change avec elle
+  ///
+  /// In fr, this message translates to:
+  /// **'Reculer de 30 secondes'**
+  String get miniPlayerSkipBackward;
+
+  /// Mini-lecteur : libellé d'accessibilité du bouton +30 s. Même pas que miniPlayerSkipBackward
+  ///
+  /// In fr, this message translates to:
+  /// **'Avancer de 30 secondes'**
+  String get miniPlayerSkipForward;
+
+  /// Mini-lecteur : le gros bouton en fin de lecture. Relance depuis le début
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejouer'**
+  String get miniPlayerReplay;
+
+  /// Mini-lecteur : le gros bouton quand l'écoute a échoué avant d'avoir jamais commencé (pas de réseau à l'ouverture). Pas « Reprendre » : il n'y a aucune position à retrouver. Pas « Réessayer » non plus, mot banni du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Relancer l\'écoute'**
+  String get miniPlayerRelaunch;
+
+  /// Mini-lecteur : libellé d'accessibilité de la croix. Arrête le son, retire la notification et ferme le mini-lecteur ; la position de reprise est gardée
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer le lecteur'**
+  String get miniPlayerClose;
 }
 
 class _AppLocalizationsDelegate
