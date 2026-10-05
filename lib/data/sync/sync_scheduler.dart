@@ -96,6 +96,23 @@ class SyncScheduler with WidgetsBindingObserver {
   /// elle-même a échoué.
   Future<void> Function(SyncReport report)? onCycleSucceeded;
 
+  /// **Appelé au retour au premier plan : immédiatement, puis de nouveau à la
+  /// fin du cycle du retour** (#138). `null` par défaut.
+  ///
+  /// Le réveil push d'une application en arrière-plan écrit par **une autre
+  /// connexion** au même fichier (`push_background.dart`), et il avance le
+  /// curseur. Les flux de l'isolate principal n'en sont pas prévenus — drift ne
+  /// prévient que les écouteurs de sa propre connexion —, et le cycle du retour,
+  /// trouvant un curseur déjà avancé, n'écrit rien : aucun flux ne se relirait.
+  /// `sync_providers.dart` y branche donc un `markTablesUpdated` sur les tables
+  /// des collections synchronisées.
+  ///
+  /// Deux appels, parce qu'un réveil de fond peut être **encore en cours** au
+  /// moment du retour : le premier relit ce qui est déjà écrit, le second ce
+  /// que le réveil a fini d'écrire pendant le cycle. Rappel injecté, pour que
+  /// ce fichier ne dépende pas de drift.
+  void Function()? onForeground;
+
   /// Un cycle est en cours.
   bool get isRunning => _inFlight != null;
 
@@ -116,10 +133,14 @@ class SyncScheduler with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Ce qu'un réveil de fond a écrit par une autre connexion : les écrans
+      // ne se rafraîchiraient pas d'eux-mêmes. Voir [onForeground].
+      onForeground?.call();
       // Le résultat n'intéresse personne ici : le magasin peint les écrans, et
       // ils se rafraîchiront d'eux-mêmes quand il changera. L'échec éventuel
-      // est retenu par [lastFailure], jamais propagé.
-      trigger(SyncTrigger.foreground);
+      // est retenu par [lastFailure], jamais propagé — [trigger] ne lève donc
+      // jamais, et la seconde relecture suit le cycle, réussi ou non.
+      trigger(SyncTrigger.foreground).then((_) => onForeground?.call());
     }
   }
 

@@ -76,6 +76,45 @@ void main() {
     expect(scheduler.lastTrigger, SyncTrigger.foreground);
   });
 
+  test(
+      'le retour au premier plan relit les flux tout de suite, puis à la fin '
+      'du cycle (#138)', () async {
+    final scheduler = SyncScheduler(deferred);
+    addTearDown(scheduler.dispose);
+    var rereads = 0;
+    scheduler.onForeground = () => rereads++;
+
+    scheduler.didChangeAppLifecycleState(AppLifecycleState.paused);
+    expect(rereads, 0, reason: 'seul le retour relit');
+
+    scheduler.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    // Immédiatement : ce qu'un réveil de fond a déjà écrit par une autre
+    // connexion se voit sans attendre le réseau.
+    expect(rereads, 1);
+    expect(cycles, 1);
+
+    // Puis à la fin du cycle : un réveil de fond encore en cours au retour a
+    // pu finir d'écrire entre-temps.
+    pending.single.complete(report);
+    await pumpEventQueue();
+    expect(rereads, 2);
+  });
+
+  test('la seconde relecture suit aussi un cycle échoué (#138)', () async {
+    final scheduler = SyncScheduler(() => Future<SyncReport>.error(
+          const SocketException('hors ligne'),
+        ));
+    addTearDown(scheduler.dispose);
+    var rereads = 0;
+    scheduler.onForeground = () => rereads++;
+
+    scheduler.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await pumpEventQueue();
+
+    expect(rereads, 2);
+    expect(scheduler.lastFailure, isA<SocketException>());
+  });
+
   test('tirer-pour-rafraîchir déclenche un cycle', () async {
     final scheduler = SyncScheduler(immediate);
     addTearDown(scheduler.dispose);
