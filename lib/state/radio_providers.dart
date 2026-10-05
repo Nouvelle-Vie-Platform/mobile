@@ -39,6 +39,7 @@ import '../data/radio/radio_repository.dart';
 import '../data/radio/radio_retry.dart';
 import '../data/radio/radio_status.dart';
 import '../models/gathering_view.dart';
+import 'playback_controller.dart';
 import 'player_providers.dart';
 
 /// Politique de réessai des providers d'antenne : **aucun réessai automatique**.
@@ -183,13 +184,17 @@ class RadioListening extends Notifier<RadioStatus> {
     // et un bouton éteint qui refuserait de repartir serait un interdit de plus.
     _abandoned = false;
 
-    final player = ref.read(contentPlayerProvider);
-    final held = player.value.contentId == RadioConfig.contentId;
-    if (held && !player.value.hasError) {
+    // **Le transport passe par le contrôleur global** (#114), comme partout :
+    // ce qui reste propre à l'antenne — l'adresse, le pré-vol, l'insistance —
+    // vit ici, et seulement ici.
+    final controller = ref.read(playbackControllerProvider.notifier);
+    final playback = controller.playback;
+    final held = playback.contentId == RadioConfig.contentId;
+    if (held && !playback.hasError) {
       // Déjà en main — mis en pause depuis l'écran d'antenne ou la notification.
       // On ne recharge pas : rouvrir la source couperait le tampon déjà rempli.
       if (_cause == null) state = RadioStatus.connecting;
-      player.play();
+      controller.play();
       return;
     }
 
@@ -228,23 +233,26 @@ class RadioListening extends Notifier<RadioStatus> {
       final resolver = ref.read(radioHandshakeProvider);
       final handshake = await resolver.resolve(url);
       _traceHandshake(resolver, handshake);
-      await player.load(
-        contentId: RadioConfig.contentId,
-        // L'URL **finale**, pas celle de départ : le `Location` du 302 est
-        // absolu et à la racine, et rouvrir l'adresse de départ referait la
-        // négociation sans le bocal — c'est-à-dire la panne.
-        url: handshake.url,
-        title: title,
-        // Ils descendent jusqu'à la source (#108), donc jusqu'aux
-        // sous-playlists et aux segments, et ils sont retenus par
-        // `ContentRequest` pour que le chien de garde ne rouvre pas sans eux.
-        headers: handshake.headers,
-        // **Pas de ±30 s ni de barre de progression sur un direct** : c'est ce
-        // drapeau, et lui seul, qui le dit à la notification et à l'écran
-        // verrouillé.
-        isLive: true,
+      await controller.load(
+        ContentRequest(
+          contentId: RadioConfig.contentId,
+          // L'URL **finale**, pas celle de départ : le `Location` du 302 est
+          // absolu et à la racine, et rouvrir l'adresse de départ referait la
+          // négociation sans le bocal — c'est-à-dire la panne.
+          url: handshake.url,
+          title: title,
+          // Ils descendent jusqu'à la source (#108), donc jusqu'aux
+          // sous-playlists et aux segments, et ils sont retenus par
+          // `ContentRequest` pour que le chien de garde ne rouvre pas sans
+          // eux.
+          headers: handshake.headers,
+          // **Pas de ±30 s ni de barre de progression sur un direct** : c'est
+          // ce drapeau, et lui seul, qui le dit à la notification et à l'écran
+          // verrouillé.
+          isLive: true,
+        ),
       );
-      player.play();
+      controller.play();
     } catch (error) {
       _fail(_classify(error));
     } finally {
@@ -306,7 +314,7 @@ class RadioListening extends Notifier<RadioStatus> {
     _cause = null;
     _abandoned = false;
     _starting = false;
-    ref.read(contentPlayerProvider).stop();
+    ref.read(playbackControllerProvider.notifier).stop();
     state = RadioStatus.idle;
   }
 
@@ -440,9 +448,9 @@ class RadioListening extends Notifier<RadioStatus> {
   /// le `load`, ou sur la route d'antenne —, la tentative est un démarrage
   /// complet, qui relit l'adresse au passage.
   void _retry() {
-    final player = ref.read(contentPlayerProvider);
-    if (player.value.contentId == RadioConfig.contentId) {
-      unawaited(player.resume());
+    final controller = ref.read(playbackControllerProvider.notifier);
+    if (controller.playback.contentId == RadioConfig.contentId) {
+      unawaited(controller.resume());
       return;
     }
     final title = _title;

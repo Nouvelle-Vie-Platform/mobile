@@ -19,6 +19,7 @@ import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
+import 'package:maison_du_miracle/state/playback_controller.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
@@ -811,6 +812,61 @@ void main() {
 
       expect(player.loadedFilePath, isNull);
       expect(player.loadedUrl, _url);
+    });
+  });
+
+  group('Le contrôleur global (#114)', () {
+    testWidgets('la fiche publie ce qu\'elle charge', (tester) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      final container = await _pump(tester, player: player);
+
+      await _demarrer(tester, player);
+
+      // Ce que le mini-lecteur lira, depuis n'importe quel écran : la fiche ne
+      // garde pour elle ni le titre, ni l'orateur.
+      final request = container.read(playbackControllerProvider);
+      expect(request?.contentId, _id);
+      expect(request?.title, 'La foi qui déplace');
+      expect(request?.author, 'Pasteur Samuel');
+      expect(request?.isLive, isFalse);
+    });
+
+    testWidgets('le direct se publie comme tel', (tester) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      final container = await _pump(tester, player: player, isLive: true);
+
+      expect(container.read(playbackControllerProvider)?.isLive, isTrue);
+    });
+
+    testWidgets('la rétractation efface la requête courante', (tester) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      final container = await _pump(tester, player: player);
+      await _demarrer(tester, player);
+
+      container.read(_contentProvider.notifier).set(const AsyncData(null));
+      await tester.pump();
+
+      // Un contenu retiré ne doit plus être annoncé nulle part — ni sur l'écran
+      // verrouillé, ni demain dans le mini-lecteur.
+      expect(container.read(playbackControllerProvider), isNull);
+    });
+
+    testWidgets('piloté par le contrôleur, l\'écran suit', (tester) async {
+      // Le geste du mini-lecteur, avant qu'il existe : une pause qui ne vient
+      // pas de cet écran doit s'y voir quand même.
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      final container = await _pump(tester, player: player);
+      await _demarrer(tester, player);
+
+      container.read(playbackControllerProvider.notifier).pause();
+      await tester.pump();
+
+      expect(player.value.isPlaying, isFalse);
+      expect(find.byIcon(Icons.play_arrow), findsOneWidget);
     });
   });
 }

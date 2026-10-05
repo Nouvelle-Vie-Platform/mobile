@@ -6,7 +6,7 @@ import '../../data/players/content_player.dart';
 import '../../l10n/l10n_extension.dart';
 import '../../models/content_view.dart';
 import '../../state/downloads_providers.dart';
-import '../../state/player_providers.dart';
+import '../../state/playback_controller.dart';
 import '../../theme/app_spacing.dart';
 import '../app_error_state.dart';
 import '../app_list_skeleton.dart';
@@ -15,6 +15,9 @@ import 'home_content_cards.dart';
 import 'home_section_layout.dart';
 
 /// Lance ou met en pause un contenu depuis une carte de l'accueil.
+///
+/// Par le contrôleur global (#114), comme la fiche : une carte ne pilote pas le
+/// lecteur elle-même.
 Future<void> playHomeContent(
   BuildContext context,
   WidgetRef ref,
@@ -28,12 +31,13 @@ Future<void> playHomeContent(
     return;
   }
 
-  final player = ref.read(contentPlayerProvider);
-  if (player.value.contentId == content.id) {
-    if (player.value.isPlaying || player.value.isBuffering) {
-      player.pause();
+  final controller = ref.read(playbackControllerProvider.notifier);
+  final playback = controller.playback;
+  if (playback.contentId == content.id) {
+    if (playback.isPlaying || playback.isBuffering) {
+      controller.pause();
     } else {
-      player.play();
+      controller.play();
     }
     return;
   }
@@ -42,17 +46,20 @@ Future<void> playHomeContent(
   await _loadHomeContent(
     ScaffoldMessenger.of(context),
     context.l10n.stateErrorMessage,
-    player,
+    controller,
     resolver,
     content,
     url,
   );
 }
 
+/// Le contrôleur est passé **en objet**, et non relu par `ref` : après la
+/// résolution du téléchargement, la carte qui a reçu l'appui peut avoir quitté
+/// l'écran, et son `ref` avec elle. Le contrôleur, lui, n'est jamais jeté.
 Future<void> _loadHomeContent(
   ScaffoldMessengerState messenger,
   String errorMessage,
-  ContentPlayer player,
+  PlaybackController controller,
   DownloadResolver resolver,
   ContentView content,
   String url,
@@ -62,19 +69,21 @@ Future<void> _loadHomeContent(
       contentId: content.id,
       hlsUrl: url,
     );
-    await player.load(
-      contentId: content.id,
-      url: url,
-      localFilePath: resolution.localFilePath,
-      title: content.title,
-      author: content.authorName,
-      artUrl: content.squareOrLandscape,
+    await controller.load(
+      ContentRequest(
+        contentId: content.id,
+        url: url,
+        filePath: resolution.localFilePath,
+        title: content.title,
+        author: content.authorName,
+        artUrl: content.squareOrLandscape,
+      ),
     );
-    if (player.value.hasError) {
+    if (controller.playback.hasError) {
       _showHomePlaybackError(messenger, errorMessage);
       return;
     }
-    player.play();
+    controller.play();
   } catch (_) {
     _showHomePlaybackError(messenger, errorMessage);
   }
@@ -100,8 +109,8 @@ void _showHomePlaybackError(
 ///
 /// Il ne connaît **aucune route** : les enveloppes qui le câblent
 /// (`HomeTeachingSection`, `HomeGatheringSection`) choisissent la destination.
-/// La lecture, elle, est commune aux deux familles : elle passe par le player
-/// global et le résolveur offline-first.
+/// La lecture, elle, est commune aux deux familles : elle passe par le
+/// contrôleur de lecture global et le résolveur offline-first.
 ///
 /// **Une rubrique sans contenu ne se rend pas du tout**, en-tête compris. Le
 /// magasin applique déjà la règle en amont (`itemCount` est toujours strictement

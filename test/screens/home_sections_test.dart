@@ -12,6 +12,7 @@ import 'package:maison_du_miracle/data/repositories/store_menu_repository.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
+import 'package:maison_du_miracle/state/playback_controller.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/widgets/cards/content_cover.dart';
 import 'package:maison_du_miracle/widgets/content_absence.dart';
@@ -240,7 +241,8 @@ void main() {
       expect(find.byType(HomeHeroCard), findsNothing);
     });
 
-    homeTest('« Écouter » lance le player sans ouvrir la fiche', (tester) async {
+    homeTest('« Écouter » lance le player sans ouvrir la fiche',
+        (tester) async {
       const playlistUrl = 'https://media.example.test/enseignement/master.m3u8';
       await putTypes([
         teachingTypeRow(1,
@@ -273,7 +275,8 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(HomeScreen)),
       );
-      final player = container.read(contentPlayerProvider) as InertContentPlayer;
+      final player =
+          container.read(contentPlayerProvider) as InertContentPlayer;
       expect(player.loadedUrl, playlistUrl);
       expect(player.value.contentId, 't-1');
       expect(player.value.isPlaying, isTrue);
@@ -283,6 +286,53 @@ void main() {
       await tester.tap(playButton);
       await tester.pump();
       expect(player.value.isPlaying, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+
+    homeTest('« Écouter » publie ce qui joue, par le contrôleur global', (
+      tester,
+    ) async {
+      // #114 : une carte de l'accueil ne pilote plus le lecteur elle-même. Ce
+      // qu'elle a lancé doit se lire au même endroit que ce que lance la fiche
+      // — c'est ce que lira le mini-lecteur, quel que soit l'écran.
+      const playlistUrl = 'https://media.example.test/enseignement/master.m3u8';
+      await putTypes([
+        teachingTypeRow(1,
+            label: {'fr': 'Dimanche'}, slug: 'dim', layout: 'carousel'),
+      ]);
+      await putTeachings([
+        teachingRow(
+          't-1',
+          title: 'Le grain de moutarde',
+          teachingTypeId: 1,
+          playlistUrl: playlistUrl,
+        ),
+      ]);
+
+      await pumpHome(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(HomeScreen)),
+      );
+      expect(container.read(playbackControllerProvider), isNull);
+
+      final card = find.descendant(
+        of: find.byType(HomeTeachingSection),
+        matching: find.byType(HomeCarouselCard),
+      );
+      await tester.tap(
+        find.descendant(of: card, matching: find.byType(OutlinedButton)),
+      );
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
+
+      final request = container.read(playbackControllerProvider);
+      expect(request?.contentId, 't-1');
+      expect(request?.title, 'Le grain de moutarde');
+      expect(request?.url, playlistUrl);
+      expect(request?.isLive, isFalse);
       expect(tester.takeException(), isNull);
     });
 

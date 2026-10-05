@@ -16,6 +16,7 @@ import '../models/content_view.dart';
 import '../router/app_router.dart';
 import '../state/downloads_providers.dart';
 import '../state/measurement_providers.dart';
+import '../state/playback_controller.dart';
 import '../state/playback_progress_providers.dart';
 import '../state/player_providers.dart';
 import '../state/season_providers.dart';
@@ -53,7 +54,7 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   /// lui-même** (#110).
   ///
   /// `null` — le cas de la médiathèque — garde le comportement d'origine : cet
-  /// écran résout le téléchargement et appelle `player.load`.
+  /// écran résout le téléchargement et charge par le contrôleur global.
   ///
   /// Non nul, il **remplace entièrement** le chargement : ni résolution de
   /// téléchargement, ni `load`, ni déplacement vers la position de reprise. C'est
@@ -61,7 +62,7 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   ///
   /// ⚠️ **Il existe pour une seule raison, et elle est mesurée** : l'antenne de
   /// New Life Radio ne s'ouvre qu'après une **poignée de main par cookie**
-  /// (#108), et `player.load(url: content.playlistUrl)` écrit ici ne la porte
+  /// (#108), et un chargement de `content.playlistUrl` écrit ici ne la porte
   /// pas. Deux chemins y tombaient — un lien profond vers `/radio`, et la course
   /// du second appui pendant le pré-vol de cinq secondes —, et les deux
   /// donnaient un `401 {"error":"session not found"}` que rien à l'écran ne
@@ -359,7 +360,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     final url = content.playlistUrl;
     if (url == null) return;
 
-    final player = ref.read(contentPlayerProvider);
+    final controller = ref.read(playbackControllerProvider.notifier);
     await _openRecorder(content.id);
     _openPlayTracker(content.id);
     if (!mounted) return;
@@ -368,7 +369,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     // le fait pas repartir de zéro. On ne force pas non plus la lecture — un
     // contenu mis en pause depuis la notification doit le rester, et c'est vrai
     // du direct comme du reste.
-    if (player.value.contentId == content.id) return;
+    if (controller.playback.contentId == content.id) return;
 
     // **L'ouverture appartient à l'appelant quand il l'a demandée** (#110) :
     // c'est tout ce qui suit — résolution, en-têtes, lecture — qui lui revient.
@@ -399,17 +400,20 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
         .resolve(contentId: content.id, hlsUrl: url);
     if (!mounted) return;
 
-    await player.load(
-      contentId: content.id,
-      url: url,
-      localFilePath: resolution.localFilePath,
-      title: content.title,
-      author: content.authorName,
-      artUrl: content.squareOrLandscape,
-      // **Le régime de la source descend jusqu'au système** (#104) : une antenne
-      // n'a ni « −30 s » ni déplacement sur l'écran verrouillé, et c'est ce
-      // drapeau qui le dit au handler. L'écran est le seul à le savoir.
-      isLive: widget.isLive,
+    await controller.load(
+      ContentRequest(
+        contentId: content.id,
+        url: url,
+        filePath: resolution.localFilePath,
+        title: content.title,
+        author: content.authorName,
+        artUrl: content.squareOrLandscape,
+        // **Le régime de la source descend jusqu'au système** (#104) : une
+        // antenne n'a ni « −30 s » ni déplacement sur l'écran verrouillé, et
+        // c'est ce drapeau qui le dit au handler. L'écran est le seul à le
+        // savoir.
+        isLive: widget.isLive,
+      ),
     );
     if (!mounted) return;
 
@@ -417,13 +421,13 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     if (resume != null &&
         !resume.completed &&
         resume.position > Duration.zero) {
-      player.seek(resume.position);
+      controller.seek(resume.position);
     }
 
     if (autoplay) {
-      player.play();
+      controller.play();
     } else {
-      player.pause();
+      controller.pause();
     }
   }
 
@@ -459,9 +463,9 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
   void _stopForRetraction() {
     if (_stoppedByRetraction) return;
     _stoppedByRetraction = true;
-    final player = ref.read(contentPlayerProvider);
-    if (player.value.contentId != _requested) return;
-    player.stop();
+    final controller = ref.read(playbackControllerProvider.notifier);
+    if (controller.playback.contentId != _requested) return;
+    controller.stop();
   }
 
   void _onPlayback(ContentPlayback? previous, ContentPlayback next) {
@@ -476,9 +480,9 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
 
     if (next.isCompleted && !(previous?.isCompleted ?? false)) {
       _fireAndForget(recorder.onTerminated());
-      final player = ref.read(contentPlayerProvider);
-      player.pause();
-      player.seek(Duration.zero);
+      final controller = ref.read(playbackControllerProvider.notifier);
+      controller.pause();
+      controller.seek(Duration.zero);
       return;
     }
 
@@ -514,21 +518,23 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     );
   }
 
-  /// Lecture/pause — **sur le lecteur**, jamais sur un booléen local.
+  /// Lecture/pause — **sur le lecteur**, par le contrôleur global, jamais sur
+  /// un booléen local.
   ///
   /// Rien de chargé sous la main : contenu rétracté puis republié, lecteur
   /// arrêté depuis la notification, ou fiche ouverte sans démarrage automatique,
   /// ce qui est désormais le cas courant. Le geste, lui, est explicite — on
   /// rouvre **et on joue**, en un seul appui.
   void _togglePlayback(ContentView content) {
-    final player = ref.read(contentPlayerProvider);
-    if (player.value.contentId != content.id) {
+    final controller = ref.read(playbackControllerProvider.notifier);
+    final playback = controller.playback;
+    if (playback.contentId != content.id) {
       _stoppedByRetraction = false;
       _requested = content.id;
       unawaited(_open(content, autoplay: true));
       return;
     }
-    player.value.isPlaying ? player.pause() : player.play();
+    playback.isPlaying ? controller.pause() : controller.play();
   }
 
   /// **Prendre une note exige un compte**, et l'écran de lecture n'en exige pas.
@@ -572,8 +578,9 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
             Expanded(
               child: _PlayerStage(
                 content: content,
-                onResume: () =>
-                    unawaited(ref.read(contentPlayerProvider).resume()),
+                onResume: () => unawaited(
+                  ref.read(playbackControllerProvider.notifier).resume(),
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -619,7 +626,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
               liked: _liked,
               accent: base,
               onSeek: (position) =>
-                  ref.read(contentPlayerProvider).seek(position),
+                  ref.read(playbackControllerProvider.notifier).seek(position),
               onPlayPause: () => _togglePlayback(content),
               onLike: () => setState(() => _liked = !_liked),
               onNotes: _requireNotes,
@@ -834,7 +841,9 @@ class _PlayerStage extends ConsumerWidget {
 
     return switch (stage) {
       _Stage.artwork => Center(child: artworkWidget),
-      _Stage.buffering => Center(child: artworkWidget), // Plus de loader centré - le bouton play sert d'indicateur
+      _Stage.buffering => Center(
+          child:
+              artworkWidget), // Plus de loader centré - le bouton play sert d'indicateur
       _Stage.interrupted => _room(
           AppErrorState(
             title: l10n.playerErrorTitle,
@@ -901,7 +910,8 @@ class _Controls extends ConsumerWidget {
             if (isLive)
               const Spacer()
             else ...[
-              Expanded(child: _ProgressLine(contentId: contentId, onSeek: onSeek)),
+              Expanded(
+                  child: _ProgressLine(contentId: contentId, onSeek: onSeek)),
               const SizedBox(width: AppSpacing.lg),
             ],
             _PlayButton(
@@ -942,7 +952,8 @@ class _Controls extends ConsumerWidget {
               if (isPlaying)
                 _GlassCircleButton(
                   icon: Icons.stop_rounded,
-                  onPressed: () => ref.read(contentPlayerProvider).stop(),
+                  onPressed: () =>
+                      ref.read(playbackControllerProvider.notifier).stop(),
                 ),
             ],
           ],

@@ -225,7 +225,8 @@ rougir des tests qui n'ont rien demandé.
 que des intervalles et ne permet pas de **choisir les boutons** de la
 notification, or « −30 s / +30 s » est une exigence produit. Le pas unique est
 `kContentSkipInterval`, lu par le handler *et* par l'`AudioServiceConfig` *et*
-par l'écran — donc aussi sur le web, où il n'y a que l'écran.
+par le contrôleur global (`skipBackward` / `skipForward`) — donc aussi sur le
+web, où il n'y a que l'application.
 
 **Ce que ce choix n'a PAS évité — l'application embarque deux moteurs SQLite.**
 Le raisonnement ci-dessus laisse croire qu'écarter `just_audio_background`
@@ -280,6 +281,50 @@ Cinq points qui se ratent en silence :
 5. **La session audio se configure APRÈS `AudioService.init()`**, en profil
    `speech()` — les plugins audio s'écrasent mutuellement, et le profil
    « musique » baisse le volume à chaque instruction du GPS.
+
+#### Le transport passe par un seul contrôleur (#114)
+
+`PlaybackController` (`lib/state/playback_controller.dart`,
+`playbackControllerProvider`, **jamais `autoDispose`**) est le **seul point
+d'entrée du transport** : `load(ContentRequest)`, `play`, `pause`, `seek`,
+`skipBackward` / `skipForward` (`kContentSkipInterval`, sans effet sur un
+direct), `stop`, `replay` (zéro puis lecture) et `resume` (la reprise après
+panne de #42). La fiche (`ContentPlayerView`), les cartes de l'accueil
+(`playHomeContent`) et l'antenne (`RadioListening`) passent toutes par lui ;
+**aucun appelant hors du contrôleur ne commande `contentPlayerProvider`**.
+Observer reste libre : `contentPlaybackProvider`, par `select`, comme avant.
+
+La règle était écrite sur un widget — « `ContentPlayerView` est le seul endroit
+qui pilote le lecteur » — et un widget ne pouvait pas la tenir :
+`playHomeContent` y dérogeait déjà, et le mini-lecteur (#116), présent sur tous
+les écrans, y aurait dérogé à son tour. Le plafond de débit
+(`BitrateCapController`) reste hors du contrôleur : il contraint la qualité, il
+ne commande pas la lecture.
+
+**La valeur du provider est la requête courante** (`ContentRequest?` :
+identifiant, titre, auteur, image, direct ou non, en-têtes), `null` quand rien
+n'est chargé ou après un arrêt. `ContentPlayback` ne porte ni titre ni image, et
+on ne les retrouve pas depuis l'identifiant — la radio n'est pas un enseignement
+du magasin. Trois points :
+
+1. **Le contrôleur retient la requête, il ne la demande pas au lecteur.** Les
+   trois lecteurs la gardent déjà, mais en privé ; la publier aurait élargi le
+   contrat et touché trois implémentations, dont deux qu'aucun test ne monte,
+   pour une information que le contrôleur possède — tout chargement passe par
+   lui.
+2. **Le lecteur reste juge de ce qu'il tient** : dès que son `contentId` cesse
+   d'être celui de la requête (arrêt, chargement passé ailleurs), la requête
+   retombe à `null`. Une requête périmée afficherait le titre d'un prêche qui
+   ne joue plus.
+3. ⚠️ **L'arrêt depuis la notification ne la fait pas tomber**, parce qu'il ne
+   la fait pas tomber dans le lecteur non plus : `ContentAudioHandler.stop()`
+   arrête le média sans passer par `JustAudioContentPlayer.stop()`, et
+   `ContentPlayback.contentId` reste posé. C'est le comportement d'avant #114,
+   inchangé ; le mini-lecteur aura à le trancher.
+
+Ce que le contrôleur **ne fait pas encore** : suivre la position de reprise
+(`PlaybackProgressRecorder`) et compter l'écoute (`PlayTracker`). Les deux
+restent attachés à la fiche jusqu'à #115.
 
 #### Le lecteur **web** (`hls_content_player.dart`) — #46
 `just_audio_web` pose l'URL `.m3u8` dans un `<audio>` **sans lecteur HLS** : sa
@@ -631,6 +676,12 @@ délègue à `RadioListening.start`. Deux choses à ne pas se tromper :
    rapporte aucun cookie (`DirectRadioHandshake` est écarté : c'est, par
    conception, le pré-vol qui n'en fait pas).
 
+Depuis #114, `RadioListening` **charge, joue, arrête et reprend par le
+contrôleur global**, comme tout le monde — mais l'ordre ne change pas : l'adresse
+et le pré-vol d'abord, chez lui, puis `load` avec les en-têtes obtenus. Le
+contrôleur transmet la requête entière au lecteur ; il ne négocie rien et ne
+connaît pas l'antenne.
+
 Côté tests : `pumpScreen` / `pumpRouter` posent un `FixedRadioRepository` sur
 `RadioAntenna.unknown` (paramètre nommé `radio:`) **et** un `DirectRadioHandshake`
 (paramètre nommé `handshake:`, #108 — le pré-vol réel ouvrirait une socket au
@@ -938,6 +989,10 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     intestable), `themeModeProvider` (le `ThemeMode` résolu) et
     `isDarkModeActive`. `settingsDaoProvider` y vit aussi : les réglages
     d'apparence et les réglages média partagent la même table.
+  - `playback_controller.dart` : `playbackControllerProvider` (#114), le
+    **contrôleur global de lecture** — seul point d'entrée du transport, et
+    porteur de la requête courante. Voir « Le transport passe par un seul
+    contrôleur » sous « Le lecteur de la médiathèque ».
 
 ### L'onglet Annonces — trois responsabilités que le serveur ne prend pas
 Le mur de statuts est peint par le magasin (#35), comme la médiathèque. Sa
@@ -1426,10 +1481,10 @@ Quatre points qui se ratent en silence :
    **0 % de CPU pendant dix minutes**, donc une attente de ressource et non une
    boucle. Le poser dans `main()` le sort du chemin des tests d'écran, que le
    harnais n'exécute jamais. Cela ne déroge qu'en apparence à
-   « `ContentPlayerView` est le seul endroit qui pilote le lecteur » : cette
-   règle vise le **transport** — jouer, pause, déplacement, arrêt — pour que
-   deux endroits ne se disputent pas la lecture ; un plafond ne fait que
-   contraindre la qualité, sans effet audible immédiat.
+   « le transport passe par le contrôleur global » (#114) : cette règle vise
+   le **transport** — jouer, pause, déplacement, arrêt — pour que deux
+   endroits ne se disputent pas la lecture ; un plafond ne fait que contraindre
+   la qualité, sans effet audible immédiat.
 
 **Ce n'est pas une collection synchronisée** : le serveur ne la sert pas, ne la
 reçoit pas. Une préférence de débit décrit *le forfait de cet appareil-ci*, pas
@@ -2600,7 +2655,10 @@ autorisés avant authentification.
   **avec repli coloré**. Il ne résout plus rien (URL et couleur arrivent déjà
   résolues), il choisit un cadrage et dessine.
 - `ContentPlayerView` — le lecteur plein écran, partagé par les deux écrans de
-  détail, et **le seul endroit qui pilote le lecteur** (#40). Il reçoit le
+  détail. Il **décide** du transport de la fiche (quand charger, quand jouer,
+  quand couper) mais ne le **commande** plus lui-même : chaque geste passe par
+  le contrôleur global (#114, voir « Le transport passe par un seul
+  contrôleur »). Il reçoit le
   **provider** (et non sa valeur) pour pouvoir l'écouter : une rétractation
   immédiatement suivie d'une resynchronisation ne produirait qu'une
   reconstruction, et le son aurait continué sur un contenu retiré. Cinq points
