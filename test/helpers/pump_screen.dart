@@ -10,7 +10,9 @@ import 'package:maison_du_miracle/data/measurement/play_reporter.dart';
 import 'package:maison_du_miracle/data/measurement/play_spool.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
+import 'package:maison_du_miracle/data/radio/radio_channel.dart';
 import 'package:maison_du_miracle/data/radio/radio_handshake.dart';
+import 'package:maison_du_miracle/data/radio/radio_live_repository.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/realtime/group_channel.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
@@ -35,6 +37,7 @@ import 'package:maison_du_miracle/state/media_settings_providers.dart';
 import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/menu_providers.dart';
+import 'package:maison_du_miracle/state/radio_live_providers.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
@@ -180,6 +183,8 @@ Future<void> pumpRouter(
   GroupChannel? channel,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
+  RadioChannel? radioChannel,
+  RadioLiveRepository? radioLive,
   PlaybackProgressReporter? progress,
   PlayReporter? plays,
   PlaySpool? playSpool,
@@ -206,6 +211,8 @@ Future<void> pumpRouter(
           channel: channel,
           radio: radio,
           handshake: handshake,
+          radioChannel: radioChannel,
+          radioLive: radioLive,
           progress: progress,
           plays: plays,
           playSpool: playSpool,
@@ -255,6 +262,8 @@ List<Override> _commonOverrides(
   GroupChannel? channel,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
+  RadioChannel? radioChannel,
+  RadioLiveRepository? radioLive,
   PlaybackProgressReporter? progress,
   PlayReporter? plays,
   PlaySpool? playSpool,
@@ -269,6 +278,20 @@ List<Override> _commonOverrides(
       // **Le pré-vol de la poignée de main de MediaMTX** (#108) — voir l'en-tête.
       radioHandshakeProvider.overrideWithValue(
         handshake ?? const DirectRadioHandshake(),
+      ),
+      // **La page live** (#135) — le canal temps réel posé **muet** et les
+      // routes du fil posées **inertes**, pour la raison de l'antenne :
+      // l'implémentation réelle est SSE et HTTP dès que `AppEnv.useBackend` est
+      // vrai, donc ouvrir `/radio` ouvrirait une socket que `flutter test`
+      // refuse, et laisserait derrière elle la minuterie de réouverture. Le
+      // défaut est une radio **hors direct**, sans compteur — ce qu'un test qui
+      // ne parle pas du live doit voir. Paramètres nommés et non `Override` de
+      // plus : Riverpod 3 refuse deux surcharges du même provider.
+      radioChannelProvider.overrideWithValue(
+        radioChannel ?? const SilentRadioChannel(),
+      ),
+      radioLiveRepositoryProvider.overrideWithValue(
+        radioLive ?? const InertRadioLiveRepository(),
       ),
       // **Le canal temps réel d'un groupe, posé muet** (#101), pour la raison de
       // l'auth et de l'envoyeur de messages : l'implémentation réelle est SSE dès
@@ -415,6 +438,8 @@ Future<void> pumpScreen(
   GroupChannel? channel,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
+  RadioChannel? radioChannel,
+  RadioLiveRepository? radioLive,
   PlaybackProgressReporter? progress,
   PlayReporter? plays,
   PlaySpool? playSpool,
@@ -447,6 +472,8 @@ Future<void> pumpScreen(
           channel: channel,
           radio: radio,
           handshake: handshake,
+          radioChannel: radioChannel,
+          radioLive: radioLive,
           progress: progress,
           plays: plays,
           playSpool: playSpool,
