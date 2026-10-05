@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/messaging/group_read_advancer.dart';
+import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/data/repositories/echanges_repository.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
@@ -85,12 +86,14 @@ Future<void> _pumpThread(
   GroupDetailView? group,
   GroupReadSender? readSender,
   AppDatabase? database,
+  AuthRepository? auth,
 }) =>
     pumpScreen(
       tester,
       const GroupChatScreen(groupId: _groupId),
       database: database,
       readSender: readSender,
+      auth: auth,
       echanges: InMemoryEchangesRepository(
         groups: {_groupId: group ?? _group()},
         threads: {_groupId: messages},
@@ -132,6 +135,35 @@ void main() {
       );
     });
 
+    testWidgets(
+        'un long fil s\'ouvre SUR le séparateur, hors de vue au départ : '
+        'ensureVisible le pose en haut de la liste inversée, les non-lus '
+        'dessous', (tester) async {
+      // 40 lus puis 30 non-lus : le séparateur est à des écrans du bas, où une
+      // liste inversée s'ouvre.
+      await _pumpThread(tester, [
+        for (var i = 0; i < 40; i++) _message('r-$i', minute: i % 60),
+        for (var i = 0; i < 30; i++)
+          _message('u-$i', unread: true, minute: i % 60),
+      ]);
+      await tester.pumpAndSettle();
+
+      final separator = find.text(_fr.chatUnreadSeparator(30));
+      expect(separator, findsOneWidget);
+      final viewport = tester.getRect(find.byType(ListView));
+      final top = tester.getTopLeft(separator).dy;
+      expect(top, greaterThanOrEqualTo(viewport.top));
+      // Vers le haut de la vue (alignment 0.9 : 1 = le haut d'une liste
+      // inversée), pas en bas.
+      expect(top, lessThan(viewport.top + viewport.height / 2));
+      // Le premier non-lu est juste dessous, visible.
+      final firstUnread = tester.getTopLeft(find.byKey(const ValueKey('u-0')));
+      expect(firstUnread.dy, greaterThan(top));
+      expect(firstUnread.dy, lessThan(viewport.bottom));
+      // Le plus récent, lui, n'est plus construit à l'écran.
+      expect(find.byKey(const ValueKey('u-29')), findsNothing);
+    });
+
     testWidgets('sans non-lu, aucun séparateur', (tester) async {
       await _pumpThread(tester, [_message('m-1')]);
       expect(find.byKey(const Key('chat_unread_separator')), findsNothing);
@@ -146,7 +178,10 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
 
-      // Drift sous `testWidgets` : tout dans **un seul** `runAsync`.
+      // Drift sous `testWidgets` : tout dans **un seul** `runAsync`. La session
+      // est résolue sans délai : le double par défaut répond après une vraie
+      // minuterie (~300 ms), qui survivrait au test sous `runAsync` et
+      // écrirait dans un `authProvider` déjà jeté.
       await tester.runAsync(() async {
         await _pumpThread(
           tester,
@@ -156,6 +191,7 @@ void main() {
           ],
           readSender: sender,
           database: db,
+          auth: SignedInAuthRepository(),
         );
         await Future<void>.delayed(const Duration(milliseconds: 50));
         await tester.pump();
@@ -194,7 +230,14 @@ void main() {
     testWidgets('un message envoyé ne répond pas au toucher', (tester) async {
       await _pumpThread(tester, [_message('m-1', mine: true)]);
       expect(find.text(_fr.chatMessageFailed), findsNothing);
-      await tester.tap(find.byType(ChatBubble));
+      // Sur le texte de la bulle : son centre géométrique tombe dans le vide
+      // de la ligne (bulle alignée à droite), et le toucher n'y prouverait rien.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ChatBubble),
+          matching: find.text('Bonjour'),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.text(_fr.chatRetry), findsNothing);
     });
