@@ -171,7 +171,7 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
     }
     context.pushNamed(AppRoute.radio);
   }
-  
+
   Color? _getIconColor(RadioStatus status) {
     if (status.phase == RadioPhase.playing) {
       return AppColors.success;
@@ -197,53 +197,63 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            GestureDetector(
-              key: RadioCtaPill.buttonKey,
-              onTap: _onTap,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.sm + 2,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: dimmed ? 0.55 : 1),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (status.isWorking)
-                      SizedBox(
-                        key: RadioCtaPill.workingKey,
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
+            // **Flexible, et le libellé avec lui** : sur un écran étroit (ou un
+            // grand corps de texte), le libellé se replie en points de
+            // suspension au lieu de faire déborder l'en-tête de l'accueil.
+            Flexible(
+              child: GestureDetector(
+                key: RadioCtaPill.buttonKey,
+                onTap: _onTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.sm + 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: dimmed ? 0.55 : 1),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (status.isWorking)
+                        SizedBox(
+                          key: RadioCtaPill.workingKey,
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: _getIconColor(status),
+                          ),
+                        )
+                      else
+                        Icon(
+                          Icons.sensors,
+                          size: 18,
                           color: _getIconColor(status),
                         ),
-                      )
-                    else
-                      Icon(
-                        Icons.sensors,
-                        size: 18,
-                        color: _getIconColor(status),
+                      const SizedBox(width: AppSpacing.sm),
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodyStrong.copyWith(
+                            color: AppColors.neutralDark
+                                .withValues(alpha: dimmed ? 0.7 : 1),
+                          ),
+                        ),
                       ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      label,
-                      style: AppTypography.bodyStrong.copyWith(
-                        color: AppColors.neutralDark
-                            .withValues(alpha: dimmed ? 0.7 : 1),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
