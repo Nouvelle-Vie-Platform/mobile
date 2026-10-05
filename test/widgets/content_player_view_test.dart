@@ -927,9 +927,9 @@ Future<void> _demarrer(WidgetTester tester, InertContentPlayer player) async {
 
 /// **Le témoin d'attente** : le bouton de lecture en état « chargement ».
 ///
-/// L'indicateur centré sur le visuel (`ContentPlayerView.bufferingKey`) a été
-/// retiré par 44092f0 — « le bouton play sert d'indicateur » : son disque se
-/// remplit en boucle tant que le lecteur regarnit son tampon. Le peintre est
+/// L'indicateur centré sur le visuel a été retiré par 44092f0, sa clé avec
+/// lui : « le bouton play sert d'indicateur », et son disque se remplit en
+/// boucle tant que le lecteur regarnit son tampon. Le peintre est
 /// privé au fichier de production ; c'est lui, et lui seul, qui dessine cet
 /// état, d'où la lecture par son type.
 final Finder _attente = find.byWidgetPredicate(
