@@ -553,6 +553,44 @@ class AppLocalizationsEe extends AppLocalizations {
   String get chatToday => 'Aujourd\'hui';
 
   @override
+  String chatUnreadSeparator(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages non lus',
+      one: '$count message non lu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatMediaUnsupported =>
+      'Ce message contient un média que cette version de l\'application ne sait pas encore afficher.';
+
+  @override
+  String get echangesMediaPreview => 'Pièce jointe';
+
+  @override
+  String get chatMessageFailed => 'Non envoyé. Touchez pour réessayer.';
+
+  @override
+  String get chatRetry => 'Réessayer';
+
+  @override
+  String get chatDiscard => 'Supprimer';
+
+  @override
+  String echangesUnreadBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages non lus',
+      one: '$count message non lu',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get teachingAppBarTitle => 'Message';
 
   @override

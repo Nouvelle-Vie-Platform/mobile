@@ -1054,6 +1054,48 @@ abstract class AppLocalizations {
   /// **'Aujourd\'hui'**
   String get chatToday;
 
+  /// Fil de discussion : séparateur posé avant le premier message non lu, à l'ouverture (#140). Il reste à sa place tant que le fil est ouvert, même quand la lecture avance
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} message non lu} other{{count} messages non lus}}'**
+  String chatUnreadSeparator(int count);
+
+  /// Fil de discussion : corps d'un message-média (vocal, image) dont le texte est nul (#140, piège 1). Jamais une bulle vide : la personne doit savoir qu'un message est là
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce message contient un média que cette version de l\'application ne sait pas encore afficher.'**
+  String get chatMediaUnsupported;
+
+  /// Hub Échanges : aperçu d'une conversation dont le dernier message est un média (texte nul, #140)
+  ///
+  /// In fr, this message translates to:
+  /// **'Pièce jointe'**
+  String get echangesMediaPreview;
+
+  /// Fil de discussion : sous une bulle à moi dont l'envoi a échoué. Le toucher ouvre Réessayer / Supprimer (#140). Le renvoi est aussi automatique au retour du réseau
+  ///
+  /// In fr, this message translates to:
+  /// **'Non envoyé. Touchez pour réessayer.'**
+  String get chatMessageFailed;
+
+  /// Fil de discussion : feuille d'actions d'un message non envoyé — le renvoyer, sous la même clé (jamais de doublon)
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get chatRetry;
+
+  /// Fil de discussion : feuille d'actions d'un message non envoyé — l'abandonner (rien ne part au serveur)
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get chatDiscard;
+
+  /// Libellé d'accessibilité de la pastille de non-lus (onglet Échanges et tuile d'une conversation, #140). Le chiffre seul est affiché, la phrase est lue
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} message non lu} other{{count} messages non lus}}'**
+  String echangesUnreadBadge(int count);
+
   /// Titre de la barre de l'écran de détail d'un message. La clé garde son nom historique
   ///
   /// In fr, this message translates to:

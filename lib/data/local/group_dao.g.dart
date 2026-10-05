@@ -12,6 +12,9 @@ mixin _$GroupDaoMixin on DatabaseAccessor<AppDatabase> {
   $ProfilesTable get profiles => attachedDatabase.profiles;
   $PendingGroupMessagesTable get pendingGroupMessages =>
       attachedDatabase.pendingGroupMessages;
+  $GroupReadsTable get groupReads => attachedDatabase.groupReads;
+  $PendingGroupReadsTable get pendingGroupReads =>
+      attachedDatabase.pendingGroupReads;
   $OfficialAccountsTable get officialAccounts =>
       attachedDatabase.officialAccounts;
   $ContributorsTable get contributors => attachedDatabase.contributors;
@@ -35,6 +38,11 @@ class GroupDaoManager {
   $$PendingGroupMessagesTableTableManager get pendingGroupMessages =>
       $$PendingGroupMessagesTableTableManager(
           _db.attachedDatabase, _db.pendingGroupMessages);
+  $$GroupReadsTableTableManager get groupReads =>
+      $$GroupReadsTableTableManager(_db.attachedDatabase, _db.groupReads);
+  $$PendingGroupReadsTableTableManager get pendingGroupReads =>
+      $$PendingGroupReadsTableTableManager(
+          _db.attachedDatabase, _db.pendingGroupReads);
   $$OfficialAccountsTableTableManager get officialAccounts =>
       $$OfficialAccountsTableTableManager(
           _db.attachedDatabase, _db.officialAccounts);
