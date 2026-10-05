@@ -45,6 +45,11 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   de la médiathèque » plus bas — configuration native obligatoire des deux
   côtés. **Aucun des trois ne sert sur le web** (#46) : `just_audio_web` ne joue
   rien hors Safari, et `audio_service` y est un no-op.
+- **video_player ^2.11.1** (#130) — la **vidéo des statuts** (HLS du profil
+  `sparks`). Swift Package, aucune permission. Lu **uniquement** par
+  `lib/data/players/media_status_player.dart`, derrière `StatusPlayer` — qui
+  lit aussi l'audio des statuts par `just_audio`. Pas monté sur le web. Voir
+  « Les médias des statuts » sous « L'onglet Annonces ».
 - **flutter_zoom_drawer ^3.2.0** (#54) — le **menu latéral** de l'accueil. Pur
   Dart, aucune configuration native, la cible web reste tenue. Voir « Le menu
   latéral » plus bas : il se construit dans `HomeShell.build()`, son
@@ -215,7 +220,9 @@ l'UI observe. **Trois** implémentations vivent derrière lui, et **aucun écran
 sait laquelle tourne** — c'est `main.dart` qui choisit, par `kIsWeb` :
 
 - `JustAudioContentPlayer` (+ `ContentAudioHandler`) — la réelle, mobile. **Le
-  seul fichier de `lib/` qui importe `just_audio`**, et un test de source le
+  seul fichier de `lib/` qui importe `just_audio`** pour la médiathèque — le
+  second est `media_status_player.dart`, le lecteur des **statuts** (#130),
+  derrière un autre contrat (`StatusPlayer`) —, et un test de source le
   vérifie (`test/data/content_player_test.dart`), comme le garde-fou « jamais
   de polling » du moteur de synchronisation ;
 - `InertContentPlayer` — celle des tests, et le **défaut** du provider :
@@ -527,7 +534,8 @@ Cinq points qui se ratent en silence :
    glisse de côté ; une carte restée en bas flotterait détachée de tout), et
    `AnnouncementsScreen` pour **toute la visionneuse de statuts** — image,
    texte ou vidéo — tant que l'onglet est actif : la carte revient quand on le
-   quitte ou que le mur se vide, et la lecture continue dessous. ⚠️ Ce n'est
+   quitte ou que le mur se vide, et la lecture continue dessous — **sauf sous
+   un statut à son** (#130), qui la met en pause jusqu'à la sortie. ⚠️ Ce n'est
    **pas** `dimFab` (statut vidéo), qui ne règle que le bouton central.
 4. **La marge des listes passe par `MediaQuery.padding.bottom`** (et
    `viewPadding`) : l'hôte y ajoute la hauteur **mesurée** de la carte, marges
@@ -835,6 +843,15 @@ n'existe
 **aucune** notion de priorité, de file, ni de « reprendre ce qui jouait », et il
 ne faut pas en inventer une : ce serait une règle éditoriale invisible, prise par
 le premier écran qui en a eu besoin.
+
+**Une exception, et elle est décidée et écrite** (#130, décision utilisateur du
+05/10/2026) : un **statut à son** (audio ou vidéo) met le lecteur principal en
+**pause**, et la sortie de la visionneuse le fait **reprendre** — l'antenne
+**au direct** (`RadioListening.rejoinLive` rouvre la source, cookie renégocié),
+un enseignement à sa position. Elle vit dans le contrôleur global
+(`PlaybackController.interruptForStatus` / `resumeAfterStatus`), ne survit pas
+à un arrêt ni à un autre chargement, et ne s'étend à rien d'autre : ce n'est pas
+une file.
 
 ⚠️ **Deux gestes peuvent lancer l'antenne** — le bouton de l'accueil et
 l'ouverture de l'écran, qui démarre au montage. Ils ne se disputent rien parce
@@ -1261,6 +1278,37 @@ Six règles, toutes vérifiées par des tests :
 Le contrat détaillé, le nom du champ de fichier (`backgroundImage`) et la limite
 assumée (on ne sait pas retirer une image déjà publiée) sont dans
 `docs/statuts-annonces.md` §11.
+
+#### Les médias des statuts (#130) — la « phase 2 », livrée
+
+Le serveur sert cinq champs `media*` à plat ; le magasin les stocke bruts
+(schéma **v19**), et `readStatusMedia` (`models/announcement_view.dart`) les lit
+en `StatusAudio` / `StatusVideo` — **le seul endroit** où ce contrat se lit.
+`MediaStatusPlayer` les joue derrière `StatusPlayer`, branché par `main.dart`
+sur mobile ; le provider garde `FakeStatusPlayer` par défaut (tests, web). Six
+points qui se ratent en silence :
+
+1. **Le palier v19 efface le curseur d'`announcements`** : un téléphone en v18
+   avait jeté le média des annonces déjà reçues. Et `announcements` naît au
+   palier v2 → v3 dans sa forme **courante** : le palier v19 n'ajoute les
+   colonnes que si la table existait avant (`from >= 3`), et le palier v3 les
+   retire pour une migration de test vers une version antérieure (`to < 19`).
+2. **La durée réelle prime** (`effectiveStatusDuration`), puis celle du
+   transcodeur, puis 30 s / 5 s.
+3. **Un moteur par chargement**, daté par une génération : réutiliser
+   l'`AudioPlayer` laisserait un « terminé » du statut précédent faire sauter le
+   suivant.
+4. **Un média qui ne s'ouvre pas retombe sur l'horloge** : le mur ne se bloque
+   jamais sur un tampon vide.
+5. **Le cadrage** : vidéo verticale = fond ; horizontale = entière, centrée sur
+   le dégradé du statut (`statusVideoFraming`, `StatusFramedMedia`). L'affiche
+   couvre l'attente jusqu'à la première image (`hasVideoFrame`).
+6. **La cohabitation** : voir « Un seul lecteur » plus haut — l'exception de
+   #130.
+
+⚠️ Le libellé « Sparks » doit venir du vocabulaire réglable, et l'onglet lit
+encore `context.l10n.navAnnouncements` : le catalogue serveur n'a pas de clé
+`mobile` pour lui. Voir `docs/statuts-annonces.md` §11.
 
 ### La médiathèque et l'accueil pilotés par les menus (#82, jumelle serveur #480)
 

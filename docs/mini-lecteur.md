@@ -36,7 +36,9 @@ pilote depuis n'importe quel écran. Aujourd'hui, la lecture survit déjà au `c
   listes reçoivent une marge basse pour que le mini-lecteur ne masque pas leurs derniers éléments.
 - **Visionneuse de statuts (Annonces)** : le mini-lecteur est masqué dès qu'un statut est affiché —
   image, texte ou vidéo — tant que l'onglet Annonces est actif, et revient quand on le quitte (ou que
-  le mur se vide). La lecture continue dessous. Le masquage est posé par `AnnouncementsScreen`
+  le mur se vide). La lecture continue dessous — **sauf sous un statut à son** (#130) : un statut
+  audio ou vidéo met la radio ou l'enseignement en pause, et la sortie de la visionneuse les fait
+  reprendre (la radio au direct, l'enseignement à sa position). Le masquage est posé par `AnnouncementsScreen`
   (`MiniPlayerShield`), indépendamment du bouton central, qui ne s'estompe, lui, que sur un statut
   vidéo.
 - **Masquages ajoutés par #117** : `/gathering/:id` (sa fiche est un `ContentPlayerView`), les parcours
