@@ -104,6 +104,8 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     GroupJoinRequests,
     GroupMessages,
     PendingGroupMessages,
+    GroupReads,
+    PendingGroupReads,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -212,8 +214,14 @@ class AppDatabase extends _$AppDatabase {
   /// `media_duration_ms`, `media_waveform`), et l'oubli de son curseur — un
   /// téléphone en v18 a pu recevoir une annonce audio ou vidéo et en jeter le
   /// média faute de colonne. Voir le palier.
+  ///
+  /// **v20** — la messagerie fiable (#140, tranche M1b) : `group_messages.body`
+  /// devient **nullable** (piège 1 du plan : un message-média arrive avec
+  /// `body: null`, et la contrainte coupait le cycle), et deux tables naissent —
+  /// la collection répliquée `group_reads` (ma position de lecture) et la table
+  /// locale seule `pending_group_reads` (l'outbox de cette lecture).
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   /// Les cinq colonnes du média d'une annonce, ajoutées ensemble au palier
   /// v18 → v19 — et retirées ensemble d'une table créée pour une version
@@ -617,6 +625,35 @@ class AppDatabase extends _$AppDatabase {
             await (delete(syncCursors)
                   ..where((c) => c.collection.equals('announcements')))
                 .go();
+          }
+
+          // v19 → v20 — **la messagerie fiable** (#140). Trois gestes :
+          //
+          // 1. `group_messages.body` perd son `NOT NULL`. SQLite ne sait pas
+          //    relâcher une contrainte de colonne : `alterTable` recrée la table
+          //    dans sa forme courante et **recopie chaque ligne** (le fil d'un
+          //    fidèle hors ligne survit, jetons d'écriture compris). Aucune ligne
+          //    n'est à réécrire : toutes portaient un texte, puisque la
+          //    contrainte refusait les autres — en coupant le cycle (piège 1 du
+          //    plan). Le curseur reste : une page refusée n'avait pas avancé le
+          //    curseur, elle sera simplement re-tirée et acceptée cette fois.
+          // 2. `group_reads` naît vide, son curseur n'existe pas : le prochain
+          //    manifeste l'annoncera `from_zero`.
+          // 3. `pending_group_reads` naît vide et le reste jusqu'au premier fil
+          //    lu.
+          //
+          // ⚠️ **`from >= 18`** : avant la v18, `group_messages` vient d'être
+          // créée **dans sa forme courante** au palier v17 → v18, donc déjà
+          // nullable — la recréer serait inutile. Pas de garde `to >= 20` sur les
+          // créations : le vérificateur de schéma ignore une table surnuméraire.
+          // Elle en faut une sur la recréation, qui produit la forme **courante**
+          // et ferait échouer la validation d'une cible antérieure.
+          if (from >= 18 && from < 20 && to >= 20) {
+            await m.alterTable(TableMigration(groupMessages));
+          }
+          if (from < 20) {
+            await m.createTable(groupReads);
+            await m.createTable(pendingGroupReads);
           }
         },
         beforeOpen: (details) async {

@@ -106,6 +106,7 @@ class GroupMessageView {
     this.authorName,
     this.authorAvatarUrl,
     this.createdAt,
+    this.unread = false,
   });
 
   /// L'UUIDv7 serveur pour un message confirmé, le `clientMessageId` pour un écho
@@ -113,7 +114,11 @@ class GroupMessageView {
   final String id;
 
   final String groupId;
-  final String body;
+
+  /// Le texte, ou **`null` pour un message-média** (#140, piège 1) — vocal ou
+  /// image, que cette version ne sait pas encore montrer. L'écran le dit
+  /// (`chatMediaUnsupported`) ; il ne rend jamais une bulle vide.
+  final String? body;
 
   /// **La seule chose qui décide bandeau ou bulle.** Voir [MessageOrigin].
   final MessageOrigin origin;
@@ -145,6 +150,15 @@ class GroupMessageView {
   /// écho. `null` n'arrive que sur une ligne mal formée — l'heure ne se rend
   /// alors pas, plutôt que de montrer une date inventée.
   final DateTime? createdAt;
+
+  /// **Non lu** au sens du contrat serveur (#140) : ni du serveur, ni de moi, et
+  /// postérieur à ma lecture. C'est ce qui place le séparateur « N messages non
+  /// lus » à l'ouverture du fil. Jamais vrai pour un écho.
+  final bool unread;
+
+  /// Un message **confirmé par le serveur** — qui a donc une identité serveur,
+  /// et peut servir de position de lecture. Un écho n'en a pas.
+  bool get isConfirmed => delivery == MessageDelivery.sent;
 }
 
 /// Une conversation de la liste à plat du hub — groupe ou tête-à-tête.
@@ -159,6 +173,7 @@ class ConversationView {
     this.avatarUrl,
     this.lastMessagePreview,
     this.lastMessageAt,
+    this.unreadCount = 0,
   });
 
   final String groupId;
@@ -192,10 +207,22 @@ class ConversationView {
 
   /// Le dernier message, **non tronqué** : c'est la tuile qui coupe, parce que
   /// c'est elle qui connaît sa largeur.
+  ///
+  /// `null` avec un [lastMessageAt] renseigné : le dernier message est un
+  /// **média** (#140), et la tuile le dit.
   final String? lastMessagePreview;
 
   final DateTime? lastMessageAt;
+
+  /// **Les messages non lus** de cette conversation (#140) — calculés par le
+  /// client, le serveur n'en sert pas (contrat M1a §2). Zéro = pas de pastille.
+  final int unreadCount;
 }
+
+/// **Le badge global** de l'onglet Échanges (#140) : la somme des non-lus de
+/// mes conversations. Écrit une fois, lu par la barre du bas.
+int totalUnread(Iterable<ConversationView> conversations) =>
+    conversations.fold(0, (sum, c) => sum + c.unreadCount);
 
 /// La fiche d'un groupe — en-tête, description, roster.
 @immutable

@@ -85,6 +85,24 @@ final class SyncedCollection<D> {
     );
   }
 
+  /// **Range des lignes arrivées hors du tirage** — le canal `users/{id}` et
+  /// l'historique par pages (#140) — par **la même** désérialisation et le même
+  /// tri « rétractation ou ligne » que le flux delta, **sans curseur**.
+  ///
+  /// C'est la règle du contrat serveur (« une ligne, trois chemins ») : le
+  /// client range un événement exactement comme il rangerait la même ligne
+  /// tirée par la synchronisation. Un tombstone (`deletedAt` posé) retire la
+  /// ligne ; une ligne vivante **remplace** la locale, jamais ne la fusionne —
+  /// le détachement d'un auteur (ADR-0032) arrive sur une ligne déjà stockée.
+  Future<void> applyLive(SyncDao dao, List<Map<String, Object?>> items) {
+    final split = _split(items);
+    return dao.applyLiveRows<D>(
+      _local(dao),
+      upserts: split.upserts,
+      deletedIds: split.deletedIds,
+    );
+  }
+
   /// Ferme le cycle de re-tirage : balaie ce que le cycle n'a pas revu, écrit
   /// le curseur, lève le jeton — en une transaction. Rend le nombre de lignes
   /// balayées.
@@ -255,6 +273,11 @@ class _PageSplit<D> {
 /// de branche retirerait du téléphone un groupe dont je suis membre et qui est
 /// rattaché à une autre assemblée — c'est-à-dire ma propre conversation. Les trois
 /// autres sont `private`, et une collection privée ne relève d'aucune branche.
+/// **`group_reads` se range juste avant `group_messages`** (#140) : à la toute
+/// première synchronisation, une lecture arrivée après le fil allumerait tout
+/// l'historique en non-lu le temps d'un tirage. Arrivée avant, elle désigne un
+/// message que le magasin n'a pas encore — et le compteur retombe alors sur
+/// `lastReadAt`, ce qui est juste.
 List<SyncedCollection<Object?>> syncedCollections() => [
       SyncedCollection<TeachingTypeRow>(
         key: SyncCollectionKey.teachingTypes,
@@ -415,6 +438,14 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) => referenceId(SyncCollectionKey.groupJoinRequests, item),
         rowOf: groupJoinRequestRowOf,
       ),
+      SyncedCollection<GroupReadRow>(
+        key: SyncCollectionKey.groupReads,
+        local: (dao) => dao.groupReadsCollection,
+        // **`groupId`**, la clé locale (#140) : le contrat demande de ranger la
+        // lecture par groupe. L'`id` serveur est celui de l'appartenance.
+        idOf: groupReadKey,
+        rowOf: groupReadRowOf,
+      ),
       SyncedCollection<GroupMessageRow>(
         key: SyncCollectionKey.groupMessages,
         local: (dao) => dao.groupMessagesCollection,
@@ -422,3 +453,17 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         rowOf: groupMessageRowOf,
       ),
     ];
+
+/// **Le descripteur d'une collection, par sa clé**, ou `null` si ce client ne
+/// la réplique pas.
+///
+/// Sert aux chemins qui rangent une ligne **hors du tirage** (#140) : un
+/// événement du canal `users/{id}` nomme sa collection, et c'est le descripteur
+/// du registre — le même que celui du moteur — qui la range. Il n'y a pas de
+/// seconde table de correspondance à tenir.
+SyncedCollection<Object?>? syncedCollectionFor(String key) {
+  for (final collection in syncedCollections()) {
+    if (collection.key == key) return collection;
+  }
+  return null;
+}

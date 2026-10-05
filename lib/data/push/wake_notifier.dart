@@ -106,7 +106,10 @@ class WakeNotification {
 /// ferait du nul de l'auteur retiré et du nul du profil en retard la même chose à
 /// l'écran — alors que le second se remplira au prochain cycle.
 WakeNotification? announcementNotification(MessageAnnouncement message) {
-  final body = message.body.trim();
+  // Un message-média (`body` nul, #140) n'a pas encore de phrase à annoncer :
+  // la notification se tait plutôt que de montrer un corps vide. Les
+  // notifications de média reviendront avec leur tranche (M4/M5).
+  final body = message.body?.trim() ?? '';
   if (body.isEmpty) return null;
 
   final group = message.groupName?.trim();

@@ -224,6 +224,9 @@ final syncSchedulerProvider = Provider<SyncScheduler>((ref) {
           for (final collection in syncedCollections())
             collection.tableIn(database.syncDao),
           database.pendingGroupMessages,
+          // L'outbox de la lecture (#140) entre dans le calcul des non-lus :
+          // ses flux se relisent avec les autres.
+          database.pendingGroupReads,
         });
   ref.onDispose(scheduler.dispose);
   return scheduler;

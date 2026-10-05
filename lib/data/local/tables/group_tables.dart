@@ -257,7 +257,18 @@ class GroupMessages extends Table with SyncedRow {
   /// par un client.
   BoolColumn get isSystem => boolean().withDefault(const Constant(false))();
 
-  TextColumn get body => text()();
+  /// **Nullable depuis la v20** (#140, piège 1 du plan
+  /// `messagerie-whatsapp-plan.md`), et c'est un garde-fou, pas une commodité.
+  ///
+  /// Un message-média (vocal, image) n'a pas de texte : le serveur le sert avec
+  /// `body: null` dès que l'application annonce une version au-delà du plancher
+  /// de compatibilité (`GROUP_MEDIA_COMPAT_FLOOR_VERSION`), et **toujours** sur le
+  /// canal `users/{id}`, qui n'a pas de requête où lire la version. Une colonne
+  /// `NOT NULL` faisait lever `groupMessageRowOf` — donc rejeter la page, donc
+  /// **couper le cycle de synchronisation** à chaque tour, sans que rien ne le
+  /// dise. Le nul se rend à l'écran comme un message que cette version ne sait
+  /// pas encore montrer (`chatMediaUnsupported`), jamais comme un vide.
+  TextColumn get body => text().nullable()();
 
   /// **La clé d'idempotence**, telle que ce client l'a frappée (UUIDv7) — ou nul
   /// pour un message qu'un autre client a envoyé sans clé.
@@ -327,4 +338,75 @@ class PendingGroupMessages extends Table {
 
   @override
   Set<Column<Object>> get primaryKey => {clientMessageId};
+}
+
+/// Collection `group_reads` (partition `private`, #140) — **ma** position de
+/// lecture dans chacun de mes groupes, et rien de celle des autres.
+///
+/// Servie par le serveur depuis M1a (`group_reads_descriptor.ts`) : `{ id,
+/// groupId, lastReadMessageId, lastReadAt }`. **Rangée par `groupId`** (le
+/// contrat le demande) : `id` est celui de l'appartenance, gardé parce qu'on
+/// stocke ce que le serveur envoie. Une appartenance jamais lue n'a pas de ligne,
+/// et l'absence veut dire « rien lu » — voir le calcul des non-lus dans
+/// `GroupDao`.
+///
+/// **Sans tombstone** : quitter un groupe ne retire pas la lecture, et un groupe
+/// que je ne vois plus n'a plus de pastille à peindre.
+///
+/// ⚠️ **Monotone.** Le canal `read.advanced` peut livrer deux lectures dans le
+/// désordre ; seule une ligne plus avancée que la locale est rangée — voir
+/// `MessagingStoreWriter`.
+@DataClassName('GroupReadRow')
+class GroupReads extends Table with SyncedRow {
+  @override
+  String get tableName => 'group_reads';
+
+  TextColumn get groupId => text()();
+
+  /// L'identifiant de l'appartenance côté serveur (un entier). Non lu.
+  IntColumn get membershipId => integer().nullable()();
+
+  /// Le dernier message lu. **Pas de clé étrangère**, ni ici ni côté serveur :
+  /// un message purgé ne remet pas la lecture à zéro.
+  TextColumn get lastReadMessageId => text().nullable()();
+
+  /// L'instant de la lecture. C'est le repli du calcul des non-lus quand le
+  /// message lu n'est pas (ou plus) dans le magasin.
+  DateTimeColumn get lastReadAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {groupId};
+}
+
+/// **Table locale seule** (#140) — une lecture avancée par ce téléphone et
+/// **pas encore confirmée** par `POST /groups/:id/read`.
+///
+/// C'est l'outbox de la lecture, sur le patron de [PendingGroupMessages] : posée
+/// **avant** l'appel réseau, retirée à sa confirmation, rejouée tant qu'elle
+/// reste (`GroupReadAdvancer.replay`). La route est idempotente et monotone
+/// (piège 5 du plan) : rejouer est toujours sûr.
+///
+/// Elle sert aussi le **calcul des non-lus** : un message lu ici, hors ligne,
+/// cesse aussitôt d'être compté — la pastille ne doit pas attendre le réseau pour
+/// s'éteindre. Le compteur prend la plus avancée des deux lectures (serveur et
+/// locale).
+///
+/// Dans aucun registre de synchronisation, sans `sync_stamp`, et aucun cycle ne
+/// la touche.
+@DataClassName('PendingGroupReadRow')
+class PendingGroupReads extends Table {
+  @override
+  String get tableName => 'pending_group_reads';
+
+  TextColumn get groupId => text()();
+
+  /// Le message le plus récent que le fil a affiché.
+  TextColumn get messageId => text()();
+
+  /// Son instant **serveur** : la position se compare dans l'ordre du fil,
+  /// `(createdAt, id)`, et il faut donc les deux.
+  DateTimeColumn get messageCreatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {groupId};
 }
