@@ -16,6 +16,17 @@
 /// Le bouton de l'accueil porte un libellé fixe (44092f0) : il ne nomme aucune
 /// panne. C'est donc cet écran qui dit pourquoi l'antenne ne joue pas, à la
 /// place de la scène centrale de la fiche ([RadioAirStatus]).
+///
+/// ## La page live (#135)
+///
+/// L'écran a pris la forme d'un live (décision 12 du plan radio live) : fond
+/// de saison plein écran, badge « EN DIRECT » et compteur en haut, fil en bas à
+/// gauche, réactions à droite — `widgets/radio_live/`. **L'écoute n'a pas
+/// bougé** : `ContentPlayerView` charge toujours par `openSource`, relance par
+/// `RadioListening.start`, et dispose ses pièces dans la scène
+/// ([ContentPlayerView.scene]) au lieu de sa fiche. La couche sociale
+/// (`radioLiveProvider`) vit **à côté** du son : elle s'ouvre avec la page, se
+/// ferme avec elle, et sa panne ne coupe rien.
 library;
 
 import 'package:flutter/material.dart';
@@ -25,6 +36,7 @@ import '../data/radio/radio_failure.dart';
 import '../data/radio/radio_status.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/l10n_extension.dart';
+import '../state/radio_live_providers.dart';
 import '../state/radio_providers.dart';
 import '../state/season_providers.dart';
 import '../theme/app_colors.dart';
@@ -33,6 +45,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_error_state.dart';
 import '../widgets/content_player_view.dart';
+import '../widgets/radio_live/radio_live_scene.dart';
 
 class RadioScreen extends ConsumerWidget {
   const RadioScreen({super.key});
@@ -46,6 +59,14 @@ class RadioScreen extends ConsumerWidget {
     final title = l10n.radioTitle;
     Future<void> start() =>
         ref.read(radioListeningProvider.notifier).start(title: title);
+
+    // **La couche sociale vit tant que la page vit** (#135), et pas une
+    // seconde de plus : `radioLiveProvider` est `autoDispose`, et cette écoute
+    // est ce qui le garde ouvert — y compris pendant que la route d'antenne
+    // charge, quand la scène n'est pas encore montée. Quitter la page le jette,
+    // et le canal temps réel se ferme avec lui. Un `listen` et non un `watch` :
+    // un cœur qui monte ne doit pas reconstruire le lecteur.
+    ref.listen(radioLiveProvider, (_, __) {});
 
     return ContentPlayerView(
       content: radioContentProvider(title),
@@ -76,7 +97,15 @@ class RadioScreen extends ConsumerWidget {
       // interrompue » et d'« il faut du réseau » : ces deux phrases ignoraient la
       // reprise en cours et la cause classée, et leur « Reprendre » rouvrait
       // sans pré-vol. Ici, toute relance passe par `start`.
-      stage: RadioAirStatus(onRetry: start),
+      //
+      // **La page live** (#135) : la scène dispose les pièces du lecteur —
+      // le gros bouton déjà câblé, l'arrêt — autour de la couche sociale.
+      // L'état de l'écoute garde la place centrale qu'il avait.
+      scene: (context, parts) => RadioLiveScene(
+        parts: parts,
+        title: title,
+        status: RadioAirStatus(onRetry: start),
+      ),
       // Le plancher de la cascade : la saison gagne quand le portail en a une.
       // Même image que l'écran de démarrage et que le splash natif.
       fallbackBackgroundAsset: kAppBackgroundAsset,
@@ -101,7 +130,7 @@ class RadioScreen extends ConsumerWidget {
 /// | --- | --- |
 /// | abandon | la cause (`radio_failure.dart`), et « Réessayer » |
 /// | reprise | « Nouvelle tentative… » — **sans** nommer la panne qu'on combat |
-/// | lecture | « En direct » |
+/// | lecture | « À l'antenne » — pas « En direct », réservé au badge d'un direct de la régie (#135) |
 /// | hors antenne | « Hors antenne », quand la route a dit `onAir: false` |
 ///
 /// Sinon — au repos ou en connexion sur une antenne qui émet ou dont on ne sait
