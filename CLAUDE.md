@@ -316,11 +316,9 @@ du magasin. Trois points :
    d'être celui de la requête (arrêt, chargement passé ailleurs), la requête
    retombe à `null`. Une requête périmée afficherait le titre d'un prêche qui
    ne joue plus.
-3. ⚠️ **L'arrêt depuis la notification ne la fait pas tomber**, parce qu'il ne
-   la fait pas tomber dans le lecteur non plus : `ContentAudioHandler.stop()`
-   arrête le média sans passer par `JustAudioContentPlayer.stop()`, et
-   `ContentPlayback.contentId` reste posé. C'est le comportement d'avant #114,
-   inchangé ; le mini-lecteur aura à le trancher.
+3. **L'arrêt depuis la notification la fait tomber aussi** (#116) : le
+   handler prévient le lecteur (`onSystemStop`), qui oublie ce qu'il tenait
+   comme après son propre `stop()`. Voir « Le mini-lecteur » plus bas.
 
 Ce que le contrôleur **ne fait pas encore** : suivre la position de reprise
 (`PlaybackProgressRecorder`) et compter l'écoute (`PlayTracker`). Les deux
@@ -413,6 +411,62 @@ AudioServiceActivity`. iOS exige `UIBackgroundModes: audio` — et **surtout pas
 `NSAppTransportSecurity` : l'URL HLS est HTTPS publique, et
 `NSAllowsArbitraryLoads` déclencherait une justification à l'App Review pour
 rien.
+
+#### Le mini-lecteur (#116) — `widgets/mini_player.dart`
+
+Une carte flottante — vignette, titre, orateur, barre de progression, −30 s,
+lecture/pause, +30 s, ✕ — qui paraît **dès que le contrôleur tient une
+requête** (`ref.watch(playbackControllerProvider) != null`), d'où qu'elle
+vienne : la fiche, une carte de l'accueil, l'antenne. Cadrage :
+`docs/mini-lecteur.md`. Il vit pour l'instant dans `HomeShell`, dans le
+`Positioned` des bandeaux, **au plus bas** de la colonne (au-dessus de la
+barre) ; sa marge basse dégage la moitié du bouton central, qui déborde de la
+barre. Il ne dépend pas de la coquille : #117 le remontera au niveau de
+l'application (écrans empilés, masquage sur la fiche et la radio, marges des
+listes).
+
+Six points qui se ratent en silence :
+
+1. **Seuls la barre (`_MiniProgress`) et le gros bouton (`_MainButton`)
+   s'abonnent à la position**, par `select` sur une valeur dérivée. La ligne
+   sous le titre s'abonne aussi, mais à la **panne seule** ; la carte, la
+   vignette et le titre ne se reconstruisent qu'au changement de requête — un
+   test le vérifie par l'identité des widgets.
+2. **Aucune ligne d'orateur sans orateur**, blanc compris. Jamais « Auteur
+   inconnu ».
+3. **Le gros bouton porte cinq gestes** : lecture, pause, **Rejouer** en fin
+   de lecture (`isCompleted`, barre pleine, `replay()`), **Reprendre** sur une
+   panne après le premier son (`hasStarted`, phrase `playerErrorTitle`,
+   `resume()` — la règle de #42), et **Relancer l'écoute** sur une panne avant
+   tout son (phrase `absenceOfflineMediaTitle`). Il dépend de `isCompleted` : un
+   suivi qui ramènerait le curseur à zéro en fin de lecture (ce que fait la
+   fiche) effacerait l'état « Rejouer ».
+4. **L'antenne passe par `RadioListening`, pas par le contrôleur**, pour deux
+   gestes : la ✕ (`RadioListening.stop`, qui annule les tentatives de reprise
+   programmées — sans quoi elles rouvriraient le son après coup) et la reprise
+   après panne (`start`, qui renégocie le cookie de MediaMTX, #108). Variante
+   « EN DIRECT » : badge, ni barre ni sauts ; un appui ouvre `/radio`.
+5. **Ouvrir la fiche ne recharge rien** : `pushNamed(teachingDetail)`, et
+   `ContentPlayerView._open` ne charge pas un contenu que le lecteur tient
+   déjà. Le routeur se lit par `GoRouter.maybeOf`, sinon `routerProvider` —
+   monté au-dessus du `Navigator`, il n'y aura plus de `GoRouter` dans le
+   contexte. ⚠️ `ref.read<GoRouter>(routerProvider)` **typé** : derrière un
+   `??`, l'inférence prend `GoRouter?` et le compilateur refuse `pushNamed`.
+6. **Un arrêt venu du système vaut une ✕.** `audio_service` appelle
+   `ContentAudioHandler.stop()` quand on balaie la notification ou qu'on
+   arrête depuis l'écran verrouillé ; il prévient désormais le lecteur
+   (`onSystemStop`), qui vide `contentId`, et le contrôleur lâche sa requête.
+   L'application, elle, relâche par `ContentAudioHandler.release()`, **qui ne
+   prévient personne** : un arrêt demandé est déjà oublié de son côté, et une
+   notification tardive effacerait un contenu chargé entre-temps (✕ puis appui
+   sur une carte). Ce chemin ne se teste pas : le handler ne s'instancie pas
+   sous `flutter test`.
+
+Côté tests : `test/widgets/mini_player_test.dart`, par `pumpRouter` (vraie
+coquille, vrai accueil, vraie fiche, lecteur inerte). Le lecteur inerte ne
+décode rien : les états (durée, fin, panne) se **peignent** par
+`InertContentPlayer.emit`. Et jamais `pumpAndSettle` : le bouton de l'antenne
+et la barre indéterminée tournent sans fin.
 
 ### New Life Radio (#104) — le bouton d'accueil, et le premier double-appui
 
