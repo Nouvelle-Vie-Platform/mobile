@@ -16,6 +16,12 @@ import '../utils/i18n_text.dart';
 /// serait une seconde résolution, qui divergerait de la première le jour où
 /// l'app gagnera un sélecteur de langue ou une locale régionale.
 ///
+/// **Elle sert aussi l'en-tête `Accept-Language`** (#131) : `app.dart` la
+/// branche comme lecteur d'`ApiClient.interfaceLanguage`. Sa *valeur* est bien
+/// la langue de l'interface — c'est sa copie —, seul son *usage* ici diffère du
+/// repli de contenu. Une seconde copie pour le réseau serait une seconde
+/// vérité, libre de diverger.
+///
 /// La valeur par défaut est [kContentFallbackLocale] — le français, seule
 /// langue dont on est certain qu'elle est toujours remplie côté contenu. Une
 /// première image rendue avant la synchronisation de la locale se replie donc

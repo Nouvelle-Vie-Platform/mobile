@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../data/app_platform.dart';
 import '../../data/app_version.dart';
 import '../../data/devices/device_identity.dart';
+import 'accept_language_header.dart';
 import 'app_version_header.dart';
 
 /// URL du backend, injectée au build.
@@ -141,6 +142,8 @@ abstract interface class DeviceSessionGuard {
 /// - Intercepteur de **présentation** : annonce la version du binaire, la
 ///   plateforme et l'identifiant d'appareil sur toutes les requêtes
 ///   ([AppVersionHeaderInterceptor])
+/// - Intercepteur de **langue** : `Accept-Language`, la langue que l'interface
+///   affiche, relue à chaque requête ([AcceptLanguageInterceptor])
 /// - Intercepteur d'auth : injecte automatiquement le token Bearer si présent
 /// - Déballage de l'enveloppe `data` posée par le serveur
 /// - Traitement global du 401 (purge du token + [onUnauthorized])
@@ -172,6 +175,10 @@ class ApiClient {
         platform: () => appPlatform,
         identity: () => deviceIdentity,
       ),
+      // **La langue de l'interface**, relue à chaque requête et jamais retenue :
+      // elle peut changer en cours de session. Même motif de lecteur que
+      // ci-dessus, et même place : rien ne dépend de lui dans la chaîne.
+      AcceptLanguageInterceptor(language: () => interfaceLanguage?.call()),
       _AuthInterceptor(_storage),
       unwrapEnvelopeInterceptor,
       // Le garde est lu **à chaque 401**, jamais capturé à la construction :
@@ -252,6 +259,23 @@ class ApiClient {
   /// ⚠️ Elle **mesure**, elle n'autorise rien (ADR-0040) : le jeton rangé dans
   /// le coffre reste la seule preuve d'identité.
   DeviceIdentity deviceIdentity = DeviceIdentity();
+
+  /// **La langue que l'interface affiche**, telle que l'en-tête
+  /// `Accept-Language` l'annonce (#131) — `fr`, `en` ou `ee`.
+  ///
+  /// Un **lecteur**, et non une valeur : il est appelé à chaque requête, pour
+  /// qu'un changement de langue en cours de session soit suivi dès la requête
+  /// suivante. Câblé au montage de l'application (`MaisonDuMiracleApp`), comme
+  /// [onUnauthorized] et pour la même raison : la couche réseau ignore Riverpod,
+  /// et le singleton naît avant tout câblage.
+  ///
+  /// Ce n'est **pas** une seconde vérité : l'application y branche
+  /// `contentLocaleProvider`, la copie de la locale que `MaterialApp` a
+  /// réellement résolue. Rien ici ne résout de langue.
+  ///
+  /// Tant qu'il vaut `null` (avant le montage, ou dans un test qui ne le pose
+  /// pas), l'en-tête est **absent** et le serveur répond en français.
+  String? Function()? interfaceLanguage;
 
   /// Refuse une URL de base en HTTP clair dans un build **release**.
   ///
