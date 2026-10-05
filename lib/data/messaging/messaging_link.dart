@@ -12,7 +12,20 @@
 ///    et la synchronisation ne perd rien (piège 4 du plan) ;
 /// 3. **le silence** → au-delà de [kMessagingSilenceLimit] sans rien recevoir —
 ///    ni ligne, ni battement —, la connexion est morte même si le système ne l'a
-///    pas dit : on la ferme et on en rouvre une.
+///    pas dit : on la ferme et on en rouvre une. **Seulement si un battement a
+///    été vu sur cette connexion** : le chien de garde est adaptatif (voir
+///    plus bas).
+///
+/// ## Le chien de garde ne s'arme qu'après un battement
+///
+/// Le serveur n'émet pas de battement pour l'instant (`pingInterval` retiré :
+/// l'application installée prendrait chaque trame pour un signal). Sans
+/// battement, un canal calme est **muet par nature** : reconnecter après 60 s
+/// de silence rouvrirait le canal chaque minute, avec un cycle à chaque fois.
+/// Le constat de silence ne s'arme donc qu'au premier `$$transmit/ping` reçu
+/// sur la connexion **courante** — chaque connexion repart désarmée. Le jour
+/// où le serveur réactive le battement, le client s'y met tout seul. La
+/// reconnexion sur erreur ou fermeture, elle, ne dépend de rien.
 ///
 /// ## Portée : tant que l'application est au premier plan
 ///
@@ -42,9 +55,9 @@ import 'messaging_channel.dart';
 /// conversation, assez long pour ne pas marteler un serveur injoignable.
 const Duration kMessagingRetryDelay = Duration(seconds: 10);
 
-/// **Le silence qui vaut une mort** : le serveur bat toutes les 25 s
-/// (`config/transmit.ts`), le contrat dit ~60 s. Deux battements manqués et un
-/// peu de marge.
+/// **Le silence qui vaut une mort**, une fois le battement constaté : quand le
+/// serveur bat (25 s, `config/transmit.ts`), deux battements manqués et un peu
+/// de marge. Sans battement vu, aucun silence ne vaut une mort.
 const Duration kMessagingSilenceLimit = Duration(seconds: 60);
 
 /// Tient le canal `users/{userId}` ouvert tant que l'application est au premier
@@ -86,6 +99,10 @@ class MessagingLink with WidgetsBindingObserver {
   Timer? _silence;
   bool _wanted = false;
   bool _observing = false;
+
+  /// La connexion **courante** a reçu au moins un battement : le constat de
+  /// silence est armé. Remis à faux à chaque connexion.
+  bool _heartbeatSeen = false;
 
   /// Les lignes se rangent **une à une, dans l'ordre d'arrivée** : un message
   /// créé puis supprimé dans la même seconde ne doit pas se ranger à l'envers.
@@ -137,7 +154,7 @@ class MessagingLink with WidgetsBindingObserver {
   void _connect() {
     if (!_wanted) return;
     _disconnect();
-    _armSilence();
+    _heartbeatSeen = false;
     _subscription = _channel.watch(userId).listen(
       _onEvent,
       onError: (Object error) {
@@ -159,6 +176,7 @@ class MessagingLink with WidgetsBindingObserver {
   }
 
   void _onEvent(MessagingEvent event) {
+    if (event is MessagingHeartbeat) _heartbeatSeen = true;
     _armSilence();
     switch (event) {
       case MessagingChannelOpened():
@@ -201,7 +219,10 @@ class MessagingLink with WidgetsBindingObserver {
 
   /// (Ré)arme le constat de silence : rien reçu pendant [_silenceLimit], la
   /// connexion est rouverte — avec un `uid` neuf, et un cycle à l'ouverture.
+  /// **Sans battement vu sur cette connexion, ne fait rien** : un serveur qui
+  /// ne bat pas laisse un canal calme muet, et ce silence-là n'est pas une mort.
   void _armSilence() {
+    if (!_heartbeatSeen) return;
     _silence?.cancel();
     _silence = Timer(_silenceLimit, () {
       if (!_wanted) return;

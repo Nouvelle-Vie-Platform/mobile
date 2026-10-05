@@ -2072,10 +2072,17 @@ bleu/vert coupe tous les flux ~120 s).
 
 Sept points qui se ratent en silence :
 
-1. **Le battement passe sur la même connexion** (`$$transmit/ping`, 25 s) : on lit
-   `channel` et on ignore ce qui n'est pas `users/<mon id>`. Toute trame — même
-   illisible — est un signe de vie ; **60 s sans rien** (`kMessagingSilenceLimit`)
-   et la connexion est rouverte, `uid` neuf.
+1. **Le chien de garde est adaptatif** : il ne s'arme qu'après un battement
+   (`$$transmit/ping`) vu sur la connexion **courante**. Le serveur n'en émet
+   pas pour l'instant (`pingInterval` retiré : l'application installée
+   prendrait chaque trame pour un signal) ; sans battement, un canal calme est
+   muet par nature, et reconnecter sur ce silence rouvrirait le canal — avec un
+   cycle — chaque minute. Battement vu : toute trame — même illisible — est un
+   signe de vie, **60 s sans rien** (`kMessagingSilenceLimit`) et la connexion
+   est rouverte, `uid` neuf, **désarmée** jusqu'au prochain battement. Le jour
+   où le serveur rebat, le client s'y met seul. La reconnexion sur erreur ou
+   fermeture ne dépend pas du battement. Le battement passe sur la même
+   connexion : on lit `channel` et on ignore ce qui n'est pas `users/<mon id>`.
 2. **Chaque (re)connexion lance un cycle** (`SyncTrigger.realtime`), posé **après**
    l'abonnement réussi : une tentative ratée n'en lance aucun (pas de sondage).
 3. **Un groupe inconnu** (DM ouvert par l'autre, ajout au portail) : la ligne est

@@ -367,11 +367,21 @@ void main() {
       expect(link.lastFailure, isA<MessagingChannelRefused>());
     });
 
-    test('un silence trop long est une mort : la connexion est rouverte',
-        () async {
+    test(
+        'un silence trop long APRÈS un battement est une mort : la connexion '
+        'est rouverte', () async {
       link.open();
+      channel.emit(const MessagingHeartbeat());
       await Future<void>.delayed(const Duration(milliseconds: 300));
       expect(channel.watched.length, greaterThanOrEqualTo(2));
+    });
+
+    test('sans battement vu, le silence ne rouvre rien', () async {
+      link.open();
+      channel.opened();
+      channel.emit(_row(_message));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      expect(channel.watched, hasLength(1));
     });
 
     test('un battement tient la connexion en vie', () async {
@@ -411,6 +421,81 @@ void main() {
       expect(channel.cancelled, 1);
       link.didChangeAppLifecycleState(AppLifecycleState.resumed);
       expect(channel.watched, hasLength(1));
+    });
+  });
+
+  group('Le chien de garde adaptatif (minuterie simulée, 60 s réelles)', () {
+    // Le serveur ne bat pas pour l'instant (`pingInterval` retiré) : le
+    // constat de silence ne s'arme qu'au premier `$$transmit/ping` reçu sur la
+    // connexion courante. `testWidgets` simule l'horloge des minuteries.
+    MessagingLink linkOn(_ScriptedChannel channel, List<String> log) =>
+        MessagingLink(
+          userId: _me,
+          channel: channel,
+          apply: (_) async => true,
+          resynchronize: () async => log.add('cycle'),
+        );
+
+    // `close` rend ses minuteries **avant** son premier `await` ; l'attendre
+    // sous l'horloge simulée bloquerait le harnais (l'annulation d'abonnement
+    // se termine dans la zone racine, que `testWidgets` ne fait pas tourner).
+    Future<void> closeUnderFakeClock(WidgetTester tester, MessagingLink link) {
+      unawaited(link.close());
+      return tester.pump();
+    }
+
+    testWidgets('sans battement : aucune reconnexion après 5 min de silence',
+        (tester) async {
+      final channel = _ScriptedChannel();
+      final log = <String>[];
+      final link = linkOn(channel, log);
+      link.open();
+      channel.opened();
+      await tester.pump();
+      expect(log, ['cycle']);
+
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(minutes: 1));
+      }
+
+      expect(channel.watched, hasLength(1));
+      expect(channel.cancelled, 0);
+      expect(log, ['cycle'], reason: 'aucun cycle de plus sur un canal calme');
+      await closeUnderFakeClock(tester, link);
+    });
+
+    testWidgets('un battement, puis plus de 60 s de silence : UNE reconnexion',
+        (tester) async {
+      final channel = _ScriptedChannel();
+      final link = linkOn(channel, <String>[]);
+      link.open();
+      channel.opened();
+      channel.emit(const MessagingHeartbeat());
+      await tester.pump();
+
+      await tester.pump(const Duration(seconds: 59));
+      expect(channel.watched, hasLength(1), reason: 'pas avant la limite');
+      await tester.pump(const Duration(seconds: 2));
+      expect(channel.watched, hasLength(2));
+
+      // La connexion neuve repart désarmée : sans nouveau battement, son
+      // silence ne la rouvre pas.
+      await tester.pump(const Duration(minutes: 5));
+      expect(channel.watched, hasLength(2));
+      await closeUnderFakeClock(tester, link);
+    });
+
+    testWidgets('un battement régulier tient la connexion en vie',
+        (tester) async {
+      final channel = _ScriptedChannel();
+      final link = linkOn(channel, <String>[]);
+      link.open();
+      for (var i = 0; i < 10; i++) {
+        channel.emit(const MessagingHeartbeat());
+        await tester.pump(const Duration(seconds: 25));
+      }
+      expect(channel.watched, hasLength(1));
+      await closeUnderFakeClock(tester, link);
     });
   });
 

@@ -344,13 +344,22 @@ ouvert (il reste servi pour le parc installé, contrat M1a §1).
 | `membership.changed` | `group_members` | remplace ; **ma** ligne tombstonée retire la conversation |
 | `group.updated` | `groups` | remplace — c'est ainsi qu'arrivent l'effectif juste et un groupe rejoint |
 | `read.advanced` | `group_reads` | **seulement s'il avance** (identifiant du message lu) |
-| `$$transmit/ping` | — | signe de vie ; 60 s de silence → reconnexion |
+| `$$transmit/ping` | — | signe de vie ; **arme** le chien de garde de la connexion courante, puis 60 s de silence → reconnexion |
 
 Chaque ligne passe par `MessagingStoreWriter` → le descripteur du registre →
 `SyncDao.applyLiveRows` : **la même fonction que la ligne de synchronisation**,
 sans curseur. Une ligne qui cite un groupe inconnu est rangée, **puis** un cycle
 est lancé ; chaque (re)connexion lance un cycle de rattrapage. La
 synchronisation reste la vérité (piège 4).
+
+**Le chien de garde est adaptatif.** Le serveur n'émet pas de battement pour
+l'instant (`pingInterval` retiré : l'application installée prendrait chaque
+trame pour un signal). Sans battement, un canal calme se tait, et reconnecter
+après 60 s de silence rouvrirait le canal — et lancerait un cycle — chaque
+minute. Le constat de silence ne s'arme donc qu'au premier `$$transmit/ping`
+reçu sur la connexion courante ; chaque connexion repart désarmée. Quand le
+serveur réactivera le battement, le client s'y mettra seul. La reconnexion sur
+erreur ou fermeture, elle, ne dépend de rien.
 
 ### Non-lus, lecture et badge
 
