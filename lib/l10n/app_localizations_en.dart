@@ -250,6 +250,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'New Life Radio is not broadcasting right now.';
 
   @override
+  String get radioLongPressTip =>
+      'Tip: press and hold this button to open the live page at any time.';
+
+  @override
+  String get radioOpenLiveHint => 'open the live page';
+
+  @override
   String get actionSeeAll => 'See all';
 
   @override

@@ -22,7 +22,8 @@ import '../helpers/radio_doubles.dart';
 /// montage. Le second passait par `ContentPlayerView._loadOnce` → `_open` →
 /// `player.load(url: content.playlistUrl)`, **sans en-têtes**, et prenait donc un
 /// `401 {"error":"session not found"}` dans deux cas : un lien profond vers
-/// `/radio`, et la course du second appui pendant les cinq secondes du pré-vol.
+/// `/radio`, et la course du second appui (le double-appui d'alors, remplacé
+/// par l'appui long depuis #134) pendant les cinq secondes du pré-vol.
 ///
 /// ⚠️ **Ce que ces tests ne prouvent PAS, et qu'il ne faut pas laisser croire** :
 /// qu'un cookie traverse jusqu'à ExoPlayer ou AVFoundation. Ils s'arrêtent à
@@ -110,7 +111,7 @@ void main() {
       // rouvrir la source — ce qui couperait le tampon déjà rempli — ni consommer
       // un second aller-retour sur la fenêtre de rattrapage de 40 secondes.
       // L'antenne joue déjà, obtenue par un autre chemin — c'est l'état dans
-      // lequel l'écran se monte quand on y arrive par le second appui du bouton.
+      // lequel l'écran se monte quand on y arrive par l'appui long du bouton.
       await player.load(
         contentId: RadioConfig.contentId,
         url: 'https://antenne.test/antenne/stream.m3u8',

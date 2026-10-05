@@ -5,36 +5,48 @@
 /// New Life Radio, au premier contact, et montre avant qu'on appuie si l'antenne
 /// émet : il s'atténue quand elle se tait.
 ///
-/// ## Le geste, et pourquoi il est écrit à la main
+/// ## Le geste : un appui agit, un appui long navigue (#134)
 ///
 /// ```
-/// À L'ARRÊT          1 appui  → lance
-///                    2 appuis → lance + ouvre la page
+/// APPUI SIMPLE   à l'arrêt     → lance
+///                en connexion  → rien (le flux est déjà parti)
+///                en lecture    → arrête
 ///
-/// EN CONNEXION       1 appui  → (déjà parti)
-///                    2 appuis → ouvre la page, connexion intacte
-///                    3, 4, 5… → rien
-///
-/// EN LECTURE         1 appui  → arrête
-///                    2 appuis → relance + ouvre la page
+/// APPUI LONG     dans tous les états → ouvre la page, sans toucher au son
 /// ```
 ///
-/// Tout tient dans une phrase : **le premier appui agit, le second ajoute la
-/// navigation, et les suivants ne font rien.** Le second rend aussi ce que le
-/// premier avait retiré — c'est ce qui donne « relance + ouvre la page » en
-/// lecture, sans une seule ligne qui parle de relancer.
+/// ⚠️ **L'ancien double-appui coupait le son** (#104, `TapBurst`) : en lecture,
+/// le premier appui arrêtait l'antenne et le second la relançait avant d'ouvrir
+/// la page — la connexion était fermée puis rouverte, et ça s'entendait. L'appui
+/// long, lui, ne touche jamais au lecteur : rien n'est arrêté puis relancé
+/// (décision 14 du cadrage `radio-live-plan.md`).
 ///
-/// ⚠️ Il n'existait **aucun double-appui dans l'application** avant celui-ci, et
-/// `GestureDetector.onDoubleTap` ne pouvait pas le porter : il impose un délai au
-/// simple appui. Le mécanisme vit dans `tap_burst.dart`, qui dit pourquoi en
-/// détail.
+/// ⚠️ **Pas de `onDoubleTap`, et l'appui long ne le remplace pas en douce.**
+/// `onDoubleTap` imposerait un délai au simple appui : le détecteur attendrait
+/// `kDoubleTapTimeout` avant de pouvoir dire qu'il n'y aura pas de second
+/// contact. `onLongPress` n'a pas ce coût — au relâchement, la reconnaissance
+/// d'appui long renonce d'elle-même et l'appui simple part **dans le même
+/// événement** ; c'est le test « un appui simple agit sans aucune attente » qui
+/// le tient, par un `pump()` sans durée.
 ///
 /// ⚠️ **L'inertie de la connexion protège la connexion, pas la navigation.** On ne
 /// peut ni relancer ni arrêter tant que ça cherche — c'est exactement ce qui casse
-/// une connexion en cours —, mais ouvrir la page reste possible, et l'auditeur y
+/// une connexion en cours —, mais l'appui long ouvre la page, et l'auditeur y
 /// voit la même animation continuer. Elle ne couvre que la connexion *initiale* :
 /// une antenne déjà entendue s'arrête toujours, y compris pendant qu'elle remplit
 /// son tampon.
+///
+/// ## Le geste se découvre au moment où il sert
+///
+/// Un appui long ne se devine pas. Au **premier son** d'un lancement parti d'ici
+/// (décision 15), un message dit qu'un appui long ouvre le live à tout moment.
+/// Pas à l'échec — on n'invite pas vers une page en annonçant une panne —, pas
+/// pour un lancement venu d'ailleurs (l'écran d'antenne, le mini-lecteur), et pas
+/// quand l'accueil n'est plus au premier plan : l'auditeur qui a déjà ouvert la
+/// page n'a plus rien à apprendre.
+///
+/// Les lecteurs d'écran annoncent l'action d'appui long (`onLongPressHint`) :
+/// sans elle, le geste n'existerait que pour qui voit le message.
 ///
 /// ## Le bouton éteint reste appuyable
 ///
@@ -57,17 +69,15 @@ import '../../data/radio/radio_status.dart';
 import '../../l10n/l10n_extension.dart';
 import '../../router/app_router.dart';
 import '../../state/radio_providers.dart';
-import '../../state/theme_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
-import 'tap_burst.dart';
 
 class RadioCtaPill extends ConsumerStatefulWidget {
   const RadioCtaPill({super.key});
 
   /// Le bouton lui-même — visé par clé et non par libellé : ce qu'un test fait
-  /// avec lui (appuyer une, deux, cinq fois) ne doit pas dépendre de l'état dans
+  /// avec lui (appuyer, appuyer longuement) ne doit pas dépendre de l'état dans
   /// lequel il le trouve.
   static const Key buttonKey = Key('radio_cta_button');
 
@@ -85,15 +95,15 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
   late AnimationController _animController;
   late Animation<Color?> _iconColorAnim;
 
-  final TapBurst _burst = TapBurst();
-
-  /// **Ce que le premier appui de la rafale a retiré**, et que le second doit
-  /// rendre.
+  /// **Un lancement parti d'ici attend son premier son**, pour dire alors
+  /// qu'un appui long ouvre le live (décision 15).
   ///
-  /// C'est toute la mécanique de « 2 appuis → relance + ouvre la page » : le
-  /// second appui n'a pas à savoir dans quel état on était, il défait ce que le
-  /// premier a fait puis navigue.
-  bool _firstTapStopped = false;
+  /// Posé par l'appui qui lance, et par lui seul : un lancement venu de l'écran
+  /// d'antenne ou du mini-lecteur ne le pose pas. Levé au premier son, à
+  /// l'échec, ou à l'arrêt — un seul message par lancement, et jamais pour
+  /// annoncer une panne. La reprise (`retrying`) ne le lève pas : une antenne
+  /// qui finit par répondre est un lancement réussi.
+  bool _awaitingFirstSound = false;
 
   @override
   void initState() {
@@ -130,47 +140,56 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
     ref.invalidate(radioAntennaProvider);
   }
 
+  /// **L'appui simple : lance ou arrête, tout de suite.**
   void _onTap() {
-    final rank = _burst.register(ref.read(nowProvider)());
-    switch (rank) {
-      case 1:
-        _firstTap();
-      case 2:
-        _secondTap();
-      default:
-        // 3ᵉ, 4ᵉ, 5ᵉ… : rien. Une rafale n'a que deux sens ; au-delà, l'auditeur
-        // insiste, et répondre à son insistance ferait couper ce qu'il attend.
-        break;
-    }
-  }
-
-  void _firstTap() {
     final status = ref.read(radioListeningProvider);
-    _firstTapStopped = false;
 
-    // L'inertie : pendant la connexion initiale, le premier appui ne touche à
-    // rien — le flux est déjà parti.
+    // L'inertie : pendant la connexion initiale, l'appui ne touche à rien — le
+    // flux est déjà parti.
     if (!status.allowsTransport) return;
 
     final radio = ref.read(radioListeningProvider.notifier);
     if (status.isOn) {
+      _awaitingFirstSound = false;
       radio.stop();
-      _firstTapStopped = true;
       return;
     }
+    _awaitingFirstSound = true;
     radio.start(title: context.l10n.radioTitle);
   }
 
-  void _secondTap() {
-    // **Rendre ce que le premier appui a retiré**, puis ouvrir la page. En
-    // connexion il n'avait rien retiré : la connexion reste intacte.
-    if (_firstTapStopped) {
-      ref.read(radioListeningProvider.notifier).start(
-            title: context.l10n.radioTitle,
-          );
-      _firstTapStopped = false;
-    }
+  /// **L'appui long : ouvre la page, et rien d'autre.**
+  ///
+  /// Aucune lecture de l'état, aucun appel au contrôleur d'écoute : c'est ce qui
+  /// garantit qu'il ne coupe ni ne relance jamais le son, quel que soit l'état
+  /// où il trouve l'antenne.
+  void _onLongPress() {
     context.pushNamed(AppRoute.radio);
+  }
+
+  /// **Le premier son d'un lancement parti d'ici** — le moment où l'appui long
+  /// se fait connaître.
+  void _onStatusChanged(RadioStatus? previous, RadioStatus next) {
+    if (!_awaitingFirstSound) return;
+    switch (next.phase) {
+      case RadioPhase.connecting:
+      case RadioPhase.retrying:
+        return; // pas encore : on attend la suite
+      case RadioPhase.idle:
+      case RadioPhase.failed:
+        _awaitingFirstSound = false; // arrêté ou abandonné : rien à dire
+        return;
+      case RadioPhase.playing:
+        _awaitingFirstSound = false;
+    }
+    // L'accueil n'est plus au premier plan — l'auditeur a déjà ouvert la page
+    // ou s'en est allé ailleurs : le message tomberait hors de propos.
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null || !messenger.mounted) return;
+    messenger.showSnackBar(
+      SnackBar(content: Text(context.l10n.radioLongPressTip)),
+    );
   }
 
   Color? _getIconColor(RadioStatus status) {
@@ -183,6 +202,7 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
   @override
   Widget build(BuildContext context) {
     final status = ref.watch(radioListeningProvider);
+    ref.listen<RadioStatus>(radioListeningProvider, _onStatusChanged);
     // `.value` et non l'`AsyncValue` entière : une antenne qu'on n'a pas pu lire
     // n'est pas une antenne éteinte, et le bouton n'a rien à attendre pour
     // s'afficher au repos.
@@ -204,58 +224,71 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
             // grand corps de texte), le libellé se replie en points de
             // suspension au lieu de faire déborder l'en-tête de l'accueil.
             Flexible(
-              child: GestureDetector(
-                key: RadioCtaPill.buttonKey,
+              // **Un seul nœud d'accessibilité, qui annonce les deux gestes.**
+              // Le détecteur s'en exclut : le nœud du `Semantics` porte les
+              // deux actions, avec l'indice de l'appui long — sans quoi un
+              // lecteur d'écran dirait seulement « bouton ».
+              child: Semantics(
+                container: true,
+                button: true,
                 onTap: _onTap,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.sm + 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: dimmed ? 0.55 : 1),
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (status.isWorking)
-                        SizedBox(
-                          key: RadioCtaPill.workingKey,
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                onLongPress: _onLongPress,
+                onLongPressHint: context.l10n.radioOpenLiveHint,
+                child: GestureDetector(
+                  key: RadioCtaPill.buttonKey,
+                  excludeFromSemantics: true,
+                  onTap: _onTap,
+                  onLongPress: _onLongPress,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.sm + 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: dimmed ? 0.55 : 1),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (status.isWorking)
+                          SizedBox(
+                            key: RadioCtaPill.workingKey,
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: _getIconColor(status),
+                            ),
+                          )
+                        else
+                          Icon(
+                            Icons.sensors,
+                            size: 18,
                             color: _getIconColor(status),
                           ),
-                        )
-                      else
-                        Icon(
-                          Icons.sensors,
-                          size: 18,
-                          color: _getIconColor(status),
-                        ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Flexible(
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.bodyStrong.copyWith(
-                            color: AppColors.neutralDark
-                                .withValues(alpha: dimmed ? 0.7 : 1),
+                        const SizedBox(width: AppSpacing.sm),
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.bodyStrong.copyWith(
+                              color: AppColors.neutralDark
+                                  .withValues(alpha: dimmed ? 0.7 : 1),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

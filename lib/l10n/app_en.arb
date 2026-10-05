@@ -92,6 +92,8 @@
   "radioFailureUnknown": "Can't listen right now",
   "radioGaveUpMessage": "The app stopped trying. Start listening again whenever you like.",
   "radioUnavailableMessage": "New Life Radio is not broadcasting right now.",
+  "radioLongPressTip": "Tip: press and hold this button to open the live page at any time.",
+  "radioOpenLiveHint": "open the live page",
   "actionSeeAll": "See all",
   "actionListen": "Listen",
   "actionPause": "Pause",

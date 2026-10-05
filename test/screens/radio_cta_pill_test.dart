@@ -16,27 +16,19 @@ import 'package:maison_du_miracle/data/radio/radio_status.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
-import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/widgets/home/radio_cta_pill.dart';
 
 import '../helpers/pump_screen.dart';
 import '../helpers/radio_doubles.dart';
 
-/// **Le bouton d'antenne de l'accueil** (#104) — le geste, l'inertie, les états et
-/// la reprise.
+/// **Le bouton d'antenne de l'accueil** (#104, #134) — le geste, l'inertie, les
+/// états et la reprise.
 ///
 /// ⚠️ **Jamais `pumpAndSettle` ici**, et ce n'est pas une précaution de style : le
 /// bouton porte une **animation continue** (le pictogramme pulse sans fin, et un
 /// témoin tourne pendant la connexion). `pumpAndSettle` attendrait une
 /// stabilisation qui n'arrive jamais et expirerait au bout de dix minutes. On
 /// avance l'horloge, comme partout dans ce dépôt.
-///
-/// ⚠️ **L'horloge des rafales est surchargée dans tous les tests de geste.** Deux
-/// `tester.tap` tombent à quelques microsecondes l'un de l'autre sur l'horloge
-/// réelle, donc dans la même rafale — ce qui sert ici — mais rien ne le garantit
-/// sur une machine chargée, et surtout **aucun test ne pourrait alors montrer
-/// qu'une rafale se referme**. `nowProvider` est l'horloge injectable du dépôt, et
-/// `tap_burst_test.dart` juge la fenêtre elle-même.
 void main() {
   /// Ce que la page d'antenne affiche — on ne monte pas le vrai écran : ce qu'on
   /// vérifie est **qu'on y va**, pas ce qu'elle dessine (`feature_screens_test`
@@ -76,6 +68,11 @@ void main() {
     if (phase == RadioPhase.failed) expect(status(tester).failure, failure);
   }
 
+  /// La phase seule, sans chercher le libellé : la page d'antenne couvre le
+  /// bouton une fois ouverte.
+  void expectPhaseOnly(WidgetTester tester, RadioPhase phase) =>
+      expect(status(tester).phase, phase);
+
   /// **Tout ce qui se touche dans le bouton**, par clé : le bouton lui-même, et
   /// rien d'autre. Un bouton d'arrêt indépendant y ajouterait son propre
   /// détecteur — c'est son absence qu'on lit ici, sans dépendre de son
@@ -103,14 +100,14 @@ void main() {
     return (box.decoration! as BoxDecoration).color!.a < 1;
   }
 
+  /// Le message qui fait découvrir l'appui long (décision 15).
+  const tip =
+      'Astuce : un appui long sur ce bouton ouvre le live à tout moment.';
+
   late InertContentPlayer player;
-  late DateTime clock;
   late GoRouter router;
 
-  setUp(() {
-    player = InertContentPlayer();
-    clock = DateTime.utc(2026, 10, 1, 9);
-  });
+  setUp(() => player = InertContentPlayer());
 
   tearDown(() => player.dispose());
 
@@ -141,34 +138,29 @@ void main() {
       buildRouter(),
       radio: radio,
       handshake: handshake,
-      overrides: [
-        contentPlayerProvider.overrideWithValue(player),
-        nowProvider.overrideWithValue(() => clock),
-      ],
+      overrides: [contentPlayerProvider.overrideWithValue(player)],
     );
   }
 
   /// Un appui, puis **une seule image sans durée**.
   ///
   /// C'est l'assertion la plus importante de ce fichier, et elle est dans le
-  /// harnais : si quoi que ce soit attendait une fenêtre de double-clic, rien ne
-  /// se serait produit à ce moment-là. `pump()` sans durée ne fait expirer aucune
-  /// minuterie — il ne vide que la file de micro-tâches.
+  /// harnais : si quoi que ce soit attendait une fenêtre de double-clic — ou si
+  /// l'appui long retenait l'appui simple —, rien ne se serait produit à ce
+  /// moment-là. `pump()` sans durée ne fait expirer aucune minuterie — il ne
+  /// vide que la file de micro-tâches.
   Future<void> tapOnce(WidgetTester tester) async {
     await tester.tap(find.byKey(RadioCtaPill.buttonKey));
     await tester.pump();
     await tester.pump();
   }
 
-  /// **Un geste neuf**, et non la suite du précédent.
-  ///
-  /// L'horloge des rafales avance au-delà de la fenêtre : sans cela, deux appuis
-  /// séparés par tout un scénario de test resteraient la **même** rafale, et le
-  /// second serait lu comme un double-appui. C'est le piège de cette horloge
-  /// surchargée, et il a mordu en écrivant ces tests.
-  Future<void> tapAgainLater(WidgetTester tester) async {
-    clock = clock.add(const Duration(seconds: 1));
-    await tapOnce(tester);
+  /// Un appui long, puis de quoi laisser la page s'ouvrir (la transition de
+  /// route) — sans `pumpAndSettle`, pour la raison écrite en tête.
+  Future<void> longPress(WidgetTester tester) async {
+    await tester.longPress(find.byKey(RadioCtaPill.buttonKey));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
   }
 
   /// Peint l'état « le son sort » — le lecteur inerte ne pose jamais `hasStarted`
@@ -202,7 +194,7 @@ void main() {
     await tester.pump();
   }
 
-  group('Le geste — trois lignes, et le premier appui agit tout de suite', () {
+  group('L\'appui simple : lance ou arrête, tout de suite', () {
     testWidgets('à l\'arrêt, un appui lance le flux', (tester) async {
       await pumpPill(tester);
       expectPhase(tester, RadioPhase.idle);
@@ -218,18 +210,24 @@ void main() {
       expect(find.text(pageMarker), findsNothing);
     });
 
-    testWidgets('à l\'arrêt, deux appuis lancent ET ouvrent la page',
+    testWidgets('un appui simple agit sans aucune attente, appui long ou pas',
         (tester) async {
+      // ⚠️ **Le garde-fou de #134.** Le détecteur porte désormais `onLongPress` :
+      // s'il retenait l'appui simple jusqu'à savoir qu'il n'est pas long, le
+      // lancement partirait au mieux après une attente. On appuie et on relâche
+      // à la main, sans laisser passer le moindre temps, puis une image **sans
+      // durée** : l'écoute doit déjà être en route.
       await pumpPill(tester);
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byKey(RadioCtaPill.buttonKey)),
+      );
+      await gesture.up();
+      await tester.pump();
 
-      await tapOnce(tester);
-      await tapOnce(tester);
-
-      expect(player.loadedUrl, kTestAntennaOnAir.streamUrl);
-      // Le second appui **ajoute** la navigation : il ne relance rien, le flux
-      // était déjà parti.
+      expectPhase(tester, RadioPhase.connecting);
+      await tester.pump();
       expect(player.loadCount, 1);
-      expect(find.text(pageMarker), findsOneWidget);
+      expect(player.value.isPlaying, isTrue);
     });
 
     testWidgets('en lecture, un appui arrête', (tester) async {
@@ -238,7 +236,7 @@ void main() {
       await paintPlaying(tester);
       expectPhase(tester, RadioPhase.playing);
 
-      await tapAgainLater(tester);
+      await tapOnce(tester);
 
       expect(player.loadedUrl, isNull);
       expect(player.value.contentId, isNull);
@@ -246,110 +244,189 @@ void main() {
       expect(find.text(pageMarker), findsNothing);
     });
 
-    testWidgets('en lecture, deux appuis relancent ET ouvrent la page',
+    testWidgets('deux appuis rapprochés ne sont plus un geste à part',
         (tester) async {
-      await pumpPill(tester);
-      await tapOnce(tester);
-      await paintPlaying(tester);
-
-      await tapAgainLater(tester); // 1ᵉʳ de la rafale : arrête
-      await tapOnce(tester); // 2ᵉ : rend ce qu'il a retiré, puis navigue
-
-      expect(player.loadedUrl, kTestAntennaOnAir.streamUrl);
-      expect(player.loadCount, 2, reason: 'la source a bien été rouverte');
-      expect(player.value.isPlaying, isTrue);
-      expect(find.text(pageMarker), findsOneWidget);
-    });
-
-    testWidgets(
-        'deux appuis séparés sont deux rafales, donc deux fois le premier',
-        (tester) async {
+      // Le double-appui de #104 a disparu : le second appui est un appui comme
+      // un autre. En lecture, il arrête — puis le suivant relance, et rien
+      // n'ouvre la page.
       await pumpPill(tester);
       await tapOnce(tester); // lance
       await paintPlaying(tester);
 
-      // Une seconde plus tard : ce n'est plus un double-appui, c'est un appui.
-      await tapAgainLater(tester);
+      await tapOnce(tester); // arrête
+      await tapOnce(tester); // relance, sans naviguer
 
-      // Il arrête, il ne navigue pas — sans la fenêtre, ce second appui aurait
-      // relancé et ouvert la page.
-      expect(player.value.contentId, isNull);
+      expect(player.loadCount, 2);
       expect(find.text(pageMarker), findsNothing);
     });
   });
 
-  group('L\'inertie protège la connexion, pas la navigation', () {
-    testWidgets('un appui neuf pendant la connexion ne casse pas la connexion',
+  group('L\'appui long : la page, sans toucher au son', () {
+    testWidgets('en lecture, il ouvre la page et n\'arrête pas l\'antenne',
         (tester) async {
-      // Le cas que l'inertie existe pour couvrir, et le seul : une **rafale
-      // neuve** dont le premier appui tombe pendant que ça cherche. Dans la rafale
-      // initiale, c'est le rang qui s'en charge — le premier appui est justement
-      // celui qui lance.
+      // **Le défaut que #134 corrige** : l'ancien double-appui arrêtait puis
+      // relançait — la connexion était fermée puis rouverte, et ça s'entendait.
       await pumpPill(tester);
       await tapOnce(tester);
-      expect(find.byKey(RadioCtaPill.workingKey), findsOneWidget);
+      await paintPlaying(tester);
 
-      await tapAgainLater(tester);
+      await longPress(tester);
 
+      expect(find.text(pageMarker), findsOneWidget);
       expect(player.value.contentId, RadioConfig.contentId);
       expect(player.value.isPlaying, isTrue, reason: 'rien n\'a été arrêté');
+      // Un arrêt, même suivi d'une relance, aurait effacé l'adresse tenue.
+      expect(player.loadedUrl, kTestAntennaOnAir.streamUrl);
       expect(player.loadCount, 1, reason: 'rien n\'a été rouvert');
-      expect(find.text(pageMarker), findsNothing);
+      expectPhaseOnly(tester, RadioPhase.playing);
     });
 
-    testWidgets('en connexion, deux appuis ouvrent la page sans y toucher',
+    testWidgets('à l\'arrêt, il ouvre la page sans lancer', (tester) async {
+      await pumpPill(tester);
+
+      await longPress(tester);
+
+      expect(find.text(pageMarker), findsOneWidget);
+      expect(player.loadCount, 0, reason: 'le bouton n\'a rien lancé');
+      expect(player.value.contentId, isNull);
+      expectPhaseOnly(tester, RadioPhase.idle);
+    });
+
+    testWidgets('en connexion, il ouvre la page, connexion intacte',
         (tester) async {
       await pumpPill(tester);
       await tapOnce(tester);
-      // Le lecteur tient l'antenne mais le son n'est pas encore sorti : c'est
-      // l'état « en connexion », et le bouton montre qu'il travaille.
       expect(find.byKey(RadioCtaPill.workingKey), findsOneWidget);
       expectPhase(tester, RadioPhase.connecting);
 
-      await tapOnce(tester); // 2ᵉ
+      await longPress(tester);
 
       expect(find.text(pageMarker), findsOneWidget);
-      // La connexion est intacte : rien n'a été rechargé, rien n'a été arrêté.
       expect(player.loadCount, 1);
       expect(player.value.contentId, RadioConfig.contentId);
       expect(player.value.isPlaying, isTrue);
     });
 
-    testWidgets('les appuis suivants ne font rien — ni arrêt, ni seconde page',
+    testWidgets('les lecteurs d\'écran annoncent l\'appui long',
         (tester) async {
-      // ⚠️ Ce test se joue **en lecture**, et pas en connexion : en connexion,
-      // l'inertie suffirait à expliquer que rien ne bouge, et le rang des appuis
-      // ne serait prouvé par rien. En lecture, un troisième appui lu comme un
-      // premier **arrêterait** l'antenne, et lu comme un second ouvrirait une
-      // seconde page. Les deux se verraient ici.
+      await pumpPill(tester);
+      final semantics = tester.ensureSemantics();
+
+      expect(
+        tester.getSemantics(find.byKey(RadioCtaPill.buttonKey)),
+        containsSemantics(
+          label: label,
+          isButton: true,
+          hasTapAction: true,
+          hasLongPressAction: true,
+          onLongPressHint: 'ouvrir le live',
+        ),
+      );
+      semantics.dispose();
+    });
+  });
+
+  group('Le message qui fait découvrir l\'appui long', () {
+    testWidgets('au premier son d\'un lancement parti d\'ici', (tester) async {
+      await pumpPill(tester);
+      await tapOnce(tester);
+      // En connexion, rien encore : le lancement n'a pas réussi.
+      expect(find.text(tip), findsNothing);
+
+      await paintPlaying(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text(tip), findsOneWidget);
+    });
+
+    testWidgets('pas à l\'échec', (tester) async {
+      await pumpPill(tester,
+          radio: const FixedRadioRepository(RadioAntenna.unknown));
+      await tapOnce(tester);
+
+      await tester.pump(const Duration(minutes: 2));
+      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
+      expect(find.text(tip), findsNothing);
+
+      // Et un son qui viendrait après l'abandon ne le ressuscite pas : le
+      // lancement qui l'attendait est clos.
+      await paintPlaying(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text(tip), findsNothing);
+    });
+
+    testWidgets('pas pour un lancement venu d\'ailleurs', (tester) async {
+      // L'écran d'antenne et le mini-lecteur lancent aussi : le bouton ne
+      // l'apprend que par le lecteur, et n'a rien à en dire.
+      await pumpPill(tester);
+      await player.load(
+        contentId: RadioConfig.contentId,
+        url: kTestAntennaOnAir.streamUrl!,
+        title: label,
+        isLive: true,
+      );
+      player.play();
+      await paintPlaying(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expectPhaseOnly(tester, RadioPhase.playing);
+      expect(find.text(tip), findsNothing);
+    });
+
+    testWidgets('pas quand la page est déjà ouverte', (tester) async {
+      // L'auditeur a lancé puis aussitôt ouvert le live : il connaît le geste.
+      await pumpPill(tester);
+      await tapOnce(tester);
+      await longPress(tester);
+      expect(find.text(pageMarker), findsOneWidget);
+
+      await paintPlaying(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text(tip), findsNothing);
+    });
+
+    testWidgets('une seule fois par lancement', (tester) async {
       await pumpPill(tester);
       await tapOnce(tester);
       await paintPlaying(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text(tip), findsOneWidget);
 
-      await tapAgainLater(tester); // 1ᵉʳ de la rafale : arrête
-      await tapOnce(tester); // 2ᵉ : relance et ouvre la page
-      await paintPlaying(tester);
-      expect(find.text(pageMarker), findsOneWidget);
-
-      // La page d'antenne couvre le bouton : on revient dessus **sans toucher à
-      // l'horloge des rafales**, pour que les appuis suivants restent ceux de la
-      // même rafale et atteignent vraiment le bouton. Sans ce retour ils
-      // taperaient dans le vide, et ce test passerait quelle que soit
-      // l'implémentation.
-      router.pop();
+      // Le message s'efface (quatre secondes, puis sa sortie animée) ; un
+      // hoquet du lecteur (tampon, puis son) ne le fait pas revenir.
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+      expect(find.text(tip), findsNothing);
+      player.emit(
+        const ContentPlayback(
+          contentId: RadioConfig.contentId,
+          isPlaying: true,
+          hasStarted: true,
+          isBuffering: true,
+        ),
+      );
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-      expect(find.byKey(RadioCtaPill.buttonKey), findsOneWidget);
+      await paintPlaying(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text(tip), findsNothing);
+    });
+  });
 
-      await tapOnce(tester); // 3ᵉ
-      await tapOnce(tester); // 4ᵉ
-      await tapOnce(tester); // 5ᵉ
+  group('L\'inertie protège la connexion, pas la navigation', () {
+    testWidgets('un appui pendant la connexion ne casse pas la connexion',
+        (tester) async {
+      await pumpPill(tester);
+      await tapOnce(tester);
+      expect(find.byKey(RadioCtaPill.workingKey), findsOneWidget);
 
-      expect(player.value.isPlaying, isTrue, reason: 'aucun arrêt');
+      await tapOnce(tester);
+
       expect(player.value.contentId, RadioConfig.contentId);
-      expect(player.loadCount, 2, reason: 'aucune relance');
-      expect(find.text(pageMarker), findsNothing,
-          reason: 'aucune seconde page');
+      expect(player.value.isPlaying, isTrue, reason: 'rien n\'a été arrêté');
+      expect(player.loadCount, 1, reason: 'rien n\'a été rouvert');
+      expect(find.text(pageMarker), findsNothing);
     });
 
     testWidgets('une antenne mise en pause n\'est pas une antenne en connexion',
@@ -370,7 +447,7 @@ void main() {
 
       // Et un appui redémarre sans rouvrir la source : le tampon déjà rempli
       // n'est pas jeté.
-      await tapAgainLater(tester);
+      await tapOnce(tester);
       expect(player.value.isPlaying, isTrue);
       expect(player.loadCount, 1);
     });
@@ -537,7 +614,7 @@ void main() {
       expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
       expect(dimmed(tester), isTrue);
 
-      await tapAgainLater(tester);
+      await tapOnce(tester);
 
       // Un geste efface le renoncement : c'est l'auditeur qui décide de réessayer.
       expect(player.loadedUrl, kTestAntennaOnAir.streamUrl);
@@ -721,8 +798,8 @@ void main() {
         {'Cookie': RecordingRadioHandshake.sessionAt(1)},
       );
 
-      await tapAgainLater(tester); // 1ᵉʳ de la rafale : arrête
-      await tapOnce(tester); // 2ᵉ : rend ce qu'il a retiré, puis navigue
+      await tapOnce(tester); // arrête
+      await tapOnce(tester); // relance : la source est rouverte
 
       expect(handshake.count, 2, reason: 'on a renégocié');
       expect(
