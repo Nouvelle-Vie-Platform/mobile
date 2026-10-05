@@ -122,7 +122,9 @@ class PlaybackController extends Notifier<ContentRequest?> {
     ref.onDispose(() {
       // Un conteneur qui meurt n'écrit plus rien : la base meurt avec lui, et
       // l'ordre des deux morts n'est pas garanti. Les abonnements au magasin
-      // meurent avec le conteneur qui les porte.
+      // sont fermés ici, sans rien écrire : ils sont portés par le conteneur,
+      // qui peut survivre à ce contrôleur s'il est seulement invalidé.
+      _session?.close();
       _session = null;
       final lifecycle = _lifecycle;
       if (lifecycle != null) {
