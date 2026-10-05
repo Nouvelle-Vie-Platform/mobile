@@ -105,13 +105,12 @@ void main() {
       'Astuce : un appui long sur ce bouton ouvre le live à tout moment.';
 
   late InertContentPlayer player;
-  late GoRouter router;
 
   setUp(() => player = InertContentPlayer());
 
   tearDown(() => player.dispose());
 
-  GoRouter buildRouter() => router = GoRouter(
+  GoRouter buildRouter() => GoRouter(
         initialLocation: '/',
         routes: [
           GoRoute(
@@ -314,7 +313,7 @@ void main() {
 
       expect(
         tester.getSemantics(find.byKey(RadioCtaPill.buttonKey)),
-        containsSemantics(
+        isSemantics(
           label: label,
           isButton: true,
           hasTapAction: true,
