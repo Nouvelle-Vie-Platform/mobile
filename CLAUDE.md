@@ -562,7 +562,7 @@ décode rien : les états (durée, fin, panne) se **peignent** par
 `InertContentPlayer.emit`. Et jamais `pumpAndSettle` : le bouton de l'antenne
 et la barre indéterminée tournent sans fin.
 
-### New Life Radio (#104) — le bouton d'accueil, et le premier double-appui
+### New Life Radio (#104) — le bouton d'accueil : un appui agit, un appui long navigue
 
 Le bouton « Suivre le live » de l'accueil **jouait la RTBF belge**
 (`live_stream_config.dart`, bouchon assumé dans son propre commentaire), son
@@ -649,25 +649,43 @@ lecteur accepte une poignée de synonymes nommés (`streamUrl`/`url`/`hlsUrl`,
 une route en échec, un premier lancement : tous rendent `RadioAntenna.unknown`.
 Rendre `false` par défaut annoncerait à l'auditeur que l'église ne diffuse pas.
 
-#### Le geste — et pourquoi il n'y a pas de `onDoubleTap`
+#### Le geste — un appui agit, un appui long navigue (#134)
 
 ```
-À L'ARRÊT     1 → lance          EN CONNEXION  1 → (déjà parti)
-              2 → lance + page                 2 → page, connexion intacte
-                                               3, 4, 5… → rien
-EN LECTURE    1 → arrête
-              2 → relance + page
+APPUI SIMPLE   à l'arrêt → lance · en connexion → rien · en lecture → arrête
+APPUI LONG     dans tous les états → ouvre /radio, sans toucher au son
 ```
 
-⚠️ **`GestureDetector.onDoubleTap` imposerait un délai au simple appui** : le
-détecteur doit attendre `kDoubleTapTimeout` avant de pouvoir dire qu'il n'y aura
-pas de second contact. On renverse donc la logique — **chaque appui agit tout de
-suite**, et c'est son *rang dans la rafale* qui dit lequel il est
-(`widgets/home/tap_burst.dart`). **Aucune minuterie** : le rang se calcule après
-coup, en comparant l'instant de l'appui au précédent, sur l'horloge injectable
-`nowProvider`. Le second appui **rend ce que le premier a retiré** puis navigue —
-c'est ce qui donne « relance + ouvre la page » sans une ligne qui parle de
-relancer. C'est le **premier double-appui du dépôt**.
+Décisions 14 et 15 de `server-portal/docs/radio-live-plan.md`. **Le double-appui
+de #104 a disparu, avec `TapBurst`** : chaque appui y agissait tout de suite et
+son *rang dans la rafale* disait lequel il était — si bien qu'en lecture, le
+premier appui **arrêtait** l'antenne et le second la **relançait** avant d'ouvrir
+la page. La connexion était fermée puis rouverte, et la coupure s'entendait.
+L'appui long (`_onLongPress`) ne lit aucun état et n'appelle pas le contrôleur
+d'écoute : c'est ce qui garantit qu'il ne touche jamais au son.
+
+⚠️ **Toujours pas de `onDoubleTap`** : il imposerait un délai au simple appui
+(`kDoubleTapTimeout`). `onLongPress` n'en impose aucun — au relâchement, la
+reconnaissance d'appui long renonce et l'appui simple part dans le même
+événement. `radio_cta_pill_test.dart` le tient par un `pump()` **sans durée**
+(« un appui simple agit sans aucune attente »).
+
+⚠️ **L'appui long hors lecture ne lance rien, mais `/radio` démarre au
+montage** (`ContentPlayerView._loadOnce`, direct seulement) : c'est l'écran, pas
+le bouton, qui lance alors l'écoute — comme pour un lien profond.
+
+**Le geste se découvre au moment où il sert** : au **premier son** d'un lancement
+parti du bouton, un `SnackBar` dit `radioLongPressTip`. Le drapeau
+`_awaitingFirstSound` est posé par l'appui qui lance et lui seul, levé au premier
+son, à l'arrêt ou à l'abandon — jamais de message à l'échec, ni pour un
+lancement venu de l'écran ou du mini-lecteur, ni quand l'accueil n'est plus au
+premier plan (`ModalRoute.isCurrent`). La reprise ne le lève pas : une antenne
+qui finit par répondre est un lancement réussi.
+
+**Accessibilité** : un `Semantics(container, button, onTap, onLongPress,
+onLongPressHint: radioOpenLiveHint)` porte les deux actions ; le
+`GestureDetector` s'en exclut (`excludeFromSemantics`) pour qu'il n'y ait qu'un
+nœud.
 
 ⚠️ **L'inertie ne couvre que la connexion *initiale*** (`RadioStatus`,
 `allowsTransport` / `isOn` / `offersStop`). Une antenne déjà entendue s'arrête
