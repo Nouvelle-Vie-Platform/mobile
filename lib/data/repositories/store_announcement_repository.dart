@@ -119,6 +119,18 @@ class StoreAnnouncementRepository implements AnnouncementRepository {
 
   AnnouncementView _view(AnnouncementWithRefs row) {
     final background = row.background;
+    final announcement = row.announcement;
+    // Le média se lit **une fois**, par la fonction qui porte le contrat
+    // serveur : genre inconnu ou URL absente ⇒ pas de média, affiche repliée sur
+    // l'image de fond, au plus un des deux.
+    final media = readStatusMedia(
+      kind: announcement.mediaKind,
+      url: announcement.mediaUrl,
+      posterUrl: announcement.mediaPosterUrl,
+      durationMs: announcement.mediaDurationMs,
+      waveform: announcement.mediaWaveform,
+      backgroundImageUrl: announcement.backgroundImageUrl,
+    );
     return AnnouncementView.resolve(
       id: row.announcement.id,
       publishedAt: row.announcement.publishedAt,
@@ -152,8 +164,8 @@ class StoreAnnouncementRepository implements AnnouncementRepository {
       // un statut expiré, à la seconde.
       expiresAt: row.announcement.expiresAt,
       isPinned: row.announcement.isPinned,
-      // `audio` et `video` restent nuls : le serveur ne sert aucun média de
-      // statut tant que le transcodage n'est pas livré (phase 2).
+      audio: media.audio,
+      video: media.video,
     );
   }
 }

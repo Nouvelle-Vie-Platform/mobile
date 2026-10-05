@@ -27,6 +27,7 @@ import '../../models/legal_document_view.dart';
 import '../../models/teaching_download.dart';
 import '../local/app_database.dart';
 import '../local/converters/teaching_download_converter.dart';
+import '../local/converters/waveform_converter.dart';
 
 /// Une ligne du flux qui ne porte pas ce que sa collection exige.
 ///
@@ -393,6 +394,15 @@ AnnouncementsCompanion announcementRowOf(Map<String, Object?> item) {
     expiresAt: Value(_instant(item, 'expiresAt')),
     backgroundId: Value(_optionalInt(item, 'backgroundId')),
     backgroundImageUrl: Value(_optionalText(item, 'backgroundImageUrl')),
+    // **Le média, à plat et brut** (#130). Rien n'est décidé ici : un
+    // `mediaKind` inconnu ou sans URL se stocke tel quel et se lit « pas de
+    // média » (`readStatusMedia`) — une valeur que ce client ne connaît pas
+    // encore ne doit pas coûter la page entière.
+    mediaKind: Value(_optionalText(item, 'mediaKind')),
+    mediaUrl: Value(_optionalText(item, 'mediaUrl')),
+    mediaPosterUrl: Value(_optionalText(item, 'mediaPosterUrl')),
+    mediaDurationMs: Value(_optionalInt(item, 'mediaDurationMs')),
+    mediaWaveform: Value(WaveformConverter.decode(item['mediaWaveform'])),
     isPinned: Value(item['isPinned'] == true),
     ownerId: Value(_optionalText(item, 'ownerId')),
     createdAt: Value(_instant(item, 'createdAt')),

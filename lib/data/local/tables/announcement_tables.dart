@@ -29,6 +29,7 @@ library;
 import 'package:drift/drift.dart';
 
 import '../converters/i18n_map_converter.dart';
+import '../converters/waveform_converter.dart';
 import 'mediatheque_tables.dart';
 
 /// Collection `status_backgrounds` — le **référentiel partagé des fonds** de
@@ -231,6 +232,39 @@ class Announcements extends Table with SyncedRow {
 
   /// Image de fond, URL **relative** comme partout ailleurs.
   TextColumn get backgroundImageUrl => text().nullable()();
+
+  /// **Le média temporel** (issue #130, schéma v19) — `audio`, `video` ou
+  /// `null`, et **au plus un** : une vidéo porte déjà son son.
+  ///
+  /// Stocké **en chaîne, jamais en enum** côté magasin, pour la raison de
+  /// `ink` sur les fonds : une valeur que ce client ne connaît pas encore se
+  /// replie à la lecture (« pas de média ») au lieu de faire échouer
+  /// l'application d'une page entière.
+  ///
+  /// Les cinq colonnes `media*` arrivent **à plat**, comme le serveur les sert
+  /// (`announcement_transformer.ts`) : le magasin stocke ce que le serveur
+  /// envoie, en colonnes, et un objet imbriqué aurait demandé un décodage de
+  /// plus pour une valeur que la ligne porte déjà.
+  TextColumn get mediaKind => text().nullable()();
+
+  /// Playlist HLS **maître** du média (deux rendus, segments de 5 s, son
+  /// normalisé). Le serveur ne laisse jamais transiter une annonce dont le
+  /// média n'est pas prêt — mais la lecture ne s'y fie pas pour autant : un
+  /// [mediaKind] sans URL se lit « pas de média » (`readStatusMedia`).
+  TextColumn get mediaUrl => text().nullable()();
+
+  /// Affiche d'une vidéo : l'image déposée, sinon la vignette extraite par le
+  /// transcodeur. Servie sur **tout** statut vidéo.
+  TextColumn get mediaPosterUrl => text().nullable()();
+
+  /// Durée mesurée par le transcodeur, en millisecondes, ou `null`. Second
+  /// maillon de la durée effective : la durée réelle du lecteur prime.
+  IntColumn get mediaDurationMs => integer().nullable()();
+
+  /// Trente-six hauteurs de 0 à 100 (audio), en tableau JSON. `null` = rien de
+  /// servi : l'écran retombe sur la forme dérivée de l'identifiant.
+  TextColumn get mediaWaveform =>
+      text().map(const WaveformConverter()).nullable()();
 
   BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
 

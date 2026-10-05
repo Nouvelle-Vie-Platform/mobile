@@ -1167,8 +1167,9 @@ Map<String, Object?> membershipsPage() => deltaPage(
 /// - **`tag`** — abandonné : le compte occupe déjà l'en-tête, « COE » en auteur
 ///   *et* en pastille serait la même information dite deux fois.
 ///
-/// Il n'y a pas davantage de durée d'affichage, de libellé d'action, de piste
-/// audio ni de vidéo : le serveur n'en sert aucun (les médias sont la phase 2).
+/// Il n'y a pas davantage de durée d'affichage ni de libellé d'action. Les cinq
+/// champs `media*` sont là, **nuls** : `announcement_transformer.ts` les énumère
+/// sur toute annonce, et une annonce texte les sert à `null`.
 const Map<String, Object?> fullAnnouncementPayload = {
   'id': '019f5a00-0000-7000-8000-000000000001',
   'accountId': 1,
@@ -1179,6 +1180,11 @@ const Map<String, Object?> fullAnnouncementPayload = {
   'expiresAt': null,
   'backgroundId': 1,
   'backgroundImageUrl': null,
+  'mediaKind': null,
+  'mediaUrl': null,
+  'mediaPosterUrl': null,
+  'mediaDurationMs': null,
+  'mediaWaveform': null,
   'isPinned': true,
   'ownerId': 'b6f0a1c2-0000-4000-8000-000000000001',
   'createdAt': '2026-05-20T17:55:00.000Z',
@@ -1202,10 +1208,67 @@ const Map<String, Object?> expiringAnnouncementPayload = {
   'expiresAt': '2026-05-21T20:00:00.000Z',
   'backgroundId': null,
   'backgroundImageUrl': '/uploads/announcements/collecte.webp',
+  'mediaKind': null,
+  'mediaUrl': null,
+  'mediaPosterUrl': null,
+  'mediaDurationMs': null,
+  'mediaWaveform': null,
   'isPinned': false,
   'ownerId': 'b6f0a1c2-0000-4000-8000-000000000002',
   'createdAt': '2026-05-21T06:58:00.000Z',
   'updatedAt': '2026-05-21T07:00:00.000Z',
+};
+
+/// **Une annonce audio** (#130) — relevée sur `announcement_transformer.ts` et
+/// `publish_announcement_media.ts` : la playlist **maître** du profil `sparks`,
+/// la durée mesurée par le transcodeur, et **trente-six** hauteurs de 0 à 100
+/// tirées de la passe de normalisation. Pas d'affiche : elle est réservée à la
+/// vidéo, et l'image de fond reste celle de l'annonce.
+const Map<String, Object?> audioAnnouncementPayload = {
+  'id': '019f5a00-0000-7000-8000-000000000003',
+  'accountId': 1,
+  'branchId': 1,
+  'title': null,
+  'body': 'Un mot du pasteur pour la semaine.',
+  'publishedAt': '2026-10-02T08:00:00.000Z',
+  'expiresAt': null,
+  'backgroundId': 1,
+  'backgroundImageUrl': null,
+  'mediaKind': 'audio',
+  'mediaUrl': 'https://media.example.test/sparks/019f5a00/master.m3u8',
+  'mediaPosterUrl': null,
+  'mediaDurationMs': 42000,
+  'mediaWaveform': [
+    12, 30, 55, 80, 64, 41, 22, 18, 35, 60, 77, 90, //
+    85, 70, 52, 33, 20, 15, 28, 46, 68, 82, 95, 88, //
+    73, 59, 40, 26, 19, 31, 50, 66, 79, 61, 38, 14,
+  ],
+  'isPinned': false,
+  'createdAt': '2026-10-02T07:40:00.000Z',
+  'updatedAt': '2026-10-02T08:00:00.000Z',
+};
+
+/// **Une annonce vidéo** (#130). L'affiche est **relative** — le serveur sert
+/// ses chemins d'image ainsi —, et la forme d'onde est absente : elle ne
+/// concerne que l'audio.
+const Map<String, Object?> videoAnnouncementPayload = {
+  'id': '019f5a00-0000-7000-8000-000000000004',
+  'accountId': 2,
+  'branchId': null,
+  'title': 'Convention 2026',
+  'body': null,
+  'publishedAt': '2026-10-03T08:00:00.000Z',
+  'expiresAt': null,
+  'backgroundId': null,
+  'backgroundImageUrl': null,
+  'mediaKind': 'video',
+  'mediaUrl': 'https://media.example.test/sparks/019f5a01/master.m3u8',
+  'mediaPosterUrl': '/uploads/announcements/convention-affiche.webp',
+  'mediaDurationMs': 58000,
+  'mediaWaveform': null,
+  'isPinned': false,
+  'createdAt': '2026-10-03T07:40:00.000Z',
+  'updatedAt': '2026-10-03T08:00:00.000Z',
 };
 
 /// **Une rétractation d'annonce.** Le tombstone porte `deletedAt` ; c'est la
