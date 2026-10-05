@@ -4,8 +4,8 @@
 /// Charger, lire, mettre en pause, sauter de ±30 s, arrêter, rejouer, reprendre
 /// après une panne : tout geste qui **commande** le lecteur passe par ici, d'où
 /// qu'il vienne — la fiche d'un enseignement (`ContentPlayerView`), les cartes
-/// de l'accueil (`playHomeContent`), l'antenne (`RadioListening`), et demain le
-/// mini-lecteur (#116). Observer le lecteur reste libre :
+/// de l'accueil (`playHomeContent`), l'antenne (`RadioListening`) et le
+/// mini-lecteur (#116), qui l'appelle. Observer le lecteur reste libre :
 /// `contentPlaybackProvider`, par `select`, comme avant.
 ///
 /// La règle était écrite sur un widget — « `ContentPlayerView` est le seul
@@ -36,6 +36,13 @@
 /// ⚠️ **L'antenne n'est jamais suivie ni comptée** : ni position de reprise
 /// (un direct n'en a pas), ni écoute (la route veut un identifiant
 /// d'enseignement). Voir [_tracks].
+///
+/// ⚠️ **La fin de lecture reste visible.** Le suivi marque le contenu terminé,
+/// mais ne remet **pas** le lecteur à zéro : le mini-lecteur lit
+/// `ContentPlayback.isCompleted` pour afficher la barre pleine et « Rejouer »,
+/// et `seek(zero)` le ferait retomber sur `just_audio`. C'est [replay] qui
+/// repart du début. Seule la fiche, qui a son propre bouton, se remet d'aplomb
+/// à la fin.
 ///
 /// La **rétractation** suit le même chemin : un contenu retiré par le serveur
 /// pendant qu'il joue s'arrête, que sa fiche soit ouverte ou non — le contrôleur

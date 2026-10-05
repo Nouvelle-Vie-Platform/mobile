@@ -320,9 +320,34 @@ du magasin. Trois points :
    handler prévient le lecteur (`onSystemStop`), qui oublie ce qu'il tenait
    comme après son propre `stop()`. Voir « Le mini-lecteur » plus bas.
 
-Ce que le contrôleur **ne fait pas encore** : suivre la position de reprise
-(`PlaybackProgressRecorder`) et compter l'écoute (`PlayTracker`). Les deux
-restent attachés à la fiche jusqu'à #115.
+**Le contrôleur porte aussi le suivi d'écoute (#115)** — la position de reprise
+(`PlaybackProgressRecorder`) et la mesure d'écoute (`PlayTracker`), une session
+par **chargement**, quel que soit l'écran. Voir « La reprise de lecture » et
+« La mesure d'écoute ». La fiche n'écrit plus rien ; elle ne garde que la remise
+d'aplomb en fin de lecture (`pause` + `seek(zero)`), pour son propre bouton.
+⚠️ **Le contrôleur, lui, ne remet pas à zéro en fin de lecture** : le
+mini-lecteur (#116) lit `ContentPlayback.isCompleted` pour afficher « Rejouer »,
+et un `seek(zero)` le ferait retomber sur `just_audio`. C'est `replay()` qui
+repart du début.
+
+Trois points du suivi qui se ratent en silence :
+
+1. **`load()` applique la position de reprise**, d'où que vienne le chargement —
+   fiche ou carte de l'accueil. Une carte qui repartait de zéro aurait écrit zéro
+   par-dessus la place du fidèle, et `resumeFor` fait gagner la plus récente.
+2. **La rétractation est surveillée par le contrôleur**, pour le contenu chargé,
+   fiche ouverte ou non : il écoute `teachingByIdProvider` **et**
+   `gatheringByIdProvider` (la requête ne dit pas la famille) et ne coupe que ce
+   qu'il a **vu présent** puis absent — sur la **valeur**, jamais l'`AsyncValue`.
+   Ces abonnements passent par `ref.container.listen`, pas `ref.listen` : en
+   Riverpod 3, un provider qui perd son dernier auditeur (le mini-lecteur qui se
+   masque) désactive ses abonnements, et un `StreamProvider` dont tous les
+   auditeurs sont désactivés met son flux en pause.
+3. **L'observateur du cycle de vie est posé au premier contenu suivi**, pas dans
+   `build` : le contrôleur se construit aussi dans des conteneurs sans moteur
+   Flutter. Un test de conteneur qui charge un enseignement appelle
+   `TestWidgetsFlutterBinding.ensureInitialized()` et pose un magasin en mémoire
+   et des rapporteurs muets (`playback_controller_test.dart`).
 
 #### Le lecteur **web** (`hls_content_player.dart`) — #46
 `just_audio_web` pose l'URL `.m3u8` dans un `<audio>` **sans lecteur HLS** : sa
@@ -687,11 +712,11 @@ second `AudioPlayer` fait lever le service audio. La radio **remplace**.
 `rewind`, `fastForward` et `MediaAction.seek` ; `ContentPlayerView` retire la
 barre de progression du même coup.
 
-⚠️ **Conséquence à connaître, et que cette tranche ne résout pas** :
-l'enseignement interrompu n'est **pas mis en pause**, il est **remplacé**. Sa
-position n'est sauvée que par le hasard du `PlaybackProgressRecorder` — ni le
-déclencheur « sortie d'écran » ni celui de la pause n'ont lieu ; ce qui reste est
-l'écriture locale continue faite jusqu'au dernier battement. Il n'existe
+⚠️ **Conséquence à connaître** : l'enseignement interrompu n'est **pas mis en
+pause**, il est **remplacé**. Depuis #115, sa position est écrite **avant** que
+la radio ne prenne le lecteur : `PlaybackController.load` quitte la session en
+cours (déclencheur « contenu arrêté ou remplacé ») avant de charger l'antenne. Il
+n'existe
 **aucune** notion de priorité, de file, ni de « reprendre ce qui jouait », et il
 ne faut pas en inventer une : ce serait une règle éditoriale invisible, prise par
 le premier écran qui en a eu besoin.
@@ -1423,12 +1448,33 @@ pas à l'horloge : dès que le serveur connaît une ligne, c'est son `id` qui
 repart — c'est ce qui fait de chaque rapport suivant un rejeu idempotent.
 
 **Cinq déclencheurs, jamais un sondage** (`PlaybackProgressRecorder`) : pause,
-sortie de l'écran, complétion, ~30 s de temps **joué** *et* plus de 5 s de
-déplacement, et `AppLifecycleState.paused` — **sans arrêter la lecture**, c'est
-le cas le plus fréquent (le fidèle éteint son écran, il ne quitte pas). Le temps
-joué se mesure sur l'avancée de la tête de lecture : aucun `Timer`, l'horloge
-appartient au lecteur. **L'écriture locale est continue et gratuite ; seul
-l'appel réseau est espacé.**
+**contenu arrêté ou remplacé**, complétion, ~30 s de temps **joué** *et* plus de
+5 s de déplacement, et `AppLifecycleState.paused` — **sans arrêter la lecture**,
+c'est le cas le plus fréquent (le fidèle éteint son écran, il ne quitte pas). Le
+temps joué se mesure sur l'avancée de la tête de lecture : aucun `Timer`,
+l'horloge appartient au lecteur. **L'écriture locale est continue et gratuite ;
+seul l'appel réseau est espacé.**
+
+**Le suivi vit dans le contrôleur global (#115), pas sur un écran.**
+`PlaybackController` ouvre un enregistreur à chaque `load()` d'un contenu suivi
+et lui pousse chaque émission du lecteur, quel que soit l'écran affiché — fiche,
+carte de l'accueil, mini-lecteur. D'où part chaque déclencheur :
+
+- **pause** : une émission qui passe de « joue » à « ne joue pas » (fiche,
+  accueil, mini-lecteur, notification — peu importe le geste) ;
+- **contenu arrêté ou remplacé** — l'ancienne « sortie d'écran » : `stop()`
+  (croix, arrêt de l'antenne, rétractation) et `load()` d'un autre contenu,
+  radio comprise, **avant** que le lecteur ne change de main. **Quitter la fiche
+  n'est plus un déclencheur** : le son continue, le suivi aussi ;
+- **complétion** : l'état terminal du lecteur, ou le seuil dans la position
+  poussée — mêmes règles qu'avant, hors de la fiche comprise ;
+- **~30 s jouées** : la position poussée à chaque émission ;
+- **`AppLifecycleState.paused`** : un `WidgetsBindingObserver` du contrôleur
+  (pas un `AppLifecycleListener`, qui refuse un `inactive → paused` direct).
+
+⚠️ **L'antenne n'est jamais suivie ni comptée** : ni un direct (`isLive`) ni
+`RadioConfig.contentId`. Les scénarios se vérifient au niveau de l'application,
+par `pumpRouter`, dans `test/state/playback_tracking_test.dart`.
 
 **Le rapport est MUET.** Hors ligne, 401, 409, 5xx : rien ne s'affiche, rien ne
 bloque l'écoute, l'échec se retente au déclencheur suivant. `report` rend un
@@ -2345,7 +2391,12 @@ le provider dans ses tests.
 #### La mesure d'écoute est séparée de la reprise de lecture
 
 `POST /teachings/:id/plays`, au **seuil de 30 s de temps joué**, une fois par
-ouverture. Un déplacement n'est **pas** une écoute (au-delà de 2 s d'écart entre
+ouverture — c'est-à-dire, depuis #115, **une fois par chargement** dans le
+lecteur global, quel que soit l'écran : une écoute lancée depuis une carte de
+l'accueil, ou poursuivie hors de la fiche, compte. Rejouer ou reprendre après
+une pause ne recompte pas ; l'antenne n'est jamais comptée. Le traqueur vit à
+côté de l'enregistreur dans la session du contrôleur, chacun sous sa propre
+garde : l'un en panne n'emporte pas l'autre. Un déplacement n'est **pas** une écoute (au-delà de 2 s d'écart entre
 deux poussées, l'avancée est un saut) — c'est l'inverse exact du rapport de
 progression, qui compte délibérément un saut comme du temps joué.
 
@@ -2752,10 +2803,14 @@ autorisés avant authentification.
      d'antenne s'en sert, parce qu'une ouverture de l'antenne doit porter le
      cookie de MediaMTX — voir « Tout chemin qui ouvre l'antenne porte le
      cookie » plus haut ;
-  5. **les cinq déclencheurs de #43 sont câblés ici** : position poussée,
-     pause, sortie d'écran, `AppLifecycleState.paused` (**sans arrêter la
-     lecture**) et état terminal — qui exige `pause()` **et** `seek(zero)`,
-     `just_audio` restant `playing == true`, curseur en fin, sans son ;
+  5. **les cinq déclencheurs de #43 ne sont plus câblés ici** (#115) : ils
+     vivent dans le contrôleur global, qui suit ce qui est chargé quel que soit
+     l'écran — voir « La reprise de lecture ». L'écran n'écrit plus rien, et
+     c'est ce qui garantit qu'aucune écriture n'est faite deux fois. Il garde la
+     seule remise d'aplomb en fin de lecture — `pause()` **et** `seek(zero)`,
+     `just_audio` restant `playing == true`, curseur en fin, sans son —, pour
+     son propre bouton ; le contrôleur, lui, ne remet pas à zéro (le
+     mini-lecteur affiche « Rejouer » sur l'état terminé) ;
   6. **le visuel central est carré, et il le reste.** Sans contrainte, l'image
      prenait tout l'espace central — un rectangle haut — et `BoxFit.cover` la
      rognait **à gauche et à droite** : un sujet centré sortait du cadre des
@@ -2775,7 +2830,13 @@ autorisés avant authentification.
   muet** (`playbackProgressReporterProvider`) — le premier écrirait un fichier
   de base sur la machine, le second posterait sur une socket que `flutter test`
   refuse, et laisserait la minuterie de Dio derrière lui. `pumpScreen` et
-  `test/helpers/playback_doubles.dart` s'en chargent.
+  `test/helpers/playback_doubles.dart` s'en chargent. Depuis #115, tout test qui
+  **charge** un enseignement — fiche ou carte de l'accueil — ouvre aussi une
+  mesure d'écoute : `pumpScreen` / `pumpRouter` posent un rapporteur d'écoute et
+  une file muets, et les exposent en paramètres nommés (`progress:`, `plays:`,
+  `playSpool:`) pour qu'un test lise ce qu'ils ont reçu. Un conteneur fait main
+  surcharge `playReporterProvider` / `playSpoolProvider`, et des catalogues en
+  mémoire : le contrôleur surveille la rétractation du contenu chargé.
 - `home/home_content_section.dart` — le dessin d'une section d'accueil, sans la
   famille **et sans la source** : depuis #82 il prend un titre, une teinte et un
   gabarit nus, parce que l'accueil a désormais **deux** sources de sections — les
