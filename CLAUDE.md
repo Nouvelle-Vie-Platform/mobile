@@ -510,6 +510,18 @@ orphelines de ce bouton (`homeWatchLive`, `homeLiveNow`, `homeStopLive`) sont
 appartient au **culte en direct**, qui est une autre fonctionnalité et aura son
 propre chantier.
 
+**Ce que le bouton affiche (44092f0, voulu)** : un **libellé fixe**, le nom de
+l'antenne (`radioTitle`), dans tous les états — il se replie en points de
+suspension sur un en-tête étroit. L'état se lit ailleurs : l'icône tourne en
+connexion ou en reprise (`workingKey`), passe au vert quand l'antenne joue, et
+le bouton **s'atténue** (fond à 55 %) quand l'antenne est annoncée muette sans
+qu'on l'écoute, ou après un renoncement. Il ne nomme **aucune cause** : une
+panne se lit sur `/radio` — l'absence d'adresse (`radioFailureAntenna`), l'échec
+de la route (`errorStateMessage`), la panne du lecteur (« Lecture
+interrompue » ou « il faut du réseau », les états de `ContentPlayerView`). Les
+phrases d'état d'avant (`radioFollow`, `radioOffAir`, `radioRetrying`,
+`radioFailureConnection`, `radioFailureUnknown`) ont quitté les `.arb` (#123).
+
 #### L'URL vient d'une route publique, jamais d'une constante
 
 `lib/data/radio/` : `RadioRepository` (contrat), `HttpRadioRepository`
@@ -528,7 +540,7 @@ lecteur accepte une poignée de synonymes nommés (`streamUrl`/`url`/`hlsUrl`,
 **sans qu'aucun test rougisse**.
 
 ⚠️ **`onAir` nul n'est pas `onAir` faux.** « Je ne sais pas » laisse le bouton
-**au repos** ; seul un `false` reçu affiche « Hors antenne ». Un corps illisible,
+**au repos** ; seul un `false` reçu l'atténue. Un corps illisible,
 une route en échec, un premier lancement : tous rendent `RadioAntenna.unknown`.
 Rendre `false` par défaut annoncerait à l'auditeur que l'église ne diffuse pas.
 
@@ -555,13 +567,14 @@ relancer. C'est le **premier double-appui du dépôt**.
 ⚠️ **L'inertie ne couvre que la connexion *initiale*** (`RadioStatus`,
 `allowsTransport` / `isOn` / `offersStop`). Une antenne déjà entendue s'arrête
 toujours, y compris pendant qu'elle regarnit son tampon — sans quoi un hoquet
-réseau rendrait le bouton d'arrêt inopérant. Et le bouton d'arrêt n'est pas
-grisé pendant la connexion : il **n'est pas là** (règle du sélecteur de canaux,
-#83).
+réseau rendrait l'arrêt inopérant. Et l'arrêt n'est pas grisé pendant la
+connexion : il **n'est pas offert** (`offersStop`, règle du sélecteur de canaux,
+#83) — il n'y a d'ailleurs plus de bouton d'arrêt séparé, l'arrêt est le simple
+appui en lecture.
 
 #### Le bouton éteint reste appuyable
 
-« Hors antenne » **informe, il n'interdit pas** : l'état n'est lu qu'au lancement
+L'atténuation **informe, elle n'interdit pas** : l'état n'est lu qu'au lancement
 et au retour à l'écran (`ref.invalidate(radioAntennaProvider)` sur `resumed`), et
 l'antenne a pu reprendre entre-temps. Même esprit qu'ADR-0040. Idem après un
 abandon : un geste efface le renoncement.
@@ -590,9 +603,14 @@ qui relit l'adresse au passage.
 
 #### La cause se lit sur l'échec, jamais sur un test de connectivité
 
-`lib/data/radio/radio_failure.dart`. DNS, socket refusée, délai dépassé →
-« vérifiez votre connexion » ; 404, 401, une page HTML là où on attend une
-playlist → « antenne indisponible ». Le partage se fait sur **l'existence d'une
+`lib/data/radio/radio_failure.dart`. ⚠️ **Depuis 44092f0, ce classement ne
+s'affiche plus nulle part** : le bouton ne porte plus de phrase, et les clés qui
+les disaient sont retirées. Il vit encore dans `RadioStatus.failure`, que les
+tests lisent ; ce qui suit dit pourquoi il est découpé ainsi, le jour où une
+cause redeviendrait visible.
+
+DNS, socket refusée, délai dépassé → « vérifiez votre connexion » ; 404, 401,
+une page HTML là où on attend une playlist → « antenne indisponible ». Le partage se fait sur **l'existence d'une
 réponse**, comme `mapCalendarError`.
 
 ⚠️ **`connectivity_plus` n'est pas consulté**, et cette tranche n'en fait pas un
@@ -2776,27 +2794,27 @@ autorisés avant authentification.
      `ContentPlayback.contentId`) : sans quoi chaque reconstruction relance le
      prêche depuis le début, et un contenu qui réapparaît après rétractation
      repart tout seul ;
-  3. **seuls `_ProgressLine` et `_PlayButton` s'abonnent au lecteur**, par
-     `select`. La position émet plusieurs fois par seconde : la faire descendre
-     en paramètre reconstruirait le dégradé, le `Hero` et l'image au même
-     rythme ;
-  4. **l'ouverture charge le média et ne joue pas** — sauf le direct. Cette
-     règle a **changé**, et son ancienne version était écrite ici : « l'auto-
-     lecture à l'ouverture est un choix assumé — ouvrir la fiche d'un prêche
-     est, ici, l'acte d'aller l'écouter ». Ce n'en est plus un. Le son, le
-     réseau et la batterie d'un prêche d'une heure ne partent plus sur un coup
-     d'œil à une fiche ; le geste les demande. Le **direct** est la seule
-     exception (`isLive`), parce qu'un flux qu'on ouvre sans le suivre n'a pas
-     de sens : il n'y a ni position à reprendre ni durée à parcourir.
-     Mécanique : `_open(content, {required bool autoplay})`, et `autoplay` n'a
-     que deux appelants — `_loadOnce` (donc `widget.isLive`) et
-     `_togglePlayback` (**toujours vrai**). Ce second cas n'est pas un détail :
-     le bouton passe par `_open` chaque fois que le lecteur ne tient plus ce
-     contenu (rétracté puis republié, arrêté depuis la notification, ou fiche
-     simplement ouverte), et si la demande s'y perd le premier appui recharge
-     en silence — il faut **appuyer deux fois** pour entendre quelque chose.
-     C'est arrivé, `test/widgets/content_player_view_test.dart` le verrouille
-     désormais (« un seul appui suffit, même quand il faut rouvrir le média »).
+  3. **les abonnements au lecteur sont des `select`, dans les sous-widgets** :
+     `_ProgressLine` (position, durée, progression), `_PlayButton` (lecture,
+     attente), `_Controls` (« ce contenu joue », qui fait paraître le bouton
+     d'arrêt) et `_PlayerStage` (un état dérivé). Chacun est gardé par
+     l'identifiant : un autre contenu chargé se lit comme un début. La position
+     émet plusieurs fois par seconde : la faire descendre en paramètre, ou lire
+     la valeur entière, reconstruirait le dégradé, le `Hero` et l'image au même
+     rythme (« Le coût de reconstruction », dans le test de l'écran) ;
+  4. **l'ouverture ne charge rien ; le premier appui charge et joue** — sauf le
+     direct. Le son, le réseau et la batterie d'un prêche d'une heure ne
+     partent pas sur un coup d'œil à une fiche ; le geste les demande. Le
+     **direct** est la seule exception (`isLive`) : `_loadOnce` l'ouvre et le
+     joue dès l'arrivée, parce qu'un flux qu'on ouvre sans le suivre n'a pas de
+     sens. Mécanique : `_open(content)` charge **et** joue, et n'a que deux
+     appelants — `_loadOnce` (le direct seulement) et `_togglePlayback`, chaque
+     fois que le lecteur ne tient pas ce contenu (premier appui, rétracté puis
+     republié, arrêté depuis la notification). Un premier appui qui
+     rechargerait en silence obligerait à **appuyer deux fois** pour entendre
+     quelque chose : c'est arrivé, et `test/widgets/content_player_view_test.dart`
+     le verrouille (« un seul appui suffit, même quand il faut rouvrir le
+     média »).
 
      ⚠️ **`openSource` court-circuite tout ce paragraphe quand il est posé**
      (#110) : l'écran ne résout plus et ne charge plus, il délègue. Seul l'écran
@@ -2820,8 +2838,9 @@ autorisés avant authentification.
      que large, et un visuel non carré — le repli paysage ou portrait — est
      recadré au centre, ce qui reste plus informatif qu'un aplat ;
   7. **l'espace central (`_PlayerStage`) porte quatre réponses** (#42) —
-     visuel, mise en tampon **par-dessus** le visuel, « Lecture interrompue »
-     et « il faut du réseau » — et **aucune ne remplace l'écran** : le titre,
+     visuel, mise en tampon (le visuel reste ; c'est le bouton de lecture qui
+     attend, son disque se remplit en boucle), « Lecture interrompue » et « il
+     faut du réseau » — et **aucune ne remplace l'écran** : le titre,
      le compteur et les commandes restent dans les quatre. Il s'y abonne par
      `select` sur un état dérivé, pour la raison du point 3.
 
