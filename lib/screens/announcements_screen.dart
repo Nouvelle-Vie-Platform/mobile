@@ -17,6 +17,7 @@ import '../widgets/status/status_background.dart';
 import '../widgets/status/status_content.dart';
 import '../widgets/status/status_list_sheet.dart';
 import '../widgets/status/status_segmented_progress.dart';
+import '../widgets/status/status_video_layer.dart';
 import '../widgets/status/status_waveform.dart';
 
 /// Onglet « Annonces » : visionneuse de statuts en plein écran.
@@ -139,19 +140,18 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
   bool get _shouldPlay =>
       widget.isActive && _foreground && !_held && !_scrolling && !_overlayOpen;
 
-  /// Chaîne de résolution de la durée (§4) : durée du média annoncée par le
-  /// back, sinon défaut par type. La durée réelle du lecteur primera d'elle-même
-  /// en phase 2.
+  /// La durée de repli d'un statut (§4) : celle que le transcodeur a mesurée,
+  /// sinon le défaut par type. **La durée réelle du lecteur prime** dès qu'il
+  /// la lit dans le média — c'est lui qui la substitue, par la même règle
+  /// ([effectiveStatusDuration]).
   ///
   /// La **durée d'affichage** du statut (`durationMs`) a disparu du modèle avec
   /// la refonte : le serveur n'en sert aucune, et un champ que le back ne sert
   /// pas fabrique un écran qui marche en maquette et se vide en production.
-  Duration _durationFor(AnnouncementView status) {
-    final announced = status.audio?.durationMs ?? status.video?.durationMs;
-    if (announced != null) return Duration(milliseconds: announced);
-    final hasMedia = status.audio != null || status.video != null;
-    return hasMedia ? StatusDurations.media : StatusDurations.still;
-  }
+  Duration _durationFor(AnnouncementView status) => effectiveStatusDuration(
+        announcedMs: status.audio?.durationMs ?? status.video?.durationMs,
+        hasMedia: status.audio != null || status.video != null,
+      );
 
   void _loadCurrent() {
     final statuses = _statuses;
@@ -159,7 +159,10 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     final status = statuses[_index.clamp(0, statuses.length - 1)];
     _player.load(
       statusId: status.id,
-      mediaUrl: status.audio?.url ?? status.video?.url,
+      mediaUrl: status.video?.url ?? status.audio?.url,
+      mediaKind: status.video != null
+          ? StatusMediaKind.video
+          : (status.audio != null ? StatusMediaKind.audio : null),
       fallbackDuration: _durationFor(status),
     );
     widget.onVideoChanged?.call(status.video != null);
@@ -562,9 +565,12 @@ class _StatusPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Une vidéo affiche son poster en phase 1 : c'est ce qui valide dès
-    // maintenant la mise en page (bandes, voile) sans dépendance native.
-    final imageUrl = status.video?.poster ?? status.backgroundImageUrl;
+    // Une vidéo montre son affiche jusqu'à sa première image, puis elle-même
+    // (`StatusVideoLayer`) : verticale, elle occupe le fond ; horizontale, elle
+    // est gardée entière sur le dégradé du statut. L'affiche décide encore de
+    // l'encre — texte clair, rendu lisible par le voile.
+    final video = status.video;
+    final imageUrl = video?.poster ?? status.backgroundImageUrl;
     final foreground = StatusBackground.foregroundFor(
       status.id,
       backdrop: status.backdrop,
@@ -575,6 +581,14 @@ class _StatusPage extends StatelessWidget {
       id: status.id,
       backdrop: status.backdrop,
       imageUrl: imageUrl,
+      media: video == null
+          ? null
+          : StatusVideoLayer(
+              statusId: status.id,
+              player: player,
+              isCurrent: isCurrent,
+              posterUrl: imageUrl,
+            ),
       child: StatusContent(
         announcement: status,
         foreground: foreground,
