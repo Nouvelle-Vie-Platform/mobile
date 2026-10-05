@@ -510,6 +510,7 @@
   "appUpdateAction": "Update",
   "appUpdateDismiss": "Later",
   "miniPlayerLiveBadge": "LIVE",
+  "miniPlayerOnAirBadge": "On air",
   "miniPlayerOpen": "Open player: {title}",
   "miniPlayerSkipBackward": "Back 30 seconds",
   "miniPlayerSkipForward": "Forward 30 seconds",

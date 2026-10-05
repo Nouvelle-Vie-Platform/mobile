@@ -23,6 +23,11 @@
 /// 3. **Aucune ligne d'orateur sans orateur.** Jamais « Auteur inconnu » : ce
 ///    serait lire comme une erreur de saisie ce qui est un enseignement sans
 ///    orateur nommé.
+/// 4. **L'antenne dit « À l'antenne », pas « EN DIRECT »** (#149). La radio
+///    tourne 24 h/24 ; « EN DIRECT » est réservé au direct de la régie, comme
+///    sur la page live (#135). Le badge le lit dans l'antenne **déjà connue**
+///    (`radioAntennaProvider`) — jamais dans `radioLiveProvider`, dont la seule
+///    lecture ouvrirait le canal temps réel, et sans sondage.
 library;
 
 import 'dart:async';
@@ -67,6 +72,7 @@ class MiniPlayer extends ConsumerWidget {
   static const Key authorKey = Key('mini_player_author');
   static const Key statusKey = Key('mini_player_status');
   static const Key liveBadgeKey = Key('mini_player_live');
+  static const Key onAirBadgeKey = Key('mini_player_on_air');
   static const Key progressKey = Key('mini_player_progress');
   static const Key skipBackwardKey = Key('mini_player_skip_backward');
   static const Key mainButtonKey = Key('mini_player_main');
@@ -197,6 +203,7 @@ class _OpenArea extends ConsumerWidget {
                   _StatusLine(
                     contentId: request.contentId,
                     isLive: isLive,
+                    isRadio: request.contentId == RadioConfig.contentId,
                     author: hasAuthor ? author : null,
                   ),
                   if (!isLive) ...[
@@ -257,7 +264,7 @@ class _Artwork extends StatelessWidget {
 
 /// Ce que la ligne sous le titre a à dire.
 enum _Status {
-  /// Rien de particulier : l'orateur, ou le badge du direct.
+  /// Rien de particulier : l'orateur, ou le badge de l'antenne.
   normal,
 
   /// Panne **après** le premier son : « Lecture interrompue » (#42).
@@ -272,18 +279,23 @@ enum _Status {
   }
 }
 
-/// La ligne sous le titre : l'orateur, le badge du direct, ou la panne.
+/// La ligne sous le titre : l'orateur, le badge de l'antenne, ou la panne.
 ///
 /// Abonnée par `select` à la **panne seule** — jamais à la position.
 class _StatusLine extends ConsumerWidget {
   const _StatusLine({
     required this.contentId,
     required this.isLive,
+    required this.isRadio,
     required this.author,
   });
 
   final String contentId;
   final bool isLive;
+
+  /// L'antenne de New Life Radio, et non un autre direct : seule elle a un
+  /// état « À l'antenne » distinct du direct.
+  final bool isRadio;
   final String? author;
 
   @override
@@ -314,9 +326,9 @@ class _StatusLine extends ConsumerWidget {
       );
     }
     if (isLive) {
-      return const Padding(
-        padding: EdgeInsets.only(top: AppSpacing.xs),
-        child: _LiveBadge(),
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.xs),
+        child: isRadio ? const _AntennaBadge() : const _LiveBadge(),
       );
     }
     final name = author;
@@ -334,20 +346,87 @@ class _StatusLine extends ConsumerWidget {
   }
 }
 
-/// Le badge « EN DIRECT » de l'antenne.
+/// **Le badge de l'antenne** (#149) : « À l'antenne » par défaut, « EN DIRECT »
+/// seulement pendant un direct de la régie.
+///
+/// Le direct se lit dans l'antenne **déjà connue** — la lecture de la route
+/// publique que l'écoute a faite pour trouver le flux, ou que le bouton
+/// d'antenne refait au retour au premier plan. Ni canal, ni sondage : le
+/// mini-lecteur n'est pas la page live, et il ne doit pas coûter une socket à
+/// chaque écran. Un direct ouvert pendant l'écoute ne s'y verra qu'à la
+/// prochaine lecture de l'antenne ; c'est le prix accepté.
+///
+/// Une antenne en erreur ou pas encore lue donne « À l'antenne » : affirmer un
+/// direct dont on n'a aucune preuve serait pire que le taire.
+class _AntennaBadge extends ConsumerWidget {
+  const _AntennaBadge();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final live = ref.watch(
+      radioAntennaProvider.select((antenna) => antenna.value?.live != null),
+    );
+    return live ? const _LiveBadge() : const _OnAirBadge();
+  }
+}
+
+/// Le badge « EN DIRECT » : un direct de la régie, ou un autre direct que
+/// l'antenne.
 class _LiveBadge extends StatelessWidget {
   const _LiveBadge();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return _Pill(
       key: MiniPlayer.liveBadgeKey,
+      color: AppColors.danger,
+      foreground: Colors.white,
+      label: context.l10n.miniPlayerLiveBadge,
+    );
+  }
+}
+
+/// Le badge « À l'antenne » : la radio qui tourne, hors direct. Le bleu de
+/// marque et non le rouge — le rouge est le voyant du direct.
+class _OnAirBadge extends StatelessWidget {
+  const _OnAirBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return _Pill(
+      key: MiniPlayer.onAirBadgeKey,
+      color: palette.primary,
+      // `surface` et non un blanc en dur, comme le gros bouton : en sombre, le
+      // bleu s'éclaircit.
+      foreground: palette.surface,
+      label: context.l10n.miniPlayerOnAirBadge,
+    );
+  }
+}
+
+/// La pastille commune aux deux badges : un point, un mot.
+class _Pill extends StatelessWidget {
+  const _Pill({
+    super.key,
+    required this.color,
+    required this.foreground,
+    required this.label,
+  });
+
+  final Color color;
+  final Color foreground;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: 2,
       ),
       decoration: BoxDecoration(
-        color: AppColors.danger,
+        color: color,
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Row(
@@ -356,16 +435,16 @@ class _LiveBadge extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: foreground,
               shape: BoxShape.circle,
             ),
           ),
           const SizedBox(width: AppSpacing.xs),
           Text(
-            context.l10n.miniPlayerLiveBadge,
+            label,
             style: AppTypography.caption.copyWith(
-              color: Colors.white,
+              color: foreground,
               fontWeight: FontWeight.w700,
               fontSize: 10,
               height: 1.4,

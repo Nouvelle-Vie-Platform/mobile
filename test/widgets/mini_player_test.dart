@@ -4,6 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/core/config/radio_config.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
+import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
+import 'package:maison_du_miracle/data/radio/radio_channel.dart';
+import 'package:maison_du_miracle/data/radio/radio_live.dart';
+import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
@@ -14,11 +18,29 @@ import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
 import 'package:maison_du_miracle/state/playback_controller.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
+import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/widgets/app_background.dart';
 import 'package:maison_du_miracle/widgets/home/home_content_cards.dart';
 import 'package:maison_du_miracle/widgets/mini_player.dart';
 
 import '../helpers/pump_screen.dart';
+import '../helpers/radio_live_doubles.dart';
+
+/// **Une route d'antenne qui compte ses lectures**, et dont la réponse peut
+/// changer en cours de test — pour prouver que le badge lit l'antenne connue,
+/// sans la redemander de lui-même.
+class _CountingRadioRepository implements RadioRepository {
+  _CountingRadioRepository(this.value);
+
+  RadioAntenna value;
+  int reads = 0;
+
+  @override
+  Future<RadioAntenna> antenna() async {
+    reads++;
+    return value;
+  }
+}
 
 /// **Le mini-lecteur dans les onglets** (#116).
 ///
@@ -95,7 +117,11 @@ void main() {
         ],
       );
 
-  Future<void> pumpApp(WidgetTester tester) async {
+  Future<void> pumpApp(
+    WidgetTester tester, {
+    RadioRepository? radio,
+    RadioChannel? radioChannel,
+  }) async {
     // Écran haut : les listes de l'accueil sont paresseuses, et une carte
     // jamais construite ne peut pas être touchée.
     tester.view.physicalSize = const Size(900, 2400);
@@ -110,6 +136,8 @@ void main() {
       mediatheque: InMemoryMediathequeRepository(teachings: teachings),
       gatherings:
           InMemoryGatheringRepository(gatherings: const [], types: const []),
+      radio: radio,
+      radioChannel: radioChannel,
       overrides: [
         contentPlayerProvider.overrideWithValue(player),
         calendarRepositoryProvider
@@ -491,17 +519,101 @@ void main() {
           isLive: true,
         );
 
-    testWidgets('variante EN DIRECT, sans barre ni sauts', (tester) async {
-      await pumpApp(tester);
+    const onAir = RadioAntenna(
+      streamUrl: 'https://antenne.test/antenne/index.m3u8',
+      onAir: true,
+    );
+    final onAirWithLive = RadioAntenna(
+      streamUrl: onAir.streamUrl,
+      onAir: true,
+      live: RadioLive(startedAt: DateTime.utc(2026, 10, 5, 9)),
+    );
+
+    testWidgets('variante antenne : « À l\'antenne », sans barre ni sauts',
+        (tester) async {
+      final channel = ControllableRadioChannel();
+      await pumpApp(
+        tester,
+        radio: _CountingRadioRepository(onAir),
+        radioChannel: channel,
+      );
       await loadRadio(tester);
 
       expect(inMini(find.text('New Life Radio')), findsOneWidget);
-      expect(find.byKey(MiniPlayer.liveBadgeKey), findsOneWidget);
-      expect(inMini(find.text('EN DIRECT')), findsOneWidget);
+      // **La radio tourne 24 h/24** : hors direct de la régie, pas un mot de
+      // « direct » (#149, comme la page live depuis #135).
+      expect(find.byKey(MiniPlayer.onAirBadgeKey), findsOneWidget);
+      expect(inMini(find.text('À l\'antenne')), findsOneWidget);
+      expect(find.byKey(MiniPlayer.liveBadgeKey), findsNothing);
+      expect(find.text('EN DIRECT'), findsNothing);
       expect(find.byKey(MiniPlayer.progressKey), findsNothing);
       expect(find.byKey(MiniPlayer.skipBackwardKey), findsNothing);
       expect(find.byKey(MiniPlayer.skipForwardKey), findsNothing);
       expect(find.byKey(MiniPlayer.mainButtonKey), findsOneWidget);
+      expect(channel.watches, isEmpty, reason: 'aucun canal ouvert');
+    });
+
+    testWidgets('« À l\'antenne » aussi quand l\'antenne n\'a pas répondu',
+        (tester) async {
+      // Le défaut de `pumpRouter` : `RadioAntenna.unknown`. Ne rien savoir du
+      // direct n'est pas en annoncer un.
+      await pumpApp(tester);
+      await loadRadio(tester);
+
+      expect(find.byKey(MiniPlayer.onAirBadgeKey), findsOneWidget);
+      expect(find.byKey(MiniPlayer.liveBadgeKey), findsNothing);
+    });
+
+    testWidgets(
+        '« EN DIRECT » pendant un direct de la régie — lu dans l\'antenne '
+        'connue, sans canal ni sondage', (tester) async {
+      final channel = ControllableRadioChannel();
+      final antenna = _CountingRadioRepository(onAirWithLive);
+      await pumpApp(tester, radio: antenna, radioChannel: channel);
+      await loadRadio(tester);
+
+      expect(find.byKey(MiniPlayer.liveBadgeKey), findsOneWidget);
+      expect(inMini(find.text('EN DIRECT')), findsOneWidget);
+      expect(find.byKey(MiniPlayer.onAirBadgeKey), findsNothing);
+
+      // **Ni canal, ni sondage** : le temps passe, rien n'est relu.
+      final reads = antenna.reads;
+      await tester.pump(const Duration(minutes: 5));
+      expect(antenna.reads, reads);
+      expect(channel.watches, isEmpty);
+    });
+
+    testWidgets(
+        'la fin du direct se lit à la prochaine lecture de l\'antenne, '
+        'et le badge revient à « À l\'antenne »', (tester) async {
+      final antenna = _CountingRadioRepository(onAirWithLive);
+      await pumpApp(tester, radio: antenna);
+      await loadRadio(tester);
+      expect(find.byKey(MiniPlayer.liveBadgeKey), findsOneWidget);
+
+      // Ce que fait le bouton d'antenne au retour au premier plan.
+      antenna.value = onAir;
+      ProviderScope.containerOf(tester.element(find.byType(HomeShell)))
+          .invalidate(radioAntennaProvider);
+      await settle(tester);
+
+      expect(find.byKey(MiniPlayer.onAirBadgeKey), findsOneWidget);
+      expect(find.byKey(MiniPlayer.liveBadgeKey), findsNothing);
+    });
+
+    testWidgets('un autre direct que l\'antenne garde « EN DIRECT »',
+        (tester) async {
+      await pumpApp(tester);
+      await load(
+        tester,
+        contentId: withSpeaker,
+        title: 'Culte du dimanche',
+        author: null,
+        isLive: true,
+      );
+
+      expect(find.byKey(MiniPlayer.liveBadgeKey), findsOneWidget);
+      expect(find.byKey(MiniPlayer.onAirBadgeKey), findsNothing);
     });
 
     testWidgets('un appui ouvre /radio', (tester) async {

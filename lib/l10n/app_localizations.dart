@@ -2806,11 +2806,17 @@ abstract class AppLocalizations {
   /// **'Plus tard'**
   String get appUpdateDismiss;
 
-  /// Mini-lecteur : badge de l'antenne en direct, à la place de la ligne d'orateur. Capitales voulues, comme un voyant d'antenne ; court, il tient dans une pastille rouge
+  /// Mini-lecteur : badge d'un direct de la régie (#149), à la place de la ligne d'orateur. Affiché seulement quand l'antenne connue signale un direct (RadioAntenna.live) — jamais pour dire que la radio tourne, c'est miniPlayerOnAirBadge. Capitales voulues, comme un voyant d'antenne ; court, il tient dans une pastille rouge
   ///
   /// In fr, this message translates to:
   /// **'EN DIRECT'**
   String get miniPlayerLiveBadge;
+
+  /// Mini-lecteur : badge de la radio hors direct (#149), à la place de la ligne d'orateur. Le mot de la page radio (radioLive) : la radio tourne 24 h/24, « EN DIRECT » est réservé au direct de la régie. Dit ce qu'on écoute, pas que le son sort — il reste en pause. Court : il tient dans une pastille
+  ///
+  /// In fr, this message translates to:
+  /// **'À l\'antenne'**
+  String get miniPlayerOnAirBadge;
 
   /// Mini-lecteur : libellé d'accessibilité de la vignette et du titre, qui ouvrent la fiche (ou l'écran de l'antenne). {title} est le titre de ce qui joue
   ///
