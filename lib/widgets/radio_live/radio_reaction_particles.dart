@@ -67,7 +67,10 @@ class _Pending {
 
 class _RadioReactionParticlesState extends ConsumerState<RadioReactionParticles>
     with SingleTickerProviderStateMixin {
-  late final Ticker _ticker = createTicker(_tick);
+  // Créé à la première réaction, jamais dans `dispose` : créer un ticker
+  // pendant le démontage lit `TickerMode` sur un élément déjà désactivé.
+  Ticker? _tickerOrNull;
+  Ticker get _ticker => _tickerOrNull ??= createTicker(_tick);
   StreamSubscription<RadioReactionBurst>? _bursts;
   final List<_Particle> _live = [];
   final List<_Pending> _queue = [];
@@ -118,13 +121,13 @@ class _RadioReactionParticlesState extends ConsumerState<RadioReactionParticles>
   void _clear() {
     _live.clear();
     _queue.clear();
-    if (_ticker.isActive) _ticker.stop();
+    if (_tickerOrNull?.isActive ?? false) _tickerOrNull!.stop();
   }
 
   @override
   void dispose() {
     unawaited(_bursts?.cancel());
-    _ticker.dispose();
+    _tickerOrNull?.dispose();
     super.dispose();
   }
 
