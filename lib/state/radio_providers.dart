@@ -21,6 +21,13 @@
 /// position. Il n'existe **aucune** notion de priorité, de file, ni de « reprendre
 /// ce qui jouait », et il ne faut pas en inventer une ici : ce serait une règle
 /// éditoriale invisible, prise par le premier écran qui en a eu besoin.
+///
+/// **Une exception, et elle est écrite** (#130, décision du 05/10/2026) : un
+/// statut à son met la radio ou l'enseignement en pause, et la visionneuse les
+/// fait reprendre en sortant — l'antenne **au direct** ([RadioListening.rejoinLive]),
+/// l'enseignement à sa position. Ce n'est ni une file ni une priorité : une
+/// parenthèse, tenue par le contrôleur global (`PlaybackController.interruptForStatus`
+/// / `resumeAfterStatus`), qui ne survit pas à un autre chargement.
 library;
 
 import 'dart:async';
@@ -177,7 +184,14 @@ class RadioListening extends Notifier<RadioStatus> {
 
   /// **Lance l'écoute.** Idempotent : rappelé pendant qu'un démarrage est en vol,
   /// il ne fait rien.
-  Future<void> start({required String title}) async {
+  ///
+  /// [fresh] force la **réouverture** de la source, pré-vol compris, même quand
+  /// le lecteur tient déjà l'antenne en pause : c'est ce qui rend le direct
+  /// après une interruption (voir [rejoinLive]). Sans lui, un lecteur qui tient
+  /// l'antenne reçoit un simple `play()`, qui reprendrait là où le tampon s'est
+  /// arrêté — en retard sur l'antenne, ou dans le vide si la fenêtre de
+  /// rattrapage de quarante secondes est passée.
+  Future<void> start({required String title, bool fresh = false}) async {
     if (_starting) return;
     _title = title;
     // Un geste efface le renoncement : c'est l'auditeur qui décide de réessayer,
@@ -199,7 +213,7 @@ class RadioListening extends Notifier<RadioStatus> {
     final controller = ref.read(playbackControllerProvider.notifier);
     final playback = controller.playback;
     final held = playback.contentId == RadioConfig.contentId;
-    if (held && !playback.hasError && !wasAbandoned) {
+    if (held && !playback.hasError && !wasAbandoned && !fresh) {
       // Déjà en main — mis en pause depuis l'écran d'antenne ou la notification.
       // On ne recharge pas : rouvrir la source couperait le tampon déjà rempli.
       if (_cause == null) state = RadioStatus.connecting;
@@ -312,6 +326,29 @@ class RadioListening extends Notifier<RadioStatus> {
       }
       return true;
     }());
+  }
+
+  /// **Rejoint l'antenne au direct** — la reprise après un statut à son
+  /// (#130).
+  ///
+  /// Le statut a mis l'antenne en pause, et la pause a duré le temps d'écouter
+  /// une annonce : souvent plus que les quarante secondes de rattrapage du
+  /// flux, et toujours assez pour qu'un `play()` reparte **en retard** sur ce
+  /// que l'église diffuse. Rouvrir la source rend le direct ; la renégociation
+  /// du cookie de MediaMTX vient avec (#108), et une session expirée pendant
+  /// l'annonce n'y survivrait pas autrement.
+  ///
+  /// [title] est celui de la requête interrompue ; à défaut, celui du dernier
+  /// démarrage. Sans aucun des deux — l'antenne n'a jamais été lancée par ici —
+  /// il n'y a rien d'honnête à annoncer au système, et la reprise se contente
+  /// d'un `play()`.
+  Future<void> rejoinLive({String? title}) async {
+    final known = title ?? _title;
+    if (known == null) {
+      ref.read(playbackControllerProvider.notifier).play();
+      return;
+    }
+    await start(title: known, fresh: true);
   }
 
   /// **Arrête l'écoute**, et renonce à toute reprise en cours.

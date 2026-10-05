@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderFittedBox;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/players/status_player.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/models/announcement_draft.dart';
@@ -551,6 +552,133 @@ void main() {
       active.value = true;
       await tester.pump();
       expect(player.value.isPlaying, isTrue);
+    });
+  });
+
+  group('La cohabitation avec le lecteur principal (#130)', () {
+    const vocal = StatusAudio(
+      url: 'https://media.example.test/vocal/master.m3u8',
+      durationMs: 42000,
+    );
+
+    /// Le lecteur de la médiathèque, tel que l'écran le voit — inerte, et
+    /// peint en train de jouer un enseignement à 12 min 7 s.
+    InertContentPlayer playingSermon(WidgetTester tester) {
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AnnouncementsScreen)),
+      );
+      final player =
+          container.read(contentPlayerProvider) as InertContentPlayer;
+      player.emit(const ContentPlayback(
+        contentId: 't-1',
+        isPlaying: true,
+        hasStarted: true,
+        position: Duration(minutes: 12, seconds: 7),
+      ));
+      return player;
+    }
+
+    Future<void> nextStatus(WidgetTester tester) async {
+      final size = tester.getSize(find.byType(AnnouncementsScreen));
+      await tester.tapAt(Offset(size.width * 0.8, size.height / 2));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    testWidgets(
+        'un statut muet n\'interrompt rien ; un statut à son met en pause, et '
+        'quitter l\'onglet fait reprendre à la position', (tester) async {
+      final active = ValueNotifier<bool>(true);
+      addTearDown(active.dispose);
+      await pumpViewer(
+        tester,
+        [
+          _status(id: 'texte', body: 'Paix sur vous.'),
+          _status(
+            id: 'vocal',
+            body: 'Un mot du pasteur.',
+            audio: vocal,
+            age: const Duration(hours: 3),
+          ),
+        ],
+        screen: ValueListenableBuilder<bool>(
+          valueListenable: active,
+          builder: (_, isActive, __) => AnnouncementsScreen(isActive: isActive),
+        ),
+      );
+      final sermon = playingSermon(tester);
+
+      // Un statut texte : l'enseignement continue dessous.
+      await tester.pump();
+      expect(find.text('Paix sur vous.'), findsOneWidget);
+      expect(sermon.value.isPlaying, isTrue);
+
+      // Un statut vocal : l'enseignement se tait avant que le statut parle.
+      await nextStatus(tester);
+      expect(find.text('Un mot du pasteur.'), findsOneWidget);
+      expect(sermon.value.isPlaying, isFalse);
+
+      // On quitte l'onglet : l'enseignement reprend, là où il en était.
+      active.value = false;
+      await tester.pump();
+      expect(sermon.value.isPlaying, isTrue);
+      expect(sermon.value.contentId, 't-1');
+      expect(sermon.value.position, const Duration(minutes: 12, seconds: 7));
+    });
+
+    testWidgets(
+        'revenir d\'un statut à son vers un statut muet ne fait rien reprendre '
+        '— on est toujours dans la visionneuse', (tester) async {
+      await pumpViewer(tester, [
+        _status(id: 'texte', body: 'Paix sur vous.'),
+        _status(
+          id: 'vocal',
+          body: 'Un mot du pasteur.',
+          audio: vocal,
+          age: const Duration(hours: 3),
+        ),
+      ]);
+      final sermon = playingSermon(tester);
+
+      await nextStatus(tester);
+      expect(sermon.value.isPlaying, isFalse);
+
+      // Tap à gauche : retour au statut texte.
+      final size = tester.getSize(find.byType(AnnouncementsScreen));
+      await tester.tapAt(Offset(size.width * 0.1, size.height / 2));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Paix sur vous.'), findsOneWidget);
+      expect(sermon.value.isPlaying, isFalse);
+    });
+
+    testWidgets('un mur sans statut à son ne touche jamais au lecteur',
+        (tester) async {
+      final active = ValueNotifier<bool>(true);
+      addTearDown(active.dispose);
+      await pumpViewer(
+        tester,
+        [
+          _status(
+            id: 'affiche',
+            backgroundImageUrl: 'https://example.org/affiche.jpg',
+          ),
+        ],
+        screen: ValueListenableBuilder<bool>(
+          valueListenable: active,
+          builder: (_, isActive, __) => AnnouncementsScreen(isActive: isActive),
+        ),
+      );
+      final sermon = playingSermon(tester);
+      // Un enseignement mis en pause par le fidèle lui-même, ailleurs : la
+      // sortie de la visionneuse ne doit pas le relancer.
+      sermon.pause();
+
+      active.value = false;
+      await tester.pump();
+
+      expect(sermon.value.isPlaying, isFalse);
     });
   });
 

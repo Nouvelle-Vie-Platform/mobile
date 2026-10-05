@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +9,7 @@ import '../l10n/l10n_extension.dart';
 import '../models/announcement_view.dart';
 import '../router/app_router.dart';
 import '../state/announcement_providers.dart';
+import '../state/playback_controller.dart';
 import '../state/player_providers.dart';
 import '../state/session_gate.dart';
 import '../theme/app_spacing.dart';
@@ -62,6 +65,13 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
   late final PageController _pageController;
   late final StatusPlayer _player;
 
+  /// Le contrôleur global de lecture — celui de la radio et des
+  /// enseignements. La visionneuse ne le pilote que pour **une** chose : taire
+  /// ce qui joue pendant un statut à son, et le faire reprendre en sortant
+  /// (#130). Retenu à l'ouverture, parce que la sortie passe aussi par
+  /// [dispose], où `ref` ne se lit plus.
+  late final PlaybackController _listening;
+
   int _index = 0;
 
   /// Doigt maintenu sur l'écran.
@@ -94,6 +104,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     super.initState();
     _pageController = PageController();
     _player = ref.read(statusPlayerProvider);
+    _listening = ref.read(playbackControllerProvider.notifier);
     _player.addListener(_onPlayback);
     WidgetsBinding.instance.addObserver(this);
     // Le premier chargement attend la première image : `announcementsProvider`
@@ -121,6 +132,9 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     _player.removeListener(_onPlayback);
     // Le lecteur appartient au provider : on le suspend, on ne le libère pas.
     _player.pause();
+    // Quitter la visionneuse, c'est aussi la démonter : ce qu'un statut à son a
+    // tu reprend.
+    unawaited(_listening.resumeAfterStatus());
     _pageController.dispose();
     super.dispose();
   }
@@ -267,12 +281,38 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen>
     _syncPlayback();
   }
 
+  /// **Le statut courant a-t-il du son ?** — un audio, ou une vidéo, qui
+  /// porte le sien. Un texte ou une image n'en a pas, et n'interrompt rien.
+  bool get _currentHasSound {
+    final statuses = _statuses;
+    if (statuses.isEmpty) return false;
+    final status = statuses[_index.clamp(0, statuses.length - 1)];
+    return status.audio != null || status.video != null;
+  }
+
+  /// **La cohabitation avec le lecteur principal** (#130, décision du
+  /// 05/10/2026) :
+  ///
+  /// - un statut **à son** qui démarre met en pause la radio ou l'enseignement
+  ///   qui jouait — *avant* de lancer son propre son, pour qu'aucune image ne
+  ///   les fasse entendre ensemble ;
+  /// - un statut **muet** (texte, image) n'interrompt rien ;
+  /// - en **quittant la visionneuse** (autre onglet, ou démontage), ce qui a
+  ///   été tu reprend tout seul : la radio au direct, l'enseignement à sa
+  ///   position. Passer d'un statut à son à un statut muet ne fait rien
+  ///   reprendre — on est toujours dans la visionneuse.
+  ///
+  /// Un doigt maintenu, la feuille de liste ou l'application en arrière-plan
+  /// suspendent le statut sans faire reprendre le lecteur principal : ce n'est
+  /// pas quitter la visionneuse.
   void _syncPlayback() {
     if (!mounted) return;
     if (_shouldPlay) {
+      if (_currentHasSound) _listening.interruptForStatus();
       _player.play();
     } else {
       _player.pause();
+      if (!widget.isActive) unawaited(_listening.resumeAfterStatus());
     }
   }
 
