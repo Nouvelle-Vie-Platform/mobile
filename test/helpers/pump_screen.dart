@@ -14,7 +14,8 @@ import 'package:maison_du_miracle/data/radio/radio_channel.dart';
 import 'package:maison_du_miracle/data/radio/radio_handshake.dart';
 import 'package:maison_du_miracle/data/radio/radio_live_repository.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
-import 'package:maison_du_miracle/data/local/sync_dao.dart' show SyncCollectionKey;
+import 'package:maison_du_miracle/data/local/sync_dao.dart'
+    show SyncCollectionKey;
 import 'package:maison_du_miracle/data/messaging/group_history.dart';
 import 'package:maison_du_miracle/data/messaging/group_read_advancer.dart';
 import 'package:maison_du_miracle/data/messaging/messaging_channel.dart';
@@ -325,8 +326,7 @@ List<Override> _commonOverrides(
               MessagingStoreWriter(db).store(SyncCollectionKey.groupReads, row),
         ),
       ),
-      groupHistoryProvider
-          .overrideWithValue(history ?? const NoGroupHistory()),
+      groupHistoryProvider.overrideWithValue(history ?? const NoGroupHistory()),
       // **La rubrique Échanges, posée sur un double vide** (#96), pour les deux
       // raisons qui valent déjà pour la médiathèque et les annonces : son
       // implémentation réelle lit le **magasin Drift** — donc ouvre des flux qu'une

@@ -94,7 +94,8 @@ final class MessagingRowEvent extends MessagingEvent {
   /// Le groupe que la ligne concerne — son `id` pour un groupe, son `groupId`
   /// pour le reste. `null` sur une ligne mal formée.
   String? get groupId {
-    final raw = collection == SyncCollectionKey.groups ? row['id'] : row['groupId'];
+    final raw =
+        collection == SyncCollectionKey.groups ? row['id'] : row['groupId'];
     return raw is String ? raw : null;
   }
 }
@@ -102,9 +103,18 @@ final class MessagingRowEvent extends MessagingEvent {
 /// La table du contrat : quel type d'événement porte quelle collection, sous
 /// quelle clé. Écrite **une fois**.
 const Map<String, ({String collection, String key})> _kEventRows = {
-  'message.created': (collection: SyncCollectionKey.groupMessages, key: 'message'),
-  'message.updated': (collection: SyncCollectionKey.groupMessages, key: 'message'),
-  'message.deleted': (collection: SyncCollectionKey.groupMessages, key: 'message'),
+  'message.created': (
+    collection: SyncCollectionKey.groupMessages,
+    key: 'message'
+  ),
+  'message.updated': (
+    collection: SyncCollectionKey.groupMessages,
+    key: 'message'
+  ),
+  'message.deleted': (
+    collection: SyncCollectionKey.groupMessages,
+    key: 'message'
+  ),
   'membership.changed': (
     collection: SyncCollectionKey.groupMembers,
     key: 'membership'

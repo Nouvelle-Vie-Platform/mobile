@@ -34,8 +34,7 @@ import '../helpers/signed_in_auth.dart';
 const String _groupId = 'g-1';
 final _fr = AppLocalizationsFr();
 
-GroupDetailView _group({int memberCount = 3}) =>
-    GroupDetailView(
+GroupDetailView _group({int memberCount = 3}) => GroupDetailView(
       groupId: _groupId,
       title: 'Chorale Harmonie',
       isDirect: false,
@@ -100,7 +99,8 @@ Future<void> _pumpThread(
 
 void main() {
   group('L\'ouverture', () {
-    testWidgets('la liste est inversée : le fil s\'ouvre en bas', (tester) async {
+    testWidgets('la liste est inversée : le fil s\'ouvre en bas',
+        (tester) async {
       await _pumpThread(tester, [_message('m-1'), _message('m-2', minute: 1)]);
 
       final list = tester.widget<ListView>(find.byType(ListView));

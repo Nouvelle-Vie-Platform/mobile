@@ -47,7 +47,8 @@ final class ReadUnreachable extends ReadOutcome {
 
 /// Contrat d'envoi d'une lecture.
 abstract interface class GroupReadSender {
-  Future<ReadOutcome> send({required String groupId, required String messageId});
+  Future<ReadOutcome> send(
+      {required String groupId, required String messageId});
 }
 
 /// Implémentation HTTP de [GroupReadSender].

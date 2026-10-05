@@ -1,8 +1,7 @@
 /// **Le canal radio, en SSE, sur le `Dio` de l'application** (#135).
 ///
-/// Le protocole est **celui des groupes**, relevé dans `@adonisjs/transmit@3` et
-/// déjà éprouvé par `lib/data/realtime/sse_group_channel.dart` — ses quatre
-/// points valent ici à l'identique :
+/// Le protocole est celui de Transmit, relevé dans `@adonisjs/transmit@3` (et
+/// repris par le canal de la messagerie, `lib/data/messaging/`) — quatre points :
 ///
 /// 1. **l'ordre** : `POST /__transmit/subscribe` après que `GET
 ///    /__transmit/events?uid=` a rendu ses en-têtes ;

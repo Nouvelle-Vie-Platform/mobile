@@ -316,8 +316,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         // il n'a pas de conversation.
         badges: {
           if (!isGuest)
-            HomeTab.community:
-                ref.watch(unreadTotalProvider(ref.watch(echangesActorProvider))),
+            HomeTab.community: ref
+                .watch(unreadTotalProvider(ref.watch(echangesActorProvider))),
         },
       ),
     ));

@@ -158,7 +158,8 @@ void main() {
       );
 
       final row = await (db.select(db.groupMessages)
-            ..where((m) => m.id.equals(removedAuthorMessagePayload['id']! as String)))
+            ..where((m) =>
+                m.id.equals(removedAuthorMessagePayload['id']! as String)))
           .getSingle();
       expect(row.authorId, isNull);
       expect(row.isSystem, isFalse);
@@ -297,8 +298,7 @@ void main() {
       expect(await unread(), 1);
     });
 
-    test(
-        'le message lu n\'est pas en magasin : repli sur `lastReadAt`',
+    test('le message lu n\'est pas en magasin : repli sur `lastReadAt`',
         () async {
       await seedGroup();
       await writer.store(

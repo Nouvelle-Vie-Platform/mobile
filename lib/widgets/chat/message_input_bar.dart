@@ -52,8 +52,7 @@ class MessageInputBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   border: Border.all(color: palette.border),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Row(
                   children: [
                     Expanded(

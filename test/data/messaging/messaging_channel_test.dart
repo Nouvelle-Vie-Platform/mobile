@@ -213,8 +213,7 @@ void main() {
       await sub.cancel();
     });
 
-    test('une trame devient une ligne, un battement un signe de vie',
-        () async {
+    test('une trame devient une ligne, un battement un signe de vie', () async {
       final server = _FakeTransmit();
       final events = <MessagingEvent>[];
       final sub = SseMessagingChannel(client: _dio(server), mintUid: () => 'u2')

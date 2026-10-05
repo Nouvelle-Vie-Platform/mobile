@@ -351,8 +351,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         // liste des Échanges. Un nom inconnu retombe sur l'accueil.
         builder: (_, state) => AppBackground(
           child: HomeShell(
-            initialTab: HomeTab.values
-                .asNameMap()[state.uri.queryParameters['tab']],
+            initialTab:
+                HomeTab.values.asNameMap()[state.uri.queryParameters['tab']],
           ),
         ),
       ),

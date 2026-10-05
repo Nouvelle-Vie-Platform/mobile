@@ -79,8 +79,7 @@ void main() {
             .thread(kGroupId)
             .first;
 
-    test(
-        'un message en échec repart tout seul, sous SA clé, et une seule fois',
+    test('un message en échec repart tout seul, sous SA clé, et une seule fois',
         () async {
       sender.succeeds = false;
       await composer.send(groupId: kGroupId, body: 'Amen');
@@ -182,8 +181,7 @@ void main() {
           'advanced': true,
         };
 
-    test(
-        'confirmée : la ligne servie est rangée, PUIS la lecture locale part',
+    test('confirmée : la ligne servie est rangée, PUIS la lecture locale part',
         () async {
       sender.answer = (id) => ReadConfirmed(confirmed(id));
       await advancer.advance(

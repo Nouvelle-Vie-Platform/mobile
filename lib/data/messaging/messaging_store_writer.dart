@@ -42,11 +42,9 @@ class MessagingStoreWriter {
     final descriptor = syncedCollectionFor(collection);
     if (descriptor == null) return true;
 
-    final groupId = collection == SyncCollectionKey.groups
-        ? row['id']
-        : row['groupId'];
-    final known =
-        groupId is! String || await _db.groupDao.knowsGroup(groupId);
+    final groupId =
+        collection == SyncCollectionKey.groups ? row['id'] : row['groupId'];
+    final known = groupId is! String || await _db.groupDao.knowsGroup(groupId);
 
     if (collection == SyncCollectionKey.groupReads &&
         groupId is String &&
