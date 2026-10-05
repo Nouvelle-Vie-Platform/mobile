@@ -12,14 +12,12 @@ import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/home_shell.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
-import 'package:maison_du_miracle/state/measurement_providers.dart';
 import 'package:maison_du_miracle/state/playback_controller.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/widgets/app_background.dart';
 import 'package:maison_du_miracle/widgets/home/home_content_cards.dart';
 import 'package:maison_du_miracle/widgets/mini_player.dart';
 
-import '../helpers/playback_doubles.dart';
 import '../helpers/pump_screen.dart';
 
 /// **Le mini-lecteur dans les onglets** (#116).
@@ -116,8 +114,6 @@ void main() {
         contentPlayerProvider.overrideWithValue(player),
         calendarRepositoryProvider
             .overrideWithValue(InMemoryCalendarRepository()),
-        playReporterProvider.overrideWithValue(FakePlayReporter()),
-        playSpoolProvider.overrideWithValue(FakePlaySpool()),
       ],
     );
     // Démontage explicite : fermer un flux Drift planifie une minuterie à zéro

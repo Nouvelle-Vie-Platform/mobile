@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
+import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/data/sample_data.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
@@ -16,6 +17,8 @@ import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
+import 'package:maison_du_miracle/state/gathering_providers.dart';
+import 'package:maison_du_miracle/state/measurement_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
@@ -579,6 +582,15 @@ ProviderContainer _container(MediathequeRepository repository) {
       branchRepositoryProvider
           .overrideWithValue(const InMemoryBranchRepository()),
       mediathequeRepositoryProvider.overrideWithValue(repository),
+      // Le suivi d'écoute vit dans le contrôleur global (#115) : un appui sur
+      // lecture ouvre une mesure, muette ici, et une surveillance de la
+      // rétractation, qui lit aussi le catalogue des rassemblements — vide et en
+      // mémoire, plutôt qu'un flux Drift ouvert pour rien.
+      playReporterProvider.overrideWithValue(FakePlayReporter()),
+      playSpoolProvider.overrideWithValue(FakePlaySpool()),
+      gatheringRepositoryProvider.overrideWithValue(
+        InMemoryGatheringRepository(gatherings: const [], types: const []),
+      ),
     ],
   );
 }

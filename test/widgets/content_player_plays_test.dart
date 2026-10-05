@@ -1,10 +1,16 @@
 /// **La remontée d'écoute vue de l'écran de lecture.**
 ///
-/// Ce que les tests unitaires du traqueur ne peuvent pas prouver : que l'écran
-/// lui **pousse** bien la position, qu'il ne le fait qu'une fois par ouverture,
-/// que le direct n'est pas compté, et surtout que **rien ne relie les deux
-/// mesures** — un enregistreur de progression en panne ne doit pas emporter
-/// l'audience avec lui.
+/// Ce que les tests unitaires du traqueur ne peuvent pas prouver : que la
+/// position lui est bien **poussée**, une fois par ouverture, que le direct n'est
+/// pas compté, et surtout que **rien ne relie les deux mesures** — un
+/// enregistreur de progression en panne ne doit pas emporter l'audience avec
+/// lui.
+///
+/// Depuis #115, ce n'est plus l'écran qui pousse : c'est le contrôleur global,
+/// qui suit ce qui est **chargé**. La fiche n'y est plus que le geste qui charge
+/// — un appui sur lecture —, et ces tests vérifient qu'en passant par elle la
+/// mesure se comporte exactement comme avant. Les mêmes règles hors de la fiche
+/// se vérifient dans `test/state/playback_tracking_test.dart`.
 ///
 /// Tout se joue sur l'[InertContentPlayer] : aucun canal de plugin, aucune
 /// minuterie, la position ne bouge que si le test la pousse.
@@ -16,9 +22,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
+import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
+import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
+import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/measurement_providers.dart';
+import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
@@ -81,16 +91,24 @@ void main() {
     }
   }
 
-  /// **L'appui sur lecture** — c'est lui, et non plus l'ouverture de la fiche
-  /// (d777833), qui charge le contenu et ouvre la mesure de cette écoute. Sans
-  /// lui, l'écran n'a aucun traqueur à qui pousser la position, et ces tests
-  /// ne mesureraient rien.
-  Future<void> demarrer(WidgetTester tester, InertContentPlayer player) async {
+  /// **La prémisse « le contenu est chargé », posée par le geste d'un fidèle.**
+  ///
+  /// Ouvrir la fiche ne charge plus rien (sauf le direct) ; le suivi s'ouvre au
+  /// chargement, dans le contrôleur global. Sans cet appui, les positions
+  /// poussées plus bas ne trouveraient aucune session — et ces tests passeraient
+  /// au vert sur une mesure qui n'existe pas.
+  Future<void> start(WidgetTester tester, InertContentPlayer player) async {
     await tester.tap(find.byIcon(Icons.play_arrow));
+    await tester.pump();
+    // Résolution du téléchargement et lecture de la reprise : deux requêtes au
+    // magasin avant que le média ne soit chargé.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 20)),
+    );
     await tester.pump();
     expect(player.value.contentId, _id,
         reason: 'prémisse : le contenu est chargé');
-    await tester.pump();
+    expect(player.value.isPlaying, isTrue, reason: 'prémisse : le son joue');
   }
 
   Future<ProviderContainer> pump(
@@ -108,6 +126,12 @@ void main() {
         playbackProgressReporterProvider.overrideWithValue(progress),
         playReporterProvider.overrideWithValue(plays),
         playSpoolProvider.overrideWithValue(spool),
+        // Le contrôleur surveille la rétractation du contenu chargé : des
+        // catalogues en mémoire, plutôt que des flux Drift ouverts pour rien.
+        mediathequeRepositoryProvider
+            .overrideWithValue(InMemoryMediathequeRepository()),
+        gatheringRepositoryProvider
+            .overrideWithValue(InMemoryGatheringRepository()),
       ],
     );
     container.read(_contentProvider.notifier).set(const AsyncData(_view));
@@ -153,7 +177,7 @@ void main() {
     final player = InertContentPlayer();
     addTearDown(player.dispose);
     await pump(tester, player: player);
-    await demarrer(tester, player);
+    await start(tester, player);
 
     await play(tester, player, 28);
     expect(plays.reported, isEmpty, reason: 'le seuil n\'est pas atteint');
@@ -181,7 +205,7 @@ void main() {
     plays.delivered = false;
 
     await pump(tester, player: player);
-    await demarrer(tester, player);
+    await start(tester, player);
     await play(tester, player, 120);
 
     // L'écoute continue : le lecteur joue toujours, à la position poussée.
@@ -202,8 +226,8 @@ void main() {
     final player = InertContentPlayer();
     addTearDown(player.dispose);
     final container = await pump(tester, player: player);
-    await demarrer(tester, player);
     final db = container.read(appDatabaseProvider);
+    await start(tester, player);
 
     await play(tester, player, 120);
 
@@ -226,13 +250,32 @@ void main() {
     progress.delivered = false;
 
     await pump(tester, player: player);
-    await demarrer(tester, player);
+    await start(tester, player);
     await play(tester, player, 60);
 
     // Les deux mesures sont **indépendantes en panne aussi**. C'est ce que la
     // garde séparée de `_trackPlay` protège : sous une garde commune, un
     // enregistreur absent aurait emporté l'audience avec lui, et le chiffre
     // aurait baissé sans que rien ne le signale.
+    expect(plays.reported, [_id]);
+  });
+
+  testWidgets('quitter la fiche ne coupe plus la mesure', (tester) async {
+    final player = InertContentPlayer();
+    addTearDown(player.dispose);
+    await pump(tester, player: player);
+    await start(tester, player);
+    await play(tester, player, 10);
+
+    // La fiche se ferme, le son continue — le lecteur est global. Avant #115,
+    // la mesure mourait avec l'écran, et ces vingt secondes de plus ne
+    // comptaient jamais.
+    await tester.pumpWidget(const SizedBox.shrink());
+    for (var at = 12; at <= 40; at += 2) {
+      player.emit(player.value.copyWith(position: Duration(seconds: at)));
+    }
+    await tester.pump();
+
     expect(plays.reported, [_id]);
   });
 }

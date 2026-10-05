@@ -40,9 +40,12 @@ final playSpoolProvider = Provider<PlaySpool>(
 /// Une fonction plutôt qu'un `family`, pour la raison exacte de
 /// `playbackProgressRecorderProvider` : un traqueur porte l'état d'**une session
 /// d'écoute** (temps joué, écoute déjà émise), pas une donnée partagée. Le garder
-/// en cache le ferait survivre à la fermeture de l'écran et repartir avec un
-/// compteur périmé — donc ne plus jamais compter la seconde ouverture du même
+/// en cache le ferait survivre au contenu qu'il suit et repartir avec un
+/// compteur périmé — donc ne plus jamais compter le second chargement du même
 /// prêche, ce qui est précisément le contraire de ce qu'on mesure.
+///
+/// Son seul appelant est le contrôleur global (`PlaybackController`, #115), qui
+/// en ouvre un par chargement — jamais pour l'antenne.
 final playTrackerProvider =
     Provider<PlayTracker Function(String contentId)>((ref) {
   return (contentId) => PlayTracker.open(

@@ -8,16 +8,12 @@ import 'package:go_router/go_router.dart';
 
 import '../data/local/app_database.dart';
 import '../data/local/tables/download_tables.dart';
-import '../data/measurement/play_tracker.dart';
 import '../data/players/content_player.dart';
-import '../data/repositories/playback_progress_recorder.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/content_view.dart';
 import '../router/app_router.dart';
 import '../state/downloads_providers.dart';
-import '../state/measurement_providers.dart';
 import '../state/playback_controller.dart';
-import '../state/playback_progress_providers.dart';
 import '../state/player_providers.dart';
 import '../state/season_providers.dart';
 import '../state/session_gate.dart';
@@ -132,44 +128,19 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   ConsumerState<ContentPlayerView> createState() => _ContentPlayerViewState();
 }
 
-class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
-    with WidgetsBindingObserver {
+/// **Cet écran ne suit plus l'écoute** (#115).
+///
+/// La position de reprise et la mesure d'écoute vivaient ici, attachées au
+/// cycle de vie de la fiche : quitter l'écran coupait le suivi d'un prêche qui
+/// continuait de sonner, et une carte de l'accueil n'en ouvrait aucun. Elles
+/// vivent désormais dans le contrôleur global (`PlaybackController`), qui suit
+/// ce qui est **chargé**, quel que soit l'écran. Cet écran charge et commande ;
+/// il n'écrit plus rien — et c'est ce qui garantit qu'aucune écriture n'est
+/// faite deux fois.
+class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
   bool _liked = false;
   String? _requested;
   bool _stoppedByRetraction = false;
-  PlaybackProgressRecorder? _recorder;
-
-  /// **La mesure d'audience de cette ouverture** (`POST /teachings/:id/plays`).
-  ///
-  /// Un objet **à côté** de [_recorder], jamais un champ de plus sur lui : la
-  /// reprise de lecture est un confort personnel attaché à un compte, l'écoute
-  /// comptée est une statistique d'église, et les deux n'ont ni la même durée de
-  /// vie ni le même statut au regard du RGPD. Ce qui les sépare dans cet écran
-  /// est visible à l'œil : deux champs, deux appels, aucun chemin de l'un vers
-  /// l'autre.
-  ///
-  /// `null` sur le **direct** : il n'y a pas d'enseignement à compter derrière un
-  /// flux, et la route veut un identifiant de contenu.
-  PlayTracker? _playTracker;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _fireAndForget(_recorder?.onLeft());
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.paused) return;
-    _fireAndForget(_recorder?.onAppPaused());
-  }
 
   void _showInfoSheet(BuildContext context, ContentView content) {
     showModalBottomSheet<void>(
@@ -361,9 +332,6 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     if (url == null) return;
 
     final controller = ref.read(playbackControllerProvider.notifier);
-    await _openRecorder(content.id);
-    _openPlayTracker(content.id);
-    if (!mounted) return;
 
     // **Déjà chargé** : revenir sur un prêche en cours ne le recharge pas et ne
     // le fait pas repartir de zéro. On ne force pas non plus la lecture — un
@@ -415,48 +383,15 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
         isLive: widget.isLive,
       ),
     );
-    if (!mounted) return;
-
-    final resume = _recorder?.resume;
-    if (resume != null &&
-        !resume.completed &&
-        resume.position > Duration.zero) {
-      controller.seek(resume.position);
-    }
+    // La position de reprise est appliquée par le contrôleur, au chargement :
+    // c'est lui qui tient l'enregistreur (#115). Un chargement supplanté pendant
+    // ce temps — un autre contenu, ou un arrêt — n'a plus rien à jouer ici.
+    if (!mounted || controller.playback.contentId != content.id) return;
 
     if (autoplay) {
       controller.play();
     } else {
       controller.pause();
-    }
-  }
-
-  Future<void> _openRecorder(String contentId) async {
-    if (_recorder?.contentId == contentId) return;
-    final open = ref.read(playbackProgressRecorderProvider);
-    try {
-      final recorder = await open(contentId);
-      if (mounted) _recorder = recorder;
-    } catch (error, stack) {
-      debugPrint(
-          '[progression] enregistreur indisponible pour $contentId : $error');
-      debugPrintStack(stackTrace: stack, maxFrames: 4);
-    }
-  }
-
-  /// **Ouvre la mesure de cette ouverture.** Synchrone, et sans `await` : rien
-  /// de ce que fait la télémétrie ne doit retarder le chargement d'un média.
-  ///
-  /// Le direct n'est pas mesuré : voir [_playTracker].
-  void _openPlayTracker(String contentId) {
-    if (widget.isLive) return;
-    if (_playTracker?.contentId == contentId) return;
-    try {
-      _playTracker = ref.read(playTrackerProvider)(contentId);
-    } catch (error, stack) {
-      // Une mesure qui ne s'ouvre pas est une mesure perdue, pas une panne.
-      debugPrint('[mesure] traqueur indisponible pour $contentId : $error');
-      debugPrintStack(stackTrace: stack, maxFrames: 4);
     }
   }
 
@@ -468,54 +403,18 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView>
     controller.stop();
   }
 
+  /// **La fin de lecture, vue de la fiche** : le lecteur est remis d'aplomb.
+  ///
+  /// À l'état terminal, `just_audio` reste `playing == true`, curseur en fin,
+  /// sans son — le bouton afficherait « pause » sur un silence. Ce n'est **pas**
+  /// du suivi : la complétion s'enregistre dans le contrôleur global, que la
+  /// fiche soit ouverte ou non (#115).
   void _onPlayback(ContentPlayback? previous, ContentPlayback next) {
-    // **La mesure d'abord, et avec sa propre garde.** Elle ne passe pas sous
-    // celle de l'enregistreur : un enregistreur qui n'a pas pu s'ouvrir — base
-    // illisible, reprise introuvable — ne doit pas faire disparaître l'audience
-    // avec lui. Ce sont deux mesures indépendantes, y compris en panne.
-    _trackPlay(next);
-
-    final recorder = _recorder;
-    if (recorder == null || next.contentId != recorder.contentId) return;
-
-    if (next.isCompleted && !(previous?.isCompleted ?? false)) {
-      _fireAndForget(recorder.onTerminated());
-      final controller = ref.read(playbackControllerProvider.notifier);
-      controller.pause();
-      controller.seek(Duration.zero);
-      return;
-    }
-
-    _fireAndForget(
-      recorder.onPosition(
-        next.position,
-        duration: next.duration,
-        isPlaying: next.isPlaying,
-      ),
-    );
-    if ((previous?.isPlaying ?? false) && !next.isPlaying) {
-      _fireAndForget(recorder.onPaused());
-    }
-  }
-
-  /// Pousse la position au traqueur d'écoute — **jamais à l'enregistreur de
-  /// progression**, qui a son propre appel juste en dessous.
-  void _trackPlay(ContentPlayback next) {
-    final tracker = _playTracker;
-    if (tracker == null || next.contentId != tracker.contentId) return;
-    _fireAndForget(
-      tracker.onPosition(next.position, isPlaying: next.isPlaying),
-      label: 'mesure',
-    );
-  }
-
-  void _fireAndForget(Future<void>? work, {String label = 'progression'}) {
-    if (work == null) return;
-    unawaited(
-      work.catchError((Object error) {
-        debugPrint('[$label] déclencheur abandonné : $error');
-      }),
-    );
+    if (next.contentId == null || next.contentId != _requested) return;
+    if (!next.isCompleted || (previous?.isCompleted ?? false)) return;
+    final controller = ref.read(playbackControllerProvider.notifier);
+    controller.pause();
+    controller.seek(Duration.zero);
   }
 
   /// Lecture/pause — **sur le lecteur**, par le contrôleur global, jamais sur

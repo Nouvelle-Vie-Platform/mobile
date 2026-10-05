@@ -4,8 +4,9 @@
 /// `announcementComposerProvider` est le seul provider d'écriture.
 ///
 /// Ce fichier ne connaît **aucun lecteur**. Le branchement des cinq
-/// déclencheurs sur un moteur audio réel appartient à l'écran de lecture
-/// (issue #40) : ici, on fournit de quoi ouvrir un enregistreur, et
+/// déclencheurs sur le lecteur appartient au contrôleur global
+/// (`PlaybackController`, #115), qui suit ce qui est chargé quel que soit
+/// l'écran : ici, on fournit de quoi ouvrir un enregistreur, et
 /// l'enregistreur se pilote depuis un test sans qu'aucun son ne soit joué.
 library;
 
@@ -34,12 +35,13 @@ final playbackProgressReporterProvider = Provider<PlaybackProgressReporter>(
 /// Une fonction plutôt qu'un `family` : un enregistreur porte l'état d'**une
 /// session d'écoute** (position, temps joué depuis le dernier rapport,
 /// complétion), pas une donnée partagée. Le garder en cache le ferait survivre
-/// à la fermeture de l'écran et repartir avec un compteur périmé — exactement
+/// au contenu qu'il suit et repartir avec un compteur périmé — exactement
 /// le genre d'état résiduel que la convention du dépôt écarte (« Riverpod =
 /// état **partagé** »).
 ///
-/// L'appelant garde l'objet rendu pour toute la durée de la lecture, lui pousse
-/// la position, et l'informe des quatre événements.
+/// L'appelant — le contrôleur global, et lui seul — garde l'objet rendu tant
+/// que le contenu est chargé, lui pousse la position, et l'informe des quatre
+/// événements.
 final playbackProgressRecorderProvider =
     Provider<Future<PlaybackProgressRecorder> Function(String contentId)>(
   (ref) => (contentId) => PlaybackProgressRecorder.open(
