@@ -158,6 +158,8 @@ final String staleCursor = serverCursor(
 /// tableau `syncDescriptors` en porte **vingt-neuf**, et son en-tête dit
 /// « vingt-neuf » ; les deux s'accordent cette fois, et c'est le tableau qui a
 /// été cru. Trentième en #140 (serveur M1a) — `group_reads`.
+/// Trente et unième en #148 — `my_interactions`, mes requêtes —, comptée de
+/// la même façon sur la branche serveur jumelle.
 ///
 /// La partition de chaque entrée est relevée sur le champ `partition:` de son
 /// descripteur, jamais sur l'intuition de ce qu'une collection « devrait » être.
@@ -229,6 +231,9 @@ const Map<String, String> kSyncCollections = {
   // lecture voyage, et seulement chez moi.
   'group_reads': 'private',
   'official_account_memberships': 'private',
+  // **Mes requêtes** (issue serveur liée à mobile #148) : `owner_id = soi`, et
+  // rien d'autre — jamais servie à un porteur sans compte.
+  'my_interactions': 'private',
   // Partagées cloisonnées — filtre « branches visibles ∪ national ».
   'events': 'branch',
   'teachings': 'branch',
@@ -1351,6 +1356,74 @@ Map<String, Object?> playbackProgressPage() => deltaPage(
         updatedAtIso: '2026-05-24T14:31:00.000Z',
         id: '019f6b00-0000-7000-8000-000000000001',
       ),
+    );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// `my_interactions` — mes requêtes (partition `private`, #148)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// L'auteur des deux requêtes ci-dessous — **moi**, par construction : le
+/// serveur cloisonne la collection sur `owner_id = soi`.
+const String myRequestsAuthorId = 'b6f0a1c2-0000-4000-8000-000000000148';
+
+/// **Une suggestion prise en charge.**
+///
+/// Quatorze clés, relevées sur `app/interactions/transformers/
+/// interaction_transformer.ts` (la vue de `InteractionPresenter.forViewer`, le
+/// lecteur étant l'auteur) plus le `deletedAt` qu'ajoute
+/// `app/sync/descriptors/my_interactions_descriptor.ts` : `id`, `type`,
+/// `status`, `visibility`, `isAnonymous`, `branchId`, `title`, `content`,
+/// `authorId`, `revealed`, `clientCreatedAt`, `createdAt`, `updatedAt`,
+/// `deletedAt`.
+///
+/// `visibility` vaut `private` : le serveur la **force** pour une suggestion ou
+/// une réclamation (ADR-0014), quel que soit le corps envoyé.
+const Map<String, Object?> mySuggestionPayload = {
+  'id': '019f7a00-0000-7000-8000-000000000001',
+  'type': 'suggestion',
+  'status': 'in_progress',
+  'visibility': 'private',
+  'isAnonymous': false,
+  'branchId': 2,
+  'title': 'Horaires du culte',
+  'content': 'Pourrait-on ajouter un culte le samedi soir ?',
+  'authorId': myRequestsAuthorId,
+  'revealed': false,
+  'clientCreatedAt': '2026-09-28T08:00:00.000Z',
+  'createdAt': '2026-09-28T08:00:02.000Z',
+  'updatedAt': '2026-10-01T10:00:00.000Z',
+  'deletedAt': null,
+};
+
+/// **Une prière anonyme, plus récente, encore nouvelle.** Anonyme veut dire
+/// masquée aux autres, jamais à son auteur : `authorId` est bien le mien.
+const Map<String, Object?> myAnonymousPrayerPayload = {
+  'id': '019f7a00-0000-7000-8000-000000000002',
+  'type': 'prayer_request',
+  'status': 'new',
+  'visibility': 'community',
+  'isAnonymous': true,
+  'branchId': null,
+  'title': 'Pour ma mère',
+  'content': 'Priez pour sa guérison.',
+  'authorId': myRequestsAuthorId,
+  'revealed': false,
+  'clientCreatedAt': null,
+  'createdAt': '2026-10-02T09:00:00.000Z',
+  'updatedAt': '2026-10-02T09:00:00.000Z',
+  'deletedAt': null,
+};
+
+/// Curseur de fin de [myInteractionsPage].
+final String myInteractionsCursor = serverCursor(
+  updatedAtIso: '2026-10-02T09:00:00.000Z',
+  id: '019f7a00-0000-7000-8000-000000000002',
+);
+
+/// La page nominale de `my_interactions`.
+Map<String, Object?> myInteractionsPage({List<Object?>? items}) => deltaPage(
+      items: items ?? const [mySuggestionPayload, myAnonymousPrayerPayload],
+      nextCursor: myInteractionsCursor,
     );
 
 // ─────────────────────────────────────────────────────────────────────────────

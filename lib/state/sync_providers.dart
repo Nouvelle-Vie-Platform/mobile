@@ -36,6 +36,7 @@ import '../data/local/app_database.dart';
 import '../data/local/device_settings_dao.dart';
 import '../data/local/gathering_dao.dart';
 import '../data/local/group_dao.dart';
+import '../data/local/interaction_dao.dart';
 import '../data/local/legal_dao.dart';
 import '../data/local/mediatheque_dao.dart';
 import '../data/local/menu_dao.dart';
@@ -161,6 +162,11 @@ final deviceSettingsDaoProvider = Provider<DeviceSettingsDao>(
 /// fait qu'une conversation se lit sur `group_members` et non sur `groups`.
 final groupDaoProvider = Provider<GroupDao>(
   (ref) => ref.watch(appDatabaseProvider).groupDao,
+);
+
+/// La lecture de **mes requêtes** (#148), la collection privée `my_interactions`.
+final interactionDaoProvider = Provider<InteractionDao>(
+  (ref) => ref.watch(appDatabaseProvider).interactionDao,
 );
 
 /// Les deux routes du protocole, sur le `Dio` d'`ApiClient` : la requête

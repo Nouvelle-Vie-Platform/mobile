@@ -10,6 +10,7 @@ import 'tables/playback_tables.dart';
 import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
 import 'tables/group_tables.dart';
+import 'tables/interaction_tables.dart';
 import 'tables/season_tables.dart';
 import 'tables/auth_tables.dart';
 import 'tables/device_tables.dart';
@@ -168,6 +169,13 @@ abstract final class SyncCollectionKey {
   /// `POST /teachings/:teachingId/progress`. Rien de local n'entre jamais ici.
   static const String playbackProgress = 'playback_progress';
 
+  /// **Mes requêtes** (#148) — demandes de prière, suggestions et réclamations
+  /// que j'ai envoyées, et leur statut de traitement. `partition: 'private'`
+  /// (`owner_id = soi` côté serveur), **avec** tombstone. Elle se remplit par le
+  /// flux, jamais par l'application : un envoi (`POST /interactions`) est suivi
+  /// d'un cycle, et c'est ce cycle qui ramène la ligne.
+  static const String myInteractions = 'my_interactions';
+
   /// **Les profils de mes co-membres** (#96) — la projection `{id, displayName,
   /// avatarUrl}` de `users` qui donne un **nom** à chaque `userId`.
   ///
@@ -290,6 +298,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     GroupJoinRequests,
     GroupMessages,
     GroupReads,
+    MyInteractions,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -440,6 +449,10 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// une rétractation reçue du serveur.
   LocalCollection<PlaybackProgressRow> get playbackProgressCollection =>
       LocalCollection._(SyncCollectionKey.playbackProgress, playbackProgress);
+
+  /// **Avec tombstone** : une requête supprimée côté serveur quitte le magasin.
+  LocalCollection<MyInteractionRow> get myInteractionsCollection =>
+      LocalCollection._(SyncCollectionKey.myInteractions, myInteractions);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Application d'une page

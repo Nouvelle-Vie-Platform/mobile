@@ -165,6 +165,9 @@ void main() {
           'gatherings',
           'announcements',
           'playback_progress',
+          // **Mes requêtes** (#148) : privée, et sans dépendance d'ordre — une
+          // requête ne joint rien d'autre du magasin.
+          'my_interactions',
           // Les cinq d'« Échanges » (#96) ferment la marche, dans l'ordre que le
           // cadrage donne. `profiles` avant `group_messages` est la seule
           // contrainte d'ordre qu'il écrit en toutes lettres : elle nomme ce que

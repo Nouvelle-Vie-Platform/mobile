@@ -14,7 +14,7 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les trente collections du registre, dans l\'ordre', () {
+    test('les trente et une collections du registre, dans l\'ordre', () {
       // **Ce nombre avait menti.** Il disait dix-neuf quand le registre serveur
       // en comptait vingt-cinq, et le test passait au vert en gardant un contrat
       // périmé — `seasons`, `decor`, `teaching_guests`, `group_members`,
@@ -30,7 +30,8 @@ void main() {
       // `menu_entries` devient la vingt-neuvième. Cette fois l'en-tête et le
       // tableau s'accordent, et c'est le **tableau** qui a été compté. Recompté
       // en #140 (serveur M1a), où `group_reads` devient la trentième.
-      expect(kSyncCollections, hasLength(30));
+      // Puis en #148, où `my_interactions` devient la trente et unième.
+      expect(kSyncCollections, hasLength(31));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
@@ -160,14 +161,15 @@ void main() {
       // ce test disait dix-neuf pour vingt-cinq descripteurs. #96 les **réplique**
       // (une table locale, un DAO, un repository), elle ne les a pas découvertes.
       //
-      // Le registre serveur en compte **vingt-neuf**, recompté descripteur par
+      // Le registre serveur en compte **trente**, recompté descripteur par
       // descripteur (`awk '/^export const syncDescriptors/,/^\]/' | grep -cE
       // '^  [a-zA-Z]+Descriptor,$'`), jamais sur la phrase qui les précède — elle
       // a déjà menti deux fois. `menu_entries` ferme l'écart : elle est livrée
       // côté serveur par #480 et répliquée côté client par la tranche jumelle
       // #82, fusionnée depuis. `group_reads` (serveur M1a, mobile #140) porte
-      // le compte à **trente**. La carte est donc **complète**, et c'est ce que
-      // `hasLength(30)` plus haut affirme.
+      // le compte à **trente**, `my_interactions` (#148) à trente et un. La
+      // carte est donc **complète**, et c'est ce que `hasLength(31)` plus haut
+      // affirme.
       for (final key in const [
         'profiles',
         'groups',

@@ -27,6 +27,7 @@ import 'converters/legal_sections_converter.dart';
 import 'device_settings_dao.dart';
 import 'gathering_dao.dart';
 import 'group_dao.dart';
+import 'interaction_dao.dart';
 import 'legal_dao.dart';
 import 'mediatheque_dao.dart';
 import 'menu_dao.dart';
@@ -39,6 +40,7 @@ import 'tables/auth_tables.dart';
 import 'tables/download_tables.dart';
 import 'tables/gathering_tables.dart';
 import 'tables/group_tables.dart';
+import 'tables/interaction_tables.dart';
 import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
@@ -106,6 +108,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     PendingGroupMessages,
     GroupReads,
     PendingGroupReads,
+    MyInteractions,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -124,6 +127,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     AuthChannelsDao,
     DeviceSettingsDao,
     GroupDao,
+    InteractionDao,
     SettingsDao,
     DownloadsDao,
     DownloadNotificationsDao,
@@ -220,8 +224,14 @@ class AppDatabase extends _$AppDatabase {
   /// `body: null`, et la contrainte coupait le cycle), et deux tables naissent —
   /// la collection répliquée `group_reads` (ma position de lecture) et la table
   /// locale seule `pending_group_reads` (l'outbox de cette lecture).
+  ///
+  /// **v21** — **mes requêtes** (#148) : `my_interactions`, une collection
+  /// répliquée **privée** de plus, une création de table, et rien d'autre. Elle
+  /// naît **vide**, et vide veut dire « aucune requête reçue » — l'onglet
+  /// Requêtes montre son état vide, ce que l'écran affichait déjà (il ne lisait
+  /// rien).
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   /// Les cinq colonnes du média d'une annonce, ajoutées ensemble au palier
   /// v18 → v19 — et retirées ensemble d'une table créée pour une version
@@ -682,6 +692,22 @@ class AppDatabase extends _$AppDatabase {
           if (from < 20) {
             await m.createTable(groupReads);
             await m.createTable(pendingGroupReads);
+          }
+
+          // v20 → v21 — **mes requêtes** (#148). Une création de table, et rien
+          // d'autre : aucune colonne existante ne bouge, aucune ligne n'est
+          // réécrite. `my_interactions` naît vide, son curseur n'existe pas
+          // encore, et le prochain manifeste l'annoncera `from_zero` : le
+          // premier cycle ramène **toutes** mes requêtes, y compris celles
+          // envoyées avant cette version. Sur un serveur en retard d'une
+          // version, la collection prend un `404` et se saute — l'onglet
+          // Requêtes montre alors son état vide, jamais une erreur.
+          //
+          // Pas de garde `to >= 21` pour la raison des paliers qui ne créent que
+          // des tables : le vérificateur de schéma **ignore une table
+          // surnuméraire**.
+          if (from < 21) {
+            await m.createTable(myInteractions);
           }
         },
         beforeOpen: (details) async {
