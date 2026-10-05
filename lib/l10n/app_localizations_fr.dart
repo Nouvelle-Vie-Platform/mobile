@@ -226,7 +226,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radioTitle => 'New Life Radio';
 
   @override
+  String get radioOffAir => 'Hors antenne';
+
+  @override
+  String get radioLive => 'En direct';
+
+  @override
+  String get radioRetrying => 'Nouvelle tentative…';
+
+  @override
+  String get radioFailureConnection => 'Vérifiez votre connexion';
+
+  @override
   String get radioFailureAntenna => 'Antenne indisponible';
+
+  @override
+  String get radioFailureUnknown => 'Écoute impossible';
+
+  @override
+  String get radioGaveUpMessage =>
+      'L\'application a cessé de réessayer. Relancez l\'écoute quand vous voulez.';
 
   @override
   String get radioUnavailableMessage =>

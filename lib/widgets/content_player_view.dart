@@ -44,7 +44,23 @@ class ContentPlayerView extends ConsumerStatefulWidget {
     this.onStop,
     this.fallbackBackgroundAsset,
     this.openSource,
+    this.stage,
   });
+
+  /// **Ce que la scène centrale dit, quand l'appelant sait mieux qu'elle**
+  /// (#125).
+  ///
+  /// `null` — le cas de la médiathèque — garde la scène d'origine : le visuel,
+  /// puis « Lecture interrompue » ou « il faut du réseau » quand le lecteur
+  /// porte une panne.
+  ///
+  /// Non nul, il **remplace entièrement** cette scène, et c'est le pendant
+  /// d'[openSource] : quand l'appelant ouvre la source lui-même, c'est aussi lui
+  /// qui sait pourquoi elle ne joue pas. Sur l'antenne, les deux phrases
+  /// génériques mentaient par omission — la panne y est classée et reprise par
+  /// `RadioListening`, et « Reprendre » appelait `resume()` sans pré-vol, donc
+  /// sans le cookie de MediaMTX (#108).
+  final Widget? stage;
 
   /// **Comment la source s'ouvre, quand cet écran ne doit pas l'ouvrir
   /// lui-même** (#110).
@@ -109,6 +125,11 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   final VoidCallback? onStop;
 
   static const Key downloadButtonKey = Key('content_player_download');
+
+  /// Le gros bouton lecture/pause — visé par clé : c'est son pictogramme qu'on
+  /// vérifie, et chercher `Icons.play_arrow` dans tout l'écran trouverait aussi
+  /// celui du mini-lecteur.
+  static const Key playButtonKey = Key('content_player_play');
 
   /// Le bouton « prendre une note » — **le seul geste réservé de cet écran**, et
   /// donc le seul qui ait besoin d'être désigné depuis un test. Une clé plutôt
@@ -423,7 +444,30 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
       unawaited(_open(content));
       return;
     }
-    playback.isPlaying ? controller.pause() : controller.play();
+    // **Quand l'appelant ouvre la source, c'est lui qui relance** (#125) : sur
+    // l'antenne, un `play()` nu après un abandon ne ferait rien — le lecteur
+    // porte encore sa panne, et `RadioListening` ne réessaie plus. `start` sait
+    // reconnaître une antenne en pause (simple `play()`) d'une antenne en panne
+    // (pré-vol, puis réouverture).
+    final opener = widget.openSource;
+    // **Une panne n'est pas une lecture** (#125), même quand la valeur porte
+    // encore `isPlaying` : le bouton y affiche ▶ ([_PlayButton]), et l'appui
+    // **relance** au lieu de « mettre en pause » un silence. Sans appelant qui
+    // ouvre, c'est le geste de « Reprendre » sur la scène : `resume()`, qui
+    // repart d'où l'on en était.
+    if (playback.hasError) {
+      unawaited(opener != null ? opener() : controller.resume());
+      return;
+    }
+    if (playback.isPlaying) {
+      controller.pause();
+      return;
+    }
+    if (opener != null) {
+      unawaited(opener());
+      return;
+    }
+    controller.play();
   }
 
   /// **Prendre une note exige un compte**, et l'écran de lecture n'en exige pas.
@@ -465,12 +509,13 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
                   widget.isLive ? null : () => _showInfoSheet(context, content),
             ),
             Expanded(
-              child: _PlayerStage(
-                content: content,
-                onResume: () => unawaited(
-                  ref.read(playbackControllerProvider.notifier).resume(),
-                ),
-              ),
+              child: widget.stage ??
+                  _PlayerStage(
+                    content: content,
+                    onResume: () => unawaited(
+                      ref.read(playbackControllerProvider.notifier).resume(),
+                    ),
+                  ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
@@ -959,12 +1004,19 @@ class _PlayButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Deux `select` : la position qui avance ne reconstruit pas le bouton.
+    //
+    // ⚠️ **Une panne éteint les deux** (#125) : `copyWith` ne sait pas effacer
+    // `isPlaying`, et une valeur en panne le porte souvent encore. Le bouton
+    // afficherait ⏸ — ou l'anneau d'attente — sur un silence, et le premier
+    // appui « mettrait en pause » ce qui ne joue pas. En panne, il offre ▶, et
+    // l'appui relance (`_togglePlayback`).
     final playing = ref.watch(contentPlaybackProvider
-        .select((p) => p.contentId == contentId && p.isPlaying));
-    final buffering = ref.watch(contentPlaybackProvider
-        .select((p) => p.contentId == contentId && p.isBuffering));
+        .select((p) => p.contentId == contentId && p.isPlaying && !p.hasError));
+    final buffering = ref.watch(contentPlaybackProvider.select(
+        (p) => p.contentId == contentId && p.isBuffering && !p.hasError));
 
     return _AnimatedPlayButton(
+      key: ContentPlayerView.playButtonKey,
       isPlaying: playing,
       isLoading: buffering,
       accent: accent,
@@ -980,6 +1032,7 @@ class _PlayButton extends ConsumerWidget {
 /// - `isLoading = false` : cercle plein blanc avec icône play/pause
 class _AnimatedPlayButton extends StatefulWidget {
   const _AnimatedPlayButton({
+    super.key,
     required this.isPlaying,
     required this.isLoading,
     required this.accent,

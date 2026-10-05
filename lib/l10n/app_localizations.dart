@@ -472,11 +472,47 @@ abstract class AppLocalizations {
   /// **'New Life Radio'**
   String get radioTitle;
 
-  /// Titre de l'écran /radio quand la route d'antenne ne donne aucune adresse de flux : c'est l'antenne qui manque, pas un contenu retiré
+  /// Écran /radio : la route publique a répondu que l'antenne ne diffuse pas (onAir à false, jamais à null). L'écoute reste possible — l'information guide, elle n'interdit pas
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors antenne'**
+  String get radioOffAir;
+
+  /// Écran /radio : le son de l'antenne sort vraiment (RadioPhase.playing)
+  ///
+  /// In fr, this message translates to:
+  /// **'En direct'**
+  String get radioLive;
+
+  /// Écran /radio pendant la reprise (les six attentes) : il dit qu'il réessaie, sans nommer la panne qu'il combat encore
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle tentative…'**
+  String get radioRetrying;
+
+  /// Écran /radio, cause de l'abandon : rien n'a répondu (DNS, socket refusée, délai dépassé)
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifiez votre connexion'**
+  String get radioFailureConnection;
+
+  /// Écran /radio : quelque chose a répondu et ce n'était pas une playlist (404, 401, page HTML) — cause de l'abandon, et titre de l'écran quand la route d'antenne ne donne aucune adresse de flux
   ///
   /// In fr, this message translates to:
   /// **'Antenne indisponible'**
   String get radioFailureAntenna;
+
+  /// Écran /radio, cause de l'abandon quand on ignore s'il y a eu une réponse — la panne du lecteur iOS n'en porte aucune trace lisible. Ne nomme ni le réseau ni l'antenne : affirmer l'un des deux serait inventer la moitié du diagnostic
+  ///
+  /// In fr, this message translates to:
+  /// **'Écoute impossible'**
+  String get radioFailureUnknown;
+
+  /// Écran /radio, sous la cause de l'abandon : vrai pour les trois causes, il dit qu'on a renoncé et que le geste appartient à l'auditeur
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'application a cessé de réessayer. Relancez l\'écoute quand vous voulez.'**
+  String get radioGaveUpMessage;
 
   /// Écran d'antenne quand aucune adresse de flux n'est connue
   ///

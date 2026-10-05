@@ -569,11 +569,47 @@ suspension sur un en-tête étroit. L'état se lit ailleurs : l'icône tourne en
 connexion ou en reprise (`workingKey`), passe au vert quand l'antenne joue, et
 le bouton **s'atténue** (fond à 55 %) quand l'antenne est annoncée muette sans
 qu'on l'écoute, ou après un renoncement. Il ne nomme **aucune cause** : une
-panne se lit sur `/radio` — l'absence d'adresse (`radioFailureAntenna`), l'échec
-de la route (`errorStateMessage`), la panne du lecteur (« Lecture
-interrompue » ou « il faut du réseau », les états de `ContentPlayerView`). Les
-phrases d'état d'avant (`radioFollow`, `radioOffAir`, `radioRetrying`,
-`radioFailureConnection`, `radioFailureUnknown`) ont quitté les `.arb` (#123).
+panne se lit sur `/radio` (#125, voir « Ce que `/radio` affiche » plus bas) —
+l'absence d'adresse (`radioFailureAntenna`), l'échec de la route
+(`errorStateMessage`), et l'état réel de l'écoute (`RadioAirStatus`). Seul
+`radioFollow` a quitté les `.arb` pour de bon (#123) ; `radioOffAir`,
+`radioRetrying`, `radioFailureConnection` et `radioFailureUnknown` y sont
+revenus avec #125, parce que `/radio` les appelle.
+
+#### Ce que `/radio` affiche (#125)
+
+`RadioAirStatus` (`screens/radio_screen.dart`) **remplace la scène centrale** de
+la fiche, par le paramètre additif `stage:` de `ContentPlayerView` (pendant
+d'`openSource` : qui ouvre la source sait pourquoi elle ne joue pas). Il lit
+`radioListeningProvider` et `radioAntennaProvider`, par ordre de priorité :
+
+| état | ce qui s'affiche |
+| --- | --- |
+| abandon (`RadioPhase.failed`) | carte `AppErrorState` : la cause (`radioFailure*`), `radioGaveUpMessage`, « Réessayer » |
+| reprise (`retrying`) | pastille « Nouvelle tentative… », **sans** nommer la panne |
+| lecture (`playing`) | pastille « En direct » (`radioLive`) |
+| repos ou connexion, `isSilent` | pastille « Hors antenne » |
+| sinon | rien — le bouton de lecture montre déjà qu'il cherche |
+
+Trois règles à ne pas défaire :
+
+1. **`onAir` nul n'affiche rien** : seul `RadioAntenna.isSilent` (un `false`
+   reçu) dit « Hors antenne ». Et la lecture ou la reprise passent avant :
+   l'antenne a pu reprendre depuis la dernière lecture de la route.
+2. **Toute relance passe par `RadioListening.start`** : « Réessayer », et aussi
+   le bouton lecture de la fiche quand `openSource` est posé (`_togglePlayback`
+   délègue à l'appelant tout ce qui n'est pas une pause). L'ancienne scène
+   offrait « Reprendre » → `resume()`, c'est-à-dire une réouverture **sans
+   pré-vol**.
+3. ⚠️ **Après un abandon, `start` rouvre la source et oublie la cause**, même si
+   le lecteur tient l'antenne sans panne : la dernière tentative a pu effacer
+   l'erreur (`resume()` publie `isPlaying` + `isBuffering`) puis s'enliser. Avant
+   #125, le geste n'y faisait qu'un `play()` sur un tampon mort, et la cause
+   restait affichée — c'est le test « Réessayer relance par le pré-vol » de
+   `radio_screen_test.dart` qui l'a révélé.
+
+La médiathèque ne passe pas `stage:` et garde sa scène (« Lecture
+interrompue », « il faut du réseau »).
 
 #### L'URL vient d'une route publique, jamais d'une constante
 
@@ -656,11 +692,11 @@ qui relit l'adresse au passage.
 
 #### La cause se lit sur l'échec, jamais sur un test de connectivité
 
-`lib/data/radio/radio_failure.dart`. ⚠️ **Depuis 44092f0, ce classement ne
-s'affiche plus nulle part** : le bouton ne porte plus de phrase, et les clés qui
-les disaient sont retirées. Il vit encore dans `RadioStatus.failure`, que les
-tests lisent ; ce qui suit dit pourquoi il est découpé ainsi, le jour où une
-cause redeviendrait visible.
+`lib/data/radio/radio_failure.dart`. Le bouton de l'accueil ne porte plus de
+phrase depuis 44092f0 ; **la cause se lit sur `/radio`** depuis #125, à
+l'abandon seulement (`RadioStatus.failure` → `RadioAirStatus`). Pendant la
+reprise, l'écran dit qu'il réessaie sans nommer la panne : la nommer pendant
+qu'on la combat ferait renoncer l'auditeur avant l'application.
 
 DNS, socket refusée, délai dépassé → « vérifiez votre connexion » ; 404, 401,
 une page HTML là où on attend une playlist → « antenne indisponible ». Le partage se fait sur **l'existence d'une
