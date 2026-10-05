@@ -54,6 +54,13 @@ final class SyncedCollection<D> {
   final Object Function(Map<String, Object?> item) _idOf;
   final Insertable<D> Function(Map<String, Object?> item) _rowOf;
 
+  /// La table locale où se rangent les lignes de cette collection.
+  ///
+  /// Lue par le retour au premier plan (#138) : c'est la liste des tables dont
+  /// les flux de l'isolate principal doivent se relire, puisqu'un réveil de
+  /// fond a pu y écrire par une autre connexion.
+  TableInfo<Table, D> tableIn(SyncDao dao) => _local(dao).table;
+
   /// Applique une page du régime delta : ses lignes **et** son curseur, ou ni
   /// l'un ni l'autre.
   Future<void> applyPage(SyncDao dao, DeltaPage page) {

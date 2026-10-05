@@ -46,6 +46,7 @@ import '../data/local/vocabulary_dao.dart';
 import '../data/sync/sync_api.dart';
 import '../data/sync/sync_engine.dart';
 import '../data/sync/sync_scheduler.dart';
+import '../data/sync/synced_collection.dart';
 import 'branch_scope_providers.dart';
 
 /// **Le magasin local** — une seule instance pour toute l'application.
@@ -209,8 +210,21 @@ final syncEngineProvider = Provider<SyncEngine>(
 /// cycle de vie vit aussi longtemps que l'instance. Un planificateur recréé à
 /// chaque lecture se réabonnerait — ou pire, ne serait plus là pour entendre le
 /// retour au premier plan.
+///
+/// **Au retour au premier plan, les flux se relisent** (#138) : le réveil push
+/// d'une application en arrière-plan écrit par une **autre connexion** au même
+/// fichier, et avance le curseur — le cycle du retour n'a alors plus rien à
+/// écrire, et aucun flux de l'isolate principal ne serait prévenu. On marque
+/// donc comme modifiées les tables des collections synchronisées, plus l'écho
+/// optimiste du fil (`pending_group_messages`), que lisent les mêmes requêtes.
 final syncSchedulerProvider = Provider<SyncScheduler>((ref) {
-  final scheduler = SyncScheduler(ref.watch(syncEngineProvider).synchronize);
+  final database = ref.watch(appDatabaseProvider);
+  final scheduler = SyncScheduler(ref.watch(syncEngineProvider).synchronize)
+    ..onForeground = () => database.markTablesUpdated({
+          for (final collection in syncedCollections())
+            collection.tableIn(database.syncDao),
+          database.pendingGroupMessages,
+        });
   ref.onDispose(scheduler.dispose);
   return scheduler;
 });

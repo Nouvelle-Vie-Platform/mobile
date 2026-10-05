@@ -2182,7 +2182,7 @@ rend rien. Interroger `GoogleApiAvailability` demanderait une dépendance native
 plus pour une réponse qui mentirait encore. On tente, et l'absence de cible **est**
 la réponse — c'est exactement là que la tranche 4 se branchera.
 
-#### Huit points qui se ratent en silence
+#### Neuf points qui se ratent en silence
 
 1. **Le réveil d'une application fermée vit dans un autre isolate**, et rien de ce
    que `main()` a construit n'y existe. `push_background.dart` remonte tout, puis
@@ -2227,6 +2227,18 @@ la réponse — c'est exactement là que la tranche 4 se branchera.
    n'est à rappeler à la connexion** : le serveur rattache l'enregistrement au compte
    de lui-même (`ClaimDevicePushRegistrations`) et le rend à l'appareil à la
    déconnexion.
+9. **Une écriture faite par le réveil de fond n'est jamais vue par les flux de
+   l'isolate principal** (#138). Le réveil écrit par une **autre connexion** au
+   même fichier et avance le curseur ; drift ne prévient que les écouteurs de sa
+   propre connexion, et le cycle du retour n'a ensuite plus rien à écrire. D'où
+   `SyncScheduler.onForeground`, appelé au passage à `resumed` puis de nouveau à
+   la fin du cycle du retour, et branché par `syncSchedulerProvider` sur un
+   `markTablesUpdated` des tables synchronisées (+ `pending_group_messages`).
+   Toute table qu'un réveil de fond viendrait à écrire **hors** du registre
+   `synced_collection.dart` doit y être ajoutée. `shareAcrossIsolates` n'y peut
+   rien : le moteur Flutter de fond de FCM n'est pas relié par
+   `IsolateNameServer`. Voir `docs/messagerie-groupe.md` §9 et
+   `test/sync/foreground_foreign_writes_test.dart`.
 
 #### Le contrat de la route, et ses invariants
 
