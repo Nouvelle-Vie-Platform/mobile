@@ -70,6 +70,17 @@ const _screensBehindTheGuard = <String, String>{
   // membre à profil incomplet, qui plus est.
   'lib/widgets/profile_completion_banner.dart':
       'ne se rend que pour un utilisateur non nul',
+  // #145 (M6) : démarrer une discussion, créer un groupe, administrer.
+  'lib/screens/new_conversation_screen.dart': '/new-conversation est réservé',
+  'lib/screens/create_group_screen.dart': '/create-group est réservé',
+  // Les gestes de la fiche d'un groupe : montés par `/group-info`, réservé.
+  'lib/widgets/community/group_admin_section.dart':
+      'monté par /group-info, réservé',
+  // Le bouton « Nouvelle discussion » : monté par l'onglet Messages (onglet 2,
+  // remplacé par le formulaire sans session), et seulement si l'acteur est
+  // connu.
+  'lib/widgets/community/new_conversation_entry.dart':
+      'onglet 2, et seulement pour un acteur connu',
 };
 
 /// Les fichiers qui **nomment** les routes sans y naviguer.

@@ -1,4 +1,5 @@
 import '../../models/echanges_view.dart';
+import '../../models/group_management.dart';
 import '../local/group_dao.dart';
 import 'echanges_repository.dart';
 
@@ -77,7 +78,12 @@ class StoreEchangesRepository implements EchangesRepository {
     // `membersOf` lit `group_members` et `profiles`, et une page appliquée sur
     // l'une ou l'autre fait réémettre celle qui la lit. C'est ce qui garde la
     // fiche vivante sans combiner deux flux à la main.
-    return _dao.groupById(groupId).watchSingleOrNull().asyncMap((row) async {
+    //
+    // #145 : la fiche porte désormais les gestes d'administration, tirés de
+    // **mon rôle** — qui vit dans le roster. Elle réémet donc aussi quand seul
+    // le roster change (`groupDetailChanges`), et relit le groupe à chaque fois.
+    return _dao.groupDetailChanges().asyncMap((_) async {
+      final row = await _dao.groupById(groupId).getSingleOrNull();
       if (row == null) return null;
       final members = await _dao.membersOf(groupId).get();
       // `null` = je ne suis pas (ou plus) du roster. `_canWrite` le traite comme
@@ -98,6 +104,9 @@ class StoreEchangesRepository implements EchangesRepository {
         ),
         description: row.group.description,
         hostName: row.hostName,
+        joinPolicy: row.group.joinPolicy,
+        isActive: row.group.isActive,
+        myRole: myRole,
         members: [
           for (final member in members)
             GroupMemberView(
@@ -128,6 +137,20 @@ class StoreEchangesRepository implements EchangesRepository {
         directGroupId: direct,
       );
     });
+  }
+
+  @override
+  Stream<List<ContactView>> contacts() {
+    return _dao.contactsOf(userId).watch().map(
+          (rows) => [
+            for (final row in rows)
+              ContactView(
+                userId: row.userId,
+                displayName: row.displayName,
+                avatarUrl: row.avatarUrl,
+              ),
+          ],
+        );
   }
 
   @override

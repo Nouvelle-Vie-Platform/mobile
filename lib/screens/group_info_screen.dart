@@ -12,6 +12,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_avatar.dart';
 import '../widgets/app_card.dart';
+import '../widgets/community/group_admin_section.dart';
 import '../widgets/content_absence.dart';
 
 /// Fiche d'un groupe — **inspiration Telegram** (D15) : en-tête immersif (logo,
@@ -44,10 +45,13 @@ class GroupInfoScreen extends ConsumerWidget {
     final l = context.l10n;
     // L'acteur est lu ici et passé en clé : voir l'en-tête
     // d'`echanges_providers.dart`.
-    final detail = ref.watch(
-      groupDetailProvider(
-          (actor: ref.watch(echangesActorProvider), id: groupId)),
-    );
+    final me = ref.watch(echangesActorProvider);
+    final detail = ref.watch(groupDetailProvider((actor: me, id: groupId)));
+    // #145 : ma demande d'adhésion en attente, lue sur la rangée « à
+    // rejoindre » (la même source que la carte) — on ne la redemande pas.
+    final requestPending = (ref.watch(discoverGroupsProvider(me)).value ??
+            const <DiscoverGroupView>[])
+        .any((g) => g.groupId == groupId && g.requestStatus == 'pending');
 
     return detail.when(
       loading: () => const Scaffold(
@@ -70,16 +74,26 @@ class GroupInfoScreen extends ConsumerWidget {
             body: ContentAbsenceView(absence: ContentAbsence.notSynced),
           );
         }
-        return Scaffold(body: _Body(group: group));
+        return Scaffold(
+          body: _Body(group: group, me: me, requestPending: requestPending),
+        );
       },
     );
   }
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.group});
+  const _Body({
+    required this.group,
+    required this.me,
+    required this.requestPending,
+  });
 
   final GroupDetailView group;
+
+  /// Moi (#145) : ma ligne du roster n'offre ni « Message » ni retrait.
+  final String? me;
+  final bool requestPending;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +121,11 @@ class _Body extends StatelessWidget {
           _DescriptionCard(text: description),
           const SizedBox(height: AppSpacing.xl),
         ],
+        // #145 : rejoindre, demander, ajouter, quitter — selon mes droits ;
+        // puis la file des demandes, pour un animateur ou un modérateur.
+        GroupMembershipActions(group: group, requestPending: requestPending),
+        const SizedBox(height: AppSpacing.lg),
+        GroupJoinRequestsSection(group: group),
         // « Pas de contenu, pas de section » : un roster que la synchronisation
         // n'a pas encore ramené ne laisse pas un titre suivi du vide.
         if (group.members.isNotEmpty) ...[
@@ -124,7 +143,15 @@ class _Body extends StatelessWidget {
           for (final member in group.members) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: _MemberTile(member: member),
+              child: _MemberTile(
+                member: member,
+                // #145 : « Message », et les gestes d'administration.
+                actions: GroupMemberActions(
+                  group: group,
+                  member: member,
+                  me: me,
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
@@ -228,9 +255,12 @@ class _DescriptionCard extends StatelessWidget {
 /// avec un avatar neutre : la jointure est tolérante, et l'absence s'affiche comme
 /// une absence. Sa fiche reste atteignable — c'est un identifiant valide.
 class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.member});
+  const _MemberTile({required this.member, this.actions});
 
   final GroupMemberView member;
+
+  /// Les gestes sur ce membre (#145), posés avant le chevron.
+  final Widget? actions;
 
   @override
   Widget build(BuildContext context) {
@@ -266,6 +296,7 @@ class _MemberTile extends StatelessWidget {
                     .copyWith(color: palette.textSecondary),
               ),
             ),
+          if (actions != null) actions!,
           Icon(Icons.chevron_right, color: palette.textSecondary),
         ],
       ),

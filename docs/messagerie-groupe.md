@@ -433,3 +433,49 @@ résultats serveur **ne sont pas rangés** (ils feraient un trou d'historique) :
 ouvrir un résultat (`/group-chat/:id?message=<id>`) remonte le fil par pages
 (`ThreadMessageLocator`) jusqu'au message, l'amène à l'écran et le met en
 évidence (`MessageFocusHighlight`).
+
+## 12. Discussions et groupes gérés depuis l'application (#145, tranche M6)
+
+Décisions 8 et 9 du plan `server-portal/docs/messagerie-whatsapp-plan.md`.
+
+### Démarrer une discussion privée
+
+« Nouvelle discussion » (onglet Messages), « Message » sur la fiche d'un membre
+et sur chaque ligne du roster d'un groupe ouvrent `DirectChatScreen` **avec la
+personne**, pas avec un groupe :
+
+- le tête-à-tête existe → le fil ordinaire (`GroupChatScreen`) ;
+- il n'existe pas → un fil vide. Le premier message part par
+  `POST /groups/direct/:targetUserId/messages`, qui crée la discussion. Son
+  écho vit dans `pending_group_messages` sous la clé `direct:<userId>`
+  (`directThreadKey`), que l'envoyeur reconnaît pour choisir la route, et que
+  le renvoi automatique rejoue sous la **même** `clientMessageId`. La ligne
+  serveur, rangée dans le vrai fil, fait disparaître l'écho (réconciliation par
+  `clientMessageId`) ; l'écran devient le fil ordinaire dès que le groupe
+  direct est au magasin.
+
+Le sélecteur est **borné** à mes contacts de groupe (`GroupDao.contactsOf`) :
+les personnes avec qui je partage un groupe **qui n'est pas un tête-à-tête**.
+C'est la règle du serveur, qui refuse de *démarrer* sinon
+(`E_DIRECT_NO_SHARED_GROUP`, 403) ; un fil existant n'est jamais refusé.
+
+### Créer un groupe — responsables seulement
+
+`GET /groups/capabilities` (la policy même de `POST /groups`) dit si l'acteur
+peut créer, et avec quel ciblage. Sans la capacité, « Nouveau groupe »
+**n'existe pas**. La création porte un `id` frappé à l'ouverture de l'écran
+(UUIDv7) : un second appui rejoue la même création. Pas de photo : le serveur
+n'a ni colonne ni chemin de dépôt pour une image de groupe.
+
+### Rejoindre, quitter, administrer
+
+`GroupRights` (`lib/models/group_management.dart`) est le miroir des gardes
+ADR-0009 : rejoindre (`open`), demander (`request`), quitter (jamais un
+tête-à-tête), ajouter / retirer / traiter les demandes (`leader`,
+`moderator`), nommer ou retirer un modérateur (`leader`), jamais sur
+l'animateur ni sur soi. Les gestes attendent la réponse (pas d'écho) ; c'est le
+canal (`membership.changed`) ou le cycle lancé après le geste qui peint le
+résultat. Un 409 « déjà fait » se lit comme un succès.
+
+La file des demandes se lit au réseau (`GET /groups/:id/join-requests`) : la
+collection synchronisée ne porte pas le nom du demandeur.

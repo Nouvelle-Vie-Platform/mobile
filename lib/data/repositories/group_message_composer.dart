@@ -66,6 +66,39 @@ class GroupMessageComposer {
   /// entre « en cours » et « pas parti ».
   final Set<String> _inFlight = {};
 
+  /// **Les clés que le serveur a refusées pour de bon** (#145) : le renvoi
+  /// automatique les saute. Sans elles, un message refusé (plus membre, groupe
+  /// disparu, corps rejeté) repartirait à **chaque** cycle de synchronisation,
+  /// pour le même refus. L'écho reste « pas parti », avec réessayer et
+  /// supprimer : réessayer à la main retire la clé d'ici et tente sa chance.
+  ///
+  /// En mémoire, délibérément : la table `pending_group_messages` n'a pas de
+  /// colonne pour le dire, et M6 n'ouvre pas de palier de schéma. Une
+  /// application relancée fait donc **un** essai de plus par message refusé —
+  /// borné, là où le défaut était sans fin.
+  final Set<String> _refused = {};
+
+  /// Poste [pending] ; un refus définitif est retenu dans [_refused] et vaut
+  /// « pas parti ».
+  Future<bool> _post({
+    required String clientMessageId,
+    required String groupId,
+    required String body,
+    required DateTime createdAt,
+  }) async {
+    try {
+      return await _sender.send(
+        groupId: groupId,
+        body: body,
+        clientMessageId: clientMessageId,
+        clientCreatedAt: createdAt,
+      );
+    } on GroupMessageRefused {
+      _refused.add(clientMessageId);
+      return false;
+    }
+  }
+
   /// Envoie [body] dans [groupId]. Rend la **clé d'idempotence** du message, ou
   /// `null` si le texte était vide — un bouton d'envoi qui part sur une chaîne
   /// vide ne doit rien poser du tout.
@@ -89,11 +122,11 @@ class GroupMessageComposer {
     _inFlight.add(clientMessageId);
     final bool sent;
     try {
-      sent = await _sender.send(
+      sent = await _post(
+        clientMessageId: clientMessageId,
         groupId: groupId,
         body: trimmed,
-        clientMessageId: clientMessageId,
-        clientCreatedAt: createdAt,
+        createdAt: createdAt,
       );
     } finally {
       _inFlight.remove(clientMessageId);
@@ -123,6 +156,9 @@ class GroupMessageComposer {
   /// affiché pendant qu'on réessaie mentirait —, et redevient « pas parti » si
   /// l'essai échoue.
   Future<bool> retry(String clientMessageId) async {
+    // Le geste de la personne passe outre un refus définitif retenu : c'est elle
+    // qui décide de retenter, et un second refus la remettra de côté.
+    _refused.remove(clientMessageId);
     if (!await _resend(clientMessageId)) return false;
     await _resynchronize();
     await _dao.purgeReconciled();
@@ -136,12 +172,14 @@ class GroupMessageComposer {
   /// Sous la **même** clé, message par message et dans l'ordre de rédaction :
   /// jamais de doublon (piège 5 du plan). Les échos « en cours » sont rejoués
   /// aussi : une application tuée pendant l'envoi les aurait laissés tels quels
-  /// pour toujours. Ceux dont l'envoi d'origine tourne encore sont sautés.
+  /// pour toujours. Ceux dont l'envoi d'origine tourne encore sont sautés, et
+  /// ceux que le serveur a refusés pour de bon aussi (#145, [_refused]).
   ///
   /// Ne déclenche **pas** de cycle : il est lui-même appelé à la fin d'un cycle,
   /// et la ligne serveur arrive par le canal `users/{id}` — ou au cycle suivant.
   Future<void> resendUnconfirmed() async {
     for (final pending in await _dao.unconfirmedPending()) {
+      if (_refused.contains(pending.clientMessageId)) continue;
       await _resend(pending.clientMessageId);
     }
     await _dao.purgeReconciled();
@@ -154,11 +192,11 @@ class GroupMessageComposer {
       if (pending == null) return false;
 
       await _dao.markPendingSending(clientMessageId);
-      final sent = await _sender.send(
+      final sent = await _post(
+        clientMessageId: pending.clientMessageId,
         groupId: pending.groupId,
         body: pending.body,
-        clientMessageId: pending.clientMessageId,
-        clientCreatedAt: pending.createdAt,
+        createdAt: pending.createdAt,
       );
       if (!sent) await _dao.markPendingFailed(clientMessageId);
       return sent;
@@ -173,6 +211,8 @@ class GroupMessageComposer {
   /// reçu et le flux delta ramènera la ligne, auquel cas le message n'était pas à
   /// abandonner. Dans les deux cas, retirer l'écho est la seule chose honnête à
   /// faire localement.
-  Future<void> discard(String clientMessageId) =>
-      _dao.forgetPending(clientMessageId);
+  Future<void> discard(String clientMessageId) {
+    _refused.remove(clientMessageId);
+    return _dao.forgetPending(clientMessageId);
+  }
 }

@@ -1,4 +1,5 @@
 import '../../models/echanges_view.dart';
+import '../../models/group_management.dart';
 
 /// **Le contrat de lecture de la rubrique « Échanges »** (#96).
 ///
@@ -53,6 +54,12 @@ abstract interface class EchangesRepository {
 
   /// **La fiche d'une personne.** `null` quand `profiles` ne l'a pas livrée.
   Stream<MemberProfileView?> member(String userId);
+
+  /// **Mes contacts de groupe** (#145) : les personnes avec qui je partage un
+  /// groupe qui n'est pas un tête-à-tête — le sélecteur de « Nouvelle
+  /// discussion » et des membres d'un groupe qu'on crée. Borné comme le
+  /// serveur borne : jamais un annuaire.
+  Stream<List<ContactView>> contacts();
 }
 
 /// Double **en mémoire** du contrat, servi quand `AppEnv.useBackend` est faux et
@@ -77,7 +84,9 @@ class InMemoryEchangesRepository implements EchangesRepository {
     Map<String, List<GroupMessageView>> threads = const {},
     Map<String, GroupDetailView> groups = const {},
     Map<String, MemberProfileView> members = const {},
+    List<ContactView> contacts = const [],
   })  : _conversations = conversations,
+        _contacts = contacts,
         _discoverGroups = discoverGroups,
         _threads = threads,
         _groups = groups,
@@ -88,6 +97,7 @@ class InMemoryEchangesRepository implements EchangesRepository {
   final Map<String, List<GroupMessageView>> _threads;
   final Map<String, GroupDetailView> _groups;
   final Map<String, MemberProfileView> _members;
+  final List<ContactView> _contacts;
 
   @override
   Stream<List<ConversationView>> conversations() =>
@@ -120,4 +130,7 @@ class InMemoryEchangesRepository implements EchangesRepository {
   @override
   Stream<MemberProfileView?> member(String userId) =>
       Stream.value(_members[userId]);
+
+  @override
+  Stream<List<ContactView>> contacts() => Stream.value(_contacts);
 }

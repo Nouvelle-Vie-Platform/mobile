@@ -3129,6 +3129,198 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Faites glisser une discussion vers la gauche pour l\'archiver. Elle reste ici même quand un message arrive.'**
   String get chatArchivedEmpty;
+
+  /// Échanges, onglet Messages : bouton qui ouvre le sélecteur des personnes de mes groupes (#145)
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle discussion'**
+  String get m6NewConversation;
+
+  /// Échanges : bouton de création d'un groupe. N'existe que pour un responsable (droit de créer un groupe au RBAC, #145)
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau groupe'**
+  String get m6NewGroup;
+
+  /// Sélecteur de personnes : champ de recherche par nom
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un nom'**
+  String get m6SearchContacts;
+
+  /// Sélecteur de personnes vide : on n'écrit qu'aux personnes avec qui l'on partage un groupe (décision 8)
+  ///
+  /// In fr, this message translates to:
+  /// **'Personne à qui écrire pour l\'instant : vous pouvez écrire aux membres de vos groupes.'**
+  String get m6NoContacts;
+
+  /// Sélecteur de personnes : la recherche ne trouve personne
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun nom ne correspond.'**
+  String get m6NoContactMatch;
+
+  /// Discussion privée pas encore commencée : le premier message la crée (#145)
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez le premier message : la discussion commencera avec lui.'**
+  String get m6DirectFirstMessage;
+
+  /// Titre de l'écran de création d'un groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau groupe'**
+  String get m6CreateGroupTitle;
+
+  /// Création d'un groupe : champ du nom
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom du groupe'**
+  String get m6GroupNameLabel;
+
+  /// Création d'un groupe : le nom est trop court (le serveur exige 3 caractères)
+  ///
+  /// In fr, this message translates to:
+  /// **'Au moins 3 caractères'**
+  String get m6GroupNameTooShort;
+
+  /// Création d'un groupe : champ de description
+  ///
+  /// In fr, this message translates to:
+  /// **'Description (facultative)'**
+  String get m6GroupDescriptionLabel;
+
+  /// Création d'un groupe : titre de la liste des personnes à inscrire
+  ///
+  /// In fr, this message translates to:
+  /// **'Membres'**
+  String get m6GroupMembersLabel;
+
+  /// Création d'un groupe : bouton d'envoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer le groupe'**
+  String get m6CreateGroupSubmit;
+
+  /// Création d'un groupe : échec (réseau ou refus). Renvoyer le même geste ne crée pas de doublon
+  ///
+  /// In fr, this message translates to:
+  /// **'Le groupe n\'a pas été créé. Vérifiez votre connexion, puis touchez de nouveau « Créer le groupe ».'**
+  String get m6CreateGroupFailed;
+
+  /// Groupe ouvert : bouton pour y entrer
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoindre'**
+  String get m6Join;
+
+  /// Groupe sur demande : bouton pour envoyer une demande d'adhésion (carte de découverte et fiche du groupe)
+  ///
+  /// In fr, this message translates to:
+  /// **'Demander'**
+  String get m6RequestJoin;
+
+  /// Fiche d'un groupe : bouton pour en sortir. N'existe pas pour une discussion privée
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter le groupe'**
+  String get m6Leave;
+
+  /// Confirmation avant de quitter un groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne recevrez plus les messages de ce groupe.'**
+  String get m6LeaveConfirm;
+
+  /// Bouton d'annulation d'une confirmation
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get m6Cancel;
+
+  /// Fiche d'un groupe : bouton réservé aux animateurs et modérateurs
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter des membres'**
+  String get m6AddMembers;
+
+  /// Ajout de membres : bouton d'envoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter'**
+  String get m6AddMembersSubmit;
+
+  /// Ajout de membres : aucun contact hors du groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les personnes de vos groupes sont déjà membres.'**
+  String get m6NoOneToAdd;
+
+  /// Menu d'un membre : réservé à l'animateur du groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Nommer modérateur'**
+  String get m6MakeModerator;
+
+  /// Menu d'un modérateur : réservé à l'animateur du groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer le rôle de modérateur'**
+  String get m6RemoveModerator;
+
+  /// Menu d'un membre : réservé aux animateurs et modérateurs ; jamais sur l'animateur
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer du groupe'**
+  String get m6RemoveMember;
+
+  /// Confirmation avant de retirer quelqu'un d'un groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette personne ne recevra plus les messages du groupe.'**
+  String get m6RemoveConfirm;
+
+  /// Libellé d'accessibilité du menu d'un membre dans la fiche d'un groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'Options du membre'**
+  String get m6MemberOptions;
+
+  /// Fiche d'un groupe : section des demandes en attente, réservée aux animateurs et modérateurs
+  ///
+  /// In fr, this message translates to:
+  /// **'Demandes d\'adhésion'**
+  String get m6PendingRequests;
+
+  /// Demande d'adhésion : accepter
+  ///
+  /// In fr, this message translates to:
+  /// **'Accepter'**
+  String get m6Approve;
+
+  /// Demande d'adhésion : refuser
+  ///
+  /// In fr, this message translates to:
+  /// **'Refuser'**
+  String get m6Reject;
+
+  /// Demande d'adhésion d'un compte qui n'a jamais rempli son nom : jamais « Utilisateur inconnu »
+  ///
+  /// In fr, this message translates to:
+  /// **'Une personne sans nom renseigné'**
+  String get m6RequestUnnamed;
+
+  /// Geste de groupe refusé par le serveur (droits, politique du groupe)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce geste n\'est pas permis ici.'**
+  String get m6ActionRefused;
+
+  /// Geste de groupe sans réponse (réseau absent)
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de réponse du serveur. Vérifiez votre connexion.'**
+  String get m6ActionUnreachable;
 }
 
 class _AppLocalizationsDelegate

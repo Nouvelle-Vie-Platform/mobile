@@ -35,16 +35,14 @@ import '../widgets/content_absence.dart';
 /// partagées. Les pièces jointes n'existent nulle part, des deux côtés, et le PRD
 /// d'ADR-0006 les exclut de la V1.
 ///
-/// ## Le bouton « Message » n'existe que s'il y a une conversation à ouvrir
+/// ## Le bouton « Message » (#145, décision 8)
 ///
-/// `directGroupId` nul veut dire « je ne lui ai jamais écrit ». **Créer** le
-/// tête-à-tête passe par `POST /groups/direct/:targetUserId/messages` — un
-/// get-or-create paresseux côté serveur, qui exige d'envoyer le premier message
-/// avant que le groupe existe —, et c'est hors du périmètre de cette tranche : le
-/// contrat d'écriture qu'elle branche est `POST /groups/:id/messages`. Le bouton
-/// est donc **absent**, et non grisé : une option désactivée reste une option
-/// offerte, donc une promesse que personne ne tiendra (la règle du sélecteur de
-/// canaux de connexion, #83).
+/// Il ouvre le tête-à-tête **qu'il existe ou non** : `directGroupId` connu → le
+/// fil ordinaire ; inconnu → l'écran du premier message (`DirectChatScreen`),
+/// dont l'envoi crée la discussion (`POST /groups/direct/:targetUserId/messages`).
+/// La fiche d'une personne n'est atteignable que si `profiles` l'a livrée,
+/// c'est-à-dire pour une co-membre — exactement ce que le serveur exige pour
+/// démarrer. Jamais sur **ma** fiche : on ne s'écrit pas à soi-même.
 class MemberProfileScreen extends ConsumerWidget {
   const MemberProfileScreen({super.key, required this.memberId});
 
@@ -82,16 +80,19 @@ class MemberProfileScreen extends ConsumerWidget {
             body: ContentAbsenceView(absence: ContentAbsence.notSynced),
           );
         }
-        return Scaffold(body: _Body(member: member));
+        return Scaffold(
+          body: _Body(member: member, me: ref.watch(echangesActorProvider)),
+        );
       },
     );
   }
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.member});
+  const _Body({required this.member, required this.me});
 
   final MemberProfileView member;
+  final String? me;
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +104,7 @@ class _Body extends StatelessWidget {
       children: [
         _Header(member: member),
         const SizedBox(height: AppSpacing.lg),
-        if (directGroupId != null)
+        if (directGroupId != null || (me != null && member.userId != me))
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: AppButton(
@@ -111,10 +112,15 @@ class _Body extends StatelessWidget {
               icon: Icons.chat_bubble_outline,
               // **L'identifiant du groupe, jamais un objet** : c'est une vraie
               // conversation du magasin, pas une coquille fabriquée pour l'écran.
-              onPressed: () => context.pushNamed(
-                AppRoute.groupChat,
-                pathParameters: {'id': directGroupId},
-              ),
+              onPressed: () => directGroupId != null
+                  ? context.pushNamed(
+                      AppRoute.groupChat,
+                      pathParameters: {'id': directGroupId},
+                    )
+                  : context.pushNamed(
+                      AppRoute.directChat,
+                      pathParameters: {'id': member.userId},
+                    ),
             ),
           ),
         const SizedBox(height: AppSpacing.xxl),

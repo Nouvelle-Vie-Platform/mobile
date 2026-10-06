@@ -2202,6 +2202,20 @@ envoi de lecture inerte et aucun historique (paramètres nommés `channel:`,
   neuf — rien n'est invalidé. Les écrans lisent `echangesActorProvider` et le passent ;
   `test/screens/guest_tabs_test.dart` verrouille les deux gestes qui l'avaient révélé.
 
+#### Discussions et groupes gérés depuis l'application (#145, M6)
+
+Voir `docs/messagerie-groupe.md` §12. En bref : « Message » et « Nouvelle
+discussion » ouvrent `DirectChatScreen` **avec une personne** ; sans fil
+existant, l'écho du premier message vit sous la clé `direct:<userId>`
+(`directThreadKey`) et l'envoyeur poste à `POST /groups/direct/:id/messages`.
+Le sélecteur est borné à `GroupDao.contactsOf` (un groupe commun **hors
+tête-à-tête**, la règle du serveur). Les gestes d'adhésion et
+d'administration passent par `GroupAdminClient` / `groupActionsProvider`
+(pas d'écho : la réponse, puis le magasin) ; les droits par `GroupRights`
+(`lib/models/group_management.dart`), miroir d'ADR-0009. « Nouveau groupe »
+n'existe que si `GET /groups/capabilities` le permet. `pumpScreen` /
+`pumpRouter` posent un client inerte (paramètre nommé `groupAdmin:`).
+
 ### Le réveil push (#97) — `lib/data/push/`
 
 PRD autoritaire : `server-portal/docs/prd/notifications-push.md` (D4, D6, D7, D8 et

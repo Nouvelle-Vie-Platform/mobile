@@ -1715,4 +1715,106 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatArchivedEmpty =>
       'Swipe a chat to the left to archive it. It stays here even when a new message arrives.';
+
+  @override
+  String get m6NewConversation => 'New chat';
+
+  @override
+  String get m6NewGroup => 'New group';
+
+  @override
+  String get m6SearchContacts => 'Search for a name';
+
+  @override
+  String get m6NoContacts =>
+      'Nobody to write to yet: you can write to the members of your groups.';
+
+  @override
+  String get m6NoContactMatch => 'No name matches.';
+
+  @override
+  String get m6DirectFirstMessage =>
+      'Write the first message: the chat starts with it.';
+
+  @override
+  String get m6CreateGroupTitle => 'New group';
+
+  @override
+  String get m6GroupNameLabel => 'Group name';
+
+  @override
+  String get m6GroupNameTooShort => 'At least 3 characters';
+
+  @override
+  String get m6GroupDescriptionLabel => 'Description (optional)';
+
+  @override
+  String get m6GroupMembersLabel => 'Members';
+
+  @override
+  String get m6CreateGroupSubmit => 'Create group';
+
+  @override
+  String get m6CreateGroupFailed =>
+      'The group was not created. Check your connection, then tap “Create group” again.';
+
+  @override
+  String get m6Join => 'Join';
+
+  @override
+  String get m6RequestJoin => 'Ask to join';
+
+  @override
+  String get m6Leave => 'Leave group';
+
+  @override
+  String get m6LeaveConfirm =>
+      'You will no longer receive this group\'s messages.';
+
+  @override
+  String get m6Cancel => 'Cancel';
+
+  @override
+  String get m6AddMembers => 'Add members';
+
+  @override
+  String get m6AddMembersSubmit => 'Add';
+
+  @override
+  String get m6NoOneToAdd => 'Everyone from your groups is already a member.';
+
+  @override
+  String get m6MakeModerator => 'Make moderator';
+
+  @override
+  String get m6RemoveModerator => 'Remove moderator role';
+
+  @override
+  String get m6RemoveMember => 'Remove from group';
+
+  @override
+  String get m6RemoveConfirm =>
+      'This person will no longer receive the group\'s messages.';
+
+  @override
+  String get m6MemberOptions => 'Member options';
+
+  @override
+  String get m6PendingRequests => 'Join requests';
+
+  @override
+  String get m6Approve => 'Accept';
+
+  @override
+  String get m6Reject => 'Decline';
+
+  @override
+  String get m6RequestUnnamed => 'Someone without a name';
+
+  @override
+  String get m6ActionRefused => 'This action isn\'t allowed here.';
+
+  @override
+  String get m6ActionUnreachable =>
+      'No answer from the server. Check your connection.';
 }

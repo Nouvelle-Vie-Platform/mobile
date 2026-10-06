@@ -16,8 +16,10 @@ import '../widgets/app_error_state.dart';
 import '../widgets/community/chat_list_header.dart';
 import '../widgets/community/community_header.dart';
 import '../widgets/community/join_group_card.dart';
+import '../widgets/community/join_from_card.dart';
 import '../widgets/community/my_requests_tab.dart';
 import '../widgets/community/organizable_conversation_tile.dart';
+import '../widgets/community/new_conversation_entry.dart';
 
 /// Page **« Échanges »** : deux onglets, **« Messages »** puis **« Requêtes »**
 /// (#148), sous le **bandeau diagonal** ([CommunityHeader]) qui porte leur barre.
@@ -156,8 +158,12 @@ class EchangesMessagesTab extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
+                  // #145 : démarrer une discussion (et, pour un responsable,
+                  // créer un groupe). Seulement pour un membre identifié.
+                  const NewConversationEntry(),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
-                ..._discoverSection(context, toJoin),
+                ..._discoverSection(context, ref, toJoin),
                 ..._conversationsSection(ref, context, me, conversations),
               ],
             ),
@@ -175,6 +181,7 @@ class EchangesMessagesTab extends ConsumerWidget {
   /// panne » là où seule une suggestion manque.
   List<Widget> _discoverSection(
     BuildContext context,
+    WidgetRef ref,
     AsyncValue<List<DiscoverGroupView>> toJoin,
   ) {
     final groups = toJoin.value ?? const <DiscoverGroupView>[];
@@ -195,6 +202,8 @@ class EchangesMessagesTab extends ConsumerWidget {
           separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
           itemBuilder: (context, i) => JoinGroupCard(
             group: groups[i],
+            // #145 : rejoindre (ouvert) ou demander (sur demande), d'ici.
+            onJoin: () => joinFromCard(context, ref, groups[i]),
             // Le tap ouvre la **fiche du groupe**, et non plus le profil de
             // l'animateur : on découvre un groupe, on ne découvre pas une
             // personne. La fiche porte la description, l'effectif et l'animateur
