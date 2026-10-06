@@ -405,6 +405,37 @@ void main() {
       // Une seule lettre ne cherche pas.
       expect(await search.searchLocal('a'), isEmpty);
     });
+
+    test(
+        'M2 (#141) : un message supprimé pour moi ne revient pas par la '
+        'recherche, ni dans le compte du fil', () async {
+      await seedMyGroup();
+      final search = StoreChatSearchRepository(dao, userId: kMeId);
+      final memberId = memberMessagePayload['id']! as String;
+      expect(
+        (await search.searchLocal('répétition')).map((h) => h.messageId),
+        [memberId],
+      );
+
+      Future<void> hide(int id, Object? messageId) =>
+          writer.store(SyncCollectionKey.groupMessageHides, {
+            'id': id,
+            'groupId': kGroupId,
+            'messageId': messageId,
+            'createdAt': '2026-09-03T12:00:00.000Z',
+          });
+
+      // Le mien (10:32), masqué : le message trouvé remonte d'un cran, comme
+      // dans le fil qui ne montre plus le mien.
+      expect(await dao.positionFromNewest(kGroupId, memberId), 3);
+      await hide(1, myMessagePayload['id']);
+      expect(await dao.positionFromNewest(kGroupId, memberId), 2);
+
+      // Le message trouvé, masqué : ni dans la recherche, ni dans le fil.
+      await hide(2, memberId);
+      expect(await search.searchLocal('répétition'), isEmpty);
+      expect(await dao.positionFromNewest(kGroupId, memberId), isNull);
+    });
   });
 
   group('Retrouver un message dans son fil', () {
