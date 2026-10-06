@@ -85,6 +85,7 @@ class GroupMessageComposer {
     required String groupId,
     required String body,
     required DateTime createdAt,
+    String? replyToMessageId,
   }) async {
     try {
       return await _sender.send(
@@ -92,6 +93,7 @@ class GroupMessageComposer {
         body: body,
         clientMessageId: clientMessageId,
         clientCreatedAt: createdAt,
+        replyToMessageId: replyToMessageId,
       );
     } on GroupMessageRefused {
       _refused.add(clientMessageId);
@@ -105,7 +107,14 @@ class GroupMessageComposer {
   ///
   /// La clé est rendue plutôt que gardée : c'est elle que « réessayer » et
   /// « abandonner » désignent.
-  Future<String?> send({required String groupId, required String body}) async {
+  ///
+  /// [replyToMessageId] (M2, #141) : le message auquel celui-ci **répond**. Il
+  /// est gardé avec l'écho, et repart à chaque renvoi.
+  Future<String?> send({
+    required String groupId,
+    required String body,
+    String? replyToMessageId,
+  }) async {
     final trimmed = body.trim();
     if (trimmed.isEmpty) return null;
 
@@ -117,6 +126,7 @@ class GroupMessageComposer {
       groupId: groupId,
       body: trimmed,
       createdAt: createdAt,
+      replyToMessageId: replyToMessageId,
     );
 
     _inFlight.add(clientMessageId);
@@ -127,6 +137,7 @@ class GroupMessageComposer {
         groupId: groupId,
         body: trimmed,
         createdAt: createdAt,
+        replyToMessageId: replyToMessageId,
       );
     } finally {
       _inFlight.remove(clientMessageId);
@@ -197,6 +208,7 @@ class GroupMessageComposer {
         groupId: pending.groupId,
         body: pending.body,
         createdAt: pending.createdAt,
+        replyToMessageId: pending.replyToMessageId,
       );
       if (!sent) await _dao.markPendingFailed(clientMessageId);
       return sent;

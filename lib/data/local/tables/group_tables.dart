@@ -287,6 +287,38 @@ class GroupMessages extends Table with SyncedRow {
   /// une table locale n'a pas à supposer ce qu'une autre base garantit.
   DateTimeColumn get createdAt => dateTime().nullable()();
 
+  // ── Tranche M2 (#141) : supprimé, modifié, transféré, réponse ──────────────
+
+  /// **Le tombstone est gardé** depuis M2 : un message supprimé pour tous ne
+  /// quitte plus le magasin, il se peint « Ce message a été supprimé » à sa
+  /// place (le serveur ne sert plus son contenu). Voir `keepsTombstones` dans
+  /// `synced_collection.dart`.
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  /// Dernière modification par l'auteur — la bulle porte « Modifié ».
+  DateTimeColumn get editedAt => dateTime().nullable()();
+
+  /// Une copie **transférée** — la bulle porte « Transféré ».
+  BoolColumn get isForwarded => boolean().withDefault(const Constant(false))();
+
+  /// **La citation**, photographiée par le serveur sur la réponse (`replyTo`) :
+  /// de quoi la peindre sans le message d'origine en magasin. Le message cité.
+  TextColumn get replyToMessageId => text().nullable()();
+
+  /// L'auteur cité — le nom se joint sur `profiles`, comme celui d'une bulle.
+  TextColumn get replyToAuthorId => text().nullable()();
+
+  /// L'extrait du texte cité (borné par le serveur). Nul pour un média sans
+  /// légende, ou une origine supprimée.
+  TextColumn get replyToExcerpt => text().nullable()();
+
+  /// La forme du média cité (`audio`, `image`…), stockée telle quelle.
+  TextColumn get replyToMediaKind => text().nullable()();
+
+  /// L'origine a été supprimée pour tous : la citation dit « Message supprimé ».
+  BoolColumn get replyToDeleted =>
+      boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -335,6 +367,10 @@ class PendingGroupMessages extends Table {
   /// parlé. Il est posé sur **tout** refus — réseau, 401, 403, 422, 5xx — parce
   /// que de l'écran, tous disent la même chose : « ce message n'est pas parti ».
   BoolColumn get failed => boolean().withDefault(const Constant(false))();
+
+  /// **Répondre** (M2, #141) : le message cité, repassé au renvoi. L'écho peint
+  /// sa citation en joignant le message d'origine en magasin.
+  TextColumn get replyToMessageId => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {clientMessageId};
@@ -514,4 +550,56 @@ class GroupMutes extends Table with SyncedRow {
 
   @override
   Set<Column<Object>> get primaryKey => {groupId};
+}
+
+/// Collection `group_message_reactions` (partition `branch`, périmètre réel =
+/// l'appartenance — tranche M2, #141) : **la** réaction d'une personne à un
+/// message, une ligne par personne et par message.
+///
+/// **Avec tombstone** : retirer sa réaction pose `deletedAt`, et la ligne
+/// quitte le magasin par le chemin commun. Changer d'emoji réécrit la même ligne
+/// (même `id`). L'agrégat sous la bulle se calcule **à la lecture**
+/// (`GroupDao.threadOf`).
+@DataClassName('GroupMessageReactionRow')
+class GroupMessageReactions extends Table with SyncedRow {
+  @override
+  String get tableName => 'group_message_reactions';
+
+  /// UUIDv7 serveur.
+  TextColumn get id => text()();
+  TextColumn get groupId => text()();
+  TextColumn get messageId => text()();
+  TextColumn get userId => text()();
+
+  /// Un emoji, stocké tel quel.
+  TextColumn get emoji => text()();
+
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Collection `group_message_hides` (partition `private` — tranche M2, #141) :
+/// les messages que **j'ai** supprimés pour moi. Le fil ne les montre plus, sur
+/// aucun de mes appareils ; personne d'autre ne le sait.
+///
+/// **Rangée par `messageId`** — c'est ce que le fil interroge. L'`id` serveur
+/// (un entier) est gardé, parce qu'on stocke ce que le serveur envoie. Sans
+/// tombstone : on ne « démasque » pas.
+@DataClassName('GroupMessageHideRow')
+class GroupMessageHides extends Table with SyncedRow {
+  @override
+  String get tableName => 'group_message_hides';
+
+  TextColumn get messageId => text()();
+  TextColumn get groupId => text()();
+
+  /// L'identifiant serveur du masquage. Non lu.
+  IntColumn get hideId => integer().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {messageId};
 }

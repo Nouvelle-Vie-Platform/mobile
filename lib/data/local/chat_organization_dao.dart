@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.dart';
+import 'group_dao.dart';
 import 'tables/group_tables.dart';
 
 part 'chat_organization_dao.g.dart';
@@ -28,6 +29,8 @@ part 'chat_organization_dao.g.dart';
     Profiles,
     GroupArrangements,
     PendingGroupArrangements,
+    // M2 (#141) : mes « supprimé pour moi » ne reviennent pas par la recherche.
+    GroupMessageHides,
   ],
 )
 class ChatOrganizationDao extends DatabaseAccessor<AppDatabase>
@@ -137,13 +140,16 @@ WHERE me.user_id = ?1
   /// `LIKE` de la requête sont échappés : chercher « 100% » cherche ces quatre
   /// caractères. ⚠️ Le `LIKE` de SQLite n'ignore la casse que pour l'ASCII :
   /// « école » ne trouve pas « École ». La route serveur (`ILIKE`) le fait.
+  ///
+  /// Ni un message **supprimé pour tous** (le tombstone gardé), ni un message
+  /// **supprimé pour moi** (M2, #141 — `GroupDao.notHiddenForMe`).
   Future<List<MessageSearchRecord>> searchMessages(
     String userId,
     String query, {
     int limit = 50,
   }) {
     return customSelect(
-      r'''
+      '''
 SELECT
   m.id          AS message_id,
   m.group_id    AS group_id,
@@ -156,7 +162,9 @@ JOIN group_members AS me ON me.group_id = m.group_id AND me.user_id = ?1
 LEFT JOIN profiles AS author ON author.id = m.author_id
 WHERE m.is_system = 0
   AND m.body IS NOT NULL
-  AND m.body LIKE ?2 ESCAPE '\'
+  AND m.body LIKE ?2 ESCAPE '\\'
+  AND m.deleted_at IS NULL
+  AND ${GroupDao.notHiddenForMe('m')}
 ORDER BY m.created_at DESC, m.id DESC
 LIMIT ?3
 ''',
@@ -165,7 +173,7 @@ LIMIT ?3
         Variable<String>('%${escapeLikePattern(query)}%'),
         Variable<int>(limit),
       ],
-      readsFrom: {groupMessages, groupMembers, profiles},
+      readsFrom: {groupMessages, groupMembers, profiles, groupMessageHides},
     )
         .map(
           (row) => MessageSearchRecord(
@@ -188,22 +196,26 @@ LIMIT ?3
   /// la fenêtre que le fil doit ouvrir pour le contenir. `null` si le magasin
   /// ne l'a pas (pas encore chargé, ou supprimé).
   ///
-  /// L'ordre est celui de `GroupDao.threadOf` : `(created_at, id)`. Les échos
+  /// L'ordre est celui de `GroupDao.threadOf` : `(created_at, id)`, et comme
+  /// lui sans mes « supprimé pour moi » (M2, #141), qui ne sont pas dans le
+  /// fil. Les échos
   /// en attente comptent aussi — ils sont au bas du fil, donc dans la fenêtre.
   Future<int?> positionFromNewest(String groupId, String messageId) async {
     final row = await customSelect(
       '''
 SELECT
-  EXISTS (SELECT 1 FROM group_messages WHERE id = ?2 AND group_id = ?1) AS found,
+  EXISTS (SELECT 1 FROM group_messages AS f
+    WHERE f.id = ?2 AND f.group_id = ?1 AND ${GroupDao.notHiddenForMe('f')}) AS found,
   (SELECT COUNT(*) FROM group_messages AS m, group_messages AS t
     WHERE t.id = ?2 AND t.group_id = ?1 AND m.group_id = ?1
+      AND ${GroupDao.notHiddenForMe('m')}
       AND (m.created_at > t.created_at
            OR (m.created_at = t.created_at AND m.id >= t.id)))
   + (SELECT COUNT(*) FROM pending_group_messages AS p WHERE p.group_id = ?1)
   AS position
 ''',
       variables: [Variable<String>(groupId), Variable<String>(messageId)],
-      readsFrom: {groupMessages, pendingGroupMessages},
+      readsFrom: {groupMessages, pendingGroupMessages, groupMessageHides},
     ).getSingle();
     if (!row.read<bool>('found')) return null;
     return row.read<int>('position');

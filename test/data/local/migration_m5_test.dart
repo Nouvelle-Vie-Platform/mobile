@@ -59,10 +59,17 @@ void main() {
     addTearDown(db.close);
     await verifier.migrateAndValidate(db, 24);
 
-    expect((await db.select(db.groupMessages).get()).single.body, 'Amen');
+    expect(await _onlyMessageBody(db), 'Amen');
     expect((await db.groupDao.readOf('g-1'))?.lastReadMessageId, 'm-1');
     expect(await db.syncDao.cursorFor('group_messages'), 'un-curseur-opaque');
     expect(await db.select(db.groupMutes).get(), isEmpty);
     expect(await db.syncDao.cursorFor('group_mutes'), isNull);
   });
 }
+
+/// Le corps de l'unique message du fil, lu **en SQL brut** : une migration de
+/// test vers une version antérieure à M2 (#141) laisse `group_messages` sans les
+/// colonnes de M2, que la lecture typée exige (`is_forwarded` non nul).
+Future<String?> _onlyMessageBody(AppDatabase db) async =>
+    (await db.customSelect('SELECT body FROM group_messages').getSingle())
+        .read<String?>('body');

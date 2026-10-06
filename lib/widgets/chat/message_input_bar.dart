@@ -18,11 +18,16 @@ class MessageInputBar extends StatelessWidget {
     required this.hintText,
     this.controller,
     this.onSend,
+    this.focusNode,
   });
 
   final String hintText;
   final TextEditingController? controller;
   final ValueChanged<String>? onSend;
+
+  /// Le focus du champ, pour que l'écran l'ouvre (clavier) — M2 : glisser pour
+  /// répondre place le curseur dans le champ, comme WhatsApp.
+  final FocusNode? focusNode;
 
   void _send() {
     final text = controller?.text.trim() ?? '';
@@ -58,6 +63,7 @@ class MessageInputBar extends StatelessWidget {
                     Expanded(
                       child: TextField(
                         controller: controller,
+                        focusNode: focusNode,
                         cursorColor: AppColors.secondary,
                         textCapitalization: TextCapitalization.sentences,
                         onSubmitted: (_) => _send(),

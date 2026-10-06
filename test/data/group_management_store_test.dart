@@ -37,6 +37,7 @@ class _RecordingSender implements GroupMessageSender {
     required String body,
     required String clientMessageId,
     required DateTime clientCreatedAt,
+    String? replyToMessageId,
   }) async {
     threadKeys.add(groupId);
     return true;

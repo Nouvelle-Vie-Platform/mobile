@@ -41,6 +41,7 @@ import '../data/local/sync_dao.dart' show SyncCollectionKey;
 import '../data/messaging/group_history.dart';
 import '../data/messaging/group_mute_setter.dart';
 import '../data/messaging/group_read_advancer.dart';
+import '../data/messaging/message_gestures.dart';
 import '../data/messaging/messaging_channel.dart';
 import '../data/messaging/messaging_link.dart';
 import '../data/messaging/messaging_store_writer.dart';
@@ -334,3 +335,27 @@ final notificationReconcilerProvider = Provider<Object?>((ref) {
 
 /// Ce que le menu du fil lit de ma sourdine — sans le reste de la ligne.
 typedef GroupMuteRowView = ({DateTime? mutedUntil, bool mutedForever});
+
+/// **Les gestes sur un message** (M2, #141) — réagir, modifier, supprimer pour
+/// moi ou pour tous, transférer. La ligne que rend le serveur se range aussitôt
+/// par le même écrivain que le canal. Inerte sans backend.
+final messageGesturesProvider = Provider<MessageGestures>((ref) {
+  final writer = ref.watch(messagingStoreWriterProvider);
+  return MessageGestures(
+    sender: AppEnv.useBackend
+        ? HttpMessageGestureSender()
+        : const InertMessageGestureSender(),
+    store: (collection, row) async {
+      await writer.store(collection, row);
+    },
+  );
+});
+
+/// **Qui a réagi à un message** (M2, #141) — la feuille ouverte en touchant
+/// l'agrégat sous une bulle.
+final messageReactorsProvider =
+    StreamProvider.family<List<ReactorView>, EchangesKey>(
+  (ref, key) =>
+      ref.watch(echangesRepositoryProvider(key.actor)).reactors(key.id),
+  retry: _noAutomaticRetry,
+);

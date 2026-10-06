@@ -53,6 +53,7 @@ abstract interface class GroupMessageSender {
     required String body,
     required String clientMessageId,
     required DateTime clientCreatedAt,
+    String? replyToMessageId,
   });
 }
 
@@ -161,6 +162,7 @@ class HttpGroupMessageSender implements GroupMessageSender {
     required String body,
     required String clientMessageId,
     required DateTime clientCreatedAt,
+    String? replyToMessageId,
   }) async {
     final trimmed = body.trim();
     if (trimmed.isEmpty) return false;
@@ -174,6 +176,8 @@ class HttpGroupMessageSender implements GroupMessageSender {
               : trimmed,
           'clientMessageId': clientMessageId,
           'clientCreatedAt': clientCreatedAt.toUtc().toIso8601String(),
+          // **Répondre** (M2, #141) : le serveur photographie la citation.
+          if (replyToMessageId != null) 'replyToMessageId': replyToMessageId,
         },
       );
       return true;
@@ -204,6 +208,7 @@ class InertGroupMessageSender implements GroupMessageSender {
     required String body,
     required String clientMessageId,
     required DateTime clientCreatedAt,
+    String? replyToMessageId,
   }) async =>
       true;
 }

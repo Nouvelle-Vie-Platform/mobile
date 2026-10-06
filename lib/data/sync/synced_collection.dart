@@ -28,9 +28,19 @@ final class SyncedCollection<D> {
     required LocalCollection<D> Function(SyncDao dao) local,
     required Object Function(Map<String, Object?> item) idOf,
     required Insertable<D> Function(Map<String, Object?> item) rowOf,
+    this.keepsTombstones = false,
   })  : _local = local,
         _idOf = idOf,
         _rowOf = rowOf;
+
+  /// **Le tombstone est-il gardé comme une ligne ?** (M2, #141)
+  ///
+  /// Faux pour toutes les collections sauf une : un tombstone y **retire** la
+  /// ligne. `group_messages` le garde, parce qu'un message supprimé pour tous
+  /// doit continuer de **paraître** dans le fil — « Ce message a été supprimé »
+  /// à sa place, comme WhatsApp — et que le serveur, depuis M2, ne sert plus
+  /// aucun contenu sur un tombstone. Sa `rowOf` lit alors `deletedAt`.
+  final bool keepsTombstones;
 
   /// Clé de collection du protocole (`teachings`, `teaching_types`, …).
   ///
@@ -119,7 +129,7 @@ final class SyncedCollection<D> {
     final upserts = <Insertable<D>>[];
     final deletedIds = <Object>[];
     for (final item in items) {
-      if (readsAsRetraction(item)) {
+      if (!keepsTombstones && readsAsRetraction(item)) {
         deletedIds.add(_idOf(item));
       } else {
         upserts.add(_rowOf(item));
@@ -477,6 +487,23 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.groupMessagesCollection,
         idOf: (item) => contentId(SyncCollectionKey.groupMessages, item),
         rowOf: groupMessageRowOf,
+        // **M2 (#141)** : le tombstone reste, il se peint « supprimé ».
+        keepsTombstones: true,
+      ),
+      // **Les réactions** (M2, #141) : après le fil, qu'elles désignent.
+      SyncedCollection<GroupMessageReactionRow>(
+        key: SyncCollectionKey.groupMessageReactions,
+        local: (dao) => dao.groupMessageReactionsCollection,
+        idOf: (item) =>
+            contentId(SyncCollectionKey.groupMessageReactions, item),
+        rowOf: groupMessageReactionRowOf,
+      ),
+      // **Mes « supprimé pour moi »** (M2, #141) : privée, rangée par message.
+      SyncedCollection<GroupMessageHideRow>(
+        key: SyncCollectionKey.groupMessageHides,
+        local: (dao) => dao.groupMessageHidesCollection,
+        idOf: groupMessageHideKey,
+        rowOf: groupMessageHideRowOf,
       ),
       // **L'accusé de mes messages** (#142, M3) : après le fil — une coche n'a
       // de sens que sur un message déjà là. Rangé par l'identifiant du message.

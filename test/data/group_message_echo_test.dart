@@ -34,6 +34,7 @@ class _ScriptedSender implements GroupMessageSender {
     required String body,
     required String clientMessageId,
     required DateTime clientCreatedAt,
+    String? replyToMessageId,
   }) async {
     posted.add({
       'groupId': groupId,

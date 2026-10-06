@@ -60,6 +60,17 @@ abstract interface class EchangesRepository {
   /// discussion » et des membres d'un groupe qu'on crée. Borné comme le
   /// serveur borne : jamais un annuaire.
   Stream<List<ContactView>> contacts();
+
+  /// **Qui a réagi à ce message** (M2, #141), nommé quand le magasin le peut.
+  Stream<List<ReactorView>> reactors(String messageId);
+
+  /// **Combien de messages du fil sont plus récents que [messageId]**, ou
+  /// `null` si le magasin ne l'a pas (M2, #141) — pour défiler jusqu'au message
+  /// cité.
+  Future<int?> newerThan(String groupId, String messageId);
+
+  /// **Le plus ancien message du fil en magasin**, ou `null` (M2, #141).
+  Future<String?> oldestMessageId(String groupId);
 }
 
 /// Double **en mémoire** du contrat, servi quand `AppEnv.useBackend` est faux et
@@ -85,12 +96,14 @@ class InMemoryEchangesRepository implements EchangesRepository {
     Map<String, GroupDetailView> groups = const {},
     Map<String, MemberProfileView> members = const {},
     List<ContactView> contacts = const [],
+    Map<String, List<ReactorView>> reactors = const {},
   })  : _conversations = conversations,
         _contacts = contacts,
         _discoverGroups = discoverGroups,
         _threads = threads,
         _groups = groups,
-        _members = members;
+        _members = members,
+        _reactors = reactors;
 
   final List<ConversationView> _conversations;
   final List<DiscoverGroupView> _discoverGroups;
@@ -98,6 +111,7 @@ class InMemoryEchangesRepository implements EchangesRepository {
   final Map<String, GroupDetailView> _groups;
   final Map<String, MemberProfileView> _members;
   final List<ContactView> _contacts;
+  final Map<String, List<ReactorView>> _reactors;
 
   @override
   Stream<List<ConversationView>> conversations() =>
@@ -133,4 +147,21 @@ class InMemoryEchangesRepository implements EchangesRepository {
 
   @override
   Stream<List<ContactView>> contacts() => Stream.value(_contacts);
+
+  @override
+  Stream<List<ReactorView>> reactors(String messageId) =>
+      Stream.value(_reactors[messageId] ?? const []);
+
+  @override
+  Future<int?> newerThan(String groupId, String messageId) async {
+    final all = _threads[groupId] ?? const <GroupMessageView>[];
+    final index = all.indexWhere((m) => m.id == messageId);
+    return index < 0 ? null : all.length - 1 - index;
+  }
+
+  @override
+  Future<String?> oldestMessageId(String groupId) async {
+    final all = _threads[groupId] ?? const <GroupMessageView>[];
+    return all.isEmpty ? null : all.first.id;
+  }
 }

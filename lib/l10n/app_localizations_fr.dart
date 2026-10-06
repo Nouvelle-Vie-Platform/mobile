@@ -2018,4 +2018,107 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get conversationMuted => 'En sourdine';
+
+  @override
+  String get chatMessageDeleted => 'Ce message a été supprimé';
+
+  @override
+  String get chatMessageEdited => 'Modifié';
+
+  @override
+  String get chatMessageForwarded => 'Transféré';
+
+  @override
+  String get chatQuoteDeleted => 'Message supprimé';
+
+  @override
+  String get chatQuoteMedia => 'Média';
+
+  @override
+  String get chatQuoteAudio => 'Message vocal';
+
+  @override
+  String get chatQuoteImage => 'Photo';
+
+  @override
+  String get chatQuoteYou => 'Vous';
+
+  @override
+  String chatReplyingTo(String name) {
+    return 'Réponse à $name';
+  }
+
+  @override
+  String get chatReplying => 'Réponse';
+
+  @override
+  String get chatEditing => 'Modifier le message';
+
+  @override
+  String get chatCancelReply => 'Annuler la réponse';
+
+  @override
+  String get chatCancelEdit => 'Annuler la modification';
+
+  @override
+  String get chatActionReply => 'Répondre';
+
+  @override
+  String get chatActionCopy => 'Copier';
+
+  @override
+  String get chatActionForward => 'Transférer';
+
+  @override
+  String get chatActionEdit => 'Modifier';
+
+  @override
+  String get chatActionDeleteForMe => 'Supprimer pour moi';
+
+  @override
+  String get chatActionDeleteForEveryone => 'Supprimer pour tous';
+
+  @override
+  String get chatMoreReactions => 'Plus de réactions';
+
+  @override
+  String get chatCopied => 'Message copié';
+
+  @override
+  String get chatDeleteForEveryoneConfirm =>
+      'Ce message sera remplacé par « Ce message a été supprimé » pour tout le monde.';
+
+  @override
+  String get chatForwardTitle => 'Transférer à…';
+
+  @override
+  String get chatForwardSend => 'Envoyer';
+
+  @override
+  String get chatForwardEmpty => 'Aucune discussion où transférer.';
+
+  @override
+  String get chatForwardLimit => '5 discussions au plus.';
+
+  @override
+  String get chatForwardDone => 'Message transféré';
+
+  @override
+  String get chatGestureWindowClosed =>
+      'Le délai est passé : ce n\'est plus possible.';
+
+  @override
+  String get chatGestureRefused => 'Ce n\'est pas possible pour ce message.';
+
+  @override
+  String get chatGestureUnreachable => 'Pas de connexion. Réessayez.';
+
+  @override
+  String get chatReactionsTitle => 'Réactions';
+
+  @override
+  String get chatReactionsRemove => 'Touchez pour retirer';
+
+  @override
+  String get chatQuoteNotFound => 'Message introuvable';
 }

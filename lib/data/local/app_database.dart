@@ -120,6 +120,9 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     MessageReceipts,
     DeliveryAcks,
     GroupMutes,
+    // M2 (#141) : réactions et « supprimé pour moi ».
+    GroupMessageReactions,
+    GroupMessageHides,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -255,8 +258,17 @@ class AppDatabase extends _$AppDatabase {
   /// **v24** (M5, #144) — **ma sourdine** : `group_mutes`, une collection
   /// répliquée **privée** de plus, une création de table et rien d'autre. Voir
   /// [_migrateM5ToV24].
+  ///
+  /// **v25** (M2, #141) — les **gestes sur un message** (tranche M2,
+  /// #141). Le palier vit dans [_migrateM2ToV25], et son numéro dans
+  /// [kM2SchemaVersion] — la seule ligne à changer si un
+  /// palier venait s'intercaler.
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => kM2SchemaVersion;
+
+  /// **Le palier de la tranche M2** (#141) : v25, après M8 (v22), M3 (v23) et
+  /// M5 (v24).
+  static const int kM2SchemaVersion = 25;
 
   /// Les cinq colonnes du média d'une annonce, ajoutées ensemble au palier
   /// v18 → v19 — et retirées ensemble d'une table créée pour une version
@@ -285,6 +297,34 @@ class AppDatabase extends _$AppDatabase {
       '"client_created_at" INTEGER NULL, '
       '"created_at" INTEGER NULL, '
       'PRIMARY KEY ("id"))';
+
+  /// `group_messages` dans sa forme v20 à v24 — `body` nullable, **sans** les
+  /// colonnes de la tranche M2. Pour les migrations de test vers une version
+  /// antérieure à [kM2SchemaVersion] seulement : un téléphone migre toujours
+  /// jusqu'à `schemaVersion`, où `createTable` donne la forme courante.
+  static const String _groupMessagesV20 =
+      'CREATE TABLE IF NOT EXISTS "group_messages" ('
+      '"sync_stamp" INTEGER NOT NULL DEFAULT 0, '
+      '"id" TEXT NOT NULL, '
+      '"group_id" TEXT NOT NULL, '
+      '"author_id" TEXT NULL, '
+      '"is_system" INTEGER NOT NULL DEFAULT 0 CHECK ("is_system" IN (0, 1)), '
+      '"body" TEXT NULL, '
+      '"client_message_id" TEXT NULL, '
+      '"client_created_at" INTEGER NULL, '
+      '"created_at" INTEGER NULL, '
+      'PRIMARY KEY ("id"))';
+
+  /// `pending_group_messages` dans sa forme v18 à v24 — **sans** la colonne de
+  /// réponse de la tranche M2. Mêmes réserves que [_groupMessagesV20].
+  static const String _pendingGroupMessagesV18 =
+      'CREATE TABLE IF NOT EXISTS "pending_group_messages" ('
+      '"client_message_id" TEXT NOT NULL, '
+      '"group_id" TEXT NOT NULL, '
+      '"body" TEXT NOT NULL, '
+      '"created_at" INTEGER NOT NULL, '
+      '"failed" INTEGER NOT NULL DEFAULT 0 CHECK ("failed" IN (0, 1)), '
+      'PRIMARY KEY ("client_message_id"))';
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -647,10 +687,17 @@ class AppDatabase extends _$AppDatabase {
             // resserrer une contrainte : la table d'alors s'écrit telle quelle.
             if (to < 20) {
               await customStatement(_groupMessagesV18);
+            } else if (to < kM2SchemaVersion) {
+              // La forme v20 à v24 : les colonnes de M2 n'existaient pas encore.
+              await customStatement(_groupMessagesV20);
             } else {
               await m.createTable(groupMessages);
             }
-            await m.createTable(pendingGroupMessages);
+            if (to < kM2SchemaVersion) {
+              await customStatement(_pendingGroupMessagesV18);
+            } else {
+              await m.createTable(pendingGroupMessages);
+            }
           }
 
           // v18 → v19 — le **média des annonces** (#130, tranche 4/4 de
@@ -711,8 +758,15 @@ class AppDatabase extends _$AppDatabase {
           // créations : le vérificateur de schéma ignore une table surnuméraire.
           // Elle en faut une sur la recréation, qui produit la forme **courante**
           // et ferait échouer la validation d'une cible antérieure.
-          if (from >= 18 && from < 20 && to >= 20) {
-            await m.alterTable(TableMigration(groupMessages));
+          if (from >= 18 && from < 20 && to >= kM2SchemaVersion) {
+            // Recréée dans la forme **courante**, colonnes de M2 comprises : le
+            // palier M2 ne la retouche donc pas (garde `from >= 20` plus bas).
+            await m.alterTable(
+              TableMigration(groupMessages, newColumns: _m2MessageColumns),
+            );
+          } else if (from >= 18 && from < 20 && to >= 20) {
+            // Migration de test vers la v20 à la v24 : la forme d'alors.
+            await _recreateGroupMessagesV20();
           }
           if (from < 20) {
             await m.createTable(groupReads);
@@ -764,6 +818,11 @@ class AppDatabase extends _$AppDatabase {
           if (from < 24 && to >= 24) {
             await _migrateM5ToV24(m);
           }
+          // v24 → v25 — les gestes sur un message (M2, #141) — voir
+          // [_migrateM2ToV25].
+          if (from < kM2SchemaVersion && to >= kM2SchemaVersion) {
+            await _migrateM2ToV25(m, from);
+          }
         },
         beforeOpen: (details) async {
           // La ligne d'état global doit exister avant la première allocation de
@@ -787,6 +846,71 @@ class AppDatabase extends _$AppDatabase {
   Future<void> _migrateM3ToV23(Migrator m) async {
     await m.createTable(messageReceipts);
     await m.createTable(deliveryAcks);
+  }
+
+  /// Les huit colonnes de `group_messages` ajoutées par la tranche M2 (#141).
+  List<GeneratedColumn<Object>> get _m2MessageColumns => [
+        groupMessages.deletedAt,
+        groupMessages.editedAt,
+        groupMessages.isForwarded,
+        groupMessages.replyToMessageId,
+        groupMessages.replyToAuthorId,
+        groupMessages.replyToExcerpt,
+        groupMessages.replyToMediaKind,
+        groupMessages.replyToDeleted,
+      ];
+
+  /// **Palier M2 (#141) — les gestes sur un message**, v25 : voir
+  /// [kM2SchemaVersion].
+  ///
+  /// 1. `group_messages` gagne huit colonnes — le tombstone **gardé**
+  ///    (`deleted_at`), « Modifié », « Transféré », et la citation
+  ///    photographiée. Toutes nullables ou avec défaut : un `ALTER TABLE … ADD
+  ///    COLUMN`, sans réécriture, et le fil déjà en magasin survit tel quel.
+  ///    **Seulement si la table existe dans sa forme v20 à v24** (`from >= 20`) :
+  ///    plus bas, elle vient d'être créée ou recréée dans sa forme courante.
+  /// 2. `pending_group_messages` gagne la réponse en attente, sous la même
+  ///    réserve (`from >= 18`).
+  /// 3. Deux collections naissent vides, sans curseur : le prochain manifeste
+  ///    les annonce `from_zero`, et le premier cycle ramène réactions et
+  ///    masquages antérieurs.
+  ///
+  /// Le curseur de `group_messages` n'est **pas** oublié : les messages déjà
+  /// supprimés avant cette version ont quitté le magasin, et c'est sans
+  /// conséquence — un message absent ne se peint pas, un tombstone tiré
+  /// désormais se peint « supprimé ». Les citations et « Modifié » des messages
+  /// déjà rangés reviendront au fil des modifications ; aucune n'existe avant
+  /// que le serveur M2 ne soit en ligne.
+  Future<void> _migrateM2ToV25(Migrator m, int from) async {
+    if (from >= 20) {
+      for (final column in _m2MessageColumns) {
+        await m.addColumn(groupMessages, column);
+      }
+    }
+    if (from >= 18) {
+      await m.addColumn(
+          pendingGroupMessages, pendingGroupMessages.replyToMessageId);
+    }
+    await m.createTable(groupMessageReactions);
+    await m.createTable(groupMessageHides);
+  }
+
+  /// Recrée `group_messages` dans sa forme v20 à v24 en gardant ses lignes — le
+  /// palier v19 → v20 d'une **migration de test** vers une version antérieure
+  /// à [kM2SchemaVersion]. Même geste que `TableMigration`, écrit à la main
+  /// parce que `TableMigration` produit la forme courante.
+  Future<void> _recreateGroupMessagesV20() async {
+    const columns = 'sync_stamp, id, group_id, author_id, is_system, body, '
+        'client_message_id, client_created_at, created_at';
+    await customStatement(
+      'ALTER TABLE "group_messages" RENAME TO "group_messages_v19"',
+    );
+    await customStatement(_groupMessagesV20);
+    await customStatement(
+      'INSERT INTO "group_messages" ($columns) '
+      'SELECT $columns FROM "group_messages_v19"',
+    );
+    await customStatement('DROP TABLE "group_messages_v19"');
   }
 
   /// **Vide le magasin entier**, puis le remet dans l'état d'une base neuve.

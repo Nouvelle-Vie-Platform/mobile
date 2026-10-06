@@ -14527,6 +14527,62 @@ class $GroupMessagesTable extends GroupMessages
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _editedAtMeta =
+      const VerificationMeta('editedAt');
+  @override
+  late final GeneratedColumn<DateTime> editedAt = GeneratedColumn<DateTime>(
+      'edited_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _isForwardedMeta =
+      const VerificationMeta('isForwarded');
+  @override
+  late final GeneratedColumn<bool> isForwarded = GeneratedColumn<bool>(
+      'is_forwarded', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_forwarded" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _replyToMessageIdMeta =
+      const VerificationMeta('replyToMessageId');
+  @override
+  late final GeneratedColumn<String> replyToMessageId = GeneratedColumn<String>(
+      'reply_to_message_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _replyToAuthorIdMeta =
+      const VerificationMeta('replyToAuthorId');
+  @override
+  late final GeneratedColumn<String> replyToAuthorId = GeneratedColumn<String>(
+      'reply_to_author_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _replyToExcerptMeta =
+      const VerificationMeta('replyToExcerpt');
+  @override
+  late final GeneratedColumn<String> replyToExcerpt = GeneratedColumn<String>(
+      'reply_to_excerpt', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _replyToMediaKindMeta =
+      const VerificationMeta('replyToMediaKind');
+  @override
+  late final GeneratedColumn<String> replyToMediaKind = GeneratedColumn<String>(
+      'reply_to_media_kind', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _replyToDeletedMeta =
+      const VerificationMeta('replyToDeleted');
+  @override
+  late final GeneratedColumn<bool> replyToDeleted = GeneratedColumn<bool>(
+      'reply_to_deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("reply_to_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns => [
         syncStamp,
@@ -14537,7 +14593,15 @@ class $GroupMessagesTable extends GroupMessages
         body,
         clientMessageId,
         clientCreatedAt,
-        createdAt
+        createdAt,
+        deletedAt,
+        editedAt,
+        isForwarded,
+        replyToMessageId,
+        replyToAuthorId,
+        replyToExcerpt,
+        replyToMediaKind,
+        replyToDeleted
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -14592,6 +14656,50 @@ class $GroupMessagesTable extends GroupMessages
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    if (data.containsKey('edited_at')) {
+      context.handle(_editedAtMeta,
+          editedAt.isAcceptableOrUnknown(data['edited_at']!, _editedAtMeta));
+    }
+    if (data.containsKey('is_forwarded')) {
+      context.handle(
+          _isForwardedMeta,
+          isForwarded.isAcceptableOrUnknown(
+              data['is_forwarded']!, _isForwardedMeta));
+    }
+    if (data.containsKey('reply_to_message_id')) {
+      context.handle(
+          _replyToMessageIdMeta,
+          replyToMessageId.isAcceptableOrUnknown(
+              data['reply_to_message_id']!, _replyToMessageIdMeta));
+    }
+    if (data.containsKey('reply_to_author_id')) {
+      context.handle(
+          _replyToAuthorIdMeta,
+          replyToAuthorId.isAcceptableOrUnknown(
+              data['reply_to_author_id']!, _replyToAuthorIdMeta));
+    }
+    if (data.containsKey('reply_to_excerpt')) {
+      context.handle(
+          _replyToExcerptMeta,
+          replyToExcerpt.isAcceptableOrUnknown(
+              data['reply_to_excerpt']!, _replyToExcerptMeta));
+    }
+    if (data.containsKey('reply_to_media_kind')) {
+      context.handle(
+          _replyToMediaKindMeta,
+          replyToMediaKind.isAcceptableOrUnknown(
+              data['reply_to_media_kind']!, _replyToMediaKindMeta));
+    }
+    if (data.containsKey('reply_to_deleted')) {
+      context.handle(
+          _replyToDeletedMeta,
+          replyToDeleted.isAcceptableOrUnknown(
+              data['reply_to_deleted']!, _replyToDeletedMeta));
+    }
     return context;
   }
 
@@ -14619,6 +14727,22 @@ class $GroupMessagesTable extends GroupMessages
           DriftSqlType.dateTime, data['${effectivePrefix}client_created_at']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+      editedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}edited_at']),
+      isForwarded: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_forwarded'])!,
+      replyToMessageId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}reply_to_message_id']),
+      replyToAuthorId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}reply_to_author_id']),
+      replyToExcerpt: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}reply_to_excerpt']),
+      replyToMediaKind: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}reply_to_media_kind']),
+      replyToDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}reply_to_deleted'])!,
     );
   }
 
@@ -14679,6 +14803,35 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
   /// L'instant **serveur**. Non nul sur le fil, mais la colonne reste nullable :
   /// une table locale n'a pas à supposer ce qu'une autre base garantit.
   final DateTime? createdAt;
+
+  /// **Le tombstone est gardé** depuis M2 : un message supprimé pour tous ne
+  /// quitte plus le magasin, il se peint « Ce message a été supprimé » à sa
+  /// place (le serveur ne sert plus son contenu). Voir `keepsTombstones` dans
+  /// `synced_collection.dart`.
+  final DateTime? deletedAt;
+
+  /// Dernière modification par l'auteur — la bulle porte « Modifié ».
+  final DateTime? editedAt;
+
+  /// Une copie **transférée** — la bulle porte « Transféré ».
+  final bool isForwarded;
+
+  /// **La citation**, photographiée par le serveur sur la réponse (`replyTo`) :
+  /// de quoi la peindre sans le message d'origine en magasin. Le message cité.
+  final String? replyToMessageId;
+
+  /// L'auteur cité — le nom se joint sur `profiles`, comme celui d'une bulle.
+  final String? replyToAuthorId;
+
+  /// L'extrait du texte cité (borné par le serveur). Nul pour un média sans
+  /// légende, ou une origine supprimée.
+  final String? replyToExcerpt;
+
+  /// La forme du média cité (`audio`, `image`…), stockée telle quelle.
+  final String? replyToMediaKind;
+
+  /// L'origine a été supprimée pour tous : la citation dit « Message supprimé ».
+  final bool replyToDeleted;
   const GroupMessageRow(
       {required this.syncStamp,
       required this.id,
@@ -14688,7 +14841,15 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       this.body,
       this.clientMessageId,
       this.clientCreatedAt,
-      this.createdAt});
+      this.createdAt,
+      this.deletedAt,
+      this.editedAt,
+      required this.isForwarded,
+      this.replyToMessageId,
+      this.replyToAuthorId,
+      this.replyToExcerpt,
+      this.replyToMediaKind,
+      required this.replyToDeleted});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -14711,6 +14872,26 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
     if (!nullToAbsent || createdAt != null) {
       map['created_at'] = Variable<DateTime>(createdAt);
     }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || editedAt != null) {
+      map['edited_at'] = Variable<DateTime>(editedAt);
+    }
+    map['is_forwarded'] = Variable<bool>(isForwarded);
+    if (!nullToAbsent || replyToMessageId != null) {
+      map['reply_to_message_id'] = Variable<String>(replyToMessageId);
+    }
+    if (!nullToAbsent || replyToAuthorId != null) {
+      map['reply_to_author_id'] = Variable<String>(replyToAuthorId);
+    }
+    if (!nullToAbsent || replyToExcerpt != null) {
+      map['reply_to_excerpt'] = Variable<String>(replyToExcerpt);
+    }
+    if (!nullToAbsent || replyToMediaKind != null) {
+      map['reply_to_media_kind'] = Variable<String>(replyToMediaKind);
+    }
+    map['reply_to_deleted'] = Variable<bool>(replyToDeleted);
     return map;
   }
 
@@ -14733,6 +14914,26 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       createdAt: createdAt == null && nullToAbsent
           ? const Value.absent()
           : Value(createdAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      editedAt: editedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(editedAt),
+      isForwarded: Value(isForwarded),
+      replyToMessageId: replyToMessageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replyToMessageId),
+      replyToAuthorId: replyToAuthorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replyToAuthorId),
+      replyToExcerpt: replyToExcerpt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replyToExcerpt),
+      replyToMediaKind: replyToMediaKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replyToMediaKind),
+      replyToDeleted: Value(replyToDeleted),
     );
   }
 
@@ -14749,6 +14950,14 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       clientMessageId: serializer.fromJson<String?>(json['clientMessageId']),
       clientCreatedAt: serializer.fromJson<DateTime?>(json['clientCreatedAt']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      editedAt: serializer.fromJson<DateTime?>(json['editedAt']),
+      isForwarded: serializer.fromJson<bool>(json['isForwarded']),
+      replyToMessageId: serializer.fromJson<String?>(json['replyToMessageId']),
+      replyToAuthorId: serializer.fromJson<String?>(json['replyToAuthorId']),
+      replyToExcerpt: serializer.fromJson<String?>(json['replyToExcerpt']),
+      replyToMediaKind: serializer.fromJson<String?>(json['replyToMediaKind']),
+      replyToDeleted: serializer.fromJson<bool>(json['replyToDeleted']),
     );
   }
   @override
@@ -14764,6 +14973,14 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       'clientMessageId': serializer.toJson<String?>(clientMessageId),
       'clientCreatedAt': serializer.toJson<DateTime?>(clientCreatedAt),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'editedAt': serializer.toJson<DateTime?>(editedAt),
+      'isForwarded': serializer.toJson<bool>(isForwarded),
+      'replyToMessageId': serializer.toJson<String?>(replyToMessageId),
+      'replyToAuthorId': serializer.toJson<String?>(replyToAuthorId),
+      'replyToExcerpt': serializer.toJson<String?>(replyToExcerpt),
+      'replyToMediaKind': serializer.toJson<String?>(replyToMediaKind),
+      'replyToDeleted': serializer.toJson<bool>(replyToDeleted),
     };
   }
 
@@ -14776,7 +14993,15 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
           Value<String?> body = const Value.absent(),
           Value<String?> clientMessageId = const Value.absent(),
           Value<DateTime?> clientCreatedAt = const Value.absent(),
-          Value<DateTime?> createdAt = const Value.absent()}) =>
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> deletedAt = const Value.absent(),
+          Value<DateTime?> editedAt = const Value.absent(),
+          bool? isForwarded,
+          Value<String?> replyToMessageId = const Value.absent(),
+          Value<String?> replyToAuthorId = const Value.absent(),
+          Value<String?> replyToExcerpt = const Value.absent(),
+          Value<String?> replyToMediaKind = const Value.absent(),
+          bool? replyToDeleted}) =>
       GroupMessageRow(
         syncStamp: syncStamp ?? this.syncStamp,
         id: id ?? this.id,
@@ -14791,6 +15016,21 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
             ? clientCreatedAt.value
             : this.clientCreatedAt,
         createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+        editedAt: editedAt.present ? editedAt.value : this.editedAt,
+        isForwarded: isForwarded ?? this.isForwarded,
+        replyToMessageId: replyToMessageId.present
+            ? replyToMessageId.value
+            : this.replyToMessageId,
+        replyToAuthorId: replyToAuthorId.present
+            ? replyToAuthorId.value
+            : this.replyToAuthorId,
+        replyToExcerpt:
+            replyToExcerpt.present ? replyToExcerpt.value : this.replyToExcerpt,
+        replyToMediaKind: replyToMediaKind.present
+            ? replyToMediaKind.value
+            : this.replyToMediaKind,
+        replyToDeleted: replyToDeleted ?? this.replyToDeleted,
       );
   GroupMessageRow copyWithCompanion(GroupMessagesCompanion data) {
     return GroupMessageRow(
@@ -14807,6 +15047,25 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
           ? data.clientCreatedAt.value
           : this.clientCreatedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      editedAt: data.editedAt.present ? data.editedAt.value : this.editedAt,
+      isForwarded:
+          data.isForwarded.present ? data.isForwarded.value : this.isForwarded,
+      replyToMessageId: data.replyToMessageId.present
+          ? data.replyToMessageId.value
+          : this.replyToMessageId,
+      replyToAuthorId: data.replyToAuthorId.present
+          ? data.replyToAuthorId.value
+          : this.replyToAuthorId,
+      replyToExcerpt: data.replyToExcerpt.present
+          ? data.replyToExcerpt.value
+          : this.replyToExcerpt,
+      replyToMediaKind: data.replyToMediaKind.present
+          ? data.replyToMediaKind.value
+          : this.replyToMediaKind,
+      replyToDeleted: data.replyToDeleted.present
+          ? data.replyToDeleted.value
+          : this.replyToDeleted,
     );
   }
 
@@ -14821,14 +15080,38 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
           ..write('body: $body, ')
           ..write('clientMessageId: $clientMessageId, ')
           ..write('clientCreatedAt: $clientCreatedAt, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('editedAt: $editedAt, ')
+          ..write('isForwarded: $isForwarded, ')
+          ..write('replyToMessageId: $replyToMessageId, ')
+          ..write('replyToAuthorId: $replyToAuthorId, ')
+          ..write('replyToExcerpt: $replyToExcerpt, ')
+          ..write('replyToMediaKind: $replyToMediaKind, ')
+          ..write('replyToDeleted: $replyToDeleted')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(syncStamp, id, groupId, authorId, isSystem,
-      body, clientMessageId, clientCreatedAt, createdAt);
+  int get hashCode => Object.hash(
+      syncStamp,
+      id,
+      groupId,
+      authorId,
+      isSystem,
+      body,
+      clientMessageId,
+      clientCreatedAt,
+      createdAt,
+      deletedAt,
+      editedAt,
+      isForwarded,
+      replyToMessageId,
+      replyToAuthorId,
+      replyToExcerpt,
+      replyToMediaKind,
+      replyToDeleted);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -14841,7 +15124,15 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
           other.body == this.body &&
           other.clientMessageId == this.clientMessageId &&
           other.clientCreatedAt == this.clientCreatedAt &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.deletedAt == this.deletedAt &&
+          other.editedAt == this.editedAt &&
+          other.isForwarded == this.isForwarded &&
+          other.replyToMessageId == this.replyToMessageId &&
+          other.replyToAuthorId == this.replyToAuthorId &&
+          other.replyToExcerpt == this.replyToExcerpt &&
+          other.replyToMediaKind == this.replyToMediaKind &&
+          other.replyToDeleted == this.replyToDeleted);
 }
 
 class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
@@ -14854,6 +15145,14 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
   final Value<String?> clientMessageId;
   final Value<DateTime?> clientCreatedAt;
   final Value<DateTime?> createdAt;
+  final Value<DateTime?> deletedAt;
+  final Value<DateTime?> editedAt;
+  final Value<bool> isForwarded;
+  final Value<String?> replyToMessageId;
+  final Value<String?> replyToAuthorId;
+  final Value<String?> replyToExcerpt;
+  final Value<String?> replyToMediaKind;
+  final Value<bool> replyToDeleted;
   final Value<int> rowid;
   const GroupMessagesCompanion({
     this.syncStamp = const Value.absent(),
@@ -14865,6 +15164,14 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
     this.clientMessageId = const Value.absent(),
     this.clientCreatedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.editedAt = const Value.absent(),
+    this.isForwarded = const Value.absent(),
+    this.replyToMessageId = const Value.absent(),
+    this.replyToAuthorId = const Value.absent(),
+    this.replyToExcerpt = const Value.absent(),
+    this.replyToMediaKind = const Value.absent(),
+    this.replyToDeleted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   GroupMessagesCompanion.insert({
@@ -14877,6 +15184,14 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
     this.clientMessageId = const Value.absent(),
     this.clientCreatedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.editedAt = const Value.absent(),
+    this.isForwarded = const Value.absent(),
+    this.replyToMessageId = const Value.absent(),
+    this.replyToAuthorId = const Value.absent(),
+    this.replyToExcerpt = const Value.absent(),
+    this.replyToMediaKind = const Value.absent(),
+    this.replyToDeleted = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         groupId = Value(groupId);
@@ -14890,6 +15205,14 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
     Expression<String>? clientMessageId,
     Expression<DateTime>? clientCreatedAt,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? deletedAt,
+    Expression<DateTime>? editedAt,
+    Expression<bool>? isForwarded,
+    Expression<String>? replyToMessageId,
+    Expression<String>? replyToAuthorId,
+    Expression<String>? replyToExcerpt,
+    Expression<String>? replyToMediaKind,
+    Expression<bool>? replyToDeleted,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -14902,6 +15225,14 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
       if (clientMessageId != null) 'client_message_id': clientMessageId,
       if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
       if (createdAt != null) 'created_at': createdAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (editedAt != null) 'edited_at': editedAt,
+      if (isForwarded != null) 'is_forwarded': isForwarded,
+      if (replyToMessageId != null) 'reply_to_message_id': replyToMessageId,
+      if (replyToAuthorId != null) 'reply_to_author_id': replyToAuthorId,
+      if (replyToExcerpt != null) 'reply_to_excerpt': replyToExcerpt,
+      if (replyToMediaKind != null) 'reply_to_media_kind': replyToMediaKind,
+      if (replyToDeleted != null) 'reply_to_deleted': replyToDeleted,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -14916,6 +15247,14 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
       Value<String?>? clientMessageId,
       Value<DateTime?>? clientCreatedAt,
       Value<DateTime?>? createdAt,
+      Value<DateTime?>? deletedAt,
+      Value<DateTime?>? editedAt,
+      Value<bool>? isForwarded,
+      Value<String?>? replyToMessageId,
+      Value<String?>? replyToAuthorId,
+      Value<String?>? replyToExcerpt,
+      Value<String?>? replyToMediaKind,
+      Value<bool>? replyToDeleted,
       Value<int>? rowid}) {
     return GroupMessagesCompanion(
       syncStamp: syncStamp ?? this.syncStamp,
@@ -14927,6 +15266,14 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
       clientMessageId: clientMessageId ?? this.clientMessageId,
       clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
       createdAt: createdAt ?? this.createdAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      editedAt: editedAt ?? this.editedAt,
+      isForwarded: isForwarded ?? this.isForwarded,
+      replyToMessageId: replyToMessageId ?? this.replyToMessageId,
+      replyToAuthorId: replyToAuthorId ?? this.replyToAuthorId,
+      replyToExcerpt: replyToExcerpt ?? this.replyToExcerpt,
+      replyToMediaKind: replyToMediaKind ?? this.replyToMediaKind,
+      replyToDeleted: replyToDeleted ?? this.replyToDeleted,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -14961,6 +15308,30 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (editedAt.present) {
+      map['edited_at'] = Variable<DateTime>(editedAt.value);
+    }
+    if (isForwarded.present) {
+      map['is_forwarded'] = Variable<bool>(isForwarded.value);
+    }
+    if (replyToMessageId.present) {
+      map['reply_to_message_id'] = Variable<String>(replyToMessageId.value);
+    }
+    if (replyToAuthorId.present) {
+      map['reply_to_author_id'] = Variable<String>(replyToAuthorId.value);
+    }
+    if (replyToExcerpt.present) {
+      map['reply_to_excerpt'] = Variable<String>(replyToExcerpt.value);
+    }
+    if (replyToMediaKind.present) {
+      map['reply_to_media_kind'] = Variable<String>(replyToMediaKind.value);
+    }
+    if (replyToDeleted.present) {
+      map['reply_to_deleted'] = Variable<bool>(replyToDeleted.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -14979,6 +15350,14 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
           ..write('clientMessageId: $clientMessageId, ')
           ..write('clientCreatedAt: $clientCreatedAt, ')
           ..write('createdAt: $createdAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('editedAt: $editedAt, ')
+          ..write('isForwarded: $isForwarded, ')
+          ..write('replyToMessageId: $replyToMessageId, ')
+          ..write('replyToAuthorId: $replyToAuthorId, ')
+          ..write('replyToExcerpt: $replyToExcerpt, ')
+          ..write('replyToMediaKind: $replyToMediaKind, ')
+          ..write('replyToDeleted: $replyToDeleted, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -15023,9 +15402,15 @@ class $PendingGroupMessagesTable extends PendingGroupMessages
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("failed" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _replyToMessageIdMeta =
+      const VerificationMeta('replyToMessageId');
+  @override
+  late final GeneratedColumn<String> replyToMessageId = GeneratedColumn<String>(
+      'reply_to_message_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [clientMessageId, groupId, body, createdAt, failed];
+      [clientMessageId, groupId, body, createdAt, failed, replyToMessageId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -15067,6 +15452,12 @@ class $PendingGroupMessagesTable extends PendingGroupMessages
       context.handle(_failedMeta,
           failed.isAcceptableOrUnknown(data['failed']!, _failedMeta));
     }
+    if (data.containsKey('reply_to_message_id')) {
+      context.handle(
+          _replyToMessageIdMeta,
+          replyToMessageId.isAcceptableOrUnknown(
+              data['reply_to_message_id']!, _replyToMessageIdMeta));
+    }
     return context;
   }
 
@@ -15086,6 +15477,8 @@ class $PendingGroupMessagesTable extends PendingGroupMessages
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       failed: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}failed'])!,
+      replyToMessageId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}reply_to_message_id']),
     );
   }
 
@@ -15113,12 +15506,17 @@ class PendingGroupMessageRow extends DataClass
   /// parlé. Il est posé sur **tout** refus — réseau, 401, 403, 422, 5xx — parce
   /// que de l'écran, tous disent la même chose : « ce message n'est pas parti ».
   final bool failed;
+
+  /// **Répondre** (M2, #141) : le message cité, repassé au renvoi. L'écho peint
+  /// sa citation en joignant le message d'origine en magasin.
+  final String? replyToMessageId;
   const PendingGroupMessageRow(
       {required this.clientMessageId,
       required this.groupId,
       required this.body,
       required this.createdAt,
-      required this.failed});
+      required this.failed,
+      this.replyToMessageId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -15127,6 +15525,9 @@ class PendingGroupMessageRow extends DataClass
     map['body'] = Variable<String>(body);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['failed'] = Variable<bool>(failed);
+    if (!nullToAbsent || replyToMessageId != null) {
+      map['reply_to_message_id'] = Variable<String>(replyToMessageId);
+    }
     return map;
   }
 
@@ -15137,6 +15538,9 @@ class PendingGroupMessageRow extends DataClass
       body: Value(body),
       createdAt: Value(createdAt),
       failed: Value(failed),
+      replyToMessageId: replyToMessageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replyToMessageId),
     );
   }
 
@@ -15149,6 +15553,7 @@ class PendingGroupMessageRow extends DataClass
       body: serializer.fromJson<String>(json['body']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       failed: serializer.fromJson<bool>(json['failed']),
+      replyToMessageId: serializer.fromJson<String?>(json['replyToMessageId']),
     );
   }
   @override
@@ -15160,6 +15565,7 @@ class PendingGroupMessageRow extends DataClass
       'body': serializer.toJson<String>(body),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'failed': serializer.toJson<bool>(failed),
+      'replyToMessageId': serializer.toJson<String?>(replyToMessageId),
     };
   }
 
@@ -15168,13 +15574,17 @@ class PendingGroupMessageRow extends DataClass
           String? groupId,
           String? body,
           DateTime? createdAt,
-          bool? failed}) =>
+          bool? failed,
+          Value<String?> replyToMessageId = const Value.absent()}) =>
       PendingGroupMessageRow(
         clientMessageId: clientMessageId ?? this.clientMessageId,
         groupId: groupId ?? this.groupId,
         body: body ?? this.body,
         createdAt: createdAt ?? this.createdAt,
         failed: failed ?? this.failed,
+        replyToMessageId: replyToMessageId.present
+            ? replyToMessageId.value
+            : this.replyToMessageId,
       );
   PendingGroupMessageRow copyWithCompanion(PendingGroupMessagesCompanion data) {
     return PendingGroupMessageRow(
@@ -15185,6 +15595,9 @@ class PendingGroupMessageRow extends DataClass
       body: data.body.present ? data.body.value : this.body,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       failed: data.failed.present ? data.failed.value : this.failed,
+      replyToMessageId: data.replyToMessageId.present
+          ? data.replyToMessageId.value
+          : this.replyToMessageId,
     );
   }
 
@@ -15195,14 +15608,15 @@ class PendingGroupMessageRow extends DataClass
           ..write('groupId: $groupId, ')
           ..write('body: $body, ')
           ..write('createdAt: $createdAt, ')
-          ..write('failed: $failed')
+          ..write('failed: $failed, ')
+          ..write('replyToMessageId: $replyToMessageId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(clientMessageId, groupId, body, createdAt, failed);
+  int get hashCode => Object.hash(
+      clientMessageId, groupId, body, createdAt, failed, replyToMessageId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -15211,7 +15625,8 @@ class PendingGroupMessageRow extends DataClass
           other.groupId == this.groupId &&
           other.body == this.body &&
           other.createdAt == this.createdAt &&
-          other.failed == this.failed);
+          other.failed == this.failed &&
+          other.replyToMessageId == this.replyToMessageId);
 }
 
 class PendingGroupMessagesCompanion
@@ -15221,6 +15636,7 @@ class PendingGroupMessagesCompanion
   final Value<String> body;
   final Value<DateTime> createdAt;
   final Value<bool> failed;
+  final Value<String?> replyToMessageId;
   final Value<int> rowid;
   const PendingGroupMessagesCompanion({
     this.clientMessageId = const Value.absent(),
@@ -15228,6 +15644,7 @@ class PendingGroupMessagesCompanion
     this.body = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.failed = const Value.absent(),
+    this.replyToMessageId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PendingGroupMessagesCompanion.insert({
@@ -15236,6 +15653,7 @@ class PendingGroupMessagesCompanion
     required String body,
     required DateTime createdAt,
     this.failed = const Value.absent(),
+    this.replyToMessageId = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : clientMessageId = Value(clientMessageId),
         groupId = Value(groupId),
@@ -15247,6 +15665,7 @@ class PendingGroupMessagesCompanion
     Expression<String>? body,
     Expression<DateTime>? createdAt,
     Expression<bool>? failed,
+    Expression<String>? replyToMessageId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -15255,6 +15674,7 @@ class PendingGroupMessagesCompanion
       if (body != null) 'body': body,
       if (createdAt != null) 'created_at': createdAt,
       if (failed != null) 'failed': failed,
+      if (replyToMessageId != null) 'reply_to_message_id': replyToMessageId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -15265,6 +15685,7 @@ class PendingGroupMessagesCompanion
       Value<String>? body,
       Value<DateTime>? createdAt,
       Value<bool>? failed,
+      Value<String?>? replyToMessageId,
       Value<int>? rowid}) {
     return PendingGroupMessagesCompanion(
       clientMessageId: clientMessageId ?? this.clientMessageId,
@@ -15272,6 +15693,7 @@ class PendingGroupMessagesCompanion
       body: body ?? this.body,
       createdAt: createdAt ?? this.createdAt,
       failed: failed ?? this.failed,
+      replyToMessageId: replyToMessageId ?? this.replyToMessageId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -15294,6 +15716,9 @@ class PendingGroupMessagesCompanion
     if (failed.present) {
       map['failed'] = Variable<bool>(failed.value);
     }
+    if (replyToMessageId.present) {
+      map['reply_to_message_id'] = Variable<String>(replyToMessageId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -15308,6 +15733,7 @@ class PendingGroupMessagesCompanion
           ..write('body: $body, ')
           ..write('createdAt: $createdAt, ')
           ..write('failed: $failed, ')
+          ..write('replyToMessageId: $replyToMessageId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -18108,6 +18534,724 @@ class GroupMutesCompanion extends UpdateCompanion<GroupMuteRow> {
   }
 }
 
+class $GroupMessageReactionsTable extends GroupMessageReactions
+    with TableInfo<$GroupMessageReactionsTable, GroupMessageReactionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GroupMessageReactionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _messageIdMeta =
+      const VerificationMeta('messageId');
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+      'message_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+      'user_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _emojiMeta = const VerificationMeta('emoji');
+  @override
+  late final GeneratedColumn<String> emoji = GeneratedColumn<String>(
+      'emoji', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, id, groupId, messageId, userId, emoji, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'group_message_reactions';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<GroupMessageReactionRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(_messageIdMeta,
+          messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
+    } else if (isInserting) {
+      context.missing(_messageIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('emoji')) {
+      context.handle(
+          _emojiMeta, emoji.isAcceptableOrUnknown(data['emoji']!, _emojiMeta));
+    } else if (isInserting) {
+      context.missing(_emojiMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GroupMessageReactionRow map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GroupMessageReactionRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      messageId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
+      userId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
+      emoji: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}emoji'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $GroupMessageReactionsTable createAlias(String alias) {
+    return $GroupMessageReactionsTable(attachedDatabase, alias);
+  }
+}
+
+class GroupMessageReactionRow extends DataClass
+    implements Insertable<GroupMessageReactionRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// UUIDv7 serveur.
+  final String id;
+  final String groupId;
+  final String messageId;
+  final String userId;
+
+  /// Un emoji, stocké tel quel.
+  final String emoji;
+  final DateTime? updatedAt;
+  const GroupMessageReactionRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.groupId,
+      required this.messageId,
+      required this.userId,
+      required this.emoji,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    map['group_id'] = Variable<String>(groupId);
+    map['message_id'] = Variable<String>(messageId);
+    map['user_id'] = Variable<String>(userId);
+    map['emoji'] = Variable<String>(emoji);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  GroupMessageReactionsCompanion toCompanion(bool nullToAbsent) {
+    return GroupMessageReactionsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      groupId: Value(groupId),
+      messageId: Value(messageId),
+      userId: Value(userId),
+      emoji: Value(emoji),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory GroupMessageReactionRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GroupMessageReactionRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+      messageId: serializer.fromJson<String>(json['messageId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      emoji: serializer.fromJson<String>(json['emoji']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'groupId': serializer.toJson<String>(groupId),
+      'messageId': serializer.toJson<String>(messageId),
+      'userId': serializer.toJson<String>(userId),
+      'emoji': serializer.toJson<String>(emoji),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  GroupMessageReactionRow copyWith(
+          {int? syncStamp,
+          String? id,
+          String? groupId,
+          String? messageId,
+          String? userId,
+          String? emoji,
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      GroupMessageReactionRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        groupId: groupId ?? this.groupId,
+        messageId: messageId ?? this.messageId,
+        userId: userId ?? this.userId,
+        emoji: emoji ?? this.emoji,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  GroupMessageReactionRow copyWithCompanion(
+      GroupMessageReactionsCompanion data) {
+    return GroupMessageReactionRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      emoji: data.emoji.present ? data.emoji.value : this.emoji,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupMessageReactionRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('groupId: $groupId, ')
+          ..write('messageId: $messageId, ')
+          ..write('userId: $userId, ')
+          ..write('emoji: $emoji, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(syncStamp, id, groupId, messageId, userId, emoji, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GroupMessageReactionRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.groupId == this.groupId &&
+          other.messageId == this.messageId &&
+          other.userId == this.userId &&
+          other.emoji == this.emoji &&
+          other.updatedAt == this.updatedAt);
+}
+
+class GroupMessageReactionsCompanion
+    extends UpdateCompanion<GroupMessageReactionRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String> groupId;
+  final Value<String> messageId;
+  final Value<String> userId;
+  final Value<String> emoji;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const GroupMessageReactionsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.emoji = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GroupMessageReactionsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    required String groupId,
+    required String messageId,
+    required String userId,
+    required String emoji,
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        groupId = Value(groupId),
+        messageId = Value(messageId),
+        userId = Value(userId),
+        emoji = Value(emoji);
+  static Insertable<GroupMessageReactionRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? groupId,
+    Expression<String>? messageId,
+    Expression<String>? userId,
+    Expression<String>? emoji,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (groupId != null) 'group_id': groupId,
+      if (messageId != null) 'message_id': messageId,
+      if (userId != null) 'user_id': userId,
+      if (emoji != null) 'emoji': emoji,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GroupMessageReactionsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String>? groupId,
+      Value<String>? messageId,
+      Value<String>? userId,
+      Value<String>? emoji,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return GroupMessageReactionsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      groupId: groupId ?? this.groupId,
+      messageId: messageId ?? this.messageId,
+      userId: userId ?? this.userId,
+      emoji: emoji ?? this.emoji,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (emoji.present) {
+      map['emoji'] = Variable<String>(emoji.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupMessageReactionsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('groupId: $groupId, ')
+          ..write('messageId: $messageId, ')
+          ..write('userId: $userId, ')
+          ..write('emoji: $emoji, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $GroupMessageHidesTable extends GroupMessageHides
+    with TableInfo<$GroupMessageHidesTable, GroupMessageHideRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GroupMessageHidesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _messageIdMeta =
+      const VerificationMeta('messageId');
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+      'message_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _hideIdMeta = const VerificationMeta('hideId');
+  @override
+  late final GeneratedColumn<int> hideId = GeneratedColumn<int>(
+      'hide_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, messageId, groupId, hideId, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'group_message_hides';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<GroupMessageHideRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(_messageIdMeta,
+          messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
+    } else if (isInserting) {
+      context.missing(_messageIdMeta);
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('hide_id')) {
+      context.handle(_hideIdMeta,
+          hideId.isAcceptableOrUnknown(data['hide_id']!, _hideIdMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {messageId};
+  @override
+  GroupMessageHideRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GroupMessageHideRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      messageId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      hideId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}hide_id']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+    );
+  }
+
+  @override
+  $GroupMessageHidesTable createAlias(String alias) {
+    return $GroupMessageHidesTable(attachedDatabase, alias);
+  }
+}
+
+class GroupMessageHideRow extends DataClass
+    implements Insertable<GroupMessageHideRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String messageId;
+  final String groupId;
+
+  /// L'identifiant serveur du masquage. Non lu.
+  final int? hideId;
+  final DateTime? createdAt;
+  const GroupMessageHideRow(
+      {required this.syncStamp,
+      required this.messageId,
+      required this.groupId,
+      this.hideId,
+      this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['message_id'] = Variable<String>(messageId);
+    map['group_id'] = Variable<String>(groupId);
+    if (!nullToAbsent || hideId != null) {
+      map['hide_id'] = Variable<int>(hideId);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    return map;
+  }
+
+  GroupMessageHidesCompanion toCompanion(bool nullToAbsent) {
+    return GroupMessageHidesCompanion(
+      syncStamp: Value(syncStamp),
+      messageId: Value(messageId),
+      groupId: Value(groupId),
+      hideId:
+          hideId == null && nullToAbsent ? const Value.absent() : Value(hideId),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+    );
+  }
+
+  factory GroupMessageHideRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GroupMessageHideRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      messageId: serializer.fromJson<String>(json['messageId']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+      hideId: serializer.fromJson<int?>(json['hideId']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'messageId': serializer.toJson<String>(messageId),
+      'groupId': serializer.toJson<String>(groupId),
+      'hideId': serializer.toJson<int?>(hideId),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+    };
+  }
+
+  GroupMessageHideRow copyWith(
+          {int? syncStamp,
+          String? messageId,
+          String? groupId,
+          Value<int?> hideId = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent()}) =>
+      GroupMessageHideRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        messageId: messageId ?? this.messageId,
+        groupId: groupId ?? this.groupId,
+        hideId: hideId.present ? hideId.value : this.hideId,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+      );
+  GroupMessageHideRow copyWithCompanion(GroupMessageHidesCompanion data) {
+    return GroupMessageHideRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      hideId: data.hideId.present ? data.hideId.value : this.hideId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupMessageHideRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('messageId: $messageId, ')
+          ..write('groupId: $groupId, ')
+          ..write('hideId: $hideId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(syncStamp, messageId, groupId, hideId, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GroupMessageHideRow &&
+          other.syncStamp == this.syncStamp &&
+          other.messageId == this.messageId &&
+          other.groupId == this.groupId &&
+          other.hideId == this.hideId &&
+          other.createdAt == this.createdAt);
+}
+
+class GroupMessageHidesCompanion extends UpdateCompanion<GroupMessageHideRow> {
+  final Value<int> syncStamp;
+  final Value<String> messageId;
+  final Value<String> groupId;
+  final Value<int?> hideId;
+  final Value<DateTime?> createdAt;
+  final Value<int> rowid;
+  const GroupMessageHidesCompanion({
+    this.syncStamp = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.hideId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GroupMessageHidesCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String messageId,
+    required String groupId,
+    this.hideId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : messageId = Value(messageId),
+        groupId = Value(groupId);
+  static Insertable<GroupMessageHideRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? messageId,
+    Expression<String>? groupId,
+    Expression<int>? hideId,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (messageId != null) 'message_id': messageId,
+      if (groupId != null) 'group_id': groupId,
+      if (hideId != null) 'hide_id': hideId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GroupMessageHidesCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? messageId,
+      Value<String>? groupId,
+      Value<int?>? hideId,
+      Value<DateTime?>? createdAt,
+      Value<int>? rowid}) {
+    return GroupMessageHidesCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      messageId: messageId ?? this.messageId,
+      groupId: groupId ?? this.groupId,
+      hideId: hideId ?? this.hideId,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (hideId.present) {
+      map['hide_id'] = Variable<int>(hideId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupMessageHidesCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('messageId: $messageId, ')
+          ..write('groupId: $groupId, ')
+          ..write('hideId: $hideId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AppSettingsTable extends AppSettings
     with TableInfo<$AppSettingsTable, AppSettingRow> {
   @override
@@ -19433,6 +20577,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $MessageReceiptsTable(this);
   late final $DeliveryAcksTable deliveryAcks = $DeliveryAcksTable(this);
   late final $GroupMutesTable groupMutes = $GroupMutesTable(this);
+  late final $GroupMessageReactionsTable groupMessageReactions =
+      $GroupMessageReactionsTable(this);
+  late final $GroupMessageHidesTable groupMessageHides =
+      $GroupMessageHidesTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $DownloadsTable downloads = $DownloadsTable(this);
   late final $DownloadTitlesTable downloadTitles = $DownloadTitlesTable(this);
@@ -19505,6 +20653,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         messageReceipts,
         deliveryAcks,
         groupMutes,
+        groupMessageReactions,
+        groupMessageHides,
         appSettings,
         downloads,
         downloadTitles,
@@ -26150,6 +27300,14 @@ typedef $$GroupMessagesTableCreateCompanionBuilder = GroupMessagesCompanion
   Value<String?> clientMessageId,
   Value<DateTime?> clientCreatedAt,
   Value<DateTime?> createdAt,
+  Value<DateTime?> deletedAt,
+  Value<DateTime?> editedAt,
+  Value<bool> isForwarded,
+  Value<String?> replyToMessageId,
+  Value<String?> replyToAuthorId,
+  Value<String?> replyToExcerpt,
+  Value<String?> replyToMediaKind,
+  Value<bool> replyToDeleted,
   Value<int> rowid,
 });
 typedef $$GroupMessagesTableUpdateCompanionBuilder = GroupMessagesCompanion
@@ -26163,6 +27321,14 @@ typedef $$GroupMessagesTableUpdateCompanionBuilder = GroupMessagesCompanion
   Value<String?> clientMessageId,
   Value<DateTime?> clientCreatedAt,
   Value<DateTime?> createdAt,
+  Value<DateTime?> deletedAt,
+  Value<DateTime?> editedAt,
+  Value<bool> isForwarded,
+  Value<String?> replyToMessageId,
+  Value<String?> replyToAuthorId,
+  Value<String?> replyToExcerpt,
+  Value<String?> replyToMediaKind,
+  Value<bool> replyToDeleted,
   Value<int> rowid,
 });
 
@@ -26203,6 +27369,35 @@ class $$GroupMessagesTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+      column: $table.deletedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get editedAt => $composableBuilder(
+      column: $table.editedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isForwarded => $composableBuilder(
+      column: $table.isForwarded, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get replyToMessageId => $composableBuilder(
+      column: $table.replyToMessageId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get replyToAuthorId => $composableBuilder(
+      column: $table.replyToAuthorId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get replyToExcerpt => $composableBuilder(
+      column: $table.replyToExcerpt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get replyToMediaKind => $composableBuilder(
+      column: $table.replyToMediaKind,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get replyToDeleted => $composableBuilder(
+      column: $table.replyToDeleted,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$GroupMessagesTableOrderingComposer
@@ -26242,6 +27437,35 @@ class $$GroupMessagesTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+      column: $table.deletedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get editedAt => $composableBuilder(
+      column: $table.editedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isForwarded => $composableBuilder(
+      column: $table.isForwarded, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get replyToMessageId => $composableBuilder(
+      column: $table.replyToMessageId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get replyToAuthorId => $composableBuilder(
+      column: $table.replyToAuthorId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get replyToExcerpt => $composableBuilder(
+      column: $table.replyToExcerpt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get replyToMediaKind => $composableBuilder(
+      column: $table.replyToMediaKind,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get replyToDeleted => $composableBuilder(
+      column: $table.replyToDeleted,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$GroupMessagesTableAnnotationComposer
@@ -26279,6 +27503,30 @@ class $$GroupMessagesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get editedAt =>
+      $composableBuilder(column: $table.editedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isForwarded => $composableBuilder(
+      column: $table.isForwarded, builder: (column) => column);
+
+  GeneratedColumn<String> get replyToMessageId => $composableBuilder(
+      column: $table.replyToMessageId, builder: (column) => column);
+
+  GeneratedColumn<String> get replyToAuthorId => $composableBuilder(
+      column: $table.replyToAuthorId, builder: (column) => column);
+
+  GeneratedColumn<String> get replyToExcerpt => $composableBuilder(
+      column: $table.replyToExcerpt, builder: (column) => column);
+
+  GeneratedColumn<String> get replyToMediaKind => $composableBuilder(
+      column: $table.replyToMediaKind, builder: (column) => column);
+
+  GeneratedColumn<bool> get replyToDeleted => $composableBuilder(
+      column: $table.replyToDeleted, builder: (column) => column);
 }
 
 class $$GroupMessagesTableTableManager extends RootTableManager<
@@ -26316,6 +27564,14 @@ class $$GroupMessagesTableTableManager extends RootTableManager<
             Value<String?> clientMessageId = const Value.absent(),
             Value<DateTime?> clientCreatedAt = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<DateTime?> editedAt = const Value.absent(),
+            Value<bool> isForwarded = const Value.absent(),
+            Value<String?> replyToMessageId = const Value.absent(),
+            Value<String?> replyToAuthorId = const Value.absent(),
+            Value<String?> replyToExcerpt = const Value.absent(),
+            Value<String?> replyToMediaKind = const Value.absent(),
+            Value<bool> replyToDeleted = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               GroupMessagesCompanion(
@@ -26328,6 +27584,14 @@ class $$GroupMessagesTableTableManager extends RootTableManager<
             clientMessageId: clientMessageId,
             clientCreatedAt: clientCreatedAt,
             createdAt: createdAt,
+            deletedAt: deletedAt,
+            editedAt: editedAt,
+            isForwarded: isForwarded,
+            replyToMessageId: replyToMessageId,
+            replyToAuthorId: replyToAuthorId,
+            replyToExcerpt: replyToExcerpt,
+            replyToMediaKind: replyToMediaKind,
+            replyToDeleted: replyToDeleted,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -26340,6 +27604,14 @@ class $$GroupMessagesTableTableManager extends RootTableManager<
             Value<String?> clientMessageId = const Value.absent(),
             Value<DateTime?> clientCreatedAt = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<DateTime?> editedAt = const Value.absent(),
+            Value<bool> isForwarded = const Value.absent(),
+            Value<String?> replyToMessageId = const Value.absent(),
+            Value<String?> replyToAuthorId = const Value.absent(),
+            Value<String?> replyToExcerpt = const Value.absent(),
+            Value<String?> replyToMediaKind = const Value.absent(),
+            Value<bool> replyToDeleted = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               GroupMessagesCompanion.insert(
@@ -26352,6 +27624,14 @@ class $$GroupMessagesTableTableManager extends RootTableManager<
             clientMessageId: clientMessageId,
             clientCreatedAt: clientCreatedAt,
             createdAt: createdAt,
+            deletedAt: deletedAt,
+            editedAt: editedAt,
+            isForwarded: isForwarded,
+            replyToMessageId: replyToMessageId,
+            replyToAuthorId: replyToAuthorId,
+            replyToExcerpt: replyToExcerpt,
+            replyToMediaKind: replyToMediaKind,
+            replyToDeleted: replyToDeleted,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -26383,6 +27663,7 @@ typedef $$PendingGroupMessagesTableCreateCompanionBuilder
   required String body,
   required DateTime createdAt,
   Value<bool> failed,
+  Value<String?> replyToMessageId,
   Value<int> rowid,
 });
 typedef $$PendingGroupMessagesTableUpdateCompanionBuilder
@@ -26392,6 +27673,7 @@ typedef $$PendingGroupMessagesTableUpdateCompanionBuilder
   Value<String> body,
   Value<DateTime> createdAt,
   Value<bool> failed,
+  Value<String?> replyToMessageId,
   Value<int> rowid,
 });
 
@@ -26419,6 +27701,10 @@ class $$PendingGroupMessagesTableFilterComposer
 
   ColumnFilters<bool> get failed => $composableBuilder(
       column: $table.failed, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get replyToMessageId => $composableBuilder(
+      column: $table.replyToMessageId,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$PendingGroupMessagesTableOrderingComposer
@@ -26445,6 +27731,10 @@ class $$PendingGroupMessagesTableOrderingComposer
 
   ColumnOrderings<bool> get failed => $composableBuilder(
       column: $table.failed, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get replyToMessageId => $composableBuilder(
+      column: $table.replyToMessageId,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$PendingGroupMessagesTableAnnotationComposer
@@ -26470,6 +27760,9 @@ class $$PendingGroupMessagesTableAnnotationComposer
 
   GeneratedColumn<bool> get failed =>
       $composableBuilder(column: $table.failed, builder: (column) => column);
+
+  GeneratedColumn<String> get replyToMessageId => $composableBuilder(
+      column: $table.replyToMessageId, builder: (column) => column);
 }
 
 class $$PendingGroupMessagesTableTableManager extends RootTableManager<
@@ -26507,6 +27800,7 @@ class $$PendingGroupMessagesTableTableManager extends RootTableManager<
             Value<String> body = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<bool> failed = const Value.absent(),
+            Value<String?> replyToMessageId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               PendingGroupMessagesCompanion(
@@ -26515,6 +27809,7 @@ class $$PendingGroupMessagesTableTableManager extends RootTableManager<
             body: body,
             createdAt: createdAt,
             failed: failed,
+            replyToMessageId: replyToMessageId,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -26523,6 +27818,7 @@ class $$PendingGroupMessagesTableTableManager extends RootTableManager<
             required String body,
             required DateTime createdAt,
             Value<bool> failed = const Value.absent(),
+            Value<String?> replyToMessageId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               PendingGroupMessagesCompanion.insert(
@@ -26531,6 +27827,7 @@ class $$PendingGroupMessagesTableTableManager extends RootTableManager<
             body: body,
             createdAt: createdAt,
             failed: failed,
+            replyToMessageId: replyToMessageId,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -28010,6 +29307,393 @@ typedef $$GroupMutesTableProcessedTableManager = ProcessedTableManager<
     ),
     GroupMuteRow,
     PrefetchHooks Function()>;
+typedef $$GroupMessageReactionsTableCreateCompanionBuilder
+    = GroupMessageReactionsCompanion Function({
+  Value<int> syncStamp,
+  required String id,
+  required String groupId,
+  required String messageId,
+  required String userId,
+  required String emoji,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$GroupMessageReactionsTableUpdateCompanionBuilder
+    = GroupMessageReactionsCompanion Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String> groupId,
+  Value<String> messageId,
+  Value<String> userId,
+  Value<String> emoji,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$GroupMessageReactionsTableFilterComposer
+    extends Composer<_$AppDatabase, $GroupMessageReactionsTable> {
+  $$GroupMessageReactionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+      column: $table.messageId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get emoji => $composableBuilder(
+      column: $table.emoji, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$GroupMessageReactionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $GroupMessageReactionsTable> {
+  $$GroupMessageReactionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+      column: $table.messageId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get emoji => $composableBuilder(
+      column: $table.emoji, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$GroupMessageReactionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GroupMessageReactionsTable> {
+  $$GroupMessageReactionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get emoji =>
+      $composableBuilder(column: $table.emoji, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$GroupMessageReactionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $GroupMessageReactionsTable,
+    GroupMessageReactionRow,
+    $$GroupMessageReactionsTableFilterComposer,
+    $$GroupMessageReactionsTableOrderingComposer,
+    $$GroupMessageReactionsTableAnnotationComposer,
+    $$GroupMessageReactionsTableCreateCompanionBuilder,
+    $$GroupMessageReactionsTableUpdateCompanionBuilder,
+    (
+      GroupMessageReactionRow,
+      BaseReferences<_$AppDatabase, $GroupMessageReactionsTable,
+          GroupMessageReactionRow>
+    ),
+    GroupMessageReactionRow,
+    PrefetchHooks Function()> {
+  $$GroupMessageReactionsTableTableManager(
+      _$AppDatabase db, $GroupMessageReactionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GroupMessageReactionsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GroupMessageReactionsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GroupMessageReactionsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> groupId = const Value.absent(),
+            Value<String> messageId = const Value.absent(),
+            Value<String> userId = const Value.absent(),
+            Value<String> emoji = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupMessageReactionsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            groupId: groupId,
+            messageId: messageId,
+            userId: userId,
+            emoji: emoji,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            required String groupId,
+            required String messageId,
+            required String userId,
+            required String emoji,
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupMessageReactionsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            groupId: groupId,
+            messageId: messageId,
+            userId: userId,
+            emoji: emoji,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$GroupMessageReactionsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $GroupMessageReactionsTable,
+        GroupMessageReactionRow,
+        $$GroupMessageReactionsTableFilterComposer,
+        $$GroupMessageReactionsTableOrderingComposer,
+        $$GroupMessageReactionsTableAnnotationComposer,
+        $$GroupMessageReactionsTableCreateCompanionBuilder,
+        $$GroupMessageReactionsTableUpdateCompanionBuilder,
+        (
+          GroupMessageReactionRow,
+          BaseReferences<_$AppDatabase, $GroupMessageReactionsTable,
+              GroupMessageReactionRow>
+        ),
+        GroupMessageReactionRow,
+        PrefetchHooks Function()>;
+typedef $$GroupMessageHidesTableCreateCompanionBuilder
+    = GroupMessageHidesCompanion Function({
+  Value<int> syncStamp,
+  required String messageId,
+  required String groupId,
+  Value<int?> hideId,
+  Value<DateTime?> createdAt,
+  Value<int> rowid,
+});
+typedef $$GroupMessageHidesTableUpdateCompanionBuilder
+    = GroupMessageHidesCompanion Function({
+  Value<int> syncStamp,
+  Value<String> messageId,
+  Value<String> groupId,
+  Value<int?> hideId,
+  Value<DateTime?> createdAt,
+  Value<int> rowid,
+});
+
+class $$GroupMessageHidesTableFilterComposer
+    extends Composer<_$AppDatabase, $GroupMessageHidesTable> {
+  $$GroupMessageHidesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+      column: $table.messageId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get hideId => $composableBuilder(
+      column: $table.hideId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$GroupMessageHidesTableOrderingComposer
+    extends Composer<_$AppDatabase, $GroupMessageHidesTable> {
+  $$GroupMessageHidesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+      column: $table.messageId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get hideId => $composableBuilder(
+      column: $table.hideId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$GroupMessageHidesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GroupMessageHidesTable> {
+  $$GroupMessageHidesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<int> get hideId =>
+      $composableBuilder(column: $table.hideId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$GroupMessageHidesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $GroupMessageHidesTable,
+    GroupMessageHideRow,
+    $$GroupMessageHidesTableFilterComposer,
+    $$GroupMessageHidesTableOrderingComposer,
+    $$GroupMessageHidesTableAnnotationComposer,
+    $$GroupMessageHidesTableCreateCompanionBuilder,
+    $$GroupMessageHidesTableUpdateCompanionBuilder,
+    (
+      GroupMessageHideRow,
+      BaseReferences<_$AppDatabase, $GroupMessageHidesTable,
+          GroupMessageHideRow>
+    ),
+    GroupMessageHideRow,
+    PrefetchHooks Function()> {
+  $$GroupMessageHidesTableTableManager(
+      _$AppDatabase db, $GroupMessageHidesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GroupMessageHidesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GroupMessageHidesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GroupMessageHidesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> messageId = const Value.absent(),
+            Value<String> groupId = const Value.absent(),
+            Value<int?> hideId = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupMessageHidesCompanion(
+            syncStamp: syncStamp,
+            messageId: messageId,
+            groupId: groupId,
+            hideId: hideId,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String messageId,
+            required String groupId,
+            Value<int?> hideId = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupMessageHidesCompanion.insert(
+            syncStamp: syncStamp,
+            messageId: messageId,
+            groupId: groupId,
+            hideId: hideId,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$GroupMessageHidesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $GroupMessageHidesTable,
+    GroupMessageHideRow,
+    $$GroupMessageHidesTableFilterComposer,
+    $$GroupMessageHidesTableOrderingComposer,
+    $$GroupMessageHidesTableAnnotationComposer,
+    $$GroupMessageHidesTableCreateCompanionBuilder,
+    $$GroupMessageHidesTableUpdateCompanionBuilder,
+    (
+      GroupMessageHideRow,
+      BaseReferences<_$AppDatabase, $GroupMessageHidesTable,
+          GroupMessageHideRow>
+    ),
+    GroupMessageHideRow,
+    PrefetchHooks Function()>;
 typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
     Function({
   required String key,
@@ -28768,6 +30452,10 @@ class $AppDatabaseManager {
       $$DeliveryAcksTableTableManager(_db, _db.deliveryAcks);
   $$GroupMutesTableTableManager get groupMutes =>
       $$GroupMutesTableTableManager(_db, _db.groupMutes);
+  $$GroupMessageReactionsTableTableManager get groupMessageReactions =>
+      $$GroupMessageReactionsTableTableManager(_db, _db.groupMessageReactions);
+  $$GroupMessageHidesTableTableManager get groupMessageHides =>
+      $$GroupMessageHidesTableTableManager(_db, _db.groupMessageHides);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$DownloadsTableTableManager get downloads =>

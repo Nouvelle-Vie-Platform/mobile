@@ -47,6 +47,8 @@ part 'group_dao.g.dart';
     // M8 (#146) : mon rangement, lu par la liste des conversations.
     GroupArrangements,
     PendingGroupArrangements,
+    GroupMessageReactions,
+    GroupMessageHides,
   ],
 )
 class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
@@ -97,10 +99,15 @@ LEFT JOIN pending_group_reads AS pr ON pr.group_id = g.id''';
   ///
   /// ⚠️ `author_id IS NULL OR …` et non `author_id <> moi` seul : en SQL, une
   /// comparaison à `NULL` est `NULL`, et le message d'un **auteur retiré**
-  /// (ADR-0032) cesserait silencieusement de compter. Les tombstones, eux, ont
-  /// quitté le magasin.
+  /// (ADR-0032) cesserait silencieusement de compter.
+  ///
+  /// **M2 (#141)** : un tombstone reste désormais au magasin (il se peint
+  /// « supprimé ») et un message peut être **masqué pour moi** — ni l'un ni
+  /// l'autre ne compte. Exige `group_message_hides` dans `readsFrom`.
   static String _isUnread(String m, int me) => '''
 ($m.is_system = 0
+ AND $m.deleted_at IS NULL
+ AND ${_notHidden(m)}
  AND ($m.author_id IS NULL OR $m.author_id <> ?$me)
  AND (r.group_id IS NULL
       OR COALESCE(rm.created_at, r.last_read_at) IS NULL
@@ -109,6 +116,20 @@ LEFT JOIN pending_group_reads AS pr ON pr.group_id = g.id''';
  AND (pr.group_id IS NULL
       OR $m.created_at > pr.message_created_at
       OR ($m.created_at = pr.message_created_at AND $m.id > pr.message_id)))''';
+
+  /// **Le message d'alias [m] n'est pas masqué pour moi** (M2, #141) —
+  /// « supprimer pour moi » le retire de **mon** fil, de mon aperçu et de mes
+  /// non-lus. `group_message_hides` ne porte que mes lignes (collection
+  /// privée) : il n'y a pas d'utilisateur à filtrer.
+  ///
+  /// **Public, et c'est voulu** : toute lecture locale qui liste des messages
+  /// pour moi (la recherche de M8 notamment — à brancher à la fusion) doit
+  /// exclure mes « supprimé pour moi » par cette même condition.
+  static String notHiddenForMe(String m) => _notHidden(m);
+
+  static String _notHidden(String m) =>
+      'NOT EXISTS (SELECT 1 FROM group_message_hides AS h '
+      'WHERE h.message_id = $m.id)';
 
   /// **Mes conversations**, groupes et tête-à-tête mêlés, triées par récence.
   ///
@@ -152,6 +173,7 @@ SELECT
   last.is_system      AS last_is_system,
   last.author_id      AS last_author_id,
   last.created_at     AS last_created_at,
+  last.deleted_at     AS last_deleted_at,
   COALESCE(last.created_at, g.updated_at, g.created_at) AS activity_at,
   (SELECT COUNT(*) FROM group_messages AS u
     WHERE u.group_id = g.id AND ${_isUnread('u', 1)}) AS unread_count,
@@ -176,7 +198,7 @@ LEFT JOIN profiles AS peer ON peer.id = (
 )
 LEFT JOIN group_messages AS last ON last.id = (
   SELECT m.id FROM group_messages AS m
-   WHERE m.group_id = g.id
+   WHERE m.group_id = g.id AND ${_notHidden('m')}
    ORDER BY m.created_at DESC, m.id DESC LIMIT 1
 )
 WHERE me.user_id = ?1
@@ -193,6 +215,7 @@ ORDER BY activity_at DESC, g.id DESC
         groupArrangements,
         pendingGroupArrangements,
         groupMutes,
+        groupMessageHides,
       },
     ).map(
       (row) => ConversationRecord(
@@ -212,6 +235,7 @@ ORDER BY activity_at DESC, g.id DESC
         lastIsSystem: row.read<bool?>('last_is_system'),
         lastAuthorId: row.read<String?>('last_author_id'),
         lastCreatedAt: row.read<DateTime?>('last_created_at'),
+        lastDeleted: row.read<DateTime?>('last_deleted_at') != null,
         unreadCount: row.read<int>('unread_count'),
         isArchived: row.read<bool>('is_archived'),
         pinnedAt: row.read<DateTime?>('pinned_at'),
@@ -365,12 +389,24 @@ SELECT
   0               AS has_failed,
   author.display_name AS author_name,
   author.avatar_url   AS author_avatar_url,
-  CASE WHEN ${_isUnread('m', 2)} THEN 1 ELSE 0 END AS is_unread
+  CASE WHEN ${_isUnread('m', 2)} THEN 1 ELSE 0 END AS is_unread,
+  m.deleted_at          AS deleted_at,
+  m.edited_at           AS edited_at,
+  m.is_forwarded        AS is_forwarded,
+  m.reply_to_message_id AS reply_to_message_id,
+  m.reply_to_author_id  AS reply_to_author_id,
+  quoted.display_name   AS reply_to_author_name,
+  m.reply_to_excerpt    AS reply_to_excerpt,
+  m.reply_to_media_kind AS reply_to_media_kind,
+  m.reply_to_deleted    AS reply_to_deleted,
+  $_reactionsOf         AS reactions
 FROM group_messages AS m
 JOIN (SELECT ?1 AS id) AS g
 $_readJoins
 LEFT JOIN profiles AS author ON author.id = m.author_id
+LEFT JOIN profiles AS quoted ON quoted.id = m.reply_to_author_id
 WHERE m.group_id = ?1
+  AND ${_notHidden('m')}
 UNION ALL
 SELECT
   p.client_message_id,
@@ -382,9 +418,21 @@ SELECT
   p.failed,
   me.display_name,
   me.avatar_url,
-  0
+  0,
+  NULL,
+  NULL,
+  0,
+  p.reply_to_message_id,
+  origin.author_id,
+  origin_author.display_name,
+  origin.body,
+  NULL,
+  CASE WHEN origin.deleted_at IS NULL THEN 0 ELSE 1 END,
+  NULL
 FROM pending_group_messages AS p
 LEFT JOIN profiles AS me ON me.id = ?2
+LEFT JOIN group_messages AS origin ON origin.id = p.reply_to_message_id
+LEFT JOIN profiles AS origin_author ON origin_author.id = origin.author_id
 WHERE p.group_id = ?1
   AND NOT EXISTS (
     SELECT 1 FROM group_messages AS gm
@@ -407,6 +455,8 @@ ORDER BY created_at ASC, entry_id ASC
         pendingGroupMessages,
         groupReads,
         pendingGroupReads,
+        groupMessageReactions,
+        groupMessageHides,
       },
     ).map(
       (row) => ThreadEntryRecord(
@@ -420,8 +470,40 @@ ORDER BY created_at ASC, entry_id ASC
         authorName: row.read<String?>('author_name'),
         authorAvatarUrl: row.read<String?>('author_avatar_url'),
         isUnread: row.read<bool>('is_unread'),
+        deletedAt: row.read<DateTime?>('deleted_at'),
+        editedAt: row.read<DateTime?>('edited_at'),
+        isForwarded: row.read<bool>('is_forwarded'),
+        replyToMessageId: row.read<String?>('reply_to_message_id'),
+        replyToAuthorId: row.read<String?>('reply_to_author_id'),
+        replyToAuthorName: row.read<String?>('reply_to_author_name'),
+        replyToExcerpt: row.read<String?>('reply_to_excerpt'),
+        replyToMediaKind: row.read<String?>('reply_to_media_kind'),
+        replyToDeleted: row.read<bool>('reply_to_deleted'),
+        reactions: parseReactions(row.read<String?>('reactions')),
       ),
     );
+  }
+
+  /// **Les réactions d'un message, en une colonne** (M2, #141) : chaque
+  /// réaction `emoji␟userId`, jointes par `␞` (séparateurs ASCII 31 et 30, qui
+  /// n'apparaissent ni dans un emoji ni dans un uuid). Une sous-requête et non
+  /// un second flux : le fil garde **une** requête, donc un seul ordre et pas de
+  /// clignotement quand l'une des deux sources se rafraîchit.
+  static const String _reactionsOf = '''
+(SELECT group_concat(r.emoji || char(31) || r.user_id, char(30))
+   FROM group_message_reactions AS r
+  WHERE r.message_id = m.id)''';
+
+  /// Relit la colonne de [_reactionsOf]. Une entrée mal formée est ignorée.
+  @visibleForTesting
+  static List<({String emoji, String userId})> parseReactions(String? raw) {
+    if (raw == null || raw.isEmpty) return const [];
+    return [
+      for (final entry in raw.split(String.fromCharCode(30)))
+        if (entry.split(String.fromCharCode(31)) case [final emoji, final user]
+            when emoji.isNotEmpty && user.isNotEmpty)
+          (emoji: emoji, userId: user),
+    ];
   }
 
   /// **Le nombre de non-lus d'un groupe**, une fois (#140) — la formule de
@@ -437,8 +519,81 @@ $_readJoins
 WHERE m.group_id = ?1 AND ${_isUnread('m', 2)}
 ''',
       variables: [Variable<String>(groupId), Variable<String>(userId)],
-      readsFrom: {groupMessages, groupReads, pendingGroupReads},
+      readsFrom: {
+        groupMessages,
+        groupReads,
+        pendingGroupReads,
+        groupMessageHides,
+      },
     ).map((row) => row.read<int>('n')).getSingle();
+  }
+
+  /// **Qui a réagi à ce message**, et avec quoi (M2, #141) — nommé par
+  /// `profiles` quand il les a. Pour la feuille ouverte en touchant l'agrégat.
+  Selectable<ReactorRecord> reactorsOf(String messageId) {
+    return customSelect(
+      '''
+SELECT r.emoji AS emoji, r.user_id AS user_id, p.display_name AS display_name
+FROM group_message_reactions AS r
+LEFT JOIN profiles AS p ON p.id = r.user_id
+WHERE r.message_id = ?1
+ORDER BY r.emoji ASC, p.display_name ASC, r.user_id ASC
+''',
+      variables: [Variable<String>(messageId)],
+      readsFrom: {groupMessageReactions, profiles},
+    ).map(
+      (row) => ReactorRecord(
+        emoji: row.read<String>('emoji'),
+        userId: row.read<String>('user_id'),
+        displayName: row.read<String?>('display_name'),
+      ),
+    );
+  }
+
+  /// **Combien de messages du fil sont plus récents que [messageId]** (M2,
+  /// #141) — ou `null` si le magasin ne l'a pas (pas encore tiré, ou masqué pour
+  /// moi). Sert à « toucher la citation » : la fenêtre du fil doit s'élargir
+  /// jusqu'à contenir le message d'origine avant d'y défiler.
+  Future<int?> newerThan(String groupId, String messageId) async {
+    final target = await customSelect(
+      '''
+SELECT m.created_at AS created_at FROM group_messages AS m
+WHERE m.id = ?1 AND m.group_id = ?2 AND ${_notHidden('m')}
+''',
+      variables: [Variable<String>(messageId), Variable<String>(groupId)],
+      readsFrom: {groupMessages, groupMessageHides},
+    ).getSingleOrNull();
+    if (target == null) return null;
+    final createdAt = target.read<DateTime?>('created_at');
+    if (createdAt == null) return 0;
+
+    return customSelect(
+      '''
+SELECT COUNT(*) AS n FROM group_messages AS m
+WHERE m.group_id = ?1 AND ${_notHidden('m')}
+  AND (m.created_at > ?2 OR (m.created_at = ?2 AND m.id > ?3))
+''',
+      variables: [
+        Variable<String>(groupId),
+        Variable<DateTime>(createdAt),
+        Variable<String>(messageId),
+      ],
+      readsFrom: {groupMessages, groupMessageHides},
+    ).map((row) => row.read<int>('n')).getSingle();
+  }
+
+  /// **Le plus ancien message du fil en magasin** (M2, #141), ou `null` — le
+  /// point de départ de l'historique quand une citation désigne plus ancien.
+  Future<String?> oldestMessageIdOf(String groupId) {
+    return customSelect(
+      '''
+SELECT m.id AS id FROM group_messages AS m
+WHERE m.group_id = ?1
+ORDER BY m.created_at ASC, m.id ASC LIMIT 1
+''',
+      variables: [Variable<String>(groupId)],
+      readsFrom: {groupMessages},
+    ).map((row) => row.read<String>('id')).getSingleOrNull();
   }
 
   /// **Le magasin connaît-il ce groupe ?** (#140) Un événement du canal
@@ -625,6 +780,7 @@ ORDER BY p.display_name IS NULL, p.display_name COLLATE NOCASE, p.id
     required String groupId,
     required String body,
     required DateTime createdAt,
+    String? replyToMessageId,
   }) {
     return into(pendingGroupMessages).insert(
       PendingGroupMessagesCompanion.insert(
@@ -632,6 +788,7 @@ ORDER BY p.display_name IS NULL, p.display_name COLLATE NOCASE, p.id
         groupId: groupId,
         body: body,
         createdAt: createdAt,
+        replyToMessageId: Value(replyToMessageId),
       ),
       mode: InsertMode.insertOrReplace,
     );
@@ -922,6 +1079,7 @@ class ConversationRecord {
     this.lastIsSystem,
     this.lastAuthorId,
     this.lastCreatedAt,
+    this.lastDeleted = false,
     this.unreadCount = 0,
     this.isArchived = false,
     this.pinnedAt,
@@ -949,6 +1107,10 @@ class ConversationRecord {
   final bool? lastIsSystem;
   final String? lastAuthorId;
   final DateTime? lastCreatedAt;
+
+  /// Le dernier message a été **supprimé pour tous** (M2, #141) : l'aperçu dit
+  /// « Ce message a été supprimé ».
+  final bool lastDeleted;
 
   /// Les messages non lus de cette conversation — la formule du contrat serveur
   /// (`GroupDao._isUnread`).
@@ -1033,6 +1195,16 @@ class ThreadEntryRecord {
     this.authorName,
     this.authorAvatarUrl,
     this.isUnread = false,
+    this.deletedAt,
+    this.editedAt,
+    this.isForwarded = false,
+    this.replyToMessageId,
+    this.replyToAuthorId,
+    this.replyToAuthorName,
+    this.replyToExcerpt,
+    this.replyToMediaKind,
+    this.replyToDeleted = false,
+    this.reactions = const [],
   });
 
   /// L'UUIDv7 serveur pour un message confirmé, le `clientMessageId` pour un
@@ -1058,6 +1230,46 @@ class ThreadEntryRecord {
 
   /// Non lu au sens du contrat (#140) — jamais vrai pour un écho.
   final bool isUnread;
+
+  // ── Tranche M2 (#141) ──
+
+  /// Supprimé pour tous : la bulle dit « Ce message a été supprimé ».
+  final DateTime? deletedAt;
+
+  /// Modifié par l'auteur : la bulle porte « Modifié ».
+  final DateTime? editedAt;
+
+  /// Une copie transférée : la bulle porte « Transféré ».
+  final bool isForwarded;
+
+  /// La citation : le message cité, son auteur (et son nom, joint sur
+  /// `profiles`), l'extrait, la forme du média, et s'il a été supprimé. Pour un
+  /// écho, lue sur le message d'origine **en magasin**.
+  final String? replyToMessageId;
+  final String? replyToAuthorId;
+  final String? replyToAuthorName;
+  final String? replyToExcerpt;
+  final String? replyToMediaKind;
+  final bool replyToDeleted;
+
+  /// Les réactions, une par personne — l'agrégat se calcule dans la vue.
+  final List<({String emoji, String userId})> reactions;
+}
+
+/// Une réaction nommée — la feuille « qui a réagi » (M2, #141).
+@immutable
+class ReactorRecord {
+  const ReactorRecord({
+    required this.emoji,
+    required this.userId,
+    this.displayName,
+  });
+
+  final String emoji;
+  final String userId;
+
+  /// `null` tant que `profiles` ne l'a pas livré.
+  final String? displayName;
 }
 
 /// Un groupe et les trois propriétaires possibles, dont un seul est renseigné.

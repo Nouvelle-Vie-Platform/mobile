@@ -83,7 +83,8 @@ final class MessagingRowEvent extends MessagingEvent {
 
   /// `message.created`, `message.updated`, `message.deleted`,
   /// `membership.changed`, `group.updated`, `read.advanced`,
-  /// `arrangement.changed`, `receipt.updated` (#142), `mute.changed` (M5).
+  /// `arrangement.changed`, `receipt.updated` (#142), `mute.changed` (M5) — et,
+  /// depuis M2 (#141), `reaction.changed` et `message.hidden`.
   final String type;
 
   /// La clé de collection (`SyncCollectionKey`) où la ligne se range.
@@ -180,6 +181,15 @@ const Map<String, ({String collection, String key})> _kEventRows = {
   ),
   // Ma sourdine (M5), réglée depuis un autre de mes appareils.
   'mute.changed': (collection: SyncCollectionKey.groupMutes, key: 'mute'),
+  // ── Tranche M2 (#141) ──
+  'reaction.changed': (
+    collection: SyncCollectionKey.groupMessageReactions,
+    key: 'reaction'
+  ),
+  'message.hidden': (
+    collection: SyncCollectionKey.groupMessageHides,
+    key: 'hide'
+  ),
 };
 
 /// **Décode une trame** `data:` de Transmit.

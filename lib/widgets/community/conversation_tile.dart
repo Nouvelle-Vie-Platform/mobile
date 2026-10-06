@@ -48,8 +48,11 @@ class ConversationTile extends StatelessWidget {
     // **Un dernier message sans texte est un média** (#140) : il y a un instant,
     // mais pas de phrase. On le dit, plutôt que de laisser croire au vide.
     final preview = typingLabel ??
-        conversation.lastMessagePreview ??
-        (stamp != null ? l.echangesMediaPreview : null);
+        (conversation.lastMessageDeleted
+            // M2 (#141) : un dernier message supprimé pour tous le dit.
+            ? l.chatMessageDeleted
+            : conversation.lastMessagePreview ??
+                (stamp != null ? l.echangesMediaPreview : null));
     final unread = conversation.unreadCount;
 
     return AppCard(

@@ -376,7 +376,9 @@ void main() {
   });
 
   group('Les tombstones', () {
-    test('un message supprimé par modération quitte le magasin', () async {
+    test(
+        'un message supprimé pour tous RESTE au magasin, tombstoné et vidé '
+        '(M2, #141)', () async {
       server
         ..serveManifest(echangesManifest())
         ..serveCollection('profiles', profilesPage())
@@ -392,11 +394,15 @@ void main() {
 
       await engine().synchronize();
 
-      // `readsAsRetraction` tranche **avant** toute désérialisation : la ligne
-      // quitte le magasin par son identifiant, quelle que soit son origine.
-      expect(await db.select(db.groupMessages).get(), hasLength(3));
-      final ids = (await db.select(db.groupMessages).get()).map((m) => m.id);
-      expect(ids, isNot(contains(memberMessagePayload['id'])));
+      // Depuis M2, `group_messages` **garde** son tombstone : le fil peint « Ce
+      // message a été supprimé » à sa place. Le texte, lui, n'est pas gardé —
+      // même servi par un serveur antérieur à M2.
+      final rows = await db.select(db.groupMessages).get();
+      expect(rows, hasLength(4));
+      final deleted =
+          rows.singleWhere((m) => m.id == memberMessagePayload['id']);
+      expect(deleted.deletedAt, isNotNull);
+      expect(deleted.body, isNull);
     });
 
     test('mon départ retire la conversation, sans effacer le groupe', () async {

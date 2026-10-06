@@ -210,6 +210,7 @@ class _RecordingSender implements GroupMessageSender {
     required String body,
     required String clientMessageId,
     required DateTime clientCreatedAt,
+    String? replyToMessageId,
   }) async {
     calls.add(
       (groupId: groupId, body: body, clientMessageId: clientMessageId),

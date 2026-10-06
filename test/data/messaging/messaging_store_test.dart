@@ -170,15 +170,20 @@ void main() {
       );
     });
 
-    test('un tombstone (`message.deleted`) retire la ligne', () async {
+    test(
+        'un tombstone (`message.deleted`) est GARDÉ, sans son texte '
+        '(M2, #141)', () async {
       await seedGroup();
       await writer.store(
         SyncCollectionKey.groupMessages,
         deletedMessagePayload,
       );
 
-      final ids = (await db.select(db.groupMessages).get()).map((m) => m.id);
-      expect(ids, isNot(contains(deletedMessagePayload['id'])));
+      final row = await (db.select(db.groupMessages)
+            ..where((m) => m.id.equals(deletedMessagePayload['id']! as String)))
+          .getSingle();
+      expect(row.deletedAt, isNotNull);
+      expect(row.body, isNull);
     });
 
     test(

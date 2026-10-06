@@ -825,6 +825,8 @@ GroupJoinRequestsCompanion groupJoinRequestRowOf(Map<String, Object?> item) {
 /// planterait.
 GroupMessagesCompanion groupMessageRowOf(Map<String, Object?> item) {
   const collection = 'group_messages';
+  final deleted = item['deletedAt'] != null;
+  final reply = deleted ? null : _replyToOf(item);
   return GroupMessagesCompanion.insert(
     id: contentId(collection, item),
     groupId: _text(collection, item, 'groupId'),
@@ -833,11 +835,87 @@ GroupMessagesCompanion groupMessageRowOf(Map<String, Object?> item) {
     isSystem: Value(item['isSystem'] == true),
     // **Nullable** (#140, piège 1) : un message-média arrive avec `body: null`,
     // et l'exiger ici rejetait la page — donc coupait le cycle à chaque tour.
-    body: Value(_optionalText(item, 'body')),
+    // **Jamais sur un tombstone** (M2, #141) : le magasin garde désormais les
+    // messages supprimés, et un serveur antérieur à M2 servait encore leur
+    // texte. Ce qui a été retiré ne doit pas dormir dans le téléphone.
+    body: Value(deleted ? null : _optionalText(item, 'body')),
     clientMessageId: Value(_optionalText(item, 'clientMessageId')),
     clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
     createdAt: Value(_instant(item, 'createdAt')),
+    // ── Tranche M2 (#141) ── tolérés absents : un serveur antérieur à M2 ne
+    // les sert pas, et la ligne reste alors un message ni supprimé, ni modifié,
+    // ni transféré, ni réponse — ce qu'elle est.
+    deletedAt: Value(_instant(item, 'deletedAt')),
+    editedAt: Value(_instant(item, 'editedAt')),
+    isForwarded: Value(item['isForwarded'] == true),
+    replyToMessageId: Value(reply?.messageId),
+    replyToAuthorId: Value(reply?.authorId),
+    replyToExcerpt: Value(reply?.excerpt),
+    replyToMediaKind: Value(reply?.mediaKind),
+    replyToDeleted: Value(reply?.deleted ?? false),
   );
+}
+
+/// **La citation d'une réponse** (M2, #141) — l'objet `replyTo` du serveur,
+/// rangé à plat. `null` ou absent : pas une réponse. Une citation mal formée
+/// (sans `messageId`) est **ignorée**, jamais levée : elle ne vaut pas la page.
+({
+  String messageId,
+  String? authorId,
+  String? excerpt,
+  String? mediaKind,
+  bool deleted,
+})? _replyToOf(Map<String, Object?> item) {
+  final reply = item['replyTo'];
+  if (reply is! Map) return null;
+  final quoted = {for (final e in reply.entries) e.key.toString(): e.value};
+  final messageId = _optionalText(quoted, 'messageId');
+  if (messageId == null) return null;
+  return (
+    messageId: messageId,
+    authorId: _optionalText(quoted, 'authorId'),
+    excerpt: _optionalText(quoted, 'excerpt'),
+    mediaKind: _optionalText(quoted, 'mediaKind'),
+    deleted: quoted['deleted'] == true,
+  );
+}
+
+/// `GET /sync/group_message_reactions` — **une réaction** (M2, #141) : `id`,
+/// `groupId`, `messageId`, `userId`, `emoji`, `createdAt`, `updatedAt`,
+/// `deletedAt` (le tombstone est trié en amont, par `readsAsRetraction`).
+GroupMessageReactionsCompanion groupMessageReactionRowOf(
+  Map<String, Object?> item,
+) {
+  const collection = 'group_message_reactions';
+  return GroupMessageReactionsCompanion.insert(
+    id: contentId(collection, item),
+    groupId: _text(collection, item, 'groupId'),
+    messageId: _text(collection, item, 'messageId'),
+    userId: _text(collection, item, 'userId'),
+    emoji: _text(collection, item, 'emoji'),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/group_message_hides` — **un message que j'ai supprimé pour moi**
+/// (M2, #141) : `id` (entier), `groupId`, `messageId`, `createdAt`. Rangée par
+/// `messageId`.
+GroupMessageHidesCompanion groupMessageHideRowOf(Map<String, Object?> item) {
+  const collection = 'group_message_hides';
+  return GroupMessageHidesCompanion.insert(
+    messageId: _text(collection, item, 'messageId'),
+    groupId: _text(collection, item, 'groupId'),
+    hideId: Value(_optionalInt(item, 'id')),
+    createdAt: Value(_instant(item, 'createdAt')),
+  );
+}
+
+/// L'identifiant **local** d'une ligne `group_message_hides` : son
+/// `messageId`. La collection n'a pas de tombstone ; il sert au tri commun.
+String groupMessageHideKey(Map<String, Object?> item) {
+  final id = item['messageId'];
+  if (id is String) return id;
+  throw MalformedSyncRow('group_message_hides', 'messageId', id);
 }
 
 /// `GET /sync/group_reads` — **quatre clés** : `id`, `groupId`,
