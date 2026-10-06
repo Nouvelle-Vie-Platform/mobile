@@ -1,497 +1,348 @@
-/// **La médiathèque, et ses onglets qui filtrent** (#82).
+/// **La médiathèque en pages** (#167) — l'écran : onglets, puces, quatre
+/// gabarits, sections vides masquées, loupe, « Voir tout ».
 ///
-/// **Couture neuve** : cet écran n'avait aucun test à lui. Il n'apparaissait
-/// qu'en montage à blanc (`main_tabs_test.dart`) et comme support de tests
-/// d'autre chose (`sync_triggers_test.dart`, `guest_guard_test.dart`,
-/// `cold_start_test.dart`) — **aucune assertion sur un filtre, une rubrique, un
-/// tri ou un contenu affiché**. C'est précisément l'écran que cette tranche
-/// refait.
-///
-/// Tout se joue sur le **vrai magasin**, en mémoire : ce qui est vérifié n'est
-/// pas qu'un écran sait afficher une liste, c'est que la chaîne entière — lignes
-/// répliquées → menu résolu → liste filtrée → écran — laisse le portail décider
-/// de la barre d'onglets. Un double de repository aurait pu répondre n'importe
-/// quoi, et les deux règles qui comptent — « un onglet filtre vraiment » et « une
-/// destination inconnue disparaît sans repli » — ne se seraient jamais exercées.
+/// La composition elle-même (chaque règle de tri et de filtre) se juge sur la
+/// fonction pure, dans `test/models/media_page_view_test.dart` ; la lecture du
+/// magasin, dans `test/sync/media_pages_collection_test.dart`. Ici, **aucun flux
+/// Drift** : les pages sont posées par `pumpScreen(mediaLayout:)` et les
+/// contenus par les doubles en mémoire — un flux Drift sous l'horloge factice
+/// du harnais fige le montage.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:maison_du_miracle/data/external_link_launcher.dart';
-import 'package:maison_du_miracle/data/local/app_database.dart';
-import 'package:maison_du_miracle/data/local/sync_dao.dart';
-import 'package:maison_du_miracle/data/repositories/store_gathering_repository.dart';
-import 'package:maison_du_miracle/data/repositories/store_mediatheque_repository.dart';
-import 'package:maison_du_miracle/data/repositories/store_menu_repository.dart';
+import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
+import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
+import 'package:maison_du_miracle/models/media_page_view.dart';
+import 'package:maison_du_miracle/models/menu_entry_view.dart';
+import 'package:maison_du_miracle/models/models.dart';
 import 'package:maison_du_miracle/screens/media_library_screen.dart';
-import 'package:maison_du_miracle/state/menu_providers.dart';
 import 'package:maison_du_miracle/widgets/app_empty_state.dart';
 
-import '../data/local/local_database_fixtures.dart';
 import '../helpers/pump_screen.dart';
 
-/// `testWidgets`, **plus le démontage explicite de l'arbre dans le corps du
-/// test** — le patron de `home_sections_test.dart`, et pour la même raison :
-/// fermer le dernier abonné d'un flux Drift planifie une minuterie à zéro, que
-/// le démontage de fin de test (un `pump()` sans durée) ne laisse jamais partir.
-void mediaTest(String description, Future<void> Function(WidgetTester) body) {
-  testWidgets(description, (tester) async {
-    try {
-      await body(tester);
-    } finally {
-      // `finally`, et c'est ce qui distingue ce patron de celui de
-      // `home_sections_test.dart` : sans lui, un test qui **échoue** laisse la
-      // minuterie derrière lui et le harnais attend dix minutes avant de rendre
-      // la main. Un échec doit coûter trois secondes, pas dix minutes — sinon on
-      // n'ose plus lancer la suite.
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump(const Duration(milliseconds: 1));
-    }
-  });
+/// Quatre enseignements, du plus récent (t1) au plus ancien (t4), dans deux
+/// rubriques. Le libellé de rubrique s'affiche sur chaque ligne de liste : il
+/// ne doit pas répéter un libellé de puce ou d'onglet.
+final _teachings = [
+  for (final (id, title, type, day) in const [
+    ('t1', 'Prier sans cesse', 1, 4),
+    ('t2', 'Le pain du jour', 2, 3),
+    ('t3', 'Prier en famille', 1, 2),
+    ('t4', 'Louange du soir', 2, 1),
+  ])
+    Teaching(
+      id: id,
+      title: title,
+      author: 'Pasteur Komla',
+      teachingTypeId: type,
+      recordedAt: DateTime.utc(2026, 9, day),
+      publishedAt: DateTime.utc(2026, 9, day),
+    ),
+];
+
+const _types = [
+  TeachingType(id: 1, label: {'fr': 'Intercession'}, slug: 'prieres'),
+  TeachingType(id: 2, label: {'fr': 'Culte'}, slug: 'dimanche'),
+];
+
+const _rubrics = {'prieres': 1, 'dimanche': 2};
+
+MediaSectionView _section(
+  int id, {
+  MediaSectionLayout layout = MediaSectionLayout.list,
+  MediaSectionSort sort = MediaSectionSort.latest,
+  String title = '',
+  String? titleKey,
+  int maxItems = 10,
+  List<String>? manualIds,
+}) =>
+    MediaSectionView(
+      id: id,
+      layout: layout,
+      sort: sort,
+      family: MenuContentFamily.teaching,
+      title: title,
+      titleKey: titleKey,
+      maxItems: maxItems,
+      manualIds: manualIds,
+    );
+
+Future<void> _pump(
+  WidgetTester tester,
+  List<MediaPageView> pages, {
+  String? rubric,
+}) async {
+  // Écran haut : les listes sont paresseuses, et une ligne jamais construite ne
+  // prouve rien — ni sa présence, ni son absence.
+  tester.view.physicalSize = const Size(900, 3000);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+
+  await pumpScreen(
+    tester,
+    MediaLibraryScreen(initialRubric: rubric),
+    mediatheque:
+        InMemoryMediathequeRepository(teachings: _teachings, types: _types),
+    gatherings:
+        InMemoryGatheringRepository(gatherings: const [], types: const []),
+    mediaLayout: MediaLibraryLayout(pages: pages, teachingRubricIds: _rubrics),
+  );
+  await tester.pump();
+}
+
+Future<void> _tap(WidgetTester tester, Finder finder) async {
+  await tester.tap(finder);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 void main() {
-  late AppDatabase db;
-  late SyncDao sync;
-  late RecordingExternalLinkLauncher launcher;
-
-  setUp(() {
-    db = openTestDatabase();
-    sync = db.syncDao;
-    launcher = RecordingExternalLinkLauncher();
-  });
-
-  tearDown(() => db.close());
-
-  Future<void> putMenu(List<MenuEntriesCompanion> rows) =>
-      sync.applyPage(sync.menuEntriesCollection, upserts: rows, cursor: 'm-1');
-
-  Future<void> putTypes(List<TeachingTypesCompanion> rows) => sync.applyPage(
-        sync.teachingTypesCollection,
-        upserts: rows,
-        cursor: 'tt-1',
-      );
-
-  Future<void> putTeachings(List<TeachingsCompanion> rows) => sync.applyPage(
-        sync.teachingsCollection,
-        upserts: rows,
-        cursor: 't-1',
-      );
-
-  /// Deux rubriques, un contenu dans chacune, et un titre reconnaissable par
-  /// rubrique : c'est ce qui permet de dire « deux onglets ne montrent pas la
-  /// même liste » autrement que par un compte.
-  Future<void> seedCatalogue() async {
-    await putTypes([
-      // ⚠️ Le libellé de la **rubrique** ne doit pas être celui de l'entrée de
-      // menu : il s'affiche aussi sur chaque ligne du catalogue (`typeLabel`), et
-      // un finder sur le texte en trouverait deux. Ce n'est pas un artifice de
-      // test — une entrée porte un libellé **libre**, réglé au portail, qui n'a
-      // aucune raison de répéter le nom de la rubrique qu'elle vise.
-      teachingTypeRow(1, label: {'fr': 'Intercession'}, slug: 'prieres'),
-      teachingTypeRow(2, label: {'fr': 'Culte'}, slug: 'dimanche'),
-    ]);
-    await putTeachings([
-      teachingRow('t-1', title: 'Prier sans cesse', teachingTypeId: 1),
-      teachingRow('t-2', title: 'Le pain du jour', teachingTypeId: 2),
-    ]);
-  }
-
-  Future<void> pumpMedia(WidgetTester tester, {String? rubric}) async {
-    // Écran haut : les listes de l'app sont paresseuses, et une ligne jamais
-    // construite ne prouve rien — ni sa présence, ni son absence.
-    tester.view.physicalSize = const Size(900, 2400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
-    await pumpScreen(
-      tester,
-      MediaLibraryScreen(initialRubric: rubric),
-      // Le **même** magasin que celui où le test écrit : `pumpScreen` en pose un
-      // sinon, et deux `AppDatabase` sur deux connexions distinctes laisseraient
-      // l'écran lire une base vide — Drift avertit d'ailleurs du doublon.
-      database: db,
-      mediatheque: StoreMediathequeRepository(db.mediathequeDao),
-      gatherings: StoreGatheringRepository(db.gatheringDao),
-      menu: StoreMenuRepository(db.menuDao),
-      overrides: [
-        externalLinkLauncherProvider.overrideWithValue(launcher),
-      ],
-    );
-  }
-
-  group('Les onglets filtrent pour de vrai', () {
-    mediaTest('deux onglets différents ne montrent pas la même liste',
-        (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1,
-            label: {'fr': 'Prières'},
-            mediaPosition: 1,
-            destinationRubric: 'prieres'),
-        menuEntryRow(2,
-            label: {'fr': 'Dimanche'},
-            mediaPosition: 2,
-            destinationRubric: 'dimanche'),
+  group('Les onglets sont les pages', () {
+    testWidgets('dans leur ordre, et chacun montre sa page', (tester) async {
+      await _pump(tester, [
+        MediaPageView(id: 1, label: 'Écouter', sections: [_section(1)]),
+        MediaPageView(
+          id: 2,
+          label: 'Cultes',
+          filter: const MediaFilter(rubric: 'dimanche'),
+          sections: [_section(2)],
+        ),
       ]);
 
-      await pumpMedia(tester);
-
-      // Le premier onglet est actif : sa rubrique, et **rien d'autre**.
+      expect(
+        tester.getTopLeft(find.text('Écouter')).dx,
+        lessThan(tester.getTopLeft(find.text('Cultes')).dx),
+      );
+      // La première page est ouverte : tout le catalogue.
       expect(find.text('Prier sans cesse'), findsOneWidget);
-      expect(find.text('Le pain du jour'), findsNothing);
-
-      await tester.tap(find.text('Dimanche'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      // Changer d'onglet change la liste. Avant cette tranche, `_tab` ne servait
-      // qu'à déplacer un soulignement, et les deux onglets montraient
-      // exactement la même chose.
       expect(find.text('Le pain du jour'), findsOneWidget);
+
+      await _tap(tester, find.text('Cultes'));
+
+      // Le filtre de la page borne sa section.
+      expect(find.text('Le pain du jour'), findsOneWidget);
+      expect(find.text('Louange du soir'), findsOneWidget);
       expect(find.text('Prier sans cesse'), findsNothing);
     });
 
-    mediaTest('l\'ordre des onglets est celui du portail', (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1,
-            label: {'fr': 'Prières'},
-            mediaPosition: 2,
-            destinationRubric: 'prieres'),
-        menuEntryRow(2,
-            label: {'fr': 'Dimanche'},
-            mediaPosition: 1,
-            destinationRubric: 'dimanche'),
-      ]);
-
-      await pumpMedia(tester);
-
-      // L'ordre du rang, pas celui des identifiants — et on compare **deux
-      // positions**, jamais une valeur de rang.
-      expect(
-        tester.getTopLeft(find.text('Dimanche')).dx,
-        lessThan(tester.getTopLeft(find.text('Prières')).dx),
-      );
-      // Et c'est le premier du rang qui est actif à l'ouverture.
-      expect(find.text('Le pain du jour'), findsOneWidget);
-    });
-
-    mediaTest('il ne reste **qu\'une** liste du catalogue', (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1, label: {'fr': 'Tout'}, destinationFamily: 'teaching'),
-      ]);
-
-      await pumpMedia(tester);
-
-      // **Le mensonge retiré.** Les trois sections — carrousel phare,
-      // « Dernières publications », « Recommandés pour vous » — affichaient le
-      // même tableau, entier, trois fois, dans le même ordre : chaque titre
-      // apparaissait donc **trois fois** à l'écran. Il n'y a plus qu'une liste,
-      // donc qu'une occurrence.
-      expect(find.text('Prier sans cesse'), findsOneWidget);
-      expect(find.text('Le pain du jour'), findsOneWidget);
-    });
-
-    mediaTest('une sous-entrée resserre la liste de son onglet',
+    testWidgets('une page à clé du dépôt prend son mot ; sans libellé, aucune',
         (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1, label: {'fr': 'Tout'}, mediaPosition: 1),
-        menuEntryRow(2,
-            label: {'fr': 'Prières'},
-            parentId: 1,
-            mediaPosition: 1,
-            destinationRubric: 'prieres'),
+      await _pump(tester, [
+        MediaPageView(
+          id: 1,
+          labelKey: 'public.nav.mediatheque',
+          sections: [_section(1)],
+        ),
+        MediaPageView(
+            id: 2, labelKey: 'public.nav.dons', sections: [_section(2)]),
       ]);
 
-      await pumpMedia(tester);
-
-      // L'onglet montre d'abord **sa** destination — le catalogue entier.
-      expect(find.text('Prier sans cesse'), findsOneWidget);
-      expect(find.text('Le pain du jour'), findsOneWidget);
-
-      await tester.tap(find.text('Prières'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      // La puce resserre, elle ne remplace pas l'onglet.
-      expect(find.text('Prier sans cesse'), findsOneWidget);
-      expect(find.text('Le pain du jour'), findsNothing);
-    });
-  });
-
-  group('Une destination que ce binaire ne sait pas rendre', () {
-    mediaTest('disparaît en silence, et ne replie sur rien', (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1,
-            label: {'fr': 'Prières'},
-            mediaPosition: 1,
-            destinationRubric: 'prieres'),
-        // Un portail plus récent que ce binaire.
-        menuEntryRow(2,
-            label: {'fr': 'Faire un don'},
-            mediaPosition: 2,
-            destinationKind: 'paiement',
-            destinationFamily: null),
-      ]);
-
-      await pumpMedia(tester);
-
-      // L'onglet n'existe pas…
-      expect(find.text('Faire un don'), findsNothing);
-      // …et il ne s'est **pas** replié sur la liste des prêches : celle qui
-      // s'affiche est celle de l'onglet qui reste, « Prières ».
-      expect(find.text('Prières'), findsOneWidget);
-      expect(find.text('Prier sans cesse'), findsOneWidget);
-      expect(find.text('Le pain du jour'), findsNothing);
-    });
-
-    mediaTest('une entrée sans libellé affichable ne paraît pas',
-        (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1,
-            label: null,
-            labelKey: 'public.nav.mediatheque',
-            mediaPosition: 1,
-            destinationKind: 'page',
-            destinationPage: 'mediatheque',
-            destinationFamily: null),
-        // Une clé du portail que ce binaire ne sait pas traduire : il n'y a aucun
-        // libellé à afficher, et « public.nav.dons » ressemblerait à une fuite de
-        // code plutôt qu'à un réglage.
-        menuEntryRow(2,
-            label: null,
-            labelKey: 'public.nav.dons',
-            mediaPosition: 2,
-            destinationRubric: 'prieres'),
-      ]);
-
-      await pumpMedia(tester);
-
-      // Le libellé du dépôt de l'entrée indélébile : « Tout ».
       expect(find.text('Tout'), findsOneWidget);
       expect(find.text('public.nav.dons'), findsNothing);
-      expect(find.text('Prières'), findsNothing);
+    });
+
+    testWidgets('sans aucune page : pas de barre, le catalogue entier',
+        (tester) async {
+      await _pump(tester, const []);
+
+      for (final t in _teachings) {
+        expect(find.text(t.title), findsOneWidget);
+      }
     });
   });
 
-  group('Le lien externe', () {
-    mediaTest('ouvre le navigateur et ne devient pas l\'onglet actif',
+  group('Les puces', () {
+    testWidgets('une puce filtre **toutes** les sections de la page',
         (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1,
-            label: {'fr': 'Prières'},
-            mediaPosition: 1,
-            destinationRubric: 'prieres'),
-        menuEntryRow(2,
-            label: {'fr': 'YouTube'},
-            mediaPosition: 2,
-            destinationKind: 'externe',
-            destinationFamily: null,
-            destinationUrl: 'https://youtube.com/@nouvellevie'),
+      await _pump(tester, [
+        MediaPageView(
+          id: 1,
+          label: 'Écouter',
+          chips: const [
+            MediaChipView(
+              id: 9,
+              label: 'Prières',
+              filter: MediaFilter(rubric: 'prieres'),
+            ),
+          ],
+          sections: [
+            _section(1, layout: MediaSectionLayout.carousel),
+            // `popular` jamais classé : les plus récents, en attendant.
+            _section(2, sort: MediaSectionSort.popular),
+          ],
+        ),
       ]);
 
-      await pumpMedia(tester);
+      // Sans puce, les deux sections montrent le catalogue.
+      expect(find.text('Le pain du jour'), findsNWidgets(2));
 
-      await tester.tap(find.text('YouTube'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await _tap(tester, find.text('Prières'));
 
-      expect(launcher.opened, ['https://youtube.com/@nouvellevie']);
-      // La liste n'a pas bougé : il n'y a pas de liste dont un lien externe
-      // serait le filtre, et la souligner laisserait un écran qui ne change pas.
-      expect(find.text('Prier sans cesse'), findsOneWidget);
+      expect(find.text('Le pain du jour'), findsNothing);
+      expect(find.text('Louange du soir'), findsNothing);
+      expect(find.text('Prier sans cesse'), findsNWidgets(2));
+      expect(find.text('Prier en famille'), findsNWidgets(2));
+
+      // Un second appui relâche la puce.
+      await _tap(tester, find.text('Prières'));
+      expect(find.text('Le pain du jour'), findsNWidgets(2));
+    });
+  });
+
+  group('Les sections', () {
+    testWidgets('les quatre gabarits se rendent', (tester) async {
+      await _pump(tester, [
+        MediaPageView(
+          id: 1,
+          label: 'Écouter',
+          sections: [
+            _section(1, layout: MediaSectionLayout.hero, maxItems: 1),
+            _section(2, layout: MediaSectionLayout.carousel, maxItems: 1),
+            _section(3, layout: MediaSectionLayout.list, maxItems: 1),
+            _section(4, layout: MediaSectionLayout.grid, maxItems: 2),
+          ],
+        ),
+      ]);
+
+      for (final id in [1, 2, 3, 4]) {
+        expect(find.byKey(MediaLibraryScreen.sectionKey(id)), findsOneWidget,
+            reason: 'section $id');
+      }
+      expect(find.byType(PageView), findsOneWidget);
+      expect(find.byType(SliverGrid), findsOneWidget);
+      // Le plus récent paraît dans chacune des quatre ; le second, dans la
+      // grille seulement (plafond 2).
+      expect(find.text('Prier sans cesse'), findsNWidgets(4));
+      expect(find.text('Le pain du jour'), findsOneWidget);
+    });
+
+    testWidgets('une section vide ne paraît pas, ni son titre', (tester) async {
+      await _pump(tester, [
+        MediaPageView(
+          id: 1,
+          label: 'Écouter',
+          sections: [
+            _section(
+              1,
+              title: 'Sélection',
+              sort: MediaSectionSort.manual,
+              manualIds: const ['retire'],
+            ),
+            _section(2, title: 'Tout récemment'),
+          ],
+        ),
+      ]);
+
+      expect(find.text('Sélection'), findsNothing);
+      expect(find.byKey(MediaLibraryScreen.sectionKey(1)), findsNothing);
+      expect(find.text('Tout récemment'), findsOneWidget);
+      expect(find.byKey(MediaLibraryScreen.sectionKey(2)), findsOneWidget);
+    });
+
+    testWidgets('toutes les sections vides : l\'état vide', (tester) async {
+      await _pump(tester, [
+        MediaPageView(
+          id: 1,
+          label: 'Écouter',
+          sections: [
+            _section(1, sort: MediaSectionSort.manual),
+          ],
+        ),
+      ]);
+
+      expect(find.byType(AppEmptyState), findsOneWidget);
+    });
+
+    testWidgets('titleKey se résout par le vocabulaire, avant la carte',
+        (tester) async {
+      await _pump(tester, [
+        MediaPageView(
+          id: 1,
+          label: 'Écouter',
+          sections: [
+            _section(
+              1,
+              titleKey: 'sectionLatestTeachings',
+              title: 'Ignoré',
+            ),
+            _section(2, titleKey: 'cleInconnue', title: 'Recommandés'),
+          ],
+        ),
+      ]);
+
+      expect(find.text('Dernières publications'), findsOneWidget);
+      expect(find.text('Ignoré'), findsNothing);
+      expect(find.text('Recommandés'), findsOneWidget);
     });
   });
 
   group('La loupe', () {
-    mediaTest('elle filtre la liste de l\'onglet actif', (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1,
-            label: {'fr': 'Tout'},
-            destinationFamily: 'teaching',
-            filterSearch: true),
+    testWidgets('elle affine chaque section, et se referme en effaçant',
+        (tester) async {
+      await _pump(tester, [
+        MediaPageView(
+          id: 1,
+          label: 'Écouter',
+          sections: [
+            _section(1, layout: MediaSectionLayout.carousel),
+            _section(2),
+          ],
+        ),
       ]);
 
-      await pumpMedia(tester);
-      expect(find.text('Prier sans cesse'), findsOneWidget);
-      expect(find.text('Le pain du jour'), findsOneWidget);
-
-      await tester.tap(find.byKey(MediaLibraryScreen.searchButtonKey));
-      await tester.pump();
+      await _tap(tester, find.byKey(MediaLibraryScreen.searchButtonKey));
       await tester.enterText(
-        find.byKey(MediaLibraryScreen.searchFieldKey),
-        'pain',
-      );
+          find.byKey(MediaLibraryScreen.searchFieldKey), 'louange');
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
 
-      // La loupe était un `onPressed: () {}`, et `mediaSearchHint` vivait dans
-      // l'ARB sans appelant.
-      expect(find.text('Le pain du jour'), findsOneWidget);
-      expect(find.text('Prier sans cesse'), findsNothing);
-    });
-
-    mediaTest('refermer la loupe rend la liste entière', (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1,
-            label: {'fr': 'Tout'},
-            destinationFamily: 'teaching',
-            filterSearch: true),
-      ]);
-
-      await pumpMedia(tester);
-      await tester.tap(find.byKey(MediaLibraryScreen.searchButtonKey));
-      await tester.pump();
-      await tester.enterText(
-        find.byKey(MediaLibraryScreen.searchFieldKey),
-        'pain',
-      );
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Louange du soir'), findsNWidgets(2));
       expect(find.text('Prier sans cesse'), findsNothing);
 
-      await tester.tap(find.byKey(MediaLibraryScreen.searchButtonKey));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      // Laisser un filtre actif derrière un champ qu'on ne voit plus est le genre
-      // de liste tronquée qu'on prend pour un catalogue vide.
-      expect(find.text('Prier sans cesse'), findsOneWidget);
-      expect(find.text('Le pain du jour'), findsOneWidget);
-    });
-
-    mediaTest('elle n\'existe pas quand l\'entrée ne l\'offre pas',
-        (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        // `filter_search` décoché au portail : la case était servie depuis la
-        // tranche précédente et n'avait aucun lecteur. Elle en a un désormais.
-        menuEntryRow(1,
-            label: {'fr': 'Tout'},
-            destinationFamily: 'teaching',
-            filterSearch: false),
-      ]);
-
-      await pumpMedia(tester);
-
-      // **Absence, pas grisage** : une icône inerte reste une promesse que
-      // personne ne tient — c'est exactement ce qu'était `onPressed: () {}`.
-      expect(find.byKey(MediaLibraryScreen.searchButtonKey), findsNothing);
-    });
-
-    mediaTest('une recherche sans résultat est un vide, pas une panne',
-        (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1,
-            label: {'fr': 'Tout'},
-            destinationFamily: 'teaching',
-            filterSearch: true),
-      ]);
-
-      await pumpMedia(tester);
-      await tester.tap(find.byKey(MediaLibraryScreen.searchButtonKey));
-      await tester.pump();
-      await tester.enterText(
-        find.byKey(MediaLibraryScreen.searchFieldKey),
-        'zzzz',
-      );
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      // Neutre et sans bouton : il n'y a rien à réessayer.
-      expect(find.byType(AppEmptyState), findsOneWidget);
+      await _tap(tester, find.byKey(MediaLibraryScreen.searchButtonKey));
+      expect(find.text('Prier sans cesse'), findsNWidgets(2));
     });
   });
 
   group('Le « Voir tout » d\'une rubrique d\'accueil', () {
-    mediaTest('arrive sur la liste de cette rubrique, et pas sur le catalogue',
-        (tester) async {
-      await seedCatalogue();
-      // Aucune entrée de menu ne désigne « Prières » : le « Voir tout » doit
-      // filtrer **quand même**. C'est le bug que la tranche répare —
-      // `teachingsOfTypeProvider` existait et n'était branché nulle part.
-      await putMenu([
-        menuEntryRow(1, label: {'fr': 'Tout'}, destinationFamily: 'teaching'),
-      ]);
+    testWidgets('ouvre la page qui vise la rubrique', (tester) async {
+      await _pump(
+        tester,
+        [
+          MediaPageView(id: 1, label: 'Écouter', sections: [_section(1)]),
+          MediaPageView(
+            id: 2,
+            label: 'Cultes',
+            filter: const MediaFilter(rubric: 'dimanche'),
+            sections: [_section(2)],
+          ),
+        ],
+        rubric: 'dimanche',
+      );
 
-      await pumpMedia(tester, rubric: 'prieres');
-
-      expect(find.text('Prier sans cesse'), findsOneWidget);
-      expect(find.text('Le pain du jour'), findsNothing);
-    });
-
-    mediaTest('un slug inconnu ne ramène rien, jamais tout le catalogue',
-        (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1, label: {'fr': 'Tout'}, destinationFamily: 'teaching'),
-      ]);
-
-      await pumpMedia(tester, rubric: 'jeunesse');
-
-      // La doctrine du site public devant un `?rubrique=` inconnu : rien, jamais
-      // « tout le catalogue ».
-      expect(find.byType(AppEmptyState), findsOneWidget);
-      expect(find.text('Prier sans cesse'), findsNothing);
-      expect(find.text('Le pain du jour'), findsNothing);
-    });
-
-    mediaTest('il allume l\'onglet qui désigne cette rubrique, s\'il existe',
-        (tester) async {
-      await seedCatalogue();
-      await putMenu([
-        menuEntryRow(1,
-            label: {'fr': 'Dimanche'},
-            mediaPosition: 1,
-            destinationRubric: 'dimanche'),
-        menuEntryRow(2,
-            label: {'fr': 'Prières'},
-            mediaPosition: 2,
-            destinationRubric: 'prieres'),
-      ]);
-
-      await pumpMedia(tester, rubric: 'prieres');
-
-      // L'onglet demandé l'emporte sur le premier du rang : on arrive **là** où
-      // le geste pointait.
-      expect(find.text('Prier sans cesse'), findsOneWidget);
-      expect(find.text('Le pain du jour'), findsNothing);
-    });
-  });
-
-  group('Sans menu', () {
-    mediaTest('pas de barre d\'onglets, et le catalogue entier',
-        (tester) async {
-      await seedCatalogue();
-
-      await pumpMedia(tester);
-
-      // L'état d'une application dont le premier cycle n'a rien ramené, et celui
-      // d'un serveur en retard d'une version. L'écran montre tout — c'est ce que
-      // l'ancienne barre prétendait faire avec son onglet « Tout », et la seule
-      // réponse qui ne cache aucun contenu.
-      expect(find.text('Prier sans cesse'), findsOneWidget);
       expect(find.text('Le pain du jour'), findsOneWidget);
-      // Une barre vide se lirait comme une panne.
-      expect(find.text('Tout'), findsNothing);
-      // Et sans entrée active, aucune entrée n'offre la recherche : pas de loupe.
-      expect(find.byKey(MediaLibraryScreen.searchButtonKey), findsNothing);
+      expect(find.text('Prier sans cesse'), findsNothing);
     });
 
-    mediaTest('un magasin vide se dit vide, et reste tirable', (tester) async {
-      await pumpMedia(tester);
+    testWidgets('sans page qui la vise, elle affine la page ouverte',
+        (tester) async {
+      await _pump(
+        tester,
+        [
+          MediaPageView(id: 1, label: 'Écouter', sections: [_section(1)])
+        ],
+        rubric: 'prieres',
+      );
+
+      expect(find.text('Prier sans cesse'), findsOneWidget);
+      expect(find.text('Le pain du jour'), findsNothing);
+    });
+
+    testWidgets('un slug inconnu ne ramène rien, jamais tout le catalogue',
+        (tester) async {
+      await _pump(tester, const [], rubric: 'inconnue');
 
       expect(find.byType(AppEmptyState), findsOneWidget);
-      expect(find.byType(RefreshIndicator), findsOneWidget);
     });
   });
 }

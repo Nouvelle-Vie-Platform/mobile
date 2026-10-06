@@ -66,6 +66,7 @@ abstract class ContentView {
     required this.color,
     this.authorName,
     this.teachingTypeId,
+    this.branchId,
     this.typeLabel = '',
     this.imageLandscapeUrl,
     this.imagePortraitUrl,
@@ -90,6 +91,7 @@ abstract class ContentView {
     required String locale,
     String? contributorName,
     this.teachingTypeId,
+    this.branchId,
     Map<String, String>? typeLabel,
     int? color,
     int? typeColor,
@@ -142,6 +144,11 @@ abstract class ContentView {
   /// `teaching_types` pour un enseignement, de `gathering_types` pour un
   /// rassemblement.
   final int? teachingTypeId;
+
+  /// Branche du contenu (SERIAL, comparable à `branches.id`), `null` pour un
+  /// contenu **national**. Ne sert qu'à borner une page ou une section de la
+  /// médiathèque réglée sur une branche.
+  final int? branchId;
 
   /// Libellé de la rubrique, **déjà replié** dans la langue courante. Chaîne
   /// vide quand la rubrique manque, ou qu'aucune de ses traductions n'est

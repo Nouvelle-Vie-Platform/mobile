@@ -4,7 +4,10 @@ library;
 
 import 'package:flutter/foundation.dart';
 
+import '../utils/search_terms.dart';
 import 'echanges_view.dart';
+
+export '../utils/search_terms.dart' show foldForSearch;
 
 /// Au plus trois discussions épinglées — la borne de WhatsApp, que le serveur
 /// tient aussi (`409 E_PINNED_GROUPS_LIMIT`).
@@ -88,30 +91,6 @@ class RemoteSearchPage {
 
 /// La longueur minimale d'une requête — la même que le serveur.
 const int kMinSearchLength = 2;
-
-/// **Normalise un texte pour la comparaison** : minuscules, sans accents. Sert
-/// à la recherche sur les **noms** de discussions, faite en Dart sur la liste
-/// déjà lue (« eglise » trouve « Église »).
-String foldForSearch(String text) {
-  final lower = text.toLowerCase();
-  final buffer = StringBuffer();
-  for (final rune in lower.runes) {
-    final char = String.fromCharCode(rune);
-    buffer.write(_folds[char] ?? char);
-  }
-  return buffer.toString();
-}
-
-const Map<String, String> _folds = {
-  'à': 'a', 'â': 'a', 'ä': 'a', 'á': 'a', 'ã': 'a', //
-  'ç': 'c',
-  'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e', //
-  'î': 'i', 'ï': 'i', 'í': 'i', 'ì': 'i', //
-  'ô': 'o', 'ö': 'o', 'ó': 'o', 'ò': 'o', 'õ': 'o', //
-  'ù': 'u', 'û': 'u', 'ü': 'u', 'ú': 'u', //
-  'ÿ': 'y', 'ñ': 'n', 'œ': 'oe', 'æ': 'ae', //
-  'ɛ': 'e', 'ɔ': 'o', 'ŋ': 'n', 'ƒ': 'f', 'ʋ': 'v', 'ɖ': 'd', 'ɣ': 'g', //
-};
 
 /// Les discussions dont le **nom** contient la requête (accents et casse
 /// ignorés), archives comprises.

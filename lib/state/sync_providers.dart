@@ -39,6 +39,7 @@ import '../data/local/group_dao.dart';
 import '../data/local/interaction_dao.dart';
 import '../data/local/legal_dao.dart';
 import '../data/local/mediatheque_dao.dart';
+import '../data/local/media_pages_dao.dart';
 import '../data/local/menu_dao.dart';
 import '../data/local/playback_dao.dart';
 import '../data/local/season_dao.dart';
@@ -132,6 +133,12 @@ final vocabularyDaoProvider = Provider<VocabularyDao>(
 /// contenu, pas de section » a besoin, et qu'une entrée ne porte pas elle-même.
 final menuDaoProvider = Provider<MenuDao>(
   (ref) => ref.watch(appDatabaseProvider).menuDao,
+);
+
+/// Les lectures du magasin, côté **médiathèque en pages** (#167) : pages,
+/// puces, sections, et la résolution des slugs de rubrique.
+final mediaPagesDaoProvider = Provider<MediaPagesDao>(
+  (ref) => ref.watch(appDatabaseProvider).mediaPagesDao,
 );
 
 /// Les lectures du magasin, côté **canaux de connexion** — par quelles portes

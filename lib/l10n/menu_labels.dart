@@ -33,6 +33,7 @@ library;
 
 import 'package:flutter/widgets.dart';
 
+import '../models/media_page_view.dart';
 import '../models/menu_entry_view.dart';
 import 'l10n_extension.dart';
 
@@ -45,6 +46,29 @@ import 'l10n_extension.dart';
 String? menuEntryLabel(BuildContext context, MenuEntryView entry) {
   if (entry.label.isNotEmpty) return entry.label;
   return _deliveredLabel(context, entry.labelKey);
+}
+
+/// Le libellé d'une **page de médiathèque** (#167), ou `null` — même règle
+/// qu'une entrée : la surcharge, puis la clé du dépôt ; sans l'une ni l'autre,
+/// l'onglet ne paraît pas. Les pages reprises portent les clés `public.nav.*`
+/// des entrées dont elles viennent.
+String? mediaPageLabel(BuildContext context, MediaPageView page) {
+  if (page.label.isNotEmpty) return page.label;
+  return _deliveredLabel(context, page.labelKey);
+}
+
+/// Le titre d'une **section de médiathèque** (#167), ou `null` (pas d'en-tête).
+///
+/// `titleKey` est un mot du **vocabulaire réglable**, prioritaire sur la carte
+/// `title` ; une clé que ce binaire ne connaît pas se replie sur la carte.
+String? mediaSectionTitle(BuildContext context, MediaSectionView section) {
+  final fromKey = switch (section.titleKey?.trim()) {
+    'sectionLatestTeachings' => context.words.sectionLatestTeachings,
+    'filterTeachings' => context.words.filterTeachings,
+    _ => null,
+  };
+  if (fromKey != null) return fromKey;
+  return section.title.isEmpty ? null : section.title;
 }
 
 String? _deliveredLabel(BuildContext context, String? labelKey) {

@@ -5,6 +5,7 @@ import '../data/external_link_launcher.dart';
 import '../data/repositories/menu_repository.dart';
 import '../data/repositories/store_menu_repository.dart';
 import '../models/gathering_view.dart';
+import '../models/media_page_view.dart';
 import '../models/menu_entry_view.dart';
 import '../models/mediatheque_view.dart';
 import 'gathering_providers.dart';
@@ -34,18 +35,20 @@ final menuRepositoryProvider = Provider<MenuRepository>(
       : const InMemoryMenuRepository(),
 );
 
-/// **La barre d'onglets de la médiathèque**, dans l'ordre réglé au portail.
+/// **Les pages de la médiathèque** (#167) — ses onglets, puces et sections,
+/// lus dans `media_pages` / `media_page_chips` / `media_page_sections`.
 ///
-/// Une liste **vide** n'est pas une erreur : c'est « aucun menu reçu » (avant le
-/// premier cycle, ou sur un serveur en retard d'une version qui rend un `404`),
-/// ou « le portail n'a rien allumé sur cette surface ». L'écran en tire son
-/// onglet implicite — le catalogue entier —, et c'est écrit chez lui.
-final mediaMenuProvider = StreamProvider<List<MenuEntryView>>(
-  (ref) => ref.watch(menuRepositoryProvider).menu(
-        MenuSurface.mediaLibrary,
-        locale: ref.watch(contentLocaleProvider),
-        now: ref.watch(nowProvider),
-      ),
+/// La surface `media_*` de `menu_entries` n'est **plus lue** : le serveur y
+/// sert, pour les anciens clients, des entrées calculées depuis les pages (aux
+/// identifiants négatifs). L'accueil, lui, continue de lire `menu_entries`.
+///
+/// Sans backend : aucune page, donc le catalogue entier (voir l'écran).
+final mediaLibraryLayoutProvider = StreamProvider<MediaLibraryLayout>(
+  (ref) => AppEnv.useBackend
+      ? ref
+          .watch(mediaPagesDaoProvider)
+          .watchLayout(ref.watch(contentLocaleProvider))
+      : Stream.value(MediaLibraryLayout.empty),
   retry: _noAutomaticRetry,
 );
 

@@ -126,6 +126,7 @@ class StoreMediathequeRepository implements MediathequeRepository {
       // l'enseignement s'affiche quand même — sans ligne d'auteur inventée.
       contributorName: row.contributor?.name,
       teachingTypeId: row.teaching.teachingTypeId,
+      branchId: row.teaching.branchId,
       typeLabel: row.type?.label,
       // Les deux maillons bruts, séparés : c'est le modèle de lecture qui
       // termine la cascade, pas le magasin ni le serveur.

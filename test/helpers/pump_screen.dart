@@ -33,6 +33,7 @@ import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/data/repositories/playback_progress_reporter.dart';
 import 'package:maison_du_miracle/data/repositories/menu_repository.dart';
+import 'package:maison_du_miracle/models/media_page_view.dart';
 import 'package:maison_du_miracle/data/repositories/my_requests_repository.dart';
 import 'package:maison_du_miracle/data/repositories/receipts_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
@@ -189,6 +190,7 @@ Future<void> pumpRouter(
   MediathequeRepository? mediatheque,
   GatheringRepository? gatherings,
   MenuRepository? menu,
+  MediaLibraryLayout? mediaLayout,
   LegalNoticeStore? legalNotice,
   VocabularyOverrides? vocabulary,
   AuthChannelOffer? authChannels,
@@ -224,6 +226,7 @@ Future<void> pumpRouter(
           mediatheque: mediatheque,
           gatherings: gatherings,
           menu: menu,
+          mediaLayout: mediaLayout,
           legalNotice: legalNotice,
           vocabulary: vocabulary,
           authChannels: authChannels,
@@ -282,6 +285,7 @@ List<Override> _commonOverrides(
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
   MenuRepository? menu,
+  MediaLibraryLayout? mediaLayout,
   LegalNoticeStore? legalNotice,
   VocabularyOverrides? vocabulary,
   AuthChannelOffer? authChannels,
@@ -501,6 +505,13 @@ List<Override> _commonOverrides(
           .overrideWithValue(gatherings ?? InMemoryGatheringRepository()),
       menuRepositoryProvider
           .overrideWithValue(menu ?? const InMemoryMenuRepository()),
+      // **Les pages de la médiathèque** (#167), posées **par un flux nu** pour la
+      // raison du vocabulaire : lues depuis le magasin, elles ouvriraient un
+      // flux Drift qu'une horloge factice fige. Le défaut est **aucune page**,
+      // donc le catalogue entier ; [mediaLayout] en pose.
+      mediaLibraryLayoutProvider.overrideWith(
+        (ref) => Stream.value(mediaLayout ?? MediaLibraryLayout.empty),
+      ),
       announcementRepositoryProvider
           .overrideWithValue(announcements ?? InMemoryAnnouncementRepository()),
       legalNoticeStoreProvider.overrideWithValue(
@@ -537,6 +548,7 @@ Future<void> pumpScreen(
   GatheringRepository? gatherings,
   AnnouncementRepository? announcements,
   MenuRepository? menu,
+  MediaLibraryLayout? mediaLayout,
   AppDatabase? database,
   AuthRepository? auth,
   ThemePreferences? theme,
@@ -584,6 +596,7 @@ Future<void> pumpScreen(
           gatherings: gatherings,
           announcements: announcements,
           menu: menu,
+          mediaLayout: mediaLayout,
           legalNotice: legalNotice,
           vocabulary: vocabulary,
           authChannels: authChannels,

@@ -15,6 +15,7 @@ import 'tables/interaction_tables.dart';
 import 'tables/season_tables.dart';
 import 'tables/auth_tables.dart';
 import 'tables/device_tables.dart';
+import 'tables/media_page_tables.dart';
 import 'tables/menu_tables.dart';
 import 'tables/vocabulary_tables.dart';
 
@@ -132,6 +133,14 @@ abstract final class SyncCollectionKey {
   /// durement et cesse simplement de paraître au flux. La réparation appartient
   /// au client, sur le patron « pas de contenu, pas de section ».
   static const String menuEntries = 'menu_entries';
+
+  /// **La médiathèque en pages** (#167, serveur #540) : les onglets, leurs
+  /// puces, leurs sections. Trois référentiels servis sans compte, comme
+  /// [menuEntries], mais **avec** tombstone — retirer une page, c'est la
+  /// supprimer. Ils remplacent, pour ce client, la surface `media_*` des menus.
+  static const String mediaPages = 'media_pages';
+  static const String mediaPageChips = 'media_page_chips';
+  static const String mediaPageSections = 'media_page_sections';
 
   /// **Les canaux de connexion** (#83) — par quelles portes l'application
   /// propose d'entrer, et ce qu'elle annonce.
@@ -318,6 +327,9 @@ const String _kSyncStampColumn = 'sync_stamp';
     Seasons,
     PresentationVocabulary,
     MenuEntries,
+    MediaPages,
+    MediaPageChips,
+    MediaPageSections,
     Decor,
     AuthChannels,
     DeviceSettings,
@@ -420,6 +432,15 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// toujours sur l'appareil qui l'avait reçue.
   LocalCollection<MenuEntryRow> get menuEntriesCollection =>
       LocalCollection._(SyncCollectionKey.menuEntries, menuEntries);
+
+  /// Les pages, puces et sections de la médiathèque (#167). Un tombstone en
+  /// retire la ligne.
+  LocalCollection<MediaPageRow> get mediaPagesCollection =>
+      LocalCollection._(SyncCollectionKey.mediaPages, mediaPages);
+  LocalCollection<MediaPageChipRow> get mediaPageChipsCollection =>
+      LocalCollection._(SyncCollectionKey.mediaPageChips, mediaPageChips);
+  LocalCollection<MediaPageSectionRow> get mediaPageSectionsCollection =>
+      LocalCollection._(SyncCollectionKey.mediaPageSections, mediaPageSections);
 
   /// **Une seule ligne**, et `null` y est une valeur : pas de décor déposé au
   /// portail n'est pas la même chose que pas encore reçu les réglages.

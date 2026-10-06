@@ -155,6 +155,10 @@ void main() {
           'seasons',
           'presentation_vocabulary',
           'menu_entries',
+          // La médiathèque en pages (#167), juste après les menus.
+          'media_pages',
+          'media_page_chips',
+          'media_page_sections',
           'auth_channels',
           'device_settings',
           'decor',
