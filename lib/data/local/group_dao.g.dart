@@ -23,6 +23,10 @@ mixin _$GroupDaoMixin on DatabaseAccessor<AppDatabase> {
       attachedDatabase.groupArrangements;
   $PendingGroupArrangementsTable get pendingGroupArrangements =>
       attachedDatabase.pendingGroupArrangements;
+  $GroupMessageReactionsTable get groupMessageReactions =>
+      attachedDatabase.groupMessageReactions;
+  $GroupMessageHidesTable get groupMessageHides =>
+      attachedDatabase.groupMessageHides;
   GroupDaoManager get managers => GroupDaoManager(this);
 }
 
@@ -61,4 +65,10 @@ class GroupDaoManager {
   $$PendingGroupArrangementsTableTableManager get pendingGroupArrangements =>
       $$PendingGroupArrangementsTableTableManager(
           _db.attachedDatabase, _db.pendingGroupArrangements);
+  $$GroupMessageReactionsTableTableManager get groupMessageReactions =>
+      $$GroupMessageReactionsTableTableManager(
+          _db.attachedDatabase, _db.groupMessageReactions);
+  $$GroupMessageHidesTableTableManager get groupMessageHides =>
+      $$GroupMessageHidesTableTableManager(
+          _db.attachedDatabase, _db.groupMessageHides);
 }

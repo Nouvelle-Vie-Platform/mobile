@@ -3609,6 +3609,204 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'En sourdine'**
   String get conversationMuted;
+
+  /// M2 (#141) : à la place d'un message supprimé pour tous, dans la bulle et dans l'aperçu de la liste. En italique
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce message a été supprimé'**
+  String get chatMessageDeleted;
+
+  /// M2 (#141) : près de l'heure d'un message modifié par son auteur (15 min après l'envoi au plus)
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifié'**
+  String get chatMessageEdited;
+
+  /// M2 (#141) : en tête de bulle d'une copie transférée depuis une autre discussion
+  ///
+  /// In fr, this message translates to:
+  /// **'Transféré'**
+  String get chatMessageForwarded;
+
+  /// M2 (#141) : dans une citation, quand le message cité a été supprimé pour tous
+  ///
+  /// In fr, this message translates to:
+  /// **'Message supprimé'**
+  String get chatQuoteDeleted;
+
+  /// M2 (#141) : dans une citation, un média sans légende dont la forme est inconnue de cette version
+  ///
+  /// In fr, this message translates to:
+  /// **'Média'**
+  String get chatQuoteMedia;
+
+  /// M2 (#141) : dans une citation, un vocal sans légende
+  ///
+  /// In fr, this message translates to:
+  /// **'Message vocal'**
+  String get chatQuoteAudio;
+
+  /// M2 (#141) : dans une citation, une image sans légende
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo'**
+  String get chatQuoteImage;
+
+  /// M2 (#141) : auteur d'une citation ou d'une réaction quand c'est moi
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous'**
+  String get chatQuoteYou;
+
+  /// M2 (#141) : au-dessus du champ de saisie, la citation du message auquel on répond
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponse à {name}'**
+  String chatReplyingTo(String name);
+
+  /// M2 (#141) : au-dessus du champ, quand l'auteur cité n'a pas de nom en magasin
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponse'**
+  String get chatReplying;
+
+  /// M2 (#141) : au-dessus du champ, pendant la modification d'un message
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le message'**
+  String get chatEditing;
+
+  /// M2 (#141) : libellé d'accessibilité de la croix de l'aperçu de réponse
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler la réponse'**
+  String get chatCancelReply;
+
+  /// M2 (#141) : libellé d'accessibilité de la croix pendant une modification
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler la modification'**
+  String get chatCancelEdit;
+
+  /// M2 (#141) : menu d'appui long sur une bulle
+  ///
+  /// In fr, this message translates to:
+  /// **'Répondre'**
+  String get chatActionReply;
+
+  /// M2 (#141) : menu d'appui long sur une bulle — copie le texte
+  ///
+  /// In fr, this message translates to:
+  /// **'Copier'**
+  String get chatActionCopy;
+
+  /// M2 (#141) : menu d'appui long sur une bulle
+  ///
+  /// In fr, this message translates to:
+  /// **'Transférer'**
+  String get chatActionForward;
+
+  /// M2 (#141) : menu d'appui long — mon message, dans les 15 minutes
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get chatActionEdit;
+
+  /// M2 (#141) : menu d'appui long — retire le message de mon fil seulement
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer pour moi'**
+  String get chatActionDeleteForMe;
+
+  /// M2 (#141) : menu d'appui long — mon message dans les 2 jours, ou tout message pour un administrateur
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer pour tous'**
+  String get chatActionDeleteForEveryone;
+
+  /// M2 (#141) : libellé d'accessibilité du « + » du jeu rapide de réactions
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus de réactions'**
+  String get chatMoreReactions;
+
+  /// M2 (#141) : confirmation après « Copier »
+  ///
+  /// In fr, this message translates to:
+  /// **'Message copié'**
+  String get chatCopied;
+
+  /// M2 (#141) : confirmation avant « Supprimer pour tous »
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce message sera remplacé par « Ce message a été supprimé » pour tout le monde.'**
+  String get chatDeleteForEveryoneConfirm;
+
+  /// M2 (#141) : titre de la feuille de choix des discussions
+  ///
+  /// In fr, this message translates to:
+  /// **'Transférer à…'**
+  String get chatForwardTitle;
+
+  /// M2 (#141) : bouton de la feuille de transfert
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
+  String get chatForwardSend;
+
+  /// M2 (#141) : feuille de transfert sans discussion où l'on peut écrire
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune discussion où transférer.'**
+  String get chatForwardEmpty;
+
+  /// M2 (#141) : feuille de transfert, quand on tente d'en cocher une sixième
+  ///
+  /// In fr, this message translates to:
+  /// **'5 discussions au plus.'**
+  String get chatForwardLimit;
+
+  /// M2 (#141) : confirmation après un transfert
+  ///
+  /// In fr, this message translates to:
+  /// **'Message transféré'**
+  String get chatForwardDone;
+
+  /// M2 (#141) : le serveur refuse une modification (15 min) ou une suppression pour tous (2 jours) arrivée trop tard
+  ///
+  /// In fr, this message translates to:
+  /// **'Le délai est passé : ce n\'est plus possible.'**
+  String get chatGestureWindowClosed;
+
+  /// M2 (#141) : le serveur refuse un geste (droit, message supprimé entre-temps)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce n\'est pas possible pour ce message.'**
+  String get chatGestureRefused;
+
+  /// M2 (#141) : un geste sur un message n'a pas reçu de réponse
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de connexion. Réessayez.'**
+  String get chatGestureUnreachable;
+
+  /// M2 (#141) : titre de la feuille « qui a réagi », ouverte en touchant l'agrégat sous une bulle
+  ///
+  /// In fr, this message translates to:
+  /// **'Réactions'**
+  String get chatReactionsTitle;
+
+  /// M2 (#141) : sous ma propre ligne dans la feuille des réactions
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez pour retirer'**
+  String get chatReactionsRemove;
+
+  /// M2 (#141) : toucher une citation dont le message d'origine n'est plus dans l'historique
+  ///
+  /// In fr, this message translates to:
+  /// **'Message introuvable'**
+  String get chatQuoteNotFound;
 }
 
 class _AppLocalizationsDelegate

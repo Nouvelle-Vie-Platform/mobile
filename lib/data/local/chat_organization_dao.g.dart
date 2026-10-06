@@ -14,6 +14,8 @@ mixin _$ChatOrganizationDaoMixin on DatabaseAccessor<AppDatabase> {
       attachedDatabase.groupArrangements;
   $PendingGroupArrangementsTable get pendingGroupArrangements =>
       attachedDatabase.pendingGroupArrangements;
+  $GroupMessageHidesTable get groupMessageHides =>
+      attachedDatabase.groupMessageHides;
   ChatOrganizationDaoManager get managers => ChatOrganizationDaoManager(this);
 }
 
@@ -37,4 +39,7 @@ class ChatOrganizationDaoManager {
   $$PendingGroupArrangementsTableTableManager get pendingGroupArrangements =>
       $$PendingGroupArrangementsTableTableManager(
           _db.attachedDatabase, _db.pendingGroupArrangements);
+  $$GroupMessageHidesTableTableManager get groupMessageHides =>
+      $$GroupMessageHidesTableTableManager(
+          _db.attachedDatabase, _db.groupMessageHides);
 }
