@@ -17718,6 +17718,396 @@ class DeliveryAcksCompanion extends UpdateCompanion<DeliveryAckRow> {
   }
 }
 
+class $GroupMutesTable extends GroupMutes
+    with TableInfo<$GroupMutesTable, GroupMuteRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GroupMutesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _membershipIdMeta =
+      const VerificationMeta('membershipId');
+  @override
+  late final GeneratedColumn<int> membershipId = GeneratedColumn<int>(
+      'membership_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _mutedUntilMeta =
+      const VerificationMeta('mutedUntil');
+  @override
+  late final GeneratedColumn<DateTime> mutedUntil = GeneratedColumn<DateTime>(
+      'muted_until', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _mutedForeverMeta =
+      const VerificationMeta('mutedForever');
+  @override
+  late final GeneratedColumn<bool> mutedForever = GeneratedColumn<bool>(
+      'muted_forever', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("muted_forever" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _muteChangedAtMeta =
+      const VerificationMeta('muteChangedAt');
+  @override
+  late final GeneratedColumn<DateTime> muteChangedAt =
+      GeneratedColumn<DateTime>('mute_changed_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        groupId,
+        membershipId,
+        mutedUntil,
+        mutedForever,
+        muteChangedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'group_mutes';
+  @override
+  VerificationContext validateIntegrity(Insertable<GroupMuteRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('membership_id')) {
+      context.handle(
+          _membershipIdMeta,
+          membershipId.isAcceptableOrUnknown(
+              data['membership_id']!, _membershipIdMeta));
+    }
+    if (data.containsKey('muted_until')) {
+      context.handle(
+          _mutedUntilMeta,
+          mutedUntil.isAcceptableOrUnknown(
+              data['muted_until']!, _mutedUntilMeta));
+    }
+    if (data.containsKey('muted_forever')) {
+      context.handle(
+          _mutedForeverMeta,
+          mutedForever.isAcceptableOrUnknown(
+              data['muted_forever']!, _mutedForeverMeta));
+    }
+    if (data.containsKey('mute_changed_at')) {
+      context.handle(
+          _muteChangedAtMeta,
+          muteChangedAt.isAcceptableOrUnknown(
+              data['mute_changed_at']!, _muteChangedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId};
+  @override
+  GroupMuteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GroupMuteRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      membershipId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}membership_id']),
+      mutedUntil: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}muted_until']),
+      mutedForever: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}muted_forever'])!,
+      muteChangedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}mute_changed_at']),
+    );
+  }
+
+  @override
+  $GroupMutesTable createAlias(String alias) {
+    return $GroupMutesTable(attachedDatabase, alias);
+  }
+}
+
+class GroupMuteRow extends DataClass implements Insertable<GroupMuteRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String groupId;
+
+  /// L'identifiant de l'appartenance côté serveur (un entier). Non lu.
+  final int? membershipId;
+
+  /// La fin d'une sourdine bornée (8 h, 1 semaine), ou `null`.
+  final DateTime? mutedUntil;
+
+  /// « Toujours ». Jamais cumulé avec [mutedUntil] (`CHECK` côté serveur).
+  final bool mutedForever;
+
+  /// L'instant serveur du dernier réglage — ce qui départage deux lignes
+  /// arrivées dans le désordre.
+  final DateTime? muteChangedAt;
+  const GroupMuteRow(
+      {required this.syncStamp,
+      required this.groupId,
+      this.membershipId,
+      this.mutedUntil,
+      required this.mutedForever,
+      this.muteChangedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['group_id'] = Variable<String>(groupId);
+    if (!nullToAbsent || membershipId != null) {
+      map['membership_id'] = Variable<int>(membershipId);
+    }
+    if (!nullToAbsent || mutedUntil != null) {
+      map['muted_until'] = Variable<DateTime>(mutedUntil);
+    }
+    map['muted_forever'] = Variable<bool>(mutedForever);
+    if (!nullToAbsent || muteChangedAt != null) {
+      map['mute_changed_at'] = Variable<DateTime>(muteChangedAt);
+    }
+    return map;
+  }
+
+  GroupMutesCompanion toCompanion(bool nullToAbsent) {
+    return GroupMutesCompanion(
+      syncStamp: Value(syncStamp),
+      groupId: Value(groupId),
+      membershipId: membershipId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(membershipId),
+      mutedUntil: mutedUntil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mutedUntil),
+      mutedForever: Value(mutedForever),
+      muteChangedAt: muteChangedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(muteChangedAt),
+    );
+  }
+
+  factory GroupMuteRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GroupMuteRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+      membershipId: serializer.fromJson<int?>(json['membershipId']),
+      mutedUntil: serializer.fromJson<DateTime?>(json['mutedUntil']),
+      mutedForever: serializer.fromJson<bool>(json['mutedForever']),
+      muteChangedAt: serializer.fromJson<DateTime?>(json['muteChangedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'groupId': serializer.toJson<String>(groupId),
+      'membershipId': serializer.toJson<int?>(membershipId),
+      'mutedUntil': serializer.toJson<DateTime?>(mutedUntil),
+      'mutedForever': serializer.toJson<bool>(mutedForever),
+      'muteChangedAt': serializer.toJson<DateTime?>(muteChangedAt),
+    };
+  }
+
+  GroupMuteRow copyWith(
+          {int? syncStamp,
+          String? groupId,
+          Value<int?> membershipId = const Value.absent(),
+          Value<DateTime?> mutedUntil = const Value.absent(),
+          bool? mutedForever,
+          Value<DateTime?> muteChangedAt = const Value.absent()}) =>
+      GroupMuteRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        groupId: groupId ?? this.groupId,
+        membershipId:
+            membershipId.present ? membershipId.value : this.membershipId,
+        mutedUntil: mutedUntil.present ? mutedUntil.value : this.mutedUntil,
+        mutedForever: mutedForever ?? this.mutedForever,
+        muteChangedAt:
+            muteChangedAt.present ? muteChangedAt.value : this.muteChangedAt,
+      );
+  GroupMuteRow copyWithCompanion(GroupMutesCompanion data) {
+    return GroupMuteRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      membershipId: data.membershipId.present
+          ? data.membershipId.value
+          : this.membershipId,
+      mutedUntil:
+          data.mutedUntil.present ? data.mutedUntil.value : this.mutedUntil,
+      mutedForever: data.mutedForever.present
+          ? data.mutedForever.value
+          : this.mutedForever,
+      muteChangedAt: data.muteChangedAt.present
+          ? data.muteChangedAt.value
+          : this.muteChangedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupMuteRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('groupId: $groupId, ')
+          ..write('membershipId: $membershipId, ')
+          ..write('mutedUntil: $mutedUntil, ')
+          ..write('mutedForever: $mutedForever, ')
+          ..write('muteChangedAt: $muteChangedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, groupId, membershipId, mutedUntil,
+      mutedForever, muteChangedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GroupMuteRow &&
+          other.syncStamp == this.syncStamp &&
+          other.groupId == this.groupId &&
+          other.membershipId == this.membershipId &&
+          other.mutedUntil == this.mutedUntil &&
+          other.mutedForever == this.mutedForever &&
+          other.muteChangedAt == this.muteChangedAt);
+}
+
+class GroupMutesCompanion extends UpdateCompanion<GroupMuteRow> {
+  final Value<int> syncStamp;
+  final Value<String> groupId;
+  final Value<int?> membershipId;
+  final Value<DateTime?> mutedUntil;
+  final Value<bool> mutedForever;
+  final Value<DateTime?> muteChangedAt;
+  final Value<int> rowid;
+  const GroupMutesCompanion({
+    this.syncStamp = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.membershipId = const Value.absent(),
+    this.mutedUntil = const Value.absent(),
+    this.mutedForever = const Value.absent(),
+    this.muteChangedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GroupMutesCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String groupId,
+    this.membershipId = const Value.absent(),
+    this.mutedUntil = const Value.absent(),
+    this.mutedForever = const Value.absent(),
+    this.muteChangedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : groupId = Value(groupId);
+  static Insertable<GroupMuteRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? groupId,
+    Expression<int>? membershipId,
+    Expression<DateTime>? mutedUntil,
+    Expression<bool>? mutedForever,
+    Expression<DateTime>? muteChangedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (groupId != null) 'group_id': groupId,
+      if (membershipId != null) 'membership_id': membershipId,
+      if (mutedUntil != null) 'muted_until': mutedUntil,
+      if (mutedForever != null) 'muted_forever': mutedForever,
+      if (muteChangedAt != null) 'mute_changed_at': muteChangedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GroupMutesCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? groupId,
+      Value<int?>? membershipId,
+      Value<DateTime?>? mutedUntil,
+      Value<bool>? mutedForever,
+      Value<DateTime?>? muteChangedAt,
+      Value<int>? rowid}) {
+    return GroupMutesCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      groupId: groupId ?? this.groupId,
+      membershipId: membershipId ?? this.membershipId,
+      mutedUntil: mutedUntil ?? this.mutedUntil,
+      mutedForever: mutedForever ?? this.mutedForever,
+      muteChangedAt: muteChangedAt ?? this.muteChangedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (membershipId.present) {
+      map['membership_id'] = Variable<int>(membershipId.value);
+    }
+    if (mutedUntil.present) {
+      map['muted_until'] = Variable<DateTime>(mutedUntil.value);
+    }
+    if (mutedForever.present) {
+      map['muted_forever'] = Variable<bool>(mutedForever.value);
+    }
+    if (muteChangedAt.present) {
+      map['mute_changed_at'] = Variable<DateTime>(muteChangedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupMutesCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('groupId: $groupId, ')
+          ..write('membershipId: $membershipId, ')
+          ..write('mutedUntil: $mutedUntil, ')
+          ..write('mutedForever: $mutedForever, ')
+          ..write('muteChangedAt: $muteChangedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AppSettingsTable extends AppSettings
     with TableInfo<$AppSettingsTable, AppSettingRow> {
   @override
@@ -19042,6 +19432,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MessageReceiptsTable messageReceipts =
       $MessageReceiptsTable(this);
   late final $DeliveryAcksTable deliveryAcks = $DeliveryAcksTable(this);
+  late final $GroupMutesTable groupMutes = $GroupMutesTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $DownloadsTable downloads = $DownloadsTable(this);
   late final $DownloadTitlesTable downloadTitles = $DownloadTitlesTable(this);
@@ -19113,6 +19504,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         pendingGroupArrangements,
         messageReceipts,
         deliveryAcks,
+        groupMutes,
         appSettings,
         downloads,
         downloadTitles,
@@ -27429,6 +27821,195 @@ typedef $$DeliveryAcksTableProcessedTableManager = ProcessedTableManager<
     ),
     DeliveryAckRow,
     PrefetchHooks Function()>;
+typedef $$GroupMutesTableCreateCompanionBuilder = GroupMutesCompanion Function({
+  Value<int> syncStamp,
+  required String groupId,
+  Value<int?> membershipId,
+  Value<DateTime?> mutedUntil,
+  Value<bool> mutedForever,
+  Value<DateTime?> muteChangedAt,
+  Value<int> rowid,
+});
+typedef $$GroupMutesTableUpdateCompanionBuilder = GroupMutesCompanion Function({
+  Value<int> syncStamp,
+  Value<String> groupId,
+  Value<int?> membershipId,
+  Value<DateTime?> mutedUntil,
+  Value<bool> mutedForever,
+  Value<DateTime?> muteChangedAt,
+  Value<int> rowid,
+});
+
+class $$GroupMutesTableFilterComposer
+    extends Composer<_$AppDatabase, $GroupMutesTable> {
+  $$GroupMutesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get membershipId => $composableBuilder(
+      column: $table.membershipId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get mutedUntil => $composableBuilder(
+      column: $table.mutedUntil, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get mutedForever => $composableBuilder(
+      column: $table.mutedForever, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get muteChangedAt => $composableBuilder(
+      column: $table.muteChangedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$GroupMutesTableOrderingComposer
+    extends Composer<_$AppDatabase, $GroupMutesTable> {
+  $$GroupMutesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get membershipId => $composableBuilder(
+      column: $table.membershipId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get mutedUntil => $composableBuilder(
+      column: $table.mutedUntil, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get mutedForever => $composableBuilder(
+      column: $table.mutedForever,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get muteChangedAt => $composableBuilder(
+      column: $table.muteChangedAt,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$GroupMutesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GroupMutesTable> {
+  $$GroupMutesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<int> get membershipId => $composableBuilder(
+      column: $table.membershipId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get mutedUntil => $composableBuilder(
+      column: $table.mutedUntil, builder: (column) => column);
+
+  GeneratedColumn<bool> get mutedForever => $composableBuilder(
+      column: $table.mutedForever, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get muteChangedAt => $composableBuilder(
+      column: $table.muteChangedAt, builder: (column) => column);
+}
+
+class $$GroupMutesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $GroupMutesTable,
+    GroupMuteRow,
+    $$GroupMutesTableFilterComposer,
+    $$GroupMutesTableOrderingComposer,
+    $$GroupMutesTableAnnotationComposer,
+    $$GroupMutesTableCreateCompanionBuilder,
+    $$GroupMutesTableUpdateCompanionBuilder,
+    (
+      GroupMuteRow,
+      BaseReferences<_$AppDatabase, $GroupMutesTable, GroupMuteRow>
+    ),
+    GroupMuteRow,
+    PrefetchHooks Function()> {
+  $$GroupMutesTableTableManager(_$AppDatabase db, $GroupMutesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GroupMutesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GroupMutesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GroupMutesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> groupId = const Value.absent(),
+            Value<int?> membershipId = const Value.absent(),
+            Value<DateTime?> mutedUntil = const Value.absent(),
+            Value<bool> mutedForever = const Value.absent(),
+            Value<DateTime?> muteChangedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupMutesCompanion(
+            syncStamp: syncStamp,
+            groupId: groupId,
+            membershipId: membershipId,
+            mutedUntil: mutedUntil,
+            mutedForever: mutedForever,
+            muteChangedAt: muteChangedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String groupId,
+            Value<int?> membershipId = const Value.absent(),
+            Value<DateTime?> mutedUntil = const Value.absent(),
+            Value<bool> mutedForever = const Value.absent(),
+            Value<DateTime?> muteChangedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupMutesCompanion.insert(
+            syncStamp: syncStamp,
+            groupId: groupId,
+            membershipId: membershipId,
+            mutedUntil: mutedUntil,
+            mutedForever: mutedForever,
+            muteChangedAt: muteChangedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$GroupMutesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $GroupMutesTable,
+    GroupMuteRow,
+    $$GroupMutesTableFilterComposer,
+    $$GroupMutesTableOrderingComposer,
+    $$GroupMutesTableAnnotationComposer,
+    $$GroupMutesTableCreateCompanionBuilder,
+    $$GroupMutesTableUpdateCompanionBuilder,
+    (
+      GroupMuteRow,
+      BaseReferences<_$AppDatabase, $GroupMutesTable, GroupMuteRow>
+    ),
+    GroupMuteRow,
+    PrefetchHooks Function()>;
 typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
     Function({
   required String key,
@@ -28185,6 +28766,8 @@ class $AppDatabaseManager {
       $$MessageReceiptsTableTableManager(_db, _db.messageReceipts);
   $$DeliveryAcksTableTableManager get deliveryAcks =>
       $$DeliveryAcksTableTableManager(_db, _db.deliveryAcks);
+  $$GroupMutesTableTableManager get groupMutes =>
+      $$GroupMutesTableTableManager(_db, _db.groupMutes);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$DownloadsTableTableManager get downloads =>

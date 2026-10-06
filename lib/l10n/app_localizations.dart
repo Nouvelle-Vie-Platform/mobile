@@ -3495,6 +3495,120 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Le réglage n\'a pas pu être enregistré. Réessayez.'**
   String get privacySaveError;
+
+  /// Notification de message (M5) : le nom que le style « messagerie » d'Android donne à la personne elle-même. Rarement lu, mais exigé par le style
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous'**
+  String get notificationYou;
+
+  /// Notification de message (M5), aperçu MASQUÉ (réglage « Afficher le contenu » désactivé) : la seule ligne d'une notification de tête-à-tête — le titre dit déjà qui écrit. Aucun texte du message n'apparaît
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau message'**
+  String get notificationNewMessage;
+
+  /// Notification de message (M5), aperçu MASQUÉ dans un groupe : {name} est l'auteur du dernier message ; le titre est le nom du groupe. Aucun texte du message n'apparaît
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau message de {name}'**
+  String notificationNewMessageFrom(String name);
+
+  /// Notification de message (M5) : action qui ouvre un champ de réponse dans la notification elle-même. Le message part sans ouvrir l'application, par le même chemin que la barre de saisie
+  ///
+  /// In fr, this message translates to:
+  /// **'Répondre'**
+  String get notificationReply;
+
+  /// Notification de message (M5) : texte d'invite du champ de réponse
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre message'**
+  String get notificationReplyHint;
+
+  /// Notification de message (M5) : action qui marque la conversation lue sans ouvrir l'application ; la notification disparaît
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme lu'**
+  String get notificationMarkRead;
+
+  /// Notification de message (M5) : titre du résumé qui coiffe les notifications quand plusieurs discussions ont du nouveau. {count} est le total des non-lus
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 nouveau message} other{{count} nouveaux messages}}'**
+  String notificationSummaryTitle(int count);
+
+  /// Notification de message (M5) : seconde ligne du résumé. {count} est le nombre de discussions non lues hors sourdine
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{dans 1 discussion} other{dans {count} discussions}}'**
+  String notificationSummaryText(int count);
+
+  /// Profil (M5) : interrupteur. Activé (défaut) : les notifications montrent le texte des messages. Désactivé : seulement « Nouveau message » ou « Nouveau message de Ama ». Réglage de ce téléphone, pas du compte
+  ///
+  /// In fr, this message translates to:
+  /// **'Afficher le contenu des messages'**
+  String get notificationPreviewSetting;
+
+  /// Profil (M5) : sous-titre de l'interrupteur notificationPreviewSetting, qui dit ce qu'on voit quand il est désactivé
+  ///
+  /// In fr, this message translates to:
+  /// **'Dans les notifications. Sinon : « Nouveau message »'**
+  String get notificationPreviewSettingHint;
+
+  /// Fil de discussion (M5) : libellé d'accessibilité du bouton « ⋮ » de la barre du haut
+  ///
+  /// In fr, this message translates to:
+  /// **'Options de la discussion'**
+  String get chatMuteMenu;
+
+  /// Fil de discussion (M5) : entrée du menu « ⋮ » qui propose les trois durées de sourdine. Une sourdine tait les notifications de cette discussion ; les messages arrivent toujours
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre en sourdine'**
+  String get chatMute;
+
+  /// Fil de discussion (M5) : titre du choix de durée de la sourdine
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre en sourdine pendant…'**
+  String get chatMuteTitle;
+
+  /// Durée de sourdine (M5). Les trois durées sont celles de WhatsApp, et le serveur n'en accepte pas d'autre
+  ///
+  /// In fr, this message translates to:
+  /// **'8 heures'**
+  String get chatMuteEightHours;
+
+  /// Durée de sourdine (M5)
+  ///
+  /// In fr, this message translates to:
+  /// **'1 semaine'**
+  String get chatMuteOneWeek;
+
+  /// Durée de sourdine (M5) : jusqu'à ce qu'on la réactive
+  ///
+  /// In fr, this message translates to:
+  /// **'Toujours'**
+  String get chatMuteForever;
+
+  /// Fil de discussion (M5) : entrée du menu « ⋮ » d'une discussion en sourdine
+  ///
+  /// In fr, this message translates to:
+  /// **'Réactiver les notifications'**
+  String get chatUnmute;
+
+  /// Fil de discussion (M5) : message bref quand le serveur n'a pas confirmé le réglage de sourdine (réseau absent, plus membre). La sourdine se règle en ligne : c'est le serveur qui tait les réveils
+  ///
+  /// In fr, this message translates to:
+  /// **'La sourdine n\'a pas pu être réglée. Vérifiez votre connexion.'**
+  String get chatMuteFailed;
+
+  /// Liste des discussions (M5) : libellé d'accessibilité de l'icône de haut-parleur barré d'une discussion en sourdine
+  ///
+  /// In fr, this message translates to:
+  /// **'En sourdine'**
+  String get conversationMuted;
 }
 
 class _AppLocalizationsDelegate

@@ -15,6 +15,7 @@ mixin _$GroupDaoMixin on DatabaseAccessor<AppDatabase> {
   $GroupReadsTable get groupReads => attachedDatabase.groupReads;
   $PendingGroupReadsTable get pendingGroupReads =>
       attachedDatabase.pendingGroupReads;
+  $GroupMutesTable get groupMutes => attachedDatabase.groupMutes;
   $OfficialAccountsTable get officialAccounts =>
       attachedDatabase.officialAccounts;
   $ContributorsTable get contributors => attachedDatabase.contributors;
@@ -47,6 +48,8 @@ class GroupDaoManager {
   $$PendingGroupReadsTableTableManager get pendingGroupReads =>
       $$PendingGroupReadsTableTableManager(
           _db.attachedDatabase, _db.pendingGroupReads);
+  $$GroupMutesTableTableManager get groupMutes =>
+      $$GroupMutesTableTableManager(_db.attachedDatabase, _db.groupMutes);
   $$OfficialAccountsTableTableManager get officialAccounts =>
       $$OfficialAccountsTableTableManager(
           _db.attachedDatabase, _db.officialAccounts);

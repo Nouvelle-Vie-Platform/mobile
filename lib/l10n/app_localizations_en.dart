@@ -1923,4 +1923,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacySaveError => 'The setting could not be saved. Try again.';
+
+  @override
+  String get notificationYou => 'You';
+
+  @override
+  String get notificationNewMessage => 'New message';
+
+  @override
+  String notificationNewMessageFrom(String name) {
+    return 'New message from $name';
+  }
+
+  @override
+  String get notificationReply => 'Reply';
+
+  @override
+  String get notificationReplyHint => 'Your message';
+
+  @override
+  String get notificationMarkRead => 'Mark as read';
+
+  @override
+  String notificationSummaryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new messages',
+      one: '1 new message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationSummaryText(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'in $count chats',
+      one: 'in 1 chat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationPreviewSetting => 'Show message content';
+
+  @override
+  String get notificationPreviewSettingHint =>
+      'In notifications. Otherwise: “New message”';
+
+  @override
+  String get chatMuteMenu => 'Chat options';
+
+  @override
+  String get chatMute => 'Mute';
+
+  @override
+  String get chatMuteTitle => 'Mute notifications for…';
+
+  @override
+  String get chatMuteEightHours => '8 hours';
+
+  @override
+  String get chatMuteOneWeek => '1 week';
+
+  @override
+  String get chatMuteForever => 'Always';
+
+  @override
+  String get chatUnmute => 'Unmute notifications';
+
+  @override
+  String get chatMuteFailed =>
+      'Mute could not be changed. Check your connection.';
+
+  @override
+  String get conversationMuted => 'Muted';
 }
