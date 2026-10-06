@@ -207,4 +207,36 @@ void main() {
       expect(adapter.lastBody['clientMessageId'], 'c-1');
     });
   });
+
+  group('L\'envoyeur distingue le refus définitif', () {
+    Future<bool> sendOnce() => HttpGroupMessageSender(client: api).send(
+          groupId: 'g-1',
+          body: 'Amen',
+          clientMessageId: 'c-1',
+          clientCreatedAt: DateTime.utc(2026, 10, 6, 9),
+        );
+
+    for (final status in [403, 404, 409, 422]) {
+      test('$status : lève GroupMessageRefused', () async {
+        serve((_) => errorReply(status, 'E_REFUSED'));
+        await expectLater(
+          sendOnce(),
+          throwsA(
+            isA<GroupMessageRefused>()
+                .having((e) => e.statusCode, 'statusCode', status),
+          ),
+        );
+      });
+    }
+
+    test('500 : « pas parti », sans lever — cela peut changer', () async {
+      serve((_) => errorReply(500, 'E_INTERNAL'));
+      expect(await sendOnce(), isFalse);
+    });
+
+    test('réseau absent : « pas parti », sans lever', () async {
+      serve((_) => throw const SocketException('hors ligne'));
+      expect(await sendOnce(), isFalse);
+    });
+  });
 }

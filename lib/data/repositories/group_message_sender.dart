@@ -39,6 +39,15 @@ abstract interface class GroupMessageSender {
   /// quand même au réseau. Le serveur l'attend déjà — unicité
   /// `(group_id, author_id, client_message_id)` — et renvoie l'existant plutôt que
   /// de créer un doublon.
+  ///
+  /// ## Le refus définitif lève [GroupMessageRefused]
+  ///
+  /// `false` dit « pas parti, cela peut changer » (réseau, 401, 5xx) : le renvoi
+  /// automatique le reposte au cycle suivant. Un refus que le serveur rendra à
+  /// l'identique à chaque essai (403, 404, 409, 422) lève [GroupMessageRefused] :
+  /// le reposter à chaque cycle ne ferait que rejouer le même refus, sans fin.
+  /// L'écran ne change pas de phrase — « pas parti », avec réessayer et
+  /// supprimer —, seul le renvoi automatique s'arrête.
   Future<bool> send({
     required String groupId,
     required String body,
@@ -54,6 +63,26 @@ abstract interface class GroupMessageSender {
 /// temporellement, donc deux clés frappées par le même appareil gardent l'ordre
 /// dans lequel on a tapé, même si le réseau les livre dans l'autre sens.
 String mintClientMessageId() => const Uuid().v7();
+
+// ── #145 (M6) : le refus définitif ─────────────────────────────────────────
+
+/// **Les statuts d'un refus définitif** : le serveur rendra le même à chaque
+/// essai — plus membre (403), groupe ou destinataire introuvable (404), conflit
+/// (409), corps refusé (422). Aucun « déjà fait » n'y figure : un rejeu sous la
+/// même clé rend le message existant, jamais un refus.
+const Set<int> kDefinitiveSendRefusals = {403, 404, 409, 422};
+
+/// **Le serveur a refusé ce message pour de bon** (#145) : le renvoi automatique
+/// ne doit plus le reposter. Réessayer à la main reste possible.
+class GroupMessageRefused implements Exception {
+  const GroupMessageRefused(this.statusCode);
+
+  /// Le statut HTTP du refus, l'un de [kDefinitiveSendRefusals].
+  final int statusCode;
+
+  @override
+  String toString() => 'GroupMessageRefused($statusCode)';
+}
 
 // ── #145 (M6) : le premier message d'un tête-à-tête ────────────────────────
 
@@ -148,9 +177,14 @@ class HttpGroupMessageSender implements GroupMessageSender {
         },
       );
       return true;
-    } on DioException {
+    } on DioException catch (error) {
       // **Muet, et délibérément.** Voir [GroupMessageSender.send] : il n'y a rien
       // à composer d'un refus ici, seulement un écho à marquer « pas parti ».
+      // Seul le refus définitif se distingue, pour arrêter le renvoi automatique.
+      final status = error.response?.statusCode;
+      if (status != null && kDefinitiveSendRefusals.contains(status)) {
+        throw GroupMessageRefused(status);
+      }
       return false;
     }
   }

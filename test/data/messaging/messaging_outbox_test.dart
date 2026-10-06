@@ -22,6 +22,9 @@ import '../../helpers/sync_fixtures.dart';
 
 class _ScriptedSender implements GroupMessageSender {
   bool succeeds = true;
+
+  /// Un statut de refus définitif (#145) : l'envoi lève [GroupMessageRefused].
+  int? refusesWith;
   final List<String> posted = [];
 
   @override
@@ -32,6 +35,8 @@ class _ScriptedSender implements GroupMessageSender {
     required DateTime clientCreatedAt,
   }) async {
     posted.add(clientMessageId);
+    final refusal = refusesWith;
+    if (refusal != null) throw GroupMessageRefused(refusal);
     return succeeds;
   }
 }
@@ -126,6 +131,60 @@ void main() {
       sender.posted.clear();
       await composer.resendUnconfirmed();
       expect(sender.posted, isEmpty);
+    });
+
+    test(
+        'refusé pour de bon (#145) : « pas parti », mais plus jamais renvoyé '
+        'tout seul', () async {
+      sender.refusesWith = 403;
+      await composer.send(groupId: kGroupId, body: 'refusé');
+      sender.refusesWith = null;
+      sender.succeeds = false;
+      await composer.send(groupId: kGroupId, body: 'réseau absent');
+      expect(
+        (await thread()).map((m) => m.delivery),
+        everyElement(MessageDelivery.failed),
+        reason:
+            'l\'écran dit la même chose : pas parti, réessayer ou supprimer',
+      );
+
+      // Plusieurs cycles passent : seul l'échec de réseau repart (à chaque
+      // cycle tant que sa ligne serveur n'est pas arrivée), jamais le refusé.
+      sender.succeeds = true;
+      sender.posted.clear();
+      await composer.resendUnconfirmed();
+      await composer.resendUnconfirmed();
+      expect(sender.posted, ['c-2', 'c-2']);
+      final byBody = {for (final m in await thread()) m.body: m.delivery};
+      expect(byBody['refusé'], MessageDelivery.failed);
+    });
+
+    test('refusé au renvoi automatique : les cycles suivants le sautent',
+        () async {
+      sender.succeeds = false;
+      await composer.send(groupId: kGroupId, body: 'Amen');
+
+      sender.refusesWith = 422;
+      await composer.resendUnconfirmed();
+      expect((await thread()).single.delivery, MessageDelivery.failed);
+
+      sender.refusesWith = null;
+      sender.succeeds = true;
+      sender.posted.clear();
+      await composer.resendUnconfirmed();
+      await composer.resendUnconfirmed();
+      expect(sender.posted, isEmpty);
+    });
+
+    test('réessayer à la main passe outre le refus retenu', () async {
+      sender.refusesWith = 409;
+      final key = await composer.send(groupId: kGroupId, body: 'Amen');
+
+      sender.refusesWith = null;
+      sender.succeeds = true;
+      sender.posted.clear();
+      expect(await composer.retry(key!), isTrue);
+      expect(sender.posted, [key]);
     });
 
     test('un envoi encore en cours n\'est pas doublé par le renvoi', () async {
