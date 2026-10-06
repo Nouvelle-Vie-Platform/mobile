@@ -1,5 +1,6 @@
 import '../../models/echanges_view.dart';
 import '../../models/group_management.dart';
+import '../../models/message_media.dart';
 import '../local/group_dao.dart';
 import 'echanges_repository.dart';
 
@@ -204,6 +205,13 @@ class StoreEchangesRepository implements EchangesRepository {
       pinnedAt: row.pinnedAt,
       isMuted: row.isMutedAt(DateTime.now()),
       lastMessageDeleted: row.lastDeleted,
+      // L'aperçu d'un média (M4) : la forme seule, la tuile en fait un libellé.
+      lastMessageMedia: row.lastDeleted
+          ? null
+          : MessageMedia.fromColumns(
+              kind: row.lastMediaKind,
+              metaJson: row.lastMediaMeta,
+            )?.kind,
     );
   }
 
@@ -268,6 +276,24 @@ class StoreEchangesRepository implements EchangesRepository {
               .where((r) => r.userId == userId)
               .map((r) => r.emoji)
               .firstOrNull,
+      // Le média (M4, #143) : colonnes serveur, ou celles de l'écho avec son
+      // fichier local — la bulle peint la photo qu'on vient de prendre sans
+      // attendre la montée.
+      // Supprimé pour tous (M2) : aucun média, comme aucun texte.
+      media: row.deletedAt != null
+          ? null
+          : MessageMedia.fromColumns(
+              kind: row.mediaKind,
+              key: row.mediaKey,
+              thumbnailKey: row.mediaThumbnailKey,
+              duration: row.mediaDuration,
+              metaJson: row.mediaMeta,
+              size: row.mediaSize,
+              mime: row.mediaMime,
+              localPath: row.mediaPath,
+              localThumbPath: row.mediaThumbPath,
+            ),
+      mediaError: MediaSendError.parse(row.mediaError),
     );
   }
 

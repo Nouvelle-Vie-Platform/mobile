@@ -263,12 +263,48 @@ class AppDatabase extends _$AppDatabase {
   /// #141). Le palier vit dans [_migrateM2ToV25], et son numéro dans
   /// [kM2SchemaVersion] — la seule ligne à changer si un
   /// palier venait s'intercaler.
+  ///
+  /// **v26** (M4, #143) — **le média porté par le message** : sept colonnes
+  /// sur `group_messages` (clé, forme, durée, méta, taille, type, vignette),
+  /// dix sur `pending_group_messages` (l'écho d'un média : fichier local, type,
+  /// méta, clés montées, cause d'échec), et l'oubli du curseur de
+  /// `group_messages`. Voir [_migrateM4ToV26] et [kM4SchemaVersion].
   @override
-  int get schemaVersion => kM2SchemaVersion;
+  int get schemaVersion => kM4SchemaVersion;
 
   /// **Le palier de la tranche M2** (#141) : v25, après M8 (v22), M3 (v23) et
   /// M5 (v24).
   static const int kM2SchemaVersion = 25;
+
+  /// **Le palier de la tranche M4** (#143) : v26, après M2 (v25).
+  static const int kM4SchemaVersion = 26;
+
+  /// Les sept colonnes du média d'un message (M4), ajoutées ensemble au palier
+  /// v26 — et retirées ensemble d'une table créée pour une version antérieure
+  /// (migrations de test seulement, comme [_announcementMediaColumns]).
+  List<GeneratedColumn<Object>> get _groupMessageMediaColumns => [
+        groupMessages.mediaKey,
+        groupMessages.mediaKind,
+        groupMessages.mediaDuration,
+        groupMessages.mediaMeta,
+        groupMessages.mediaSize,
+        groupMessages.mediaMime,
+        groupMessages.mediaThumbnailKey,
+      ];
+
+  /// Les dix colonnes de l'écho d'un média (M4), même règle.
+  List<GeneratedColumn<Object>> get _pendingMediaColumns => [
+        pendingGroupMessages.mediaKind,
+        pendingGroupMessages.mediaPath,
+        pendingGroupMessages.mediaThumbPath,
+        pendingGroupMessages.mediaMime,
+        pendingGroupMessages.mediaMeta,
+        pendingGroupMessages.mediaDuration,
+        pendingGroupMessages.mediaSize,
+        pendingGroupMessages.mediaKey,
+        pendingGroupMessages.mediaThumbnailKey,
+        pendingGroupMessages.mediaError,
+      ];
 
   /// Les cinq colonnes du média d'une annonce, ajoutées ensemble au palier
   /// v18 → v19 — et retirées ensemble d'une table créée pour une version
@@ -692,11 +728,15 @@ class AppDatabase extends _$AppDatabase {
               await customStatement(_groupMessagesV20);
             } else {
               await m.createTable(groupMessages);
+              // M4 : la forme courante porte le média ; une cible antérieure
+              // à la v26 ne l'a pas encore.
+              await _dropM4ColumnsBefore26(m, to, groupMessages);
             }
             if (to < kM2SchemaVersion) {
               await customStatement(_pendingGroupMessagesV18);
             } else {
               await m.createTable(pendingGroupMessages);
+              await _dropM4ColumnsBefore26(m, to, pendingGroupMessages);
             }
           }
 
@@ -759,11 +799,20 @@ class AppDatabase extends _$AppDatabase {
           // Elle en faut une sur la recréation, qui produit la forme **courante**
           // et ferait échouer la validation d'une cible antérieure.
           if (from >= 18 && from < 20 && to >= kM2SchemaVersion) {
-            // Recréée dans la forme **courante**, colonnes de M2 comprises : le
-            // palier M2 ne la retouche donc pas (garde `from >= 20` plus bas).
+            // Recréée dans la forme **courante**, colonnes de M2 et du média
+            // (M4) comprises : leurs paliers ne la retouchent donc pas (garde
+            // `from >= 20` plus bas). Ces colonnes-là n'ont rien à recopier
+            // (`newColumns`) ; une cible antérieure à la v26 perd le média.
             await m.alterTable(
-              TableMigration(groupMessages, newColumns: _m2MessageColumns),
+              TableMigration(
+                groupMessages,
+                newColumns: [
+                  ..._m2MessageColumns,
+                  ..._groupMessageMediaColumns
+                ],
+              ),
             );
+            await _dropM4ColumnsBefore26(m, to, groupMessages);
           } else if (from >= 18 && from < 20 && to >= 20) {
             // Migration de test vers la v20 à la v24 : la forme d'alors.
             await _recreateGroupMessagesV20();
@@ -822,6 +871,11 @@ class AppDatabase extends _$AppDatabase {
           // [_migrateM2ToV25].
           if (from < kM2SchemaVersion && to >= kM2SchemaVersion) {
             await _migrateM2ToV25(m, from);
+          }
+          // v25 → v26 — le média porté par le message (M4, #143) — voir
+          // [_migrateM4ToV26].
+          if (from < kM4SchemaVersion && to >= kM4SchemaVersion) {
+            await _migrateM4ToV26(m, from);
           }
         },
         beforeOpen: (details) async {
@@ -960,6 +1014,60 @@ class AppDatabase extends _$AppDatabase {
   /// Écrit à part, et appelé par un seul palier (v24).
   Future<void> _migrateM5ToV24(Migrator m) async {
     await m.createTable(groupMutes);
+  }
+
+  /// **v25 → v26 (tranche M4 — #143)** : le média porté par le message. Son
+  /// numéro vit dans [kM4SchemaVersion].
+  ///
+  /// 1. `group_messages` gagne sept colonnes nullables — **seulement si la
+  ///    table existait déjà dans une forme sans elles** (`from >= 20`) : créée
+  ///    au palier v17 → v18, ou recréée au palier v19 → v20, elle porte déjà la
+  ///    forme courante. Même garde que le palier M2.
+  /// 2. `pending_group_messages` gagne dix colonnes nullables, sous la même
+  ///    réserve (`from >= 18`, palier de sa création).
+  /// 3. **Le curseur de `group_messages` est effacé** — même geste que le média
+  ///    des annonces au palier v19. Un téléphone resté en v25 a reçu des vocaux
+  ///    et des images (`body: null`) et les a rangés **sans leur média**, faute
+  ///    de colonne ; son curseur est passé dessus. Effacé, le manifeste suivant
+  ///    annonce la collection `from_zero` et le premier cycle réécrit chaque
+  ///    ligne par-dessus (règle 3 : remplacer, jamais purger d'abord) — le fil
+  ///    ne se vide pas pendant la reprise.
+  ///
+  /// Appelé par un seul palier, sous la garde `from < kM4SchemaVersion && to >=
+  /// kM4SchemaVersion` — la même forme que les paliers M3, M5 et M2.
+  Future<void> _migrateM4ToV26(Migrator m, int from) async {
+    if (from >= 20) {
+      for (final column in _groupMessageMediaColumns) {
+        await m.addColumn(groupMessages, column);
+      }
+    }
+    if (from >= 18) {
+      for (final column in _pendingMediaColumns) {
+        await m.addColumn(pendingGroupMessages, column);
+      }
+    }
+    await (delete(syncCursors)
+          ..where((c) => c.collection.equals('group_messages')))
+        .go();
+  }
+
+  /// Une table du fil **créée dans sa forme courante** pour une cible
+  /// antérieure à la v26 (migrations de test seulement) : on lui retire les
+  /// colonnes du média, que cette cible n'a pas encore. Même geste que le
+  /// palier v2 → v3 pour le média des annonces. Sur un téléphone, `to` vaut
+  /// toujours `schemaVersion` et rien n'est retiré.
+  Future<void> _dropM4ColumnsBefore26(
+    Migrator m,
+    int to,
+    TableInfo<Table, Object?> table,
+  ) async {
+    if (to >= kM4SchemaVersion) return;
+    final columns = identical(table, groupMessages)
+        ? _groupMessageMediaColumns
+        : _pendingMediaColumns;
+    for (final column in columns) {
+      await m.dropColumn(table, column.name);
+    }
   }
 
   Future<void> _ensureGlobalStateRow() async {

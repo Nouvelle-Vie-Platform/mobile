@@ -21,6 +21,8 @@
 ///    droit.
 library;
 
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../models/legal_document_view.dart';
@@ -853,6 +855,17 @@ GroupMessagesCompanion groupMessageRowOf(Map<String, Object?> item) {
     replyToExcerpt: Value(reply?.excerpt),
     replyToMediaKind: Value(reply?.mediaKind),
     replyToDeleted: Value(reply?.deleted ?? false),
+    // Le média porté par le message (M4, #143) — sept champs, tous tolérés
+    // absents (un serveur en retard ne les sert pas) et rangés tels quels.
+    // **Aucun n'est exigé** : un média mal formé donne une bulle sans détail,
+    // jamais une page refusée qui couperait le cycle (piège 1 du plan).
+    mediaKey: Value(_optionalText(item, 'mediaKey')),
+    mediaKind: Value(_optionalText(item, 'mediaKind')),
+    mediaDuration: Value(_optionalNumberAsInt(item, 'mediaDuration')),
+    mediaMeta: Value(_optionalJson(item, 'mediaMeta')),
+    mediaSize: Value(_optionalNumberAsInt(item, 'mediaSize')),
+    mediaMime: Value(_optionalText(item, 'mediaMime')),
+    mediaThumbnailKey: Value(_optionalText(item, 'mediaThumbnailKey')),
   );
 }
 
@@ -916,6 +929,27 @@ String groupMessageHideKey(Map<String, Object?> item) {
   final id = item['messageId'];
   if (id is String) return id;
   throw MalformedSyncRow('group_message_hides', 'messageId', id);
+}
+
+/// Un nombre du fil rendu entier, ou `null` (M4). `jsonb` et JSON ne
+/// distinguent pas `42` de `42.0` : on arrondit plutôt que de jeter.
+int? _optionalNumberAsInt(Map<String, Object?> item, String field) {
+  final value = item[field];
+  if (value is int) return value;
+  if (value is double && value.isFinite) return value.round();
+  return null;
+}
+
+/// Un objet du fil **ré-encodé en JSON** pour une colonne texte (M4), ou
+/// `null`. Une liste ou un scalaire ne sont pas une méta : ignorés.
+String? _optionalJson(Map<String, Object?> item, String field) {
+  final value = item[field];
+  if (value is! Map) return null;
+  try {
+    return jsonEncode(value);
+  } on Object {
+    return null;
+  }
 }
 
 /// `GET /sync/group_reads` — **quatre clés** : `id`, `groupId`,
