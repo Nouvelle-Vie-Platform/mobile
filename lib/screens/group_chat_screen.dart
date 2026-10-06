@@ -30,7 +30,6 @@ import '../widgets/chat/forward_sheet.dart';
 import '../widgets/chat/message_actions_sheet.dart';
 import '../widgets/chat/message_focus_highlight.dart';
 import '../widgets/chat/message_info_sheet.dart';
-import '../widgets/chat/message_input_bar.dart';
 import '../widgets/chat/message_quote.dart';
 import '../widgets/chat/message_reactions.dart';
 import '../widgets/chat/receipt_mark.dart';

@@ -122,8 +122,8 @@ class _Body extends StatelessWidget {
         ],
         // Les médias partagés (M4, #143) : les images du fil — la section
         // revient, remplie de vrais messages, et absente quand il n'y en a pas.
+        // (Elle porte son propre espacement, et rien quand elle est vide.)
         GroupSharedMedia(groupId: group.groupId),
-        const SizedBox(height: AppSpacing.lg),
         // #145 : rejoindre, demander, ajouter, quitter — selon mes droits ;
         // puis la file des demandes, pour un animateur ou un modérateur.
         GroupMembershipActions(group: group, requestPending: requestPending),

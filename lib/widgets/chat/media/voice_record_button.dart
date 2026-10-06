@@ -142,7 +142,8 @@ class VoiceRecordingStrip extends StatelessWidget {
                 IconButton(
                   key: const Key('m4_voice_discard'),
                   tooltip: l.m4VoiceCancel,
-                  icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+                  icon:
+                      const Icon(Icons.delete_outline, color: AppColors.danger),
                   onPressed: () => unawaited(controller.cancel()),
                 )
               else

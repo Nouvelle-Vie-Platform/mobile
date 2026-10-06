@@ -720,5 +720,9 @@
   "m4CaptionHint": "Add a caption…",
   "m4Send": "Send",
   "m4Cancel": "Cancel",
-  "m4SharedMedia": "Shared media"
+  "m4SharedMedia": "Shared media",
+  "m4QuoteVideo": "Video",
+  "m4QuoteDocument": "Document",
+  "m4QuoteLocation": "Location",
+  "m4QuoteContact": "Contact"
 }

@@ -35,7 +35,8 @@ final groupMediaTransportProvider = Provider<GroupMediaTransport>(
 
 /// Les URL de lecture (clé → URL présignée nue).
 final groupMediaUrlsProvider = Provider<GroupMediaUrls>(
-  (ref) => AppEnv.useBackend ? HttpGroupMediaUrls() : const InertGroupMediaUrls(),
+  (ref) =>
+      AppEnv.useBackend ? HttpGroupMediaUrls() : const InertGroupMediaUrls(),
 );
 
 /// La progression des montées, par écho.
@@ -73,7 +74,8 @@ final chatMediaPickerProvider = Provider<ChatMediaPicker>(
 
 /// Ouvrir une carte, un document, un numéro.
 final mediaOpenerProvider = Provider<MediaOpener>(
-  (ref) => AppEnv.useBackend ? const DeviceMediaOpener() : const InertMediaOpener(),
+  (ref) =>
+      AppEnv.useBackend ? const DeviceMediaOpener() : const InertMediaOpener(),
 );
 
 /// L'enregistreur de vocaux. Sans backend : un double qui n'enregistre rien.
@@ -103,8 +105,6 @@ final chatVideoSurfaceProvider = Provider<ChatVideoSurfaceFactory>(
 /// **Les images du fil d'un groupe** — les « médias partagés » de sa fiche
 /// (#98 : « vide en 1, rempli en 3 »). Des identifiants de messages : l'URL se
 /// résout à l'affichage.
-final groupSharedImagesProvider =
-    StreamProvider.family<List<String>, String>(
-  (ref, groupId) =>
-      ref.watch(groupDaoProvider).sharedImagesOf(groupId).watch(),
+final groupSharedImagesProvider = StreamProvider.family<List<String>, String>(
+  (ref, groupId) => ref.watch(groupDaoProvider).sharedImagesOf(groupId).watch(),
 );

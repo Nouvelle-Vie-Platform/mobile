@@ -22,8 +22,7 @@ class VideoPlayerChatSurfaceFactory implements ChatVideoSurfaceFactory {
   const VideoPlayerChatSurfaceFactory();
 
   @override
-  Widget build(BuildContext context, String url) =>
-      _ChatVideoSurface(url: url);
+  Widget build(BuildContext context, String url) => _ChatVideoSurface(url: url);
 }
 
 class InertChatVideoSurfaceFactory implements ChatVideoSurfaceFactory {

@@ -215,7 +215,7 @@ class GroupMessageComposer {
       if (pending.mediaKind != null) {
         final resendMedia = _resendMedia;
         if (resendMedia == null) return false;
-        return resendMedia(clientMessageId, manual: manual);
+        return await resendMedia(clientMessageId, manual: manual);
       }
 
       await _dao.markPendingSending(clientMessageId);

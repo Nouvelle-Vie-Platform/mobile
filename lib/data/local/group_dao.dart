@@ -899,11 +899,15 @@ ORDER BY p.display_name IS NULL, p.display_name COLLATE NOCASE, p.id
       '''
 SELECT id FROM group_messages
 WHERE group_id = ?1 AND media_kind = 'image' AND media_key IS NOT NULL
+  AND deleted_at IS NULL
+  AND ${_notHidden('group_messages')}
 ORDER BY created_at DESC, id DESC
 LIMIT ?2
 ''',
       variables: [Variable<String>(groupId), Variable<int>(limit)],
-      readsFrom: {groupMessages},
+      // Ni supprimé pour tous, ni supprimé pour moi (M2) : une image retirée
+      // du fil ne reste pas dans la fiche du groupe.
+      readsFrom: {groupMessages, groupMessageHides},
     ).map((row) => row.read<String>('id'));
   }
 

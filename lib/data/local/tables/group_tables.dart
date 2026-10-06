@@ -322,7 +322,7 @@ class GroupMessages extends Table with SyncedRow {
   // ── Le média porté par le message (M4, #143 ; serveur #485 + M4) ──────────
   //
   // Sept colonnes, toutes nullables, **telles que le serveur les envoie**. Elles
-  // naissent au palier v22 (provisoire) ; le curseur de `group_messages` est
+  // naissent au palier v26 ; le curseur de `group_messages` est
   // alors effacé, pour que les messages-médias reçus avant — rangés sans leur
   // média faute de colonne — soient réécrits.
 

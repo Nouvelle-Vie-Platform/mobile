@@ -19,6 +19,7 @@ import 'package:maison_du_miracle/state/chat_media_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 import 'package:maison_du_miracle/widgets/chat/chat_bubble.dart';
 import 'package:maison_du_miracle/widgets/chat/media/media_labels.dart';
+import 'package:maison_du_miracle/widgets/chat/message_quote.dart';
 import 'package:maison_du_miracle/widgets/status/status_waveform.dart';
 
 final AppLocalizations _fr = lookupAppLocalizations(const Locale('fr'));
@@ -82,6 +83,7 @@ GroupMessageView _message(
   bool mine = false,
   MessageDelivery delivery = MessageDelivery.sent,
   MediaSendError? error,
+  bool deleted = false,
 }) =>
     GroupMessageView(
       id: id,
@@ -95,6 +97,7 @@ GroupMessageView _message(
       createdAt: DateTime.utc(2026, 10, 6, 10),
       media: media,
       mediaError: error,
+      deleted: deleted,
     );
 
 void main() {
@@ -110,7 +113,8 @@ void main() {
     progress = MediaUploadProgress();
   });
 
-  Future<void> pump(WidgetTester tester, List<GroupMessageView> messages) async {
+  Future<void> pump(
+      WidgetTester tester, List<GroupMessageView> messages) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -132,7 +136,8 @@ void main() {
             body: SingleChildScrollView(
               child: Column(
                 children: [
-                  for (final m in messages) ChatBubble(key: Key(m.id), message: m),
+                  for (final m in messages)
+                    ChatBubble(key: Key(m.id), message: m),
                 ],
               ),
             ),
@@ -183,7 +188,8 @@ void main() {
       await tester.tap(find.byKey(const Key('m4_audio_play_m-2')));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      expect(engine.calls, containsAllInOrder(['stop', 'load https://store.test/m-2']));
+      expect(engine.calls,
+          containsAllInOrder(['stop', 'load https://store.test/m-2']));
       // Un seul bouton « pause » : celui du second.
       expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
       expect(
@@ -342,9 +348,59 @@ void main() {
   testWidgets('une forme inconnue se dit, jamais une bulle vide',
       (tester) async {
     await pump(tester, [
-      _message('m-1', media: const MessageMedia(kind: MessageMediaKind.unknown)),
+      _message('m-1',
+          media: const MessageMedia(kind: MessageMediaKind.unknown)),
     ]);
     expect(find.text(_fr.m4MediaUnsupportedKind), findsOneWidget);
+  });
+
+  testWidgets(
+      'supprimé pour tous (M2) : aucun média peint, seulement la mention',
+      (tester) async {
+    await pump(tester, [
+      _message(
+        'm-1',
+        deleted: true,
+        media: const MessageMedia(
+          kind: MessageMediaKind.location,
+          latitude: 6.1319,
+          longitude: 1.2228,
+          label: 'Temple de Bè',
+        ),
+      ),
+    ]);
+    expect(find.text(_fr.chatMessageDeleted), findsOneWidget);
+    expect(find.text('Temple de Bè'), findsNothing);
+    expect(find.byKey(const Key('m4_location_tile')), findsNothing);
+  });
+
+  testWidgets('la citation d’un média M4 sans légende dit sa forme',
+      (tester) async {
+    final said = <String, String>{};
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) {
+            for (final kind in ['video', 'document', 'location', 'contact']) {
+              said[kind] = MessageQuote.quoteText(
+                context,
+                MessageQuoteView(messageId: 'm-0', mediaKind: kind),
+              );
+            }
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    expect(said, {
+      'video': _fr.m4QuoteVideo,
+      'document': _fr.m4QuoteDocument,
+      'location': _fr.m4QuoteLocation,
+      'contact': _fr.m4QuoteContact,
+    });
   });
 
   group('L’état d’envoi', () {
@@ -357,7 +413,8 @@ void main() {
     testWidgets('en cours : l’anneau de la montée suit la progression',
         (tester) async {
       await pump(tester, [
-        _message('c-1', media: echo, mine: true, delivery: MessageDelivery.sending),
+        _message('c-1',
+            media: echo, mine: true, delivery: MessageDelivery.sending),
       ]);
       expect(find.byKey(const Key('m4_upload_progress')), findsOneWidget);
 

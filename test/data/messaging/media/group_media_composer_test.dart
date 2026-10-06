@@ -184,9 +184,7 @@ void main() {
   }
 
   Future<List<GroupMessageView>> thread() =>
-      StoreEchangesRepository(db.groupDao, userId: me)
-          .thread(groupId)
-          .first;
+      StoreEchangesRepository(db.groupDao, userId: me).thread(groupId).first;
 
   group('L’écho paraît avant la montée', () {
     test('un vocal est au fil, « en cours d’envoi », pendant qu’il monte',
@@ -207,7 +205,8 @@ void main() {
       expect(echo.delivery, MessageDelivery.sending);
       expect(echo.media!.kind, MessageMediaKind.voice);
       expect(echo.media!.waveform, [10, 60, 30]);
-      expect(echo.body, isNull, reason: 'un vocal sans légende n’a pas de texte');
+      expect(echo.body, isNull,
+          reason: 'un vocal sans légende n’a pas de texte');
 
       // Puis le message part, sous la même clé, en citant la clé montée.
       expect(transport.tickets.single['kind'], 'audio');
@@ -257,7 +256,8 @@ void main() {
       expect(transport.tickets.single['contentType'], 'application/pdf');
     });
 
-    test('un vocal au-delà du plafond de durée est refusé côté client', () async {
+    test('un vocal au-delà du plafond de durée est refusé côté client',
+        () async {
       transport.maxDurationSeconds = 600;
 
       await composer.send(
@@ -300,7 +300,8 @@ void main() {
 
       var echo = (await thread()).single;
       expect(echo.delivery, MessageDelivery.failed);
-      expect(echo.mediaError, isNull, reason: 'le réseau n’a pas de cause à dire');
+      expect(echo.mediaError, isNull,
+          reason: 'le réseau n’a pas de cause à dire');
       expect(echo.media!.localPath, isNotNull, reason: 'la photo reste peinte');
 
       expect(await composer.deliver(id, manual: true), isTrue);

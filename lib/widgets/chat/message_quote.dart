@@ -106,6 +106,11 @@ class MessageQuote extends StatelessWidget {
     return switch (quote.mediaKind) {
       'audio' || 'voice' => l.chatQuoteAudio,
       'image' => l.chatQuoteImage,
+      // Les formes de M4 (#143).
+      'video' => l.m4QuoteVideo,
+      'document' => l.m4QuoteDocument,
+      'location' => l.m4QuoteLocation,
+      'contact' => l.m4QuoteContact,
       _ => l.chatQuoteMedia,
     };
   }

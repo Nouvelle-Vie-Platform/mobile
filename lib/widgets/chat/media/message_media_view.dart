@@ -55,8 +55,7 @@ class MessageMediaView extends ConsumerWidget {
       MessageMediaKind.video => VideoMediaTile(message: message, media: media),
       MessageMediaKind.document =>
         DocumentMediaTile(message: message, media: media, ink: ink),
-      MessageMediaKind.location =>
-        LocationMediaTile(media: media, ink: ink),
+      MessageMediaKind.location => LocationMediaTile(media: media, ink: ink),
       MessageMediaKind.contact => ContactMediaTile(media: media, ink: ink),
       MessageMediaKind.unknown => Text(
           l.m4MediaUnsupportedKind,
@@ -264,9 +263,9 @@ class _VisualPlaceholder extends StatelessWidget {
           ? Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon ?? Icons.broken_image_outlined, color: Colors.black38),
-                if (label != null)
-                  Text(label!, style: AppTypography.caption),
+                Icon(icon ?? Icons.broken_image_outlined,
+                    color: Colors.black38),
+                if (label != null) Text(label!, style: AppTypography.caption),
               ],
             )
           : Icon(icon ?? Icons.image_outlined, color: Colors.black26, size: 40),
@@ -312,7 +311,8 @@ class VideoMediaTile extends ConsumerWidget {
                       bottom: 6,
                       child: Row(
                         children: [
-                          const Icon(Icons.videocam, color: Colors.white, size: 14),
+                          const Icon(Icons.videocam,
+                              color: Colors.white, size: 14),
                           const SizedBox(width: 4),
                           Text(
                             formatMediaDuration(Duration(seconds: duration)),
@@ -453,7 +453,9 @@ class AudioMediaTile extends ConsumerWidget {
         );
 
         final timeText = formatMediaDuration(
-          active && position > Duration.zero ? position : (total ?? Duration.zero),
+          active && position > Duration.zero
+              ? position
+              : (total ?? Duration.zero),
         );
 
         return SizedBox(
@@ -463,7 +465,8 @@ class AudioMediaTile extends ConsumerWidget {
               if (voice)
                 Icon(Icons.mic, color: ink.withValues(alpha: 0.8), size: 18)
               else
-                Icon(Icons.music_note, color: ink.withValues(alpha: 0.8), size: 18),
+                Icon(Icons.music_note,
+                    color: ink.withValues(alpha: 0.8), size: 18),
               button,
               Expanded(
                 child: Column(
@@ -479,31 +482,32 @@ class AudioMediaTile extends ConsumerWidget {
                       ),
                     LayoutBuilder(
                       builder: (context, constraints) => GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      // Toucher la forme d'onde saute à cet endroit — du son en
-                      // cours seulement.
-                      onTapDown: (details) => controller.seekTo(
-                        message.id,
-                        details.localPosition.dx / constraints.maxWidth,
-                      ),
-                      child: voice
-                          ? StatusWaveform(
-                              key: Key('m4_voice_waveform_${message.id}'),
-                              bars: media.waveform,
-                              progress: progress,
-                              seed: message.id,
-                              playedColor: ink,
-                              height: 28,
-                            )
-                          : Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 6),
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                color: ink,
-                                backgroundColor: ink.withValues(alpha: 0.25),
+                        behavior: HitTestBehavior.opaque,
+                        // Toucher la forme d'onde saute à cet endroit — du son en
+                        // cours seulement.
+                        onTapDown: (details) => controller.seekTo(
+                          message.id,
+                          details.localPosition.dx / constraints.maxWidth,
+                        ),
+                        child: voice
+                            ? StatusWaveform(
+                                key: Key('m4_voice_waveform_${message.id}'),
+                                bars: media.waveform,
+                                progress: progress,
+                                seed: message.id,
+                                playedColor: ink,
+                                height: 28,
+                              )
+                            : Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 6),
+                                child: LinearProgressIndicator(
+                                  value: progress,
+                                  color: ink,
+                                  backgroundColor: ink.withValues(alpha: 0.25),
+                                ),
                               ),
-                            ),
-                    ),
+                      ),
                     ),
                     Row(
                       children: [
@@ -590,7 +594,8 @@ class DocumentMediaTile extends ConsumerWidget {
       final messenger = ScaffoldMessenger.of(context);
       final failure = l.m4DocumentOpenFailed;
       final opener = ref.read(mediaOpenerProvider);
-      var path = message.delivery != MessageDelivery.sent ? media.localPath : null;
+      var path =
+          message.delivery != MessageDelivery.sent ? media.localPath : null;
       path ??= await ref.read(groupMediaUrlsProvider).download(
             groupId: message.groupId,
             messageId: message.id,
@@ -717,7 +722,8 @@ class LocationMediaTile extends ConsumerWidget {
 class _MapPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFFE8F0E3));
+    canvas.drawRect(
+        Offset.zero & size, Paint()..color = const Color(0xFFE8F0E3));
     final block = Paint()..color = const Color(0xFFD6E4CF);
     for (var x = 0.0; x < size.width; x += 46) {
       for (var y = 0.0; y < size.height; y += 34) {

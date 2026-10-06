@@ -150,8 +150,13 @@ class VoiceRecordingController extends ChangeNotifier {
 
   Future<void> _end() async {
     _phase = VoiceRecordingPhase.idle;
-    await _subscription?.cancel();
+    // L'abonnement aux niveaux est **lâché sans être attendu** : `phase` est
+    // déjà au repos, et `_onLevel` ignore tout niveau tardif. L'attendre ne
+    // protège rien, et sous l'horloge factice des tests de widgets le futur de
+    // `cancel()` (complété dans la zone racine) ne rend jamais la main.
+    final subscription = _subscription;
     _subscription = null;
+    unawaited(subscription?.cancel());
     _notify();
   }
 

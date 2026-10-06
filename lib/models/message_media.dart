@@ -268,7 +268,8 @@ class MessageMedia {
 String formatByteSize(int bytes, String localeName) {
   final fr = localeName.startsWith('fr');
   String number(double value) {
-    final text = value >= 10 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+    final text =
+        value >= 10 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
     return fr ? text.replaceAll('.', ',') : text;
   }
 

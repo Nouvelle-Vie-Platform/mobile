@@ -74,11 +74,13 @@ class OutgoingMedia {
 
   /// Une photo (galerie ou appareil photo), légende facultative.
   const OutgoingMedia.image({required String path, String? caption})
-      : this._(kind: MessageMediaKind.image, sourcePath: path, caption: caption);
+      : this._(
+            kind: MessageMediaKind.image, sourcePath: path, caption: caption);
 
   /// Une vidéo, compressée sur l'appareil avant de partir.
   const OutgoingMedia.video({required String path, String? caption})
-      : this._(kind: MessageMediaKind.video, sourcePath: path, caption: caption);
+      : this._(
+            kind: MessageMediaKind.video, sourcePath: path, caption: caption);
 
   /// Un document, envoyé tel quel (son type est déduit de son nom).
   const OutgoingMedia.document({
@@ -321,7 +323,8 @@ class GroupMediaComposer {
   }
 
   /// **Dégrade** une image ou une vidéo, une fois : le type posé dit « prêt ».
-  Future<PendingGroupMessageRow> _prepare(PendingGroupMessageRow pending) async {
+  Future<PendingGroupMessageRow> _prepare(
+      PendingGroupMessageRow pending) async {
     if (pending.mediaMime != null) return pending;
     final source = pending.mediaPath;
     if (source == null || !File(source).existsSync()) {
@@ -331,8 +334,8 @@ class GroupMediaComposer {
     final meta = MessageMedia.decodeMeta(pending.mediaMeta);
 
     if (pending.mediaKind == 'image') {
-      final prepared =
-          await _preparer.prepareImage(source, await _outbox.pathFor('$id.jpg'));
+      final prepared = await _preparer.prepareImage(
+          source, await _outbox.pathFor('$id.jpg'));
       await _dao.updatePendingMedia(
         id,
         PendingGroupMessagesCompanion(

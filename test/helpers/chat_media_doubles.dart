@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/messaging/media/chat_media_picker.dart';
 import 'package:maison_du_miracle/data/messaging/media/group_media_composer.dart';
@@ -32,6 +32,11 @@ List<Override> chatMediaTestOverrides(AppDatabase db) => [
       }),
       chatVideoSurfaceProvider
           .overrideWithValue(const InertChatVideoSurfaceFactory()),
+      // Les médias partagés de la fiche d'un groupe : un flux nu, pour la
+      // raison du vocabulaire — un flux Drift qu'une horloge factice fige
+      // laisserait une minuterie en suspens au démontage.
+      groupSharedImagesProvider
+          .overrideWith((ref, groupId) => Stream.value(const <String>[])),
       mediaPreparerProvider.overrideWithValue(const UnusedMediaPreparer()),
       mediaOutboxProvider.overrideWithValue(
         MediaOutbox(root: () async => throw UnsupportedError('pas de disque')),

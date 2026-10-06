@@ -108,6 +108,49 @@ void main() {
     expect(conversation.lastMessageMedia, MessageMediaKind.audio);
   });
 
+  test(
+      'supprimé pour tous ou pour moi (M2) : ni média au fil, ni image dans '
+      'la fiche du groupe', () async {
+    await seedGroup();
+    const kept = '019a3000-0000-7000-8000-0000000000i1';
+    const gone = '019a3000-0000-7000-8000-0000000000i2';
+    const hidden = '019a3000-0000-7000-8000-0000000000i3';
+    for (final (id, at) in [
+      (kept, '2026-09-03T11:00:00.000Z'),
+      (gone, '2026-09-03T11:01:00.000Z'),
+      (hidden, '2026-09-03T11:02:00.000Z'),
+    ]) {
+      await writer.store(
+        SyncCollectionKey.groupMessages,
+        _media(id, at, kind: 'image', key: 'group-media/$kGroupId/$id.jpg'),
+      );
+    }
+    // Un tombstone qui porterait encore son média (un serveur fautif) : la
+    // vue ne le peint pas pour autant.
+    await writer.store(
+      SyncCollectionKey.groupMessages,
+      {
+        ..._media(gone, '2026-09-03T11:01:00.000Z',
+            kind: 'image', key: 'group-media/$kGroupId/$gone.jpg'),
+        'deletedAt': '2026-09-03T12:00:00.000Z',
+      },
+    );
+    await writer.store(SyncCollectionKey.groupMessageHides, {
+      'id': 1,
+      'groupId': kGroupId,
+      'messageId': hidden,
+      'createdAt': '2026-09-03T12:00:00.000Z',
+    });
+
+    expect(await db.groupDao.sharedImagesOf(kGroupId).get(), [kept]);
+
+    final thread = await repository().thread(kGroupId).first;
+    final tombstone = thread.singleWhere((m) => m.id == gone);
+    expect(tombstone.deleted, isTrue);
+    expect(tombstone.media, isNull);
+    expect(thread.where((m) => m.id == hidden), isEmpty);
+  });
+
   test('une position (sans clé) se range et se relit', () async {
     await seedGroup();
     await writer.store(

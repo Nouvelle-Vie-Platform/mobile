@@ -50,11 +50,13 @@ void main() {
     test('un contact lit son nom et ses numéros, rien d’autre', () {
       final contact = MessageMedia.fromColumns(
         kind: 'contact',
-        metaJson: '{"name":"Diacre Kossi","phones":[{"number":"+228 90 11 22 33",'
+        metaJson:
+            '{"name":"Diacre Kossi","phones":[{"number":"+228 90 11 22 33",'
             '"label":"mobile"},{"nope":1}]}',
       )!;
       expect(contact.contactName, 'Diacre Kossi');
-      expect(contact.name, isNull, reason: 'le nom d’un contact n’est pas un nom de fichier');
+      expect(contact.name, isNull,
+          reason: 'le nom d’un contact n’est pas un nom de fichier');
       expect(contact.phones, [
         const ContactPhone(number: '+228 90 11 22 33', label: 'mobile'),
       ]);
@@ -113,7 +115,8 @@ void main() {
       expect(row.body, const Value<String?>(null));
     });
 
-    test('un serveur en retard (sans champs média) ne rejette pas la ligne', () {
+    test('un serveur en retard (sans champs média) ne rejette pas la ligne',
+        () {
       final row = groupMessageRowOf({
         'id': 'm-2',
         'groupId': 'g-1',
@@ -148,7 +151,8 @@ void main() {
 
     test('formatMediaDuration', () {
       expect(formatMediaDuration(const Duration(seconds: 42)), '0:42');
-      expect(formatMediaDuration(const Duration(minutes: 12, seconds: 5)), '12:05');
+      expect(formatMediaDuration(const Duration(minutes: 12, seconds: 5)),
+          '12:05');
     });
   });
 }

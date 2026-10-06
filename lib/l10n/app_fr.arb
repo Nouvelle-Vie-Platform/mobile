@@ -1294,5 +1294,13 @@
   "m4Cancel": "Annuler",
   "@m4Cancel": { "description": "Dialogues des médias (M4) : bouton d'annulation" },
   "m4SharedMedia": "Médias partagés",
-  "@m4SharedMedia": { "description": "Fiche d'un groupe (M4) : titre de la rangée des images envoyées dans le fil" }
+  "@m4SharedMedia": { "description": "Fiche d'un groupe (M4) : titre de la rangée des images envoyées dans le fil" },
+  "m4QuoteVideo": "Vidéo",
+  "@m4QuoteVideo": { "description": "Citation d'une réponse (M2 × M4) : la vidéo citée n'avait pas de légende" },
+  "m4QuoteDocument": "Document",
+  "@m4QuoteDocument": { "description": "Citation d'une réponse (M2 × M4) : le document cité n'avait pas de légende" },
+  "m4QuoteLocation": "Position",
+  "@m4QuoteLocation": { "description": "Citation d'une réponse (M2 × M4) : une position partagée" },
+  "m4QuoteContact": "Contact",
+  "@m4QuoteContact": { "description": "Citation d'une réponse (M2 × M4) : un contact partagé" }
 }
