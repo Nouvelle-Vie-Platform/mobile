@@ -79,8 +79,12 @@ class MediaFilter {
     // (`BranchTransformer` n'en sert pas) — une borne de branche ne ramène
     // donc rien, comme pour les menus. À brancher ici le jour où il descendra.
     if (_present(branch) != null) return false;
-    final term = normalizeSearchTerm(search)?.toLowerCase();
-    return term == null || content.title.toLowerCase().contains(term);
+    // Titre **et** intervenant, sans accents ni casse — comme l'aperçu du
+    // portail.
+    final term = normalizeSearchTerm(search);
+    return term == null ||
+        foldForSearch('${content.title} ${content.authorName ?? ''}')
+            .contains(foldForSearch(term));
   }
 
   static String? _present(String? value) {

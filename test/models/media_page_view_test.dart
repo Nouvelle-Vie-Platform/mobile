@@ -13,7 +13,12 @@ const _latest = [
       id: 't1', title: 'Prier sans cesse', color: 0, teachingTypeId: 1),
   TeachingView(id: 't2', title: 'Le pain du jour', color: 0, teachingTypeId: 2),
   TeachingView(
-      id: 't3', title: 'Prier en famille', color: 0, teachingTypeId: 1),
+    id: 't3',
+    title: 'Prier en famille',
+    color: 0,
+    teachingTypeId: 1,
+    authorName: 'Pasteur Kodjo Agbéko',
+  ),
   TeachingView(id: 't4', title: 'Louange', color: 0, teachingTypeId: 2),
 ];
 
@@ -96,6 +101,12 @@ void main() {
         ),
         ['t2'],
       );
+    });
+
+    test('la loupe ignore accents et casse, et lit aussi l\'intervenant', () {
+      expect(_compose(_section(), query: 'LOUANGE'), ['t4']);
+      expect(_compose(_section(), query: 'agbeko'), ['t3']);
+      expect(_compose(_section(), query: 'PRIÈR'), ['t1', 't3']);
     });
 
     test('une famille de page différente de la section ne ramène rien', () {
