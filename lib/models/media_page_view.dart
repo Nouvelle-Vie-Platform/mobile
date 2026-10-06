@@ -71,7 +71,8 @@ class MediaFilter {
   ///
   /// Un slug inconnu du magasin — rubrique ou branche, ou branche sans slug —
   /// ne ramène rien, jamais tout le catalogue (comme le serveur). Un contenu
-  /// national (`branchId` nul) ne passe aucune borne de branche.
+  /// national (`branchId` nul) ne passe aucune borne de branche. La recherche
+  /// compare titre **et** intervenant, sans accents ni casse.
   bool matches(
     ContentView content, {
     required Map<String, int> rubricIds,
@@ -79,7 +80,6 @@ class MediaFilter {
   }) {
     final rubric = _present(this.rubric);
     if (rubric != null) {
-      // Un slug inconnu du magasin ne ramène rien — jamais tout le catalogue.
       final id = rubricIds[rubric];
       if (id == null || content.teachingTypeId != id) return false;
     }
@@ -88,8 +88,6 @@ class MediaFilter {
       final id = branchIds[branch];
       if (id == null || content.branchId != id) return false;
     }
-    // Titre **et** intervenant, sans accents ni casse — comme l'aperçu du
-    // portail.
     final term = normalizeSearchTerm(search);
     return term == null ||
         foldForSearch('${content.title} ${content.authorName ?? ''}')
@@ -208,7 +206,14 @@ class MediaLibraryLayout {
 }
 
 /// **Ce qu'une section montre** — la fonction pure que l'écran appelle pour
-/// chaque section de la page active.
+/// chaque section de la page active, alignée sur `composeSection` de l'aperçu
+/// du portail (`inertia/lib/media_page_preview.ts`) :
+///
+/// 1. l'ordre : `manual` = la sélection, bornée à la famille de la section
+///    seule ; `latest` / `popular` = page ∧ source, puis l'ordre de
+///    `rankedIds` (ou les plus récents tant qu'il est nul) ;
+/// 2. puce et loupe affinent, pour **tous** les tris, sans changer l'ordre ;
+/// 3. le plafond coupe en dernier.
 ///
 /// [latestFirst] : les contenus de la famille de la section, les plus récents
 /// d'abord (l'ordre du magasin). [chip] : le filtre de la puce choisie ;
@@ -224,41 +229,39 @@ List<C> composeSection<C extends ContentView>({
 }) {
   final family = section.family;
   if (family == null) return const [];
-  final manual = section.sort == MediaSectionSort.manual;
-  // La page borne la famille aussi — sauf pour une sélection manuelle, où
-  // seule la famille de la section compte.
-  if (!manual &&
-      page.family != null &&
-      MenuContentFamily.of(page.family) != family) {
-    return const [];
+  bool passes(C content, MediaFilter filter) =>
+      filter.matches(content, rubricIds: rubricIds, branchIds: branchIds);
+
+  final List<C> ordered;
+  if (section.sort == MediaSectionSort.manual) {
+    ordered = _byIds(section.manualIds ?? const [], latestFirst);
+  } else {
+    // La page borne la famille aussi. Une famille de page vide ne dit rien ;
+    // une famille inconnue de ce binaire ne ramène rien.
+    final pageFamily = MediaFilter._present(page.family);
+    if (pageFamily != null && MenuContentFamily.of(pageFamily) != family) {
+      return const [];
+    }
+    final inSource = [
+      for (final c in latestFirst)
+        if (passes(c, page.filter) && passes(c, section.filter)) c,
+    ];
+    final ranked = section.rankedIds;
+    ordered = section.sort == MediaSectionSort.popular && ranked != null
+        ? _byIds(ranked, inSource)
+        : inSource;
   }
-  final filters = [
-    if (!manual) page.filter,
-    if (!manual) section.filter,
-    if (chip != null) chip,
-    MediaFilter(search: query),
-  ];
 
-  final ordered = switch (section.sort) {
-    MediaSectionSort.latest => latestFirst,
-    MediaSectionSort.popular => section.rankedIds == null
-        ? latestFirst
-        : _byIds(section.rankedIds!, latestFirst),
-    MediaSectionSort.manual =>
-      _byIds(section.manualIds ?? const [], latestFirst),
-  };
-
+  final search = MediaFilter(search: query);
   return List<C>.unmodifiable(
     ordered
-        .where((c) => filters.every(
-              (f) => f.matches(c, rubricIds: rubricIds, branchIds: branchIds),
-            ))
+        .where((c) => (chip == null || passes(c, chip)) && passes(c, search))
         .take(math.max(section.maxItems, 0)),
   );
 }
 
-/// Les contenus de [ids], dans cet ordre ; un identifiant absent du magasin
-/// est sauté sans bruit.
+/// Les contenus de [ids], dans cet ordre ; un identifiant absent de
+/// [contents] est sauté sans bruit.
 List<C> _byIds<C extends ContentView>(List<String> ids, List<C> contents) {
   final byId = {for (final c in contents) c.id: c};
   return [

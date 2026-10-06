@@ -167,6 +167,13 @@ void main() {
       expect(_compose(_section(), query: 'PRIÈR'), ['t1', 't3']);
     });
 
+    test('une famille de page blanche ne borne rien', () {
+      expect(
+        _compose(_section(), page: const MediaPageView(id: 1, family: ' ')),
+        ['t1', 't2', 't3', 't4'],
+      );
+    });
+
     test('une famille inconnue ne ramène rien', () {
       expect(_compose(_section(family: null)), isEmpty);
     });
@@ -189,6 +196,13 @@ void main() {
       expect(
         _compose(_section(sort: MediaSectionSort.popular)),
         ['t1', 't2', 't3', 't4'],
+      );
+    });
+
+    test('un classement vide n\'est pas un classement absent', () {
+      expect(
+        _compose(_section(sort: MediaSectionSort.popular, rankedIds: [])),
+        isEmpty,
       );
     });
 
