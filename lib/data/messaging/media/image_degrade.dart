@@ -62,7 +62,15 @@ DegradedImage degradeImageBytes(
   int maxLongSide = kImageMaxLongSide,
   int quality = kImageJpegQuality,
 }) {
-  final decoded = img.decodeImage(source);
+  // `package:image` essaie ses décodeurs l'un après l'autre, et l'un d'eux peut
+  // lever n'importe quoi sur des octets tronqués (un `RangeError` du lecteur
+  // PSD sur quatre octets) : tout échec de lecture devient un FormatException.
+  img.Image? decoded;
+  try {
+    decoded = img.decodeImage(source);
+  } on Object {
+    decoded = null;
+  }
   if (decoded == null) {
     throw const FormatException('image illisible');
   }

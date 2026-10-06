@@ -28,14 +28,24 @@ Uint8List _photo({
 }
 
 void main() {
-  test('la photo d’origine porte bien ses coordonnées (contrôle du témoin)', () {
+  test('la photo d’origine porte bien ses coordonnées (contrôle du témoin)',
+      () {
     final exif = img.decodeJpgExif(_photo(width: 64, height: 48));
     expect(exif, isNotNull);
     expect(exif!.gpsIfd.gpsLatitude, closeTo(6.1319, 0.001));
   });
 
   test('l’EXIF est retiré : plus de position GPS, plus d’appareil', () {
-    final degraded = degradeImageBytes(_photo(width: 64, height: 48));
+    final source = _photo(width: 64, height: 48);
+    // Le témoin d'abord, sur les MÊMES octets : la position et l'appareil y
+    // sont bien écrits. Sans cela, l'absence plus bas ne prouverait rien.
+    final before = img.decodeJpgExif(source);
+    expect(before, isNotNull);
+    expect(before!.gpsIfd.gpsLatitude, closeTo(6.1319, 0.001));
+    expect(before.gpsIfd.gpsLongitude, closeTo(1.2228, 0.001));
+    expect(before.imageIfd.make, isNotNull);
+
+    final degraded = degradeImageBytes(source);
 
     final exif = img.decodeJpgExif(degraded.bytes);
     // Aucun segment EXIF du tout — ou, si un décodeur en voit un, vide.
