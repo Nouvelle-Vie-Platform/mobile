@@ -14,7 +14,7 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les trente-trois collections du registre, dans l\'ordre', () {
+    test('les trente-quatre collections du registre, dans l\'ordre', () {
       // **Ce nombre avait menti.** Il disait dix-neuf quand le registre serveur
       // en comptait vingt-cinq, et le test passait au vert en gardant un contrat
       // périmé — `seasons`, `decor`, `teaching_guests`, `group_members`,

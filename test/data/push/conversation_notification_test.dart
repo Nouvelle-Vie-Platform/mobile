@@ -25,7 +25,7 @@ void main() {
         createdAt: t0.add(Duration(minutes: minutes)),
       );
 
-  ConversationDigest group(List<DigestMessage> messages, {int? unread}) =>
+  ConversationDigest groupDigest(List<DigestMessage> messages, {int? unread}) =>
       ConversationDigest(
         groupId: 'grp-1',
         groupName: 'Chorale Harmonie',
@@ -47,7 +47,7 @@ void main() {
   group('Une conversation de groupe', () {
     test('empile les non-lus avec leurs auteurs, sous le nom du groupe', () {
       final n = conversationNotification(
-        group([
+        groupDigest([
           message('m1', 'Répétition samedi'),
           message('m2', 'Amen', authorId: 'u-kofi', authorName: 'Kofi'),
         ], unread: 5),
@@ -72,7 +72,7 @@ void main() {
 
     test('un auteur retiré est dit comme dans le fil, sans nom inventé', () {
       final n = conversationNotification(
-        group([message('m1', 'Paix', authorId: null, authorName: null)]),
+        groupDigest([message('m1', 'Paix', authorId: null, authorName: null)]),
         showPreview: true,
         texts: kTestNotificationTexts,
       )!;
@@ -84,7 +84,7 @@ void main() {
 
     test('un média se dit « Pièce jointe », jamais par un vide', () {
       final n = conversationNotification(
-        group([message('m1', null)]),
+        groupDigest([message('m1', null)]),
         showPreview: true,
         texts: kTestNotificationTexts,
       )!;
@@ -114,7 +114,7 @@ void main() {
     test('rien de non lu, rien à annoncer', () {
       expect(
         conversationNotification(
-          group(const [], unread: 0),
+          groupDigest(const [], unread: 0),
           showPreview: true,
           texts: kTestNotificationTexts,
         ),
@@ -152,7 +152,7 @@ void main() {
   group('L\'aperçu masqué', () {
     test('un groupe : une seule ligne, « Nouveau message de Ama »', () {
       final n = conversationNotification(
-        group([
+        groupDigest([
           message('m1', 'Secret de prière'),
           message('m2', 'Autre secret', minutes: 1),
         ]),
@@ -182,7 +182,8 @@ void main() {
 
     test('un auteur sans nom : « Nouveau message »', () {
       final n = conversationNotification(
-        group([message('m1', 'Secret', authorId: null, authorName: null)]),
+        groupDigest(
+            [message('m1', 'Secret', authorId: null, authorName: null)]),
         showPreview: false,
         texts: kTestNotificationTexts,
       )!;
