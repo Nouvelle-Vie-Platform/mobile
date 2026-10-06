@@ -66,6 +66,47 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # Le « Quoi de neuf » des fidèles s'écrit dans le message du tag annoté
+      # (`git tag -a v1.4.0 -m "…"`, CLAUDE.md). Il ouvre les notes de la
+      # Release et part au portail. Le texte ne passe que par un fichier, jamais
+      # par `${{ }}` : il n'est jamais interprété par le shell.
+      - name: Lire les notes du tag
+        id: notes
+        env:
+          LC_ALL: C.UTF-8
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          file="${RUNNER_TEMP}/notes-du-tag.txt"
+          : > "$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+          # `checkout` peut ne garder que le commit, pas l'objet tag annoté.
+          git fetch --force --no-tags origin "refs/tags/${tag}:refs/tags/${tag}" || {
+            echo "::warning title=Notes::tag ${tag} non rapatrié : Release et portail sans notes."
+            exit 0
+          }
+          # Un tag léger n'a pas de message : `%(contents)` rendrait celui du
+          # commit, qu'on ne veut surtout pas publier.
+          if [ "$(git cat-file -t "refs/tags/${tag}")" != "tag" ]; then
+            echo "Tag léger : pas de notes."
+            exit 0
+          fi
+          # Le message entier moins sa signature éventuelle (PGP, SSH). Pas
+          # `%(contents:subject)` : il recollerait en une ligne un premier
+          # paragraphe écrit sur plusieurs.
+          notes=$(git for-each-ref --format='%(contents)' "refs/tags/${tag}")
+          sig=$(git for-each-ref --format='%(contents:signature)' "refs/tags/${tag}")
+          [ -n "$sig" ] && notes="${notes%"$sig"}"
+          notes="${notes#"${notes%%[![:space:]]*}"}"
+          notes="${notes%"${notes##*[![:space:]]}"}"
+          # Le portail refuse au-delà de 2000 caractères (422).
+          if [ "${#notes}" -gt 2000 ]; then
+            echo "::warning title=Notes::message du tag de ${#notes} caractères, tronqué à 2000."
+            notes="${notes:0:2000}"
+          fi
+          printf '%s' "$notes" > "$file"
+          echo "Notes du tag (${#notes} caractères) :"
+          cat "$file"; echo
+
       # AGP 9 exige un JDK 17 au moins ; 21 est celui de la machine de dev
       # (CLAUDE.md, « Environnement »).
       - name: Setup Java
@@ -222,6 +263,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           STABLE: ${{ steps.signing.outputs.stable }}
+          TAG_NOTES: ${{ steps.notes.outputs.file }}
         run: |
           if [ "$STABLE" = "true" ]; then
             signature="Signés avec la clé de release : la mise à jour s'installe par-dessus la version précédente (une seule exception : une version d'avant la clé de release, à désinstaller une dernière fois)."
@@ -238,6 +280,11 @@ jobs:
 
           Certificat (SHA-256) : \`${{ steps.apk.outputs.cert }}\`
           EOF
+          # Le « Quoi de neuf » du tag en tête, s'il y en a un.
+          if [ -s "$TAG_NOTES" ]; then
+            { cat "$TAG_NOTES"; printf '\n\n---\n\n'; cat notes.md; } > notes-full.md
+            mv notes-full.md notes.md
+          fi
           gh release create "$GITHUB_REF_NAME" ${{ steps.apk.outputs.files }} \
             --title "Nouvelle Vie ${{ steps.version.outputs.name }}" \
             --notes-file notes.md \
@@ -310,3 +357,34 @@ jobs:
             echo "${apk} déposé ($(jq -r '.outcome' response.json)) — SHA-256 ${local_sha}"
             echo "${apk} sur le portail : ${PORTAL_URL%/}/application" >> "$GITHUB_STEP_SUMMARY"
           done
+
+      # Le « Quoi de neuf » du tag, pour le bandeau de mise à jour du portail.
+      # Après les dépôts : la version doit exister. Même règle que ci-dessus,
+      # jamais d'échec — et un portail d'avant cette route répond 404.
+      - name: Envoyer les notes au portail
+        env:
+          APP_RELEASE_TOKEN: ${{ secrets.APP_RELEASE_TOKEN }}
+          PORTAL_URL: ${{ vars.PORTAL_URL || 'https://eenv.brainsial.com' }}
+          VERSION: ${{ steps.version.outputs.name }}
+          TAG_NOTES: ${{ steps.notes.outputs.file }}
+        run: |
+          # Pas de notes : rien à envoyer (pas d'effacement non plus).
+          if [ ! -s "$TAG_NOTES" ] || [ -z "$APP_RELEASE_TOKEN" ]; then
+            exit 0
+          fi
+          NOTES=$(cat "$TAG_NOTES")
+          url="${PORTAL_URL%/}/app-releases/${VERSION}/notes"
+          rm -f response.json
+          code=$(jq -n --arg notes "$NOTES" '{notes:$notes}' \
+            | curl -sS -o response.json -w '%{http_code}' \
+              --max-time 60 --retry 3 --retry-delay 15 --retry-connrefused \
+              -X PUT \
+              -H "Authorization: Bearer ${APP_RELEASE_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data-binary @- \
+              "$url") || code="000"
+          case "$code" in
+            200) echo "Notes envoyées au portail." ;;
+            404) echo "::warning title=Notes::${url} : 404 — version inconnue, ou portail d'avant les notes de version." ;;
+            *) echo "::warning title=Notes::envoi des notes sur ${url} en échec (HTTP ${code}) : $(head -c 300 response.json 2>/dev/null)" ;;
+          esac
