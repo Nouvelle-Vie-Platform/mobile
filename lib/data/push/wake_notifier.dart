@@ -6,13 +6,18 @@
 /// depuis la charge utile afficherait un message qui n'est pas en base, et le tap
 /// ouvrirait un fil qui ne le contient pas.
 ///
-/// Quatre pièces, et la frontière entre elles est le point du fichier :
+/// Ce que la notification **dit** est décidé ailleurs, sans greffon
+/// (`conversation_notification.dart`, M5 : une notification par conversation,
+/// ses derniers non-lus, un résumé). Ici vivent les deux rôles qui parlent au
+/// greffon :
 ///
-/// - [WakeNotification] — ce qui s'affiche, déjà décidé. Une valeur, sans plugin ;
-/// - [announcementNotification] — la **règle** qui transforme une ligne de magasin
-///   en titre et corps. Fonction pure, testée sans canal natif ;
-/// - [WakeNotifier] — **afficher**, derrière une abstraction, avec son double inerte ;
+/// - [WakeNotifier] — **afficher, mettre à jour, effacer**, derrière une
+///   abstraction, avec son double inerte ;
 /// - [WakeTaps] — **recevoir le tap**, derrière une seconde abstraction.
+///
+/// Et une porte de plus depuis M5 : [wakeActionEntryPoint], le point d'entrée
+/// des **actions** de la notification (« Répondre », « Marquer comme lu »), que
+/// le greffon appelle dans un isolate de fond.
 ///
 /// Deux abstractions et non une, parce que les deux rôles ne vivent pas dans le
 /// même isolate : c'est le réveil de l'application **fermée** qui affiche
@@ -25,10 +30,14 @@
 /// vérifie (`test/data/push/push_seam_test.dart`).
 library;
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-import '../local/group_dao.dart';
+import 'conversation_notification.dart';
+import 'notification_action_handler.dart';
+import 'push_background.dart';
 
 /// **Le canal Android des réveils de messagerie.**
 ///
@@ -49,102 +58,6 @@ const String kWakeChannelId =
 /// `main.dart`, pour la même raison.
 const String kWakeChannelName = 'Messages reçus';
 
-/// Ce qui s'affiche, et où le tap mène. Aucune décision ne reste à prendre.
-@immutable
-class WakeNotification {
-  const WakeNotification({
-    required this.id,
-    required this.title,
-    required this.body,
-    required this.groupId,
-  });
-
-  /// L'identifiant **système** de la notification. Un entier : c'est ce qu'Android
-  /// et iOS attendent, et c'est lui qui fait qu'un second message **remplace** la
-  /// notification du même fil au lieu d'en empiler une seconde. Dérivé du
-  /// `groupId`, donc une notification par conversation.
-  final int id;
-
-  final String title;
-  final String body;
-
-  /// La conversation à ouvrir au tap — **lue du magasin**, jamais du push.
-  final String groupId;
-
-  @override
-  bool operator ==(Object other) =>
-      other is WakeNotification &&
-      other.id == id &&
-      other.title == title &&
-      other.body == body &&
-      other.groupId == groupId;
-
-  @override
-  int get hashCode => Object.hash(id, title, body, groupId);
-
-  @override
-  String toString() => 'WakeNotification($id, "$title", "$body", $groupId)';
-}
-
-/// **La règle**, et le seul endroit qui la porte.
-///
-/// Rend `null` quand il n'y a rien à annoncer — un corps vide, ou un groupe que le
-/// magasin ne nomme pas encore. Mieux vaut se taire qu'annoncer « (sans titre) » :
-/// une notification vide ressemble à une donnée perdue, exactement comme un titre
-/// blanc dans le vocabulaire du portail (#81).
-///
-/// Trois formes, et aucune n'invente de nom :
-///
-/// | cas | titre | corps |
-/// |---|---|---|
-/// | tête-à-tête | le nom de l'auteur, sinon celui du groupe | le texte |
-/// | groupe, auteur connu | le nom du groupe | `Auteur : texte` |
-/// | message système, auteur retiré, profil pas encore reçu | le nom du groupe | le texte seul |
-///
-/// Le troisième cas couvre les **trois** sens du nom absent, et c'est délibéré :
-/// « Membre retiré » est un **fait**, pas un nom (CLAUDE.md), et le préfixer ici
-/// ferait du nul de l'auteur retiré et du nul du profil en retard la même chose à
-/// l'écran — alors que le second se remplira au prochain cycle.
-WakeNotification? announcementNotification(MessageAnnouncement message) {
-  // Un message-média (`body` nul, #140) n'a pas encore de phrase à annoncer :
-  // la notification se tait plutôt que de montrer un corps vide. Les
-  // notifications de média reviendront avec leur tranche (M4/M5).
-  final body = message.body?.trim() ?? '';
-  if (body.isEmpty) return null;
-
-  final group = message.groupName?.trim();
-  final author = message.authorName?.trim();
-  final named = author != null && author.isNotEmpty;
-
-  if (message.isDirect) {
-    final title = named ? author : (group?.isNotEmpty == true ? group! : null);
-    if (title == null) return null;
-    return WakeNotification(
-      id: _systemId(message.groupId),
-      title: title,
-      body: body,
-      groupId: message.groupId,
-    );
-  }
-
-  if (group == null || group.isEmpty) return null;
-  return WakeNotification(
-    id: _systemId(message.groupId),
-    title: group,
-    // Pas de préfixe pour un message système : le serveur ne se présente pas.
-    body: named && !message.isSystem ? '$author : $body' : body,
-    groupId: message.groupId,
-  );
-}
-
-/// Un entier stable et positif, dérivé du `groupId`.
-///
-/// Positif : Android accepte les négatifs, iOS non. Stable : c'est ce qui fait
-/// qu'un second message du même fil **remplace** la notification au lieu d'en
-/// ajouter une — le groupage et les badges sont hors périmètre, mais empiler dix
-/// notifications pour une conversation n'en serait pas un, ce serait un défaut.
-int _systemId(String groupId) => groupId.hashCode & 0x7fffffff;
-
 /// **Afficher une notification locale.** Ne lève jamais : un réveil qui n'a pas pu
 /// s'afficher ne doit rien casser.
 abstract interface class WakeNotifier {
@@ -152,10 +65,22 @@ abstract interface class WakeNotifier {
   /// côté Android.
   Future<void> prepare();
 
-  Future<void> show(WakeNotification notification);
+  /// Affiche — ou **remplace**, même identifiant — la notification d'une
+  /// conversation.
+  Future<void> show(ConversationNotification notification);
+
+  /// Affiche ou remplace le **résumé** qui coiffe les conversations.
+  Future<void> showSummary(NotificationSummary summary);
+
+  /// Efface la notification d'une conversation (lue, ici ou ailleurs). Sans
+  /// effet si elle n'est pas affichée.
+  Future<void> cancel(String groupId);
+
+  /// Efface le résumé — plus rien à coiffer.
+  Future<void> cancelSummary();
 }
 
-/// Le double **inerte** : n'affiche rien.
+/// Le double **inerte** : n'affiche rien, n'efface rien.
 ///
 /// Le défaut du provider, en production comme sous `flutter test` — et le câblage
 /// réel du **premier plan** (voir `app.dart`) : application ouverte, les écrans se
@@ -168,15 +93,39 @@ class InertWakeNotifier implements WakeNotifier {
   Future<void> prepare() async {}
 
   @override
-  Future<void> show(WakeNotification notification) async {}
+  Future<void> show(ConversationNotification notification) async {}
+
+  @override
+  Future<void> showSummary(NotificationSummary summary) async {}
+
+  @override
+  Future<void> cancel(String groupId) async {}
+
+  @override
+  Future<void> cancelSummary() async {}
 }
 
 /// L'implémentation réelle, et **le seul endroit du dépôt qui connaisse
 /// `flutter_local_notifications`**.
 ///
-/// Elle se construit dans `main.dart` (premier plan) et dans le point d'entrée du
-/// réveil en arrière-plan — deux isolates, donc deux instances du greffon, ce qui
-/// est le mode d'emploi du paquet et non un contournement.
+/// Elle se construit dans `main.dart` (premier plan, pour **effacer** les
+/// notifications d'une conversation lue) et dans les points d'entrée de fond
+/// (réveil, action) — plusieurs isolates, donc plusieurs instances du greffon,
+/// ce qui est le mode d'emploi du paquet et non un contournement.
+///
+/// ## La notification d'une conversation : le style « messagerie »
+///
+/// `MessagingStyle` d'Android, comme WhatsApp : le nom du groupe en titre de
+/// conversation, chaque non-lu avec son auteur, « Vous » pour moi. Elle porte
+/// deux actions — **Répondre**, avec un champ de saisie, et **Marquer comme
+/// lu** —, toutes deux traitées **sans ouvrir l'application** (voir
+/// [wakeActionEntryPoint]). Le compteur (`number`) est celui de mes non-lus, et
+/// c'est lui que le lanceur reprend en pastille.
+///
+/// **Pas d'avatar** : `users` ne porte aucune image aujourd'hui
+/// (`Profiles.avatarUrl` est toujours nul). Le jour où il en portera, c'est
+/// `Person.icon` qu'il faudra remplir — et télécharger l'image *avant* de
+/// l'afficher, dans un isolate de fond.
 class LocalWakeNotifier implements WakeNotifier {
   LocalWakeNotifier({FlutterLocalNotificationsPlugin? plugin})
       : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
@@ -186,7 +135,15 @@ class LocalWakeNotifier implements WakeNotifier {
   @override
   Future<void> prepare() async {
     try {
-      await _plugin.initialize(settings: _initialization);
+      // Le point d'entrée des actions est déclaré **ici aussi**, et pas
+      // seulement par l'isolate principal : un téléphone qui reçoit sa première
+      // notification avant d'avoir rouvert l'application depuis la mise à jour
+      // n'aurait sinon aucun point d'entrée enregistré, et « Répondre » se
+      // perdrait sans bruit.
+      await _plugin.initialize(
+        settings: _initialization,
+        onDidReceiveBackgroundNotificationResponse: wakeActionEntryPoint,
+      );
 
       // Android 8+ : un canal **créé à l'avance**. Sans lui, la première
       // notification en crée un avec l'importance par défaut, et l'importance d'un
@@ -210,29 +167,153 @@ class LocalWakeNotifier implements WakeNotifier {
   }
 
   @override
-  Future<void> show(WakeNotification notification) async {
+  Future<void> show(ConversationNotification notification) async {
     try {
       await _plugin.show(
         id: notification.id,
         title: notification.title,
         body: notification.body,
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            kWakeChannelId,
-            kWakeChannelName,
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(),
-        ),
+        notificationDetails: conversationDetails(notification),
         // **La charge utile du tap est un identifiant de fil, et rien d'autre.**
-        // Il vient du magasin (voir `MessageAnnouncement.groupId`), donc il désigne
-        // une conversation dont on sait qu'elle contient le message annoncé.
+        // Il vient du magasin, donc il désigne une conversation dont on sait
+        // qu'elle contient les messages annoncés. Les deux actions le lisent
+        // aussi : c'est la conversation à laquelle on répond, ou qu'on marque lue.
         payload: notification.groupId,
       );
     } on Object catch (error) {
       _traceNotifier('affichage impossible : $error');
     }
+  }
+
+  @override
+  Future<void> showSummary(NotificationSummary summary) async {
+    try {
+      await _plugin.show(
+        id: kMessagesSummaryId,
+        title: summary.title,
+        body: summary.text,
+        notificationDetails: summaryDetails(summary),
+        // Pas de charge utile : le résumé ne désigne aucune conversation, et le
+        // tap ouvre simplement l'application.
+      );
+    } on Object catch (error) {
+      _traceNotifier('résumé impossible : $error');
+    }
+  }
+
+  @override
+  Future<void> cancel(String groupId) async {
+    try {
+      await _plugin.cancel(id: conversationNotificationId(groupId));
+    } on Object catch (error) {
+      _traceNotifier('effacement impossible : $error');
+    }
+  }
+
+  @override
+  Future<void> cancelSummary() async {
+    try {
+      await _plugin.cancel(id: kMessagesSummaryId);
+    } on Object catch (error) {
+      _traceNotifier('effacement du résumé impossible : $error');
+    }
+  }
+
+  /// **Le dessin d'une conversation**, exposé pour les tests : c'est la
+  /// traduction d'une [ConversationNotification] dans le vocabulaire du
+  /// greffon, et rien d'autre ne la fait.
+  @visibleForTesting
+  static NotificationDetails conversationDetails(
+    ConversationNotification notification,
+  ) {
+    final texts = notification.texts;
+    final me = Person(key: 'me', name: texts.you);
+    final messages = [
+      for (final line in notification.lines)
+        Message(line.text, line.at, _sender(line, texts)),
+    ];
+
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        kWakeChannelId,
+        kWakeChannelName,
+        importance: Importance.high,
+        priority: Priority.high,
+        category: AndroidNotificationCategory.message,
+        styleInformation: MessagingStyleInformation(
+          me,
+          // Le titre de conversation n'a de sens que pour un groupe : dans un
+          // tête-à-tête, l'auteur de chaque ligne **est** la conversation.
+          conversationTitle: notification.isGroup ? notification.title : null,
+          groupConversation: notification.isGroup,
+          messages: messages,
+        ),
+        groupKey: kMessagesGroupKey,
+        number: notification.unreadCount,
+        when: notification.lines.last.at.millisecondsSinceEpoch,
+        // Une mise à jour silencieuse (le contenu change, rien de neuf n'est
+        // arrivé) ne doit ni sonner ni vibrer.
+        silent: !notification.alert,
+        onlyAlertOnce: !notification.alert,
+        actions: [
+          AndroidNotificationAction(
+            kReplyActionId,
+            texts.reply,
+            inputs: [AndroidNotificationActionInput(label: texts.replyHint)],
+            semanticAction: SemanticAction.reply,
+            // Traitée **sans ouvrir l'application** : voir
+            // [wakeActionEntryPoint]. Et la notification part au geste —
+            // Android garderait sinon son indicateur d'envoi tournant.
+            showsUserInterface: false,
+            cancelNotification: true,
+          ),
+          AndroidNotificationAction(
+            kMarkReadActionId,
+            texts.markRead,
+            semanticAction: SemanticAction.markAsRead,
+            showsUserInterface: false,
+            cancelNotification: true,
+          ),
+        ],
+      ),
+      iOS: const DarwinNotificationDetails(threadIdentifier: kMessagesGroupKey),
+    );
+  }
+
+  /// **Le dessin du résumé**, exposé pour les tests.
+  @visibleForTesting
+  static NotificationDetails summaryDetails(NotificationSummary summary) {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        kWakeChannelId,
+        kWakeChannelName,
+        importance: Importance.high,
+        priority: Priority.high,
+        category: AndroidNotificationCategory.message,
+        styleInformation: InboxStyleInformation(
+          summary.lines,
+          contentTitle: summary.title,
+          summaryText: summary.text,
+        ),
+        groupKey: kMessagesGroupKey,
+        setAsGroupSummary: true,
+        number: summary.totalUnread,
+        // Le résumé ne sonne jamais : c'est la conversation qui vient
+        // d'arriver qui alerte, pas son rappel.
+        groupAlertBehavior: GroupAlertBehavior.children,
+        onlyAlertOnce: true,
+      ),
+      iOS: const DarwinNotificationDetails(threadIdentifier: kMessagesGroupKey),
+    );
+  }
+
+  /// Qui a écrit une ligne. Un auteur retiré se dit comme dans le fil
+  /// (« Membre retiré ») ; un profil pas encore arrivé, par une absence de nom.
+  static Person _sender(NotificationLine line, NotificationTexts texts) {
+    if (line.authorKey == 'removed') {
+      return Person(key: 'removed', name: texts.removedAuthor);
+    }
+    return Person(key: line.authorKey, name: line.authorName);
   }
 }
 
@@ -264,7 +345,12 @@ class LocalWakeTaps implements WakeTaps {
       await _plugin.initialize(
         settings: _initialization,
         onDidReceiveNotificationResponse: (response) =>
-            _deliver(response.payload, onTap),
+            _deliver(response, onTap),
+        // Les actions **sans interface** (« Répondre », « Marquer comme lu ») ne
+        // passent jamais par le rappel ci-dessus : le greffon les confie à un
+        // isolate de fond, application ouverte ou non. Voir
+        // [wakeActionEntryPoint].
+        onDidReceiveBackgroundNotificationResponse: wakeActionEntryPoint,
       );
 
       // **Le tap qui a lancé l'application** ne passe pas toujours par le rappel
@@ -272,8 +358,9 @@ class LocalWakeTaps implements WakeTaps {
       // cette lecture, ouvrir l'application depuis une notification déposerait le
       // fidèle sur l'accueil, et il n'aurait aucun moyen de savoir où aller.
       final launch = await _plugin.getNotificationAppLaunchDetails();
-      if (launch?.didNotificationLaunchApp ?? false) {
-        _deliver(launch?.notificationResponse?.payload, onTap);
+      final response = launch?.notificationResponse;
+      if ((launch?.didNotificationLaunchApp ?? false) && response != null) {
+        _deliver(response, onTap);
       }
     } on Object catch (error) {
       // Canal absent (web, harnais) : il n'y aura pas de tap, et rien d'autre ne
@@ -282,10 +369,41 @@ class LocalWakeTaps implements WakeTaps {
     }
   }
 
-  void _deliver(String? payload, void Function(String groupId) onTap) {
+  /// Seul le **tap sur la notification** ouvre une conversation : une action
+  /// (« Répondre », « Marquer comme lu ») n'est pas une demande d'ouverture, et
+  /// la rejouer ici ferait sauter l'écran sous les doigts de qui vient de
+  /// répondre depuis sa barre de notifications.
+  void _deliver(
+    NotificationResponse response,
+    void Function(String groupId) onTap,
+  ) {
+    if (response.actionId != null) return;
+    final payload = response.payload;
     if (payload == null || payload.isEmpty) return;
     onTap(payload);
   }
+}
+
+/// **Le point d'entrée des actions de notification** (M5) — « Répondre » et
+/// « Marquer comme lu ».
+///
+/// Le greffon l'appelle dans un **isolate de fond** qu'il démarre lui-même,
+/// application ouverte ou fermée : rien de `main()` n'y existe. Ce fichier
+/// n'y fait qu'**aplatir** la réponse du greffon (le seul type qu'il connaisse),
+/// et confie le reste à `push_background.dart`, qui remonte le magasin et le
+/// client HTTP le temps du geste — exactement le partage du réveil push.
+///
+/// `@pragma('vm:entry-point')` n'est pas décoratif : sans lui, le compilateur
+/// d'une version *release* retire la fonction, que rien n'appelle depuis Dart.
+@pragma('vm:entry-point')
+void wakeActionEntryPoint(NotificationResponse response) {
+  final action = readNotificationAction(
+    actionId: response.actionId,
+    payload: response.payload,
+    input: response.input,
+  );
+  if (action == null) return;
+  unawaited(handleBackgroundNotificationAction(action));
 }
 
 /// Les réglages d'initialisation, **partagés par les deux rôles** : les deux parlent

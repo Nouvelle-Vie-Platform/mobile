@@ -139,6 +139,10 @@ Future<void> main() async {
       if (push != null) ...[
         pushTransportProvider.overrideWithValue(push),
         wakeTapsProvider.overrideWithValue(LocalWakeTaps()),
+        // **Effacer**, oui (M5) : la notification d'une conversation qu'on
+        // vient de lire part, application ouverte. Afficher, toujours non —
+        // c'est `wakeNotifierProvider`, inerte au premier plan.
+        wakeDismisserProvider.overrideWithValue(LocalWakeNotifier()),
       ],
     ],
   );
