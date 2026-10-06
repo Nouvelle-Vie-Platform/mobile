@@ -3,7 +3,7 @@
 // `test/data/local/schema/schema_v27.dart`, produit par `make gen && make
 // migrations`.
 
-import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
@@ -83,5 +83,32 @@ void main() {
       (await db.select(db.mediaPageSections).get()).single.manualIds,
       ['t-1'],
     );
+  });
+
+  test(
+      'v26 → v27 : `branches.slug` s\'ajoute nul, et le curseur de '
+      '`branches` est oublié — seul le sien', () async {
+    final schema = await verifier.schemaAt(v - 1);
+    schema.rawDatabase.execute(
+      "INSERT INTO branches (id, name, sync_stamp) VALUES (3, 'Aného', 1)",
+    );
+    for (final key in const ['branches', 'teachings']) {
+      schema.rawDatabase.execute(
+        "INSERT INTO sync_cursors (collection, cursor, synced_at) "
+        "VALUES ('$key', 'un-curseur-opaque', 1)",
+      );
+    }
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, v);
+
+    final branch = (await db.select(db.branches).get()).single;
+    expect(branch.name, 'Aného');
+    expect(branch.slug, isNull);
+    // Effacé : le prochain manifeste l'annonce `from_zero`, et le premier
+    // cycle réécrit chaque branche avec son slug.
+    expect(await db.syncDao.cursorFor('branches'), isNull);
+    expect(await db.syncDao.cursorFor('teachings'), isNotNull);
   });
 }

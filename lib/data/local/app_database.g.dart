@@ -746,6 +746,11 @@ class $BranchesTable extends Branches
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _slugMeta = const VerificationMeta('slug');
+  @override
+  late final GeneratedColumn<String> slug = GeneratedColumn<String>(
+      'slug', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _isMotherChurchMeta =
       const VerificationMeta('isMotherChurch');
   @override
@@ -795,6 +800,7 @@ class $BranchesTable extends Branches
         syncStamp,
         id,
         name,
+        slug,
         isMotherChurch,
         address,
         email,
@@ -825,6 +831,10 @@ class $BranchesTable extends Branches
           _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('slug')) {
+      context.handle(
+          _slugMeta, slug.isAcceptableOrUnknown(data['slug']!, _slugMeta));
     }
     if (data.containsKey('is_mother_church')) {
       context.handle(
@@ -871,6 +881,8 @@ class $BranchesTable extends Branches
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      slug: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}slug']),
       isMotherChurch: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_mother_church'])!,
       address: attachedDatabase.typeMapping
@@ -904,6 +916,11 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
   final int syncStamp;
   final int id;
   final String name;
+
+  /// L'identité publique de la branche (v27, `server-portal#490`) — le mot
+  /// qu'un filtre de branche de la médiathèque désigne. `null` = branche non
+  /// adressable : aucun filtre ne peut la viser.
+  final String? slug;
   final bool isMotherChurch;
   final String? address;
   final String? email;
@@ -915,6 +932,7 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
       {required this.syncStamp,
       required this.id,
       required this.name,
+      this.slug,
       required this.isMotherChurch,
       this.address,
       this.email,
@@ -928,6 +946,9 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
     map['sync_stamp'] = Variable<int>(syncStamp);
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || slug != null) {
+      map['slug'] = Variable<String>(slug);
+    }
     map['is_mother_church'] = Variable<bool>(isMotherChurch);
     if (!nullToAbsent || address != null) {
       map['address'] = Variable<String>(address);
@@ -955,6 +976,7 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
       syncStamp: Value(syncStamp),
       id: Value(id),
       name: Value(name),
+      slug: slug == null && nullToAbsent ? const Value.absent() : Value(slug),
       isMotherChurch: Value(isMotherChurch),
       address: address == null && nullToAbsent
           ? const Value.absent()
@@ -982,6 +1004,7 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
       syncStamp: serializer.fromJson<int>(json['syncStamp']),
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      slug: serializer.fromJson<String?>(json['slug']),
       isMotherChurch: serializer.fromJson<bool>(json['isMotherChurch']),
       address: serializer.fromJson<String?>(json['address']),
       email: serializer.fromJson<String?>(json['email']),
@@ -998,6 +1021,7 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
       'syncStamp': serializer.toJson<int>(syncStamp),
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'slug': serializer.toJson<String?>(slug),
       'isMotherChurch': serializer.toJson<bool>(isMotherChurch),
       'address': serializer.toJson<String?>(address),
       'email': serializer.toJson<String?>(email),
@@ -1012,6 +1036,7 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
           {int? syncStamp,
           int? id,
           String? name,
+          Value<String?> slug = const Value.absent(),
           bool? isMotherChurch,
           Value<String?> address = const Value.absent(),
           Value<String?> email = const Value.absent(),
@@ -1023,6 +1048,7 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
         syncStamp: syncStamp ?? this.syncStamp,
         id: id ?? this.id,
         name: name ?? this.name,
+        slug: slug.present ? slug.value : this.slug,
         isMotherChurch: isMotherChurch ?? this.isMotherChurch,
         address: address.present ? address.value : this.address,
         email: email.present ? email.value : this.email,
@@ -1036,6 +1062,7 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
       syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      slug: data.slug.present ? data.slug.value : this.slug,
       isMotherChurch: data.isMotherChurch.present
           ? data.isMotherChurch.value
           : this.isMotherChurch,
@@ -1054,6 +1081,7 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
           ..write('syncStamp: $syncStamp, ')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('slug: $slug, ')
           ..write('isMotherChurch: $isMotherChurch, ')
           ..write('address: $address, ')
           ..write('email: $email, ')
@@ -1066,8 +1094,8 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
   }
 
   @override
-  int get hashCode => Object.hash(syncStamp, id, name, isMotherChurch, address,
-      email, phone, postalBox, createdAt, updatedAt);
+  int get hashCode => Object.hash(syncStamp, id, name, slug, isMotherChurch,
+      address, email, phone, postalBox, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1075,6 +1103,7 @@ class BranchRow extends DataClass implements Insertable<BranchRow> {
           other.syncStamp == this.syncStamp &&
           other.id == this.id &&
           other.name == this.name &&
+          other.slug == this.slug &&
           other.isMotherChurch == this.isMotherChurch &&
           other.address == this.address &&
           other.email == this.email &&
@@ -1088,6 +1117,7 @@ class BranchesCompanion extends UpdateCompanion<BranchRow> {
   final Value<int> syncStamp;
   final Value<int> id;
   final Value<String> name;
+  final Value<String?> slug;
   final Value<bool> isMotherChurch;
   final Value<String?> address;
   final Value<String?> email;
@@ -1099,6 +1129,7 @@ class BranchesCompanion extends UpdateCompanion<BranchRow> {
     this.syncStamp = const Value.absent(),
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.slug = const Value.absent(),
     this.isMotherChurch = const Value.absent(),
     this.address = const Value.absent(),
     this.email = const Value.absent(),
@@ -1111,6 +1142,7 @@ class BranchesCompanion extends UpdateCompanion<BranchRow> {
     this.syncStamp = const Value.absent(),
     this.id = const Value.absent(),
     required String name,
+    this.slug = const Value.absent(),
     this.isMotherChurch = const Value.absent(),
     this.address = const Value.absent(),
     this.email = const Value.absent(),
@@ -1123,6 +1155,7 @@ class BranchesCompanion extends UpdateCompanion<BranchRow> {
     Expression<int>? syncStamp,
     Expression<int>? id,
     Expression<String>? name,
+    Expression<String>? slug,
     Expression<bool>? isMotherChurch,
     Expression<String>? address,
     Expression<String>? email,
@@ -1135,6 +1168,7 @@ class BranchesCompanion extends UpdateCompanion<BranchRow> {
       if (syncStamp != null) 'sync_stamp': syncStamp,
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (slug != null) 'slug': slug,
       if (isMotherChurch != null) 'is_mother_church': isMotherChurch,
       if (address != null) 'address': address,
       if (email != null) 'email': email,
@@ -1149,6 +1183,7 @@ class BranchesCompanion extends UpdateCompanion<BranchRow> {
       {Value<int>? syncStamp,
       Value<int>? id,
       Value<String>? name,
+      Value<String?>? slug,
       Value<bool>? isMotherChurch,
       Value<String?>? address,
       Value<String?>? email,
@@ -1160,6 +1195,7 @@ class BranchesCompanion extends UpdateCompanion<BranchRow> {
       syncStamp: syncStamp ?? this.syncStamp,
       id: id ?? this.id,
       name: name ?? this.name,
+      slug: slug ?? this.slug,
       isMotherChurch: isMotherChurch ?? this.isMotherChurch,
       address: address ?? this.address,
       email: email ?? this.email,
@@ -1181,6 +1217,9 @@ class BranchesCompanion extends UpdateCompanion<BranchRow> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (slug.present) {
+      map['slug'] = Variable<String>(slug.value);
     }
     if (isMotherChurch.present) {
       map['is_mother_church'] = Variable<bool>(isMotherChurch.value);
@@ -1212,6 +1251,7 @@ class BranchesCompanion extends UpdateCompanion<BranchRow> {
           ..write('syncStamp: $syncStamp, ')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('slug: $slug, ')
           ..write('isMotherChurch: $isMotherChurch, ')
           ..write('address: $address, ')
           ..write('email: $email, ')
@@ -23824,6 +23864,7 @@ typedef $$BranchesTableCreateCompanionBuilder = BranchesCompanion Function({
   Value<int> syncStamp,
   Value<int> id,
   required String name,
+  Value<String?> slug,
   Value<bool> isMotherChurch,
   Value<String?> address,
   Value<String?> email,
@@ -23836,6 +23877,7 @@ typedef $$BranchesTableUpdateCompanionBuilder = BranchesCompanion Function({
   Value<int> syncStamp,
   Value<int> id,
   Value<String> name,
+  Value<String?> slug,
   Value<bool> isMotherChurch,
   Value<String?> address,
   Value<String?> email,
@@ -23862,6 +23904,9 @@ class $$BranchesTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get slug => $composableBuilder(
+      column: $table.slug, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isMotherChurch => $composableBuilder(
       column: $table.isMotherChurch,
@@ -23904,6 +23949,9 @@ class $$BranchesTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get slug => $composableBuilder(
+      column: $table.slug, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isMotherChurch => $composableBuilder(
       column: $table.isMotherChurch,
       builder: (column) => ColumnOrderings(column));
@@ -23944,6 +23992,9 @@ class $$BranchesTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get slug =>
+      $composableBuilder(column: $table.slug, builder: (column) => column);
 
   GeneratedColumn<bool> get isMotherChurch => $composableBuilder(
       column: $table.isMotherChurch, builder: (column) => column);
@@ -23993,6 +24044,7 @@ class $$BranchesTableTableManager extends RootTableManager<
             Value<int> syncStamp = const Value.absent(),
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String?> slug = const Value.absent(),
             Value<bool> isMotherChurch = const Value.absent(),
             Value<String?> address = const Value.absent(),
             Value<String?> email = const Value.absent(),
@@ -24005,6 +24057,7 @@ class $$BranchesTableTableManager extends RootTableManager<
             syncStamp: syncStamp,
             id: id,
             name: name,
+            slug: slug,
             isMotherChurch: isMotherChurch,
             address: address,
             email: email,
@@ -24017,6 +24070,7 @@ class $$BranchesTableTableManager extends RootTableManager<
             Value<int> syncStamp = const Value.absent(),
             Value<int> id = const Value.absent(),
             required String name,
+            Value<String?> slug = const Value.absent(),
             Value<bool> isMotherChurch = const Value.absent(),
             Value<String?> address = const Value.absent(),
             Value<String?> email = const Value.absent(),
@@ -24029,6 +24083,7 @@ class $$BranchesTableTableManager extends RootTableManager<
             syncStamp: syncStamp,
             id: id,
             name: name,
+            slug: slug,
             isMotherChurch: isMotherChurch,
             address: address,
             email: email,

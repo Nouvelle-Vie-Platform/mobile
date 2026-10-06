@@ -98,6 +98,7 @@ class StoreGatheringRepository implements GatheringRepository {
       // le rassemblement s'affiche quand même — sans ligne d'auteur inventée.
       contributorName: row.contributor?.name,
       teachingTypeId: row.gathering.teachingTypeId,
+      branchId: row.gathering.branchId,
       typeLabel: row.type?.label,
       // Les deux maillons bruts, séparés : c'est le modèle de lecture qui
       // termine la cascade, pas le magasin ni le serveur.

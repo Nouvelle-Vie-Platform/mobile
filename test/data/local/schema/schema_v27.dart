@@ -162,6 +162,11 @@ class Branches extends Table with TableInfo {
       type: DriftSqlType.string,
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL');
+  late final GeneratedColumn<String> slug = GeneratedColumn<String>(
+      'slug', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: 'NULL');
   late final GeneratedColumn<int> isMotherChurch = GeneratedColumn<int>(
       'is_mother_church', aliasedName, false,
       type: DriftSqlType.int,
@@ -204,6 +209,7 @@ class Branches extends Table with TableInfo {
         syncStamp,
         id,
         name,
+        slug,
         isMotherChurch,
         address,
         email,

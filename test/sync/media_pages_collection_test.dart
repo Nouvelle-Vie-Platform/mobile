@@ -16,6 +16,7 @@ import 'package:maison_du_miracle/data/sync/branch_filter.dart';
 import 'package:maison_du_miracle/data/sync/sync_api.dart';
 import 'package:maison_du_miracle/data/sync/sync_engine.dart';
 import 'package:maison_du_miracle/data/sync/sync_protocol.dart';
+import 'package:maison_du_miracle/data/sync/sync_rows.dart';
 import 'package:maison_du_miracle/data/sync/synced_collection.dart';
 import 'package:maison_du_miracle/models/media_page_view.dart';
 import 'package:maison_du_miracle/models/menu_entry_view.dart';
@@ -323,6 +324,13 @@ void main() {
       await db.into(db.gatheringTypes).insert(
             gatheringTypeRow(6, label: {'fr': 'Concert'}, slug: 'concerts'),
           );
+      await db.into(db.branches).insert(
+            branchRowOf({'id': 7, 'name': 'Aného', 'slug': 'aneho'}),
+          );
+      // Sans slug : non adressable, absente de la résolution.
+      await db.into(db.branches).insert(
+            branchRowOf({'id': 8, 'name': 'Lomé', 'slug': null}),
+          );
 
       final layout = await db.mediaPagesDao.readLayout('en');
 
@@ -347,6 +355,7 @@ void main() {
 
       expect(layout.teachingRubricIds, {'prieres': 5});
       expect(layout.gatheringRubricIds, {'concerts': 6});
+      expect(layout.branchIds, {'aneho': 7});
     });
 
     test('le flux réémet quand une section arrive', () async {

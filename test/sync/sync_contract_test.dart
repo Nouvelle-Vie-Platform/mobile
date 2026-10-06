@@ -1,4 +1,6 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/sync/sync_rows.dart';
 
 import '../helpers/sync_fixtures.dart';
 
@@ -1081,6 +1083,8 @@ void main() {
       expect(branchPayload.keys.toSet(), {
         'id',
         'name',
+        'city',
+        'slug',
         'isMotherChurch',
         'address',
         'email',
@@ -1090,6 +1094,10 @@ void main() {
         'updatedAt',
       });
       expect(motherBranchPayload['isMotherChurch'], isTrue);
+      // Le slug est ce qu'un filtre de branche de la médiathèque désigne ;
+      // `null` = branche non adressable (server-portal#490).
+      expect(branchRowOf(branchPayload).slug, const Value('be-kpota'));
+      expect(branchRowOf(motherBranchPayload).slug, const Value<String?>(null));
     });
   });
 }

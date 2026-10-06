@@ -8,21 +8,38 @@ import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/models/menu_entry_view.dart';
 
 /// Les plus récents d'abord : t1 est le plus récent.
+/// t2 et t4 sont d'Aného (7), t3 de Lomé (8), t1 est national.
 const _latest = [
   TeachingView(
       id: 't1', title: 'Prier sans cesse', color: 0, teachingTypeId: 1),
-  TeachingView(id: 't2', title: 'Le pain du jour', color: 0, teachingTypeId: 2),
+  TeachingView(
+    id: 't2',
+    title: 'Le pain du jour',
+    color: 0,
+    teachingTypeId: 2,
+    branchId: 7,
+  ),
   TeachingView(
     id: 't3',
     title: 'Prier en famille',
     color: 0,
     teachingTypeId: 1,
+    branchId: 8,
     authorName: 'Pasteur Kodjo Agbéko',
   ),
-  TeachingView(id: 't4', title: 'Louange', color: 0, teachingTypeId: 2),
+  TeachingView(
+    id: 't4',
+    title: 'Louange',
+    color: 0,
+    teachingTypeId: 2,
+    branchId: 7,
+  ),
 ];
 
 const _rubrics = {'prieres': 1, 'dimanche': 2};
+
+/// Une branche sans slug n'y figure pas, comme dans ce que lit le DAO.
+const _branches = {'aneho': 7, 'lome': 8};
 
 MediaSectionView _section({
   MediaSectionSort sort = MediaSectionSort.latest,
@@ -54,6 +71,7 @@ List<String> _compose(
       page: page,
       latestFirst: _latest,
       rubricIds: _rubrics,
+      branchIds: _branches,
       chip: chip,
       query: query,
     ).map((c) => c.id).toList();
@@ -103,12 +121,6 @@ void main() {
       );
     });
 
-    test('la loupe ignore accents et casse, et lit aussi l\'intervenant', () {
-      expect(_compose(_section(), query: 'LOUANGE'), ['t4']);
-      expect(_compose(_section(), query: 'agbeko'), ['t3']);
-      expect(_compose(_section(), query: 'PRIÈR'), ['t1', 't3']);
-    });
-
     test('une famille de page différente de la section ne ramène rien', () {
       expect(
         _compose(
@@ -119,15 +131,40 @@ void main() {
       );
     });
 
-    test('un slug inconnu ou une branche ne ramènent rien', () {
+    test('un slug de rubrique ou de branche inconnu ne ramène rien', () {
       expect(
         _compose(_section(filter: const MediaFilter(rubric: 'inconnue'))),
         isEmpty,
       );
       expect(
-        _compose(_section(filter: const MediaFilter(branch: 'aneho'))),
+        _compose(_section(filter: const MediaFilter(branch: 'kpalime'))),
         isEmpty,
       );
+    });
+
+    test('la branche se résout par son slug : page, section, puce', () {
+      // Le national (t1) ne passe aucune borne de branche.
+      expect(
+        _compose(_section(filter: const MediaFilter(branch: 'aneho'))),
+        ['t2', 't4'],
+      );
+      expect(
+        _compose(
+          _section(),
+          page: const MediaPageView(id: 1, filter: MediaFilter(branch: 'lome')),
+        ),
+        ['t3'],
+      );
+      expect(
+        _compose(_section(), chip: const MediaFilter(branch: 'aneho')),
+        ['t2', 't4'],
+      );
+    });
+
+    test('la loupe ignore accents et casse, et lit aussi l\'intervenant', () {
+      expect(_compose(_section(), query: 'LOUANGE'), ['t4']);
+      expect(_compose(_section(), query: 'agbeko'), ['t3']);
+      expect(_compose(_section(), query: 'PRIÈR'), ['t1', 't3']);
     });
 
     test('une famille inconnue ne ramène rien', () {

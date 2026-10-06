@@ -51,6 +51,11 @@ class Branches extends Table with SyncedRow {
 
   IntColumn get id => integer()();
   TextColumn get name => text()();
+
+  /// L'identité publique de la branche (v27, `server-portal#490`) — le mot
+  /// qu'un filtre de branche de la médiathèque désigne. `null` = branche non
+  /// adressable : aucun filtre ne peut la viser.
+  TextColumn get slug => text().nullable()();
   BoolColumn get isMotherChurch =>
       boolean().withDefault(const Constant(false))();
   TextColumn get address => text().nullable()();

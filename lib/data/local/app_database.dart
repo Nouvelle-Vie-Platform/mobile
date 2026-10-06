@@ -282,8 +282,8 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// **v27** (#167) — **la médiathèque en pages** : `media_pages`,
   /// `media_page_chips`, `media_page_sections`, trois collections répliquées
-  /// de plus, trois créations de table et rien d'autre. Voir
-  /// [kMediaPagesSchemaVersion].
+  /// de plus, trois créations de table ; et `branches.slug`, avec l'oubli du
+  /// curseur de `branches`. Voir [kMediaPagesSchemaVersion].
   @override
   int get schemaVersion => kMediaPagesSchemaVersion;
 
@@ -898,7 +898,7 @@ class AppDatabase extends _$AppDatabase {
             await _migrateM4ToV26(m, from);
           }
           // v26 → v27 — la médiathèque en pages (#167). Trois créations de
-          // table, et rien d'autre. Elles naissent **vides**, et vide veut dire
+          // table, et `branches.slug` plus bas. Elles naissent **vides**, et vide veut dire
           // « aucune page reçue » : l'écran montre alors le catalogue entier,
           // comme avant. Leurs curseurs n'existent pas, le prochain manifeste
           // les annoncera `from_zero`. Pas de garde `to >= 27` : le
@@ -907,6 +907,21 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(mediaPages);
             await m.createTable(mediaPageChips);
             await m.createTable(mediaPageSections);
+          }
+          // Même palier : `branches.slug` (server-portal#490), ce qu'un filtre
+          // de branche désigne. Nullable, aucune ligne réécrite ; et le
+          // curseur de `branches` est **effacé**, comme celui des annonces au
+          // palier v19 : sans cela, les branches déjà en magasin garderaient
+          // un slug nul — donc tout filtre de branche vide — jusqu'à ce que
+          // quelqu'un les modifie au portail. `branches` existe depuis la v1 :
+          // pas de garde `from >=`. La garde `to >=` a la raison du palier
+          // v7 → v8 (colonne surnuméraire signalée par le vérificateur).
+          if (from < kMediaPagesSchemaVersion &&
+              to >= kMediaPagesSchemaVersion) {
+            await m.addColumn(branches, branches.slug);
+            await (delete(syncCursors)
+                  ..where((c) => c.collection.equals('branches')))
+                .go();
           }
         },
         beforeOpen: (details) async {

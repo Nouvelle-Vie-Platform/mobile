@@ -80,12 +80,14 @@ String contentId(String collection, Map<String, Object?> item) {
 // Lignes
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// `GET /sync/branches` — neuf clés, ni `timezone` ni `pastorId`.
+/// `GET /sync/branches` — dix clés (dont `slug`, v27), ni `city`, ni
+/// `timezone`, ni `pastorId`.
 BranchesCompanion branchRowOf(Map<String, Object?> item) {
   const collection = 'branches';
   return BranchesCompanion.insert(
     id: Value(referenceId(collection, item)),
     name: _text(collection, item, 'name'),
+    slug: Value(_optionalText(item, 'slug')),
     isMotherChurch: Value(item['isMotherChurch'] == true),
     address: Value(_optionalText(item, 'address')),
     email: Value(_optionalText(item, 'email')),

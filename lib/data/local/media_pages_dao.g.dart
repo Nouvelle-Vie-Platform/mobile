@@ -10,6 +10,7 @@ mixin _$MediaPagesDaoMixin on DatabaseAccessor<AppDatabase> {
       attachedDatabase.mediaPageSections;
   $TeachingTypesTable get teachingTypes => attachedDatabase.teachingTypes;
   $GatheringTypesTable get gatheringTypes => attachedDatabase.gatheringTypes;
+  $BranchesTable get branches => attachedDatabase.branches;
   MediaPagesDaoManager get managers => MediaPagesDaoManager(this);
 }
 
@@ -29,4 +30,6 @@ class MediaPagesDaoManager {
   $$GatheringTypesTableTableManager get gatheringTypes =>
       $$GatheringTypesTableTableManager(
           _db.attachedDatabase, _db.gatheringTypes);
+  $$BranchesTableTableManager get branches =>
+      $$BranchesTableTableManager(_db.attachedDatabase, _db.branches);
 }

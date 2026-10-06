@@ -67,18 +67,27 @@ class MediaFilter {
 
   /// [rubricIds] : slug → identifiant, dans le référentiel de **la famille de
   /// la section** (les deux référentiels ne garantissent pas des slugs
-  /// disjoints).
-  bool matches(ContentView content, Map<String, int> rubricIds) {
+  /// disjoints). [branchIds] : slug de branche → identifiant.
+  ///
+  /// Un slug inconnu du magasin — rubrique ou branche, ou branche sans slug —
+  /// ne ramène rien, jamais tout le catalogue (comme le serveur). Un contenu
+  /// national (`branchId` nul) ne passe aucune borne de branche.
+  bool matches(
+    ContentView content, {
+    required Map<String, int> rubricIds,
+    required Map<String, int> branchIds,
+  }) {
     final rubric = _present(this.rubric);
     if (rubric != null) {
       // Un slug inconnu du magasin ne ramène rien — jamais tout le catalogue.
       final id = rubricIds[rubric];
       if (id == null || content.teachingTypeId != id) return false;
     }
-    // ponytail: le slug de branche n'est pas résoluble sur ce client
-    // (`BranchTransformer` n'en sert pas) — une borne de branche ne ramène
-    // donc rien, comme pour les menus. À brancher ici le jour où il descendra.
-    if (_present(branch) != null) return false;
+    final branch = _present(this.branch);
+    if (branch != null) {
+      final id = branchIds[branch];
+      if (id == null || content.branchId != id) return false;
+    }
     // Titre **et** intervenant, sans accents ni casse — comme l'aperçu du
     // portail.
     final term = normalizeSearchTerm(search);
@@ -180,6 +189,7 @@ class MediaLibraryLayout {
     this.pages = const [],
     this.teachingRubricIds = const {},
     this.gatheringRubricIds = const {},
+    this.branchIds = const {},
   });
 
   static const MediaLibraryLayout empty = MediaLibraryLayout();
@@ -187,6 +197,9 @@ class MediaLibraryLayout {
   final List<MediaPageView> pages;
   final Map<String, int> teachingRubricIds;
   final Map<String, int> gatheringRubricIds;
+
+  /// Slug de branche → identifiant ; une branche sans slug n'y figure pas.
+  final Map<String, int> branchIds;
 
   Map<String, int> rubricIdsOf(MenuContentFamily family) => switch (family) {
         MenuContentFamily.teaching => teachingRubricIds,
@@ -205,6 +218,7 @@ List<C> composeSection<C extends ContentView>({
   required MediaPageView page,
   required List<C> latestFirst,
   required Map<String, int> rubricIds,
+  Map<String, int> branchIds = const {},
   MediaFilter? chip,
   String? query,
 }) {
@@ -236,7 +250,9 @@ List<C> composeSection<C extends ContentView>({
 
   return List<C>.unmodifiable(
     ordered
-        .where((c) => filters.every((f) => f.matches(c, rubricIds)))
+        .where((c) => filters.every(
+              (f) => f.matches(c, rubricIds: rubricIds, branchIds: branchIds),
+            ))
         .take(math.max(section.maxItems, 0)),
   );
 }

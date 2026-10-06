@@ -207,6 +207,16 @@
             "dsl_features": []
           },
           {
+            "name": "slug",
+            "getter_name": "slug",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
             "name": "is_mother_church",
             "getter_name": "isMotherChurch",
             "moor_type": "bool",
@@ -5224,7 +5234,7 @@
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"branches\" (\"sync_stamp\" INTEGER NOT NULL DEFAULT 0, \"id\" INTEGER NOT NULL, \"name\" TEXT NOT NULL, \"is_mother_church\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_mother_church\" IN (0, 1)), \"address\" TEXT NULL, \"email\" TEXT NULL, \"phone\" TEXT NULL, \"postal_box\" TEXT NULL, \"created_at\" INTEGER NULL, \"updated_at\" INTEGER NULL, PRIMARY KEY (\"id\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"branches\" (\"sync_stamp\" INTEGER NOT NULL DEFAULT 0, \"id\" INTEGER NOT NULL, \"name\" TEXT NOT NULL, \"slug\" TEXT NULL, \"is_mother_church\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_mother_church\" IN (0, 1)), \"address\" TEXT NULL, \"email\" TEXT NULL, \"phone\" TEXT NULL, \"postal_box\" TEXT NULL, \"created_at\" INTEGER NULL, \"updated_at\" INTEGER NULL, PRIMARY KEY (\"id\"));"
         }
       ]
     },

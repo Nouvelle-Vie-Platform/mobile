@@ -749,6 +749,8 @@ Map<String, Object?> contributorsPage() => deltaPage(
 const Map<String, Object?> branchPayload = {
   'id': 3,
   'name': 'Maison du Miracle — Bè Kpota',
+  'city': 'Bè Kpota',
+  'slug': 'be-kpota',
   'isMotherChurch': false,
   'address': 'Rue des Palmiers, Lomé',
   'email': 'bekpota@example.org',
@@ -762,6 +764,9 @@ const Map<String, Object?> branchPayload = {
 const Map<String, Object?> motherBranchPayload = {
   'id': 1,
   'name': 'Maison du Miracle — Temple Central',
+  'city': null,
+  // Non adressable publiquement : un état vrai (server-portal#490).
+  'slug': null,
   'isMotherChurch': true,
   'address': null,
   'email': null,

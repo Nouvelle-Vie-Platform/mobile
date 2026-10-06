@@ -12,7 +12,7 @@ part 'media_pages_dao.g.dart';
 
 /// **La lecture de la médiathèque en pages** (#167) : les pages dans leur
 /// ordre, chacune avec ses puces et ses sections, et la résolution des slugs
-/// de rubrique des deux familles.
+/// de rubrique des deux familles et de branche.
 ///
 /// Une puce ou une section dont la page n'est pas (ou plus) en magasin est
 /// **ignorée** — jamais remontée ailleurs. Les contenus, eux, ne sont pas lus
@@ -25,13 +25,14 @@ part 'media_pages_dao.g.dart';
     MediaPageSections,
     TeachingTypes,
     GatheringTypes,
+    Branches,
   ],
 )
 class MediaPagesDao extends DatabaseAccessor<AppDatabase>
     with _$MediaPagesDaoMixin {
   MediaPagesDao(super.db);
 
-  /// Réémet à chaque écriture de l'une des cinq tables : une requête vide
+  /// Réémet à chaque écriture de l'une des six tables : une requête vide
   /// observée sert de signal, puis tout se relit. Quelques dizaines de lignes
   /// de configuration — relire le tout est plus sûr que d'assembler trois flux.
   Stream<MediaLibraryLayout> watchLayout(String locale) => customSelect(
@@ -42,6 +43,7 @@ class MediaPagesDao extends DatabaseAccessor<AppDatabase>
           mediaPageSections,
           teachingTypes,
           gatheringTypes,
+          branches,
         },
       ).watch().asyncMap((_) => readLayout(locale));
 
@@ -66,6 +68,7 @@ class MediaPagesDao extends DatabaseAccessor<AppDatabase>
         .get();
     final teachingRubrics = await select(teachingTypes).get();
     final gatheringRubrics = await select(gatheringTypes).get();
+    final allBranches = await select(branches).get();
 
     String resolved(Map<String, String>? map) =>
         map == null ? '' : pick(map, locale).trim();
@@ -73,6 +76,10 @@ class MediaPagesDao extends DatabaseAccessor<AppDatabase>
     return MediaLibraryLayout(
       teachingRubricIds: {for (final t in teachingRubrics) t.slug: t.id},
       gatheringRubricIds: {for (final g in gatheringRubrics) g.slug: g.id},
+      branchIds: {
+        for (final b in allBranches)
+          if (b.slug case final slug?) slug: b.id,
+      },
       pages: List.unmodifiable([
         for (final page in pages)
           MediaPageView(

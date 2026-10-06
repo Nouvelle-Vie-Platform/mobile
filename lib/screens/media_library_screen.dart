@@ -253,6 +253,7 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
           MenuContentFamily.gathering => gatherings.requireValue,
         },
         rubricIds: layout.rubricIdsOf(family),
+        branchIds: layout.branchIds,
         chip: chip,
         query: _query,
       );
