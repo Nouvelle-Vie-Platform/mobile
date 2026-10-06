@@ -2102,4 +2102,148 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatQuoteNotFound => 'Message not found';
+
+  @override
+  String get m4ChatAttach => 'Attach';
+
+  @override
+  String get m4ChatCamera => 'Camera';
+
+  @override
+  String get m4ChatRecordVoice => 'Hold to record a voice message';
+
+  @override
+  String get m4AttachGallery => 'Gallery';
+
+  @override
+  String get m4AttachVideo => 'Video';
+
+  @override
+  String get m4AttachRecordVideo => 'Record';
+
+  @override
+  String get m4AttachDocument => 'Document';
+
+  @override
+  String get m4AttachAudio => 'Audio';
+
+  @override
+  String get m4AttachLocation => 'Location';
+
+  @override
+  String get m4AttachContact => 'Contact';
+
+  @override
+  String get m4PreviewVoice => '🎤 Voice message';
+
+  @override
+  String get m4PreviewAudio => '🎵 Audio';
+
+  @override
+  String get m4PreviewImage => '📷 Photo';
+
+  @override
+  String get m4PreviewVideo => '🎥 Video';
+
+  @override
+  String get m4PreviewDocument => '📄 Document';
+
+  @override
+  String get m4PreviewLocation => '📍 Location';
+
+  @override
+  String get m4PreviewContact => '👤 Contact';
+
+  @override
+  String get m4VoiceSlideToCancel => '‹ Slide to cancel';
+
+  @override
+  String get m4VoiceCancel => 'Discard voice message';
+
+  @override
+  String get m4VoiceSend => 'Send voice message';
+
+  @override
+  String get m4VoiceLockHint => 'Slide up to lock';
+
+  @override
+  String get m4VoiceMicDenied =>
+      'Allow the microphone to record a voice message.';
+
+  @override
+  String get m4VoiceTooShort => 'Hold the microphone to record.';
+
+  @override
+  String get m4MediaErrorTooLarge => 'File too large.';
+
+  @override
+  String get m4MediaErrorTooLong => 'Too long to be sent.';
+
+  @override
+  String get m4MediaErrorType => 'This file type is not accepted.';
+
+  @override
+  String get m4MediaErrorMissing => 'The file is no longer on the phone.';
+
+  @override
+  String get m4MediaErrorUnreadable => 'This file could not be prepared.';
+
+  @override
+  String get m4MediaUnavailable => 'Media unavailable';
+
+  @override
+  String get m4MediaUnsupportedKind =>
+      'This kind of message is not supported yet.';
+
+  @override
+  String get m4LocationTitle => 'Send my location?';
+
+  @override
+  String get m4LocationLabelHint => 'Place name (optional)';
+
+  @override
+  String get m4LocationDisabled => 'Location is turned off on this phone.';
+
+  @override
+  String get m4LocationDenied =>
+      'Allow location access to share your position.';
+
+  @override
+  String get m4LocationOpen => 'Open in Maps';
+
+  @override
+  String get m4LocationDefaultLabel => 'Shared location';
+
+  @override
+  String get m4ContactCall => 'Call';
+
+  @override
+  String get m4DocumentOpenFailed => 'This document could not be opened.';
+
+  @override
+  String get m4DocumentUnsupported => 'This file type cannot be sent.';
+
+  @override
+  String get m4CaptionHint => 'Add a caption…';
+
+  @override
+  String get m4Send => 'Send';
+
+  @override
+  String get m4Cancel => 'Cancel';
+
+  @override
+  String get m4SharedMedia => 'Shared media';
+
+  @override
+  String get m4QuoteVideo => 'Video';
+
+  @override
+  String get m4QuoteDocument => 'Document';
+
+  @override
+  String get m4QuoteLocation => 'Location';
+
+  @override
+  String get m4QuoteContact => 'Contact';
 }

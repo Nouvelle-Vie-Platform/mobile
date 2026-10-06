@@ -174,6 +174,8 @@ SELECT
   last.author_id      AS last_author_id,
   last.created_at     AS last_created_at,
   last.deleted_at     AS last_deleted_at,
+  last.media_kind     AS last_media_kind,
+  last.media_meta     AS last_media_meta,
   COALESCE(last.created_at, g.updated_at, g.created_at) AS activity_at,
   (SELECT COUNT(*) FROM group_messages AS u
     WHERE u.group_id = g.id AND ${_isUnread('u', 1)}) AS unread_count,
@@ -241,6 +243,8 @@ ORDER BY activity_at DESC, g.id DESC
         pinnedAt: row.read<DateTime?>('pinned_at'),
         mutedUntil: row.read<DateTime?>('muted_until'),
         mutedForever: row.read<bool?>('muted_forever') ?? false,
+        lastMediaKind: row.read<String?>('last_media_kind'),
+        lastMediaMeta: row.read<String?>('last_media_meta'),
       ),
     );
   }
@@ -399,7 +403,17 @@ SELECT
   m.reply_to_excerpt    AS reply_to_excerpt,
   m.reply_to_media_kind AS reply_to_media_kind,
   m.reply_to_deleted    AS reply_to_deleted,
-  $_reactionsOf         AS reactions
+  $_reactionsOf         AS reactions,
+  m.media_kind          AS media_kind,
+  m.media_key           AS media_key,
+  m.media_thumbnail_key AS media_thumbnail_key,
+  m.media_duration      AS media_duration,
+  m.media_meta          AS media_meta,
+  m.media_size          AS media_size,
+  m.media_mime          AS media_mime,
+  NULL                  AS media_path,
+  NULL                  AS media_thumb_path,
+  NULL                  AS media_error
 FROM group_messages AS m
 JOIN (SELECT ?1 AS id) AS g
 $_readJoins
@@ -410,7 +424,7 @@ WHERE m.group_id = ?1
 UNION ALL
 SELECT
   p.client_message_id,
-  p.body,
+  NULLIF(p.body, ''),
   ?2,
   0,
   p.created_at,
@@ -426,9 +440,19 @@ SELECT
   origin.author_id,
   origin_author.display_name,
   origin.body,
-  NULL,
+  origin.media_kind,
   CASE WHEN origin.deleted_at IS NULL THEN 0 ELSE 1 END,
-  NULL
+  NULL,
+  p.media_kind,
+  p.media_key,
+  p.media_thumbnail_key,
+  p.media_duration,
+  p.media_meta,
+  p.media_size,
+  p.media_mime,
+  p.media_path,
+  p.media_thumb_path,
+  p.media_error
 FROM pending_group_messages AS p
 LEFT JOIN profiles AS me ON me.id = ?2
 LEFT JOIN group_messages AS origin ON origin.id = p.reply_to_message_id
@@ -480,6 +504,19 @@ ORDER BY created_at ASC, entry_id ASC
         replyToMediaKind: row.read<String?>('reply_to_media_kind'),
         replyToDeleted: row.read<bool>('reply_to_deleted'),
         reactions: parseReactions(row.read<String?>('reactions')),
+        // Le média (M4) — les colonnes serveur, ou celles de l'écho (fichier
+        // local compris). `MessageMedia.fromColumns` les lit à l'étage du
+        // dessus.
+        mediaKind: row.read<String?>('media_kind'),
+        mediaKey: row.read<String?>('media_key'),
+        mediaThumbnailKey: row.read<String?>('media_thumbnail_key'),
+        mediaDuration: row.read<int?>('media_duration'),
+        mediaMeta: row.read<String?>('media_meta'),
+        mediaSize: row.read<int?>('media_size'),
+        mediaMime: row.read<String?>('media_mime'),
+        mediaPath: row.read<String?>('media_path'),
+        mediaThumbPath: row.read<String?>('media_thumb_path'),
+        mediaError: row.read<String?>('media_error'),
       ),
     );
   }
@@ -794,6 +831,98 @@ ORDER BY p.display_name IS NULL, p.display_name COLLATE NOCASE, p.id
     );
   }
 
+  /// **Pose l'écho d'un média** (M4, #143) — **avant** toute dégradation ni
+  /// montée : le vocal, la photo, le document paraissent au fil « en cours
+  /// d'envoi » dans l'instant, avec leur fichier local.
+  ///
+  /// [caption] vide ou absente = pas de légende ; la colonne `body` garde son
+  /// `NOT NULL` et porte alors une chaîne vide (voir la table).
+  Future<void> rememberPendingMedia({
+    required String clientMessageId,
+    required String groupId,
+    required DateTime createdAt,
+    required String mediaKind,
+    String? caption,
+    String? mediaPath,
+    String? mediaMime,
+    String? mediaMeta,
+    int? mediaDuration,
+    int? mediaSize,
+  }) {
+    return into(pendingGroupMessages).insert(
+      PendingGroupMessagesCompanion.insert(
+        clientMessageId: clientMessageId,
+        groupId: groupId,
+        body: caption?.trim() ?? '',
+        createdAt: createdAt,
+        mediaKind: Value(mediaKind),
+        mediaPath: Value(mediaPath),
+        mediaMime: Value(mediaMime),
+        mediaMeta: Value(mediaMeta),
+        mediaDuration: Value(mediaDuration),
+        mediaSize: Value(mediaSize),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  /// **Avance l'écho d'un média** (M4) : fichier prêt, clés montées, cause
+  /// d'échec effacée… Seuls les champs présents dans [changes] sont écrits.
+  Future<void> updatePendingMedia(
+    String clientMessageId,
+    PendingGroupMessagesCompanion changes,
+  ) {
+    return (update(pendingGroupMessages)
+          ..where((p) => p.clientMessageId.equals(clientMessageId)))
+        .write(changes);
+  }
+
+  /// **Un média n'est pas parti, et l'on sait pourquoi** (M4) — trop lourd,
+  /// trop long, type refusé, fichier disparu. [error] `null` = le réseau, sans
+  /// cause à dire.
+  Future<void> markPendingMediaFailed(String clientMessageId, String? error) {
+    return (update(pendingGroupMessages)
+          ..where((p) => p.clientMessageId.equals(clientMessageId)))
+        .write(
+      PendingGroupMessagesCompanion(
+        failed: const Value(true),
+        mediaError: Value(error),
+      ),
+    );
+  }
+
+  /// **Les images du fil** (M4, #143 — #98) : les « médias partagés » de la
+  /// fiche du groupe, les plus récentes d'abord. Un message supprimé a quitté le
+  /// magasin (tombstone), son image avec lui.
+  Selectable<String> sharedImagesOf(String groupId, {int limit = 30}) {
+    return customSelect(
+      '''
+SELECT id FROM group_messages
+WHERE group_id = ?1 AND media_kind = 'image' AND media_key IS NOT NULL
+  AND deleted_at IS NULL
+  AND ${_notHidden('group_messages')}
+ORDER BY created_at DESC, id DESC
+LIMIT ?2
+''',
+      variables: [Variable<String>(groupId), Variable<int>(limit)],
+      // Ni supprimé pour tous, ni supprimé pour moi (M2) : une image retirée
+      // du fil ne reste pas dans la fiche du groupe.
+      readsFrom: {groupMessages, groupMessageHides},
+    ).map((row) => row.read<String>('id'));
+  }
+
+  /// **Les fichiers locaux encore cités par un écho** (M4) — tout le reste du
+  /// dossier de l'outbox peut partir.
+  Future<Set<String>> pendingMediaFiles() async {
+    final rows = await select(pendingGroupMessages).get();
+    return {
+      for (final row in rows) ...[
+        if (row.mediaPath != null) row.mediaPath!,
+        if (row.mediaThumbPath != null) row.mediaThumbPath!,
+      ],
+    };
+  }
+
   /// Un écho **par sa clé**, ou `null`. Sert au « réessayer » : il renvoie sous la
   /// **même** clé, et a donc besoin du corps et de l'instant d'origine.
   Future<PendingGroupMessageRow?> pendingById(String clientMessageId) {
@@ -1085,6 +1214,8 @@ class ConversationRecord {
     this.pinnedAt,
     this.mutedUntil,
     this.mutedForever = false,
+    this.lastMediaKind,
+    this.lastMediaMeta,
   });
 
   final String groupId;
@@ -1136,6 +1267,11 @@ class ConversationRecord {
         mutedForever: mutedForever,
         now: now,
       );
+
+  /// La forme du média du dernier message, et sa méta en JSON (M4) — de quoi
+  /// distinguer un vocal d'un fichier audio dans l'aperçu.
+  final String? lastMediaKind;
+  final String? lastMediaMeta;
 }
 
 /// **La règle de la sourdine**, écrite une fois (M5) : « toujours », ou une
@@ -1205,6 +1341,16 @@ class ThreadEntryRecord {
     this.replyToMediaKind,
     this.replyToDeleted = false,
     this.reactions = const [],
+    this.mediaKind,
+    this.mediaKey,
+    this.mediaThumbnailKey,
+    this.mediaDuration,
+    this.mediaMeta,
+    this.mediaSize,
+    this.mediaMime,
+    this.mediaPath,
+    this.mediaThumbPath,
+    this.mediaError,
   });
 
   /// L'UUIDv7 serveur pour un message confirmé, le `clientMessageId` pour un
@@ -1254,6 +1400,24 @@ class ThreadEntryRecord {
 
   /// Les réactions, une par personne — l'agrégat se calcule dans la vue.
   final List<({String emoji, String userId})> reactions;
+
+  // ── Le média (M4, #143), colonnes brutes ──────────────────────────────────
+  final String? mediaKind;
+  final String? mediaKey;
+  final String? mediaThumbnailKey;
+  final int? mediaDuration;
+
+  /// En JSON, tel que rangé.
+  final String? mediaMeta;
+  final int? mediaSize;
+  final String? mediaMime;
+
+  /// Le fichier local d'un **écho** (nul pour une ligne serveur).
+  final String? mediaPath;
+  final String? mediaThumbPath;
+
+  /// La cause d'un envoi de média en échec (écho seulement).
+  final String? mediaError;
 }
 
 /// Une réaction nommée — la feuille « qui a réagi » (M2, #141).

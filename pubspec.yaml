@@ -122,7 +122,11 @@ dependencies:
   # Lu **uniquement** derrière `AppVersionReader` (`lib/data/app_version.dart`) :
   # sous `flutter test`, un canal de plugin lève `MissingPluginException`, et
   # aucun test d'écran n'a à connaître ce détail.
-  package_info_plus: ^9.0.1
+  #
+  # ^10 (et non plus ^9) depuis M4 : `geolocator` ≥ 14.0.3 tire
+  # `geolocator_linux` 0.2.6, qui exige `package_info_plus` ^10. La 10 demande
+  # Flutter ≥ 3.38.1 et iOS 13 — la CI est en 3.44.2, le projet en iOS 15.
+  package_info_plus: ^10.2.2
   # **Le type de transport**, et rien d'autre : wifi ou données mobiles. C'est
   # ce qui permet au réglage « Automatique » de la qualité d'écoute de plafonner
   # le débit hors wifi (`NetworkTransport`, `lib/data/network/`).
@@ -227,6 +231,41 @@ dependencies:
   firebase_core: ^4.15.0
   firebase_messaging: ^16.7.0
   flutter_local_notifications: ^22.3.1
+  # **Les médias de la messagerie** (M4, #143 — reprend #98). « Le téléphone
+  # dégrade, le serveur borne » : tout ce qui part est encodé ou compressé ici.
+  # Chaque greffon est lu derrière **une couture** (`lib/data/messaging/media/`,
+  # `lib/data/players/`), inerte dans les tests. Tous sont des **Swift
+  # Packages** (CocoaPods ne ressuscite pas) et maintenus en 2026.
+  #
+  # - `record` — l'enregistreur de vocaux : AAC mono 32 kbit/s natif, gain
+  #   automatique (le niveau normalisé du cadrage). Un seul fichier l'importe
+  #   (`record_voice_recorder.dart`). `RECORD_AUDIO` / `NSMicrophoneUsage…`.
+  # - `image` — **pur Dart** : décoder, cuire l'orientation, ramener à 1600 px,
+  #   **retirer l'EXIF** (la position GPS de la prise de vue) et réencoder en
+  #   JPEG q80. Pur Dart, donc **testable** sur de vrais octets.
+  # - `v_video_compressor` — la vidéo compressée sur l'appareil (H.264, 720p,
+  #   métadonnées retirées) et sa vignette. Préféré à `video_compress`, plus
+  #   connu mais figé depuis 2025 et CocoaPods seulement.
+  # - `file_picker` — un document ou un fichier audio, par le sélecteur du
+  #   système (aucune permission).
+  # - `geolocator` — la position, demandée **au geste** (`ACCESS_FINE_LOCATION`,
+  #   `NSLocationWhenInUse…`).
+  # - `flutter_native_contact_picker` — **un** contact, par le sélecteur du
+  #   système : aucune permission de lecture du carnet, l'application ne voit
+  #   que le contact choisi (plan §4).
+  # - `url_launcher` — ouvrir une position dans l'application de cartes (aucune
+  #   clé d'API, aucune carte statique payante), un numéro dans le composeur, et
+  #   les liens `externe` du menu (`UrlLauncherExternalLinkLauncher`).
+  # - `open_file` — ouvrir un document reçu dans l'application du système.
+  #   Préféré à `open_filex`, CocoaPods seulement.
+  record: ^7.1.1
+  image: ^4.10.1
+  v_video_compressor: ^2.2.3
+  file_picker: ^13.1.0
+  geolocator: ^14.1.1
+  flutter_native_contact_picker: ^0.0.12
+  url_launcher: ^6.3.3
+  open_file: ^4.0.0
 
 dev_dependencies:
   flutter_test:

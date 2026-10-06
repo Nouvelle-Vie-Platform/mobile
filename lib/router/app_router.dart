@@ -553,13 +553,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final args = state.extra as MediaViewerArgs? ??
               const MediaViewerArgs(urls: [], index: 0);
-          // ⚠️ **Plus aucun écran n'ouvre cette route depuis #96** : les médias
-          // partagés d'une fiche de groupe étaient des images inventées, et ils
-          // sont retirés jusqu'à la tranche 3, où ils seront **les images du
-          // fil** (décision 10 : « vide en 1, rempli en 3 »). La route, l'écran
-          // et leur configuration native restent en place — c'est la destination
-          // que la tranche 3 câblera, et la détruire pour la réécrire à
-          // l'identique ne gagnerait rien.
+          // Ouverte depuis M4 (#143) par **les images du fil** : une bulle
+          // d'image, et les médias partagés de la fiche d'un groupe (décision 10
+          // du cadrage d'Échanges : « vide en 1, rempli en 3 »). L'URL passée
+          // est présignée et **nue** (`GroupMediaUrls`).
           //
           // `onDownload` sera branché une fois le mécanisme de téléchargement
           // choisi (plugin d'enregistrement galerie / partage). Tant qu'il est

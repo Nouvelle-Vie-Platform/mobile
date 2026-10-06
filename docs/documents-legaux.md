@@ -359,8 +359,9 @@ dans `AuthState.user`, parce que le `redirect` est synchrone (§4.1).
 
 ## 7. Limites assumées
 
-- **Les liens Markdown n'ouvrent rien.** `url_launcher` n'est pas une dépendance du dépôt, et
-  l'ajouter pour un lien `mailto:` dans une CGU ne se justifie pas encore. Les liens se rendent
+- **Les liens Markdown n'ouvrent rien.** `url_launcher` est une dépendance depuis les médias de
+  la messagerie (M4), mais le rendu en ligne des documents ne pose aucun geste sur un lien, et
+  ouvrir un `mailto:` depuis une CGU ne se justifie pas encore. Les liens se rendent
   comme des liens — couleur, soulignement — mais restent inertes. À reprendre le jour où un besoin
   réel de sortie vers le navigateur apparaît.
 - **Aucun partage, aucune impression, aucun téléchargement** d'un document.

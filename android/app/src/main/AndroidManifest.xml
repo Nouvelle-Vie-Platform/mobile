@@ -34,6 +34,24 @@
          d'autorisation d'écriture. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28"/>
+    <!-- Les médias de la messagerie (M4, #143). Toutes demandées **au geste**,
+         jamais au lancement :
+         - RECORD_AUDIO : au premier appui maintenu sur le micro (vocal) ;
+         - ACCESS_FINE/COARSE_LOCATION : quand on choisit « Position » dans la
+           feuille du trombone (geolocator), et seulement alors.
+         Ni CAMERA (image_picker passe par l'application photo du système), ni
+         READ_CONTACTS (le contact est choisi dans le sélecteur du système, qui ne
+         livre que lui), ni READ_MEDIA_* (sélecteurs du système). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- `v_video_compressor` déclare READ_EXTERNAL_STORAGE sans borne. Inutile ici :
+         la vidéo qu'il compresse sort d'image_picker, copiée dans le cache de
+         l'application. Bornée à Android 12L (32) — au-delà, la permission n'existe
+         plus pour les médias — pour ne pas l'afficher sur les téléphones récents. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"
+        tools:replace="android:maxSdkVersion"/>
     <!-- `android:label` est le nom **affiché** : ce que le fidèle lit sous
          l'icône de son écran d'accueil. Il ne se confond ni avec le nom du
          paquet Dart (`maison_du_miracle`, que personne ne voit) ni avec
@@ -114,6 +132,25 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- M4 (#143) : ouvrir une position dans l'application de cartes, un
+             numéro de contact dans le composeur (url_launcher l'ouvre par VIEW),
+             une page de carte en repli — et les liens `externe` du menu. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="geo"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="tel"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
         </intent>
     </queries>
 </manifest>

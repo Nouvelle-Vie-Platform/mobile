@@ -16,16 +16,16 @@ abstract interface class StoreLauncher {
 /// L'implémentation en service aujourd'hui — **elle n'ouvre rien**, et c'est
 /// assumé.
 ///
-/// **Deux choses manquent, et elles arrivent ensemble.** Il n'y a pas d'adresse
-/// de fiche à ouvrir : l'application n'a jamais été soumise, donc elle n'a ni
+/// **Il manque l'adresse de la fiche** : l'application n'a jamais été
+/// soumise, donc elle n'a ni
 /// fiche App Store ni fiche Play Store, et une URL inventée mènerait à une page
-/// d'erreur — ce qui est pire que rien. Et le dépôt n'a pas `url_launcher` :
-/// l'ajouter est un greffon natif de plus, qui exige une déclaration `<queries>`
-/// dans le manifeste Android, pour un bouton qu'aucun fidèle ne peut atteindre
-/// (sans seuil réglé, le bandeau ne s'affiche pour personne — voir
-/// `appUpdateThresholdProvider`).
+/// d'erreur — ce qui est pire que rien. `url_launcher`, lui, est là depuis les
+/// médias de la messagerie (M4, #143), avec les `<queries>` `https` du
+/// manifeste Android : seule l'adresse manque, pour un bouton qu'aucun fidèle ne
+/// peut atteindre (sans seuil réglé, le bandeau ne s'affiche pour personne —
+/// voir `appUpdateThresholdProvider`).
 ///
-/// Les deux se câblent donc **à la première soumission au magasin**, qui est
+/// Il se câble donc **à la première soumission au magasin**, qui est
 /// aussi le moment où le seuil commence à vouloir dire quelque chose. D'ici là,
 /// le chemin complet est écrit et testé ; seule la dernière ligne est en
 /// attente, exactement comme `BestEffortDiskSpace` attend sa mesure.

@@ -14583,6 +14583,48 @@ class $GroupMessagesTable extends GroupMessages
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("reply_to_deleted" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _mediaKeyMeta =
+      const VerificationMeta('mediaKey');
+  @override
+  late final GeneratedColumn<String> mediaKey = GeneratedColumn<String>(
+      'media_key', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaKindMeta =
+      const VerificationMeta('mediaKind');
+  @override
+  late final GeneratedColumn<String> mediaKind = GeneratedColumn<String>(
+      'media_kind', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaDurationMeta =
+      const VerificationMeta('mediaDuration');
+  @override
+  late final GeneratedColumn<int> mediaDuration = GeneratedColumn<int>(
+      'media_duration', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _mediaMetaMeta =
+      const VerificationMeta('mediaMeta');
+  @override
+  late final GeneratedColumn<String> mediaMeta = GeneratedColumn<String>(
+      'media_meta', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaSizeMeta =
+      const VerificationMeta('mediaSize');
+  @override
+  late final GeneratedColumn<int> mediaSize = GeneratedColumn<int>(
+      'media_size', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _mediaMimeMeta =
+      const VerificationMeta('mediaMime');
+  @override
+  late final GeneratedColumn<String> mediaMime = GeneratedColumn<String>(
+      'media_mime', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaThumbnailKeyMeta =
+      const VerificationMeta('mediaThumbnailKey');
+  @override
+  late final GeneratedColumn<String> mediaThumbnailKey =
+      GeneratedColumn<String>('media_thumbnail_key', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         syncStamp,
@@ -14601,7 +14643,14 @@ class $GroupMessagesTable extends GroupMessages
         replyToAuthorId,
         replyToExcerpt,
         replyToMediaKind,
-        replyToDeleted
+        replyToDeleted,
+        mediaKey,
+        mediaKind,
+        mediaDuration,
+        mediaMeta,
+        mediaSize,
+        mediaMime,
+        mediaThumbnailKey
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -14700,6 +14749,38 @@ class $GroupMessagesTable extends GroupMessages
           replyToDeleted.isAcceptableOrUnknown(
               data['reply_to_deleted']!, _replyToDeletedMeta));
     }
+    if (data.containsKey('media_key')) {
+      context.handle(_mediaKeyMeta,
+          mediaKey.isAcceptableOrUnknown(data['media_key']!, _mediaKeyMeta));
+    }
+    if (data.containsKey('media_kind')) {
+      context.handle(_mediaKindMeta,
+          mediaKind.isAcceptableOrUnknown(data['media_kind']!, _mediaKindMeta));
+    }
+    if (data.containsKey('media_duration')) {
+      context.handle(
+          _mediaDurationMeta,
+          mediaDuration.isAcceptableOrUnknown(
+              data['media_duration']!, _mediaDurationMeta));
+    }
+    if (data.containsKey('media_meta')) {
+      context.handle(_mediaMetaMeta,
+          mediaMeta.isAcceptableOrUnknown(data['media_meta']!, _mediaMetaMeta));
+    }
+    if (data.containsKey('media_size')) {
+      context.handle(_mediaSizeMeta,
+          mediaSize.isAcceptableOrUnknown(data['media_size']!, _mediaSizeMeta));
+    }
+    if (data.containsKey('media_mime')) {
+      context.handle(_mediaMimeMeta,
+          mediaMime.isAcceptableOrUnknown(data['media_mime']!, _mediaMimeMeta));
+    }
+    if (data.containsKey('media_thumbnail_key')) {
+      context.handle(
+          _mediaThumbnailKeyMeta,
+          mediaThumbnailKey.isAcceptableOrUnknown(
+              data['media_thumbnail_key']!, _mediaThumbnailKeyMeta));
+    }
     return context;
   }
 
@@ -14743,6 +14824,20 @@ class $GroupMessagesTable extends GroupMessages
           DriftSqlType.string, data['${effectivePrefix}reply_to_media_kind']),
       replyToDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}reply_to_deleted'])!,
+      mediaKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_key']),
+      mediaKind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_kind']),
+      mediaDuration: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}media_duration']),
+      mediaMeta: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_meta']),
+      mediaSize: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}media_size']),
+      mediaMime: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_mime']),
+      mediaThumbnailKey: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}media_thumbnail_key']),
     );
   }
 
@@ -14832,6 +14927,36 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
 
   /// L'origine a été supprimée pour tous : la citation dit « Message supprimé ».
   final bool replyToDeleted;
+
+  /// La clé de l'objet au magasin — **jamais une URL**. Elle s'échange contre
+  /// une URL de lecture temporaire au moment d'afficher
+  /// (`GET /groups/:id/messages/:mid/media`). `null` pour un texte, une
+  /// position, un contact.
+  final String? mediaKey;
+
+  /// `audio` · `image` · `video` · `document` · `location` · `contact`, stocké
+  /// tel quel : une forme inconnue d'une version future se lit « non pris en
+  /// charge », jamais une erreur de rangement.
+  final String? mediaKind;
+
+  /// Durée **déclarée** d'un vocal ou d'une vidéo, en secondes.
+  final int? mediaDuration;
+
+  /// Les données structurées du média, **en JSON** (forme d'onde, nom, taille
+  /// d'image, coordonnées, contact). Lues par `MessageMedia.fromColumns`, qui
+  /// tolère tout : une méta illisible donne une bulle sans détail, pas une
+  /// page refusée.
+  final String? mediaMeta;
+
+  /// Taille **mesurée** par le serveur, en octets (« 2,3 Mo » d'un document).
+  final int? mediaSize;
+
+  /// Type retenu par le magasin — l'icône d'un document, l'application qui
+  /// l'ouvrira.
+  final String? mediaMime;
+
+  /// Clé de la vignette d'une vidéo (`?variant=thumbnail`).
+  final String? mediaThumbnailKey;
   const GroupMessageRow(
       {required this.syncStamp,
       required this.id,
@@ -14849,7 +14974,14 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       this.replyToAuthorId,
       this.replyToExcerpt,
       this.replyToMediaKind,
-      required this.replyToDeleted});
+      required this.replyToDeleted,
+      this.mediaKey,
+      this.mediaKind,
+      this.mediaDuration,
+      this.mediaMeta,
+      this.mediaSize,
+      this.mediaMime,
+      this.mediaThumbnailKey});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -14892,6 +15024,27 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       map['reply_to_media_kind'] = Variable<String>(replyToMediaKind);
     }
     map['reply_to_deleted'] = Variable<bool>(replyToDeleted);
+    if (!nullToAbsent || mediaKey != null) {
+      map['media_key'] = Variable<String>(mediaKey);
+    }
+    if (!nullToAbsent || mediaKind != null) {
+      map['media_kind'] = Variable<String>(mediaKind);
+    }
+    if (!nullToAbsent || mediaDuration != null) {
+      map['media_duration'] = Variable<int>(mediaDuration);
+    }
+    if (!nullToAbsent || mediaMeta != null) {
+      map['media_meta'] = Variable<String>(mediaMeta);
+    }
+    if (!nullToAbsent || mediaSize != null) {
+      map['media_size'] = Variable<int>(mediaSize);
+    }
+    if (!nullToAbsent || mediaMime != null) {
+      map['media_mime'] = Variable<String>(mediaMime);
+    }
+    if (!nullToAbsent || mediaThumbnailKey != null) {
+      map['media_thumbnail_key'] = Variable<String>(mediaThumbnailKey);
+    }
     return map;
   }
 
@@ -14934,6 +15087,27 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
           ? const Value.absent()
           : Value(replyToMediaKind),
       replyToDeleted: Value(replyToDeleted),
+      mediaKey: mediaKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaKey),
+      mediaKind: mediaKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaKind),
+      mediaDuration: mediaDuration == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaDuration),
+      mediaMeta: mediaMeta == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaMeta),
+      mediaSize: mediaSize == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaSize),
+      mediaMime: mediaMime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaMime),
+      mediaThumbnailKey: mediaThumbnailKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaThumbnailKey),
     );
   }
 
@@ -14958,6 +15132,14 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       replyToExcerpt: serializer.fromJson<String?>(json['replyToExcerpt']),
       replyToMediaKind: serializer.fromJson<String?>(json['replyToMediaKind']),
       replyToDeleted: serializer.fromJson<bool>(json['replyToDeleted']),
+      mediaKey: serializer.fromJson<String?>(json['mediaKey']),
+      mediaKind: serializer.fromJson<String?>(json['mediaKind']),
+      mediaDuration: serializer.fromJson<int?>(json['mediaDuration']),
+      mediaMeta: serializer.fromJson<String?>(json['mediaMeta']),
+      mediaSize: serializer.fromJson<int?>(json['mediaSize']),
+      mediaMime: serializer.fromJson<String?>(json['mediaMime']),
+      mediaThumbnailKey:
+          serializer.fromJson<String?>(json['mediaThumbnailKey']),
     );
   }
   @override
@@ -14981,6 +15163,13 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       'replyToExcerpt': serializer.toJson<String?>(replyToExcerpt),
       'replyToMediaKind': serializer.toJson<String?>(replyToMediaKind),
       'replyToDeleted': serializer.toJson<bool>(replyToDeleted),
+      'mediaKey': serializer.toJson<String?>(mediaKey),
+      'mediaKind': serializer.toJson<String?>(mediaKind),
+      'mediaDuration': serializer.toJson<int?>(mediaDuration),
+      'mediaMeta': serializer.toJson<String?>(mediaMeta),
+      'mediaSize': serializer.toJson<int?>(mediaSize),
+      'mediaMime': serializer.toJson<String?>(mediaMime),
+      'mediaThumbnailKey': serializer.toJson<String?>(mediaThumbnailKey),
     };
   }
 
@@ -15001,7 +15190,14 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
           Value<String?> replyToAuthorId = const Value.absent(),
           Value<String?> replyToExcerpt = const Value.absent(),
           Value<String?> replyToMediaKind = const Value.absent(),
-          bool? replyToDeleted}) =>
+          bool? replyToDeleted,
+          Value<String?> mediaKey = const Value.absent(),
+          Value<String?> mediaKind = const Value.absent(),
+          Value<int?> mediaDuration = const Value.absent(),
+          Value<String?> mediaMeta = const Value.absent(),
+          Value<int?> mediaSize = const Value.absent(),
+          Value<String?> mediaMime = const Value.absent(),
+          Value<String?> mediaThumbnailKey = const Value.absent()}) =>
       GroupMessageRow(
         syncStamp: syncStamp ?? this.syncStamp,
         id: id ?? this.id,
@@ -15031,6 +15227,16 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
             ? replyToMediaKind.value
             : this.replyToMediaKind,
         replyToDeleted: replyToDeleted ?? this.replyToDeleted,
+        mediaKey: mediaKey.present ? mediaKey.value : this.mediaKey,
+        mediaKind: mediaKind.present ? mediaKind.value : this.mediaKind,
+        mediaDuration:
+            mediaDuration.present ? mediaDuration.value : this.mediaDuration,
+        mediaMeta: mediaMeta.present ? mediaMeta.value : this.mediaMeta,
+        mediaSize: mediaSize.present ? mediaSize.value : this.mediaSize,
+        mediaMime: mediaMime.present ? mediaMime.value : this.mediaMime,
+        mediaThumbnailKey: mediaThumbnailKey.present
+            ? mediaThumbnailKey.value
+            : this.mediaThumbnailKey,
       );
   GroupMessageRow copyWithCompanion(GroupMessagesCompanion data) {
     return GroupMessageRow(
@@ -15066,6 +15272,17 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
       replyToDeleted: data.replyToDeleted.present
           ? data.replyToDeleted.value
           : this.replyToDeleted,
+      mediaKey: data.mediaKey.present ? data.mediaKey.value : this.mediaKey,
+      mediaKind: data.mediaKind.present ? data.mediaKind.value : this.mediaKind,
+      mediaDuration: data.mediaDuration.present
+          ? data.mediaDuration.value
+          : this.mediaDuration,
+      mediaMeta: data.mediaMeta.present ? data.mediaMeta.value : this.mediaMeta,
+      mediaSize: data.mediaSize.present ? data.mediaSize.value : this.mediaSize,
+      mediaMime: data.mediaMime.present ? data.mediaMime.value : this.mediaMime,
+      mediaThumbnailKey: data.mediaThumbnailKey.present
+          ? data.mediaThumbnailKey.value
+          : this.mediaThumbnailKey,
     );
   }
 
@@ -15088,30 +15305,45 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
           ..write('replyToAuthorId: $replyToAuthorId, ')
           ..write('replyToExcerpt: $replyToExcerpt, ')
           ..write('replyToMediaKind: $replyToMediaKind, ')
-          ..write('replyToDeleted: $replyToDeleted')
+          ..write('replyToDeleted: $replyToDeleted, ')
+          ..write('mediaKey: $mediaKey, ')
+          ..write('mediaKind: $mediaKind, ')
+          ..write('mediaDuration: $mediaDuration, ')
+          ..write('mediaMeta: $mediaMeta, ')
+          ..write('mediaSize: $mediaSize, ')
+          ..write('mediaMime: $mediaMime, ')
+          ..write('mediaThumbnailKey: $mediaThumbnailKey')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      syncStamp,
-      id,
-      groupId,
-      authorId,
-      isSystem,
-      body,
-      clientMessageId,
-      clientCreatedAt,
-      createdAt,
-      deletedAt,
-      editedAt,
-      isForwarded,
-      replyToMessageId,
-      replyToAuthorId,
-      replyToExcerpt,
-      replyToMediaKind,
-      replyToDeleted);
+  int get hashCode => Object.hashAll([
+        syncStamp,
+        id,
+        groupId,
+        authorId,
+        isSystem,
+        body,
+        clientMessageId,
+        clientCreatedAt,
+        createdAt,
+        deletedAt,
+        editedAt,
+        isForwarded,
+        replyToMessageId,
+        replyToAuthorId,
+        replyToExcerpt,
+        replyToMediaKind,
+        replyToDeleted,
+        mediaKey,
+        mediaKind,
+        mediaDuration,
+        mediaMeta,
+        mediaSize,
+        mediaMime,
+        mediaThumbnailKey
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -15132,7 +15364,14 @@ class GroupMessageRow extends DataClass implements Insertable<GroupMessageRow> {
           other.replyToAuthorId == this.replyToAuthorId &&
           other.replyToExcerpt == this.replyToExcerpt &&
           other.replyToMediaKind == this.replyToMediaKind &&
-          other.replyToDeleted == this.replyToDeleted);
+          other.replyToDeleted == this.replyToDeleted &&
+          other.mediaKey == this.mediaKey &&
+          other.mediaKind == this.mediaKind &&
+          other.mediaDuration == this.mediaDuration &&
+          other.mediaMeta == this.mediaMeta &&
+          other.mediaSize == this.mediaSize &&
+          other.mediaMime == this.mediaMime &&
+          other.mediaThumbnailKey == this.mediaThumbnailKey);
 }
 
 class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
@@ -15153,6 +15392,13 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
   final Value<String?> replyToExcerpt;
   final Value<String?> replyToMediaKind;
   final Value<bool> replyToDeleted;
+  final Value<String?> mediaKey;
+  final Value<String?> mediaKind;
+  final Value<int?> mediaDuration;
+  final Value<String?> mediaMeta;
+  final Value<int?> mediaSize;
+  final Value<String?> mediaMime;
+  final Value<String?> mediaThumbnailKey;
   final Value<int> rowid;
   const GroupMessagesCompanion({
     this.syncStamp = const Value.absent(),
@@ -15172,6 +15418,13 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
     this.replyToExcerpt = const Value.absent(),
     this.replyToMediaKind = const Value.absent(),
     this.replyToDeleted = const Value.absent(),
+    this.mediaKey = const Value.absent(),
+    this.mediaKind = const Value.absent(),
+    this.mediaDuration = const Value.absent(),
+    this.mediaMeta = const Value.absent(),
+    this.mediaSize = const Value.absent(),
+    this.mediaMime = const Value.absent(),
+    this.mediaThumbnailKey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   GroupMessagesCompanion.insert({
@@ -15192,6 +15445,13 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
     this.replyToExcerpt = const Value.absent(),
     this.replyToMediaKind = const Value.absent(),
     this.replyToDeleted = const Value.absent(),
+    this.mediaKey = const Value.absent(),
+    this.mediaKind = const Value.absent(),
+    this.mediaDuration = const Value.absent(),
+    this.mediaMeta = const Value.absent(),
+    this.mediaSize = const Value.absent(),
+    this.mediaMime = const Value.absent(),
+    this.mediaThumbnailKey = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         groupId = Value(groupId);
@@ -15213,6 +15473,13 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
     Expression<String>? replyToExcerpt,
     Expression<String>? replyToMediaKind,
     Expression<bool>? replyToDeleted,
+    Expression<String>? mediaKey,
+    Expression<String>? mediaKind,
+    Expression<int>? mediaDuration,
+    Expression<String>? mediaMeta,
+    Expression<int>? mediaSize,
+    Expression<String>? mediaMime,
+    Expression<String>? mediaThumbnailKey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -15233,6 +15500,13 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
       if (replyToExcerpt != null) 'reply_to_excerpt': replyToExcerpt,
       if (replyToMediaKind != null) 'reply_to_media_kind': replyToMediaKind,
       if (replyToDeleted != null) 'reply_to_deleted': replyToDeleted,
+      if (mediaKey != null) 'media_key': mediaKey,
+      if (mediaKind != null) 'media_kind': mediaKind,
+      if (mediaDuration != null) 'media_duration': mediaDuration,
+      if (mediaMeta != null) 'media_meta': mediaMeta,
+      if (mediaSize != null) 'media_size': mediaSize,
+      if (mediaMime != null) 'media_mime': mediaMime,
+      if (mediaThumbnailKey != null) 'media_thumbnail_key': mediaThumbnailKey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -15255,6 +15529,13 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
       Value<String?>? replyToExcerpt,
       Value<String?>? replyToMediaKind,
       Value<bool>? replyToDeleted,
+      Value<String?>? mediaKey,
+      Value<String?>? mediaKind,
+      Value<int?>? mediaDuration,
+      Value<String?>? mediaMeta,
+      Value<int?>? mediaSize,
+      Value<String?>? mediaMime,
+      Value<String?>? mediaThumbnailKey,
       Value<int>? rowid}) {
     return GroupMessagesCompanion(
       syncStamp: syncStamp ?? this.syncStamp,
@@ -15274,6 +15555,13 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
       replyToExcerpt: replyToExcerpt ?? this.replyToExcerpt,
       replyToMediaKind: replyToMediaKind ?? this.replyToMediaKind,
       replyToDeleted: replyToDeleted ?? this.replyToDeleted,
+      mediaKey: mediaKey ?? this.mediaKey,
+      mediaKind: mediaKind ?? this.mediaKind,
+      mediaDuration: mediaDuration ?? this.mediaDuration,
+      mediaMeta: mediaMeta ?? this.mediaMeta,
+      mediaSize: mediaSize ?? this.mediaSize,
+      mediaMime: mediaMime ?? this.mediaMime,
+      mediaThumbnailKey: mediaThumbnailKey ?? this.mediaThumbnailKey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -15332,6 +15620,27 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
     if (replyToDeleted.present) {
       map['reply_to_deleted'] = Variable<bool>(replyToDeleted.value);
     }
+    if (mediaKey.present) {
+      map['media_key'] = Variable<String>(mediaKey.value);
+    }
+    if (mediaKind.present) {
+      map['media_kind'] = Variable<String>(mediaKind.value);
+    }
+    if (mediaDuration.present) {
+      map['media_duration'] = Variable<int>(mediaDuration.value);
+    }
+    if (mediaMeta.present) {
+      map['media_meta'] = Variable<String>(mediaMeta.value);
+    }
+    if (mediaSize.present) {
+      map['media_size'] = Variable<int>(mediaSize.value);
+    }
+    if (mediaMime.present) {
+      map['media_mime'] = Variable<String>(mediaMime.value);
+    }
+    if (mediaThumbnailKey.present) {
+      map['media_thumbnail_key'] = Variable<String>(mediaThumbnailKey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -15358,6 +15667,13 @@ class GroupMessagesCompanion extends UpdateCompanion<GroupMessageRow> {
           ..write('replyToExcerpt: $replyToExcerpt, ')
           ..write('replyToMediaKind: $replyToMediaKind, ')
           ..write('replyToDeleted: $replyToDeleted, ')
+          ..write('mediaKey: $mediaKey, ')
+          ..write('mediaKind: $mediaKind, ')
+          ..write('mediaDuration: $mediaDuration, ')
+          ..write('mediaMeta: $mediaMeta, ')
+          ..write('mediaSize: $mediaSize, ')
+          ..write('mediaMime: $mediaMime, ')
+          ..write('mediaThumbnailKey: $mediaThumbnailKey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -15393,6 +15709,66 @@ class $PendingGroupMessagesTable extends PendingGroupMessages
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _mediaKindMeta =
+      const VerificationMeta('mediaKind');
+  @override
+  late final GeneratedColumn<String> mediaKind = GeneratedColumn<String>(
+      'media_kind', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaPathMeta =
+      const VerificationMeta('mediaPath');
+  @override
+  late final GeneratedColumn<String> mediaPath = GeneratedColumn<String>(
+      'media_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaThumbPathMeta =
+      const VerificationMeta('mediaThumbPath');
+  @override
+  late final GeneratedColumn<String> mediaThumbPath = GeneratedColumn<String>(
+      'media_thumb_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaMimeMeta =
+      const VerificationMeta('mediaMime');
+  @override
+  late final GeneratedColumn<String> mediaMime = GeneratedColumn<String>(
+      'media_mime', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaMetaMeta =
+      const VerificationMeta('mediaMeta');
+  @override
+  late final GeneratedColumn<String> mediaMeta = GeneratedColumn<String>(
+      'media_meta', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaDurationMeta =
+      const VerificationMeta('mediaDuration');
+  @override
+  late final GeneratedColumn<int> mediaDuration = GeneratedColumn<int>(
+      'media_duration', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _mediaSizeMeta =
+      const VerificationMeta('mediaSize');
+  @override
+  late final GeneratedColumn<int> mediaSize = GeneratedColumn<int>(
+      'media_size', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _mediaKeyMeta =
+      const VerificationMeta('mediaKey');
+  @override
+  late final GeneratedColumn<String> mediaKey = GeneratedColumn<String>(
+      'media_key', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaThumbnailKeyMeta =
+      const VerificationMeta('mediaThumbnailKey');
+  @override
+  late final GeneratedColumn<String> mediaThumbnailKey =
+      GeneratedColumn<String>('media_thumbnail_key', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaErrorMeta =
+      const VerificationMeta('mediaError');
+  @override
+  late final GeneratedColumn<String> mediaError = GeneratedColumn<String>(
+      'media_error', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _failedMeta = const VerificationMeta('failed');
   @override
   late final GeneratedColumn<bool> failed = GeneratedColumn<bool>(
@@ -15409,8 +15785,24 @@ class $PendingGroupMessagesTable extends PendingGroupMessages
       'reply_to_message_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
   @override
-  List<GeneratedColumn> get $columns =>
-      [clientMessageId, groupId, body, createdAt, failed, replyToMessageId];
+  List<GeneratedColumn> get $columns => [
+        clientMessageId,
+        groupId,
+        body,
+        createdAt,
+        mediaKind,
+        mediaPath,
+        mediaThumbPath,
+        mediaMime,
+        mediaMeta,
+        mediaDuration,
+        mediaSize,
+        mediaKey,
+        mediaThumbnailKey,
+        mediaError,
+        failed,
+        replyToMessageId
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -15448,6 +15840,54 @@ class $PendingGroupMessagesTable extends PendingGroupMessages
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('media_kind')) {
+      context.handle(_mediaKindMeta,
+          mediaKind.isAcceptableOrUnknown(data['media_kind']!, _mediaKindMeta));
+    }
+    if (data.containsKey('media_path')) {
+      context.handle(_mediaPathMeta,
+          mediaPath.isAcceptableOrUnknown(data['media_path']!, _mediaPathMeta));
+    }
+    if (data.containsKey('media_thumb_path')) {
+      context.handle(
+          _mediaThumbPathMeta,
+          mediaThumbPath.isAcceptableOrUnknown(
+              data['media_thumb_path']!, _mediaThumbPathMeta));
+    }
+    if (data.containsKey('media_mime')) {
+      context.handle(_mediaMimeMeta,
+          mediaMime.isAcceptableOrUnknown(data['media_mime']!, _mediaMimeMeta));
+    }
+    if (data.containsKey('media_meta')) {
+      context.handle(_mediaMetaMeta,
+          mediaMeta.isAcceptableOrUnknown(data['media_meta']!, _mediaMetaMeta));
+    }
+    if (data.containsKey('media_duration')) {
+      context.handle(
+          _mediaDurationMeta,
+          mediaDuration.isAcceptableOrUnknown(
+              data['media_duration']!, _mediaDurationMeta));
+    }
+    if (data.containsKey('media_size')) {
+      context.handle(_mediaSizeMeta,
+          mediaSize.isAcceptableOrUnknown(data['media_size']!, _mediaSizeMeta));
+    }
+    if (data.containsKey('media_key')) {
+      context.handle(_mediaKeyMeta,
+          mediaKey.isAcceptableOrUnknown(data['media_key']!, _mediaKeyMeta));
+    }
+    if (data.containsKey('media_thumbnail_key')) {
+      context.handle(
+          _mediaThumbnailKeyMeta,
+          mediaThumbnailKey.isAcceptableOrUnknown(
+              data['media_thumbnail_key']!, _mediaThumbnailKeyMeta));
+    }
+    if (data.containsKey('media_error')) {
+      context.handle(
+          _mediaErrorMeta,
+          mediaError.isAcceptableOrUnknown(
+              data['media_error']!, _mediaErrorMeta));
+    }
     if (data.containsKey('failed')) {
       context.handle(_failedMeta,
           failed.isAcceptableOrUnknown(data['failed']!, _failedMeta));
@@ -15475,6 +15915,26 @@ class $PendingGroupMessagesTable extends PendingGroupMessages
           .read(DriftSqlType.string, data['${effectivePrefix}body'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      mediaKind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_kind']),
+      mediaPath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_path']),
+      mediaThumbPath: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}media_thumb_path']),
+      mediaMime: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_mime']),
+      mediaMeta: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_meta']),
+      mediaDuration: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}media_duration']),
+      mediaSize: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}media_size']),
+      mediaKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_key']),
+      mediaThumbnailKey: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}media_thumbnail_key']),
+      mediaError: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_error']),
       failed: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}failed'])!,
       replyToMessageId: attachedDatabase.typeMapping.read(
@@ -15499,6 +15959,45 @@ class PendingGroupMessageRow extends DataClass
   /// d'instant serveur à présenter — il n'en a pas encore.
   final DateTime createdAt;
 
+  /// La forme du média, ou `null` pour un message texte.
+  final String? mediaKind;
+
+  /// **Le fichier local** à monter : la source choisie, puis — une fois
+  /// dégradée — la copie prête (JPEG q80, vidéo compressée). Il vit dans le
+  /// dossier de l'outbox (`MediaOutbox`), pour survivre à un redémarrage.
+  final String? mediaPath;
+
+  /// La vignette locale d'une vidéo.
+  final String? mediaThumbPath;
+
+  /// Le type à déclarer au dépôt. **Posé quand le fichier est prêt** : c'est
+  /// le témoin que la dégradation a eu lieu (une reprise ne la refait pas).
+  final String? mediaMime;
+
+  /// La méta à envoyer, en JSON (forme d'onde, nom, dimensions, coordonnées,
+  /// contact).
+  final String? mediaMeta;
+
+  /// Durée d'un vocal ou d'une vidéo, en secondes.
+  final int? mediaDuration;
+
+  /// Taille du fichier prêt, en octets — comparée à la borne servie **avant**
+  /// toute montée.
+  final int? mediaSize;
+
+  /// La clé obtenue une fois l'objet **monté** : une reprise saute alors la
+  /// montée et ne reposte que le message. Effacée si le serveur répond que
+  /// l'objet n'existe plus (lien expiré, purge des orphelins).
+  final String? mediaKey;
+
+  /// La clé de la vignette montée.
+  final String? mediaThumbnailKey;
+
+  /// **Pourquoi l'envoi a échoué**, quand on le sait : `tooLarge`, `tooLong`,
+  /// `typeNotAllowed`, `missingFile`… — l'écran dit alors la cause au lieu du
+  /// seul « pas parti ». `null` = un échec de réseau, qui se réessaie.
+  final String? mediaError;
+
   /// **L'envoi a échoué**, et l'écran doit le dire.
   ///
   /// Sans ce drapeau, un message perdu resterait « en cours d'envoi » pour
@@ -15515,6 +16014,16 @@ class PendingGroupMessageRow extends DataClass
       required this.groupId,
       required this.body,
       required this.createdAt,
+      this.mediaKind,
+      this.mediaPath,
+      this.mediaThumbPath,
+      this.mediaMime,
+      this.mediaMeta,
+      this.mediaDuration,
+      this.mediaSize,
+      this.mediaKey,
+      this.mediaThumbnailKey,
+      this.mediaError,
       required this.failed,
       this.replyToMessageId});
   @override
@@ -15524,6 +16033,36 @@ class PendingGroupMessageRow extends DataClass
     map['group_id'] = Variable<String>(groupId);
     map['body'] = Variable<String>(body);
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || mediaKind != null) {
+      map['media_kind'] = Variable<String>(mediaKind);
+    }
+    if (!nullToAbsent || mediaPath != null) {
+      map['media_path'] = Variable<String>(mediaPath);
+    }
+    if (!nullToAbsent || mediaThumbPath != null) {
+      map['media_thumb_path'] = Variable<String>(mediaThumbPath);
+    }
+    if (!nullToAbsent || mediaMime != null) {
+      map['media_mime'] = Variable<String>(mediaMime);
+    }
+    if (!nullToAbsent || mediaMeta != null) {
+      map['media_meta'] = Variable<String>(mediaMeta);
+    }
+    if (!nullToAbsent || mediaDuration != null) {
+      map['media_duration'] = Variable<int>(mediaDuration);
+    }
+    if (!nullToAbsent || mediaSize != null) {
+      map['media_size'] = Variable<int>(mediaSize);
+    }
+    if (!nullToAbsent || mediaKey != null) {
+      map['media_key'] = Variable<String>(mediaKey);
+    }
+    if (!nullToAbsent || mediaThumbnailKey != null) {
+      map['media_thumbnail_key'] = Variable<String>(mediaThumbnailKey);
+    }
+    if (!nullToAbsent || mediaError != null) {
+      map['media_error'] = Variable<String>(mediaError);
+    }
     map['failed'] = Variable<bool>(failed);
     if (!nullToAbsent || replyToMessageId != null) {
       map['reply_to_message_id'] = Variable<String>(replyToMessageId);
@@ -15537,6 +16076,36 @@ class PendingGroupMessageRow extends DataClass
       groupId: Value(groupId),
       body: Value(body),
       createdAt: Value(createdAt),
+      mediaKind: mediaKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaKind),
+      mediaPath: mediaPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaPath),
+      mediaThumbPath: mediaThumbPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaThumbPath),
+      mediaMime: mediaMime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaMime),
+      mediaMeta: mediaMeta == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaMeta),
+      mediaDuration: mediaDuration == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaDuration),
+      mediaSize: mediaSize == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaSize),
+      mediaKey: mediaKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaKey),
+      mediaThumbnailKey: mediaThumbnailKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaThumbnailKey),
+      mediaError: mediaError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaError),
       failed: Value(failed),
       replyToMessageId: replyToMessageId == null && nullToAbsent
           ? const Value.absent()
@@ -15552,6 +16121,17 @@ class PendingGroupMessageRow extends DataClass
       groupId: serializer.fromJson<String>(json['groupId']),
       body: serializer.fromJson<String>(json['body']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      mediaKind: serializer.fromJson<String?>(json['mediaKind']),
+      mediaPath: serializer.fromJson<String?>(json['mediaPath']),
+      mediaThumbPath: serializer.fromJson<String?>(json['mediaThumbPath']),
+      mediaMime: serializer.fromJson<String?>(json['mediaMime']),
+      mediaMeta: serializer.fromJson<String?>(json['mediaMeta']),
+      mediaDuration: serializer.fromJson<int?>(json['mediaDuration']),
+      mediaSize: serializer.fromJson<int?>(json['mediaSize']),
+      mediaKey: serializer.fromJson<String?>(json['mediaKey']),
+      mediaThumbnailKey:
+          serializer.fromJson<String?>(json['mediaThumbnailKey']),
+      mediaError: serializer.fromJson<String?>(json['mediaError']),
       failed: serializer.fromJson<bool>(json['failed']),
       replyToMessageId: serializer.fromJson<String?>(json['replyToMessageId']),
     );
@@ -15564,6 +16144,16 @@ class PendingGroupMessageRow extends DataClass
       'groupId': serializer.toJson<String>(groupId),
       'body': serializer.toJson<String>(body),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'mediaKind': serializer.toJson<String?>(mediaKind),
+      'mediaPath': serializer.toJson<String?>(mediaPath),
+      'mediaThumbPath': serializer.toJson<String?>(mediaThumbPath),
+      'mediaMime': serializer.toJson<String?>(mediaMime),
+      'mediaMeta': serializer.toJson<String?>(mediaMeta),
+      'mediaDuration': serializer.toJson<int?>(mediaDuration),
+      'mediaSize': serializer.toJson<int?>(mediaSize),
+      'mediaKey': serializer.toJson<String?>(mediaKey),
+      'mediaThumbnailKey': serializer.toJson<String?>(mediaThumbnailKey),
+      'mediaError': serializer.toJson<String?>(mediaError),
       'failed': serializer.toJson<bool>(failed),
       'replyToMessageId': serializer.toJson<String?>(replyToMessageId),
     };
@@ -15574,6 +16164,16 @@ class PendingGroupMessageRow extends DataClass
           String? groupId,
           String? body,
           DateTime? createdAt,
+          Value<String?> mediaKind = const Value.absent(),
+          Value<String?> mediaPath = const Value.absent(),
+          Value<String?> mediaThumbPath = const Value.absent(),
+          Value<String?> mediaMime = const Value.absent(),
+          Value<String?> mediaMeta = const Value.absent(),
+          Value<int?> mediaDuration = const Value.absent(),
+          Value<int?> mediaSize = const Value.absent(),
+          Value<String?> mediaKey = const Value.absent(),
+          Value<String?> mediaThumbnailKey = const Value.absent(),
+          Value<String?> mediaError = const Value.absent(),
           bool? failed,
           Value<String?> replyToMessageId = const Value.absent()}) =>
       PendingGroupMessageRow(
@@ -15581,6 +16181,20 @@ class PendingGroupMessageRow extends DataClass
         groupId: groupId ?? this.groupId,
         body: body ?? this.body,
         createdAt: createdAt ?? this.createdAt,
+        mediaKind: mediaKind.present ? mediaKind.value : this.mediaKind,
+        mediaPath: mediaPath.present ? mediaPath.value : this.mediaPath,
+        mediaThumbPath:
+            mediaThumbPath.present ? mediaThumbPath.value : this.mediaThumbPath,
+        mediaMime: mediaMime.present ? mediaMime.value : this.mediaMime,
+        mediaMeta: mediaMeta.present ? mediaMeta.value : this.mediaMeta,
+        mediaDuration:
+            mediaDuration.present ? mediaDuration.value : this.mediaDuration,
+        mediaSize: mediaSize.present ? mediaSize.value : this.mediaSize,
+        mediaKey: mediaKey.present ? mediaKey.value : this.mediaKey,
+        mediaThumbnailKey: mediaThumbnailKey.present
+            ? mediaThumbnailKey.value
+            : this.mediaThumbnailKey,
+        mediaError: mediaError.present ? mediaError.value : this.mediaError,
         failed: failed ?? this.failed,
         replyToMessageId: replyToMessageId.present
             ? replyToMessageId.value
@@ -15594,6 +16208,23 @@ class PendingGroupMessageRow extends DataClass
       groupId: data.groupId.present ? data.groupId.value : this.groupId,
       body: data.body.present ? data.body.value : this.body,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      mediaKind: data.mediaKind.present ? data.mediaKind.value : this.mediaKind,
+      mediaPath: data.mediaPath.present ? data.mediaPath.value : this.mediaPath,
+      mediaThumbPath: data.mediaThumbPath.present
+          ? data.mediaThumbPath.value
+          : this.mediaThumbPath,
+      mediaMime: data.mediaMime.present ? data.mediaMime.value : this.mediaMime,
+      mediaMeta: data.mediaMeta.present ? data.mediaMeta.value : this.mediaMeta,
+      mediaDuration: data.mediaDuration.present
+          ? data.mediaDuration.value
+          : this.mediaDuration,
+      mediaSize: data.mediaSize.present ? data.mediaSize.value : this.mediaSize,
+      mediaKey: data.mediaKey.present ? data.mediaKey.value : this.mediaKey,
+      mediaThumbnailKey: data.mediaThumbnailKey.present
+          ? data.mediaThumbnailKey.value
+          : this.mediaThumbnailKey,
+      mediaError:
+          data.mediaError.present ? data.mediaError.value : this.mediaError,
       failed: data.failed.present ? data.failed.value : this.failed,
       replyToMessageId: data.replyToMessageId.present
           ? data.replyToMessageId.value
@@ -15608,6 +16239,16 @@ class PendingGroupMessageRow extends DataClass
           ..write('groupId: $groupId, ')
           ..write('body: $body, ')
           ..write('createdAt: $createdAt, ')
+          ..write('mediaKind: $mediaKind, ')
+          ..write('mediaPath: $mediaPath, ')
+          ..write('mediaThumbPath: $mediaThumbPath, ')
+          ..write('mediaMime: $mediaMime, ')
+          ..write('mediaMeta: $mediaMeta, ')
+          ..write('mediaDuration: $mediaDuration, ')
+          ..write('mediaSize: $mediaSize, ')
+          ..write('mediaKey: $mediaKey, ')
+          ..write('mediaThumbnailKey: $mediaThumbnailKey, ')
+          ..write('mediaError: $mediaError, ')
           ..write('failed: $failed, ')
           ..write('replyToMessageId: $replyToMessageId')
           ..write(')'))
@@ -15616,7 +16257,22 @@ class PendingGroupMessageRow extends DataClass
 
   @override
   int get hashCode => Object.hash(
-      clientMessageId, groupId, body, createdAt, failed, replyToMessageId);
+      clientMessageId,
+      groupId,
+      body,
+      createdAt,
+      mediaKind,
+      mediaPath,
+      mediaThumbPath,
+      mediaMime,
+      mediaMeta,
+      mediaDuration,
+      mediaSize,
+      mediaKey,
+      mediaThumbnailKey,
+      mediaError,
+      failed,
+      replyToMessageId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -15625,6 +16281,16 @@ class PendingGroupMessageRow extends DataClass
           other.groupId == this.groupId &&
           other.body == this.body &&
           other.createdAt == this.createdAt &&
+          other.mediaKind == this.mediaKind &&
+          other.mediaPath == this.mediaPath &&
+          other.mediaThumbPath == this.mediaThumbPath &&
+          other.mediaMime == this.mediaMime &&
+          other.mediaMeta == this.mediaMeta &&
+          other.mediaDuration == this.mediaDuration &&
+          other.mediaSize == this.mediaSize &&
+          other.mediaKey == this.mediaKey &&
+          other.mediaThumbnailKey == this.mediaThumbnailKey &&
+          other.mediaError == this.mediaError &&
           other.failed == this.failed &&
           other.replyToMessageId == this.replyToMessageId);
 }
@@ -15635,6 +16301,16 @@ class PendingGroupMessagesCompanion
   final Value<String> groupId;
   final Value<String> body;
   final Value<DateTime> createdAt;
+  final Value<String?> mediaKind;
+  final Value<String?> mediaPath;
+  final Value<String?> mediaThumbPath;
+  final Value<String?> mediaMime;
+  final Value<String?> mediaMeta;
+  final Value<int?> mediaDuration;
+  final Value<int?> mediaSize;
+  final Value<String?> mediaKey;
+  final Value<String?> mediaThumbnailKey;
+  final Value<String?> mediaError;
   final Value<bool> failed;
   final Value<String?> replyToMessageId;
   final Value<int> rowid;
@@ -15643,6 +16319,16 @@ class PendingGroupMessagesCompanion
     this.groupId = const Value.absent(),
     this.body = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.mediaKind = const Value.absent(),
+    this.mediaPath = const Value.absent(),
+    this.mediaThumbPath = const Value.absent(),
+    this.mediaMime = const Value.absent(),
+    this.mediaMeta = const Value.absent(),
+    this.mediaDuration = const Value.absent(),
+    this.mediaSize = const Value.absent(),
+    this.mediaKey = const Value.absent(),
+    this.mediaThumbnailKey = const Value.absent(),
+    this.mediaError = const Value.absent(),
     this.failed = const Value.absent(),
     this.replyToMessageId = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -15652,6 +16338,16 @@ class PendingGroupMessagesCompanion
     required String groupId,
     required String body,
     required DateTime createdAt,
+    this.mediaKind = const Value.absent(),
+    this.mediaPath = const Value.absent(),
+    this.mediaThumbPath = const Value.absent(),
+    this.mediaMime = const Value.absent(),
+    this.mediaMeta = const Value.absent(),
+    this.mediaDuration = const Value.absent(),
+    this.mediaSize = const Value.absent(),
+    this.mediaKey = const Value.absent(),
+    this.mediaThumbnailKey = const Value.absent(),
+    this.mediaError = const Value.absent(),
     this.failed = const Value.absent(),
     this.replyToMessageId = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -15664,6 +16360,16 @@ class PendingGroupMessagesCompanion
     Expression<String>? groupId,
     Expression<String>? body,
     Expression<DateTime>? createdAt,
+    Expression<String>? mediaKind,
+    Expression<String>? mediaPath,
+    Expression<String>? mediaThumbPath,
+    Expression<String>? mediaMime,
+    Expression<String>? mediaMeta,
+    Expression<int>? mediaDuration,
+    Expression<int>? mediaSize,
+    Expression<String>? mediaKey,
+    Expression<String>? mediaThumbnailKey,
+    Expression<String>? mediaError,
     Expression<bool>? failed,
     Expression<String>? replyToMessageId,
     Expression<int>? rowid,
@@ -15673,6 +16379,16 @@ class PendingGroupMessagesCompanion
       if (groupId != null) 'group_id': groupId,
       if (body != null) 'body': body,
       if (createdAt != null) 'created_at': createdAt,
+      if (mediaKind != null) 'media_kind': mediaKind,
+      if (mediaPath != null) 'media_path': mediaPath,
+      if (mediaThumbPath != null) 'media_thumb_path': mediaThumbPath,
+      if (mediaMime != null) 'media_mime': mediaMime,
+      if (mediaMeta != null) 'media_meta': mediaMeta,
+      if (mediaDuration != null) 'media_duration': mediaDuration,
+      if (mediaSize != null) 'media_size': mediaSize,
+      if (mediaKey != null) 'media_key': mediaKey,
+      if (mediaThumbnailKey != null) 'media_thumbnail_key': mediaThumbnailKey,
+      if (mediaError != null) 'media_error': mediaError,
       if (failed != null) 'failed': failed,
       if (replyToMessageId != null) 'reply_to_message_id': replyToMessageId,
       if (rowid != null) 'rowid': rowid,
@@ -15684,6 +16400,16 @@ class PendingGroupMessagesCompanion
       Value<String>? groupId,
       Value<String>? body,
       Value<DateTime>? createdAt,
+      Value<String?>? mediaKind,
+      Value<String?>? mediaPath,
+      Value<String?>? mediaThumbPath,
+      Value<String?>? mediaMime,
+      Value<String?>? mediaMeta,
+      Value<int?>? mediaDuration,
+      Value<int?>? mediaSize,
+      Value<String?>? mediaKey,
+      Value<String?>? mediaThumbnailKey,
+      Value<String?>? mediaError,
       Value<bool>? failed,
       Value<String?>? replyToMessageId,
       Value<int>? rowid}) {
@@ -15692,6 +16418,16 @@ class PendingGroupMessagesCompanion
       groupId: groupId ?? this.groupId,
       body: body ?? this.body,
       createdAt: createdAt ?? this.createdAt,
+      mediaKind: mediaKind ?? this.mediaKind,
+      mediaPath: mediaPath ?? this.mediaPath,
+      mediaThumbPath: mediaThumbPath ?? this.mediaThumbPath,
+      mediaMime: mediaMime ?? this.mediaMime,
+      mediaMeta: mediaMeta ?? this.mediaMeta,
+      mediaDuration: mediaDuration ?? this.mediaDuration,
+      mediaSize: mediaSize ?? this.mediaSize,
+      mediaKey: mediaKey ?? this.mediaKey,
+      mediaThumbnailKey: mediaThumbnailKey ?? this.mediaThumbnailKey,
+      mediaError: mediaError ?? this.mediaError,
       failed: failed ?? this.failed,
       replyToMessageId: replyToMessageId ?? this.replyToMessageId,
       rowid: rowid ?? this.rowid,
@@ -15713,6 +16449,36 @@ class PendingGroupMessagesCompanion
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (mediaKind.present) {
+      map['media_kind'] = Variable<String>(mediaKind.value);
+    }
+    if (mediaPath.present) {
+      map['media_path'] = Variable<String>(mediaPath.value);
+    }
+    if (mediaThumbPath.present) {
+      map['media_thumb_path'] = Variable<String>(mediaThumbPath.value);
+    }
+    if (mediaMime.present) {
+      map['media_mime'] = Variable<String>(mediaMime.value);
+    }
+    if (mediaMeta.present) {
+      map['media_meta'] = Variable<String>(mediaMeta.value);
+    }
+    if (mediaDuration.present) {
+      map['media_duration'] = Variable<int>(mediaDuration.value);
+    }
+    if (mediaSize.present) {
+      map['media_size'] = Variable<int>(mediaSize.value);
+    }
+    if (mediaKey.present) {
+      map['media_key'] = Variable<String>(mediaKey.value);
+    }
+    if (mediaThumbnailKey.present) {
+      map['media_thumbnail_key'] = Variable<String>(mediaThumbnailKey.value);
+    }
+    if (mediaError.present) {
+      map['media_error'] = Variable<String>(mediaError.value);
+    }
     if (failed.present) {
       map['failed'] = Variable<bool>(failed.value);
     }
@@ -15732,6 +16498,16 @@ class PendingGroupMessagesCompanion
           ..write('groupId: $groupId, ')
           ..write('body: $body, ')
           ..write('createdAt: $createdAt, ')
+          ..write('mediaKind: $mediaKind, ')
+          ..write('mediaPath: $mediaPath, ')
+          ..write('mediaThumbPath: $mediaThumbPath, ')
+          ..write('mediaMime: $mediaMime, ')
+          ..write('mediaMeta: $mediaMeta, ')
+          ..write('mediaDuration: $mediaDuration, ')
+          ..write('mediaSize: $mediaSize, ')
+          ..write('mediaKey: $mediaKey, ')
+          ..write('mediaThumbnailKey: $mediaThumbnailKey, ')
+          ..write('mediaError: $mediaError, ')
           ..write('failed: $failed, ')
           ..write('replyToMessageId: $replyToMessageId, ')
           ..write('rowid: $rowid')
@@ -27308,6 +28084,13 @@ typedef $$GroupMessagesTableCreateCompanionBuilder = GroupMessagesCompanion
   Value<String?> replyToExcerpt,
   Value<String?> replyToMediaKind,
   Value<bool> replyToDeleted,
+  Value<String?> mediaKey,
+  Value<String?> mediaKind,
+  Value<int?> mediaDuration,
+  Value<String?> mediaMeta,
+  Value<int?> mediaSize,
+  Value<String?> mediaMime,
+  Value<String?> mediaThumbnailKey,
   Value<int> rowid,
 });
 typedef $$GroupMessagesTableUpdateCompanionBuilder = GroupMessagesCompanion
@@ -27329,6 +28112,13 @@ typedef $$GroupMessagesTableUpdateCompanionBuilder = GroupMessagesCompanion
   Value<String?> replyToExcerpt,
   Value<String?> replyToMediaKind,
   Value<bool> replyToDeleted,
+  Value<String?> mediaKey,
+  Value<String?> mediaKind,
+  Value<int?> mediaDuration,
+  Value<String?> mediaMeta,
+  Value<int?> mediaSize,
+  Value<String?> mediaMime,
+  Value<String?> mediaThumbnailKey,
   Value<int> rowid,
 });
 
@@ -27398,6 +28188,28 @@ class $$GroupMessagesTableFilterComposer
   ColumnFilters<bool> get replyToDeleted => $composableBuilder(
       column: $table.replyToDeleted,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaKey => $composableBuilder(
+      column: $table.mediaKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaKind => $composableBuilder(
+      column: $table.mediaKind, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mediaDuration => $composableBuilder(
+      column: $table.mediaDuration, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaMeta => $composableBuilder(
+      column: $table.mediaMeta, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mediaSize => $composableBuilder(
+      column: $table.mediaSize, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaMime => $composableBuilder(
+      column: $table.mediaMime, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaThumbnailKey => $composableBuilder(
+      column: $table.mediaThumbnailKey,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$GroupMessagesTableOrderingComposer
@@ -27466,6 +28278,29 @@ class $$GroupMessagesTableOrderingComposer
   ColumnOrderings<bool> get replyToDeleted => $composableBuilder(
       column: $table.replyToDeleted,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaKey => $composableBuilder(
+      column: $table.mediaKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaKind => $composableBuilder(
+      column: $table.mediaKind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mediaDuration => $composableBuilder(
+      column: $table.mediaDuration,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaMeta => $composableBuilder(
+      column: $table.mediaMeta, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mediaSize => $composableBuilder(
+      column: $table.mediaSize, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaMime => $composableBuilder(
+      column: $table.mediaMime, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaThumbnailKey => $composableBuilder(
+      column: $table.mediaThumbnailKey,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$GroupMessagesTableAnnotationComposer
@@ -27527,6 +28362,27 @@ class $$GroupMessagesTableAnnotationComposer
 
   GeneratedColumn<bool> get replyToDeleted => $composableBuilder(
       column: $table.replyToDeleted, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaKey =>
+      $composableBuilder(column: $table.mediaKey, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaKind =>
+      $composableBuilder(column: $table.mediaKind, builder: (column) => column);
+
+  GeneratedColumn<int> get mediaDuration => $composableBuilder(
+      column: $table.mediaDuration, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaMeta =>
+      $composableBuilder(column: $table.mediaMeta, builder: (column) => column);
+
+  GeneratedColumn<int> get mediaSize =>
+      $composableBuilder(column: $table.mediaSize, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaMime =>
+      $composableBuilder(column: $table.mediaMime, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaThumbnailKey => $composableBuilder(
+      column: $table.mediaThumbnailKey, builder: (column) => column);
 }
 
 class $$GroupMessagesTableTableManager extends RootTableManager<
@@ -27572,6 +28428,13 @@ class $$GroupMessagesTableTableManager extends RootTableManager<
             Value<String?> replyToExcerpt = const Value.absent(),
             Value<String?> replyToMediaKind = const Value.absent(),
             Value<bool> replyToDeleted = const Value.absent(),
+            Value<String?> mediaKey = const Value.absent(),
+            Value<String?> mediaKind = const Value.absent(),
+            Value<int?> mediaDuration = const Value.absent(),
+            Value<String?> mediaMeta = const Value.absent(),
+            Value<int?> mediaSize = const Value.absent(),
+            Value<String?> mediaMime = const Value.absent(),
+            Value<String?> mediaThumbnailKey = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               GroupMessagesCompanion(
@@ -27592,6 +28455,13 @@ class $$GroupMessagesTableTableManager extends RootTableManager<
             replyToExcerpt: replyToExcerpt,
             replyToMediaKind: replyToMediaKind,
             replyToDeleted: replyToDeleted,
+            mediaKey: mediaKey,
+            mediaKind: mediaKind,
+            mediaDuration: mediaDuration,
+            mediaMeta: mediaMeta,
+            mediaSize: mediaSize,
+            mediaMime: mediaMime,
+            mediaThumbnailKey: mediaThumbnailKey,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -27612,6 +28482,13 @@ class $$GroupMessagesTableTableManager extends RootTableManager<
             Value<String?> replyToExcerpt = const Value.absent(),
             Value<String?> replyToMediaKind = const Value.absent(),
             Value<bool> replyToDeleted = const Value.absent(),
+            Value<String?> mediaKey = const Value.absent(),
+            Value<String?> mediaKind = const Value.absent(),
+            Value<int?> mediaDuration = const Value.absent(),
+            Value<String?> mediaMeta = const Value.absent(),
+            Value<int?> mediaSize = const Value.absent(),
+            Value<String?> mediaMime = const Value.absent(),
+            Value<String?> mediaThumbnailKey = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               GroupMessagesCompanion.insert(
@@ -27632,6 +28509,13 @@ class $$GroupMessagesTableTableManager extends RootTableManager<
             replyToExcerpt: replyToExcerpt,
             replyToMediaKind: replyToMediaKind,
             replyToDeleted: replyToDeleted,
+            mediaKey: mediaKey,
+            mediaKind: mediaKind,
+            mediaDuration: mediaDuration,
+            mediaMeta: mediaMeta,
+            mediaSize: mediaSize,
+            mediaMime: mediaMime,
+            mediaThumbnailKey: mediaThumbnailKey,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -27662,6 +28546,16 @@ typedef $$PendingGroupMessagesTableCreateCompanionBuilder
   required String groupId,
   required String body,
   required DateTime createdAt,
+  Value<String?> mediaKind,
+  Value<String?> mediaPath,
+  Value<String?> mediaThumbPath,
+  Value<String?> mediaMime,
+  Value<String?> mediaMeta,
+  Value<int?> mediaDuration,
+  Value<int?> mediaSize,
+  Value<String?> mediaKey,
+  Value<String?> mediaThumbnailKey,
+  Value<String?> mediaError,
   Value<bool> failed,
   Value<String?> replyToMessageId,
   Value<int> rowid,
@@ -27672,6 +28566,16 @@ typedef $$PendingGroupMessagesTableUpdateCompanionBuilder
   Value<String> groupId,
   Value<String> body,
   Value<DateTime> createdAt,
+  Value<String?> mediaKind,
+  Value<String?> mediaPath,
+  Value<String?> mediaThumbPath,
+  Value<String?> mediaMime,
+  Value<String?> mediaMeta,
+  Value<int?> mediaDuration,
+  Value<int?> mediaSize,
+  Value<String?> mediaKey,
+  Value<String?> mediaThumbnailKey,
+  Value<String?> mediaError,
   Value<bool> failed,
   Value<String?> replyToMessageId,
   Value<int> rowid,
@@ -27698,6 +28602,38 @@ class $$PendingGroupMessagesTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaKind => $composableBuilder(
+      column: $table.mediaKind, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaPath => $composableBuilder(
+      column: $table.mediaPath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaThumbPath => $composableBuilder(
+      column: $table.mediaThumbPath,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaMime => $composableBuilder(
+      column: $table.mediaMime, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaMeta => $composableBuilder(
+      column: $table.mediaMeta, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mediaDuration => $composableBuilder(
+      column: $table.mediaDuration, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mediaSize => $composableBuilder(
+      column: $table.mediaSize, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaKey => $composableBuilder(
+      column: $table.mediaKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaThumbnailKey => $composableBuilder(
+      column: $table.mediaThumbnailKey,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaError => $composableBuilder(
+      column: $table.mediaError, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get failed => $composableBuilder(
       column: $table.failed, builder: (column) => ColumnFilters(column));
@@ -27729,6 +28665,39 @@ class $$PendingGroupMessagesTableOrderingComposer
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get mediaKind => $composableBuilder(
+      column: $table.mediaKind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaPath => $composableBuilder(
+      column: $table.mediaPath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaThumbPath => $composableBuilder(
+      column: $table.mediaThumbPath,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaMime => $composableBuilder(
+      column: $table.mediaMime, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaMeta => $composableBuilder(
+      column: $table.mediaMeta, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mediaDuration => $composableBuilder(
+      column: $table.mediaDuration,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mediaSize => $composableBuilder(
+      column: $table.mediaSize, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaKey => $composableBuilder(
+      column: $table.mediaKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaThumbnailKey => $composableBuilder(
+      column: $table.mediaThumbnailKey,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaError => $composableBuilder(
+      column: $table.mediaError, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get failed => $composableBuilder(
       column: $table.failed, builder: (column) => ColumnOrderings(column));
 
@@ -27757,6 +28726,36 @@ class $$PendingGroupMessagesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaKind =>
+      $composableBuilder(column: $table.mediaKind, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaPath =>
+      $composableBuilder(column: $table.mediaPath, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaThumbPath => $composableBuilder(
+      column: $table.mediaThumbPath, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaMime =>
+      $composableBuilder(column: $table.mediaMime, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaMeta =>
+      $composableBuilder(column: $table.mediaMeta, builder: (column) => column);
+
+  GeneratedColumn<int> get mediaDuration => $composableBuilder(
+      column: $table.mediaDuration, builder: (column) => column);
+
+  GeneratedColumn<int> get mediaSize =>
+      $composableBuilder(column: $table.mediaSize, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaKey =>
+      $composableBuilder(column: $table.mediaKey, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaThumbnailKey => $composableBuilder(
+      column: $table.mediaThumbnailKey, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaError => $composableBuilder(
+      column: $table.mediaError, builder: (column) => column);
 
   GeneratedColumn<bool> get failed =>
       $composableBuilder(column: $table.failed, builder: (column) => column);
@@ -27799,6 +28798,16 @@ class $$PendingGroupMessagesTableTableManager extends RootTableManager<
             Value<String> groupId = const Value.absent(),
             Value<String> body = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<String?> mediaKind = const Value.absent(),
+            Value<String?> mediaPath = const Value.absent(),
+            Value<String?> mediaThumbPath = const Value.absent(),
+            Value<String?> mediaMime = const Value.absent(),
+            Value<String?> mediaMeta = const Value.absent(),
+            Value<int?> mediaDuration = const Value.absent(),
+            Value<int?> mediaSize = const Value.absent(),
+            Value<String?> mediaKey = const Value.absent(),
+            Value<String?> mediaThumbnailKey = const Value.absent(),
+            Value<String?> mediaError = const Value.absent(),
             Value<bool> failed = const Value.absent(),
             Value<String?> replyToMessageId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -27808,6 +28817,16 @@ class $$PendingGroupMessagesTableTableManager extends RootTableManager<
             groupId: groupId,
             body: body,
             createdAt: createdAt,
+            mediaKind: mediaKind,
+            mediaPath: mediaPath,
+            mediaThumbPath: mediaThumbPath,
+            mediaMime: mediaMime,
+            mediaMeta: mediaMeta,
+            mediaDuration: mediaDuration,
+            mediaSize: mediaSize,
+            mediaKey: mediaKey,
+            mediaThumbnailKey: mediaThumbnailKey,
+            mediaError: mediaError,
             failed: failed,
             replyToMessageId: replyToMessageId,
             rowid: rowid,
@@ -27817,6 +28836,16 @@ class $$PendingGroupMessagesTableTableManager extends RootTableManager<
             required String groupId,
             required String body,
             required DateTime createdAt,
+            Value<String?> mediaKind = const Value.absent(),
+            Value<String?> mediaPath = const Value.absent(),
+            Value<String?> mediaThumbPath = const Value.absent(),
+            Value<String?> mediaMime = const Value.absent(),
+            Value<String?> mediaMeta = const Value.absent(),
+            Value<int?> mediaDuration = const Value.absent(),
+            Value<int?> mediaSize = const Value.absent(),
+            Value<String?> mediaKey = const Value.absent(),
+            Value<String?> mediaThumbnailKey = const Value.absent(),
+            Value<String?> mediaError = const Value.absent(),
             Value<bool> failed = const Value.absent(),
             Value<String?> replyToMessageId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -27826,6 +28855,16 @@ class $$PendingGroupMessagesTableTableManager extends RootTableManager<
             groupId: groupId,
             body: body,
             createdAt: createdAt,
+            mediaKind: mediaKind,
+            mediaPath: mediaPath,
+            mediaThumbPath: mediaThumbPath,
+            mediaMime: mediaMime,
+            mediaMeta: mediaMeta,
+            mediaDuration: mediaDuration,
+            mediaSize: mediaSize,
+            mediaKey: mediaKey,
+            mediaThumbnailKey: mediaThumbnailKey,
+            mediaError: mediaError,
             failed: failed,
             replyToMessageId: replyToMessageId,
             rowid: rowid,

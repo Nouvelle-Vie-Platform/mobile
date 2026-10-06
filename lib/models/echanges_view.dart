@@ -12,6 +12,8 @@ library;
 
 import 'package:flutter/foundation.dart';
 
+import 'message_media.dart';
+
 /// **L'origine d'un message** — la seule chose qui décide bandeau ou bulle.
 ///
 /// Elle se lit sur le **couple** `(authorId, isSystem)`, jamais sur `authorId`
@@ -113,6 +115,8 @@ class GroupMessageView {
     this.quote,
     this.reactions = const [],
     this.myReaction,
+    this.media,
+    this.mediaError,
   });
 
   /// L'UUIDv7 serveur pour un message confirmé, le `clientMessageId` pour un écho
@@ -188,6 +192,14 @@ class GroupMessageView {
   /// **Ma** réaction, s'il y en a une — c'est elle que le jeu rapide surligne,
   /// et la retoucher la retire.
   final String? myReaction;
+
+  /// **Le média porté par le message** (M4, #143), ou `null` pour un texte.
+  /// Un message peut porter texte **et** média (une image légendée) : la
+  /// bulle empile. Voir `models/message_media.dart`.
+  final MessageMedia? media;
+
+  /// La cause d'un envoi de média en échec, quand on la connaît (M4).
+  final MediaSendError? mediaError;
 }
 
 /// **La citation d'une réponse** (M2, #141) — de quoi la peindre sans le
@@ -307,6 +319,7 @@ class ConversationView {
     this.pinnedAt,
     this.isMuted = false,
     this.lastMessageDeleted = false,
+    this.lastMessageMedia,
   });
 
   final String groupId;
@@ -369,6 +382,11 @@ class ConversationView {
   /// Le dernier message a été **supprimé pour tous** (M2, #141) : la tuile dit
   /// « Ce message a été supprimé », jamais un vide.
   final bool lastMessageDeleted;
+
+  /// **La forme du média du dernier message** (M4), ou `null`. La tuile en
+  /// tire son aperçu (« 🎤 Message vocal », « 📍 Position »…) quand le message
+  /// n'a pas de texte.
+  final MessageMediaKind? lastMessageMedia;
 }
 
 /// **Le badge global** de l'onglet Échanges (#140) : la somme des non-lus de

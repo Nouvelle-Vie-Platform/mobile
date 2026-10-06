@@ -319,6 +319,43 @@ class GroupMessages extends Table with SyncedRow {
   BoolColumn get replyToDeleted =>
       boolean().withDefault(const Constant(false))();
 
+  // ── Le média porté par le message (M4, #143 ; serveur #485 + M4) ──────────
+  //
+  // Sept colonnes, toutes nullables, **telles que le serveur les envoie**. Elles
+  // naissent au palier v26 ; le curseur de `group_messages` est
+  // alors effacé, pour que les messages-médias reçus avant — rangés sans leur
+  // média faute de colonne — soient réécrits.
+
+  /// La clé de l'objet au magasin — **jamais une URL**. Elle s'échange contre
+  /// une URL de lecture temporaire au moment d'afficher
+  /// (`GET /groups/:id/messages/:mid/media`). `null` pour un texte, une
+  /// position, un contact.
+  TextColumn get mediaKey => text().nullable()();
+
+  /// `audio` · `image` · `video` · `document` · `location` · `contact`, stocké
+  /// tel quel : une forme inconnue d'une version future se lit « non pris en
+  /// charge », jamais une erreur de rangement.
+  TextColumn get mediaKind => text().nullable()();
+
+  /// Durée **déclarée** d'un vocal ou d'une vidéo, en secondes.
+  IntColumn get mediaDuration => integer().nullable()();
+
+  /// Les données structurées du média, **en JSON** (forme d'onde, nom, taille
+  /// d'image, coordonnées, contact). Lues par `MessageMedia.fromColumns`, qui
+  /// tolère tout : une méta illisible donne une bulle sans détail, pas une
+  /// page refusée.
+  TextColumn get mediaMeta => text().nullable()();
+
+  /// Taille **mesurée** par le serveur, en octets (« 2,3 Mo » d'un document).
+  IntColumn get mediaSize => integer().nullable()();
+
+  /// Type retenu par le magasin — l'icône d'un document, l'application qui
+  /// l'ouvrira.
+  TextColumn get mediaMime => text().nullable()();
+
+  /// Clé de la vignette d'une vidéo (`?variant=thumbnail`).
+  TextColumn get mediaThumbnailKey => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -359,6 +396,53 @@ class PendingGroupMessages extends Table {
   /// L'horloge de l'**appareil** : l'écho s'affiche au bas du fil, et il n'a pas
   /// d'instant serveur à présenter — il n'en a pas encore.
   DateTimeColumn get createdAt => dateTime()();
+
+  // ── L'écho d'un média (M4, #143) ─────────────────────────────────────────
+  //
+  // ⚠️ **[body] garde son `NOT NULL`**, et c'est délibéré : le relâcher
+  // obligerait à recréer la table de l'outbox à chaque palier intermédiaire. Un
+  // média **sans légende** y porte un corps **vide**, que la lecture rend nul
+  // (`NULLIF(p.body, '')` dans `GroupDao.threadOf`) et que l'envoi ne poste pas.
+  // Un texte, lui, n'est jamais vide (le composeur refuse une chaîne vide).
+
+  /// La forme du média, ou `null` pour un message texte.
+  TextColumn get mediaKind => text().nullable()();
+
+  /// **Le fichier local** à monter : la source choisie, puis — une fois
+  /// dégradée — la copie prête (JPEG q80, vidéo compressée). Il vit dans le
+  /// dossier de l'outbox (`MediaOutbox`), pour survivre à un redémarrage.
+  TextColumn get mediaPath => text().nullable()();
+
+  /// La vignette locale d'une vidéo.
+  TextColumn get mediaThumbPath => text().nullable()();
+
+  /// Le type à déclarer au dépôt. **Posé quand le fichier est prêt** : c'est
+  /// le témoin que la dégradation a eu lieu (une reprise ne la refait pas).
+  TextColumn get mediaMime => text().nullable()();
+
+  /// La méta à envoyer, en JSON (forme d'onde, nom, dimensions, coordonnées,
+  /// contact).
+  TextColumn get mediaMeta => text().nullable()();
+
+  /// Durée d'un vocal ou d'une vidéo, en secondes.
+  IntColumn get mediaDuration => integer().nullable()();
+
+  /// Taille du fichier prêt, en octets — comparée à la borne servie **avant**
+  /// toute montée.
+  IntColumn get mediaSize => integer().nullable()();
+
+  /// La clé obtenue une fois l'objet **monté** : une reprise saute alors la
+  /// montée et ne reposte que le message. Effacée si le serveur répond que
+  /// l'objet n'existe plus (lien expiré, purge des orphelins).
+  TextColumn get mediaKey => text().nullable()();
+
+  /// La clé de la vignette montée.
+  TextColumn get mediaThumbnailKey => text().nullable()();
+
+  /// **Pourquoi l'envoi a échoué**, quand on le sait : `tooLarge`, `tooLong`,
+  /// `typeNotAllowed`, `missingFile`… — l'écran dit alors la cause au lieu du
+  /// seul « pas parti ». `null` = un échec de réseau, qui se réessaie.
+  TextColumn get mediaError => text().nullable()();
 
   /// **L'envoi a échoué**, et l'écran doit le dire.
   ///
