@@ -1,7 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart' hide PickedFile;
 import 'package:open_file/open_file.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -79,7 +79,11 @@ class DeviceChatMediaPicker implements ChatMediaPicker {
       );
       final path = file?.path;
       if (file == null || path == null) return null;
-      return PickedFile(path: path, name: file.name, sizeBytes: file.size);
+      return PickedFile(
+        path: path,
+        name: file.name,
+        sizeBytes: file.lengthSync() ?? await file.length(),
+      );
     } on Object {
       return null;
     }

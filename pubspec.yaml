@@ -122,7 +122,11 @@ dependencies:
   # Lu **uniquement** derrière `AppVersionReader` (`lib/data/app_version.dart`) :
   # sous `flutter test`, un canal de plugin lève `MissingPluginException`, et
   # aucun test d'écran n'a à connaître ce détail.
-  package_info_plus: ^9.0.1
+  #
+  # ^10 (et non plus ^9) depuis M4 : `geolocator` ≥ 14.0.3 tire
+  # `geolocator_linux` 0.2.6, qui exige `package_info_plus` ^10. La 10 demande
+  # Flutter ≥ 3.38.1 et iOS 13 — la CI est en 3.44.2, le projet en iOS 15.
+  package_info_plus: ^10.2.2
   # **Le type de transport**, et rien d'autre : wifi ou données mobiles. C'est
   # ce qui permet au réglage « Automatique » de la qualité d'écoute de plafonner
   # le débit hors wifi (`NetworkTransport`, `lib/data/network/`).
@@ -250,7 +254,8 @@ dependencies:
   #   système : aucune permission de lecture du carnet, l'application ne voit
   #   que le contact choisi (plan §4).
   # - `url_launcher` — ouvrir une position dans l'application de cartes (aucune
-  #   clé d'API, aucune carte statique payante) et un numéro dans le composeur.
+  #   clé d'API, aucune carte statique payante), un numéro dans le composeur, et
+  #   les liens `externe` du menu (`UrlLauncherExternalLinkLauncher`).
   # - `open_file` — ouvrir un document reçu dans l'application du système.
   #   Préféré à `open_filex`, CocoaPods seulement.
   record: ^7.1.1
