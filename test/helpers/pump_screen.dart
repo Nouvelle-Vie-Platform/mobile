@@ -24,6 +24,7 @@ import 'package:maison_du_miracle/data/repositories/announcement_repository.dart
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
 import 'package:maison_du_miracle/data/repositories/branch_repository.dart';
 import 'package:maison_du_miracle/data/repositories/echanges_repository.dart';
+import 'package:maison_du_miracle/data/repositories/group_admin_client.dart';
 import 'package:maison_du_miracle/data/repositories/group_message_composer.dart';
 import 'package:maison_du_miracle/data/repositories/group_message_sender.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
@@ -37,6 +38,7 @@ import 'package:maison_du_miracle/state/auth_providers.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/echanges_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
+import 'package:maison_du_miracle/state/group_management_providers.dart';
 import 'package:maison_du_miracle/state/legal_notice_providers.dart';
 import 'package:maison_du_miracle/state/measurement_providers.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
@@ -186,6 +188,7 @@ Future<void> pumpRouter(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
+  GroupAdminClient? groupAdmin,
   MyRequestsRepository? myRequests,
   RequestSubmitter? requestSubmitter,
   MessagingChannel? channel,
@@ -218,6 +221,7 @@ Future<void> pumpRouter(
           authChannels: authChannels,
           updateThreshold: updateThreshold,
           echanges: echanges,
+          groupAdmin: groupAdmin,
           myRequests: myRequests,
           requestSubmitter: requestSubmitter,
           channel: channel,
@@ -273,6 +277,7 @@ List<Override> _commonOverrides(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
+  GroupAdminClient? groupAdmin,
   MyRequestsRepository? myRequests,
   RequestSubmitter? requestSubmitter,
   MessagingChannel? channel,
@@ -362,6 +367,20 @@ List<Override> _commonOverrides(
       // **L'envoi d'une requête**, posé indisponible par défaut : le réel est
       // HTTP dès que `AppEnv.useBackend` est vrai, et un appui sur « Envoyer »
       // ouvrirait une socket que `flutter test` refuse.
+      // **Les gestes de groupe** (#145), posés **inertes**, pour la raison de
+      // l'envoyeur de messages : le réel est HTTP dès que `AppEnv.useBackend`
+      // est vrai, et `GET /groups/capabilities` partirait au montage de
+      // « Nouvelle discussion ». Le cycle qui suit un geste réussi est muet.
+      // [groupAdmin] est un paramètre nommé — Riverpod 3 refuse deux
+      // surcharges du même provider.
+      groupAdminClientProvider
+          .overrideWithValue(groupAdmin ?? const InertGroupAdminClient()),
+      groupActionsProvider.overrideWith(
+        (ref) => GroupActions(
+          client: groupAdmin ?? const InertGroupAdminClient(),
+          resynchronize: () async {},
+        ),
+      ),
       requestSubmitterProvider.overrideWithValue(
         requestSubmitter ?? const UnavailableRequestSubmitter(),
       ),
@@ -479,6 +498,7 @@ Future<void> pumpScreen(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
+  GroupAdminClient? groupAdmin,
   MyRequestsRepository? myRequests,
   RequestSubmitter? requestSubmitter,
   MessagingChannel? channel,
@@ -517,6 +537,7 @@ Future<void> pumpScreen(
           authChannels: authChannels,
           updateThreshold: updateThreshold,
           echanges: echanges,
+          groupAdmin: groupAdmin,
           myRequests: myRequests,
           requestSubmitter: requestSubmitter,
           channel: channel,

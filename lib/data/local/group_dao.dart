@@ -513,8 +513,7 @@ WHERE m.group_id = ?1 AND ${_isUnread('m', 2)}
   /// `null` veut dire « je n'ai jamais écrit à cette personne », et **pas** « je ne
   /// peux pas ». Créer le tête-à-tête se fait côté serveur en envoyant le premier
   /// message (`POST /groups/direct/:targetUserId/messages`, get-or-create
-  /// paresseux), ce qui est hors du périmètre de cette tranche — voir
-  /// `MemberProfileScreen`.
+  /// paresseux) — l'écran du premier message, `DirectChatScreen` (#145).
   Selectable<String> directGroupWith({
     required String me,
     required String other,
@@ -539,6 +538,66 @@ LIMIT 1
   Selectable<GroupMemberRow> membershipOf(String groupId, String userId) =>
       select(groupMembers)
         ..where((m) => m.groupId.equals(groupId) & m.userId.equals(userId));
+
+  // ── #145 (M6) ─────────────────────────────────────────────────────────────
+
+  /// **Mes contacts de groupe** (#145, décisions 8 et 9) : les personnes avec
+  /// qui je partage **au moins un groupe qui n'est pas un tête-à-tête**, moi
+  /// exclu, triées par nom (les sans-nom à la fin).
+  ///
+  /// C'est **exactement** la règle du serveur (`sharedGroupContacts`) : un
+  /// sélecteur plus large proposerait des personnes qu'il refuserait — démarrer
+  /// un tête-à-tête, ou les inscrire dans un groupe qu'on crée. Les appartenances
+  /// retirées ont quitté le magasin (tombstone), il n'y a rien à filtrer de plus.
+  ///
+  /// Une personne dont `profiles` n'a pas encore livré la ligne n'est pas
+  /// proposée : sans profil, ni nom ni avatar à montrer, et la synchronisation
+  /// suivante l'amènera.
+  Selectable<({String userId, String? displayName, String? avatarUrl})>
+      contactsOf(String userId) {
+    return customSelect(
+      '''
+SELECT DISTINCT p.id AS user_id, p.display_name AS display_name,
+       p.avatar_url AS avatar_url
+FROM group_members AS ours
+JOIN "groups" AS g ON g.id = ours.group_id AND g.is_direct = 0
+JOIN group_members AS theirs ON theirs.group_id = ours.group_id
+JOIN profiles AS p ON p.id = theirs.user_id
+WHERE ours.user_id = ?1
+  AND theirs.user_id <> ?1
+ORDER BY p.display_name IS NULL, p.display_name COLLATE NOCASE, p.id
+''',
+      variables: [Variable<String>(userId)],
+      readsFrom: {groups, groupMembers, profiles},
+    ).map(
+      (row) => (
+        userId: row.read<String>('user_id'),
+        displayName: row.read<String?>('display_name'),
+        avatarUrl: row.read<String?>('avatar_url'),
+      ),
+    );
+  }
+
+  /// **Un battement à chaque changement de ce que lit la fiche d'un groupe**
+  /// (#145) : le groupe, son roster, les noms et les propriétaires.
+  ///
+  /// La fiche observait `groups` seul et relisait le roster à chaque émission :
+  /// un changement de rôle (nommer admin) n'écrit que `group_members`, et la
+  /// fiche — qui en tire désormais les gestes offerts — restait sur l'ancien
+  /// rôle jusqu'à ce que la ligne du groupe bouge. Une émission de plus quand
+  /// une table voisine change ne coûte qu'une relecture.
+  Stream<void> groupDetailChanges() => customSelect(
+        'SELECT 1',
+        readsFrom: {
+          groups,
+          groupMembers,
+          profiles,
+          officialAccounts,
+          contributors,
+        },
+      ).watch().map((_) {});
+
+  // ── fin #145 ──────────────────────────────────────────────────────────────
 
   // ───────────────────────────────────────────────────────────────────────────
   // Écritures — **la table locale seule, et rien d'autre**

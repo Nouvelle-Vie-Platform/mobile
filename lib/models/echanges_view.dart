@@ -253,6 +253,9 @@ class GroupDetailView {
     this.description,
     this.hostName,
     this.members = const [],
+    this.joinPolicy = 'invite_only',
+    this.isActive = true,
+    this.myRole,
   });
 
   final String groupId;
@@ -260,6 +263,17 @@ class GroupDetailView {
   final bool isDirect;
   final int memberCount;
   final bool canWrite;
+
+  /// `open` | `request` | `invite_only` — ce qui décide « Rejoindre » ou
+  /// « Demander à rejoindre » sur la fiche (#145).
+  final String joinPolicy;
+
+  final bool isActive;
+
+  /// **Mon rôle** dans ce groupe, ou `null` si je n'en suis pas (ou plus)
+  /// membre (#145). C'est lui qui décide des gestes offerts : voir
+  /// `GroupRights` (`group_management.dart`).
+  final String? myRole;
 
   /// `null` ou vide = pas de présentation déposée : la section ne se rend pas.
   final String? description;
@@ -344,11 +358,8 @@ class MemberProfileView {
 
   /// **Le tête-à-tête que je partage déjà avec cette personne**, ou `null`.
   ///
-  /// `null` veut dire « je ne lui ai jamais écrit », et c'est pour cela que le
-  /// bouton « Message » n'existe pas dans ce cas : créer le tête-à-tête passe par
-  /// `POST /groups/direct/:targetUserId/messages` (get-or-create paresseux côté
-  /// serveur), qui est hors du périmètre de cette tranche. Un bouton qui ne fait
-  /// rien est une promesse que personne ne tient — la règle du sélecteur de canaux
-  /// de connexion (#83).
+  /// `null` veut dire « je ne lui ai jamais écrit » : « Message » ouvre alors
+  /// l'écran du premier message (#145), dont l'envoi crée le tête-à-tête
+  /// (`POST /groups/direct/:targetUserId/messages`, get-or-create côté serveur).
   final String? directGroupId;
 }

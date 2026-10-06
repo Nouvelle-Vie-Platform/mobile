@@ -26,11 +26,28 @@ import '../app_avatar.dart';
 /// `open` = on entre, `request` = on demande. Et si j'ai **déjà** demandé, la
 /// carte le dit au lieu de proposer un geste déjà fait — c'est tout l'usage que
 /// cette tranche a de `group_join_requests`.
+///
+/// ## Le geste est sur la carte (#145)
+///
+/// « Rejoindre » (`open`) ou « Demander » (`request`), selon la politique ; rien
+/// quand ma demande est en attente. [onJoin] nul = pas de bouton (un écran qui
+/// ne fait que montrer la carte).
 class JoinGroupCard extends StatelessWidget {
-  const JoinGroupCard({super.key, required this.group, this.onTap});
+  const JoinGroupCard(
+      {super.key, required this.group, this.onTap, this.onJoin});
 
   final DiscoverGroupView group;
   final VoidCallback? onTap;
+
+  /// Rejoindre ou demander, selon `group.joinPolicy` (#145).
+  final VoidCallback? onJoin;
+
+  /// Le bouton de la carte — pour les tests.
+  static ValueKey<String> joinKey(String groupId) =>
+      ValueKey('join-card-$groupId');
+
+  /// La hauteur du bouton de la carte (#145), comptée dans [rowHeight].
+  static const double actionHeight = 40;
 
   static const double width = 156;
   static const double coverHeight = 116;
@@ -38,7 +55,8 @@ class JoinGroupCard extends StatelessWidget {
   /// Hauteur totale de la carte (aplat + nom sur **2 lignes** + ligne animateur).
   /// Utilisée pour dimensionner la rangée horizontale : trop juste, un nom qui
   /// passe à la ligne fait déborder la carte (RenderFlex overflow).
-  static const double rowHeight = coverHeight + 84;
+  static const double rowHeight =
+      coverHeight + 84 + actionHeight + AppSpacing.sm;
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +110,23 @@ class JoinGroupCard extends StatelessWidget {
                   style: AppTypography.caption
                       .copyWith(color: palette.textSecondary),
                 ),
+              // #145 : le geste, sauf si ma demande attend déjà.
+              if (onJoin != null && group.requestStatus != 'pending') ...[
+                const SizedBox(height: AppSpacing.sm),
+                SizedBox(
+                  height: actionHeight,
+                  width: double.infinity,
+                  child: FilledButton.tonal(
+                    key: joinKey(group.groupId),
+                    onPressed: onJoin,
+                    child: Text(
+                      group.joinPolicy == 'open' ? l.m6Join : l.m6RequestJoin,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

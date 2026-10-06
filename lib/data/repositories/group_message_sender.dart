@@ -55,6 +55,42 @@ abstract interface class GroupMessageSender {
 /// dans lequel on a tapé, même si le réseau les livre dans l'autre sens.
 String mintClientMessageId() => const Uuid().v7();
 
+// ── #145 (M6) : le premier message d'un tête-à-tête ────────────────────────
+
+/// Le préfixe de **la clé de fil d'un tête-à-tête qui n'existe pas encore**.
+const String kDirectThreadPrefix = 'direct:';
+
+/// **La clé de fil d'un tête-à-tête à démarrer** avec [userId] (#145).
+///
+/// Le premier message crée la discussion côté serveur
+/// (`POST /groups/direct/:targetUserId/messages`, get-or-create) : avant lui,
+/// il n'y a **aucun** identifiant de groupe. L'écho optimiste en a pourtant
+/// besoin — `pending_group_messages.group_id` est sa clé de fil, et c'est par
+/// elle que le fil le montre et que le renvoi automatique le reposte. Cette clé
+/// en tient lieu : elle n'est jamais un UUID, donc jamais confondue avec un vrai
+/// groupe, et l'envoyeur la reconnaît pour poster à la bonne route. La
+/// réconciliation, elle, se fait sur `clientMessageId` (sans regarder le
+/// groupe) : la ligne serveur, rangée dans le vrai fil, fait disparaître l'écho.
+String directThreadKey(String userId) => '$kDirectThreadPrefix$userId';
+
+/// Le destinataire d'une clé [directThreadKey], ou `null` pour un vrai groupe.
+String? directTargetOf(String threadKey) =>
+    threadKey.startsWith(kDirectThreadPrefix)
+        ? threadKey.substring(kDirectThreadPrefix.length)
+        : null;
+
+/// **La route d'envoi** d'une clé de fil : un vrai groupe, ou le premier message
+/// d'un tête-à-tête (même corps, même clé d'idempotence — le serveur la
+/// reconnaît aussi sur cette route).
+String messagesPathFor(String threadKey) {
+  final target = directTargetOf(threadKey);
+  return target == null
+      ? '/groups/$threadKey/messages'
+      : '/groups/direct/$target/messages';
+}
+
+// ── fin #145 ───────────────────────────────────────────────────────────────
+
 /// Implémentation HTTP de [GroupMessageSender].
 ///
 /// ```
@@ -102,7 +138,7 @@ class HttpGroupMessageSender implements GroupMessageSender {
 
     try {
       await _client.post<Object?>(
-        '/groups/$groupId/messages',
+        messagesPathFor(groupId),
         data: {
           'body': trimmed.length > maxBodyLength
               ? trimmed.substring(0, maxBodyLength)

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../models/models.dart';
 import '../screens/about_screen.dart';
+import '../screens/add_group_members_screen.dart';
 import '../screens/agenda_screen.dart';
 import '../screens/announcement_composer_screen.dart';
 import '../screens/archived_chats_screen.dart';
@@ -12,7 +13,9 @@ import '../screens/auth/identifier_screen.dart';
 import '../screens/auth/profile_form_screen.dart';
 import '../screens/bible_screen.dart';
 import '../screens/chat_search_screen.dart';
+import '../screens/create_group_screen.dart';
 import '../screens/delete_account_screen.dart';
+import '../screens/direct_chat_screen.dart';
 import '../screens/donations_screen.dart';
 import '../screens/downloads_screen.dart';
 import '../screens/event_detail_screen.dart';
@@ -26,6 +29,7 @@ import '../screens/radio_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/media_library_screen.dart';
 import '../screens/member_profile_screen.dart';
+import '../screens/new_conversation_screen.dart';
 import '../screens/new_request_screen.dart';
 import '../screens/notes_screen.dart';
 import '../screens/group_info_screen.dart';
@@ -111,6 +115,21 @@ abstract final class AppRoute {
   /// chemin, comme `/teaching/:id` : l'écran résout la ligne dans le magasin, il
   /// ne reçoit pas de copie figée au moment du clic.
   static const announcementEdit = 'announcement-edit';
+
+  // ── #145 (M6) : discussions et groupes gérés depuis l'application ─────────
+
+  /// « Nouvelle discussion » : le sélecteur des personnes de mes groupes.
+  static const newConversation = 'new-conversation';
+
+  /// La discussion privée avec une **personne** (`:id` = son identifiant) —
+  /// le fil ordinaire si elle existe, l'écran du premier message sinon.
+  static const directChat = 'direct-chat';
+
+  /// Créer un groupe (responsables seulement).
+  static const createGroup = 'create-group';
+
+  /// Ajouter des membres à un groupe (`:id` = le groupe).
+  static const addGroupMembers = 'add-group-members';
 }
 
 /// Arguments passés à [CodeScreen] via `extra`.
@@ -191,6 +210,12 @@ const memberOnlyRoutes = <String>{
   // M8 (#146) : mes archives et la recherche dans mes messages.
   '/chats/archived',
   '/chats/search',
+  // #145 : démarrer une discussion, créer un groupe, ajouter des membres —
+  // des gestes de membre, sur des données de membre.
+  '/new-conversation',
+  '/direct-chat/:id',
+  '/create-group',
+  '/add-group-members/:id',
   // La barrière de consentement.
   _legalGate,
 };
@@ -533,6 +558,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/member-profile/:id',
         builder: (_, state) => AppBackground(
           child: MemberProfileScreen(memberId: state.pathParameters['id']!),
+        ),
+      ),
+      // #145 (M6) — l'identifiant, jamais l'objet, comme le reste d'Échanges.
+      GoRoute(
+        name: AppRoute.newConversation,
+        path: '/new-conversation',
+        builder: (_, __) => const AppBackground(child: NewConversationScreen()),
+      ),
+      GoRoute(
+        name: AppRoute.directChat,
+        path: '/direct-chat/:id',
+        builder: (_, state) => AppBackground(
+          child: DirectChatScreen(userId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        name: AppRoute.createGroup,
+        path: '/create-group',
+        builder: (_, __) => const AppBackground(child: CreateGroupScreen()),
+      ),
+      GoRoute(
+        name: AppRoute.addGroupMembers,
+        path: '/add-group-members/:id',
+        builder: (_, state) => AppBackground(
+          child: AddGroupMembersScreen(groupId: state.pathParameters['id']!),
         ),
       ),
       GoRoute(
