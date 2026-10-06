@@ -1728,4 +1728,107 @@ class AppLocalizationsEe extends AppLocalizations {
   @override
   String get chatArchivedEmpty =>
       'Faites glisser une discussion vers la gauche pour l\'archiver. Elle reste ici même quand un message arrive.';
+
+  @override
+  String get m6NewConversation => 'Nouvelle discussion';
+
+  @override
+  String get m6NewGroup => 'Nouveau groupe';
+
+  @override
+  String get m6SearchContacts => 'Rechercher un nom';
+
+  @override
+  String get m6NoContacts =>
+      'Personne à qui écrire pour l\'instant : vous pouvez écrire aux membres de vos groupes.';
+
+  @override
+  String get m6NoContactMatch => 'Aucun nom ne correspond.';
+
+  @override
+  String get m6DirectFirstMessage =>
+      'Écrivez le premier message : la discussion commencera avec lui.';
+
+  @override
+  String get m6CreateGroupTitle => 'Nouveau groupe';
+
+  @override
+  String get m6GroupNameLabel => 'Nom du groupe';
+
+  @override
+  String get m6GroupNameTooShort => 'Au moins 3 caractères';
+
+  @override
+  String get m6GroupDescriptionLabel => 'Description (facultative)';
+
+  @override
+  String get m6GroupMembersLabel => 'Membres';
+
+  @override
+  String get m6CreateGroupSubmit => 'Créer le groupe';
+
+  @override
+  String get m6CreateGroupFailed =>
+      'Le groupe n\'a pas été créé. Vérifiez votre connexion, puis touchez de nouveau « Créer le groupe ».';
+
+  @override
+  String get m6Join => 'Rejoindre';
+
+  @override
+  String get m6RequestJoin => 'Demander';
+
+  @override
+  String get m6Leave => 'Quitter le groupe';
+
+  @override
+  String get m6LeaveConfirm =>
+      'Vous ne recevrez plus les messages de ce groupe.';
+
+  @override
+  String get m6Cancel => 'Annuler';
+
+  @override
+  String get m6AddMembers => 'Ajouter des membres';
+
+  @override
+  String get m6AddMembersSubmit => 'Ajouter';
+
+  @override
+  String get m6NoOneToAdd =>
+      'Toutes les personnes de vos groupes sont déjà membres.';
+
+  @override
+  String get m6MakeModerator => 'Nommer modérateur';
+
+  @override
+  String get m6RemoveModerator => 'Retirer le rôle de modérateur';
+
+  @override
+  String get m6RemoveMember => 'Retirer du groupe';
+
+  @override
+  String get m6RemoveConfirm =>
+      'Cette personne ne recevra plus les messages du groupe.';
+
+  @override
+  String get m6MemberOptions => 'Options du membre';
+
+  @override
+  String get m6PendingRequests => 'Demandes d\'adhésion';
+
+  @override
+  String get m6Approve => 'Accepter';
+
+  @override
+  String get m6Reject => 'Refuser';
+
+  @override
+  String get m6RequestUnnamed => 'Une personne sans nom renseigné';
+
+  @override
+  String get m6ActionRefused => 'Ce geste n\'est pas permis ici.';
+
+  @override
+  String get m6ActionUnreachable =>
+      'Pas de réponse du serveur. Vérifiez votre connexion.';
 }
