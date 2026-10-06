@@ -24,10 +24,20 @@ import '../unread_badge.dart';
 /// c'est la conversation qu'on vient de rejoindre, et la cacher pour défaut de
 /// message serait la pire chose à faire.
 class ConversationTile extends StatelessWidget {
-  const ConversationTile({super.key, required this.conversation, this.onTap});
+  const ConversationTile({
+    super.key,
+    required this.conversation,
+    this.onTap,
+    this.typingLabel,
+  });
 
   final ConversationView conversation;
   final VoidCallback? onTap;
+
+  /// **« Ama écrit… »** (#142, M3) — prend la place de l'aperçu tant que
+  /// quelqu'un écrit, dans la teinte de marque, comme WhatsApp. `null` :
+  /// l'aperçu du dernier message.
+  final String? typingLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +46,8 @@ class ConversationTile extends StatelessWidget {
     final stamp = conversation.lastMessageAt;
     // **Un dernier message sans texte est un média** (#140) : il y a un instant,
     // mais pas de phrase. On le dit, plutôt que de laisser croire au vide.
-    final preview = conversation.lastMessagePreview ??
+    final preview = typingLabel ??
+        conversation.lastMessagePreview ??
         (stamp != null ? l.echangesMediaPreview : null);
     final unread = conversation.unreadCount;
 
@@ -71,8 +82,12 @@ class ConversationTile extends StatelessWidget {
                     preview,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.caption
-                        .copyWith(color: palette.textSecondary),
+                    style: AppTypography.caption.copyWith(
+                      color: typingLabel != null
+                          ? palette.primary
+                          : palette.textSecondary,
+                      fontStyle: typingLabel != null ? FontStyle.italic : null,
+                    ),
                   ),
                 ],
               ],

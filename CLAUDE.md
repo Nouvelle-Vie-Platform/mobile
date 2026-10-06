@@ -2216,6 +2216,37 @@ d'administration passent par `GroupAdminClient` / `groupActionsProvider`
 n'existe que si `GET /groups/capabilities` le permet. `pumpScreen` /
 `pumpRouter` posent un client inerte (paramètre nommé `groupAdmin:`).
 
+#### Accusés, « écrit… », « en ligne / vu à » (#142, M3)
+
+Contrat serveur : `server-portal/docs/messagerie-temps-reel-contrat.md` §6. **La
+réciprocité se calcule côté serveur** : un « lu » ou une présence qu'on n'a pas
+le droit de voir n'arrive jamais ici — ce client n'a rien à filtrer.
+
+- **Coches** (`ReceiptMark`, posée par `ChatBubble.receiptMark` sur mes
+  messages confirmés) : ✓ sans ligne, ✓✓ `deliveredAt`, ✓✓ bleu `readAt`, lues
+  dans la collection privée `message_receipts` (registre, après
+  `group_messages` ; aussi `receipt.updated` sur le canal), par
+  `ReceiptsRepository` — double vide dans `pumpScreen`.
+- **Distribution** : `DeliveryAcknowledger` confirme par lot
+  (`POST /groups/messages/delivered`) les messages des autres rangés depuis
+  moins de 3 jours, après chaque cycle réussi et à chaque `message.created`
+  d'un autre ; `delivery_acks` (locale seule) retient ce qui est confirmé. La
+  lecture n'a rien de neuf à envoyer : `POST /groups/:id/read` accuse.
+- **Éphémère** (`messaging_ephemeral.dart`) : la frappe et la présence vivent
+  **en mémoire**, jamais dans le magasin. `MessagingLink.onSignal` les remet à
+  `MessagingEphemeralStore` ; « écrit… » s'efface seul après 5 s, et un message
+  reçu de la même personne l'éteint. Le champ envoie « j'écris » au plus toutes
+  les 3 s (`TypingSignaler`).
+- **Présence** : tête-à-tête seulement, lue à l'ouverture
+  (`GET /groups/:id/presence`), puis `presence.changed`. `visible: false` ou
+  « vu à » inconnu : rien sous le nom, jamais une date inventée.
+- **Infos du message** : appui long sur un de mes messages → « Infos »
+  (`message_info_sheet.dart`), lu en ligne, relu à chaque changement de coche.
+- **Confidentialité** : `/profile/privacy` (`PrivacySettingsScreen`), deux
+  interrupteurs lus et écrits en ligne (`GET|PUT /messaging/privacy`).
+- Les six routes passent par **une** couture, `MessagingSignalsApi` — inerte
+  dans `pumpScreen` (paramètre `signals:`), comme les coches (`receipts:`).
+
 ### Le réveil push (#97) — `lib/data/push/`
 
 PRD autoritaire : `server-portal/docs/prd/notifications-push.md` (D4, D6, D7, D8 et

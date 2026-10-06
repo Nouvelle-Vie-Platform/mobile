@@ -15,6 +15,7 @@ import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_state.dart';
 import '../widgets/community/chat_list_header.dart';
 import '../widgets/community/community_header.dart';
+import '../widgets/community/conversation_typing.dart';
 import '../widgets/community/join_group_card.dart';
 import '../widgets/community/join_from_card.dart';
 import '../widgets/community/my_requests_tab.dart';
@@ -273,6 +274,13 @@ class EchangesMessagesTab extends ConsumerWidget {
                   padding: AppSpacing.screenPadding,
                   child: OrganizableConversationTile(
                     conversation: c,
+                    // #142 (M3) : « Ama écrit… » à la place de l'aperçu.
+                    typingLabel: conversationTypingLabel(
+                      ref,
+                      context,
+                      actor: actor,
+                      conversation: c,
+                    ),
                     // **L'identifiant, jamais l'objet** : un objet en `extra` est
                     // une copie figée hors du magasin, et il ne survit ni à un
                     // réveil push ni à un lien profond.

@@ -25,6 +25,7 @@ import '../screens/home_shell.dart';
 import '../screens/legal_acceptance_screen.dart';
 import '../screens/legal_document_screen.dart';
 import '../screens/media_settings_screen.dart';
+import '../screens/privacy_settings_screen.dart';
 import '../screens/radio_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/media_library_screen.dart';
@@ -63,6 +64,10 @@ abstract final class AppRoute {
   static const profileEdit = 'profile-edit';
   static const profileDelete = 'profile-delete';
   static const mediaSettings = 'media-settings';
+
+  /// **Confidentialité de la messagerie** (#142) — accusés de lecture, vu à /
+  /// en ligne. Poussée depuis le Profil ; réservée aux membres.
+  static const privacySettings = 'privacy-settings';
   static const downloads = 'downloads';
   static const home = 'home';
   static const profile = 'profile';
@@ -191,6 +196,9 @@ const memberOnlyRoutes = <String>{
   '/profile',
   '/profile/edit',
   '/profile/delete',
+  // Les réglages de confidentialité de la messagerie (#142) : ils vivent sur
+  // le compte, sans compte il n'y a rien à régler.
+  '/profile/privacy',
   // L'**écriture** d'une annonce — leur lecture est ouverte.
   '/announcement/compose',
   '/announcement/:id/edit',
@@ -363,6 +371,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.profileDelete,
         path: '/profile/delete',
         builder: (_, __) => const AppBackground(child: DeleteAccountScreen()),
+      ),
+      // Confidentialité de la messagerie (#142) — poussée depuis le Profil.
+      GoRoute(
+        name: AppRoute.privacySettings,
+        path: '/profile/privacy',
+        builder: (_, __) => const AppBackground(child: PrivacySettingsScreen()),
       ),
       // Réglages média — poussée depuis le Profil, où elle a remplacé
       // l'hexagone des dons.

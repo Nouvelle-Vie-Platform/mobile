@@ -38,10 +38,14 @@ class OrganizableConversationTile extends ConsumerWidget {
     super.key,
     required this.conversation,
     required this.onTap,
+    this.typingLabel,
   });
 
   final ConversationView conversation;
   final VoidCallback onTap;
+
+  /// #142 (M3) : « Ama écrit… », passé à la tuile à la place de l'aperçu.
+  final String? typingLabel;
 
   /// La clé du [Dismissible] d'une conversation — ce qu'un test fait glisser.
   static Key dismissKeyOf(String groupId) => ValueKey('dismiss-$groupId');
@@ -94,7 +98,11 @@ class OrganizableConversationTile extends ConsumerWidget {
           if (action == null || !context.mounted) return;
           await runConversationAction(context, ref, conversation, action);
         },
-        child: ConversationTile(conversation: conversation, onTap: onTap),
+        child: ConversationTile(
+          conversation: conversation,
+          onTap: onTap,
+          typingLabel: typingLabel,
+        ),
       ),
     );
   }

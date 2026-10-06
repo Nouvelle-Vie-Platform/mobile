@@ -19,6 +19,7 @@ import 'package:maison_du_miracle/data/local/sync_dao.dart'
 import 'package:maison_du_miracle/data/messaging/group_history.dart';
 import 'package:maison_du_miracle/data/messaging/group_read_advancer.dart';
 import 'package:maison_du_miracle/data/messaging/messaging_channel.dart';
+import 'package:maison_du_miracle/data/messaging/messaging_signals_api.dart';
 import 'package:maison_du_miracle/data/messaging/messaging_store_writer.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/data/repositories/auth_repository.dart';
@@ -32,6 +33,7 @@ import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart'
 import 'package:maison_du_miracle/data/repositories/playback_progress_reporter.dart';
 import 'package:maison_du_miracle/data/repositories/menu_repository.dart';
 import 'package:maison_du_miracle/data/repositories/my_requests_repository.dart';
+import 'package:maison_du_miracle/data/repositories/receipts_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
@@ -46,6 +48,7 @@ import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/menu_providers.dart';
 import 'package:maison_du_miracle/state/radio_live_providers.dart';
+import 'package:maison_du_miracle/state/receipts_providers.dart';
 import 'package:maison_du_miracle/state/requests_providers.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/theme_provider.dart';
@@ -194,6 +197,8 @@ Future<void> pumpRouter(
   MessagingChannel? channel,
   GroupReadSender? readSender,
   GroupHistory? history,
+  ReceiptsRepository? receipts,
+  MessagingSignalsApi? signals,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
   RadioChannel? radioChannel,
@@ -227,6 +232,8 @@ Future<void> pumpRouter(
           channel: channel,
           readSender: readSender,
           history: history,
+          receipts: receipts,
+          signals: signals,
           radio: radio,
           handshake: handshake,
           radioChannel: radioChannel,
@@ -283,6 +290,8 @@ List<Override> _commonOverrides(
   MessagingChannel? channel,
   GroupReadSender? readSender,
   GroupHistory? history,
+  ReceiptsRepository? receipts,
+  MessagingSignalsApi? signals,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
   RadioChannel? radioChannel,
@@ -340,6 +349,17 @@ List<Override> _commonOverrides(
         ),
       ),
       groupHistoryProvider.overrideWithValue(history ?? const NoGroupHistory()),
+      // **Les accusés, la frappe, la présence, la confidentialité** (#142) :
+      // les six routes posées **inertes** (l'implémentation réelle est HTTP dès
+      // que `AppEnv.useBackend` est vrai) et les coches posées **par un flux
+      // nu** — lues dans le magasin, elles ouvriraient un flux Drift, qui fige
+      // le montage sous l'horloge factice. Paramètres nommés : Riverpod 3
+      // refuse deux surcharges du même provider.
+      messagingSignalsApiProvider
+          .overrideWithValue(signals ?? const InertMessagingSignalsApi()),
+      receiptsRepositoryProvider.overrideWith(
+        (ref, actor) => receipts ?? const EmptyReceiptsRepository(),
+      ),
       // **La rubrique Échanges, posée sur un double vide** (#96), pour les deux
       // raisons qui valent déjà pour la médiathèque et les annonces : son
       // implémentation réelle lit le **magasin Drift** — donc ouvre des flux qu'une
@@ -504,6 +524,8 @@ Future<void> pumpScreen(
   MessagingChannel? channel,
   GroupReadSender? readSender,
   GroupHistory? history,
+  ReceiptsRepository? receipts,
+  MessagingSignalsApi? signals,
   RadioRepository? radio,
   RadioHandshakeResolver? handshake,
   RadioChannel? radioChannel,
@@ -543,6 +565,8 @@ Future<void> pumpScreen(
           channel: channel,
           readSender: readSender,
           history: history,
+          receipts: receipts,
+          signals: signals,
           radio: radio,
           handshake: handshake,
           radioChannel: radioChannel,

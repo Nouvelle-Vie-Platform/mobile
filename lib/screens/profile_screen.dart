@@ -23,6 +23,9 @@ class ProfileScreen extends ConsumerWidget {
   final bool showBack;
 
   static const Key deleteAccountKey = Key('profile_delete_account');
+
+  /// L'entrée « Confidentialité » (#142).
+  static const Key privacyKey = Key('profile_privacy');
   static const Key themeButtonKey = Key('profile_theme_button');
 
   @override
@@ -76,6 +79,17 @@ class ProfileScreen extends ConsumerWidget {
                     Padding(
                       padding: AppSpacing.screenPadding,
                       child: const ProfileCompletionBanner(),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                  // #142 (M3) : accusés de lecture, vu à / en ligne.
+                  if (user != null) ...[
+                    MenuTile(
+                      key: ProfileScreen.privacyKey,
+                      icon: Icons.lock_outline,
+                      label: l.privacyMenu,
+                      subtitle: l.privacyMenuSubtitle,
+                      onTap: () => context.pushNamed(AppRoute.privacySettings),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                   ],
