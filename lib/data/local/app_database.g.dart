@@ -17202,6 +17202,522 @@ class PendingGroupArrangementsCompanion
   }
 }
 
+class $MessageReceiptsTable extends MessageReceipts
+    with TableInfo<$MessageReceiptsTable, MessageReceiptRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MessageReceiptsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _deliveredAtMeta =
+      const VerificationMeta('deliveredAt');
+  @override
+  late final GeneratedColumn<DateTime> deliveredAt = GeneratedColumn<DateTime>(
+      'delivered_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _readAtMeta = const VerificationMeta('readAt');
+  @override
+  late final GeneratedColumn<DateTime> readAt = GeneratedColumn<DateTime>(
+      'read_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, id, groupId, deliveredAt, readAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'message_receipts';
+  @override
+  VerificationContext validateIntegrity(Insertable<MessageReceiptRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('delivered_at')) {
+      context.handle(
+          _deliveredAtMeta,
+          deliveredAt.isAcceptableOrUnknown(
+              data['delivered_at']!, _deliveredAtMeta));
+    }
+    if (data.containsKey('read_at')) {
+      context.handle(_readAtMeta,
+          readAt.isAcceptableOrUnknown(data['read_at']!, _readAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MessageReceiptRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MessageReceiptRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      deliveredAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}delivered_at']),
+      readAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}read_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $MessageReceiptsTable createAlias(String alias) {
+    return $MessageReceiptsTable(attachedDatabase, alias);
+  }
+}
+
+class MessageReceiptRow extends DataClass
+    implements Insertable<MessageReceiptRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// L'identifiant **du message** (UUIDv7 serveur).
+  final String id;
+  final String groupId;
+  final DateTime? deliveredAt;
+  final DateTime? readAt;
+  final DateTime? updatedAt;
+  const MessageReceiptRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.groupId,
+      this.deliveredAt,
+      this.readAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    map['group_id'] = Variable<String>(groupId);
+    if (!nullToAbsent || deliveredAt != null) {
+      map['delivered_at'] = Variable<DateTime>(deliveredAt);
+    }
+    if (!nullToAbsent || readAt != null) {
+      map['read_at'] = Variable<DateTime>(readAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  MessageReceiptsCompanion toCompanion(bool nullToAbsent) {
+    return MessageReceiptsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      groupId: Value(groupId),
+      deliveredAt: deliveredAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deliveredAt),
+      readAt:
+          readAt == null && nullToAbsent ? const Value.absent() : Value(readAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory MessageReceiptRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MessageReceiptRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+      deliveredAt: serializer.fromJson<DateTime?>(json['deliveredAt']),
+      readAt: serializer.fromJson<DateTime?>(json['readAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'groupId': serializer.toJson<String>(groupId),
+      'deliveredAt': serializer.toJson<DateTime?>(deliveredAt),
+      'readAt': serializer.toJson<DateTime?>(readAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  MessageReceiptRow copyWith(
+          {int? syncStamp,
+          String? id,
+          String? groupId,
+          Value<DateTime?> deliveredAt = const Value.absent(),
+          Value<DateTime?> readAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      MessageReceiptRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        groupId: groupId ?? this.groupId,
+        deliveredAt: deliveredAt.present ? deliveredAt.value : this.deliveredAt,
+        readAt: readAt.present ? readAt.value : this.readAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  MessageReceiptRow copyWithCompanion(MessageReceiptsCompanion data) {
+    return MessageReceiptRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      deliveredAt:
+          data.deliveredAt.present ? data.deliveredAt.value : this.deliveredAt,
+      readAt: data.readAt.present ? data.readAt.value : this.readAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageReceiptRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('groupId: $groupId, ')
+          ..write('deliveredAt: $deliveredAt, ')
+          ..write('readAt: $readAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(syncStamp, id, groupId, deliveredAt, readAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MessageReceiptRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.groupId == this.groupId &&
+          other.deliveredAt == this.deliveredAt &&
+          other.readAt == this.readAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MessageReceiptsCompanion extends UpdateCompanion<MessageReceiptRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String> groupId;
+  final Value<DateTime?> deliveredAt;
+  final Value<DateTime?> readAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const MessageReceiptsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.deliveredAt = const Value.absent(),
+    this.readAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MessageReceiptsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    required String groupId,
+    this.deliveredAt = const Value.absent(),
+    this.readAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        groupId = Value(groupId);
+  static Insertable<MessageReceiptRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? groupId,
+    Expression<DateTime>? deliveredAt,
+    Expression<DateTime>? readAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (groupId != null) 'group_id': groupId,
+      if (deliveredAt != null) 'delivered_at': deliveredAt,
+      if (readAt != null) 'read_at': readAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MessageReceiptsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String>? groupId,
+      Value<DateTime?>? deliveredAt,
+      Value<DateTime?>? readAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return MessageReceiptsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      groupId: groupId ?? this.groupId,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
+      readAt: readAt ?? this.readAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (deliveredAt.present) {
+      map['delivered_at'] = Variable<DateTime>(deliveredAt.value);
+    }
+    if (readAt.present) {
+      map['read_at'] = Variable<DateTime>(readAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MessageReceiptsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('groupId: $groupId, ')
+          ..write('deliveredAt: $deliveredAt, ')
+          ..write('readAt: $readAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DeliveryAcksTable extends DeliveryAcks
+    with TableInfo<$DeliveryAcksTable, DeliveryAckRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DeliveryAcksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _messageIdMeta =
+      const VerificationMeta('messageId');
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+      'message_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [messageId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'delivery_acks';
+  @override
+  VerificationContext validateIntegrity(Insertable<DeliveryAckRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('message_id')) {
+      context.handle(_messageIdMeta,
+          messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
+    } else if (isInserting) {
+      context.missing(_messageIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {messageId};
+  @override
+  DeliveryAckRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeliveryAckRow(
+      messageId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
+    );
+  }
+
+  @override
+  $DeliveryAcksTable createAlias(String alias) {
+    return $DeliveryAcksTable(attachedDatabase, alias);
+  }
+}
+
+class DeliveryAckRow extends DataClass implements Insertable<DeliveryAckRow> {
+  final String messageId;
+  const DeliveryAckRow({required this.messageId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['message_id'] = Variable<String>(messageId);
+    return map;
+  }
+
+  DeliveryAcksCompanion toCompanion(bool nullToAbsent) {
+    return DeliveryAcksCompanion(
+      messageId: Value(messageId),
+    );
+  }
+
+  factory DeliveryAckRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeliveryAckRow(
+      messageId: serializer.fromJson<String>(json['messageId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'messageId': serializer.toJson<String>(messageId),
+    };
+  }
+
+  DeliveryAckRow copyWith({String? messageId}) => DeliveryAckRow(
+        messageId: messageId ?? this.messageId,
+      );
+  DeliveryAckRow copyWithCompanion(DeliveryAcksCompanion data) {
+    return DeliveryAckRow(
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeliveryAckRow(')
+          ..write('messageId: $messageId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => messageId.hashCode;
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeliveryAckRow && other.messageId == this.messageId);
+}
+
+class DeliveryAcksCompanion extends UpdateCompanion<DeliveryAckRow> {
+  final Value<String> messageId;
+  final Value<int> rowid;
+  const DeliveryAcksCompanion({
+    this.messageId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DeliveryAcksCompanion.insert({
+    required String messageId,
+    this.rowid = const Value.absent(),
+  }) : messageId = Value(messageId);
+  static Insertable<DeliveryAckRow> custom({
+    Expression<String>? messageId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (messageId != null) 'message_id': messageId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DeliveryAcksCompanion copyWith(
+      {Value<String>? messageId, Value<int>? rowid}) {
+    return DeliveryAcksCompanion(
+      messageId: messageId ?? this.messageId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeliveryAcksCompanion(')
+          ..write('messageId: $messageId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AppSettingsTable extends AppSettings
     with TableInfo<$AppSettingsTable, AppSettingRow> {
   @override
@@ -18523,6 +19039,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $GroupArrangementsTable(this);
   late final $PendingGroupArrangementsTable pendingGroupArrangements =
       $PendingGroupArrangementsTable(this);
+  late final $MessageReceiptsTable messageReceipts =
+      $MessageReceiptsTable(this);
+  late final $DeliveryAcksTable deliveryAcks = $DeliveryAcksTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $DownloadsTable downloads = $DownloadsTable(this);
   late final $DownloadTitlesTable downloadTitles = $DownloadTitlesTable(this);
@@ -18548,6 +19067,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       InteractionDao(this as AppDatabase);
   late final ChatOrganizationDao chatOrganizationDao =
       ChatOrganizationDao(this as AppDatabase);
+  late final ReceiptsDao receiptsDao = ReceiptsDao(this as AppDatabase);
   late final SettingsDao settingsDao = SettingsDao(this as AppDatabase);
   late final DownloadsDao downloadsDao = DownloadsDao(this as AppDatabase);
   late final DownloadNotificationsDao downloadNotificationsDao =
@@ -18591,6 +19111,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         myInteractions,
         groupArrangements,
         pendingGroupArrangements,
+        messageReceipts,
+        deliveryAcks,
         appSettings,
         downloads,
         downloadTitles,
@@ -26605,6 +27127,308 @@ typedef $$PendingGroupArrangementsTableProcessedTableManager
         ),
         PendingGroupArrangementRow,
         PrefetchHooks Function()>;
+typedef $$MessageReceiptsTableCreateCompanionBuilder = MessageReceiptsCompanion
+    Function({
+  Value<int> syncStamp,
+  required String id,
+  required String groupId,
+  Value<DateTime?> deliveredAt,
+  Value<DateTime?> readAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$MessageReceiptsTableUpdateCompanionBuilder = MessageReceiptsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String> groupId,
+  Value<DateTime?> deliveredAt,
+  Value<DateTime?> readAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$MessageReceiptsTableFilterComposer
+    extends Composer<_$AppDatabase, $MessageReceiptsTable> {
+  $$MessageReceiptsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get deliveredAt => $composableBuilder(
+      column: $table.deliveredAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get readAt => $composableBuilder(
+      column: $table.readAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MessageReceiptsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MessageReceiptsTable> {
+  $$MessageReceiptsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get deliveredAt => $composableBuilder(
+      column: $table.deliveredAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get readAt => $composableBuilder(
+      column: $table.readAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MessageReceiptsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MessageReceiptsTable> {
+  $$MessageReceiptsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deliveredAt => $composableBuilder(
+      column: $table.deliveredAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get readAt =>
+      $composableBuilder(column: $table.readAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MessageReceiptsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $MessageReceiptsTable,
+    MessageReceiptRow,
+    $$MessageReceiptsTableFilterComposer,
+    $$MessageReceiptsTableOrderingComposer,
+    $$MessageReceiptsTableAnnotationComposer,
+    $$MessageReceiptsTableCreateCompanionBuilder,
+    $$MessageReceiptsTableUpdateCompanionBuilder,
+    (
+      MessageReceiptRow,
+      BaseReferences<_$AppDatabase, $MessageReceiptsTable, MessageReceiptRow>
+    ),
+    MessageReceiptRow,
+    PrefetchHooks Function()> {
+  $$MessageReceiptsTableTableManager(
+      _$AppDatabase db, $MessageReceiptsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MessageReceiptsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MessageReceiptsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MessageReceiptsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> groupId = const Value.absent(),
+            Value<DateTime?> deliveredAt = const Value.absent(),
+            Value<DateTime?> readAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MessageReceiptsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            groupId: groupId,
+            deliveredAt: deliveredAt,
+            readAt: readAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            required String groupId,
+            Value<DateTime?> deliveredAt = const Value.absent(),
+            Value<DateTime?> readAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MessageReceiptsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            groupId: groupId,
+            deliveredAt: deliveredAt,
+            readAt: readAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MessageReceiptsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $MessageReceiptsTable,
+    MessageReceiptRow,
+    $$MessageReceiptsTableFilterComposer,
+    $$MessageReceiptsTableOrderingComposer,
+    $$MessageReceiptsTableAnnotationComposer,
+    $$MessageReceiptsTableCreateCompanionBuilder,
+    $$MessageReceiptsTableUpdateCompanionBuilder,
+    (
+      MessageReceiptRow,
+      BaseReferences<_$AppDatabase, $MessageReceiptsTable, MessageReceiptRow>
+    ),
+    MessageReceiptRow,
+    PrefetchHooks Function()>;
+typedef $$DeliveryAcksTableCreateCompanionBuilder = DeliveryAcksCompanion
+    Function({
+  required String messageId,
+  Value<int> rowid,
+});
+typedef $$DeliveryAcksTableUpdateCompanionBuilder = DeliveryAcksCompanion
+    Function({
+  Value<String> messageId,
+  Value<int> rowid,
+});
+
+class $$DeliveryAcksTableFilterComposer
+    extends Composer<_$AppDatabase, $DeliveryAcksTable> {
+  $$DeliveryAcksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get messageId => $composableBuilder(
+      column: $table.messageId, builder: (column) => ColumnFilters(column));
+}
+
+class $$DeliveryAcksTableOrderingComposer
+    extends Composer<_$AppDatabase, $DeliveryAcksTable> {
+  $$DeliveryAcksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get messageId => $composableBuilder(
+      column: $table.messageId, builder: (column) => ColumnOrderings(column));
+}
+
+class $$DeliveryAcksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DeliveryAcksTable> {
+  $$DeliveryAcksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+}
+
+class $$DeliveryAcksTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $DeliveryAcksTable,
+    DeliveryAckRow,
+    $$DeliveryAcksTableFilterComposer,
+    $$DeliveryAcksTableOrderingComposer,
+    $$DeliveryAcksTableAnnotationComposer,
+    $$DeliveryAcksTableCreateCompanionBuilder,
+    $$DeliveryAcksTableUpdateCompanionBuilder,
+    (
+      DeliveryAckRow,
+      BaseReferences<_$AppDatabase, $DeliveryAcksTable, DeliveryAckRow>
+    ),
+    DeliveryAckRow,
+    PrefetchHooks Function()> {
+  $$DeliveryAcksTableTableManager(_$AppDatabase db, $DeliveryAcksTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DeliveryAcksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DeliveryAcksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DeliveryAcksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> messageId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              DeliveryAcksCompanion(
+            messageId: messageId,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String messageId,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              DeliveryAcksCompanion.insert(
+            messageId: messageId,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$DeliveryAcksTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $DeliveryAcksTable,
+    DeliveryAckRow,
+    $$DeliveryAcksTableFilterComposer,
+    $$DeliveryAcksTableOrderingComposer,
+    $$DeliveryAcksTableAnnotationComposer,
+    $$DeliveryAcksTableCreateCompanionBuilder,
+    $$DeliveryAcksTableUpdateCompanionBuilder,
+    (
+      DeliveryAckRow,
+      BaseReferences<_$AppDatabase, $DeliveryAcksTable, DeliveryAckRow>
+    ),
+    DeliveryAckRow,
+    PrefetchHooks Function()>;
 typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
     Function({
   required String key,
@@ -27357,6 +28181,10 @@ class $AppDatabaseManager {
   $$PendingGroupArrangementsTableTableManager get pendingGroupArrangements =>
       $$PendingGroupArrangementsTableTableManager(
           _db, _db.pendingGroupArrangements);
+  $$MessageReceiptsTableTableManager get messageReceipts =>
+      $$MessageReceiptsTableTableManager(_db, _db.messageReceipts);
+  $$DeliveryAcksTableTableManager get deliveryAcks =>
+      $$DeliveryAcksTableTableManager(_db, _db.deliveryAcks);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$DownloadsTableTableManager get downloads =>
