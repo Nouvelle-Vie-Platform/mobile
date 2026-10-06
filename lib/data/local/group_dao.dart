@@ -41,6 +41,7 @@ part 'group_dao.g.dart';
     PendingGroupMessages,
     GroupReads,
     PendingGroupReads,
+    GroupMutes,
     OfficialAccounts,
     Contributors,
     // M8 (#146) : mon rangement, lu par la liste des conversations.
@@ -76,6 +77,11 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
 LEFT JOIN group_reads AS r ON r.group_id = g.id
 LEFT JOIN group_messages AS rm ON rm.id = r.last_read_message_id
 LEFT JOIN pending_group_reads AS pr ON pr.group_id = g.id''';
+
+  /// **La jointure de ma sourdine** (M5), à poser derrière un `FROM … AS g` :
+  /// `mu`, ou rien si je n'ai jamais réglé la sourdine de ce groupe.
+  static const String _muteJoin =
+      'LEFT JOIN group_mutes AS mu ON mu.group_id = g.id';
 
   /// **La formule des non-lus du contrat serveur** (M1a §2), pour un message
   /// d'alias [m], **moi** étant la variable `?[me]`. Exige [_readJoins].
@@ -154,12 +160,15 @@ SELECT
        ELSE ga.archived_at IS NOT NULL END AS is_archived,
   CASE WHEN pa.group_id IS NOT NULL
        THEN (CASE WHEN pa.pinned THEN COALESCE(ga.pinned_at, pa.requested_at) END)
-       ELSE ga.pinned_at END AS pinned_at
+       ELSE ga.pinned_at END AS pinned_at,
+  mu.muted_until      AS muted_until,
+  mu.muted_forever    AS muted_forever
 FROM group_members AS me
 JOIN "groups" AS g ON g.id = me.group_id
 $_readJoins
 LEFT JOIN group_arrangements AS ga ON ga.group_id = g.id
 LEFT JOIN pending_group_arrangements AS pa ON pa.group_id = g.id
+$_muteJoin
 LEFT JOIN profiles AS peer ON peer.id = (
   SELECT other.user_id FROM group_members AS other
    WHERE other.group_id = g.id AND other.user_id <> me.user_id
@@ -183,6 +192,7 @@ ORDER BY activity_at DESC, g.id DESC
         pendingGroupReads,
         groupArrangements,
         pendingGroupArrangements,
+        groupMutes,
       },
     ).map(
       (row) => ConversationRecord(
@@ -205,6 +215,8 @@ ORDER BY activity_at DESC, g.id DESC
         unreadCount: row.read<int>('unread_count'),
         isArchived: row.read<bool>('is_archived'),
         pinnedAt: row.read<DateTime?>('pinned_at'),
+        mutedUntil: row.read<DateTime?>('muted_until'),
+        mutedForever: row.read<bool?>('muted_forever') ?? false,
       ),
     );
   }
@@ -763,108 +775,126 @@ DELETE FROM pending_group_messages
     );
   }
 
-  /// **Un message, avec de quoi l'annoncer** — ou `null` si le magasin ne l'a pas.
+  // ───────────────────────────────────────────────────────────────────────────
+  // Les notifications et la sourdine (M5)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// **Ma sourdine dans un groupe**, ou `null` si je ne l'ai jamais réglée.
+  Selectable<GroupMuteRow> muteOf(String groupId) =>
+      select(groupMutes)..where((m) => m.groupId.equals(groupId));
+
+  /// **Le dernier message d'un groupe**, quel qu'en soit l'auteur — la position
+  /// jusqu'où « Marquer comme lu » avance la lecture. `null` sur un fil vide.
+  Future<GroupMessageRow?> latestMessageOf(String groupId) {
+    return (select(groupMessages)
+          ..where((m) => m.groupId.equals(groupId))
+          ..orderBy([
+            (m) => OrderingTerm.desc(m.createdAt),
+            (m) => OrderingTerm.desc(m.id),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// **De quoi dresser la notification d'une conversation** (M5), lu du
+  /// magasin et de lui seul — ou `null` si [userId] n'en est pas membre.
   ///
-  /// La seule lecture de ce DAO qui ne peint pas un écran : elle sert la
-  /// notification locale du réveil push (#97). Elle existe ici et non dans
-  /// `lib/data/push/` parce que c'est une **lecture du domaine Échanges**, et que
-  /// la règle du dépôt est « un DAO par domaine » — le module de push ne doit pas
-  /// se mettre à écrire du SQL sur `group_messages`.
-  ///
-  /// Trois choses qu'elle ne fait **pas**, et qui sont le contrat de la tranche :
-  ///
-  /// 1. elle ne lit **rien** de la charge utile du push. Son seul paramètre est un
-  ///    identifiant, et tout ce qu'elle rend vient du magasin. C'est ce qui fait
-  ///    qu'une notification ne peut pas afficher un message absent de la base
-  ///    (ADR-0006) ni ouvrir un fil qui ne le contient pas ;
-  /// 2. elle ne devine **aucun** nom : `authorName` reste nul quand `profiles` n'a
-  ///    pas encore livré l'auteur, quand le serveur parle (`isSystem`), et quand le
-  ///    compte a été supprimé (ADR-0032). L'absence s'affiche comme une absence ;
-  /// 3. elle ne filtre pas sur mon appartenance. Le serveur ne réveille que les
-  ///    membres d'un groupe, et un `group_messages` en magasin y est **déjà**
-  ///    arrivé par mon périmètre : filtrer ici referait, moins bien, le travail de
-  ///    `ResolveDeviceTokens`.
-  ///
-  /// `null` est une réponse **normale** et fréquente : la synchronisation
-  /// déclenchée par le réveil peut avoir échoué (avion), ou le message avoir été
-  /// retiré par la modération entre l'envoi du push et le tirage. Il n'y a alors
-  /// rien à annoncer, et c'est très exactement ce qu'il faut faire.
-  Future<MessageAnnouncement?> announcementFor(String messageId) {
-    return customSelect(
+  /// Les messages sont **les non-lus** au sens du contrat ([_isUnread]) : ni les
+  /// miens, ni ceux du serveur, et rien d'antérieur à ma lecture. C'est ce qui
+  /// fait qu'une notification se vide quand la discussion est lue ailleurs, et
+  /// qu'un message système (« X a rejoint le groupe ») ne réveille personne.
+  /// Les [limit] plus récents, du plus ancien au plus récent — l'ordre où la
+  /// notification les empile.
+  Future<ConversationDigest?> conversationDigestOf(
+    String groupId,
+    String userId, {
+    int limit = 6,
+  }) async {
+    final header = await customSelect(
       '''
 SELECT
-  m.id                AS message_id,
-  m.group_id          AS group_id,
+  g.id                AS group_id,
+  g.name              AS group_name,
+  g.is_direct         AS is_direct,
+  peer.display_name   AS peer_name,
+  peer.avatar_url     AS peer_avatar_url,
+  mu.muted_until      AS muted_until,
+  mu.muted_forever    AS muted_forever,
+  (SELECT COUNT(*) FROM group_messages AS u
+    WHERE u.group_id = g.id AND ${_isUnread('u', 2)}) AS unread_count
+FROM group_members AS me
+JOIN "groups" AS g ON g.id = me.group_id
+$_readJoins
+$_muteJoin
+LEFT JOIN profiles AS peer ON peer.id = (
+  SELECT other.user_id FROM group_members AS other
+   WHERE other.group_id = g.id AND other.user_id <> me.user_id
+   ORDER BY other.id LIMIT 1
+)
+WHERE me.group_id = ?1 AND me.user_id = ?2
+''',
+      variables: [Variable<String>(groupId), Variable<String>(userId)],
+      readsFrom: {
+        groups,
+        groupMembers,
+        groupMessages,
+        profiles,
+        groupReads,
+        pendingGroupReads,
+        groupMutes,
+      },
+    ).getSingleOrNull();
+    if (header == null) return null;
+
+    final lines = await customSelect(
+      '''
+SELECT * FROM (
+SELECT
+  m.id                AS id,
   m.body              AS body,
   m.author_id         AS author_id,
   m.is_system         AS is_system,
-  g.name              AS group_name,
-  g.is_direct         AS is_direct,
+  m.created_at        AS created_at,
   author.display_name AS author_name
 FROM group_messages AS m
-LEFT JOIN "groups" AS g ON g.id = m.group_id
+JOIN (SELECT ?1 AS id) AS g
+$_readJoins
 LEFT JOIN profiles AS author ON author.id = m.author_id
-WHERE m.id = ?1
+WHERE m.group_id = ?1 AND ${_isUnread('m', 2)}
+ORDER BY m.created_at DESC, m.id DESC
+LIMIT ?3
+)
+ORDER BY created_at ASC, id ASC
 ''',
-      variables: [Variable<String>(messageId)],
-      readsFrom: {groupMessages, groups, profiles},
-    ).map(_announcement).getSingleOrNull();
+      variables: [
+        Variable<String>(groupId),
+        Variable<String>(userId),
+        Variable<int>(limit),
+      ],
+      readsFrom: {groupMessages, profiles, groupReads, pendingGroupReads},
+    ).get();
+
+    return ConversationDigest(
+      groupId: header.read<String>('group_id'),
+      groupName: header.read<String?>('group_name'),
+      isDirect: header.read<bool?>('is_direct') ?? false,
+      peerName: header.read<String?>('peer_name'),
+      peerAvatarUrl: header.read<String?>('peer_avatar_url'),
+      unreadCount: header.read<int>('unread_count'),
+      mutedUntil: header.read<DateTime?>('muted_until'),
+      mutedForever: header.read<bool?>('muted_forever') ?? false,
+      messages: [
+        for (final row in lines)
+          DigestMessage(
+            id: row.read<String>('id'),
+            body: row.read<String?>('body'),
+            authorId: row.read<String?>('author_id'),
+            authorName: row.read<String?>('author_name'),
+            createdAt: row.read<DateTime?>('created_at'),
+          ),
+      ],
+    );
   }
-
-  static MessageAnnouncement _announcement(QueryRow row) => MessageAnnouncement(
-        messageId: row.read<String>('message_id'),
-        groupId: row.read<String>('group_id'),
-        // La jointure est **externe** : `groups` n'a pas de tombstone mais rien ne
-        // garantit qu'elle soit arrivée avant le message (`profiles` est la seule
-        // contrainte d'ordre écrite par le cadrage de #96).
-        groupName: row.read<String?>('group_name'),
-        isDirect: row.read<bool?>('is_direct') ?? false,
-        body: row.read<String?>('body'),
-        authorId: row.read<String?>('author_id'),
-        isSystem: row.read<bool>('is_system'),
-        authorName: row.read<String?>('author_name'),
-      );
-}
-
-/// Ce que le magasin sait d'un message qu'un réveil vient d'annoncer (#97).
-///
-/// Elle porte les colonnes, elle ne tranche rien : c'est
-/// `lib/data/push/wake_notifier.dart` qui en dresse un titre et un corps, et
-/// `messageOriginOf` (`models/echanges_view.dart`) qui lit le **couple**
-/// `(authorId, isSystem)` partout ailleurs. Ne jamais tester [authorId] seul : le
-/// nul a deux sens depuis la suppression de compte (ADR-0032).
-@immutable
-class MessageAnnouncement {
-  const MessageAnnouncement({
-    required this.messageId,
-    required this.groupId,
-    required this.groupName,
-    required this.isDirect,
-    required this.body,
-    required this.authorId,
-    required this.isSystem,
-    required this.authorName,
-  });
-
-  final String messageId;
-
-  /// Lu du **magasin**, et non du push : c'est lui qui sert de cible au tap, et il
-  /// désigne donc un fil dont on sait qu'il contient le message.
-  final String groupId;
-
-  /// `null` quand `groups` n'est pas encore arrivée en magasin.
-  final String? groupName;
-
-  final bool isDirect;
-
-  /// `null` pour un message-média (#140) : il n'y a pas de phrase à annoncer.
-  final String? body;
-  final String? authorId;
-  final bool isSystem;
-
-  /// `null` dans **trois** cas distincts — profil pas encore reçu, message
-  /// système, auteur retiré. Aucun ne se remplace par un nom inventé.
-  final String? authorName;
 }
 
 /// Une ligne de la liste des conversations — ce que la tuile affiche, et rien de
@@ -895,6 +925,8 @@ class ConversationRecord {
     this.unreadCount = 0,
     this.isArchived = false,
     this.pinnedAt,
+    this.mutedUntil,
+    this.mutedForever = false,
   });
 
   final String groupId;
@@ -927,7 +959,30 @@ class ConversationRecord {
 
   /// **Épinglée par moi**, et depuis quand (#146) — `null` sinon.
   final DateTime? pinnedAt;
+  /// Ma sourdine (M5) — la fin d'une sourdine bornée, ou `null`.
+  final DateTime? mutedUntil;
+
+  /// « Toujours » (M5).
+  final bool mutedForever;
+
+  /// **La conversation est-elle en sourdine à [now] ?** Une sourdine bornée
+  /// échue est levée : elle n'est jamais effacée, elle cesse simplement d'être
+  /// dans le futur.
+  bool isMutedAt(DateTime now) => isGroupMuted(
+        mutedUntil: mutedUntil,
+        mutedForever: mutedForever,
+        now: now,
+      );
 }
+
+/// **La règle de la sourdine**, écrite une fois (M5) : « toujours », ou une
+/// échéance encore dans le futur. Celle du pusher serveur, à l'horloge près.
+bool isGroupMuted({
+  required DateTime? mutedUntil,
+  required bool mutedForever,
+  required DateTime now,
+}) =>
+    mutedForever || (mutedUntil != null && mutedUntil.isAfter(now));
 
 /// Une carte de la rangée « groupes à rejoindre ».
 @immutable
@@ -1037,4 +1092,76 @@ class GroupMemberWithProfile {
 
   final GroupMemberRow member;
   final ProfileRow? profile;
+}
+
+/// **Ce que le magasin sait d'une conversation à notifier** (M5) — lu par
+/// [GroupDao.conversationDigestOf], mis en forme par
+/// `lib/data/push/conversation_notification.dart`.
+///
+/// Elle porte des colonnes, elle ne tranche rien : le titre, l'aperçu masqué
+/// et la sourdine se décident plus haut.
+@immutable
+class ConversationDigest {
+  const ConversationDigest({
+    required this.groupId,
+    required this.isDirect,
+    required this.unreadCount,
+    required this.messages,
+    this.groupName,
+    this.peerName,
+    this.peerAvatarUrl,
+    this.mutedUntil,
+    this.mutedForever = false,
+  });
+
+  final String groupId;
+  final String? groupName;
+  final bool isDirect;
+
+  /// L'autre d'un tête-à-tête — `null` pour un groupe, ou tant que son profil
+  /// n'est pas arrivé.
+  final String? peerName;
+
+  /// **Toujours `null` aujourd'hui** : `users` ne porte pas d'avatar (voir
+  /// `Profiles.avatarUrl`). Gardé pour le jour où il en portera.
+  final String? peerAvatarUrl;
+
+  /// Tous mes non-lus de cette conversation — pas seulement ceux de [messages].
+  final int unreadCount;
+
+  /// Les non-lus les plus récents, du plus ancien au plus récent.
+  final List<DigestMessage> messages;
+
+  final DateTime? mutedUntil;
+  final bool mutedForever;
+
+  bool isMutedAt(DateTime now) => isGroupMuted(
+        mutedUntil: mutedUntil,
+        mutedForever: mutedForever,
+        now: now,
+      );
+}
+
+/// Un message non lu, avec ce que le magasin possède de son auteur.
+///
+/// [authorName] est nul quand l'auteur a été retiré (`authorId` nul, ADR-0032)
+/// **ou** quand son profil n'est pas encore arrivé — [authorId] départage les
+/// deux. Jamais un message du serveur : la formule des non-lus les écarte.
+@immutable
+class DigestMessage {
+  const DigestMessage({
+    required this.id,
+    this.body,
+    this.authorId,
+    this.authorName,
+    this.createdAt,
+  });
+
+  final String id;
+
+  /// `null` pour un message-média (#140).
+  final String? body;
+  final String? authorId;
+  final String? authorName;
+  final DateTime? createdAt;
 }

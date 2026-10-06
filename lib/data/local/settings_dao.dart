@@ -202,4 +202,37 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   /// Remplace la file d'attente.
   Future<void> setPendingPlays(String encoded) =>
       _put(_pendingPlaysKey, encoded);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // L'aperçu des notifications de messagerie (tranche M5)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// « Afficher le contenu » des notifications de messages. **Défaut : oui.**
+  ///
+  /// Lu par le réveil de l'application **fermée**, dans son isolate et avec sa
+  /// propre connexion : c'est pourquoi le réglage vit ici, dans le magasin, et
+  /// non dans un état Riverpod que cet isolate ne verrait pas. Une préférence
+  /// d'appareil, pas de compte : elle ne voyage pas.
+  static const String _notificationPreviewKey = 'notification_preview';
+
+  /// Absent = oui. Seul `'false'` masque : une valeur bricolée retombe sur le
+  /// défaut, comme `download_on_cellular` retombe sur le sien.
+  static bool _previewFrom(String? raw) => raw != 'false';
+
+  Future<bool> notificationPreview() async {
+    final row = await (select(appSettings)
+          ..where((t) => t.key.equals(_notificationPreviewKey)))
+        .getSingleOrNull();
+    return _previewFrom(row?.value);
+  }
+
+  Stream<bool> watchNotificationPreview() {
+    return (select(appSettings)
+          ..where((t) => t.key.equals(_notificationPreviewKey)))
+        .watchSingleOrNull()
+        .map((row) => _previewFrom(row?.value));
+  }
+
+  Future<void> setNotificationPreview(bool shown) =>
+      _put(_notificationPreviewKey, shown ? 'true' : 'false');
 }

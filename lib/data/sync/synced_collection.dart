@@ -462,6 +462,16 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: groupArrangementKey,
         rowOf: groupArrangementRowOf,
       ),
+      // **Ma sourdine** (M5) : privée, rangée par `groupId`. Juste après la
+      // lecture et avant le fil, pour la même raison : un premier tirage qui
+      // ramènerait le fil avant elle laisserait un réveil sonner pour une
+      // discussion que j'avais mise en sourdine sur un autre appareil.
+      SyncedCollection<GroupMuteRow>(
+        key: SyncCollectionKey.groupMutes,
+        local: (dao) => dao.groupMutesCollection,
+        idOf: groupMuteKey,
+        rowOf: groupMuteRowOf,
+      ),
       SyncedCollection<GroupMessageRow>(
         key: SyncCollectionKey.groupMessages,
         local: (dao) => dao.groupMessagesCollection,

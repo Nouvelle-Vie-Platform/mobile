@@ -247,6 +247,13 @@ abstract final class SyncCollectionKey {
   /// tombstone**, rangée par l'identifiant du message, et **après**
   /// [groupMessages] : une coche n'a de sens que sur un message déjà là.
   static const String messageReceipts = 'message_receipts';
+
+  /// **Ma sourdine** dans chacun de mes groupes (tranche M5). `partition:
+  /// 'private'`, séparée du roster pour la raison de [groupReads] : une
+  /// préférence ne voyage que chez moi.
+  ///
+  /// **Sans tombstone**, rangée par `groupId`. Réactiver voyage comme une ligne.
+  static const String groupMutes = 'group_mutes';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -313,6 +320,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     MyInteractions,
     GroupArrangements,
     MessageReceipts,
+    GroupMutes,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -469,6 +477,12 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// `users/{id}` l'écrit aussi (`receipt.updated`).
   LocalCollection<MessageReceiptRow> get messageReceiptsCollection =>
       LocalCollection._(SyncCollectionKey.messageReceipts, messageReceipts);
+
+  /// **Sans tombstone**, rangée par `groupId` (M5). Le canal `users/{id}`
+  /// l'écrit aussi (`mute.changed`), mais jamais par-dessus un réglage plus
+  /// récent — voir `MessagingStoreWriter`.
+  LocalCollection<GroupMuteRow> get groupMutesCollection =>
+      LocalCollection._(SyncCollectionKey.groupMutes, groupMutes);
 
   /// **La seule collection `private` de ce registre.** Elle se remplit comme
   /// les dix autres — par le flux delta, jamais par l'application — et rien

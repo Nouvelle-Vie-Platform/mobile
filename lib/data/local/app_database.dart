@@ -119,6 +119,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     // (#142, M3).
     MessageReceipts,
     DeliveryAcks,
+    GroupMutes,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -247,8 +248,15 @@ class AppDatabase extends _$AppDatabase {
   /// **v22** (#146) — **archiver, épingler** : `group_arrangements`, une
   /// collection répliquée **privée** de plus, et `pending_group_arrangements`,
   /// son outbox locale. Deux créations de table, et rien d'autre.
+  ///
+  /// **v23** (#142, M3) — les accusés de mes messages et les distributions
+  /// confirmées. Voir [_migrateM3ToV23].
+  ///
+  /// **v24** (M5, #144) — **ma sourdine** : `group_mutes`, une collection
+  /// répliquée **privée** de plus, une création de table et rien d'autre. Voir
+  /// [_migrateM5ToV24].
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   /// Les cinq colonnes du média d'une annonce, ajoutées ensemble au palier
   /// v18 → v19 — et retirées ensemble d'une table créée pour une version
@@ -752,6 +760,10 @@ class AppDatabase extends _$AppDatabase {
           if (from < 23 && to >= 23) {
             await _migrateM3ToV23(m);
           }
+          // v23 → v24 — ma sourdine (M5, #144) — voir [_migrateM5ToV24].
+          if (from < 24 && to >= 24) {
+            await _migrateM5ToV24(m);
+          }
         },
         beforeOpen: (details) async {
           // La ligne d'état global doit exister avant la première allocation de
@@ -810,6 +822,20 @@ class AppDatabase extends _$AppDatabase {
       }
       await _ensureGlobalStateRow();
     });
+  }
+
+  /// **v23 → v24 (M5, #144)** — la sourdine par discussion.
+  ///
+  /// Une création de table, et rien d'autre : aucune colonne existante ne
+  /// bouge, aucune ligne n'est réécrite. `group_mutes` naît vide, son curseur
+  /// n'existe pas encore, et le prochain manifeste l'annoncera `from_zero` : le
+  /// premier cycle ramène les sourdines posées depuis un autre appareil. Vide
+  /// veut dire « aucune sourdine » — exactement l'état d'avant cette version.
+  /// Sur un serveur en retard, la collection prend un `404` et se saute.
+  ///
+  /// Écrit à part, et appelé par un seul palier (v24).
+  Future<void> _migrateM5ToV24(Migrator m) async {
+    await m.createTable(groupMutes);
   }
 
   Future<void> _ensureGlobalStateRow() async {

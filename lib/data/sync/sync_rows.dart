@@ -916,6 +916,33 @@ MessageReceiptsCompanion messageReceiptRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/group_mutes` — **cinq clés** : `id`, `groupId`, `mutedUntil`,
+/// `mutedForever`, `muteChangedAt` (tranche M5, `groupMuteSyncRow` côté
+/// serveur).
+///
+/// La même fonction range la ligne venue du tirage, celle du canal
+/// (`mute.changed`) et celle que rendent `PUT`/`DELETE /groups/:id/mute`.
+/// **Rangée par `groupId`**, exigé ; `mutedForever` absent se lit `false` — une
+/// ligne qui ne dit pas « toujours » ne l'est pas.
+GroupMutesCompanion groupMuteRowOf(Map<String, Object?> item) {
+  const collection = 'group_mutes';
+  return GroupMutesCompanion.insert(
+    groupId: _text(collection, item, 'groupId'),
+    membershipId: Value(_optionalInt(item, 'id')),
+    mutedUntil: Value(_instant(item, 'mutedUntil')),
+    mutedForever: Value(item['mutedForever'] == true),
+    muteChangedAt: Value(_instant(item, 'muteChangedAt')),
+  );
+}
+
+/// L'identifiant **local** d'une ligne `group_mutes` : son `groupId`, pour la
+/// raison de [groupReadKey].
+String groupMuteKey(Map<String, Object?> item) {
+  final id = item['groupId'];
+  if (id is String) return id;
+  throw MalformedSyncRow('group_mutes', 'groupId', id);
+}
+
 /// `GET /sync/menu_entries` — **une entrée de menu** (#82).
 ///
 /// **Trente et une clés**, relevées une à une sur

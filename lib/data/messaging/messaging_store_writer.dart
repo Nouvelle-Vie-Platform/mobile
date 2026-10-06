@@ -63,6 +63,13 @@ class MessagingStoreWriter {
       return known;
     }
 
+    // M5 : une sourdine ne recule jamais non plus (deux appareils).
+    if (collection == SyncCollectionKey.groupMutes &&
+        groupId is String &&
+        !await _isNewerMute(groupId, row)) {
+      return known;
+    }
+
     await descriptor.applyLive(_db.syncDao, [row]);
 
     if (collection == SyncCollectionKey.groupMessages &&
@@ -78,6 +85,24 @@ class MessagingStoreWriter {
     if (rows.isEmpty) return;
     await syncedCollectionFor(SyncCollectionKey.groupMessages)!
         .applyLive(_db.syncDao, rows);
+  }
+
+  /// **La sourdine reçue est-elle au moins aussi récente que la locale ?** (M5)
+  ///
+  /// Le canal (`mute.changed`) et la réponse de `PUT /groups/:id/mute` portent
+  /// la même ligne et peuvent arriver dans les deux ordres ; deux réglages faits
+  /// coup sur coup depuis deux appareils aussi. On juge sur `muteChangedAt`,
+  /// l'instant serveur du réglage. Une ligne sans instant (jamais réglée) ne
+  /// remplace pas une ligne qui en a un. À égalité, la ligne reçue est rangée :
+  /// c'est la même.
+  Future<bool> _isNewerMute(String groupId, Map<String, Object?> row) async {
+    final local =
+        (await _db.groupDao.muteOf(groupId).getSingleOrNull())?.muteChangedAt;
+    if (local == null) return true;
+    final raw = row['muteChangedAt'];
+    final incoming = raw is String ? DateTime.tryParse(raw) : null;
+    if (incoming == null) return false;
+    return !incoming.isBefore(local);
   }
 
   /// La ligne de lecture reçue avance-t-elle sur la locale ?

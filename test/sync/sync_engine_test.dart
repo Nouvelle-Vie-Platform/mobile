@@ -183,6 +183,9 @@ void main() {
           'group_reads',
           // Mon rangement (#146, M8) : il ne fait que classer des discussions.
           'group_arrangements',
+          // Ma sourdine (M5), avant le fil pour la même raison : un réveil
+          // tiré avant elle sonnerait pour une discussion tue ailleurs.
+          'group_mutes',
           'group_messages',
           // L'accusé de mes messages (#142, M3), **après** le fil : une coche
           // n'a de sens que sur un message déjà là.

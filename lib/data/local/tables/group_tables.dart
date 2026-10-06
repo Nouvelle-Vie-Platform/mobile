@@ -475,3 +475,43 @@ class PendingGroupArrangements extends Table {
   @override
   Set<Column<Object>> get primaryKey => {groupId};
 }
+
+/// Collection `group_mutes` (partition `private`, tranche M5) — **ma** sourdine
+/// dans chacun de mes groupes, et rien de celle des autres.
+///
+/// Servie par le serveur (`group_mutes_descriptor.ts`) : `{ id, groupId,
+/// mutedUntil, mutedForever, muteChangedAt }`. **Rangée par `groupId`**, comme
+/// [GroupReads] : `id` est celui de l'appartenance. Une appartenance jamais
+/// réglée n'a pas de ligne, et l'absence veut dire « pas de sourdine ».
+///
+/// **La sourdine est active** si [mutedForever], ou si [mutedUntil] est dans le
+/// futur. Une sourdine bornée **échue** reste telle quelle en magasin : elle est
+/// lue comme levée, et rien n'a à passer l'effacer à l'heure dite.
+///
+/// **Sans tombstone** : réactiver voyage comme une ligne remise à zéro. Le canal
+/// (`mute.changed`) peut livrer deux réglages dans le désordre ; seule une ligne
+/// au moins aussi récente que la locale ([muteChangedAt]) est rangée — voir
+/// `MessagingStoreWriter`.
+@DataClassName('GroupMuteRow')
+class GroupMutes extends Table with SyncedRow {
+  @override
+  String get tableName => 'group_mutes';
+
+  TextColumn get groupId => text()();
+
+  /// L'identifiant de l'appartenance côté serveur (un entier). Non lu.
+  IntColumn get membershipId => integer().nullable()();
+
+  /// La fin d'une sourdine bornée (8 h, 1 semaine), ou `null`.
+  DateTimeColumn get mutedUntil => dateTime().nullable()();
+
+  /// « Toujours ». Jamais cumulé avec [mutedUntil] (`CHECK` côté serveur).
+  BoolColumn get mutedForever => boolean().withDefault(const Constant(false))();
+
+  /// L'instant serveur du dernier réglage — ce qui départage deux lignes
+  /// arrivées dans le désordre.
+  DateTimeColumn get muteChangedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {groupId};
+}
