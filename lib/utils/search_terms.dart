@@ -39,3 +39,28 @@ String? normalizeSearchTerm(String? raw) {
   final stripped = raw?.replaceAll(RegExp(r'[%_]'), '').trim();
   return (stripped == null || stripped.isEmpty) ? null : stripped;
 }
+
+/// **Normalise un texte pour la comparaison** : minuscules, sans accents. Sert
+/// aux recherches faites en Dart sur une liste déjà lue — les **noms** de
+/// discussions, les sections de la médiathèque en pages (« eglise » trouve
+/// « Église »).
+String foldForSearch(String text) {
+  final lower = text.toLowerCase();
+  final buffer = StringBuffer();
+  for (final rune in lower.runes) {
+    final char = String.fromCharCode(rune);
+    buffer.write(_folds[char] ?? char);
+  }
+  return buffer.toString();
+}
+
+const Map<String, String> _folds = {
+  'à': 'a', 'â': 'a', 'ä': 'a', 'á': 'a', 'ã': 'a', //
+  'ç': 'c',
+  'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e', //
+  'î': 'i', 'ï': 'i', 'í': 'i', 'ì': 'i', //
+  'ô': 'o', 'ö': 'o', 'ó': 'o', 'ò': 'o', 'õ': 'o', //
+  'ù': 'u', 'û': 'u', 'ü': 'u', 'ú': 'u', //
+  'ÿ': 'y', 'ñ': 'n', 'œ': 'oe', 'æ': 'ae', //
+  'ɛ': 'e', 'ɔ': 'o', 'ŋ': 'n', 'ƒ': 'f', 'ʋ': 'v', 'ɖ': 'd', 'ɣ': 'g', //
+};
