@@ -23,6 +23,7 @@ import '../widgets/chat/chat_bubble.dart';
 import '../widgets/chat/chat_info_banner.dart';
 import '../widgets/chat/message_focus_highlight.dart';
 import '../widgets/chat/message_info_sheet.dart';
+import '../widgets/chat/chat_mute_menu.dart';
 import '../widgets/chat/message_input_bar.dart';
 import '../widgets/chat/receipt_mark.dart';
 import '../widgets/content_absence.dart';
@@ -519,7 +520,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           onBack: _leave,
           onTitleTap:
               group == null ? null : () => _openTitleTarget(context, group),
-          actions: const [],
+          // Le menu « ⋮ » : la sourdine (M5).
+          actions: [ChatMuteMenu(groupId: widget.groupId)],
         ),
         body: Column(
           children: [

@@ -6,6 +6,7 @@
 ///
 /// ```
 /// { type: 'group_message', groupId: '…', messageId: '…' }   // GroupWakePayload
+/// { type: 'group_message_muted', groupId, messageId }       // idem, en sourdine (M5)
 /// { type: 'sync_nudge',    collection: 'announcements' }    // SyncNudgePayload
 /// ```
 ///
@@ -57,11 +58,24 @@ sealed class PushWake {
 /// [messageId] est un **indice de curseur** (UUIDv7 serveur), pas une donnée à
 /// afficher : c'est par lui qu'on retrouve en magasin la ligne que la
 /// synchronisation vient d'appliquer.
+///
+/// `{ type: 'group_message_muted', … }` (M5) est le **même** réveil, envoyé à
+/// qui a mis la conversation en sourdine : on synchronise, on ne notifie pas.
+/// [muted] le porte. Le serveur en décide à l'instant de l'envoi ; le magasin
+/// en décide aussi, à l'instant de la lecture (une sourdine posée depuis ce
+/// téléphone et pas encore arrivée au serveur) — l'une ou l'autre suffit.
 final class GroupMessageWake extends PushWake {
-  const GroupMessageWake({required this.groupId, required this.messageId});
+  const GroupMessageWake({
+    required this.groupId,
+    required this.messageId,
+    this.muted = false,
+  });
 
   final String groupId;
   final String messageId;
+
+  /// Le serveur sait la conversation en sourdine pour moi : pas d'alerte.
+  final bool muted;
 
   /// **Quatre collections, et chacune porte un morceau de la notification.**
   ///
@@ -76,7 +90,7 @@ final class GroupMessageWake extends PushWake {
   /// `groups` : « le groupe est déjà en magasin dès que j'en suis membre ». C'est
   /// vrai **sauf au premier message après une installation**, c'est-à-dire
   /// exactement le réveil qu'on remarque. Sans le nom du fil, la notification n'a
-  /// pas de titre, et `announcementNotification` se tait alors — un réveil
+  /// pas de titre, et `conversationNotification` se tait alors — un réveil
   /// silencieux là où quelque chose venait d'arriver.
   ///
   /// `group_join_requests` n'y est pas, elle : une demande d'adhésion n'entre dans
@@ -86,11 +100,18 @@ final class GroupMessageWake extends PushWake {
   /// L'ordre, lui, n'est **pas** décidé ici : c'est `synced_collection.dart` qui
   /// l'écrit, et `profiles` y passe donc avant `group_messages` sans qu'on ait à le
   /// redire — d'où un `Set` et non une liste.
+  ///
+  /// **Deux de plus depuis M5**, parce que la notification empile désormais
+  /// les **non-lus** : `group_reads` dit où j'en suis (une conversation lue sur
+  /// un autre appareil n'a plus rien à montrer, et sa notification s'efface), et
+  /// `group_mutes` dit si je l'ai mise en sourdine ailleurs.
   @override
   Set<String> get collections => const {
         SyncCollectionKey.profiles,
         SyncCollectionKey.groups,
         SyncCollectionKey.groupMembers,
+        SyncCollectionKey.groupReads,
+        SyncCollectionKey.groupMutes,
         SyncCollectionKey.groupMessages,
       };
 
@@ -98,13 +119,15 @@ final class GroupMessageWake extends PushWake {
   bool operator ==(Object other) =>
       other is GroupMessageWake &&
       other.groupId == groupId &&
-      other.messageId == messageId;
+      other.messageId == messageId &&
+      other.muted == muted;
 
   @override
-  int get hashCode => Object.hash(groupId, messageId);
+  int get hashCode => Object.hash(groupId, messageId, muted);
 
   @override
-  String toString() => 'GroupMessageWake($groupId, $messageId)';
+  String toString() =>
+      'GroupMessageWake($groupId, $messageId${muted ? ', muet' : ''})';
 }
 
 /// `{ type: 'sync_nudge', collection }` — une collection a changé.
@@ -144,10 +167,15 @@ PushWake? readPushWake(Map<String, Object?> data) {
   final type = _text(data['type']);
   switch (type) {
     case 'group_message':
+    case 'group_message_muted':
       final groupId = _text(data['groupId']);
       final messageId = _text(data['messageId']);
       if (groupId == null || messageId == null) return null;
-      return GroupMessageWake(groupId: groupId, messageId: messageId);
+      return GroupMessageWake(
+        groupId: groupId,
+        messageId: messageId,
+        muted: type == 'group_message_muted',
+      );
     case 'sync_nudge':
       final collection = _text(data['collection']);
       if (collection == null) return null;

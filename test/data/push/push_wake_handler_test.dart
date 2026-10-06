@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/core/network/api_client.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
-import 'package:maison_du_miracle/data/local/group_dao.dart';
 import 'package:maison_du_miracle/data/local/sync_dao.dart';
+import 'package:maison_du_miracle/data/push/conversation_notification.dart';
 import 'package:maison_du_miracle/data/push/push_wake_handler.dart';
 import 'package:maison_du_miracle/data/push/wake_notifier.dart';
 import 'package:maison_du_miracle/data/sync/sync_api.dart';
@@ -13,6 +14,7 @@ import 'package:maison_du_miracle/data/sync/synced_collection.dart';
 import '../../data/local/local_database_fixtures.dart';
 import '../../helpers/fake_sync_server.dart';
 import '../../helpers/sync_fixtures.dart';
+import 'notification_doubles.dart';
 
 /// **Le réveil, de bout en bout** — et l'assertion sur laquelle toute la tranche se
 /// juge : la notification locale est dressée depuis le **magasin**, jamais depuis la
@@ -23,13 +25,21 @@ import '../../helpers/sync_fixtures.dart';
 /// le réveil nomme, le double du serveur de synchronisation sur le transport de Dio,
 /// et un notifieur qui note ce qu'on lui demande d'afficher. Seul le greffon de
 /// notification est remplacé — c'est le seul morceau qui exige un appareil.
+///
+/// Depuis M5, la notification est celle d'une **conversation** : ses derniers
+/// non-lus, la sourdine, l'aperçu masquable, l'effacement d'une conversation lue
+/// ailleurs, le résumé.
 void main() {
   late FakeSyncServer server;
   late Dio dio;
   late AppDatabase db;
   late SyncDao dao;
-  late _RecordingNotifier notifier;
+  late RecordingNotifier notifier;
   late List<Set<String>> pulls;
+  late bool preview;
+
+  /// L'horloge des tests : après tous les messages des fixtures.
+  final now = DateTime.utc(2026, 9, 10, 12);
 
   /// Les cinq collections d'« Échanges », pour servir un manifeste complet.
   const echanges = [
@@ -55,13 +65,19 @@ void main() {
       ..httpClientAdapter = server;
     db = openTestDatabase();
     dao = db.syncDao;
-    notifier = _RecordingNotifier();
+    notifier = RecordingNotifier();
     pulls = [];
+    preview = true;
   });
 
   tearDown(() => db.close());
 
-  void serveEchanges() {
+  /// Le manifeste d'Échanges, et — au besoin — une page de lecture servie
+  /// (`group_reads`) et une page de messages choisie.
+  void serveEchanges({
+    Map<String, Object?>? messages,
+    Map<String, Object?>? read,
+  }) {
     server
       ..serveManifest({
         'scope_version': 7,
@@ -74,18 +90,32 @@ void main() {
               hasChanges: true,
               fromZero: true,
             ),
+          if (read != null)
+            manifestEntry(
+              SyncCollectionKey.groupReads,
+              partition: 'private',
+              currentCursor: _readCursor,
+              hasChanges: true,
+              fromZero: true,
+            ),
         ],
       })
       ..serveCollection('profiles', profilesPage())
       ..serveCollection('groups', groupsPage())
       ..serveCollection('group_members', groupMembersPage())
       ..serveCollection('group_join_requests', groupJoinRequestsPage())
-      ..serveCollection('group_messages', groupMessagesPage());
+      ..serveCollection('group_messages', messages ?? groupMessagesPage());
+    if (read != null) {
+      server.serveCollection(
+        'group_reads',
+        deltaPage(items: [read], nextCursor: _readCursor),
+      );
+    }
   }
 
   /// **Le câblage du réveil d'une application fermée**, à l'identique de
   /// `push_background.dart` : un moteur **restreint** aux collections nommées, qui
-  /// ne persiste **pas** la version de périmètre.
+  /// ne persiste **pas** la version de périmètre, et le magasin lu pour **moi**.
   PushWakeHandler handler({bool syncFails = false}) => PushWakeHandler(
         synchronize: (collections) async {
           pulls.add(collections);
@@ -101,29 +131,45 @@ void main() {
             persistsScopeVersion: false,
           ).synchronize();
         },
-        announcement: db.groupDao.announcementFor,
+        store: StoreWakeStore(
+          groups: db.groupDao,
+          showPreview: () async => preview,
+          userId: () => kMeId,
+        ),
         notifier: notifier,
+        texts: kTestNotificationTexts,
+        now: () => now,
       );
+
+  const msg1 = '019a3000-0000-7000-8000-00000000msg1';
+  const msg3 = '019a3000-0000-7000-8000-00000000msg3';
+  const msg4 = '019a3000-0000-7000-8000-00000000msg4';
+
+  Map<String, Object?> wake(String messageId, {bool muted = false}) => {
+        'type': muted ? 'group_message_muted' : 'group_message',
+        'groupId': kGroupId,
+        'messageId': messageId,
+      };
 
   group('Un réveil de groupe', () {
     test('tire les collections du réveil, et elles seules', () async {
       serveEchanges();
 
-      await handler().handle(const {
-        'type': 'group_message',
-        'groupId': kGroupId,
-        'messageId': '019a3000-0000-7000-8000-00000000msg1',
-      });
+      await handler().handle(wake(msg1));
 
       expect(pulls, hasLength(1));
       expect(pulls.single, {
         SyncCollectionKey.profiles,
         SyncCollectionKey.groups,
         SyncCollectionKey.groupMembers,
+        // M5 : ma lecture (une conversation lue ailleurs n'a plus rien à
+        // montrer) et ma sourdine (posée ailleurs).
+        SyncCollectionKey.groupReads,
+        SyncCollectionKey.groupMutes,
         SyncCollectionKey.groupMessages,
       });
-      // Et c'est **ciblé** : la cinquième collection d'Échanges n'est pas demandée
-      // au serveur, et aucune des dix-huit autres du registre non plus. Un réveil
+      // Et c'est **ciblé** : les demandes d'adhésion ne sont pas demandées au
+      // serveur, et aucune des autres collections du registre non plus. Un réveil
       // n'a pas à payer un cycle complet sur une application fermée.
       expect(server.requestsFor('group_join_requests'), isEmpty);
       expect(server.requestsFor('teachings'), isEmpty);
@@ -139,10 +185,8 @@ void main() {
       // serveur n'envoie jamais, mais qu'un intermédiaire pourrait. Rien de tout
       // cela ne doit paraître : le texte affiché est celui de `group_messages`, et
       // le nom celui de `profiles`.
-      await handler().handle(const {
-        'type': 'group_message',
-        'groupId': kGroupId,
-        'messageId': '019a3000-0000-7000-8000-00000000msg1',
+      await handler().handle({
+        ...wake(msg1),
         'body': 'TEXTE VENU DU PUSH',
         'title': 'TITRE VENU DU PUSH',
         'authorName': 'NOM VENU DU PUSH',
@@ -152,74 +196,163 @@ void main() {
       final shown = notifier.shown.single;
       // Le nom du groupe, lu dans `groups`.
       expect(shown.title, 'Chorale Harmonie');
-      // Le nom de l'auteur (`profiles`) et le corps du message (`group_messages`).
-      expect(
-          shown.body, 'Estelle Adjo : Répétition samedi à 16h, salle du fond.');
+      expect(shown.isGroup, isTrue);
       expect(shown.groupId, kGroupId);
+      // **Les non-lus de la conversation**, du plus ancien au plus récent : ni
+      // mon message, ni celui du serveur. Le nom de l'auteur vient de
+      // `profiles` ; l'auteur retiré n'en a pas (ADR-0032).
+      expect(shown.lines.map((l) => l.text), [
+        'Répétition samedi à 16h, salle du fond.',
+        'Que Dieu vous bénisse tous.',
+      ]);
+      expect(shown.lines.first.authorName, 'Estelle Adjo');
+      expect(shown.lines.last.authorName, isNull);
+      expect(shown.unreadCount, 2);
+      expect(shown.alert, isTrue);
 
       // **L'assertion la plus importante de la tranche**, écrite en négatif : rien
-      // de la charge utile n'atteint l'écran. Une notification peinte depuis le push
-      // afficherait un message qui n'est pas en base, et le tap ouvrirait un fil qui
-      // ne le contient pas.
+      // de la charge utile n'atteint l'écran.
+      for (final line in shown.lines) {
+        expect(line.text, isNot(contains('PUSH')));
+        expect(line.authorName ?? '', isNot(contains('PUSH')));
+      }
       expect(shown.title, isNot(contains('PUSH')));
-      expect(shown.body, isNot(contains('PUSH')));
     });
 
-    test('un message système n\'est préfixé d\'aucun nom', () async {
+    test('un message du serveur ne réveille personne', () async {
       serveEchanges();
 
-      await handler().handle(const {
-        'type': 'group_message',
-        'groupId': kGroupId,
-        'messageId': '019a3000-0000-7000-8000-00000000msg3',
-      });
+      // `(null, true)` : « Un nouveau membre a rejoint le groupe. » La formule des
+      // non-lus écarte le serveur — WhatsApp ne sonne pas pour une adhésion.
+      await handler().handle(wake(msg3));
 
-      expect(notifier.shown.single.title, 'Chorale Harmonie');
-      // Le serveur ne se présente pas, et surtout il ne porte aucun profil à
-      // joindre : `(authorId, isSystem) = (null, true)`.
-      expect(
-        notifier.shown.single.body,
-        'Un nouveau membre a rejoint le groupe.',
-      );
+      expect(notifier.shown, isEmpty);
     });
 
     test('un auteur retiré se rend par une absence, pas par un nom inventé',
         () async {
       serveEchanges();
 
-      // `(null, false)` — ADR-0032. Le corps part seul : « Membre retiré » est un
-      // **fait**, pas un nom, et l'écrire ici le rendrait indiscernable d'un profil
-      // simplement pas encore arrivé.
-      await handler().handle(const {
-        'type': 'group_message',
-        'groupId': kGroupId,
-        'messageId': '019a3000-0000-7000-8000-00000000msg4',
-      });
+      await handler().handle(wake(msg4));
 
-      expect(notifier.shown.single.body, 'Que Dieu vous bénisse tous.');
-      expect(notifier.shown.single.body, isNot(contains('retiré')));
+      final shown = notifier.shown.single;
+      // Le corps d'une ligne part seul : « Membre retiré » est un **fait**, pas un
+      // nom, et le préfixer le rendrait indiscernable d'un profil simplement pas
+      // encore arrivé. MessagingStyle, lui, le dit comme le fil (« removed »).
+      expect(shown.body, 'Que Dieu vous bénisse tous.');
+      expect(shown.lines.last.authorKey, 'removed');
     });
 
     test('deux messages du même fil se remplacent, ils ne s\'empilent pas',
         () async {
       serveEchanges();
 
-      await handler().handle(const {
-        'type': 'group_message',
-        'groupId': kGroupId,
-        'messageId': '019a3000-0000-7000-8000-00000000msg1',
-      });
-      await handler().handle(const {
-        'type': 'group_message',
-        'groupId': kGroupId,
-        'messageId': '019a3000-0000-7000-8000-00000000msg3',
-      });
+      await handler().handle(wake(msg1));
+      await handler().handle(wake(msg4));
 
       expect(notifier.shown, hasLength(2));
       // Même identifiant système : la seconde notification **remplace** la
-      // première. Dix notifications pour une conversation ne seraient pas un défaut
-      // de groupage, ce serait un défaut tout court.
+      // première, en l'allongeant — c'est la conversation qu'on notifie.
       expect(notifier.shown.first.id, notifier.shown.last.id);
+      expect(notifier.shown.first.id, conversationNotificationId(kGroupId));
+    });
+
+    test('le résumé suit : il compte les non-lus des conversations notifiées',
+        () async {
+      serveEchanges();
+
+      await handler().handle(wake(msg1));
+
+      expect(notifier.summaries, isNotEmpty);
+      final summary = notifier.summaries.last;
+      expect(summary.totalUnread, 2);
+      expect(summary.conversations, 1);
+      expect(summary.title, '2 nouveaux messages');
+      expect(summary.lines, ['Chorale Harmonie']);
+    });
+  });
+
+  group('La sourdine tait', () {
+    test('un réveil muet du serveur synchronise et n\'affiche rien', () async {
+      serveEchanges();
+
+      await handler().handle(wake(msg1, muted: true));
+
+      // Le magasin a bien été rempli — un réveil muet n'est pas un réveil perdu…
+      expect(pulls, hasLength(1));
+      expect(await db.groupDao.latestMessageOf(kGroupId), isNotNull);
+      // … mais rien ne s'affiche — et pas de résumé posé seul, qui
+      // annoncerait ce qu'aucune notification ne montre.
+      expect(notifier.shown, isEmpty);
+      expect(notifier.summaries, isEmpty);
+    });
+
+    test('une sourdine connue du magasin tait aussi un réveil sonore',
+        () async {
+      serveEchanges();
+      // Posée depuis ce téléphone, et le serveur ne l'a pas encore appliquée à
+      // ce réveil-ci.
+      await db.into(db.groupMutes).insert(
+            GroupMutesCompanion.insert(
+              groupId: kGroupId,
+              mutedForever: const Value(true),
+              muteChangedAt: Value(now.subtract(const Duration(minutes: 1))),
+            ),
+          );
+
+      await handler().handle(wake(msg1));
+
+      expect(notifier.shown, isEmpty);
+    });
+
+    test('une sourdine échue ne tait plus rien', () async {
+      serveEchanges();
+      await db.into(db.groupMutes).insert(
+            GroupMutesCompanion.insert(
+              groupId: kGroupId,
+              mutedUntil: Value(now.subtract(const Duration(minutes: 1))),
+              muteChangedAt: Value(now.subtract(const Duration(hours: 8))),
+            ),
+          );
+
+      await handler().handle(wake(msg1));
+
+      expect(notifier.shown, hasLength(1));
+    });
+  });
+
+  group('L\'aperçu masquable', () {
+    test('masqué dans un groupe : « Nouveau message de … », rien du texte',
+        () async {
+      preview = false;
+      serveEchanges(messages: groupMessagesPage(items: [memberMessagePayload]));
+
+      await handler().handle(wake(msg1));
+
+      final shown = notifier.shown.single;
+      expect(shown.lines, hasLength(1));
+      expect(shown.lines.single.text, 'Nouveau message de Estelle Adjo');
+      expect(shown.body, isNot(contains('Répétition')));
+      // Le titre reste : c'est le nom de la conversation, pas son contenu.
+      expect(shown.title, 'Chorale Harmonie');
+    });
+  });
+
+  group('Une conversation lue ailleurs', () {
+    test('sa notification s\'efface, et le résumé avec', () async {
+      // Ma lecture, avancée sur un autre appareil jusqu'au dernier message.
+      serveEchanges(read: {
+        'id': 1,
+        'groupId': kGroupId,
+        'lastReadMessageId': msg4,
+        'lastReadAt': '2026-09-03T11:00:00.000Z',
+      });
+
+      await handler().handle(wake(msg1));
+
+      expect(notifier.shown, isEmpty);
+      expect(notifier.cancelled, contains(kGroupId));
+      expect(notifier.summaryCancelled, isPositive);
     });
   });
 
@@ -228,11 +361,7 @@ void main() {
         () async {
       serveEchanges();
 
-      await handler().handle(const {
-        'type': 'group_message',
-        'groupId': kGroupId,
-        'messageId': '019a3000-0000-7000-8000-0000000absent',
-      });
+      await handler().handle(wake('019a3000-0000-7000-8000-0000000absent'));
 
       // La synchronisation a bien eu lieu — le réveil n'est pas inerte —, mais le
       // message n'est pas arrivé : modération entre l'envoi du push et le tirage, ou
@@ -247,11 +376,7 @@ void main() {
       serveEchanges();
 
       await expectLater(
-        handler(syncFails: true).handle(const {
-          'type': 'group_message',
-          'groupId': kGroupId,
-          'messageId': '019a3000-0000-7000-8000-00000000msg1',
-        }),
+        handler(syncFails: true).handle(wake(msg1)),
         completes,
       );
 
@@ -271,17 +396,32 @@ void main() {
             .toList(growable: false),
       ).synchronize();
 
-      await handler(syncFails: true).handle(const {
-        'type': 'group_message',
-        'groupId': kGroupId,
-        'messageId': '019a3000-0000-7000-8000-00000000msg1',
-      });
+      await handler(syncFails: true).handle(wake(msg1));
 
       expect(notifier.shown, hasLength(1));
       expect(
-        notifier.shown.single.body,
-        'Estelle Adjo : Répétition samedi à 16h, salle du fond.',
+        notifier.shown.single.lines.first.text,
+        'Répétition samedi à 16h, salle du fond.',
       );
+    });
+
+    test('sans compte sur ce téléphone, aucune conversation à notifier',
+        () async {
+      serveEchanges();
+      final anonymous = PushWakeHandler(
+        synchronize: (_) async {},
+        store: StoreWakeStore(
+          groups: db.groupDao,
+          showPreview: () async => true,
+          userId: () => null,
+        ),
+        notifier: notifier,
+        texts: kTestNotificationTexts,
+      );
+
+      await anonymous.handle(wake(msg1));
+
+      expect(notifier.shown, isEmpty);
     });
   });
 
@@ -346,11 +486,7 @@ void main() {
     test('la `scope_version` reste celle d\'avant le réveil', () async {
       serveEchanges();
 
-      await handler().handle(const {
-        'type': 'group_message',
-        'groupId': kGroupId,
-        'messageId': '019a3000-0000-7000-8000-00000000msg1',
-      });
+      await handler().handle(wake(msg1));
 
       // ⚠️ Le corollaire de la règle 2 d'ADR-0027. La `scope_version` est
       // **globale** : la persister après un cycle qui n'a visité que trois
@@ -378,136 +514,21 @@ void main() {
     });
   });
 
-  group('La notification, dressée hors de tout canal', () {
-    test('un tête-à-tête porte le nom de la personne', () {
-      final notification = announcementNotification(
-        const MessageAnnouncement(
-          messageId: 'm',
-          groupId: 'g',
-          groupName: 'Kossi Amavi, Estelle Adjo',
-          isDirect: true,
-          body: 'Bonsoir, es-tu disponible demain ?',
-          authorId: 'u',
-          isSystem: false,
-          authorName: 'Estelle Adjo',
-        ),
-      );
-
-      // Le titre d'un DM est le nom de la personne, pas celui que le serveur a donné
-      // au groupe — la règle de `GroupDao.conversationsOf`, tenue ici aussi.
-      expect(notification!.title, 'Estelle Adjo');
-      expect(notification.body, 'Bonsoir, es-tu disponible demain ?');
-    });
-
-    test('un tête-à-tête sans nom retombe sur le groupe', () {
-      final notification = announcementNotification(
-        const MessageAnnouncement(
-          messageId: 'm',
-          groupId: 'g',
-          groupName: 'Conversation',
-          isDirect: true,
-          body: 'Paix sur toi.',
-          authorId: 'u',
-          isSystem: false,
-          authorName: null,
-        ),
-      );
-
-      expect(notification!.title, 'Conversation');
-    });
-
-    test('un groupe que le magasin ne nomme pas encore ne s\'annonce pas', () {
-      // Mieux vaut se taire qu'annoncer « (sans titre) » : une notification vide
-      // ressemble à une donnée perdue.
-      expect(
-        announcementNotification(
-          const MessageAnnouncement(
-            messageId: 'm',
-            groupId: 'g',
-            groupName: null,
-            isDirect: false,
-            body: 'Amen.',
-            authorId: 'u',
-            isSystem: false,
-            authorName: 'Estelle Adjo',
-          ),
-        ),
-        isNull,
-      );
-    });
-
-    test('un corps vide ne s\'annonce pas', () {
-      expect(
-        announcementNotification(
-          const MessageAnnouncement(
-            messageId: 'm',
-            groupId: 'g',
-            groupName: 'Chorale',
-            isDirect: false,
-            body: '   ',
-            authorId: 'u',
-            isSystem: false,
-            authorName: 'Estelle',
-          ),
-        ),
-        isNull,
-      );
-    });
-
-    test('l\'identifiant système est positif et stable par fil', () {
-      MessageAnnouncement of(String groupId) => MessageAnnouncement(
-            messageId: 'm',
-            groupId: groupId,
-            groupName: 'Chorale',
-            isDirect: false,
-            body: 'Amen.',
-            authorId: 'u',
-            isSystem: false,
-            authorName: 'Estelle',
-          );
-
-      final first = announcementNotification(of('grp-1'))!;
-      final again = announcementNotification(of('grp-1'))!;
-      final other = announcementNotification(of('grp-2'))!;
-
-      // Positif : Android accepte les négatifs, iOS non.
-      expect(first.id, greaterThanOrEqualTo(0));
-      expect(first.id, again.id);
-      expect(first.id, isNot(other.id));
-    });
-  });
-
   group('Le notifieur inerte', () {
-    test('n\'affiche rien et ne lève pas', () async {
+    test('n\'affiche rien, n\'efface rien, et ne lève pas', () async {
       const inert = InertWakeNotifier();
       await expectLater(inert.prepare(), completes);
-      await expectLater(
-        inert.show(
-          const WakeNotification(
-            id: 1,
-            title: 'Chorale',
-            body: 'Amen.',
-            groupId: 'g',
-          ),
-        ),
-        completes,
-      );
+      await expectLater(inert.cancel('g'), completes);
+      await expectLater(inert.cancelSummary(), completes);
     });
   });
 }
 
-/// Un notifieur qui **note** au lieu d'afficher : aucun canal de greffon, et ce que
-/// le test lit est exactement ce qui serait parti à l'écran.
-class _RecordingNotifier implements WakeNotifier {
-  final List<WakeNotification> shown = [];
-
-  @override
-  Future<void> prepare() async {}
-
-  @override
-  Future<void> show(WakeNotification notification) async =>
-      shown.add(notification);
-}
+/// L'état de lecture servi par `group_reads` dans ces tests.
+final String _readCursor = serverCursor(
+  updatedAtIso: '2026-09-03T11:00:00.000Z',
+  id: 1,
+);
 
 /// Une panne de cycle, nommée pour qu'un test se lise. Ce que le moteur remonte
 /// vraiment est une `DioException` ; ce qui compte ici est que **toute** panne soit

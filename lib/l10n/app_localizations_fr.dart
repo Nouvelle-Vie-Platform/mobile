@@ -1941,4 +1941,81 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get privacySaveError =>
       'Le réglage n\'a pas pu être enregistré. Réessayez.';
+
+  @override
+  String get notificationYou => 'Vous';
+
+  @override
+  String get notificationNewMessage => 'Nouveau message';
+
+  @override
+  String notificationNewMessageFrom(String name) {
+    return 'Nouveau message de $name';
+  }
+
+  @override
+  String get notificationReply => 'Répondre';
+
+  @override
+  String get notificationReplyHint => 'Votre message';
+
+  @override
+  String get notificationMarkRead => 'Marquer comme lu';
+
+  @override
+  String notificationSummaryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nouveaux messages',
+      one: '1 nouveau message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationSummaryText(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'dans $count discussions',
+      one: 'dans 1 discussion',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationPreviewSetting => 'Afficher le contenu des messages';
+
+  @override
+  String get notificationPreviewSettingHint =>
+      'Dans les notifications. Sinon : « Nouveau message »';
+
+  @override
+  String get chatMuteMenu => 'Options de la discussion';
+
+  @override
+  String get chatMute => 'Mettre en sourdine';
+
+  @override
+  String get chatMuteTitle => 'Mettre en sourdine pendant…';
+
+  @override
+  String get chatMuteEightHours => '8 heures';
+
+  @override
+  String get chatMuteOneWeek => '1 semaine';
+
+  @override
+  String get chatMuteForever => 'Toujours';
+
+  @override
+  String get chatUnmute => 'Réactiver les notifications';
+
+  @override
+  String get chatMuteFailed =>
+      'La sourdine n\'a pas pu être réglée. Vérifiez votre connexion.';
+
+  @override
+  String get conversationMuted => 'En sourdine';
 }

@@ -39,11 +39,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/app_env.dart';
 import '../data/local/sync_dao.dart' show SyncCollectionKey;
 import '../data/messaging/group_history.dart';
+import '../data/messaging/group_mute_setter.dart';
 import '../data/messaging/group_read_advancer.dart';
 import '../data/messaging/messaging_channel.dart';
 import '../data/messaging/messaging_link.dart';
 import '../data/messaging/messaging_store_writer.dart';
 import '../data/messaging/sse_messaging_channel.dart';
+import '../data/push/notification_reconciler.dart';
 import '../data/repositories/echanges_repository.dart';
 import '../data/repositories/group_message_composer.dart';
 import '../data/repositories/group_message_sender.dart';
@@ -53,6 +55,7 @@ import 'auth_providers.dart';
 import 'chat_organization_providers.dart';
 import 'receipts_providers.dart'
     show deliveryAcknowledgerProvider, messagingSignalHandlerProvider;
+import 'push_providers.dart';
 import 'sync_providers.dart';
 
 /// Politique de réessai : **aucun réessai automatique**, comme la médiathèque et
@@ -273,3 +276,61 @@ final messagingOutboxProvider = Provider<Future<void> Function()>((ref) {
     await ref.read(deliveryAcknowledgerProvider)?.flush();
   };
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// La sourdine et les notifications (tranche M5)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Ma sourdine dans une conversation**, du magasin — `null` si je ne l'ai
+/// jamais réglée. Le menu du fil la lit pour proposer « Mettre en sourdine » ou
+/// « Réactiver les notifications ». La sourdine est-elle **active** ? C'est
+/// `isGroupMuted`, à l'instant de l'affichage.
+final groupMuteProvider = StreamProvider.family<GroupMuteRowView?, String>(
+  (ref, groupId) =>
+      ref.watch(groupDaoProvider).muteOf(groupId).watchSingleOrNull().map(
+            (row) => row == null
+                ? null
+                : (mutedUntil: row.mutedUntil, mutedForever: row.mutedForever),
+          ),
+  retry: _noAutomaticRetry,
+);
+
+/// **Poser ou lever une sourdine** (M5) — en ligne, la ligne confirmée rangée
+/// par la même fonction que le canal. Inerte sans backend.
+final groupMuteSetterProvider = Provider<GroupMuteSetter>((ref) {
+  final writer = ref.watch(messagingStoreWriterProvider);
+  return GroupMuteSetter(
+    sender: AppEnv.useBackend
+        ? HttpGroupMuteSender()
+        : const InertGroupMuteSender(),
+    storeMute: (row) => writer.store(SyncCollectionKey.groupMutes, row),
+  );
+});
+
+/// **Effacer, application ouverte, la notification d'une conversation lue**
+/// (M5) — ici, ou ailleurs (`read.advanced` sur le canal). Voir
+/// `NotificationReconciler`.
+///
+/// `null` sans notifieur d'effacement (aucun transport de réveil : rien à
+/// effacer) ou sans session. Comme [messagingLinkProvider], il lit l'acteur
+/// par `authProvider.select` — seul `app.dart` l'écoute, hors de tout `build`.
+/// Pas `autoDispose` : il vit avec la session, et un changement de compte le
+/// reconstruit sur les conversations du nouveau.
+final notificationReconcilerProvider = Provider<Object?>((ref) {
+  final dismisser = ref.watch(wakeDismisserProvider);
+  if (dismisser == null) return null;
+  final userId = ref.watch(authProvider.select((state) => state.user?.id));
+  if (userId == null) return null;
+
+  final reconciler = NotificationReconciler(notifier: dismisser);
+  final subscription = ref
+      .watch(groupDaoProvider)
+      .conversationsOf(userId)
+      .watch()
+      .listen(reconciler.onConversations, onError: (Object _) {});
+  ref.onDispose(subscription.cancel);
+  return subscription;
+});
+
+/// Ce que le menu du fil lit de ma sourdine — sans le reste de la ligne.
+typedef GroupMuteRowView = ({DateTime? mutedUntil, bool mutedForever});

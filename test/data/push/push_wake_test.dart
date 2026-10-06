@@ -23,16 +23,19 @@ void main() {
       );
     });
 
-    test('nomme les quatre collections dont la notification est faite', () {
+    test('nomme les six collections dont la notification est faite', () {
       const wake = GroupMessageWake(groupId: 'g', messageId: 'm');
 
       // Chacune porte un morceau : le texte (`group_messages`), le nom de l'auteur
-      // (`profiles`), le nom du fil (`groups`) et le fait que la conversation est
-      // mienne (`group_members`, règle 1 de `GroupDao`).
+      // (`profiles`), le nom du fil (`groups`), le fait que la conversation est
+      // mienne (`group_members`, règle 1 de `GroupDao`) — et depuis M5, ce que
+      // j'ai déjà lu (`group_reads`) et ma sourdine (`group_mutes`).
       expect(wake.collections, {
         SyncCollectionKey.profiles,
         SyncCollectionKey.groups,
         SyncCollectionKey.groupMembers,
+        SyncCollectionKey.groupReads,
+        SyncCollectionKey.groupMutes,
         SyncCollectionKey.groupMessages,
       });
 
@@ -42,6 +45,44 @@ void main() {
       expect(
         wake.collections,
         isNot(contains(SyncCollectionKey.groupJoinRequests)),
+      );
+    });
+
+    test('le réveil d\'une conversation en sourdine se lit muet (M5)', () {
+      final wake = readPushWake(const {
+        'type': 'group_message_muted',
+        'groupId': 'grp-1',
+        'messageId': 'msg-1',
+      });
+
+      // Le même réveil — mêmes identifiants, mêmes collections à tirer —, mais
+      // marqué : on synchronise, on ne notifie pas.
+      expect(
+        wake,
+        const GroupMessageWake(
+          groupId: 'grp-1',
+          messageId: 'msg-1',
+          muted: true,
+        ),
+      );
+      expect(
+        wake!.collections,
+        const GroupMessageWake(groupId: 'g', messageId: 'm').collections,
+      );
+      // Et le réveil habituel ne l'est pas.
+      expect(
+        readPushWake(const {
+          'type': 'group_message',
+          'groupId': 'grp-1',
+          'messageId': 'msg-1',
+        }),
+        isNot(
+          const GroupMessageWake(
+            groupId: 'grp-1',
+            messageId: 'msg-1',
+            muted: true,
+          ),
+        ),
       );
     });
 

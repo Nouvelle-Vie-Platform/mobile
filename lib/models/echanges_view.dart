@@ -176,6 +176,7 @@ class ConversationView {
     this.unreadCount = 0,
     this.archived = false,
     this.pinnedAt,
+    this.isMuted = false,
   });
 
   final String groupId;
@@ -229,6 +230,11 @@ class ConversationView {
   final DateTime? pinnedAt;
 
   bool get pinned => pinnedAt != null;
+
+  /// **En sourdine** (M5), jugé à l'instant où la liste a été lue : la tuile
+  /// porte alors un haut-parleur barré. Une sourdine bornée échue n'en est plus
+  /// une — elle disparaît à la prochaine émission du magasin.
+  final bool isMuted;
 }
 
 /// **Le badge global** de l'onglet Échanges (#140) : la somme des non-lus de

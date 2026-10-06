@@ -9,6 +9,7 @@ import '../../utils/event_time.dart';
 import '../app_avatar.dart';
 import '../app_card.dart';
 import '../unread_badge.dart';
+import 'muted_indicator.dart';
 
 /// Tuile d'une conversation du hub « Échanges » : avatar, nom, aperçu du
 /// dernier message et horodatage. Le tap ouvre le chat (décision D7).
@@ -93,7 +94,10 @@ class ConversationTile extends StatelessWidget {
               ],
             ),
           ),
-          if (stamp != null || unread > 0 || conversation.pinned) ...[
+          if (stamp != null ||
+              unread > 0 ||
+              conversation.pinned ||
+              conversation.isMuted) ...[
             const SizedBox(width: AppSpacing.sm),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -104,6 +108,11 @@ class ConversationTile extends StatelessWidget {
                     style: AppTypography.caption
                         .copyWith(color: palette.textSecondary),
                   ),
+                // La sourdine (M5) : sous l'heure, avant la pastille.
+                if (conversation.isMuted) ...[
+                  const SizedBox(height: 4),
+                  const MutedIndicator(),
+                ],
                 if (unread > 0) ...[
                   const SizedBox(height: 4),
                   UnreadBadge(count: unread),

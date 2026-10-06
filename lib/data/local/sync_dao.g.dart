@@ -42,6 +42,7 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
   $GroupArrangementsTable get groupArrangements =>
       attachedDatabase.groupArrangements;
   $MessageReceiptsTable get messageReceipts => attachedDatabase.messageReceipts;
+  $GroupMutesTable get groupMutes => attachedDatabase.groupMutes;
   SyncDaoManager get managers => SyncDaoManager(this);
 }
 
@@ -124,4 +125,6 @@ class SyncDaoManager {
   $$MessageReceiptsTableTableManager get messageReceipts =>
       $$MessageReceiptsTableTableManager(
           _db.attachedDatabase, _db.messageReceipts);
+  $$GroupMutesTableTableManager get groupMutes =>
+      $$GroupMutesTableTableManager(_db.attachedDatabase, _db.groupMutes);
 }

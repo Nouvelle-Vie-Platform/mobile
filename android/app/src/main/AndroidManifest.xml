@@ -90,6 +90,15 @@
             </intent-filter>
         </receiver>
 
+        <!-- Les actions des notifications de messages (M5) — « Répondre » et
+             « Marquer comme lu ». Le greffon `flutter_local_notifications` les
+             reçoit par ce récepteur, puis démarre un isolate de fond
+             (`wakeActionEntryPoint`). Sans cette ligne, les deux boutons
+             s'affichent et ne font **rien**, sans aucune erreur. -->
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

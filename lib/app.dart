@@ -44,6 +44,7 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   /// (#140) — voir `messagingLinkProvider`. Personne d'autre ne l'écoute : sans
   /// lui, le canal ne s'ouvrirait jamais.
   ProviderSubscription<Object?>? _messaging;
+  ProviderSubscription<Object?>? _notifications;
 
   @override
   void initState() {
@@ -142,6 +143,12 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
         // cycle de vie (fermé en arrière-plan, rouvert au retour).
         _messaging = ref.listenManual(messagingLinkProvider, (_, __) {});
 
+        // **Les notifications d'une conversation lue s'effacent** (M5), ici ou
+        // sur un autre appareil (`read.advanced`). Inerte sans transport de
+        // réveil : il n'y a alors rien à effacer.
+        _notifications =
+            ref.listenManual(notificationReconcilerProvider, (_, __) {});
+
         // **Le réveil push** (#97), posé au même endroit et pour la même raison que
         // le premier cycle : il a besoin d'un porteur, et `awaitToken()` vient de
         // l'attendre. `POST /devices/tokens` accepte les deux porteurs — un invité
@@ -187,7 +194,7 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   /// dans le conteneur et non sur un `BuildContext` capturé — la contrainte de tout
   /// geste que `requireSession()` peut rejouer après un détour par la connexion.
   ///
-  /// L'identifiant vient du **magasin** (`MessageAnnouncement.groupId`), donc le fil
+  /// L'identifiant vient du **magasin** (`ConversationDigest.groupId`), donc le fil
   /// ouvert contient bien le message annoncé.
   ///
   /// ⚠️ **`requireSession()`, et non une navigation nue.** `/group-chat/:id` est dans
@@ -212,6 +219,7 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   void dispose() {
     _intents?.close();
     _messaging?.close();
+    _notifications?.close();
     unawaited(_wakes?.cancel());
     ApiClient.instance.onUnauthorized = null;
     ApiClient.instance.interfaceLanguage = null;

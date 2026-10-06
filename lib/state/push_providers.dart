@@ -17,13 +17,16 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
+import '../data/push/notification_texts.dart';
 import '../data/push/push_enrolment.dart';
 import '../data/push/push_registrar.dart';
 import '../data/push/push_transport.dart';
 import '../data/push/push_wake_handler.dart';
 import '../data/push/wake_notifier.dart';
 import '../data/sync/sync_scheduler.dart';
+import 'auth_providers.dart';
 import 'sync_providers.dart';
+import 'theme_provider.dart' show settingsDaoProvider;
 
 /// **Le transport**, inerte par défaut. Surchargé par `main.dart`.
 final pushTransportProvider = Provider<PushTransport>(
@@ -69,16 +72,37 @@ final wakeTapsProvider = Provider<WakeTaps>((ref) => const InertWakeTaps());
 /// `SyncTrigger.pushWake`, qui dit aussi pourquoi c'est un cycle **complet** ici et
 /// un cycle ciblé en fond.
 final pushWakeHandlerProvider = Provider<PushWakeHandler>((ref) {
-  final database = ref.watch(appDatabaseProvider);
   return PushWakeHandler(
     synchronize: (_) async {
       if (!AppEnv.useBackend) return;
       await ref.read(syncSchedulerProvider).trigger(SyncTrigger.pushWake);
     },
-    announcement: database.groupDao.announcementFor,
+    store: StoreWakeStore(
+      groups: ref.watch(groupDaoProvider),
+      showPreview: () => ref.read(settingsDaoProvider).notificationPreview(),
+      userId: () => ref.read(authProvider).user?.id,
+    ),
     notifier: ref.watch(wakeNotifierProvider),
+    // Inutiles tant que le notifieur du premier plan est inerte ; résolus
+    // quand même dans la langue du système, comme au fond — un notifieur réel
+    // posé ici un jour n'aurait rien à rebrancher.
+    texts: notificationTextsForSystem(),
   );
 });
+
+/// **Le notifieur qui efface, au premier plan** (M5) — `null` par défaut,
+/// surchargé par `main.dart` avec un [LocalWakeNotifier] quand un transport de
+/// réveil a démarré.
+///
+/// Distinct de [wakeNotifierProvider], qui reste inerte au premier plan : on
+/// n'y **affiche** rien (les écrans se repeignent du magasin), mais on y
+/// **efface** la notification d'une conversation qu'on vient de lire — ici ou
+/// sur un autre appareil (`read.advanced`). Voir `NotificationReconciler`.
+///
+/// `null` et non un double inerte : sans transport il n'y a aucune
+/// notification à effacer, et le réconciliateur ne s'abonne alors même pas au
+/// magasin (`notificationReconcilerProvider`).
+final wakeDismisserProvider = Provider<WakeNotifier?>((ref) => null);
 
 /// **L'enregistrement de la cible de réveil** — démarré par `app.dart` une fois
 /// qu'il y a un porteur, puis entretenu par l'abonnement aux rotations.
@@ -95,3 +119,10 @@ final pushEnrolmentProvider = Provider<PushEnrolment>((ref) {
   ref.onDispose(enrolment.dispose);
   return enrolment;
 });
+
+/// **« Afficher le contenu » des notifications de messages** (M5) — un réglage
+/// de ce téléphone, rangé dans le magasin pour que le réveil de fond le lise.
+/// Défaut : oui.
+final notificationPreviewProvider = StreamProvider<bool>(
+  (ref) => ref.watch(settingsDaoProvider).watchNotificationPreview(),
+);
