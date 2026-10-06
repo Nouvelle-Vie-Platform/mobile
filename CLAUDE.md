@@ -1522,12 +1522,14 @@ une entrée affichable :
    test ne fige une valeur, ils comparent l'ordre de **deux** entrées.
 4. **`destinationRubric` et `destinationBranch` portent des slugs, jamais des
    `id`** : ils se rapprochent des lignes locales du référentiel de **leur**
-   famille. ⚠️ **Le slug de branche n'est pas résoluble sur ce client** —
-   `BranchTransformer` ne sert ni slug ni rien d'approchant au flux delta —, donc
-   une entrée qui en exige un ne ramène aucun contenu et **disparaît**. C'est le
-   bon sens de la panne : mieux vaut une entrée absente qu'un onglet « Aného »
-   montrant tout le catalogue. Le jour où le slug descendra, la clause à changer
-   est dans `MenuDao.watchSurface`, et nulle part ailleurs.
+   famille. Le slug de branche **descend** depuis la v27 (`branches.slug`,
+   server-portal#490) et la médiathèque en pages le résout (`MediaFilter`,
+   `models/media_page_view.dart`) ; une branche inconnue ou sans slug ne ramène
+   rien. ⚠️ **Les menus ne le résolvent pas encore** : une entrée de
+   `menu_entries` qui exige une branche ne ramène aucun contenu et
+   **disparaît** — mieux vaut une entrée absente qu'un onglet « Aného » montrant
+   tout le catalogue. La clause à changer est dans `MenuDao.watchSurface`, et
+   nulle part ailleurs.
 5. **`parentId` est un entier nu, sans contrainte** : une sous-entrée dont le
    parent n'est pas en magasin ne fait pas échouer `applyPage`, et à la lecture
    elle est **ignorée** — surtout pas remontée à la racine, ce qui mettrait dans
