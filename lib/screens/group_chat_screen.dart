@@ -118,6 +118,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   /// Riverpod est l'état *partagé*.
   final TextEditingController _controller = TextEditingController();
 
+  /// Le focus du champ de saisie (M2) : répondre ou modifier l'ouvre.
+  final FocusNode _composerFocus = FocusNode();
+
   final ScrollController _scroll = ScrollController();
 
   /// Le séparateur « N messages non lus », pour s'y rendre à l'ouverture.
@@ -219,6 +222,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     _highlightTimer?.cancel();
     _scroll.dispose();
     _controller.dispose();
+    _composerFocus.dispose();
     super.dispose();
   }
 
@@ -305,6 +309,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       _editing = null;
       _replyTo = message;
     });
+    // Comme WhatsApp : on répond en écrivant — le clavier s'ouvre.
+    _composerFocus.requestFocus();
   }
 
   /// **Modifier** : le texte du message entre dans le champ.
@@ -318,6 +324,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       text: body,
       selection: TextSelection.collapsed(offset: body.length),
     );
+    _composerFocus.requestFocus();
   }
 
   void _cancelComposerContext() {
@@ -900,6 +907,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
               MessageInputBar(
                 hintText: l.chatMessageHint,
                 controller: _controller,
+                focusNode: _composerFocus,
                 onSend: _send,
               )
             else if (group != null)

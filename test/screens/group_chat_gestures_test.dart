@@ -156,12 +156,18 @@ void main() {
         'glisser une bulle vers la droite pose la citation au-dessus du champ',
         (tester) async {
       await _pump(tester, [_message('m-1', body: 'Répétition samedi')]);
+      EditableText field() =>
+          tester.widget<EditableText>(find.byType(EditableText));
+      expect(field().focusNode.hasFocus, isFalse);
 
       await tester.drag(find.text('Répétition samedi'), const Offset(120, 0));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('composer_reply_bar')), findsOneWidget);
       expect(find.text(_fr.chatReplyingTo('Estelle Adjo')), findsOneWidget);
+      // Comme WhatsApp : le champ prend le focus, le clavier s'ouvre.
+      expect(field().focusNode.hasFocus, isTrue);
+      expect(tester.testTextInput.isVisible, isTrue);
 
       // La croix l'annule.
       await tester.tap(find.byKey(const Key('composer_context_cancel')));
