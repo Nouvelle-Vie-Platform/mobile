@@ -100,3 +100,58 @@ jobs:
             --notes-file notes.md \
             --generate-notes \
             --verify-tag
+
+      # Le dépôt est privé : la page Releases ci-dessus rend 404 aux personnes
+      # invitées. Le portail sert donc le dernier APK sur sa page publique
+      # `/application` (server-portal#524), et c'est cette étape qui le lui dépose.
+      #
+      # ⚠️ Elle ne fait JAMAIS échouer le workflow : la Release est déjà publiée,
+      # et un portail injoignable ne doit pas la faire passer pour ratée. Tout
+      # échec devient un avertissement visible dans le résumé du run — il suffit
+      # alors de relancer le job, le portail acceptant de recevoir deux fois la
+      # même version.
+      #
+      # À poser une fois (voir server-portal/deploy/README.md) :
+      # - le secret `APP_RELEASE_TOKEN`, même valeur que sur le VPS ;
+      # - la variable `PORTAL_URL`, facultative (défaut : le domaine de prod).
+      - name: Déposer l'APK sur le portail
+        env:
+          APP_RELEASE_TOKEN: ${{ secrets.APP_RELEASE_TOKEN }}
+          PORTAL_URL: ${{ vars.PORTAL_URL || 'https://eenv.brainsial.com' }}
+          APK: ${{ steps.apk.outputs.file }}
+          VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          if [ -z "$APP_RELEASE_TOKEN" ]; then
+            echo "::warning title=Portail::Secret APP_RELEASE_TOKEN absent : l'APK n'a pas été déposé sur le portail."
+            exit 0
+          fi
+
+          url="${PORTAL_URL%/}/app-releases/${VERSION}"
+          # Pas de réponse d'un essai précédent : un échec de connexion n'en écrit aucune.
+          rm -f response.json
+          code=$(curl -sS -o response.json -w '%{http_code}' \
+            --max-time 900 --retry 3 --retry-delay 15 --retry-connrefused \
+            -X POST \
+            -H "Authorization: Bearer ${APP_RELEASE_TOKEN}" \
+            -H "Content-Type: application/vnd.android.package-archive" \
+            --data-binary "@${APK}" \
+            "$url") || code="000"
+
+          case "$code" in
+            200|201) ;;
+            *)
+              echo "::warning title=Portail::Dépôt de l'APK sur ${url} en échec (HTTP ${code}) : $(head -c 300 response.json 2>/dev/null)"
+              exit 0
+              ;;
+          esac
+
+          # Le portail calcule l'empreinte lui-même : elle doit être celle du
+          # fichier construit ici, sinon ce que la page affiche ne prouve rien.
+          local_sha=$(sha256sum "$APK" | cut -d' ' -f1)
+          remote_sha=$(jq -r '.sha256 // empty' response.json)
+          if [ "$local_sha" != "$remote_sha" ]; then
+            echo "::warning title=Portail::Empreinte différente — locale ${local_sha}, portail ${remote_sha:-absente}."
+            exit 0
+          fi
+          echo "APK ${VERSION} déposé ($(jq -r '.outcome' response.json)) — SHA-256 ${local_sha}"
+          echo "APK ${VERSION} sur le portail : ${PORTAL_URL%/}/application" >> "$GITHUB_STEP_SUMMARY"
