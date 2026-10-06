@@ -34,6 +34,9 @@ enum MessageAction {
   copy,
   forward,
   edit,
+
+  /// « Infos du message » (M3, #142) : qui a reçu, qui a lu — mes messages.
+  info,
   deleteForMe,
   deleteForEveryone,
 }
@@ -48,6 +51,7 @@ enum MessageAction {
 ///   saisie présente ([canWrite]) ;
 /// - **supprimer pour tous** : administrateur ([isAdmin]) à tout moment, ou le
 ///   mien dans les 2 jours ;
+/// - **infos** (M3, #142) : mes messages confirmés et vivants ;
 /// - **supprimer pour moi** : toujours, sur un message confirmé.
 Set<MessageAction> availableMessageActions(
   GroupMessageView message, {
@@ -73,6 +77,7 @@ Set<MessageAction> availableMessageActions(
     // de modification offerte.
     if (canWrite && message.mine && message.body != null && withinEdit)
       MessageAction.edit,
+    if (message.mine) MessageAction.info,
     MessageAction.deleteForMe,
     if (isAdmin || (message.mine && withinDelete))
       MessageAction.deleteForEveryone,

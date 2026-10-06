@@ -36,9 +36,14 @@ class ChatBubble extends StatelessWidget {
     this.onAuthorTap,
     this.onFailedTap,
     this.receiptMark,
+    this.header,
   });
 
   final GroupMessageView message;
+
+  /// **En tête de bulle, sous le nom** (M2, #141) : « Transféré » et la
+  /// citation d'une réponse — peints par `MessageBubbleHeader`. `null` = rien.
+  final Widget? header;
 
   /// **Toucher un message à moi qui n'est pas parti** (#140) — l'écran ouvre
   /// « Réessayer / Supprimer ». N'a d'effet que sur un message
@@ -106,14 +111,20 @@ class ChatBubble extends StatelessWidget {
             ),
             const SizedBox(height: 2),
           ],
+          if (header != null) header!,
           // **Un message-média n'a pas de texte** (#140, piège 1) : on le dit,
           // en italique, plutôt que de rendre une bulle vide qui se lirait comme
-          // un message effacé.
+          // un message effacé. **Un message supprimé pour tous** (M2, #141) le
+          // dit aussi — et ne dit que cela.
           Text(
-            message.body ?? l.chatMediaUnsupported,
+            message.deleted
+                ? l.chatMessageDeleted
+                : message.body ?? l.chatMediaUnsupported,
             style: AppTypography.body.copyWith(
               fontSize: 14,
-              fontStyle: message.body == null ? FontStyle.italic : null,
+              fontStyle: message.deleted || message.body == null
+                  ? FontStyle.italic
+                  : null,
               color: mine ? Colors.white : palette.textPrimary,
             ),
           ),
@@ -122,6 +133,22 @@ class ChatBubble extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              // « Modifié » (M2, #141), près de l'heure, comme WhatsApp.
+              if (message.edited)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Text(
+                    l.chatMessageEdited,
+                    key: const Key('chat_bubble_edited'),
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 10,
+                      fontStyle: FontStyle.italic,
+                      color: mine
+                          ? Colors.white.withValues(alpha: 0.8)
+                          : palette.textSecondary,
+                    ),
+                  ),
+                ),
               // L'heure est **formatée ici**, depuis un instant : le serveur ne
               // sert pas de texte pré-formaté, et un fuseau se résout dans la vue.
               // Un instant absent ne se rend pas, plutôt qu'une date inventée.

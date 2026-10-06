@@ -2,13 +2,16 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/messaging/group_history.dart';
+import '../data/messaging/message_gestures.dart';
 import '../data/messaging/messaging_ephemeral.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/echanges_view.dart';
+import '../models/message_gesture_rules.dart';
 import '../models/receipt_view.dart';
 import '../router/app_router.dart';
 import '../state/chat_organization_providers.dart';
@@ -21,11 +24,16 @@ import '../utils/presence_labels.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/chat_bubble.dart';
 import '../widgets/chat/chat_info_banner.dart';
+import '../widgets/chat/chat_mute_menu.dart';
+import '../widgets/chat/forward_sheet.dart';
+import '../widgets/chat/message_actions_sheet.dart';
 import '../widgets/chat/message_focus_highlight.dart';
 import '../widgets/chat/message_info_sheet.dart';
-import '../widgets/chat/chat_mute_menu.dart';
 import '../widgets/chat/message_input_bar.dart';
+import '../widgets/chat/message_quote.dart';
+import '../widgets/chat/message_reactions.dart';
 import '../widgets/chat/receipt_mark.dart';
+import '../widgets/chat/swipe_to_reply.dart';
 import '../widgets/content_absence.dart';
 import '../widgets/home_tab.dart';
 
@@ -59,6 +67,17 @@ import '../widgets/home_tab.dart';
 ///   l'outbox de la lecture (rejouable).
 /// - **Un message qui n'est pas parti** se touche : Réessayer / Supprimer. Il
 ///   repart aussi tout seul (voir `messagingOutboxProvider`).
+///
+/// ## Les gestes sur un message (M2, #141)
+///
+/// - **Répondre** : glisser la bulle vers la droite, ou appui long → Répondre ;
+///   la citation paraît au-dessus du champ (annulable) puis dans la bulle.
+///   **Toucher une citation défile jusqu'au message d'origine** et le met en
+///   évidence — en chargeant l'historique s'il le faut.
+/// - **Appui long** : le jeu rapide de réactions et les gestes que mes droits
+///   permettent (`availableMessageActions`) — copier, transférer, modifier,
+///   supprimer pour moi / pour tous.
+/// - **Toucher l'agrégat** sous une bulle montre qui a réagi.
 ///
 /// ## Le temps réel n'a plus de prise ici
 ///
@@ -148,6 +167,31 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   /// La présence de l'autre (tête-à-tête) a été demandée pour cette ouverture.
   bool _presenceRequested = false;
 
+  // ── Tranche M2 (#141) ──
+
+  /// Le message auquel on est en train de répondre — sa citation est
+  /// au-dessus du champ.
+  GroupMessageView? _replyTo;
+
+  /// Le message qu'on est en train de modifier — son texte est dans le champ.
+  GroupMessageView? _editing;
+
+  /// Le message mis en évidence après un saut depuis une citation.
+  String? _highlightId;
+  Timer? _highlightTimer;
+
+  /// Le message vers lequel le fil défile, et la clé posée sur sa ligne.
+  String? _jumpTargetId;
+  final GlobalKey _jumpTargetKey = GlobalKey();
+
+  /// Moi, et mes droits ici — relus à chaque construction.
+  String? _me;
+
+  /// Le groupe affiché — pour « Infos du message » (M3, #142) depuis le menu.
+  GroupDetailView? _group;
+  bool _isAdmin = false;
+  bool _canWrite = false;
+
   @override
   void initState() {
     super.initState();
@@ -172,6 +216,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _focusTimer?.cancel();
+    _highlightTimer?.cancel();
     _scroll.dispose();
     _controller.dispose();
     super.dispose();
@@ -221,13 +266,293 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
   Future<void> _send(String text) async {
     _typing.reset();
+    // **Modifier** (M2) : le texte du champ remplace celui du message.
+    final editing = _editing;
+    if (editing != null) {
+      setState(() => _editing = null);
+      if (text.trim() == editing.body) return;
+      _report(
+        await ref.read(messageGesturesProvider).edit(
+              groupId: widget.groupId,
+              messageId: editing.id,
+              body: text,
+            ),
+      );
+      return;
+    }
+
     // Le fil revient en bas : le message qu'on vient d'écrire doit se voir.
     if (_scroll.hasClients && _scroll.offset > 0) _scroll.jumpTo(0);
+    final reply = _replyTo;
+    if (reply != null) setState(() => _replyTo = null);
     // L'écho est posé par le composeur avant tout appel réseau : le message
     // paraît dans le fil, marqué « en cours d'envoi », et le champ se vide.
-    await ref
-        .read(groupMessageComposerProvider)
-        .send(groupId: widget.groupId, body: text);
+    await ref.read(groupMessageComposerProvider).send(
+          groupId: widget.groupId,
+          body: text,
+          replyToMessageId: reply?.id,
+        );
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Les gestes sur un message (M2, #141)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// **Répondre** : la citation monte au-dessus du champ.
+  void _startReply(GroupMessageView message) {
+    setState(() {
+      if (_editing != null) _controller.clear();
+      _editing = null;
+      _replyTo = message;
+    });
+  }
+
+  /// **Modifier** : le texte du message entre dans le champ.
+  void _startEdit(GroupMessageView message) {
+    setState(() {
+      _replyTo = null;
+      _editing = message;
+    });
+    final body = message.body ?? '';
+    _controller.value = TextEditingValue(
+      text: body,
+      selection: TextSelection.collapsed(offset: body.length),
+    );
+  }
+
+  void _cancelComposerContext() {
+    setState(() {
+      if (_editing != null) _controller.clear();
+      _editing = null;
+      _replyTo = null;
+    });
+  }
+
+  /// La citation d'un message qu'on s'apprête à citer — pour l'aperçu.
+  MessageQuoteView _quoteOf(GroupMessageView message) => MessageQuoteView(
+        messageId: message.id,
+        authorId: message.authorId,
+        authorName: message.authorName,
+        excerpt: message.body,
+        mine: message.mine,
+      );
+
+  /// **L'appui long** : le jeu rapide de réactions, puis les gestes permis.
+  Future<void> _onLongPress(GroupMessageView message) async {
+    final actions = availableMessageActions(
+      message,
+      isAdmin: _isAdmin,
+      canWrite: _canWrite,
+      now: DateTime.now(),
+    );
+    final canReact = canReactTo(message);
+    if (actions.isEmpty && !canReact) return;
+
+    HapticFeedback.selectionClick();
+    final choice = await showMessageActionsSheet(
+      context,
+      actions: actions,
+      canReact: canReact,
+      myReaction: message.myReaction,
+    );
+    if (choice == null || !mounted) return;
+
+    final gestures = ref.read(messageGesturesProvider);
+    switch (choice) {
+      case ReactionChoice(:final emoji):
+        _report(
+          await gestures.toggleReaction(
+            groupId: widget.groupId,
+            messageId: message.id,
+            emoji: emoji,
+            current: message.myReaction,
+          ),
+        );
+      case ActionChoice(action: MessageAction.reply):
+        _startReply(message);
+      case ActionChoice(action: MessageAction.copy):
+        await Clipboard.setData(ClipboardData(text: message.body ?? ''));
+        if (!mounted) return;
+        _snack(context.l10n.chatCopied);
+      case ActionChoice(action: MessageAction.forward):
+        final targets = await showForwardSheet(context, actor: _me);
+        if (targets == null || targets.isEmpty || !mounted) return;
+        final outcome = await gestures.forward(
+          groupId: widget.groupId,
+          messageId: message.id,
+          targetGroupIds: targets,
+        );
+        if (!mounted) return;
+        if (outcome == GestureOutcome.done) {
+          _snack(context.l10n.chatForwardDone);
+        } else {
+          _report(outcome);
+        }
+      case ActionChoice(action: MessageAction.edit):
+        _startEdit(message);
+      case ActionChoice(action: MessageAction.info):
+        // M3 (#142) : qui a reçu, qui a lu — la feuille de M3, ouverte d'ici.
+        final group = _group;
+        if (group == null) return;
+        await showMessageInfo(context, message: message, group: group);
+      case ActionChoice(action: MessageAction.deleteForMe):
+        if (_replyTo?.id == message.id) setState(() => _replyTo = null);
+        _report(
+          await gestures.hideForMe(
+            groupId: widget.groupId,
+            messageId: message.id,
+          ),
+        );
+      case ActionChoice(action: MessageAction.deleteForEveryone):
+        if (!await _confirmDeleteForEveryone() || !mounted) return;
+        _report(
+          await gestures.deleteForEveryone(
+            groupId: widget.groupId,
+            messageId: message.id,
+          ),
+        );
+    }
+  }
+
+  Future<bool> _confirmDeleteForEveryone() async {
+    final l = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        content: Text(l.chatDeleteForEveryoneConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialog).pop(false),
+            child: Text(MaterialLocalizations.of(dialog).cancelButtonLabel),
+          ),
+          TextButton(
+            key: const Key('confirm_delete_for_everyone'),
+            onPressed: () => Navigator.of(dialog).pop(true),
+            child: Text(l.chatActionDeleteForEveryone),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  /// **Toucher l'agrégat** : qui a réagi ; toucher ma ligne retire la mienne.
+  void _onReactionsTap(GroupMessageView message) {
+    showReactorsSheet(
+      context,
+      actor: _me,
+      messageId: message.id,
+      onRemove: () async {
+        final mine = message.myReaction;
+        if (mine == null) return;
+        _report(
+          await ref.read(messageGesturesProvider).toggleReaction(
+                groupId: widget.groupId,
+                messageId: message.id,
+                emoji: mine,
+                current: mine,
+              ),
+        );
+      },
+    );
+  }
+
+  /// Dit ce qu'a donné un geste — rien quand il a abouti.
+  void _report(GestureOutcome outcome) {
+    if (!mounted) return;
+    final l = context.l10n;
+    switch (outcome) {
+      case GestureOutcome.done:
+        return;
+      case GestureOutcome.windowClosed:
+        _snack(l.chatGestureWindowClosed);
+      case GestureOutcome.refused:
+        _snack(l.chatGestureRefused);
+      case GestureOutcome.unreachable:
+        _snack(l.chatGestureUnreachable);
+    }
+  }
+
+  void _snack(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.maybeOf(context)
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  /// **Toucher une citation** : défiler jusqu'au message d'origine et le
+  /// mettre en évidence. S'il n'est pas dans le magasin, l'historique se charge
+  /// page après page jusqu'à lui (ou jusqu'au début du fil).
+  Future<void> _jumpTo(String messageId) async {
+    final repository = ref.read(echangesRepositoryProvider(_me));
+    var newer = await repository.newerThan(widget.groupId, messageId);
+
+    var pages = 0;
+    while (newer == null && !_historyExhausted && pages < 20) {
+      final oldest = await repository.oldestMessageId(widget.groupId);
+      if (oldest == null) break;
+      final outcome = await ref
+          .read(groupHistoryProvider)
+          .loadBefore(groupId: widget.groupId, beforeId: oldest);
+      if (outcome == HistoryOutcome.exhausted) _historyExhausted = true;
+      if (outcome == HistoryOutcome.unreachable) break;
+      newer = await repository.newerThan(widget.groupId, messageId);
+      pages++;
+    }
+    if (!mounted) return;
+    if (newer == null) {
+      _snack(context.l10n.chatQuoteNotFound);
+      return;
+    }
+
+    final needed = newer + kThreadWindow;
+    _highlightTimer?.cancel();
+    setState(() {
+      // La fenêtre doit contenir le message (les échos en attente comptent
+      // aussi dans le fil : la marge les absorbe).
+      if (_limit < needed) _limit = needed;
+      _jumpTargetId = messageId;
+      _highlightId = messageId;
+    });
+    _highlightTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _highlightId = null);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revealJumpTarget());
+  }
+
+  /// Amène la ligne du message visé à l'écran. La liste est paresseuse et
+  /// inversée : on repart du bas, puis on remonte d'un écran tant que la ligne
+  /// n'est pas construite — le motif de [_revealSeparator].
+  void _revealJumpTarget([int attempt = 0]) {
+    if (!mounted) return;
+    final target = _jumpTargetKey.currentContext;
+    if (target != null) {
+      Scrollable.ensureVisible(
+        target,
+        alignment: 0.5,
+        duration: const Duration(milliseconds: 250),
+      );
+      return;
+    }
+    if (!_scroll.hasClients || attempt > 40) return;
+    final position = _scroll.position;
+    if (attempt == 0) {
+      _scroll.jumpTo(0);
+    } else {
+      if (position.pixels >= position.maxScrollExtent) {
+        // Le haut est atteint sans la ligne : la fenêtre s'élargit peut-être
+        // encore ; on laisse une image de plus avant d'abandonner.
+        if (attempt > 35) return;
+      }
+      _scroll.jumpTo(
+        math.min(
+          position.pixels + position.viewportDimension * 0.8,
+          position.maxScrollExtent,
+        ),
+      );
+    }
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _revealJumpTarget(attempt + 1));
   }
 
   /// **Y a-t-il une pile sous ce fil ?** Lu sur la `GoRouter` quand il y en a
@@ -496,6 +821,17 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         ) ??
         (group != null && group.isDirect ? presenceLabel(l, presence) : null);
 
+    // Mes droits ici (M2, #141) : l'administrateur supprime pour tous sans
+    // délai ; répondre et modifier exigent la barre de saisie.
+    _me = me;
+    _group = group;
+    _canWrite = group != null && group.canWrite;
+    _isAdmin = group != null &&
+        group.members.any(
+          (m) =>
+              m.userId == me && (m.role == 'leader' || m.role == 'moderator'),
+        );
+
     return PopScope(
       // Pas de pile dessous (ouvert par une notification) : le geste système
       // mène à la liste des Échanges au lieu de quitter l'application.
@@ -539,18 +875,27 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 focusKey: _focusKey,
                 focusLit: _focusLit,
                 receipts: receipts,
-                onMineLongPress: group == null
-                    ? null
-                    : (m) => showMyMessageActions(
-                          context,
-                          message: m,
-                          group: group,
-                        ),
+                canWrite: _canWrite,
+                onLongPress: _onLongPress,
+                onSwipeReply: _startReply,
+                onQuoteTap: _jumpTo,
+                onReactionsTap: _onReactionsTap,
+                highlightId: _highlightId,
+                jumpTargetId: _jumpTargetId,
+                jumpTargetKey: _jumpTargetKey,
               ),
             ),
             // **La barre de saisie n'existe que si l'on peut écrire.** Le
             // serveur revérifie à chaque envoi ; on le lit ici pour ne pas
             // offrir un champ dont chaque appui prendrait un 403.
+            // Au-dessus du champ (M2) : la réponse ou la modification en cours.
+            if (group != null && group.canWrite && _editing != null)
+              ComposerContextBar.edit(onCancel: _cancelComposerContext)
+            else if (group != null && group.canWrite && _replyTo != null)
+              ComposerContextBar.reply(
+                quote: _quoteOf(_replyTo!),
+                onCancel: _cancelComposerContext,
+              ),
             if (group != null && group.canWrite)
               MessageInputBar(
                 hintText: l.chatMessageHint,
@@ -614,7 +959,14 @@ class _Thread extends StatelessWidget {
     this.focusKey,
     this.focusLit = false,
     this.receipts = const {},
-    this.onMineLongPress,
+    this.canWrite = false,
+    this.onLongPress,
+    this.onSwipeReply,
+    this.onQuoteTap,
+    this.onReactionsTap,
+    this.highlightId,
+    this.jumpTargetId,
+    this.jumpTargetKey,
   });
 
   final AsyncValue<List<GroupMessageView>> thread;
@@ -635,8 +987,15 @@ class _Thread extends StatelessWidget {
   /// Les coches de mes messages (#142), par identifiant.
   final Map<String, ReceiptStatus> receipts;
 
-  /// Appui long sur un de mes messages confirmés (#142 : « Infos »).
-  final void Function(GroupMessageView message)? onMineLongPress;
+  // ── Tranche M2 (#141) ──
+  final bool canWrite;
+  final void Function(GroupMessageView message)? onLongPress;
+  final void Function(GroupMessageView message)? onSwipeReply;
+  final void Function(String messageId)? onQuoteTap;
+  final void Function(GroupMessageView message)? onReactionsTap;
+  final String? highlightId;
+  final String? jumpTargetId;
+  final GlobalKey? jumpTargetKey;
 
   @override
   Widget build(BuildContext context) {
@@ -711,6 +1070,14 @@ class _Thread extends StatelessWidget {
           receiptMark: mineConfirmed
               ? ReceiptMark(status: receipts[m.id] ?? ReceiptStatus.sent)
               : null,
+          // « Transféré » et la citation (M2) — toucher la citation y mène.
+          header: messageBubbleHeader(
+            context,
+            m,
+            onQuoteTap: m.quote == null || onQuoteTap == null
+                ? null
+                : () => onQuoteTap!(m.quote!.messageId),
+          ),
           // Répondre en privé à un membre qui intervient : tap sur son
           // nom/avatar → sa fiche. Seulement dans un groupe, seulement sur un
           // message reçu, et **jamais** sur un auteur retiré.
@@ -727,24 +1094,87 @@ class _Thread extends StatelessWidget {
               ? () => onFailedTap(m)
               : null,
         );
-        // #142 (M3) : appui long sur un de mes messages confirmés → « Infos ».
-        final pressable = (!mineConfirmed || onMineLongPress == null)
-            ? bubble
-            : GestureDetector(
-                key: ValueKey('long-press-${m.id}'),
-                behavior: HitTestBehavior.opaque,
-                onLongPress: () => onMineLongPress!(m),
-                child: bubble,
-              );
+        final gestured = _GesturedMessage(
+          key: m.id == jumpTargetId ? jumpTargetKey : null,
+          message: m,
+          bubble: bubble,
+          canSwipe:
+              onSwipeReply != null && canSwipeToReply(m, canWrite: canWrite),
+          highlighted: m.id == highlightId,
+          onLongPress: onLongPress == null ? null : () => onLongPress!(m),
+          onSwipeReply: onSwipeReply == null ? null : () => onSwipeReply!(m),
+          onReactionsTap:
+              onReactionsTap == null ? null : () => onReactionsTap!(m),
+        );
         // M8 (#146) : le message trouvé par la recherche.
         if (m.id == focusMessageId) {
           return KeyedSubtree(
             key: focusKey,
-            child: MessageFocusHighlight(lit: focusLit, child: pressable),
+            child: MessageFocusHighlight(lit: focusLit, child: gestured),
           );
         }
-        return pressable;
+        return gestured;
       },
+    );
+  }
+}
+
+/// **Une bulle et ses gestes** (M2, #141) : glisser pour répondre, appui long
+/// pour le menu, l'agrégat des réactions dessous, et la mise en évidence après
+/// un saut depuis une citation. Le geste de glissement ne couvre que la bulle.
+class _GesturedMessage extends StatelessWidget {
+  const _GesturedMessage({
+    super.key,
+    required this.message,
+    required this.bubble,
+    required this.canSwipe,
+    required this.highlighted,
+    this.onLongPress,
+    this.onSwipeReply,
+    this.onReactionsTap,
+  });
+
+  final GroupMessageView message;
+  final Widget bubble;
+  final bool canSwipe;
+  final bool highlighted;
+  final VoidCallback? onLongPress;
+  final VoidCallback? onSwipeReply;
+  final VoidCallback? onReactionsTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? palette.primary.withValues(alpha: 0.15)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            message.mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            key: Key('message_gestures_${message.id}'),
+            onLongPress: onLongPress,
+            child: SwipeToReply(
+              enabled: canSwipe,
+              onReply: onSwipeReply ?? () {},
+              child: bubble,
+            ),
+          ),
+          if (message.reactions.isNotEmpty)
+            MessageReactionsRow(
+              reactions: message.reactions,
+              alignEnd: message.mine,
+              onTap: onReactionsTap,
+            ),
+        ],
+      ),
     );
   }
 }
