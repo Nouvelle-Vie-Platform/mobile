@@ -3807,6 +3807,288 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Message introuvable'**
   String get chatQuoteNotFound;
+
+  /// Barre de saisie du fil (M4) : libellé d'accessibilité du trombone, qui ouvre la feuille des pièces jointes
+  ///
+  /// In fr, this message translates to:
+  /// **'Joindre'**
+  String get m4ChatAttach;
+
+  /// Barre de saisie du fil (M4) : libellé d'accessibilité du bouton appareil photo
+  ///
+  /// In fr, this message translates to:
+  /// **'Appareil photo'**
+  String get m4ChatCamera;
+
+  /// Barre de saisie du fil (M4) : libellé d'accessibilité du micro (appui maintenu)
+  ///
+  /// In fr, this message translates to:
+  /// **'Maintenir pour enregistrer un vocal'**
+  String get m4ChatRecordVoice;
+
+  /// Feuille des pièces jointes (M4) : choisir une photo dans la galerie
+  ///
+  /// In fr, this message translates to:
+  /// **'Galerie'**
+  String get m4AttachGallery;
+
+  /// Feuille des pièces jointes (M4) : choisir une vidéo dans la galerie
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo'**
+  String get m4AttachVideo;
+
+  /// Feuille des pièces jointes (M4) : filmer une vidéo avec l'appareil photo
+  ///
+  /// In fr, this message translates to:
+  /// **'Filmer'**
+  String get m4AttachRecordVideo;
+
+  /// Feuille des pièces jointes (M4) : choisir un document (PDF, Word…)
+  ///
+  /// In fr, this message translates to:
+  /// **'Document'**
+  String get m4AttachDocument;
+
+  /// Feuille des pièces jointes (M4) : choisir un fichier audio du téléphone
+  ///
+  /// In fr, this message translates to:
+  /// **'Audio'**
+  String get m4AttachAudio;
+
+  /// Feuille des pièces jointes (M4) : partager sa position actuelle
+  ///
+  /// In fr, this message translates to:
+  /// **'Position'**
+  String get m4AttachLocation;
+
+  /// Feuille des pièces jointes (M4) : partager un contact du carnet (nom et numéros seulement)
+  ///
+  /// In fr, this message translates to:
+  /// **'Contact'**
+  String get m4AttachContact;
+
+  /// Aperçu de la liste des conversations (M4) : dernier message = un vocal sans texte
+  ///
+  /// In fr, this message translates to:
+  /// **'🎤 Message vocal'**
+  String get m4PreviewVoice;
+
+  /// Aperçu de la liste des conversations (M4) : dernier message = un fichier audio
+  ///
+  /// In fr, this message translates to:
+  /// **'🎵 Audio'**
+  String get m4PreviewAudio;
+
+  /// Aperçu de la liste des conversations (M4) : dernier message = une image sans légende
+  ///
+  /// In fr, this message translates to:
+  /// **'📷 Photo'**
+  String get m4PreviewImage;
+
+  /// Aperçu de la liste des conversations (M4) : dernier message = une vidéo sans légende
+  ///
+  /// In fr, this message translates to:
+  /// **'🎥 Vidéo'**
+  String get m4PreviewVideo;
+
+  /// Aperçu de la liste des conversations (M4) : dernier message = un document
+  ///
+  /// In fr, this message translates to:
+  /// **'📄 Document'**
+  String get m4PreviewDocument;
+
+  /// Aperçu de la liste des conversations (M4) : dernier message = une position
+  ///
+  /// In fr, this message translates to:
+  /// **'📍 Position'**
+  String get m4PreviewLocation;
+
+  /// Aperçu de la liste des conversations (M4) : dernier message = un contact
+  ///
+  /// In fr, this message translates to:
+  /// **'👤 Contact'**
+  String get m4PreviewContact;
+
+  /// Enregistrement d'un vocal (M4) : consigne affichée pendant l'appui maintenu
+  ///
+  /// In fr, this message translates to:
+  /// **'‹ Glisser pour annuler'**
+  String get m4VoiceSlideToCancel;
+
+  /// Enregistrement verrouillé (M4) : bouton qui jette le vocal en cours
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler le vocal'**
+  String get m4VoiceCancel;
+
+  /// Enregistrement verrouillé (M4) : bouton qui arrête et envoie le vocal
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer le vocal'**
+  String get m4VoiceSend;
+
+  /// Enregistrement d'un vocal (M4) : consigne au-dessus du micro
+  ///
+  /// In fr, this message translates to:
+  /// **'Glisser vers le haut pour verrouiller'**
+  String get m4VoiceLockHint;
+
+  /// Message (M4) : la permission du micro a été refusée
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisez le micro pour enregistrer un vocal.'**
+  String get m4VoiceMicDenied;
+
+  /// Message (M4) : un appui trop bref sur le micro (moins d'une seconde)
+  ///
+  /// In fr, this message translates to:
+  /// **'Maintenez le micro pour enregistrer.'**
+  String get m4VoiceTooShort;
+
+  /// Bulle d'un média en échec (M4) : le fichier dépasse la borne du serveur
+  ///
+  /// In fr, this message translates to:
+  /// **'Fichier trop volumineux.'**
+  String get m4MediaErrorTooLarge;
+
+  /// Bulle d'un média en échec (M4) : le vocal ou la vidéo dépasse le plafond de durée
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop long pour être envoyé.'**
+  String get m4MediaErrorTooLong;
+
+  /// Bulle d'un média en échec (M4) : type refusé
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce type de fichier n\'est pas accepté.'**
+  String get m4MediaErrorType;
+
+  /// Bulle d'un média en échec (M4) : le fichier local a disparu
+  ///
+  /// In fr, this message translates to:
+  /// **'Le fichier n\'est plus sur le téléphone.'**
+  String get m4MediaErrorMissing;
+
+  /// Bulle d'un média en échec (M4) : image ou vidéo illisible
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce fichier n\'a pas pu être préparé.'**
+  String get m4MediaErrorUnreadable;
+
+  /// Bulle d'un média (M4) : l'image ou le son n'a pas pu être chargé (hors ligne, retiré)
+  ///
+  /// In fr, this message translates to:
+  /// **'Média indisponible'**
+  String get m4MediaUnavailable;
+
+  /// Bulle (M4) : une forme de média inconnue de cette version
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce type de message n\'est pas encore pris en charge.'**
+  String get m4MediaUnsupportedKind;
+
+  /// Dialogue (M4) : confirmation avant de partager sa position
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer ma position ?'**
+  String get m4LocationTitle;
+
+  /// Dialogue de position (M4) : champ du libellé
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom du lieu (facultatif)'**
+  String get m4LocationLabelHint;
+
+  /// Message (M4) : service de localisation coupé
+  ///
+  /// In fr, this message translates to:
+  /// **'La localisation est désactivée sur ce téléphone.'**
+  String get m4LocationDisabled;
+
+  /// Message (M4) : permission de localisation refusée
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisez la localisation pour partager votre position.'**
+  String get m4LocationDenied;
+
+  /// Bulle de position (M4) : libellé d'accessibilité — ouvre l'application de cartes
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir dans Cartes'**
+  String get m4LocationOpen;
+
+  /// Bulle de position (M4) : titre quand aucun libellé n'a été donné
+  ///
+  /// In fr, this message translates to:
+  /// **'Position partagée'**
+  String get m4LocationDefaultLabel;
+
+  /// Bulle de contact (M4) : bouton qui ouvre le composeur sur le numéro
+  ///
+  /// In fr, this message translates to:
+  /// **'Appeler'**
+  String get m4ContactCall;
+
+  /// Message (M4) : le document n'a pas pu être téléchargé ou ouvert
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir ce document.'**
+  String get m4DocumentOpenFailed;
+
+  /// Message (M4) : extension hors de la liste des documents acceptés
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce type de fichier ne peut pas être envoyé.'**
+  String get m4DocumentUnsupported;
+
+  /// Aperçu avant envoi d'une photo ou d'une vidéo (M4) : champ de légende
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une légende…'**
+  String get m4CaptionHint;
+
+  /// Aperçu avant envoi (M4) : bouton d'envoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
+  String get m4Send;
+
+  /// Dialogues des médias (M4) : bouton d'annulation
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get m4Cancel;
+
+  /// Fiche d'un groupe (M4) : titre de la rangée des images envoyées dans le fil
+  ///
+  /// In fr, this message translates to:
+  /// **'Médias partagés'**
+  String get m4SharedMedia;
+
+  /// Citation d'une réponse (M2 × M4) : la vidéo citée n'avait pas de légende
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo'**
+  String get m4QuoteVideo;
+
+  /// Citation d'une réponse (M2 × M4) : le document cité n'avait pas de légende
+  ///
+  /// In fr, this message translates to:
+  /// **'Document'**
+  String get m4QuoteDocument;
+
+  /// Citation d'une réponse (M2 × M4) : une position partagée
+  ///
+  /// In fr, this message translates to:
+  /// **'Position'**
+  String get m4QuoteLocation;
+
+  /// Citation d'une réponse (M2 × M4) : un contact partagé
+  ///
+  /// In fr, this message translates to:
+  /// **'Contact'**
+  String get m4QuoteContact;
 }
 
 class _AppLocalizationsDelegate
