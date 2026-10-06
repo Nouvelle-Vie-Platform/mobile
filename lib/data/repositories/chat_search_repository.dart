@@ -137,8 +137,9 @@ class HttpRemoteMessageSearch implements RemoteMessageSearch {
         },
       );
       final data = response.data;
-      if (data is! List)
+      if (data is! List) {
         return const RemoteSearchPage(hits: [], hasMore: false);
+      }
       final hits = <MessageSearchHit>[];
       for (final item in data) {
         if (item is! Map) continue;
