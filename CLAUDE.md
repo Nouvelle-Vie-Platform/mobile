@@ -1216,7 +1216,8 @@ qu'elle remplit. Le réseau ne peint jamais.
   collections depuis #96) : `teaching_types`,
   `gathering_types`, `status_backgrounds`, `official_accounts`,
   `official_account_memberships`, `legal_documents`, `seasons`,
-  `presentation_vocabulary`, `menu_entries`, `auth_channels`, `device_settings`,
+  `presentation_vocabulary`, `menu_entries`, `media_pages`, `media_page_chips`,
+  `media_page_sections` (#167), `auth_channels`, `device_settings`,
   `decor`, `contributors`,
   `branches`, puis `teachings`, `teaching_guests`, `gatherings`,
   `announcements`, `playback_progress`, `my_interactions` (**mes requêtes**,
@@ -1328,7 +1329,8 @@ pas un accusé de réception : il ne devient jamais le curseur local.
     `gatheringSectionsProvider`. Deux jeux de providers et non un paramétré par
     une famille : c'est ce qui rend impossible qu'un rassemblement se glisse
     dans une liste d'enseignements.
-  - `menu_providers.dart` : `menuRepositoryProvider`, `mediaMenuProvider`,
+  - `menu_providers.dart` : `menuRepositoryProvider`, `mediaLibraryLayoutProvider`
+    (les pages de la médiathèque, #167),
     `homeMenuProvider`, `menuTeachingsProvider.family` /
     `menuGatheringsProvider.family` (clés par `MenuCatalogue`),
     `teachingRubricIdProvider.family` (slug → identifiant) et
@@ -1590,6 +1592,16 @@ rendra alors plus rien, le repli sera mort, et les quatre lignes de
 répondra à « où et comment cela paraît ».
 
 #### Ce que l'écran fait, et ce qu'il ne fait pas
+
+> ⚠️ **Remplacé par #167 (médiathèque en pages)** : l'écran ne lit plus la
+> surface `media_*` de `menu_entries` (le serveur y farde les pages pour les
+> anciens clients, ids négatifs). Il lit `media_pages` / `media_page_chips` /
+> `media_page_sections` (`MediaPagesDao`, schéma v27) : onglets = pages, puces
+> qui affinent **chaque** section, quatre gabarits (`hero`, `carousel`, `list`,
+> `grid`). La composition d'une section est la fonction pure `composeSection`
+> (`models/media_page_view.dart`), testée règle par règle. La loupe est
+> toujours offerte ; sans page reçue, le catalogue entier en liste. Les points
+> ci-dessous valent encore pour le « Voir tout » (`?rubrique=`) et l'accueil.
 
 `MediaLibraryScreen` ne décide **rien** du menu : il décide « quel onglet est
 actif, et ce qu'il montre ». Cinq points s'y ratent en silence :
