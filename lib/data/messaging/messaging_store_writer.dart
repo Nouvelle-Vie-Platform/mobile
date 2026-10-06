@@ -23,6 +23,7 @@
 library;
 
 import '../local/app_database.dart';
+import '../local/chat_organization_dao.dart' show arrangementIsNotOlder;
 import '../local/sync_dao.dart' show SyncCollectionKey;
 import '../sync/synced_collection.dart';
 
@@ -49,6 +50,16 @@ class MessagingStoreWriter {
     if (collection == SyncCollectionKey.groupReads &&
         groupId is String &&
         !await _advances(groupId, row)) {
+      return known;
+    }
+
+    // M8 (#146) : un rangement ne recule jamais non plus (deux appareils).
+    if (collection == SyncCollectionKey.groupArrangements &&
+        groupId is String &&
+        !arrangementIsNotOlder(
+          await _db.chatOrganizationDao.arrangementOf(groupId),
+          row,
+        )) {
       return known;
     }
 

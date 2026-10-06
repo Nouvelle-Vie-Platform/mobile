@@ -154,6 +154,8 @@ class StoreEchangesRepository implements EchangesRepository {
       lastMessagePreview: row.lastBody,
       lastMessageAt: row.lastCreatedAt,
       unreadCount: row.unreadCount,
+      archived: row.isArchived,
+      pinnedAt: row.pinnedAt,
     );
   }
 

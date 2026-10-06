@@ -235,6 +235,11 @@ abstract final class SyncCollectionKey {
   /// lecture arrivée d'abord évite que tout l'historique ne s'allume en non-lu
   /// le temps que le fil soit tiré.
   static const String groupReads = 'group_reads';
+
+  /// **Mon rangement** de chacune de mes discussions (#146, M8) : archivée,
+  /// épinglée. `partition: 'private'`, **sans tombstone**, rangée par
+  /// `groupId` — désarchiver revient avec le champ nul.
+  static const String groupArrangements = 'group_arrangements';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -299,6 +304,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     GroupMessages,
     GroupReads,
     MyInteractions,
+    GroupArrangements,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -442,6 +448,14 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// `MessagingStoreWriter`.
   LocalCollection<GroupReadRow> get groupReadsCollection =>
       LocalCollection._(SyncCollectionKey.groupReads, groupReads);
+
+  /// **Sans tombstone**, rangée par `groupId` (#146). Le canal l'écrit aussi
+  /// (`arrangement.changed`), jamais en arrière — voir `MessagingStoreWriter`.
+  LocalCollection<GroupArrangementRow> get groupArrangementsCollection =>
+      LocalCollection._(
+        SyncCollectionKey.groupArrangements,
+        groupArrangements,
+      );
 
   /// **La seule collection `private` de ce registre.** Elle se remplit comme
   /// les dix autres — par le flux delta, jamais par l'application — et rien

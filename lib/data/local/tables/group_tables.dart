@@ -410,3 +410,68 @@ class PendingGroupReads extends Table {
   @override
   Set<Column<Object>> get primaryKey => {groupId};
 }
+
+/// Collection `group_arrangements` (partition `private`, #146, tranche M8) —
+/// **mon** rangement de chacune de mes discussions : archivée, épinglée.
+///
+/// Servie par le serveur (`group_arrangements_descriptor.ts`) : `{ id, groupId,
+/// archivedAt, pinnedAt, arrangedAt }`. **Rangée par `groupId`**, comme la
+/// lecture. Une discussion jamais rangée n'a pas de ligne ; désarchiver revient
+/// avec `archivedAt: null`, sans tombstone.
+///
+/// ⚠️ **Jamais en arrière.** Deux `arrangement.changed` venus de deux appareils
+/// peuvent arriver dans le désordre : une ligne dont [arrangedAt] est antérieur
+/// à la locale n'est pas rangée — voir `MessagingStoreWriter`.
+@DataClassName('GroupArrangementRow')
+class GroupArrangements extends Table with SyncedRow {
+  @override
+  String get tableName => 'group_arrangements';
+
+  TextColumn get groupId => text()();
+
+  /// L'identifiant de l'appartenance côté serveur (un entier). Non lu.
+  IntColumn get membershipId => integer().nullable()();
+
+  /// La discussion a quitté la liste principale pour la rangée « Archivées ».
+  /// Elle **y reste** quand un message arrive : le serveur ne désarchive jamais,
+  /// et le client non plus.
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+
+  /// La discussion est épinglée en tête de liste (trois au plus).
+  DateTimeColumn get pinnedAt => dateTime().nullable()();
+
+  /// L'instant serveur du dernier changement — l'ordre des événements.
+  DateTimeColumn get arrangedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {groupId};
+}
+
+/// **Table locale seule** (#146) — un rangement fait sur ce téléphone et **pas
+/// encore confirmé** par `PUT /groups/:id/arrangement`.
+///
+/// L'outbox du rangement, sur le patron de [PendingGroupReads] : posée **avant**
+/// l'appel réseau, elle **l'emporte à la lecture** sur la ligne servie — la
+/// discussion quitte la liste à l'instant du geste, réseau ou pas —, retirée à
+/// la confirmation, rejouée tant qu'elle reste. Elle porte l'**état voulu**
+/// complet, jamais une bascule : la route est idempotente, rejouer est sûr.
+@DataClassName('PendingGroupArrangementRow')
+class PendingGroupArrangements extends Table {
+  @override
+  String get tableName => 'pending_group_arrangements';
+
+  TextColumn get groupId => text()();
+
+  BoolColumn get archived => boolean()();
+
+  BoolColumn get pinned => boolean()();
+
+  /// L'horloge de l'appareil au moment du geste : l'ordre d'une épingle neuve
+  /// avant sa confirmation, et l'identité de la demande (une demande plus
+  /// récente posée pendant l'aller-retour n'est pas effacée par la réponse de
+  /// la précédente).
+  DateTimeColumn get requestedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {groupId};
+}

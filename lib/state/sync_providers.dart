@@ -233,6 +233,8 @@ final syncSchedulerProvider = Provider<SyncScheduler>((ref) {
           // L'outbox de la lecture (#140) entre dans le calcul des non-lus :
           // ses flux se relisent avec les autres.
           database.pendingGroupReads,
+          // L'outbox du rangement (#146) l'emporte à la lecture de la liste.
+          database.pendingGroupArrangements,
         });
   ref.onDispose(scheduler.dispose);
   return scheduler;

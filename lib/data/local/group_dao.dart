@@ -43,6 +43,9 @@ part 'group_dao.g.dart';
     PendingGroupReads,
     OfficialAccounts,
     Contributors,
+    // M8 (#146) : mon rangement, lu par la liste des conversations.
+    GroupArrangements,
+    PendingGroupArrangements,
   ],
 )
 class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
@@ -145,10 +148,18 @@ SELECT
   last.created_at     AS last_created_at,
   COALESCE(last.created_at, g.updated_at, g.created_at) AS activity_at,
   (SELECT COUNT(*) FROM group_messages AS u
-    WHERE u.group_id = g.id AND ${_isUnread('u', 1)}) AS unread_count
+    WHERE u.group_id = g.id AND ${_isUnread('u', 1)}) AS unread_count,
+  -- M8 (#146) : mon rangement effectif — le geste local en attente l'emporte.
+  CASE WHEN pa.group_id IS NOT NULL THEN pa.archived
+       ELSE ga.archived_at IS NOT NULL END AS is_archived,
+  CASE WHEN pa.group_id IS NOT NULL
+       THEN (CASE WHEN pa.pinned THEN COALESCE(ga.pinned_at, pa.requested_at) END)
+       ELSE ga.pinned_at END AS pinned_at
 FROM group_members AS me
 JOIN "groups" AS g ON g.id = me.group_id
 $_readJoins
+LEFT JOIN group_arrangements AS ga ON ga.group_id = g.id
+LEFT JOIN pending_group_arrangements AS pa ON pa.group_id = g.id
 LEFT JOIN profiles AS peer ON peer.id = (
   SELECT other.user_id FROM group_members AS other
    WHERE other.group_id = g.id AND other.user_id <> me.user_id
@@ -170,6 +181,8 @@ ORDER BY activity_at DESC, g.id DESC
         profiles,
         groupReads,
         pendingGroupReads,
+        groupArrangements,
+        pendingGroupArrangements,
       },
     ).map(
       (row) => ConversationRecord(
@@ -190,6 +203,8 @@ ORDER BY activity_at DESC, g.id DESC
         lastAuthorId: row.read<String?>('last_author_id'),
         lastCreatedAt: row.read<DateTime?>('last_created_at'),
         unreadCount: row.read<int>('unread_count'),
+        isArchived: row.read<bool>('is_archived'),
+        pinnedAt: row.read<DateTime?>('pinned_at'),
       ),
     );
   }
@@ -819,6 +834,8 @@ class ConversationRecord {
     this.lastAuthorId,
     this.lastCreatedAt,
     this.unreadCount = 0,
+    this.isArchived = false,
+    this.pinnedAt,
   });
 
   final String groupId;
@@ -845,6 +862,12 @@ class ConversationRecord {
   /// Les messages non lus de cette conversation — la formule du contrat serveur
   /// (`GroupDao._isUnread`).
   final int unreadCount;
+
+  /// **Archivée par moi** (#146) — effective, outbox comprise.
+  final bool isArchived;
+
+  /// **Épinglée par moi**, et depuis quand (#146) — `null` sinon.
+  final DateTime? pinnedAt;
 }
 
 /// Une carte de la rangée « groupes à rejoindre ».

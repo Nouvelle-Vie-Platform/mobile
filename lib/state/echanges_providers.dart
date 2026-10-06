@@ -50,6 +50,7 @@ import '../data/repositories/group_message_sender.dart';
 import '../data/repositories/store_echanges_repository.dart';
 import '../models/echanges_view.dart';
 import 'auth_providers.dart';
+import 'chat_organization_providers.dart';
 import 'sync_providers.dart';
 
 /// Politique de réessai : **aucun réessai automatique**, comme la médiathèque et
@@ -260,5 +261,9 @@ final messagingOutboxProvider = Provider<Future<void> Function()>((ref) {
   return () async {
     await ref.read(groupMessageComposerProvider).resendUnconfirmed();
     await ref.read(groupReadAdvancerProvider).replay();
+    // M8 (#146) : les rangements (archiver, épingler) posés hors ligne.
+    await ref
+        .read(groupArrangerProvider(ref.read(echangesActorProvider)))
+        ?.replay();
   };
 });

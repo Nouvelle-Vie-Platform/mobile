@@ -122,6 +122,11 @@ void main() {
         'membership.changed': ('membership', SyncCollectionKey.groupMembers),
         'group.updated': ('group', SyncCollectionKey.groups),
         'read.advanced': ('read', SyncCollectionKey.groupReads),
+        // M8 (#146).
+        'arrangement.changed': (
+          'arrangement',
+          SyncCollectionKey.groupArrangements
+        ),
       };
       for (final MapEntry(key: type, value: (key, collection))
           in cases.entries) {

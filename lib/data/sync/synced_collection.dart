@@ -454,6 +454,14 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: groupReadKey,
         rowOf: groupReadRowOf,
       ),
+      // **Mon rangement** (#146, M8) : privée, rangée par `groupId`, sans
+      // dépendance d'ordre — elle ne fait que classer des discussions déjà là.
+      SyncedCollection<GroupArrangementRow>(
+        key: SyncCollectionKey.groupArrangements,
+        local: (dao) => dao.groupArrangementsCollection,
+        idOf: groupArrangementKey,
+        rowOf: groupArrangementRowOf,
+      ),
       SyncedCollection<GroupMessageRow>(
         key: SyncCollectionKey.groupMessages,
         local: (dao) => dao.groupMessagesCollection,

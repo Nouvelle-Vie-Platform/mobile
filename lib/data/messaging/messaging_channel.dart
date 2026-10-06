@@ -82,7 +82,8 @@ final class MessagingRowEvent extends MessagingEvent {
   });
 
   /// `message.created`, `message.updated`, `message.deleted`,
-  /// `membership.changed`, `group.updated`, `read.advanced`.
+  /// `membership.changed`, `group.updated`, `read.advanced`,
+  /// `arrangement.changed`.
   final String type;
 
   /// La clé de collection (`SyncCollectionKey`) où la ligne se range.
@@ -121,6 +122,11 @@ const Map<String, ({String collection, String key})> _kEventRows = {
   ),
   'group.updated': (collection: SyncCollectionKey.groups, key: 'group'),
   'read.advanced': (collection: SyncCollectionKey.groupReads, key: 'read'),
+  // M8 (#146) : mon rangement, vers mes autres appareils seulement.
+  'arrangement.changed': (
+    collection: SyncCollectionKey.groupArrangements,
+    key: 'arrangement'
+  ),
 };
 
 /// **Décode une trame** `data:` de Transmit.

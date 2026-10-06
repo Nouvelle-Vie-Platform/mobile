@@ -174,6 +174,8 @@ class ConversationView {
     this.lastMessagePreview,
     this.lastMessageAt,
     this.unreadCount = 0,
+    this.archived = false,
+    this.pinnedAt,
   });
 
   final String groupId;
@@ -217,12 +219,27 @@ class ConversationView {
   /// **Les messages non lus** de cette conversation (#140) — calculés par le
   /// client, le serveur n'en sert pas (contrat M1a §2). Zéro = pas de pastille.
   final int unreadCount;
+
+  /// **Archivée par moi** (#146) : hors de la liste principale, dans la rangée
+  /// « Archivées ». Elle y **reste** quand un message arrive.
+  final bool archived;
+
+  /// **Épinglée par moi** (#146), et depuis quand — `null` sinon. Les épingles
+  /// tiennent la tête de la liste, la plus récente d'abord.
+  final DateTime? pinnedAt;
+
+  bool get pinned => pinnedAt != null;
 }
 
 /// **Le badge global** de l'onglet Échanges (#140) : la somme des non-lus de
 /// mes conversations. Écrit une fois, lu par la barre du bas.
-int totalUnread(Iterable<ConversationView> conversations) =>
-    conversations.fold(0, (sum, c) => sum + c.unreadCount);
+///
+/// **Sans les discussions archivées** (#146) : comme WhatsApp, une discussion
+/// rangée aux archives ne réclame plus l'attention de l'onglet — sa
+/// notification, elle, reste.
+int totalUnread(Iterable<ConversationView> conversations) => conversations
+    .where((c) => !c.archived)
+    .fold(0, (sum, c) => sum + c.unreadCount);
 
 /// La fiche d'un groupe — en-tête, description, roster.
 @immutable
