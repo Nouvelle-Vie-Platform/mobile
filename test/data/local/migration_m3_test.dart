@@ -1,6 +1,5 @@
-/// **Le palier des accusés** (#142, M3) — ⚠️ numéroté v22 **à titre
-/// provisoire** : le coordinateur le renumérote (v22, v23…) dans l'ordre des
-/// fusions des tranches de la messagerie. Il exige le schéma exporté
+/// **Le palier des accusés** (#142, M3) — v23, après celui d'archiver et
+/// d'épingler (v22, M8). Il exige le schéma exporté
 /// (`make migrations` : `drift_schemas/` et `test/data/local/schema/`).
 library;
 
@@ -17,24 +16,24 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('v21 → v22 : les accusés et les confirmations apparaissent', () async {
-    final connection = await verifier.startAt(21);
+  test('v22 → v23 : les accusés et les confirmations apparaissent', () async {
+    final connection = await verifier.startAt(22);
     final db = AppDatabase(connection);
     addTearDown(db.close);
 
-    await verifier.migrateAndValidate(db, 22);
+    await verifier.migrateAndValidate(db, 23);
   });
 
-  test('v1 → v22 : un appareil resté en v1 rejoue tous les paliers', () async {
+  test('v1 → v23 : un appareil resté en v1 rejoue tous les paliers', () async {
     final connection = await verifier.startAt(1);
     final db = AppDatabase(connection);
     addTearDown(db.close);
 
-    await verifier.migrateAndValidate(db, 22);
+    await verifier.migrateAndValidate(db, 23);
   });
 
-  test('v21 → v22 : le fil survit ; les deux tables naissent vides', () async {
-    final schema = await verifier.schemaAt(21);
+  test('v22 → v23 : le fil survit ; les deux tables naissent vides', () async {
+    final schema = await verifier.schemaAt(22);
     schema.rawDatabase.execute(
       "INSERT INTO group_messages (id, group_id, author_id, is_system, body, "
       "created_at, sync_stamp) VALUES ('m-1', 'g-1', 'u-1', 0, 'Amen', "
@@ -47,7 +46,7 @@ void main() {
 
     final db = AppDatabase(schema.newConnection());
     addTearDown(db.close);
-    await verifier.migrateAndValidate(db, 22);
+    await verifier.migrateAndValidate(db, 23);
 
     expect((await db.select(db.groupMessages).get()).single.body, 'Amen');
     expect(await db.syncDao.cursorFor('group_messages'), 'un-curseur-opaque');
