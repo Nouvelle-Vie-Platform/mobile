@@ -63,6 +63,9 @@ class ArchivedChatsScreen extends ConsumerWidget {
                 padding: AppSpacing.screenPadding,
                 child: OrganizableConversationTile(
                   conversation: archived[i],
+                  // #142 (M3) : « Ama écrit… » aussi aux archives.
+                  showTyping: true,
+                  actor: me,
                   onTap: () => context.pushNamed(
                     AppRoute.groupChat,
                     pathParameters: {'id': archived[i].groupId},

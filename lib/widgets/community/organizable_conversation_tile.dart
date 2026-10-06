@@ -11,6 +11,7 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import 'conversation_tile.dart';
+import 'conversation_typing.dart';
 
 /// Ce qu'on peut faire d'une discussion depuis la liste (#146, tranche M8).
 enum ConversationAction { archive, unarchive, pin, unpin, markRead }
@@ -38,14 +39,19 @@ class OrganizableConversationTile extends ConsumerWidget {
     super.key,
     required this.conversation,
     required this.onTap,
-    this.typingLabel,
+    this.showTyping = false,
+    this.actor,
   });
 
   final ConversationView conversation;
   final VoidCallback onTap;
 
-  /// #142 (M3) : « Ama écrit… », passé à la tuile à la place de l'aperçu.
-  final String? typingLabel;
+  /// #142 (M3) : « Ama écrit… » à la place de l'aperçu. Lu **ici**, par
+  /// tuile : la liste ne se reconstruit pas quand quelqu'un écrit.
+  final bool showTyping;
+
+  /// L'acteur de l'onglet (clé des familles de providers), passé par l'écran.
+  final String? actor;
 
   /// La clé du [Dismissible] d'une conversation — ce qu'un test fait glisser.
   static Key dismissKeyOf(String groupId) => ValueKey('dismiss-$groupId');
@@ -55,6 +61,14 @@ class OrganizableConversationTile extends ConsumerWidget {
     final l = context.l10n;
     final palette = context.palette;
     final swipeArchives = !conversation.archived;
+    final typingLabel = showTyping
+        ? conversationTypingLabel(
+            ref,
+            context,
+            actor: actor,
+            conversation: conversation,
+          )
+        : null;
 
     return Dismissible(
       key: dismissKeyOf(conversation.groupId),
