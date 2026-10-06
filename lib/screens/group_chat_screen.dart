@@ -125,6 +125,12 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   /// M8 (#146) : porte la bulle du message trouvé, pour s'y rendre.
   final GlobalKey _focusKey = GlobalKey();
 
+  /// M8 (#146) : le message trouvé est en évidence. Allumé une fois, à
+  /// l'arrivée sur lui, et éteint par [_focusTimer] — jamais rallumé, même si
+  /// la liste recrée sa bulle.
+  bool _focusLit = false;
+  Timer? _focusTimer;
+
   @override
   void initState() {
     super.initState();
@@ -136,6 +142,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _focusTimer?.cancel();
     _scroll.dispose();
     _controller.dispose();
     super.dispose();
@@ -300,13 +307,17 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     // M8 (#146) : ouvert sur un message trouvé — c'est lui qu'on montre.
     final focus = widget.focusMessageId;
     if (focus != null && messages.any((m) => m.id == focus)) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => revealKeyedItem(
+      _focusLit = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        revealKeyedItem(
           target: _focusKey,
           scroll: _scroll,
           mounted: () => mounted,
-        ),
-      );
+        );
+        _focusTimer = Timer(kMessageFocusDuration, () {
+          if (mounted) setState(() => _focusLit = false);
+        });
+      });
       return;
     }
 
@@ -463,6 +474,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 onFailedTap: _onFailedTap,
                 focusMessageId: widget.focusMessageId,
                 focusKey: _focusKey,
+                focusLit: _focusLit,
               ),
             ),
             // **La barre de saisie n'existe que si l'on peut écrire.** Le
@@ -529,6 +541,7 @@ class _Thread extends StatelessWidget {
     required this.onFailedTap,
     this.focusMessageId,
     this.focusKey,
+    this.focusLit = false,
   });
 
   final AsyncValue<List<GroupMessageView>> thread;
@@ -542,6 +555,9 @@ class _Thread extends StatelessWidget {
   /// M8 (#146) : le message trouvé, mis en évidence et porteur de [focusKey].
   final String? focusMessageId;
   final GlobalKey? focusKey;
+
+  /// M8 (#146) : le fond du message trouvé est encore allumé.
+  final bool focusLit;
 
   @override
   Widget build(BuildContext context) {
@@ -631,7 +647,7 @@ class _Thread extends StatelessWidget {
         if (m.id == focusMessageId) {
           return KeyedSubtree(
             key: focusKey,
-            child: MessageFocusHighlight(child: bubble),
+            child: MessageFocusHighlight(lit: focusLit, child: bubble),
           );
         }
         return bubble;

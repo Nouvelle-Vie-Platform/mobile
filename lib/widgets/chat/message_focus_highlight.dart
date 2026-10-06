@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -6,60 +5,43 @@ import 'package:flutter/material.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 
+/// Combien de temps le message trouvé reste en évidence avant de s'effacer.
+const Duration kMessageFocusDuration = Duration(seconds: 2);
+
 /// **Le message trouvé, mis en évidence** (#146, tranche M8) — un fond teinté
-/// qui s'efface de lui-même, comme WhatsApp quand on ouvre un résultat de
-/// recherche.
+/// qui s'efface, comme WhatsApp quand on ouvre un résultat de recherche.
 ///
-/// Une minuterie et un `AnimatedContainer`, pas d'`AnimationController` : rien
-/// à libérer dans `dispose()` sinon la minuterie elle-même.
-class MessageFocusHighlight extends StatefulWidget {
+/// Sans état : c'est l'écran qui dit quand le fond s'éteint ([lit]), une seule
+/// fois. Une minuterie portée par ce widget se réarmerait chaque fois que la
+/// liste paresseuse recrée la bulle — en revenant sur elle après l'avoir fait
+/// défiler hors de l'écran, le fond se rallumerait. L'`AnimatedContainer` fait
+/// le fondu quand [lit] passe à `false` ; aucun `AnimationController` à libérer.
+class MessageFocusHighlight extends StatelessWidget {
   const MessageFocusHighlight({
     super.key,
     required this.child,
-    this.duration = const Duration(seconds: 2),
+    required this.lit,
   });
 
   final Widget child;
 
-  /// Combien de temps le fond reste avant de s'effacer.
-  final Duration duration;
+  /// `true` tant que le fond doit rester allumé.
+  final bool lit;
 
   static const Key tintKey = Key('message_focus_highlight');
 
   @override
-  State<MessageFocusHighlight> createState() => _MessageFocusHighlightState();
-}
-
-class _MessageFocusHighlightState extends State<MessageFocusHighlight> {
-  bool _lit = true;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer(widget.duration, () {
-      if (mounted) setState(() => _lit = false);
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      key: _lit ? MessageFocusHighlight.tintKey : null,
+      key: lit ? MessageFocusHighlight.tintKey : null,
       duration: const Duration(milliseconds: 600),
       decoration: BoxDecoration(
-        color: _lit
+        color: lit
             ? context.palette.primary.withValues(alpha: 0.18)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
-      child: widget.child,
+      child: child,
     );
   }
 }

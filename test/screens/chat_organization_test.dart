@@ -497,6 +497,27 @@ void main() {
       await tester.pump(const Duration(seconds: 3));
       await tester.pumpAndSettle();
       expect(find.byKey(MessageFocusHighlight.tintKey), findsNothing);
+
+      // Et elle ne se rallume pas quand la liste recrée la bulle : on descend
+      // tout en bas (la bulle quitte l'arbre), puis on revient sur elle.
+      final position = tester
+          .state<ScrollableState>(
+            find
+                .descendant(
+                  of: find.byType(ListView),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          )
+          .position;
+      final there = position.pixels;
+      position.jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(target, findsNothing);
+      position.jumpTo(there);
+      await tester.pumpAndSettle();
+      expect(target, findsOneWidget);
+      expect(find.byKey(MessageFocusHighlight.tintKey), findsNothing);
     });
 
     testWidgets('introuvable : le fil s\'ouvre comme d\'habitude, en bas',
