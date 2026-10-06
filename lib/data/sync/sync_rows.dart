@@ -897,6 +897,25 @@ String groupArrangementKey(Map<String, Object?> item) {
   throw MalformedSyncRow('group_arrangements', 'groupId', id);
 }
 
+/// `GET /sync/message_receipts` — **l'accusé d'un de mes messages** (#142,
+/// serveur M3, `messageReceiptSyncRow`) : `id` (celui du message), `groupId`,
+/// `deliveredAt`, `readAt`, `updatedAt`.
+///
+/// La même fonction range la ligne du tirage et celle du canal
+/// (`receipt.updated`). Les deux instants sont nullables et ne reculent jamais
+/// côté serveur ; on stocke ce qu'il envoie, remplacé en entier. Le « lu » a
+/// déjà été filtré par la réciprocité : rien n'est décidé ici.
+MessageReceiptsCompanion messageReceiptRowOf(Map<String, Object?> item) {
+  const collection = 'message_receipts';
+  return MessageReceiptsCompanion.insert(
+    id: _text(collection, item, 'id'),
+    groupId: _text(collection, item, 'groupId'),
+    deliveredAt: Value(_instant(item, 'deliveredAt')),
+    readAt: Value(_instant(item, 'readAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 /// `GET /sync/menu_entries` — **une entrée de menu** (#82).
 ///
 /// **Trente et une clés**, relevées une à une sur

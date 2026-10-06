@@ -273,6 +273,9 @@ class EchangesMessagesTab extends ConsumerWidget {
                   padding: AppSpacing.screenPadding,
                   child: OrganizableConversationTile(
                     conversation: c,
+                    // #142 (M3) : « Ama écrit… » à la place de l'aperçu.
+                    showTyping: true,
+                    actor: actor,
                     // **L'identifiant, jamais l'objet** : un objet en `extra` est
                     // une copie figée hors du magasin, et il ne survit ni à un
                     // réveil push ni à un lien profond.

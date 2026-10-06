@@ -35,6 +35,7 @@ class ChatBubble extends StatelessWidget {
     required this.message,
     this.onAuthorTap,
     this.onFailedTap,
+    this.receiptMark,
   });
 
   final GroupMessageView message;
@@ -51,6 +52,11 @@ class ChatBubble extends StatelessWidget {
   /// et une zone qui ne répond pas se lit comme un bug. C'est l'écran qui le
   /// décide, sur l'origine.
   final VoidCallback? onAuthorTap;
+
+  /// **Les coches d'accusé** (#142, M3 — `ReceiptMark`) d'un message à moi
+  /// **confirmé** : elles remplacent la coche simple d'envoi. `null` : la
+  /// coche simple. Ignoré pendant l'envoi et sur un échec.
+  final Widget? receiptMark;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +137,11 @@ class ChatBubble extends StatelessWidget {
                 ),
               if (mine) ...[
                 const SizedBox(width: 3),
-                _DeliveryMark(delivery: message.delivery),
+                if (receiptMark != null &&
+                    message.delivery == MessageDelivery.sent)
+                  receiptMark!
+                else
+                  _DeliveryMark(delivery: message.delivery),
               ],
             ],
           ),

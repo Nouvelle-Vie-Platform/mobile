@@ -14,7 +14,7 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les trente-deux collections du registre, dans l\'ordre', () {
+    test('les trente-trois collections du registre, dans l\'ordre', () {
       // **Ce nombre avait menti.** Il disait dix-neuf quand le registre serveur
       // en comptait vingt-cinq, et le test passait au vert en gardant un contrat
       // périmé — `seasons`, `decor`, `teaching_guests`, `group_members`,
@@ -31,8 +31,9 @@ void main() {
       // tableau s'accordent, et c'est le **tableau** qui a été compté. Recompté
       // en #140 (serveur M1a), où `group_reads` devient la trentième.
       // Puis en #148, où `my_interactions` devient la trente et unième ; puis
-      // en #146 (M8), où `group_arrangements` devient la trente-deuxième.
-      expect(kSyncCollections, hasLength(32));
+      // en #146 (M8), où `group_arrangements` devient la trente-deuxième ; puis
+      // en #142 (M3), où `message_receipts` devient la trente-troisième.
+      expect(kSyncCollections, hasLength(33));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
@@ -169,9 +170,9 @@ void main() {
       // côté serveur par #480 et répliquée côté client par la tranche jumelle
       // #82, fusionnée depuis. `group_reads` (serveur M1a, mobile #140) porte
       // le compte à **trente**, `my_interactions` (#148) à trente et un,
-      // `group_arrangements` (#146) à trente-deux. La
-      // carte est donc **complète**, et c'est ce que `hasLength(32)` plus haut
-      // affirme.
+      // `group_arrangements` (#146) à trente-deux, `message_receipts` (#142) à
+      // trente-trois. La carte est donc **complète**, et c'est ce que
+      // `hasLength(33)` plus haut affirme.
       for (final key in const [
         'profiles',
         'groups',

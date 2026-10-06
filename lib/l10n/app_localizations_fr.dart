@@ -1833,4 +1833,112 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get m6ActionUnreachable =>
       'Pas de réponse du serveur. Vérifiez votre connexion.';
+
+  @override
+  String get chatTyping => 'écrit…';
+
+  @override
+  String chatTypingNamed(String name) {
+    return '$name écrit…';
+  }
+
+  @override
+  String chatTypingSeveral(int count) {
+    return '$count personnes écrivent…';
+  }
+
+  @override
+  String get chatPresenceOnline => 'en ligne';
+
+  @override
+  String chatLastSeenToday(String time) {
+    return 'vu aujourd\'hui à $time';
+  }
+
+  @override
+  String chatLastSeenYesterday(String time) {
+    return 'vu hier à $time';
+  }
+
+  @override
+  String chatLastSeenOn(String date, String time) {
+    return 'vu le $date à $time';
+  }
+
+  @override
+  String get chatReceiptSent => 'Envoyé';
+
+  @override
+  String get chatReceiptDelivered => 'Distribué';
+
+  @override
+  String get chatReceiptRead => 'Lu';
+
+  @override
+  String get messageInfoAction => 'Infos';
+
+  @override
+  String get messageInfoTitle => 'Infos du message';
+
+  @override
+  String get messageInfoReadBy => 'Lu par';
+
+  @override
+  String get messageInfoDeliveredTo => 'Distribué à';
+
+  @override
+  String get messageInfoPending => 'Pas encore reçu';
+
+  @override
+  String get messageInfoEmpty => 'Personne n\'attend ce message.';
+
+  @override
+  String get messageInfoError =>
+      'Impossible de charger les infos du message. Vérifiez votre connexion.';
+
+  @override
+  String messageInfoToday(String time) {
+    return 'aujourd\'hui à $time';
+  }
+
+  @override
+  String messageInfoYesterday(String time) {
+    return 'hier à $time';
+  }
+
+  @override
+  String messageInfoOn(String date, String time) {
+    return '$date à $time';
+  }
+
+  @override
+  String get privacyMenu => 'Confidentialité';
+
+  @override
+  String get privacyMenuSubtitle => 'Accusés de lecture, vu à et en ligne';
+
+  @override
+  String get privacyTitle => 'Confidentialité';
+
+  @override
+  String get privacyReadReceipts => 'Accusés de lecture';
+
+  @override
+  String get privacyReadReceiptsHint =>
+      'Si vous les désactivez, les autres ne verront plus que vous avez lu leurs messages, et vous ne verrez plus quand ils ont lu les vôtres. Ne s\'applique pas aux groupes.';
+
+  @override
+  String get privacyPresence => 'Vu à et en ligne';
+
+  @override
+  String get privacyPresenceHint =>
+      'Si vous le désactivez, les autres ne verront plus quand vous êtes en ligne, et vous ne verrez plus quand ils le sont.';
+
+  @override
+  String get privacyLoadError =>
+      'Impossible de charger vos réglages de confidentialité.';
+
+  @override
+  String get privacySaveError =>
+      'Le réglage n\'a pas pu être enregistré. Réessayez.';
 }

@@ -51,6 +51,8 @@ import '../data/repositories/store_echanges_repository.dart';
 import '../models/echanges_view.dart';
 import 'auth_providers.dart';
 import 'chat_organization_providers.dart';
+import 'receipts_providers.dart'
+    show deliveryAcknowledgerProvider, messagingSignalHandlerProvider;
 import 'sync_providers.dart';
 
 /// Politique de réessai : **aucun réessai automatique**, comme la médiathèque et
@@ -224,6 +226,8 @@ final messagingLinkProvider = Provider<MessagingLink?>((ref) {
     channel: ref.watch(messagingChannelProvider),
     apply: (event) => writer.store(event.collection, event.row),
     resynchronize: ref.watch(realtimeSyncProvider),
+    // #142 (M3) : frappe, présence, et la distribution d'un message reçu.
+    onSignal: ref.watch(messagingSignalHandlerProvider),
   );
   ref.onDispose(link.close);
   link.open();
@@ -265,5 +269,7 @@ final messagingOutboxProvider = Provider<Future<void> Function()>((ref) {
     await ref
         .read(groupArrangerProvider(ref.read(echangesActorProvider)))
         ?.replay();
+    // #142 (M3) : ce que ce téléphone a rangé depuis, confirmé reçu (✓✓).
+    await ref.read(deliveryAcknowledgerProvider)?.flush();
   };
 });

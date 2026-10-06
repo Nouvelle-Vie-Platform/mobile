@@ -184,6 +184,9 @@ void main() {
           // Mon rangement (#146, M8) : il ne fait que classer des discussions.
           'group_arrangements',
           'group_messages',
+          // L'accusé de mes messages (#142, M3), **après** le fil : une coche
+          // n'a de sens que sur un message déjà là.
+          'message_receipts',
         ],
         reason: 'ça ne supprime pas la fenêtre où un enseignement arrive sans '
             'son intervenant — la jointure de lecture reste tolérante pour '

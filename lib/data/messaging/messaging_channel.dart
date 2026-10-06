@@ -83,7 +83,7 @@ final class MessagingRowEvent extends MessagingEvent {
 
   /// `message.created`, `message.updated`, `message.deleted`,
   /// `membership.changed`, `group.updated`, `read.advanced`,
-  /// `arrangement.changed`.
+  /// `arrangement.changed`, `receipt.updated` (#142).
   final String type;
 
   /// La clé de collection (`SyncCollectionKey`) où la ligne se range.
@@ -98,6 +98,52 @@ final class MessagingRowEvent extends MessagingEvent {
     final raw =
         collection == SyncCollectionKey.groups ? row['id'] : row['groupId'];
     return raw is String ? raw : null;
+  }
+}
+
+/// **Quelqu'un écrit** (#142, M3) — éphémère : aucune collection, rien n'est
+/// rangé. L'écran l'affiche ~5 s puis l'oublie seul.
+@immutable
+final class MessagingTypingEvent extends MessagingEvent {
+  const MessagingTypingEvent({required this.groupId, required this.userId});
+
+  final String groupId;
+  final String userId;
+}
+
+/// **La présence d'une personne a changé** (#142, M3) — éphémère, en mémoire.
+///
+/// `visible == false` : l'un des deux a coupé « Vu à / en ligne », il n'y a
+/// rien à montrer (le serveur n'envoie alors ni état ni date).
+@immutable
+final class MessagingPresenceEvent extends MessagingEvent {
+  const MessagingPresenceEvent({
+    required this.userId,
+    required this.visible,
+    required this.online,
+    this.lastSeenAt,
+  });
+
+  final String userId;
+  final bool visible;
+  final bool online;
+
+  /// Arrondi à la minute par le serveur ; `null` en ligne, ou inconnu.
+  final DateTime? lastSeenAt;
+
+  /// Lit la forme du contrat (`presence.changed` et `GET /groups/:id/presence`).
+  /// `null` sur une charge mal formée.
+  static MessagingPresenceEvent? fromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final userId = raw['userId'];
+    if (userId is! String) return null;
+    final seen = raw['lastSeenAt'];
+    return MessagingPresenceEvent(
+      userId: userId,
+      visible: raw['visible'] == true,
+      online: raw['online'] == true,
+      lastSeenAt: seen is String ? DateTime.tryParse(seen)?.toUtc() : null,
+    );
   }
 }
 
@@ -127,6 +173,11 @@ const Map<String, ({String collection, String key})> _kEventRows = {
     collection: SyncCollectionKey.groupArrangements,
     key: 'arrangement'
   ),
+  // #142 (M3) : l'accusé d'un de mes messages, à moi seul.
+  'receipt.updated': (
+    collection: SyncCollectionKey.messageReceipts,
+    key: 'receipt'
+  ),
 };
 
 /// **Décode une trame** `data:` de Transmit.
@@ -153,6 +204,20 @@ MessagingEvent? decodeMessagingData(String data, {required String channel}) {
   if (payload is! Map) return null;
   final type = payload['type'];
   if (type is! String) return null;
+
+  // Les deux événements **éphémères** de #142 : ils ne portent aucune ligne.
+  if (type == 'typing') {
+    final typing = payload['typing'];
+    if (typing is! Map) return null;
+    final groupId = typing['groupId'];
+    final userId = typing['userId'];
+    if (groupId is! String || userId is! String) return null;
+    return MessagingTypingEvent(groupId: groupId, userId: userId);
+  }
+  if (type == 'presence.changed') {
+    return MessagingPresenceEvent.fromJson(payload['presence']);
+  }
+
   final shape = _kEventRows[type];
   if (shape == null) return null;
 

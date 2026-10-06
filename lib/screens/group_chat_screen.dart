@@ -6,19 +6,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/messaging/group_history.dart';
+import '../data/messaging/messaging_ephemeral.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/echanges_view.dart';
+import '../models/receipt_view.dart';
 import '../router/app_router.dart';
 import '../state/chat_organization_providers.dart';
 import '../state/echanges_providers.dart';
+import '../state/receipts_providers.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import '../utils/presence_labels.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/chat_bubble.dart';
 import '../widgets/chat/chat_info_banner.dart';
 import '../widgets/chat/message_focus_highlight.dart';
+import '../widgets/chat/message_info_sheet.dart';
 import '../widgets/chat/message_input_bar.dart';
+import '../widgets/chat/receipt_mark.dart';
 import '../widgets/content_absence.dart';
 import '../widgets/home_tab.dart';
 
@@ -130,13 +136,35 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   /// la liste recrée sa bulle.
   bool _focusLit = false;
   Timer? _focusTimer;
+  // ── #142 (M3) : « écrit… » envoyé, présence de l'autre lue à l'ouverture ──
+
+  /// « J'écris », à intervalle borné pendant la frappe.
+  late final TypingSignaler _typing = TypingSignaler(
+    send: () =>
+        ref.read(messagingSignalsApiProvider).signalTyping(widget.groupId),
+  );
+
+  /// La présence de l'autre (tête-à-tête) a été demandée pour cette ouverture.
+  bool _presenceRequested = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _scroll.addListener(_onScroll);
+    _controller.addListener(_onTextChanged);
     unawaited(_resolveWindow());
+  }
+
+  void _onTextChanged() => _typing.onTextChanged(_controller.text);
+
+  /// **La présence de l'autre, à l'ouverture d'un tête-à-tête** (#142) — puis
+  /// tenue à jour par `presence.changed`. Un groupe n'en a pas.
+  Future<void> _loadPresence() async {
+    final presence =
+        await ref.read(messagingSignalsApiProvider).presenceIn(widget.groupId);
+    if (!mounted || presence == null) return;
+    ref.read(messagingEphemeralStoreProvider).presenceChanged(presence);
   }
 
   @override
@@ -153,6 +181,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     _foreground = state == AppLifecycleState.resumed;
     // Revenir sur un fil ouvert, c'est le lire.
     if (_foreground) _maybeAdvanceRead();
+    // Et relire la présence : celle qu'on tenait date d'avant l'arrière-plan.
+    if (_foreground && _presenceRequested) unawaited(_loadPresence());
   }
 
   /// **La fenêtre de départ** : assez large pour contenir le premier non-lu, sur
@@ -189,6 +219,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   }
 
   Future<void> _send(String text) async {
+    _typing.reset();
     // Le fil revient en bas : le message qu'on vient d'écrire doit se voir.
     if (_scroll.hasClients && _scroll.offset > 0) _scroll.jumpTo(0);
     // L'écho est posé par le composeur avant tout appel réseau : le message
@@ -437,6 +468,33 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
     final isGroup = group != null && !group.isDirect;
 
+    // ── #142 (M3) : coches, « écrit… », « en ligne / vu à » ──
+    if (group != null && group.isDirect && !_presenceRequested) {
+      _presenceRequested = true;
+      unawaited(_loadPresence());
+    }
+    final receipts = ref
+            .watch(messageReceiptsProvider((actor: me, id: widget.groupId)))
+            .value ??
+        const <String, ReceiptStatus>{};
+    final typers = ref.watch(typingInProvider((actor: me, id: widget.groupId)));
+    final other = group == null || !group.isDirect
+        ? null
+        : group.members.where((m) => m.userId != me).firstOrNull;
+    final presence =
+        other == null ? null : ref.watch(presenceOfProvider(other.userId));
+    final names = {
+      for (final member in group?.members ?? const <GroupMemberView>[])
+        member.userId: member.displayName,
+    };
+    final liveSubtitle = typingLabel(
+          l,
+          typers: typers,
+          isDirect: group?.isDirect ?? false,
+          nameOf: (userId) => names[userId],
+        ) ??
+        (group != null && group.isDirect ? presenceLabel(l, presence) : null);
+
     return PopScope(
       // Pas de pile dessous (ouvert par une notification) : le geste système
       // mène à la liste des Échanges au lieu de quitter l'application.
@@ -454,7 +512,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
           // **L'effectif servi par le serveur** (`groups.memberCount`, membres
           // actifs), jamais un compte des lignes `group_members` locales : le
           // roster garde la ligne d'un compte effacé (contrat M1a §4).
-          subtitle: isGroup ? l.groupMembers(group.memberCount) : null,
+          // « écrit… » d'abord ; sinon l'effectif d'un groupe, ou la présence
+          // de l'autre dans un tête-à-tête (#142).
+          subtitle: liveSubtitle ??
+              (isGroup ? l.groupMembers(group.memberCount) : null),
           onBack: _leave,
           onTitleTap:
               group == null ? null : () => _openTitleTarget(context, group),
@@ -475,6 +536,14 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 focusMessageId: widget.focusMessageId,
                 focusKey: _focusKey,
                 focusLit: _focusLit,
+                receipts: receipts,
+                onMineLongPress: group == null
+                    ? null
+                    : (m) => showMyMessageActions(
+                          context,
+                          message: m,
+                          group: group,
+                        ),
               ),
             ),
             // **La barre de saisie n'existe que si l'on peut écrire.** Le
@@ -542,6 +611,8 @@ class _Thread extends StatelessWidget {
     this.focusMessageId,
     this.focusKey,
     this.focusLit = false,
+    this.receipts = const {},
+    this.onMineLongPress,
   });
 
   final AsyncValue<List<GroupMessageView>> thread;
@@ -558,6 +629,12 @@ class _Thread extends StatelessWidget {
 
   /// M8 (#146) : le fond du message trouvé est encore allumé.
   final bool focusLit;
+
+  /// Les coches de mes messages (#142), par identifiant.
+  final Map<String, ReceiptStatus> receipts;
+
+  /// Appui long sur un de mes messages confirmés (#142 : « Infos »).
+  final void Function(GroupMessageView message)? onMineLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -624,9 +701,14 @@ class _Thread extends StatelessWidget {
           return ChatInfoBanner(text: m.body ?? l.chatMediaUnsupported);
         }
 
+        final mineConfirmed = m.mine && m.isConfirmed;
         final bubble = ChatBubble(
           key: ValueKey(m.id),
           message: m,
+          // #142 (M3) : ✓ / ✓✓ / ✓✓ bleu sur mes messages confirmés.
+          receiptMark: mineConfirmed
+              ? ReceiptMark(status: receipts[m.id] ?? ReceiptStatus.sent)
+              : null,
           // Répondre en privé à un membre qui intervient : tap sur son
           // nom/avatar → sa fiche. Seulement dans un groupe, seulement sur un
           // message reçu, et **jamais** sur un auteur retiré.
@@ -643,14 +725,23 @@ class _Thread extends StatelessWidget {
               ? () => onFailedTap(m)
               : null,
         );
+        // #142 (M3) : appui long sur un de mes messages confirmés → « Infos ».
+        final pressable = (!mineConfirmed || onMineLongPress == null)
+            ? bubble
+            : GestureDetector(
+                key: ValueKey('long-press-${m.id}'),
+                behavior: HitTestBehavior.opaque,
+                onLongPress: () => onMineLongPress!(m),
+                child: bubble,
+              );
         // M8 (#146) : le message trouvé par la recherche.
         if (m.id == focusMessageId) {
           return KeyedSubtree(
             key: focusKey,
-            child: MessageFocusHighlight(lit: focusLit, child: bubble),
+            child: MessageFocusHighlight(lit: focusLit, child: pressable),
           );
         }
-        return bubble;
+        return pressable;
       },
     );
   }

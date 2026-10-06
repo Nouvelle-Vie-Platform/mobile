@@ -1817,4 +1817,110 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get m6ActionUnreachable =>
       'No answer from the server. Check your connection.';
+
+  @override
+  String get chatTyping => 'typing…';
+
+  @override
+  String chatTypingNamed(String name) {
+    return '$name is typing…';
+  }
+
+  @override
+  String chatTypingSeveral(int count) {
+    return '$count people are typing…';
+  }
+
+  @override
+  String get chatPresenceOnline => 'online';
+
+  @override
+  String chatLastSeenToday(String time) {
+    return 'last seen today at $time';
+  }
+
+  @override
+  String chatLastSeenYesterday(String time) {
+    return 'last seen yesterday at $time';
+  }
+
+  @override
+  String chatLastSeenOn(String date, String time) {
+    return 'last seen $date at $time';
+  }
+
+  @override
+  String get chatReceiptSent => 'Sent';
+
+  @override
+  String get chatReceiptDelivered => 'Delivered';
+
+  @override
+  String get chatReceiptRead => 'Read';
+
+  @override
+  String get messageInfoAction => 'Info';
+
+  @override
+  String get messageInfoTitle => 'Message info';
+
+  @override
+  String get messageInfoReadBy => 'Read by';
+
+  @override
+  String get messageInfoDeliveredTo => 'Delivered to';
+
+  @override
+  String get messageInfoPending => 'Not received yet';
+
+  @override
+  String get messageInfoEmpty => 'Nobody is waiting for this message.';
+
+  @override
+  String get messageInfoError =>
+      'Could not load the message info. Check your connection.';
+
+  @override
+  String messageInfoToday(String time) {
+    return 'today at $time';
+  }
+
+  @override
+  String messageInfoYesterday(String time) {
+    return 'yesterday at $time';
+  }
+
+  @override
+  String messageInfoOn(String date, String time) {
+    return '$date at $time';
+  }
+
+  @override
+  String get privacyMenu => 'Privacy';
+
+  @override
+  String get privacyMenuSubtitle => 'Read receipts, last seen and online';
+
+  @override
+  String get privacyTitle => 'Privacy';
+
+  @override
+  String get privacyReadReceipts => 'Read receipts';
+
+  @override
+  String get privacyReadReceiptsHint =>
+      'If you turn them off, others will no longer see that you read their messages, and you will no longer see when they read yours. Does not apply to groups.';
+
+  @override
+  String get privacyPresence => 'Last seen and online';
+
+  @override
+  String get privacyPresenceHint =>
+      'If you turn it off, others will no longer see when you are online, and you will no longer see when they are.';
+
+  @override
+  String get privacyLoadError => 'Could not load your privacy settings.';
+
+  @override
+  String get privacySaveError => 'The setting could not be saved. Try again.';
 }

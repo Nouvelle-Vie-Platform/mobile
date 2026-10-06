@@ -468,6 +468,14 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) => contentId(SyncCollectionKey.groupMessages, item),
         rowOf: groupMessageRowOf,
       ),
+      // **L'accusé de mes messages** (#142, M3) : après le fil — une coche n'a
+      // de sens que sur un message déjà là. Rangé par l'identifiant du message.
+      SyncedCollection<MessageReceiptRow>(
+        key: SyncCollectionKey.messageReceipts,
+        local: (dao) => dao.messageReceiptsCollection,
+        idOf: (item) => contentId(SyncCollectionKey.messageReceipts, item),
+        rowOf: messageReceiptRowOf,
+      ),
     ];
 
 /// **Le descripteur d'une collection, par sa clé**, ou `null` si ce client ne

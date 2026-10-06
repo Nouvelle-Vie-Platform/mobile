@@ -3321,6 +3321,180 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pas de réponse du serveur. Vérifiez votre connexion.'**
   String get m6ActionUnreachable;
+
+  /// Fil et liste : quelqu'un écrit, dans un tête-à-tête (#142). Sans nom : l'en-tête porte déjà le nom de l'autre. Éphémère, s'efface seul après ~5 s
+  ///
+  /// In fr, this message translates to:
+  /// **'écrit…'**
+  String get chatTyping;
+
+  /// Fil et liste d'un groupe : une personne écrit (#142). {name} est son prénom (premier mot du nom servi)
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} écrit…'**
+  String chatTypingNamed(String name);
+
+  /// Fil et liste d'un groupe : plusieurs personnes écrivent en même temps (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} personnes écrivent…'**
+  String chatTypingSeveral(int count);
+
+  /// En-tête d'un tête-à-tête : l'autre a l'application ouverte (#142). Jamais affiché si l'un des deux a coupé « Vu à et en ligne », ni dans un groupe
+  ///
+  /// In fr, this message translates to:
+  /// **'en ligne'**
+  String get chatPresenceOnline;
+
+  /// En-tête d'un tête-à-tête : dernière présence aujourd'hui (#142). {time} est l'heure, arrondie à la minute
+  ///
+  /// In fr, this message translates to:
+  /// **'vu aujourd\'hui à {time}'**
+  String chatLastSeenToday(String time);
+
+  /// En-tête d'un tête-à-tête : dernière présence hier (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'vu hier à {time}'**
+  String chatLastSeenYesterday(String time);
+
+  /// En-tête d'un tête-à-tête : dernière présence avant hier (#142). {date} est le jour et le mois
+  ///
+  /// In fr, this message translates to:
+  /// **'vu le {date} à {time}'**
+  String chatLastSeenOn(String date, String time);
+
+  /// Accessibilité : coche simple d'un de mes messages — le serveur l'a, personne ne l'a encore reçu (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyé'**
+  String get chatReceiptSent;
+
+  /// Accessibilité : double coche grise — tous les destinataires l'ont reçu sur leur téléphone (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Distribué'**
+  String get chatReceiptDelivered;
+
+  /// Accessibilité : double coche bleue — tous l'ont lu (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Lu'**
+  String get chatReceiptRead;
+
+  /// Appui long sur un de mes messages : ouvre « Infos du message » (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos'**
+  String get messageInfoAction;
+
+  /// Titre de la feuille qui dit qui a reçu et qui a lu un de mes messages (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos du message'**
+  String get messageInfoTitle;
+
+  /// Infos du message : section des destinataires qui l'ont lu (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Lu par'**
+  String get messageInfoReadBy;
+
+  /// Infos du message : section des destinataires qui l'ont reçu sans l'avoir lu — ou dont la lecture est cachée par la réciprocité (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Distribué à'**
+  String get messageInfoDeliveredTo;
+
+  /// Infos du message : section des destinataires dont le téléphone ne l'a pas encore reçu (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore reçu'**
+  String get messageInfoPending;
+
+  /// Infos du message : le message n'a aucun destinataire (seul dans le groupe) (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Personne n\'attend ce message.'**
+  String get messageInfoEmpty;
+
+  /// Infos du message : la lecture en ligne a échoué (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les infos du message. Vérifiez votre connexion.'**
+  String get messageInfoError;
+
+  /// Infos du message : instant d'une réception ou d'une lecture aujourd'hui (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'aujourd\'hui à {time}'**
+  String messageInfoToday(String time);
+
+  /// Infos du message : instant d'hier (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'hier à {time}'**
+  String messageInfoYesterday(String time);
+
+  /// Infos du message : instant plus ancien (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'{date} à {time}'**
+  String messageInfoOn(String date, String time);
+
+  /// Profil : entrée qui ouvre les réglages de confidentialité de la messagerie (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Confidentialité'**
+  String get privacyMenu;
+
+  /// Profil : sous-titre de l'entrée Confidentialité (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Accusés de lecture, vu à et en ligne'**
+  String get privacyMenuSubtitle;
+
+  /// Titre de l'écran des réglages de confidentialité de la messagerie (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Confidentialité'**
+  String get privacyTitle;
+
+  /// Réglage : montrer aux autres que j'ai lu leurs messages (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Accusés de lecture'**
+  String get privacyReadReceipts;
+
+  /// Réglage des accusés de lecture : la réciprocité, dite (#142). Tête-à-tête seulement, comme WhatsApp : en groupe, les accusés de lecture sont toujours envoyés. La distribution (double coche grise) n'est pas concernée
+  ///
+  /// In fr, this message translates to:
+  /// **'Si vous les désactivez, les autres ne verront plus que vous avez lu leurs messages, et vous ne verrez plus quand ils ont lu les vôtres. Ne s\'applique pas aux groupes.'**
+  String get privacyReadReceiptsHint;
+
+  /// Réglage : montrer aux autres quand j'ai l'application ouverte, ou quand je l'ai quittée (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Vu à et en ligne'**
+  String get privacyPresence;
+
+  /// Réglage de la présence : la réciprocité, dite (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Si vous le désactivez, les autres ne verront plus quand vous êtes en ligne, et vous ne verrez plus quand ils le sont.'**
+  String get privacyPresenceHint;
+
+  /// Écran Confidentialité : la lecture en ligne a échoué (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos réglages de confidentialité.'**
+  String get privacyLoadError;
+
+  /// Écran Confidentialité : l'enregistrement a échoué ; l'interrupteur revient à sa place (#142)
+  ///
+  /// In fr, this message translates to:
+  /// **'Le réglage n\'a pas pu être enregistré. Réessayez.'**
+  String get privacySaveError;
 }
 
 class _AppLocalizationsDelegate
