@@ -157,6 +157,22 @@ chaque ABI : `1000 × rang + run` (armeabi-v7a 1, arm64-v8a 2) — le workflow
 refuse un run ≥ 1000, où les deux ABI se chevaucheraient. Le `version:` du
 pubspec n'est pas lu par ce chemin. Un tag hors de la forme `vX.Y.Z` est refusé.
 
+**Les notes de version s'écrivent dans le message du tag annoté** — le « Quoi
+de neuf » destiné aux fidèles :
+```bash
+git tag -a v1.4.0 -m "Quoi de neuf :
+- la radio reprend où vous l'aviez laissée
+- les podcasts se rangent par saison"
+git push origin v1.4.0
+```
+La CI le place en tête des notes de la Release (avant le bloc APK ; les notes
+générées suivent toujours), puis l'envoie au portail
+(`PUT /app-releases/X.Y.Z/notes`, après les APK). Signature retirée, blancs de
+bord ôtés, tronqué à 2000 caractères avec un avertissement. **Un tag léger
+(`git tag v1.4.0`) n'a pas de notes** — la CI ne prend jamais le message du
+commit à sa place — et rien n'est envoyé au portail. Un échec d'envoi (portail
+d'avant cette route : 404) n'est qu'un `::warning::`.
+
 **Signature (#159)** : `android/app/build.gradle.kts` signe la release avec la
 clé lue dans `ANDROID_KEYSTORE_PATH` / `ANDROID_KEYSTORE_PASSWORD` /
 `ANDROID_KEY_ALIAS` / `ANDROID_KEY_PASSWORD`, ou à défaut dans
