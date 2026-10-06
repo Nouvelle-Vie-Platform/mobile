@@ -2347,7 +2347,7 @@ la réponse — c'est exactement là que la tranche 4 se branchera.
    `wakeNotifierProvider` (inerte) qui le dit, et le même `PushWakeHandler` sert les
    deux chemins — ce qui change est **injecté**, jamais décidé par un drapeau.
    L'immédiateté d'un fil **ouvert** est le sujet du temps réel SSE (#101).
-5. **Un réveil de groupe tire quatre collections**, et la plus facile à croire
+5. **Un réveil de groupe tire six collections** (quatre avant M5, plus `group_reads` et `group_mutes`), et la plus facile à croire
    superflue est `groups` : « le groupe est déjà en magasin ». Vrai **sauf au premier
    message après une installation**, c'est-à-dire exactement le réveil qu'on remarque
    — et sans le nom du fil la notification n'a pas de titre, donc se tait.
@@ -2416,8 +2416,54 @@ pas passer de temps à diagnostiquer une non-livraison sur iPhone : elle est att
 C'est aussi la raison d'être de la décision 12 du cadrage, le temps réel SSE (#101).
 
 Hors périmètre, nommément : la *Notification Service Extension* iOS (D8), les OEM
-Android tueurs de fond, le groupage et les badges, le choix manuel du transport,
-UnifiedPush (#99), et l'UX de réveil des domaines autres que les messages.
+Android tueurs de fond, le choix manuel du transport, UnifiedPush (#99), et l'UX
+de réveil des domaines autres que les messages. (Le groupage et le compteur sont
+arrivés avec M5, ci-dessous.)
+
+#### Les notifications de conversation, la réponse et la sourdine (M5, #144)
+
+Une notification **par conversation**, au style « messagerie » d'Android
+(`MessagingStyle`) : les derniers **non-lus** avec leur auteur, le nom du groupe,
+le compteur (`number`), rangée sous un **résumé** (`kMessagesGroupKey`) quand
+plusieurs conversations ont du nouveau. La règle est pure et sans greffon
+(`conversation_notification.dart`), lue d'un `ConversationDigest`
+(`GroupDao.conversationDigestOf`) ; `wake_notifier.dart` la traduit. Six points :
+
+1. **Le message du réveil doit être un non-lu** de la conversation (ni le mien,
+   ni du serveur) — un « X a rejoint le groupe » ne sonne pas. C'est « pas de
+   ligne, pas de notification », resserré. D'où `group_reads` et `group_mutes`
+   dans les collections d'un réveil de groupe.
+2. **La sourdine tait de deux façons** : le serveur envoie
+   `group_message_muted` (même réveil, sans alerte — une version d'avant M5
+   ignore ce type, donc ne sonne jamais), et le magasin connaît `group_mutes`.
+   L'une ou l'autre suffit. Une sourdine bornée échue n'est jamais effacée : elle
+   est lue comme levée (`isGroupMuted`).
+3. **« Répondre » passe par le composeur du fil** (`GroupMessageComposer`) : même
+   clé client, même écho, même renvoi automatique s'il échoue. Il marque aussi la
+   conversation lue. **« Marquer comme lu »** passe par `GroupReadAdvancer`.
+   Les deux sont des actions **sans interface** : le greffon les confie à un
+   isolate de fond (`wakeActionEntryPoint` → `handleBackgroundNotificationAction`),
+   application ouverte ou non. Le récepteur `ActionBroadcastReceiver` est déclaré
+   dans `AndroidManifest.xml` — **sans lui, les boutons s'affichent et ne font
+   rien**. Le câblage testable est `notificationActionHandlerFor`.
+4. **Une conversation lue s'efface** : au fond, chaque réveil recalcule
+   (`NotificationRefresher`) ; au premier plan, `NotificationReconciler` écoute
+   la liste des conversations et efface celles retombées à zéro non-lu — lues ici
+   ou ailleurs (`read.advanced`). Le premier plan **efface** (`wakeDismisserProvider`,
+   posé par `main.dart`) mais n'**affiche** toujours rien.
+5. **« Afficher le contenu »** (profil, défaut oui) vit dans `app_settings`
+   (`notification_preview`) parce que c'est l'isolate de fond qui le lit. Masqué :
+   « Nouveau message » / « Nouveau message de Ama », rien du texte.
+6. **Les textes d'interface** (« Vous », « Répondre »…) viennent des `.arb` par
+   `lookupAppLocalizations` sur la langue du système (`notification_texts.dart`) :
+   l'isolate de fond n'a pas de `BuildContext`. Le nom du canal reste en dur.
+
+**Pas d'avatar** : `users` n'en porte pas (`Profiles.avatarUrl` toujours nul).
+
+La sourdine se règle **en ligne** (`GroupMuteSetter`, `PUT`/`DELETE
+/groups/:id/mute`) — c'est le serveur qui choisit le réveil muet ; un refus se dit
+tout de suite. Le menu « ⋮ » du fil (`ChatMuteMenu`) et l'icône de la tuile
+(`MutedIndicator`) lisent `group_mutes`, collection privée.
 
 ### Brancher un vrai backend : **un repository dédié asynchrone par domaine**
 Surcharger `churchRepositoryProvider` **ne suffit pas** et n'est pas le motif :

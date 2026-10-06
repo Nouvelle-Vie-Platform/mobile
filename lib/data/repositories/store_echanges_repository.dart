@@ -179,6 +179,7 @@ class StoreEchangesRepository implements EchangesRepository {
       unreadCount: row.unreadCount,
       archived: row.isArchived,
       pinnedAt: row.pinnedAt,
+      isMuted: row.isMutedAt(DateTime.now()),
     );
   }
 

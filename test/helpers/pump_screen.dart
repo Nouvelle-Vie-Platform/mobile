@@ -17,6 +17,7 @@ import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/local/sync_dao.dart'
     show SyncCollectionKey;
 import 'package:maison_du_miracle/data/messaging/group_history.dart';
+import 'package:maison_du_miracle/data/messaging/group_mute_setter.dart';
 import 'package:maison_du_miracle/data/messaging/group_read_advancer.dart';
 import 'package:maison_du_miracle/data/messaging/messaging_channel.dart';
 import 'package:maison_du_miracle/data/messaging/messaging_signals_api.dart';
@@ -53,6 +54,7 @@ import 'package:maison_du_miracle/state/requests_providers.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
+import 'package:maison_du_miracle/state/push_providers.dart';
 import 'package:maison_du_miracle/models/auth_channels.dart';
 import 'package:maison_du_miracle/models/vocabulary.dart';
 import 'package:maison_du_miracle/state/auth_channels_providers.dart';
@@ -300,6 +302,9 @@ List<Override> _commonOverrides(
   PlayReporter? plays,
   PlaySpool? playSpool,
   List<DownloadNotificationRow> notifications = const [],
+  Map<String, GroupMuteRowView> mutes = const {},
+  GroupMuteSender? muteSender,
+  bool notificationPreview = true,
 }) =>
     [
       appDatabaseProvider.overrideWithValue(db),
@@ -500,6 +505,24 @@ List<Override> _commonOverrides(
       legalNoticeStoreProvider.overrideWithValue(
         legalNotice ?? InMemoryLegalNoticeStore(seen: true),
       ),
+      // **La sourdine et l'aperçu des notifications** (M5), posés **par des
+      // flux nus** pour la raison du vocabulaire : lus depuis le magasin, ils
+      // ouvrent des flux Drift qu'une horloge factice fige — et le menu du fil
+      // comme l'onglet Profil les lisent. Le défaut est **aucune sourdine** et
+      // **aperçu affiché**. Le réglage d'une sourdine est posé inerte (le réel
+      // est HTTP) ; [muteSender] le remplace. Paramètres nommés et non
+      // `Override` de plus — Riverpod 3 refuse deux surcharges du même provider.
+      groupMuteProvider
+          .overrideWith((ref, groupId) => Stream.value(mutes[groupId])),
+      notificationPreviewProvider
+          .overrideWith((ref) => Stream.value(notificationPreview)),
+      groupMuteSetterProvider.overrideWith(
+        (ref) => GroupMuteSetter(
+          sender: muteSender ?? const InertGroupMuteSender(),
+          storeMute: (row) =>
+              MessagingStoreWriter(db).store(SyncCollectionKey.groupMutes, row),
+        ),
+      ),
     ];
 
 Future<void> pumpScreen(
@@ -534,6 +557,9 @@ Future<void> pumpScreen(
   PlayReporter? plays,
   PlaySpool? playSpool,
   List<DownloadNotificationRow> notifications = const [],
+  Map<String, GroupMuteRowView> mutes = const {},
+  GroupMuteSender? muteSender,
+  bool notificationPreview = true,
 }) async {
   // Paramètres nommés et non `Override` de plus, pour la raison déjà donnée
   // ci-dessus : Riverpod 3 refuse deux surcharges du même provider. [database]
@@ -575,6 +601,9 @@ Future<void> pumpScreen(
           plays: plays,
           playSpool: playSpool,
           notifications: notifications,
+          mutes: mutes,
+          muteSender: muteSender,
+          notificationPreview: notificationPreview,
         ),
         ...overrides,
       ],

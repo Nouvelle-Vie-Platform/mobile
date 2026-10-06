@@ -12,6 +12,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_avatar.dart';
 import '../widgets/menu_tile.dart';
+import '../widgets/notification_preview_tile.dart';
 import '../widgets/profile_completion_banner.dart';
 import '../widgets/theme_sheet.dart';
 
@@ -93,6 +94,9 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                   ],
+                  // Le contenu des notifications de messages (M5).
+                  const NotificationPreviewTile(),
+                  const SizedBox(height: AppSpacing.sm),
                   MenuTile(
                     icon: Icons.help_outline,
                     label: l.helpSupport,
