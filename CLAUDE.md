@@ -2243,7 +2243,10 @@ le droit de voir n'arrive jamais ici — ce client n'a rien à filtrer.
 - **Infos du message** : appui long sur un de mes messages → « Infos »
   (`message_info_sheet.dart`), lu en ligne, relu à chaque changement de coche.
 - **Confidentialité** : `/profile/privacy` (`PrivacySettingsScreen`), deux
-  interrupteurs lus et écrits en ligne (`GET|PUT /messaging/privacy`).
+  interrupteurs lus et écrits en ligne (`GET|PUT /messaging/privacy`). Comme
+  WhatsApp, « Accusés de lecture » ne vaut qu'en **tête-à-tête** (réciprocité) :
+  en groupe, le bleu et « Infos du message » montrent toujours les lectures — le
+  serveur l'applique, l'écran le dit (« Ne s'applique pas aux groupes »).
 - Les six routes passent par **une** couture, `MessagingSignalsApi` — inerte
   dans `pumpScreen` (paramètre `signals:`), comme les coches (`receipts:`).
 

@@ -48,7 +48,8 @@ Future<void> showMyMessageActions(
 /// chaque changement de la coche du message (un `receipt.updated` arrivé
 /// pendant que la feuille est ouverte).
 ///
-/// La réciprocité est appliquée par le serveur : une lecture cachée arrive
+/// La réciprocité (tête-à-tête seulement — en groupe, le réglage ne
+/// s'applique pas) est appliquée par le serveur : une lecture cachée arrive
 /// comme « pas lue », et l'écran la montre comme telle — il n'a aucun moyen de
 /// les distinguer, et c'est voulu.
 Future<void> showMessageInfo(

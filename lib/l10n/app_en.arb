@@ -620,7 +620,7 @@
   "privacyMenuSubtitle": "Read receipts, last seen and online",
   "privacyTitle": "Privacy",
   "privacyReadReceipts": "Read receipts",
-  "privacyReadReceiptsHint": "If you turn them off, others will no longer see that you read their messages, and you will no longer see when they read yours.",
+  "privacyReadReceiptsHint": "If you turn them off, others will no longer see that you read their messages, and you will no longer see when they read yours. Does not apply to groups.",
   "privacyPresence": "Last seen and online",
   "privacyPresenceHint": "If you turn it off, others will no longer see when you are online, and you will no longer see when they are.",
   "privacyLoadError": "Could not load your privacy settings.",
