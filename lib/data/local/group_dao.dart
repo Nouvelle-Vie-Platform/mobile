@@ -959,6 +959,7 @@ class ConversationRecord {
 
   /// **Épinglée par moi**, et depuis quand (#146) — `null` sinon.
   final DateTime? pinnedAt;
+
   /// Ma sourdine (M5) — la fin d'une sourdine bornée, ou `null`.
   final DateTime? mutedUntil;
 
