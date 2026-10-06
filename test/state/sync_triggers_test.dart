@@ -117,11 +117,10 @@ void main() {
       );
 
       expect(find.byType(RefreshIndicator), findsOneWidget);
-      // La liste du catalogue est désormais un `ListView` et non un
-      // `CustomScrollView` : l'écran ne porte plus trois sections empilées en
-      // slivers, il porte **une** liste (#82). Et c'est la seule ici — la barre
-      // d'onglets n'existe pas sans menu, et le double en mémoire en rend un vide.
-      await pullDown(tester, find.byType(ListView));
+      // Les sections de la page s'empilent de nouveau en slivers (#167) : un
+      // `CustomScrollView`, le seul ici — sans page reçue, ni barre d'onglets
+      // ni puces.
+      await pullDown(tester, find.byType(CustomScrollView));
 
       expect(pulls, 1);
     });
