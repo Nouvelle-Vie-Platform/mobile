@@ -1653,4 +1653,81 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get miniPlayerClose => 'Fermer le lecteur';
+
+  @override
+  String get chatSearchHint => 'Rechercher';
+
+  @override
+  String get chatSearchTitle => 'Rechercher';
+
+  @override
+  String chatSearchMinLength(int count) {
+    return 'Tapez au moins $count caractères pour chercher dans les noms et les messages.';
+  }
+
+  @override
+  String get chatSearchChats => 'Discussions';
+
+  @override
+  String get chatSearchMessages => 'Messages';
+
+  @override
+  String get chatSearchMore => 'Plus de résultats';
+
+  @override
+  String get chatSearchOffline =>
+      'L\'historique plus ancien n\'a pas pu être consulté. Les résultats ci-dessus viennent du téléphone.';
+
+  @override
+  String get chatSearchNoResult => 'Aucun résultat.';
+
+  @override
+  String get chatSearchUnknownChat => 'Discussion';
+
+  @override
+  String get chatArchive => 'Archiver';
+
+  @override
+  String get chatUnarchive => 'Désarchiver';
+
+  @override
+  String get chatPin => 'Épingler';
+
+  @override
+  String get chatUnpin => 'Désépingler';
+
+  @override
+  String get chatMarkRead => 'Marquer comme lu';
+
+  @override
+  String get chatPinnedLabel => 'Épinglée';
+
+  @override
+  String chatPinLimit(int count) {
+    return 'Vous pouvez épingler $count discussions au plus. Désépinglez-en une d\'abord.';
+  }
+
+  @override
+  String get chatArrangeFailed => 'Cette discussion n\'a pas pu être rangée.';
+
+  @override
+  String get chatArchivedNotice => 'Discussion archivée';
+
+  @override
+  String get chatUndo => 'Annuler';
+
+  @override
+  String chatArchivedRow(int count) {
+    return 'Archivées ($count)';
+  }
+
+  @override
+  String get chatArchivedTitle => 'Archivées';
+
+  @override
+  String get chatArchivedEmptyTitle => 'Aucune discussion archivée';
+
+  @override
+  String get chatArchivedEmpty =>
+      'Faites glisser une discussion vers la gauche pour l\'archiver. Elle reste ici même quand un message arrive.';
 }

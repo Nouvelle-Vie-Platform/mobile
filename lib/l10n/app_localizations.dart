@@ -2991,6 +2991,144 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Fermer le lecteur'**
   String get miniPlayerClose;
+
+  /// M8 (#146) : invite de la barre de recherche de l'onglet Messages et du champ de l'écran de recherche
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher'**
+  String get chatSearchHint;
+
+  /// M8 : titre de l'écran de recherche dans les discussions
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher'**
+  String get chatSearchTitle;
+
+  /// M8 : aide affichée tant que la requête est trop courte (la même borne que le serveur)
+  ///
+  /// In fr, this message translates to:
+  /// **'Tapez au moins {count} caractères pour chercher dans les noms et les messages.'**
+  String chatSearchMinLength(int count);
+
+  /// M8 : section des résultats sur les noms de discussions
+  ///
+  /// In fr, this message translates to:
+  /// **'Discussions'**
+  String get chatSearchChats;
+
+  /// M8 : section des résultats sur le texte des messages
+  ///
+  /// In fr, this message translates to:
+  /// **'Messages'**
+  String get chatSearchMessages;
+
+  /// M8 : demande la page suivante des résultats du serveur (historique ancien)
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus de résultats'**
+  String get chatSearchMore;
+
+  /// M8 : la recherche serveur n'a pas répondu (hors ligne) ; les résultats locaux restent
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'historique plus ancien n\'a pas pu être consulté. Les résultats ci-dessus viennent du téléphone.'**
+  String get chatSearchOffline;
+
+  /// M8 : aucune discussion ni aucun message ne correspond
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun résultat.'**
+  String get chatSearchNoResult;
+
+  /// M8 : titre d'un résultat dont la discussion n'est pas (encore) dans la liste du téléphone
+  ///
+  /// In fr, this message translates to:
+  /// **'Discussion'**
+  String get chatSearchUnknownChat;
+
+  /// M8 : action du menu d'une discussion et libellé du glissement vers la gauche
+  ///
+  /// In fr, this message translates to:
+  /// **'Archiver'**
+  String get chatArchive;
+
+  /// M8 : action inverse, depuis la liste des archives
+  ///
+  /// In fr, this message translates to:
+  /// **'Désarchiver'**
+  String get chatUnarchive;
+
+  /// M8 : épingle la discussion en tête de liste (trois au plus)
+  ///
+  /// In fr, this message translates to:
+  /// **'Épingler'**
+  String get chatPin;
+
+  /// M8 : retire l'épingle
+  ///
+  /// In fr, this message translates to:
+  /// **'Désépingler'**
+  String get chatUnpin;
+
+  /// M8 : avance la lecture jusqu'au dernier message de la discussion
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme lu'**
+  String get chatMarkRead;
+
+  /// M8 : libellé d'accessibilité de l'icône d'épingle sur une tuile
+  ///
+  /// In fr, this message translates to:
+  /// **'Épinglée'**
+  String get chatPinnedLabel;
+
+  /// M8 : refus d'une épingle de plus (borne de WhatsApp, tenue aussi par le serveur)
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous pouvez épingler {count} discussions au plus. Désépinglez-en une d\'abord.'**
+  String chatPinLimit(int count);
+
+  /// M8 : le serveur a refusé le rangement (vous n'êtes plus membre) ; la discussion revient à sa place
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette discussion n\'a pas pu être rangée.'**
+  String get chatArrangeFailed;
+
+  /// M8 : confirmation après un archivage, avec « Annuler »
+  ///
+  /// In fr, this message translates to:
+  /// **'Discussion archivée'**
+  String get chatArchivedNotice;
+
+  /// M8 : annule l'archivage qu'on vient de faire
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get chatUndo;
+
+  /// M8 : rangée en haut de l'onglet Messages ; {count} est le nombre de discussions archivées
+  ///
+  /// In fr, this message translates to:
+  /// **'Archivées ({count})'**
+  String chatArchivedRow(int count);
+
+  /// M8 : titre de l'écran des discussions archivées
+  ///
+  /// In fr, this message translates to:
+  /// **'Archivées'**
+  String get chatArchivedTitle;
+
+  /// M8 : état vide de l'écran des archives
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune discussion archivée'**
+  String get chatArchivedEmptyTitle;
+
+  /// M8 : explication de l'état vide des archives
+  ///
+  /// In fr, this message translates to:
+  /// **'Faites glisser une discussion vers la gauche pour l\'archiver. Elle reste ici même quand un message arrive.'**
+  String get chatArchivedEmpty;
 }
 
 class _AppLocalizationsDelegate
