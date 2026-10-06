@@ -249,6 +249,9 @@ const Map<String, String> kSyncCollections = {
   'prayer_wall': 'branch',
   'groups': 'branch',
   'group_messages': 'branch',
+  // **L'accusé de chacun de mes messages** (serveur M3, mobile #142) : privée
+  // — servie à l'auteur seul —, rangée en fin de registre côté serveur.
+  'message_receipts': 'private',
 };
 
 /// Clé de collection **inconnue du registre** : le mobile pourrait la demander

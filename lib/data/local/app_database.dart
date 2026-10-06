@@ -33,6 +33,7 @@ import 'legal_dao.dart';
 import 'mediatheque_dao.dart';
 import 'menu_dao.dart';
 import 'playback_dao.dart';
+import 'receipts_dao.dart';
 import 'settings_dao.dart';
 import 'sync_dao.dart';
 import 'season_dao.dart';
@@ -45,6 +46,7 @@ import 'tables/interaction_tables.dart';
 import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
+import 'tables/receipt_tables.dart';
 import 'tables/settings_tables.dart';
 import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
@@ -113,6 +115,10 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     // M8 (#146) : mon rangement des discussions, et son outbox.
     GroupArrangements,
     PendingGroupArrangements,
+    // Accusés de mes messages, et ce que ce téléphone a confirmé recevoir
+    // (#142, M3).
+    MessageReceipts,
+    DeliveryAcks,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -134,6 +140,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     InteractionDao,
     // M8 (#146) : archiver, épingler, rechercher.
     ChatOrganizationDao,
+    ReceiptsDao,
     SettingsDao,
     DownloadsDao,
     DownloadNotificationsDao,
@@ -241,7 +248,7 @@ class AppDatabase extends _$AppDatabase {
   /// collection répliquée **privée** de plus, et `pending_group_arrangements`,
   /// son outbox locale. Deux créations de table, et rien d'autre.
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   /// Les cinq colonnes du média d'une annonce, ajoutées ensemble au palier
   /// v18 → v19 — et retirées ensemble d'une table créée pour une version
@@ -740,6 +747,11 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(groupArrangements);
             await m.createTable(pendingGroupArrangements);
           }
+          // v22 → v23 — accusés de mes messages et distributions confirmées
+          // (#142, M3).
+          if (from < 23 && to >= 23) {
+            await _migrateM3ToV23(m);
+          }
         },
         beforeOpen: (details) async {
           // La ligne d'état global doit exister avant la première allocation de
@@ -749,6 +761,21 @@ class AppDatabase extends _$AppDatabase {
           await _ensureGlobalStateRow();
         },
       );
+
+  /// **Palier des accusés (#142, M3)** — deux créations de table, et rien
+  /// d'autre : aucune colonne existante ne bouge, aucune donnée n'est recopiée.
+  ///
+  /// `message_receipts` naît vide, son curseur n'existe pas : le prochain
+  /// manifeste l'annonce `from_zero`, et le premier cycle ramène les accusés
+  /// des messages envoyés avant cette version. `delivery_acks` naît vide : les
+  /// messages reçus des derniers jours seront confirmés une fois — la route
+  /// est idempotente.
+  ///
+  /// Écrit à part, et appelé par un seul palier (v23).
+  Future<void> _migrateM3ToV23(Migrator m) async {
+    await m.createTable(messageReceipts);
+    await m.createTable(deliveryAcks);
+  }
 
   /// **Vide le magasin entier**, puis le remet dans l'état d'une base neuve.
   ///

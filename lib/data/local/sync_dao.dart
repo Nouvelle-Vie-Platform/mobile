@@ -7,6 +7,7 @@ import 'tables/gathering_tables.dart';
 import 'tables/legal_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
+import 'tables/receipt_tables.dart';
 import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
 import 'tables/group_tables.dart';
@@ -240,6 +241,11 @@ abstract final class SyncCollectionKey {
   /// épinglée. `partition: 'private'`, **sans tombstone**, rangée par
   /// `groupId` — désarchiver revient avec le champ nul.
   static const String groupArrangements = 'group_arrangements';
+  /// **L'accusé de chacun de mes messages** (#142, serveur M3) : ✓✓ et ✓✓
+  /// bleu. `partition: 'private'` (servie à l'auteur seul), **sans
+  /// tombstone**, rangée par l'identifiant du message, et **après**
+  /// [groupMessages] : une coche n'a de sens que sur un message déjà là.
+  static const String messageReceipts = 'message_receipts';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -305,6 +311,7 @@ const String _kSyncStampColumn = 'sync_stamp';
     GroupReads,
     MyInteractions,
     GroupArrangements,
+    MessageReceipts,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -456,6 +463,10 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
         SyncCollectionKey.groupArrangements,
         groupArrangements,
       );
+  /// **Sans tombstone**, rangée par l'identifiant du message (#142). Le canal
+  /// `users/{id}` l'écrit aussi (`receipt.updated`).
+  LocalCollection<MessageReceiptRow> get messageReceiptsCollection =>
+      LocalCollection._(SyncCollectionKey.messageReceipts, messageReceipts);
 
   /// **La seule collection `private` de ce registre.** Elle se remplit comme
   /// les dix autres — par le flux delta, jamais par l'application — et rien

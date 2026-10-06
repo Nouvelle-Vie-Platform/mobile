@@ -68,12 +68,14 @@ class MessagingLink with WidgetsBindingObserver {
     required MessagingChannel channel,
     required Future<bool> Function(MessagingRowEvent event) apply,
     required Future<void> Function() resynchronize,
+    void Function(MessagingEvent event)? onSignal,
     Duration retryDelay = kMessagingRetryDelay,
     Duration silenceLimit = kMessagingSilenceLimit,
     WidgetsBinding? binding,
   })  : _channel = channel,
         _apply = apply,
         _resynchronize = resynchronize,
+        _onSignal = onSignal,
         _retryDelay = retryDelay,
         _silenceLimit = silenceLimit,
         _binding = binding;
@@ -89,6 +91,12 @@ class MessagingLink with WidgetsBindingObserver {
 
   /// **Demande un cycle de synchronisation.** Injecté, comme partout.
   final Future<void> Function() _resynchronize;
+
+  /// **Les signaux éphémères** (#142, M3) — frappe et présence : rien n'est
+  /// rangé, ils sont remis tels quels (à l'état en mémoire de l'écran). Les
+  /// lignes aussi lui sont remises **après** leur rangement, pour qu'un
+  /// message reçu éteigne le « écrit… » de son auteur. Absent : ignorés.
+  final void Function(MessagingEvent event)? _onSignal;
 
   final Duration _retryDelay;
   final Duration _silenceLimit;
@@ -186,12 +194,25 @@ class MessagingLink with WidgetsBindingObserver {
         break;
       case final MessagingRowEvent row:
         _queue = _queue.then((_) => _store(row));
+      case MessagingTypingEvent() || MessagingPresenceEvent():
+        _signal(event);
+    }
+  }
+
+  void _signal(MessagingEvent event) {
+    try {
+      _onSignal?.call(event);
+    } catch (error) {
+      // Un signal éphémère qu'on n'a pas su remettre ne se rattrape pas, et ne
+      // vaut pas un cycle : le suivant le remplacera.
+      lastFailure = error;
     }
   }
 
   Future<void> _store(MessagingRowEvent event) async {
     try {
       final known = await _apply(event);
+      _signal(event);
       if (!known) _cycle();
     } catch (error) {
       // Une ligne qu'on n'a pas su ranger (mal formée, base occupée) n'est pas
