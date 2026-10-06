@@ -7,6 +7,8 @@
 /// de prouver qu'elle traverse `sync_rows.dart`. Puis `MediaPagesDao` les relit.
 library;
 
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/core/network/api_client.dart';
@@ -362,19 +364,23 @@ void main() {
       await put('media_pages', [
         pagePayload(1, label: {'fr': 'Tout'})
       ]);
-      final seen = <List<int>>[];
-      final sub = db.mediaPagesDao
-          .watchLayout('fr')
-          .map((l) => [for (final s in l.pages.single.sections) s.id])
-          .listen(seen.add);
-      await pumpEventQueue();
+      // Déterministe : on n'écrit qu'après la première émission, puis on
+      // attend la suivante — aucun pari sur le nombre de tours de boucle.
+      final firstSeen = Completer<void>();
+      final emissions = expectLater(
+        db.mediaPagesDao.watchLayout('fr').map((l) {
+          if (!firstSeen.isCompleted) firstSeen.complete();
+          return [for (final s in l.pages.single.sections) s.id];
+        }),
+        emitsInOrder([
+          isEmpty,
+          emitsThrough(equals([7]))
+        ]),
+      );
+      await firstSeen.future;
 
       await put('media_page_sections', [sectionPayload(7, 1)]);
-      await pumpEventQueue();
-      await sub.cancel();
-
-      expect(seen.first, isEmpty);
-      expect(seen.last, [7]);
+      await emissions;
     });
 
     test('un magasin vide : aucune page', () async {
