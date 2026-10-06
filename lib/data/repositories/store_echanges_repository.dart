@@ -157,6 +157,29 @@ class StoreEchangesRepository implements EchangesRepository {
   Future<int> unreadCount(String groupId) =>
       _dao.unreadCountOf(groupId, userId);
 
+  @override
+  Stream<List<ReactorView>> reactors(String messageId) {
+    return _dao.reactorsOf(messageId).watch().map(
+          (rows) => [
+            for (final row in rows)
+              ReactorView(
+                emoji: row.emoji,
+                userId: row.userId,
+                displayName: row.displayName,
+                mine: row.userId == userId,
+              ),
+          ],
+        );
+  }
+
+  @override
+  Future<int?> newerThan(String groupId, String messageId) =>
+      _dao.newerThan(groupId, messageId);
+
+  @override
+  Future<String?> oldestMessageId(String groupId) =>
+      _dao.oldestMessageIdOf(groupId);
+
   ConversationView _conversation(ConversationRecord row) {
     return ConversationView(
       groupId: row.groupId,
@@ -180,6 +203,7 @@ class StoreEchangesRepository implements EchangesRepository {
       archived: row.isArchived,
       pinnedAt: row.pinnedAt,
       isMuted: row.isMutedAt(DateTime.now()),
+      lastMessageDeleted: row.lastDeleted,
     );
   }
 
@@ -219,6 +243,31 @@ class StoreEchangesRepository implements EchangesRepository {
           origin == MessageOrigin.member ? row.authorAvatarUrl : null,
       createdAt: row.createdAt,
       unread: row.isUnread,
+      // ── M2 (#141) ── un message supprimé ne garde que ce fait.
+      deleted: row.deletedAt != null,
+      edited: row.deletedAt == null && row.editedAt != null,
+      forwarded: row.deletedAt == null && row.isForwarded,
+      quote: row.deletedAt != null || row.replyToMessageId == null
+          ? null
+          : MessageQuoteView(
+              messageId: row.replyToMessageId!,
+              authorId: row.replyToAuthorId,
+              authorName: row.replyToAuthorName,
+              excerpt: row.replyToExcerpt,
+              mediaKind: row.replyToMediaKind,
+              deleted: row.replyToDeleted,
+              mine:
+                  row.replyToAuthorId != null && row.replyToAuthorId == userId,
+            ),
+      reactions: row.deletedAt != null
+          ? const []
+          : aggregateReactions(row.reactions, me: userId),
+      myReaction: row.deletedAt != null
+          ? null
+          : row.reactions
+              .where((r) => r.userId == userId)
+              .map((r) => r.emoji)
+              .firstOrNull,
     );
   }
 

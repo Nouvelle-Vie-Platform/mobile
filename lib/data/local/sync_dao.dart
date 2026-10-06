@@ -254,6 +254,16 @@ abstract final class SyncCollectionKey {
   ///
   /// **Sans tombstone**, rangée par `groupId`. Réactiver voyage comme une ligne.
   static const String groupMutes = 'group_mutes';
+
+  /// **Les réactions emoji** aux messages de mes groupes (tranche M2, #141).
+  /// `partition: 'branch'`, périmètre réel = l'appartenance, **avec** tombstone
+  /// (une réaction retirée quitte le magasin). Rangée **après**
+  /// [groupMessages] : une réaction désigne un message.
+  static const String groupMessageReactions = 'group_message_reactions';
+
+  /// **Mes « supprimé pour moi »** (tranche M2, #141). `partition: 'private'`,
+  /// sans tombstone, rangée par `messageId`.
+  static const String groupMessageHides = 'group_message_hides';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -321,6 +331,8 @@ const String _kSyncStampColumn = 'sync_stamp';
     GroupArrangements,
     MessageReceipts,
     GroupMutes,
+    GroupMessageReactions,
+    GroupMessageHides,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -494,6 +506,17 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// **Avec tombstone** : une requête supprimée côté serveur quitte le magasin.
   LocalCollection<MyInteractionRow> get myInteractionsCollection =>
       LocalCollection._(SyncCollectionKey.myInteractions, myInteractions);
+
+  /// **Avec tombstone** (M2, #141) : une réaction retirée quitte le magasin.
+  LocalCollection<GroupMessageReactionRow>
+      get groupMessageReactionsCollection => LocalCollection._(
+            SyncCollectionKey.groupMessageReactions,
+            groupMessageReactions,
+          );
+
+  /// **Sans tombstone**, rangée par `messageId` (M2, #141).
+  LocalCollection<GroupMessageHideRow> get groupMessageHidesCollection =>
+      LocalCollection._(SyncCollectionKey.groupMessageHides, groupMessageHides);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Application d'une page

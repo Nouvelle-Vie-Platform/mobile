@@ -107,6 +107,12 @@ class GroupMessageView {
     this.authorAvatarUrl,
     this.createdAt,
     this.unread = false,
+    this.deleted = false,
+    this.edited = false,
+    this.forwarded = false,
+    this.quote,
+    this.reactions = const [],
+    this.myReaction,
   });
 
   /// L'UUIDv7 serveur pour un message confirmé, le `clientMessageId` pour un écho
@@ -159,6 +165,129 @@ class GroupMessageView {
   /// Un message **confirmé par le serveur** — qui a donc une identité serveur,
   /// et peut servir de position de lecture. Un écho n'en a pas.
   bool get isConfirmed => delivery == MessageDelivery.sent;
+
+  // ── Tranche M2 (#141) ──
+
+  /// **Supprimé pour tous** : la bulle dit « Ce message a été supprimé », sans
+  /// rien d'autre — ni texte, ni citation, ni réaction, ni geste sauf
+  /// « supprimer pour moi ».
+  final bool deleted;
+
+  /// Modifié par l'auteur : « Modifié » près de l'heure.
+  final bool edited;
+
+  /// Une copie transférée : « Transféré » en tête de bulle.
+  final bool forwarded;
+
+  /// La citation, quand ce message répond à un autre.
+  final MessageQuoteView? quote;
+
+  /// L'agrégat des réactions, le plus partagé d'abord.
+  final List<MessageReactionView> reactions;
+
+  /// **Ma** réaction, s'il y en a une — c'est elle que le jeu rapide surligne,
+  /// et la retoucher la retire.
+  final String? myReaction;
+}
+
+/// **La citation d'une réponse** (M2, #141) — de quoi la peindre sans le
+/// message d'origine : son auteur, un extrait, la forme d'un média, ou le fait
+/// qu'il a été supprimé.
+@immutable
+class MessageQuoteView {
+  const MessageQuoteView({
+    required this.messageId,
+    this.authorId,
+    this.authorName,
+    this.excerpt,
+    this.mediaKind,
+    this.deleted = false,
+    this.mine = false,
+  });
+
+  /// Le message cité — c'est vers lui que défile le fil quand on touche la
+  /// citation.
+  final String messageId;
+
+  final String? authorId;
+
+  /// `null` tant que `profiles` ne l'a pas livré, ou pour un auteur retiré.
+  final String? authorName;
+
+  /// L'extrait. `null` pour un média sans légende, ou une origine supprimée.
+  final String? excerpt;
+
+  /// `audio`, `image`… brut : la vue le traduit, une forme inconnue se dit
+  /// « Média ».
+  final String? mediaKind;
+
+  /// L'origine a été supprimée pour tous : « Message supprimé ».
+  final bool deleted;
+
+  /// L'auteur cité, c'est moi : « Vous ».
+  final bool mine;
+}
+
+/// **Un emoji de l'agrégat** sous une bulle (M2, #141) : combien l'ont posé, et
+/// si j'en suis.
+@immutable
+class MessageReactionView {
+  const MessageReactionView({
+    required this.emoji,
+    required this.count,
+    this.mine = false,
+  });
+
+  final String emoji;
+  final int count;
+  final bool mine;
+}
+
+/// **Une personne qui a réagi** — la feuille ouverte en touchant l'agrégat.
+@immutable
+class ReactorView {
+  const ReactorView({
+    required this.emoji,
+    required this.userId,
+    this.displayName,
+    this.mine = false,
+  });
+
+  final String emoji;
+  final String userId;
+
+  /// `null` tant que `profiles` ne l'a pas livré — jamais « Utilisateur
+  /// inconnu ».
+  final String? displayName;
+  final bool mine;
+}
+
+/// **L'agrégat des réactions** d'un message (M2, #141) : un emoji par entrée,
+/// le plus partagé d'abord, puis dans l'ordre d'arrivée. Écrit **une fois** —
+/// le magasin et le double en mémoire le partagent.
+List<MessageReactionView> aggregateReactions(
+  Iterable<({String emoji, String userId})> reactions, {
+  required String? me,
+}) {
+  final counts = <String, int>{};
+  final mine = <String>{};
+  for (final reaction in reactions) {
+    counts.update(reaction.emoji, (n) => n + 1, ifAbsent: () => 1);
+    if (me != null && reaction.userId == me) mine.add(reaction.emoji);
+  }
+  final order = counts.keys.toList();
+  final emojis = [...order]..sort((a, b) {
+      final byCount = counts[b]!.compareTo(counts[a]!);
+      return byCount != 0 ? byCount : order.indexOf(a) - order.indexOf(b);
+    });
+  return [
+    for (final emoji in emojis)
+      MessageReactionView(
+        emoji: emoji,
+        count: counts[emoji]!,
+        mine: mine.contains(emoji),
+      ),
+  ];
 }
 
 /// Une conversation de la liste à plat du hub — groupe ou tête-à-tête.
@@ -177,6 +306,7 @@ class ConversationView {
     this.archived = false,
     this.pinnedAt,
     this.isMuted = false,
+    this.lastMessageDeleted = false,
   });
 
   final String groupId;
@@ -235,6 +365,10 @@ class ConversationView {
   /// porte alors un haut-parleur barré. Une sourdine bornée échue n'en est plus
   /// une — elle disparaît à la prochaine émission du magasin.
   final bool isMuted;
+
+  /// Le dernier message a été **supprimé pour tous** (M2, #141) : la tuile dit
+  /// « Ce message a été supprimé », jamais un vide.
+  final bool lastMessageDeleted;
 }
 
 /// **Le badge global** de l'onglet Échanges (#140) : la somme des non-lus de

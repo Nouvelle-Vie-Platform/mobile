@@ -2327,8 +2327,9 @@ const Map<String, Object?> attachedAuthorMessagePayload = {
 
 /// **Un message supprimé par modération** — le tombstone du fil.
 ///
-/// La ligne part **entière**, `deletedAt` en plus : `readsAsRetraction` tranche
-/// avant toute désérialisation, et la ligne quitte le magasin.
+/// La ligne part **entière**, `deletedAt` en plus — c'est la forme d'un serveur
+/// antérieur à M2. Depuis M2 (#141), le magasin **garde** le tombstone (le fil
+/// peint « Ce message a été supprimé ») mais jamais son texte.
 const Map<String, Object?> deletedMessagePayload = {
   'id': '019a3000-0000-7000-8000-00000000msg1',
   'groupId': kGroupId,

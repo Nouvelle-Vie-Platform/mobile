@@ -33,6 +33,7 @@ class _ScriptedSender implements GroupMessageSender {
     required String body,
     required String clientMessageId,
     required DateTime clientCreatedAt,
+    String? replyToMessageId,
   }) async {
     posted.add(clientMessageId);
     final refusal = refusesWith;
@@ -320,6 +321,7 @@ class _SlowSender implements GroupMessageSender {
     required String body,
     required String clientMessageId,
     required DateTime clientCreatedAt,
+    String? replyToMessageId,
   }) {
     posted.add(clientMessageId);
     final pending = Completer<bool>();
