@@ -929,6 +929,60 @@ void main() {
     expect(await db.syncDao.cursorFor('my_interactions'), isNull);
   });
 
+  test('v21 → v22 : le rangement et son outbox apparaissent', () async {
+    // Le palier d'**archiver, épingler** (#146) : deux créations de table, et
+    // rien d'autre.
+    final connection = await verifier.startAt(21);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 22);
+  });
+
+  test('v1 → v22 : un appareil resté en v1 rejoue tous les paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 22);
+  });
+
+  test('v21 → v22 : le fil et la lecture survivent, le rangement naît vide',
+      () async {
+    // Ce que le palier ne doit pas toucher : le reste du magasin, curseurs
+    // compris. Les deux tables neuves naissent vides, et `group_arrangements`
+    // sans curseur — le prochain manifeste l'annoncera `from_zero`, et le
+    // premier cycle ramènera les rangements faits sur un autre appareil.
+    final schema = await verifier.schemaAt(21);
+    schema.rawDatabase.execute(
+      "INSERT INTO group_messages (id, group_id, author_id, is_system, body, "
+      "created_at, sync_stamp) VALUES ('m-1', 'g-1', 'u-1', 0, 'Amen', "
+      "1700000000, 7)",
+    );
+    schema.rawDatabase.execute(
+      "INSERT INTO group_reads (group_id, last_read_message_id, last_read_at, "
+      "sync_stamp) VALUES ('g-1', 'm-1', 1700000000, 8)",
+    );
+    schema.rawDatabase.execute(
+      "INSERT INTO sync_cursors (collection, cursor, synced_at) "
+      "VALUES ('group_messages', 'un-curseur-opaque', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 22);
+
+    expect((await db.select(db.groupMessages).get()).single.body, 'Amen');
+    expect(
+      (await db.select(db.groupReads).get()).single.lastReadMessageId,
+      'm-1',
+    );
+    expect(await db.syncDao.cursorFor('group_messages'), 'un-curseur-opaque');
+    expect(await db.select(db.groupArrangements).get(), isEmpty);
+    expect(await db.select(db.pendingGroupArrangements).get(), isEmpty);
+    expect(await db.syncDao.cursorFor('group_arrangements'), isNull);
+  });
+
   test('la version de schéma couvre bien toutes les versions exportées', () {
     final db = openTestDatabase();
     addTearDown(db.close);

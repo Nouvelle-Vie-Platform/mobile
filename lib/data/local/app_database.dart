@@ -237,11 +237,9 @@ class AppDatabase extends _$AppDatabase {
   /// Requêtes montre son état vide, ce que l'écran affichait déjà (il ne lisait
   /// rien).
   ///
-  /// **v22** (PROVISOIRE — tranche M8, #146 ; le coordinateur renumérote dans
-  /// l'ordre des fusions) — **archiver, épingler** : `group_arrangements`, une
+  /// **v22** (#146) — **archiver, épingler** : `group_arrangements`, une
   /// collection répliquée **privée** de plus, et `pending_group_arrangements`,
-  /// son outbox locale. Deux créations de table, et rien d'autre. Voir
-  /// [_migrateM8ToV22].
+  /// son outbox locale. Deux créations de table, et rien d'autre.
   @override
   int get schemaVersion => 22;
 
@@ -722,9 +720,25 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(myInteractions);
           }
 
-          // v21 → v22 (PROVISOIRE, M8) — voir [_migrateM8ToV22].
+          // v21 → v22 — **archiver, épingler** (#146). Deux créations de table,
+          // et rien d'autre : aucune colonne existante ne bouge, aucune ligne
+          // n'est réécrite.
+          //
+          // - `group_arrangements` naît vide, son curseur n'existe pas : le
+          //   prochain manifeste l'annoncera `from_zero` et le premier cycle
+          //   ramènera les rangements faits sur un autre appareil. Sur un
+          //   serveur en retard d'une version, la collection prend un `404` et
+          //   se saute — aucune discussion n'est alors archivée ni épinglée, ce
+          //   qui est l'état d'avant.
+          // - `pending_group_arrangements` naît vide et le reste jusqu'au
+          //   premier geste.
+          //
+          // Pas de garde `to >= 22` pour la raison des paliers qui ne créent que
+          // des tables : le vérificateur de schéma **ignore une table
+          // surnuméraire**.
           if (from < 22) {
-            await _migrateM8ToV22(m);
+            await m.createTable(groupArrangements);
+            await m.createTable(pendingGroupArrangements);
           }
         },
         beforeOpen: (details) async {
@@ -769,25 +783,6 @@ class AppDatabase extends _$AppDatabase {
       }
       await _ensureGlobalStateRow();
     });
-  }
-
-  /// **v21 → v22 (PROVISOIRE, tranche M8, #146)** — archiver, épingler une
-  /// discussion. Deux créations de table, et rien d'autre : aucune colonne
-  /// existante ne bouge, aucune ligne n'est réécrite.
-  ///
-  /// - `group_arrangements` naît vide, son curseur n'existe pas : le prochain
-  ///   manifeste l'annoncera `from_zero` et le premier cycle ramènera les
-  ///   rangements faits sur un autre appareil. Sur un serveur en retard d'une
-  ///   version, la collection prend un `404` et se saute — aucune discussion
-  ///   n'est alors archivée ni épinglée, ce qui est l'état d'avant.
-  /// - `pending_group_arrangements` naît vide et le reste jusqu'au premier
-  ///   geste.
-  ///
-  /// Pas de garde `to >= 22` pour la raison des paliers qui ne créent que des
-  /// tables : le vérificateur de schéma **ignore une table surnuméraire**.
-  Future<void> _migrateM8ToV22(Migrator m) async {
-    await m.createTable(groupArrangements);
-    await m.createTable(pendingGroupArrangements);
   }
 
   Future<void> _ensureGlobalStateRow() async {
