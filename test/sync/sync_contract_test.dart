@@ -14,7 +14,7 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les trente-quatre collections du registre, dans l\'ordre', () {
+    test('les trente-six collections du registre, dans l\'ordre', () {
       // **Ce nombre avait menti.** Il disait dix-neuf quand le registre serveur
       // en comptait vingt-cinq, et le test passait au vert en gardant un contrat
       // périmé — `seasons`, `decor`, `teaching_guests`, `group_members`,
@@ -33,8 +33,10 @@ void main() {
       // Puis en #148, où `my_interactions` devient la trente et unième ; puis
       // en #146 (M8), où `group_arrangements` devient la trente-deuxième ; puis
       // en #142 (M3), où `message_receipts` devient la trente-troisième ; puis
-      // en M5 (#144), où `group_mutes` devient la trente-quatrième.
-      expect(kSyncCollections, hasLength(34));
+      // en M5 (#144), où `group_mutes` devient la trente-quatrième ; puis en
+      // M2 (#141), où `group_message_reactions` et `group_message_hides`
+      // deviennent la trente-cinquième et la trente-sixième.
+      expect(kSyncCollections, hasLength(36));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
@@ -172,8 +174,9 @@ void main() {
       // #82, fusionnée depuis. `group_reads` (serveur M1a, mobile #140) porte
       // le compte à **trente**, `my_interactions` (#148) à trente et un,
       // `group_arrangements` (#146) à trente-deux, `message_receipts` (#142) à
-      // trente-trois, `group_mutes` (M5) à trente-quatre. La carte est donc
-      // **complète**, et c'est ce que `hasLength(34)` plus haut affirme.
+      // trente-trois, `group_mutes` (M5) à trente-quatre, les réactions et
+      // masquages de M2 (#141) à trente-six. La carte est donc **complète**, et
+      // c'est ce que `hasLength(36)` plus haut affirme.
       for (final key in const [
         'profiles',
         'groups',

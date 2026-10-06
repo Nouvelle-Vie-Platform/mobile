@@ -1,7 +1,6 @@
-// Palier **M2** du magasin (#141) — ⚠️ PROVISOIRE : `AppDatabase.kM2SchemaVersion`
-// (22 aujourd'hui) sera renuméroté à la fusion des tranches parallèles, et ce
-// fichier avec lui. Il exige `test/data/local/schema/schema_v22.dart`, produit
-// par `make gen && make migrations`.
+// Palier **M2** du magasin (#141) : `AppDatabase.kM2SchemaVersion` = v25, après
+// M8 (v22), M3 (v23) et M5 (v24). Il exige `test/data/local/schema/schema_v25.dart`,
+// produit par `make gen && make migrations`.
 
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,7 +17,7 @@ void main() {
 
   const v = AppDatabase.kM2SchemaVersion;
 
-  test('v21 → v22 : les gestes sur un message', () async {
+  test('v24 → v25 : les gestes sur un message', () async {
     final connection = await verifier.startAt(v - 1);
     final db = AppDatabase(connection);
     addTearDown(db.close);
@@ -26,7 +25,7 @@ void main() {
     await verifier.migrateAndValidate(db, v);
   });
 
-  test('v1 → v22 : un appareil resté en v1 rejoue tous les paliers', () async {
+  test('v1 → v25 : un appareil resté en v1 rejoue tous les paliers', () async {
     final connection = await verifier.startAt(1);
     final db = AppDatabase(connection);
     addTearDown(db.close);
@@ -34,7 +33,7 @@ void main() {
     await verifier.migrateAndValidate(db, v);
   });
 
-  test('v18 → v22 : la recréation de v20 produit déjà la forme M2', () async {
+  test('v18 → v25 : la recréation de v20 produit déjà la forme M2', () async {
     final connection = await verifier.startAt(18);
     final db = AppDatabase(connection);
     addTearDown(db.close);
@@ -43,7 +42,7 @@ void main() {
   });
 
   test(
-      'v21 → v22 : le fil et l\'écho en attente survivent, les colonnes neuves '
+      'v24 → v25 : le fil et l\'écho en attente survivent, les colonnes neuves '
       'prennent leur défaut, les deux collections naissent vides', () async {
     final schema = await verifier.schemaAt(v - 1);
     schema.rawDatabase.execute(

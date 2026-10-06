@@ -856,10 +856,14 @@ void main() {
     addTearDown(db.close);
     await verifier.migrateAndValidate(db, 20);
 
-    final kept = (await db.select(db.groupMessages).get()).single;
-    expect(kept.body, 'Amen');
-    expect(kept.authorId, 'u-1');
-    expect(kept.syncStamp, 7, reason: 'le jeton d\'écriture est recopié');
+    // En SQL brut : la v20 n'a pas les colonnes de M2 (voir [_onlyMessageBody]).
+    final kept = await db
+        .customSelect('SELECT body, author_id, sync_stamp FROM group_messages')
+        .getSingle();
+    expect(kept.read<String?>('body'), 'Amen');
+    expect(kept.read<String?>('author_id'), 'u-1');
+    expect(kept.read<int>('sync_stamp'), 7,
+        reason: 'le jeton d\'écriture est recopié');
     expect(
       (await db.select(db.pendingGroupMessages).get()).single.failed,
       isTrue,
@@ -874,10 +878,10 @@ void main() {
     await db.into(db.groupMessages).insert(
           GroupMessagesCompanion.insert(id: 'm-2', groupId: 'g-1'),
         );
-    final voice = await (db.select(db.groupMessages)
-          ..where((m) => m.id.equals('m-2')))
+    final voice = await db
+        .customSelect("SELECT body FROM group_messages WHERE id = 'm-2'")
         .getSingle();
-    expect(voice.body, isNull);
+    expect(voice.read<String?>('body'), isNull);
 
     // Les deux tables neuves naissent vides, sans curseur.
     expect(await db.select(db.groupReads).get(), isEmpty);
@@ -923,7 +927,7 @@ void main() {
     addTearDown(db.close);
     await verifier.migrateAndValidate(db, 21);
 
-    expect((await db.select(db.groupMessages).get()).single.body, 'Amen');
+    expect(await _onlyMessageBody(db), 'Amen');
     expect(await db.syncDao.cursorFor('group_messages'), 'un-curseur-opaque');
     expect(await db.select(db.myInteractions).get(), isEmpty);
     expect(await db.syncDao.cursorFor('my_interactions'), isNull);
@@ -972,7 +976,7 @@ void main() {
     addTearDown(db.close);
     await verifier.migrateAndValidate(db, 22);
 
-    expect((await db.select(db.groupMessages).get()).single.body, 'Amen');
+    expect(await _onlyMessageBody(db), 'Amen');
     expect(
       (await db.select(db.groupReads).get()).single.lastReadMessageId,
       'm-1',
@@ -1008,3 +1012,10 @@ void main() {
     expect(await db.select(db.branches).get(), hasLength(1));
   });
 }
+
+/// Le corps de l'unique message du fil, lu **en SQL brut** : une migration de
+/// test vers une version antérieure à M2 (#141) laisse `group_messages` sans les
+/// colonnes de M2, que la lecture typée exige (`is_forwarded` non nul).
+Future<String?> _onlyMessageBody(AppDatabase db) async =>
+    (await db.customSelect('SELECT body FROM group_messages').getSingle())
+        .read<String?>('body');

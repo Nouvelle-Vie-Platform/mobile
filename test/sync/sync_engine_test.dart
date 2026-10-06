@@ -187,13 +187,13 @@ void main() {
           // tiré avant elle sonnerait pour une discussion tue ailleurs.
           'group_mutes',
           'group_messages',
-          // L'accusé de mes messages (#142, M3), **après** le fil : une coche
-          // n'a de sens que sur un message déjà là.
-          'message_receipts',
           // Les gestes sur un message (M2, #141) : après le fil qu'ils
           // désignent — les réactions, puis mes « supprimé pour moi ».
           'group_message_reactions',
           'group_message_hides',
+          // L'accusé de mes messages (#142, M3), **après** le fil : une coche
+          // n'a de sens que sur un message déjà là.
+          'message_receipts',
         ],
         reason: 'ça ne supprime pas la fenêtre où un enseignement arrive sans '
             'son intervenant — la jointure de lecture reste tolérante pour '

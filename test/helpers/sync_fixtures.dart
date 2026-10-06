@@ -236,6 +236,8 @@ const Map<String, String> kSyncCollections = {
   // Mon rangement (#146, M8) : privé — archiver une discussion ne se voit que
   // chez moi.
   'group_arrangements': 'private',
+  // Mes « supprimé pour moi » (serveur et mobile M2, #141) : privée.
+  'group_message_hides': 'private',
   // Ma sourdine (serveur et mobile M5, #144) : privée, pour la raison de la
   // lecture — une préférence ne voyage que chez moi.
   'group_mutes': 'private',
@@ -257,6 +259,9 @@ const Map<String, String> kSyncCollections = {
   // **L'accusé de chacun de mes messages** (serveur M3, mobile #142) : privée
   // — servie à l'auteur seul —, rangée en fin de registre côté serveur.
   'message_receipts': 'private',
+  // **Les réactions emoji** (serveur et mobile M2, #141) : cloisonnées par
+  // appartenance comme le fil, rangées après lui côté serveur.
+  'group_message_reactions': 'branch',
 };
 
 /// Clé de collection **inconnue du registre** : le mobile pourrait la demander

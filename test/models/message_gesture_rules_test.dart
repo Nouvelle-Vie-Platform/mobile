@@ -45,6 +45,8 @@ void main() {
       MessageAction.copy,
       MessageAction.forward,
       MessageAction.edit,
+      // « Infos du message » (M3, #142) : sur mes messages.
+      MessageAction.info,
       MessageAction.deleteForMe,
       MessageAction.deleteForEveryone,
     });
