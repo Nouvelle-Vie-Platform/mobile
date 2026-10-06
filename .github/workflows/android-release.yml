@@ -155,24 +155,61 @@ jobs:
       # résumé du run affiche, pour le comparer d'un tag à l'autre.
       - name: Nommer les APK et lire leur certificat
         id: apk
+        env:
+          STABLE: ${{ steps.signing.outputs.stable }}
+          EXPECTED: ${{ vars.EXPECTED_CERT_SHA256 }}
         run: |
-          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          set -o pipefail
+          # `apksigner` : celui du PATH, sinon le plus récent du SDK qui existe
+          # vraiment (#163 — l'ancienne recherche prenait le dernier dossier de
+          # build-tools sans vérifier qu'il contenait l'outil, et un échec passait
+          # en silence derrière le `sed`).
+          apksigner=$(command -v apksigner || true)
+          if [ -z "$apksigner" ]; then
+            apksigner=$(find "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/nonexistent}}/build-tools" \
+              -maxdepth 2 -name apksigner -type f 2>/dev/null | sort -V | tail -1 || true)
+          fi
+          [ -n "$apksigner" ] || { echo "::error title=Certificat::apksigner introuvable (ANDROID_HOME=${ANDROID_HOME:-vide})."; exit 1; }
+          echo "apksigner : ${apksigner}"
           files=""
           certs=""
           for abi in arm64-v8a armeabi-v7a; do
             file="nouvelle-vie-${{ steps.version.outputs.name }}-${abi}.apk"
             mv "build/app/outputs/flutter-apk/app-${abi}-release.apk" "$file"
-            cert=$("$apksigner" verify --print-certs "$file" \
-              | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+            if ! out=$("$apksigner" verify --print-certs "$file" 2>&1); then
+              echo "$out"
+              echo "::error title=Certificat::apksigner refuse ${file}."
+              exit 1
+            fi
+            # « Signer #1 certificate SHA-256 digest: … », ou « Signer (minSdkVersion=…)
+            # certificate SHA-256 digest: … » selon la version d'apksigner.
+            cert=$(printf '%s\n' "$out" \
+              | sed -n 's/^Signer[^:]*certificate SHA-256 digest: *//p' | head -1)
+            if [ -z "$cert" ]; then
+              echo "$out"
+              echo "::error title=Certificat::certificat illisible pour ${file} : un certificat vide n'est jamais une égalité."
+              exit 1
+            fi
             echo "${file} : $(du -h "$file" | cut -f1), certificat SHA-256 ${cert}"
             files="${files} ${file}"
-            certs="${certs}${cert}\n"
+            certs="${certs}${cert}"$'\n'
           done
-          if [ "$(printf "$certs" | sort -u | wc -l)" -ne 1 ]; then
-            echo "::error::Les deux APK ne portent pas le même certificat."
+          if [ "$(printf '%s' "$certs" | sort -u | wc -l)" -ne 1 ]; then
+            echo "::error title=Certificat::les deux APK ne portent pas le même certificat."
             exit 1
           fi
-          cert=$(printf "$certs" | head -1)
+          cert=$(printf '%s' "$certs" | head -1)
+          # Quand la clé fixe a servi, le certificat doit être CELUI attendu
+          # (variable du dépôt EXPECTED_CERT_SHA256, documentée dans
+          # context/docs/SIGNATURE-ANDROID.md) : une autre clé posée par erreur
+          # produirait des APK qui ne s'installent pas par-dessus.
+          if [ "$STABLE" = "true" ] && [ -n "$EXPECTED" ] && [ "$cert" != "$EXPECTED" ]; then
+            echo "::error title=Certificat::certificat ${cert}, attendu ${EXPECTED} : ce n'est pas la clé de l'application."
+            exit 1
+          fi
+          if [ "$STABLE" = "true" ] && [ -z "$EXPECTED" ]; then
+            echo "::warning title=Certificat::variable EXPECTED_CERT_SHA256 absente : le certificat n'est pas comparé à celui attendu."
+          fi
           echo "files=${files# }" >> "$GITHUB_OUTPUT"
           echo "cert=${cert}" >> "$GITHUB_OUTPUT"
           echo "Certificat de signature (SHA-256) : \`${cert}\`" >> "$GITHUB_STEP_SUMMARY"
