@@ -28,6 +28,10 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
   $PresentationVocabularyTable get presentationVocabulary =>
       attachedDatabase.presentationVocabulary;
   $MenuEntriesTable get menuEntries => attachedDatabase.menuEntries;
+  $MediaPagesTable get mediaPages => attachedDatabase.mediaPages;
+  $MediaPageChipsTable get mediaPageChips => attachedDatabase.mediaPageChips;
+  $MediaPageSectionsTable get mediaPageSections =>
+      attachedDatabase.mediaPageSections;
   $DecorTable get decor => attachedDatabase.decor;
   $AuthChannelsTable get authChannels => attachedDatabase.authChannels;
   $DeviceSettingsTable get deviceSettings => attachedDatabase.deviceSettings;
@@ -100,6 +104,14 @@ class SyncDaoManager {
           _db.attachedDatabase, _db.presentationVocabulary);
   $$MenuEntriesTableTableManager get menuEntries =>
       $$MenuEntriesTableTableManager(_db.attachedDatabase, _db.menuEntries);
+  $$MediaPagesTableTableManager get mediaPages =>
+      $$MediaPagesTableTableManager(_db.attachedDatabase, _db.mediaPages);
+  $$MediaPageChipsTableTableManager get mediaPageChips =>
+      $$MediaPageChipsTableTableManager(
+          _db.attachedDatabase, _db.mediaPageChips);
+  $$MediaPageSectionsTableTableManager get mediaPageSections =>
+      $$MediaPageSectionsTableTableManager(
+          _db.attachedDatabase, _db.mediaPageSections);
   $$DecorTableTableManager get decor =>
       $$DecorTableTableManager(_db.attachedDatabase, _db.decor);
   $$AuthChannelsTableTableManager get authChannels =>

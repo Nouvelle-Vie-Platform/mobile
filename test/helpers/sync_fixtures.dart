@@ -209,6 +209,11 @@ const Map<String, String> kSyncCollections = {
   // **aucun** onglet. `tombstoneColumn: null` — une entrée supprimée au portail
   // cesse simplement de paraître au flux.
   'menu_entries': 'reference',
+  // La médiathèque en pages (serveur #540, mobile #167) : juste après les
+  // menus, `servesAnonymous: true`, **avec** tombstone.
+  'media_pages': 'reference',
+  'media_page_chips': 'reference',
+  'media_page_sections': 'reference',
   'decor': 'reference',
   // Par quelles portes on entre (issue serveur #468, mobile #83) : rangée
   // **ici**, avec les référentiels, et avant les contenus — c'est la première

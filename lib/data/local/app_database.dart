@@ -25,11 +25,15 @@ import 'downloads_dao.dart';
 // Idem : le convertisseur des sections d'un document légal est instancié par le
 // code généré.
 import 'converters/legal_sections_converter.dart';
+// Idem : les identifiants choisis et classés d'une section de médiathèque
+// (`media_page_sections`, #167).
+import 'converters/string_list_converter.dart';
 import 'device_settings_dao.dart';
 import 'gathering_dao.dart';
 import 'group_dao.dart';
 import 'interaction_dao.dart';
 import 'legal_dao.dart';
+import 'media_pages_dao.dart';
 import 'mediatheque_dao.dart';
 import 'menu_dao.dart';
 import 'playback_dao.dart';
@@ -44,6 +48,7 @@ import 'tables/gathering_tables.dart';
 import 'tables/group_tables.dart';
 import 'tables/interaction_tables.dart';
 import 'tables/legal_tables.dart';
+import 'tables/media_page_tables.dart';
 import 'tables/mediatheque_tables.dart';
 import 'tables/playback_tables.dart';
 import 'tables/receipt_tables.dart';
@@ -100,6 +105,10 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     Seasons,
     PresentationVocabulary,
     MenuEntries,
+    // La médiathèque en pages (#167).
+    MediaPages,
+    MediaPageChips,
+    MediaPageSections,
     Decor,
     AuthChannels,
     DeviceSettings,
@@ -138,6 +147,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     SeasonDao,
     VocabularyDao,
     MenuDao,
+    MediaPagesDao,
     AuthChannelsDao,
     DeviceSettingsDao,
     GroupDao,
@@ -269,8 +279,13 @@ class AppDatabase extends _$AppDatabase {
   /// dix sur `pending_group_messages` (l'écho d'un média : fichier local, type,
   /// méta, clés montées, cause d'échec), et l'oubli du curseur de
   /// `group_messages`. Voir [_migrateM4ToV26] et [kM4SchemaVersion].
+  ///
+  /// **v27** (#167) — **la médiathèque en pages** : `media_pages`,
+  /// `media_page_chips`, `media_page_sections`, trois collections répliquées
+  /// de plus, trois créations de table et rien d'autre. Voir
+  /// [kMediaPagesSchemaVersion].
   @override
-  int get schemaVersion => kM4SchemaVersion;
+  int get schemaVersion => kMediaPagesSchemaVersion;
 
   /// **Le palier de la tranche M2** (#141) : v25, après M8 (v22), M3 (v23) et
   /// M5 (v24).
@@ -278,6 +293,11 @@ class AppDatabase extends _$AppDatabase {
 
   /// **Le palier de la tranche M4** (#143) : v26, après M2 (v25).
   static const int kM4SchemaVersion = 26;
+
+  /// **Le palier de la médiathèque en pages** (#167) : v27, après M4 (v26).
+  /// Sans rapport avec la tranche M4 de la messagerie, malgré le nom de
+  /// tranche que le plan médiathèque lui donne aussi.
+  static const int kMediaPagesSchemaVersion = 27;
 
   /// Les sept colonnes du média d'un message (M4), ajoutées ensemble au palier
   /// v26 — et retirées ensemble d'une table créée pour une version antérieure
@@ -876,6 +896,17 @@ class AppDatabase extends _$AppDatabase {
           // [_migrateM4ToV26].
           if (from < kM4SchemaVersion && to >= kM4SchemaVersion) {
             await _migrateM4ToV26(m, from);
+          }
+          // v26 → v27 — la médiathèque en pages (#167). Trois créations de
+          // table, et rien d'autre. Elles naissent **vides**, et vide veut dire
+          // « aucune page reçue » : l'écran montre alors le catalogue entier,
+          // comme avant. Leurs curseurs n'existent pas, le prochain manifeste
+          // les annoncera `from_zero`. Pas de garde `to >= 27` : le
+          // vérificateur ignore une table surnuméraire.
+          if (from < kMediaPagesSchemaVersion) {
+            await m.createTable(mediaPages);
+            await m.createTable(mediaPageChips);
+            await m.createTable(mediaPageSections);
           }
         },
         beforeOpen: (details) async {

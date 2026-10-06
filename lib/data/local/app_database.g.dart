@@ -11422,6 +11422,1958 @@ class MenuEntriesCompanion extends UpdateCompanion<MenuEntryRow> {
   }
 }
 
+class $MediaPagesTable extends MediaPages
+    with TableInfo<$MediaPagesTable, MediaPageRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MediaPagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _labelKeyMeta =
+      const VerificationMeta('labelKey');
+  @override
+  late final GeneratedColumn<String> labelKey = GeneratedColumn<String>(
+      'label_key', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      label = GeneratedColumn<String>('label', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<Map<String, String>?>(
+              $MediaPagesTable.$converterlabeln);
+  static const VerificationMeta _positionMeta =
+      const VerificationMeta('position');
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+      'position', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _destinationFamilyMeta =
+      const VerificationMeta('destinationFamily');
+  @override
+  late final GeneratedColumn<String> destinationFamily =
+      GeneratedColumn<String>('destination_family', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationRubricMeta =
+      const VerificationMeta('destinationRubric');
+  @override
+  late final GeneratedColumn<String> destinationRubric =
+      GeneratedColumn<String>('destination_rubric', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationBranchMeta =
+      const VerificationMeta('destinationBranch');
+  @override
+  late final GeneratedColumn<String> destinationBranch =
+      GeneratedColumn<String>('destination_branch', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationSearchMeta =
+      const VerificationMeta('destinationSearch');
+  @override
+  late final GeneratedColumn<String> destinationSearch =
+      GeneratedColumn<String>('destination_search', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        labelKey,
+        label,
+        position,
+        destinationFamily,
+        destinationRubric,
+        destinationBranch,
+        destinationSearch,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'media_pages';
+  @override
+  VerificationContext validateIntegrity(Insertable<MediaPageRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('label_key')) {
+      context.handle(_labelKeyMeta,
+          labelKey.isAcceptableOrUnknown(data['label_key']!, _labelKeyMeta));
+    }
+    if (data.containsKey('position')) {
+      context.handle(_positionMeta,
+          position.isAcceptableOrUnknown(data['position']!, _positionMeta));
+    }
+    if (data.containsKey('destination_family')) {
+      context.handle(
+          _destinationFamilyMeta,
+          destinationFamily.isAcceptableOrUnknown(
+              data['destination_family']!, _destinationFamilyMeta));
+    }
+    if (data.containsKey('destination_rubric')) {
+      context.handle(
+          _destinationRubricMeta,
+          destinationRubric.isAcceptableOrUnknown(
+              data['destination_rubric']!, _destinationRubricMeta));
+    }
+    if (data.containsKey('destination_branch')) {
+      context.handle(
+          _destinationBranchMeta,
+          destinationBranch.isAcceptableOrUnknown(
+              data['destination_branch']!, _destinationBranchMeta));
+    }
+    if (data.containsKey('destination_search')) {
+      context.handle(
+          _destinationSearchMeta,
+          destinationSearch.isAcceptableOrUnknown(
+              data['destination_search']!, _destinationSearchMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MediaPageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MediaPageRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      labelKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label_key']),
+      label: $MediaPagesTable.$converterlabeln.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label'])),
+      position: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position'])!,
+      destinationFamily: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_family']),
+      destinationRubric: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_rubric']),
+      destinationBranch: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_branch']),
+      destinationSearch: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_search']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $MediaPagesTable createAlias(String alias) {
+    return $MediaPagesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Map<String, String>, String> $converterlabel =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>?, String?> $converterlabeln =
+      NullAwareTypeConverter.wrap($converterlabel);
+}
+
+class MediaPageRow extends DataClass implements Insertable<MediaPageRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final int id;
+
+  /// La clé du dépôt (`public.nav.*` pour une page reprise d'une entrée de
+  /// menu), traduite par `l10n/menu_labels.dart`. Indissociable de [label].
+  final String? labelKey;
+
+  /// La surcharge, carte entière. `null` = le libellé porté par [labelKey].
+  final Map<String, String>? label;
+
+  /// Un ordre relatif, jamais un numéro stable.
+  final int position;
+
+  /// Le filtre de la page, composé avec la source de chacune de ses sections.
+  final String? destinationFamily;
+  final String? destinationRubric;
+  final String? destinationBranch;
+  final String? destinationSearch;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const MediaPageRow(
+      {required this.syncStamp,
+      required this.id,
+      this.labelKey,
+      this.label,
+      required this.position,
+      this.destinationFamily,
+      this.destinationRubric,
+      this.destinationBranch,
+      this.destinationSearch,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || labelKey != null) {
+      map['label_key'] = Variable<String>(labelKey);
+    }
+    if (!nullToAbsent || label != null) {
+      map['label'] =
+          Variable<String>($MediaPagesTable.$converterlabeln.toSql(label));
+    }
+    map['position'] = Variable<int>(position);
+    if (!nullToAbsent || destinationFamily != null) {
+      map['destination_family'] = Variable<String>(destinationFamily);
+    }
+    if (!nullToAbsent || destinationRubric != null) {
+      map['destination_rubric'] = Variable<String>(destinationRubric);
+    }
+    if (!nullToAbsent || destinationBranch != null) {
+      map['destination_branch'] = Variable<String>(destinationBranch);
+    }
+    if (!nullToAbsent || destinationSearch != null) {
+      map['destination_search'] = Variable<String>(destinationSearch);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  MediaPagesCompanion toCompanion(bool nullToAbsent) {
+    return MediaPagesCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      labelKey: labelKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(labelKey),
+      label:
+          label == null && nullToAbsent ? const Value.absent() : Value(label),
+      position: Value(position),
+      destinationFamily: destinationFamily == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationFamily),
+      destinationRubric: destinationRubric == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationRubric),
+      destinationBranch: destinationBranch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationBranch),
+      destinationSearch: destinationSearch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationSearch),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory MediaPageRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MediaPageRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      labelKey: serializer.fromJson<String?>(json['labelKey']),
+      label: serializer.fromJson<Map<String, String>?>(json['label']),
+      position: serializer.fromJson<int>(json['position']),
+      destinationFamily:
+          serializer.fromJson<String?>(json['destinationFamily']),
+      destinationRubric:
+          serializer.fromJson<String?>(json['destinationRubric']),
+      destinationBranch:
+          serializer.fromJson<String?>(json['destinationBranch']),
+      destinationSearch:
+          serializer.fromJson<String?>(json['destinationSearch']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'labelKey': serializer.toJson<String?>(labelKey),
+      'label': serializer.toJson<Map<String, String>?>(label),
+      'position': serializer.toJson<int>(position),
+      'destinationFamily': serializer.toJson<String?>(destinationFamily),
+      'destinationRubric': serializer.toJson<String?>(destinationRubric),
+      'destinationBranch': serializer.toJson<String?>(destinationBranch),
+      'destinationSearch': serializer.toJson<String?>(destinationSearch),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  MediaPageRow copyWith(
+          {int? syncStamp,
+          int? id,
+          Value<String?> labelKey = const Value.absent(),
+          Value<Map<String, String>?> label = const Value.absent(),
+          int? position,
+          Value<String?> destinationFamily = const Value.absent(),
+          Value<String?> destinationRubric = const Value.absent(),
+          Value<String?> destinationBranch = const Value.absent(),
+          Value<String?> destinationSearch = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      MediaPageRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        labelKey: labelKey.present ? labelKey.value : this.labelKey,
+        label: label.present ? label.value : this.label,
+        position: position ?? this.position,
+        destinationFamily: destinationFamily.present
+            ? destinationFamily.value
+            : this.destinationFamily,
+        destinationRubric: destinationRubric.present
+            ? destinationRubric.value
+            : this.destinationRubric,
+        destinationBranch: destinationBranch.present
+            ? destinationBranch.value
+            : this.destinationBranch,
+        destinationSearch: destinationSearch.present
+            ? destinationSearch.value
+            : this.destinationSearch,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  MediaPageRow copyWithCompanion(MediaPagesCompanion data) {
+    return MediaPageRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      labelKey: data.labelKey.present ? data.labelKey.value : this.labelKey,
+      label: data.label.present ? data.label.value : this.label,
+      position: data.position.present ? data.position.value : this.position,
+      destinationFamily: data.destinationFamily.present
+          ? data.destinationFamily.value
+          : this.destinationFamily,
+      destinationRubric: data.destinationRubric.present
+          ? data.destinationRubric.value
+          : this.destinationRubric,
+      destinationBranch: data.destinationBranch.present
+          ? data.destinationBranch.value
+          : this.destinationBranch,
+      destinationSearch: data.destinationSearch.present
+          ? data.destinationSearch.value
+          : this.destinationSearch,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaPageRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('labelKey: $labelKey, ')
+          ..write('label: $label, ')
+          ..write('position: $position, ')
+          ..write('destinationFamily: $destinationFamily, ')
+          ..write('destinationRubric: $destinationRubric, ')
+          ..write('destinationBranch: $destinationBranch, ')
+          ..write('destinationSearch: $destinationSearch, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp,
+      id,
+      labelKey,
+      label,
+      position,
+      destinationFamily,
+      destinationRubric,
+      destinationBranch,
+      destinationSearch,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MediaPageRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.labelKey == this.labelKey &&
+          other.label == this.label &&
+          other.position == this.position &&
+          other.destinationFamily == this.destinationFamily &&
+          other.destinationRubric == this.destinationRubric &&
+          other.destinationBranch == this.destinationBranch &&
+          other.destinationSearch == this.destinationSearch &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MediaPagesCompanion extends UpdateCompanion<MediaPageRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String?> labelKey;
+  final Value<Map<String, String>?> label;
+  final Value<int> position;
+  final Value<String?> destinationFamily;
+  final Value<String?> destinationRubric;
+  final Value<String?> destinationBranch;
+  final Value<String?> destinationSearch;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const MediaPagesCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.labelKey = const Value.absent(),
+    this.label = const Value.absent(),
+    this.position = const Value.absent(),
+    this.destinationFamily = const Value.absent(),
+    this.destinationRubric = const Value.absent(),
+    this.destinationBranch = const Value.absent(),
+    this.destinationSearch = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  MediaPagesCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.labelKey = const Value.absent(),
+    this.label = const Value.absent(),
+    this.position = const Value.absent(),
+    this.destinationFamily = const Value.absent(),
+    this.destinationRubric = const Value.absent(),
+    this.destinationBranch = const Value.absent(),
+    this.destinationSearch = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  static Insertable<MediaPageRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? labelKey,
+    Expression<String>? label,
+    Expression<int>? position,
+    Expression<String>? destinationFamily,
+    Expression<String>? destinationRubric,
+    Expression<String>? destinationBranch,
+    Expression<String>? destinationSearch,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (labelKey != null) 'label_key': labelKey,
+      if (label != null) 'label': label,
+      if (position != null) 'position': position,
+      if (destinationFamily != null) 'destination_family': destinationFamily,
+      if (destinationRubric != null) 'destination_rubric': destinationRubric,
+      if (destinationBranch != null) 'destination_branch': destinationBranch,
+      if (destinationSearch != null) 'destination_search': destinationSearch,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  MediaPagesCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String?>? labelKey,
+      Value<Map<String, String>?>? label,
+      Value<int>? position,
+      Value<String?>? destinationFamily,
+      Value<String?>? destinationRubric,
+      Value<String?>? destinationBranch,
+      Value<String?>? destinationSearch,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return MediaPagesCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      labelKey: labelKey ?? this.labelKey,
+      label: label ?? this.label,
+      position: position ?? this.position,
+      destinationFamily: destinationFamily ?? this.destinationFamily,
+      destinationRubric: destinationRubric ?? this.destinationRubric,
+      destinationBranch: destinationBranch ?? this.destinationBranch,
+      destinationSearch: destinationSearch ?? this.destinationSearch,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (labelKey.present) {
+      map['label_key'] = Variable<String>(labelKey.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(
+          $MediaPagesTable.$converterlabeln.toSql(label.value));
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (destinationFamily.present) {
+      map['destination_family'] = Variable<String>(destinationFamily.value);
+    }
+    if (destinationRubric.present) {
+      map['destination_rubric'] = Variable<String>(destinationRubric.value);
+    }
+    if (destinationBranch.present) {
+      map['destination_branch'] = Variable<String>(destinationBranch.value);
+    }
+    if (destinationSearch.present) {
+      map['destination_search'] = Variable<String>(destinationSearch.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaPagesCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('labelKey: $labelKey, ')
+          ..write('label: $label, ')
+          ..write('position: $position, ')
+          ..write('destinationFamily: $destinationFamily, ')
+          ..write('destinationRubric: $destinationRubric, ')
+          ..write('destinationBranch: $destinationBranch, ')
+          ..write('destinationSearch: $destinationSearch, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MediaPageChipsTable extends MediaPageChips
+    with TableInfo<$MediaPageChipsTable, MediaPageChipRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MediaPageChipsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _mediaPageIdMeta =
+      const VerificationMeta('mediaPageId');
+  @override
+  late final GeneratedColumn<int> mediaPageId = GeneratedColumn<int>(
+      'media_page_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>, String>
+      label = GeneratedColumn<String>('label', aliasedName, false,
+              type: DriftSqlType.string, requiredDuringInsert: true)
+          .withConverter<Map<String, String>>(
+              $MediaPageChipsTable.$converterlabel);
+  static const VerificationMeta _positionMeta =
+      const VerificationMeta('position');
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+      'position', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _filterRubricMeta =
+      const VerificationMeta('filterRubric');
+  @override
+  late final GeneratedColumn<String> filterRubric = GeneratedColumn<String>(
+      'filter_rubric', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _filterBranchMeta =
+      const VerificationMeta('filterBranch');
+  @override
+  late final GeneratedColumn<String> filterBranch = GeneratedColumn<String>(
+      'filter_branch', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _filterSearchMeta =
+      const VerificationMeta('filterSearch');
+  @override
+  late final GeneratedColumn<String> filterSearch = GeneratedColumn<String>(
+      'filter_search', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        mediaPageId,
+        label,
+        position,
+        filterRubric,
+        filterBranch,
+        filterSearch,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'media_page_chips';
+  @override
+  VerificationContext validateIntegrity(Insertable<MediaPageChipRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('media_page_id')) {
+      context.handle(
+          _mediaPageIdMeta,
+          mediaPageId.isAcceptableOrUnknown(
+              data['media_page_id']!, _mediaPageIdMeta));
+    } else if (isInserting) {
+      context.missing(_mediaPageIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(_positionMeta,
+          position.isAcceptableOrUnknown(data['position']!, _positionMeta));
+    }
+    if (data.containsKey('filter_rubric')) {
+      context.handle(
+          _filterRubricMeta,
+          filterRubric.isAcceptableOrUnknown(
+              data['filter_rubric']!, _filterRubricMeta));
+    }
+    if (data.containsKey('filter_branch')) {
+      context.handle(
+          _filterBranchMeta,
+          filterBranch.isAcceptableOrUnknown(
+              data['filter_branch']!, _filterBranchMeta));
+    }
+    if (data.containsKey('filter_search')) {
+      context.handle(
+          _filterSearchMeta,
+          filterSearch.isAcceptableOrUnknown(
+              data['filter_search']!, _filterSearchMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MediaPageChipRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MediaPageChipRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      mediaPageId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}media_page_id'])!,
+      label: $MediaPageChipsTable.$converterlabel.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label'])!),
+      position: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position'])!,
+      filterRubric: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}filter_rubric']),
+      filterBranch: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}filter_branch']),
+      filterSearch: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}filter_search']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $MediaPageChipsTable createAlias(String alias) {
+    return $MediaPageChipsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Map<String, String>, String> $converterlabel =
+      const I18nMapConverter();
+}
+
+class MediaPageChipRow extends DataClass
+    implements Insertable<MediaPageChipRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final int id;
+  final int mediaPageId;
+
+  /// Toujours servi (non nul côté serveur) : le libellé est la seule identité
+  /// d'une puce.
+  final Map<String, String> label;
+  final int position;
+  final String? filterRubric;
+  final String? filterBranch;
+  final String? filterSearch;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const MediaPageChipRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.mediaPageId,
+      required this.label,
+      required this.position,
+      this.filterRubric,
+      this.filterBranch,
+      this.filterSearch,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['media_page_id'] = Variable<int>(mediaPageId);
+    {
+      map['label'] =
+          Variable<String>($MediaPageChipsTable.$converterlabel.toSql(label));
+    }
+    map['position'] = Variable<int>(position);
+    if (!nullToAbsent || filterRubric != null) {
+      map['filter_rubric'] = Variable<String>(filterRubric);
+    }
+    if (!nullToAbsent || filterBranch != null) {
+      map['filter_branch'] = Variable<String>(filterBranch);
+    }
+    if (!nullToAbsent || filterSearch != null) {
+      map['filter_search'] = Variable<String>(filterSearch);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  MediaPageChipsCompanion toCompanion(bool nullToAbsent) {
+    return MediaPageChipsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      mediaPageId: Value(mediaPageId),
+      label: Value(label),
+      position: Value(position),
+      filterRubric: filterRubric == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filterRubric),
+      filterBranch: filterBranch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filterBranch),
+      filterSearch: filterSearch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filterSearch),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory MediaPageChipRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MediaPageChipRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      mediaPageId: serializer.fromJson<int>(json['mediaPageId']),
+      label: serializer.fromJson<Map<String, String>>(json['label']),
+      position: serializer.fromJson<int>(json['position']),
+      filterRubric: serializer.fromJson<String?>(json['filterRubric']),
+      filterBranch: serializer.fromJson<String?>(json['filterBranch']),
+      filterSearch: serializer.fromJson<String?>(json['filterSearch']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'mediaPageId': serializer.toJson<int>(mediaPageId),
+      'label': serializer.toJson<Map<String, String>>(label),
+      'position': serializer.toJson<int>(position),
+      'filterRubric': serializer.toJson<String?>(filterRubric),
+      'filterBranch': serializer.toJson<String?>(filterBranch),
+      'filterSearch': serializer.toJson<String?>(filterSearch),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  MediaPageChipRow copyWith(
+          {int? syncStamp,
+          int? id,
+          int? mediaPageId,
+          Map<String, String>? label,
+          int? position,
+          Value<String?> filterRubric = const Value.absent(),
+          Value<String?> filterBranch = const Value.absent(),
+          Value<String?> filterSearch = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      MediaPageChipRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        mediaPageId: mediaPageId ?? this.mediaPageId,
+        label: label ?? this.label,
+        position: position ?? this.position,
+        filterRubric:
+            filterRubric.present ? filterRubric.value : this.filterRubric,
+        filterBranch:
+            filterBranch.present ? filterBranch.value : this.filterBranch,
+        filterSearch:
+            filterSearch.present ? filterSearch.value : this.filterSearch,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  MediaPageChipRow copyWithCompanion(MediaPageChipsCompanion data) {
+    return MediaPageChipRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      mediaPageId:
+          data.mediaPageId.present ? data.mediaPageId.value : this.mediaPageId,
+      label: data.label.present ? data.label.value : this.label,
+      position: data.position.present ? data.position.value : this.position,
+      filterRubric: data.filterRubric.present
+          ? data.filterRubric.value
+          : this.filterRubric,
+      filterBranch: data.filterBranch.present
+          ? data.filterBranch.value
+          : this.filterBranch,
+      filterSearch: data.filterSearch.present
+          ? data.filterSearch.value
+          : this.filterSearch,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaPageChipRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('mediaPageId: $mediaPageId, ')
+          ..write('label: $label, ')
+          ..write('position: $position, ')
+          ..write('filterRubric: $filterRubric, ')
+          ..write('filterBranch: $filterBranch, ')
+          ..write('filterSearch: $filterSearch, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, mediaPageId, label, position,
+      filterRubric, filterBranch, filterSearch, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MediaPageChipRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.mediaPageId == this.mediaPageId &&
+          other.label == this.label &&
+          other.position == this.position &&
+          other.filterRubric == this.filterRubric &&
+          other.filterBranch == this.filterBranch &&
+          other.filterSearch == this.filterSearch &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MediaPageChipsCompanion extends UpdateCompanion<MediaPageChipRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<int> mediaPageId;
+  final Value<Map<String, String>> label;
+  final Value<int> position;
+  final Value<String?> filterRubric;
+  final Value<String?> filterBranch;
+  final Value<String?> filterSearch;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const MediaPageChipsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.mediaPageId = const Value.absent(),
+    this.label = const Value.absent(),
+    this.position = const Value.absent(),
+    this.filterRubric = const Value.absent(),
+    this.filterBranch = const Value.absent(),
+    this.filterSearch = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  MediaPageChipsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required int mediaPageId,
+    required Map<String, String> label,
+    this.position = const Value.absent(),
+    this.filterRubric = const Value.absent(),
+    this.filterBranch = const Value.absent(),
+    this.filterSearch = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : mediaPageId = Value(mediaPageId),
+        label = Value(label);
+  static Insertable<MediaPageChipRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<int>? mediaPageId,
+    Expression<String>? label,
+    Expression<int>? position,
+    Expression<String>? filterRubric,
+    Expression<String>? filterBranch,
+    Expression<String>? filterSearch,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (mediaPageId != null) 'media_page_id': mediaPageId,
+      if (label != null) 'label': label,
+      if (position != null) 'position': position,
+      if (filterRubric != null) 'filter_rubric': filterRubric,
+      if (filterBranch != null) 'filter_branch': filterBranch,
+      if (filterSearch != null) 'filter_search': filterSearch,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  MediaPageChipsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<int>? mediaPageId,
+      Value<Map<String, String>>? label,
+      Value<int>? position,
+      Value<String?>? filterRubric,
+      Value<String?>? filterBranch,
+      Value<String?>? filterSearch,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return MediaPageChipsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      mediaPageId: mediaPageId ?? this.mediaPageId,
+      label: label ?? this.label,
+      position: position ?? this.position,
+      filterRubric: filterRubric ?? this.filterRubric,
+      filterBranch: filterBranch ?? this.filterBranch,
+      filterSearch: filterSearch ?? this.filterSearch,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (mediaPageId.present) {
+      map['media_page_id'] = Variable<int>(mediaPageId.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(
+          $MediaPageChipsTable.$converterlabel.toSql(label.value));
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (filterRubric.present) {
+      map['filter_rubric'] = Variable<String>(filterRubric.value);
+    }
+    if (filterBranch.present) {
+      map['filter_branch'] = Variable<String>(filterBranch.value);
+    }
+    if (filterSearch.present) {
+      map['filter_search'] = Variable<String>(filterSearch.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaPageChipsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('mediaPageId: $mediaPageId, ')
+          ..write('label: $label, ')
+          ..write('position: $position, ')
+          ..write('filterRubric: $filterRubric, ')
+          ..write('filterBranch: $filterBranch, ')
+          ..write('filterSearch: $filterSearch, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MediaPageSectionsTable extends MediaPageSections
+    with TableInfo<$MediaPageSectionsTable, MediaPageSectionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MediaPageSectionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _mediaPageIdMeta =
+      const VerificationMeta('mediaPageId');
+  @override
+  late final GeneratedColumn<int> mediaPageId = GeneratedColumn<int>(
+      'media_page_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _positionMeta =
+      const VerificationMeta('position');
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+      'position', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _titleKeyMeta =
+      const VerificationMeta('titleKey');
+  @override
+  late final GeneratedColumn<String> titleKey = GeneratedColumn<String>(
+      'title_key', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      title = GeneratedColumn<String>('title', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<Map<String, String>?>(
+              $MediaPageSectionsTable.$convertertitlen);
+  static const VerificationMeta _layoutMeta = const VerificationMeta('layout');
+  @override
+  late final GeneratedColumn<String> layout = GeneratedColumn<String>(
+      'layout', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sortMeta = const VerificationMeta('sort');
+  @override
+  late final GeneratedColumn<String> sort = GeneratedColumn<String>(
+      'sort', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _maxItemsMeta =
+      const VerificationMeta('maxItems');
+  @override
+  late final GeneratedColumn<int> maxItems = GeneratedColumn<int>(
+      'max_items', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(10));
+  static const VerificationMeta _destinationFamilyMeta =
+      const VerificationMeta('destinationFamily');
+  @override
+  late final GeneratedColumn<String> destinationFamily =
+      GeneratedColumn<String>('destination_family', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _destinationRubricMeta =
+      const VerificationMeta('destinationRubric');
+  @override
+  late final GeneratedColumn<String> destinationRubric =
+      GeneratedColumn<String>('destination_rubric', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationBranchMeta =
+      const VerificationMeta('destinationBranch');
+  @override
+  late final GeneratedColumn<String> destinationBranch =
+      GeneratedColumn<String>('destination_branch', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _destinationSearchMeta =
+      const VerificationMeta('destinationSearch');
+  @override
+  late final GeneratedColumn<String> destinationSearch =
+      GeneratedColumn<String>('destination_search', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  late final GeneratedColumnWithTypeConverter<List<String>?, String> manualIds =
+      GeneratedColumn<String>('manual_ids', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<List<String>?>(
+              $MediaPageSectionsTable.$convertermanualIdsn);
+  @override
+  late final GeneratedColumnWithTypeConverter<List<String>?, String> rankedIds =
+      GeneratedColumn<String>('ranked_ids', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<List<String>?>(
+              $MediaPageSectionsTable.$converterrankedIdsn);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        mediaPageId,
+        position,
+        titleKey,
+        title,
+        layout,
+        sort,
+        maxItems,
+        destinationFamily,
+        destinationRubric,
+        destinationBranch,
+        destinationSearch,
+        manualIds,
+        rankedIds,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'media_page_sections';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<MediaPageSectionRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('media_page_id')) {
+      context.handle(
+          _mediaPageIdMeta,
+          mediaPageId.isAcceptableOrUnknown(
+              data['media_page_id']!, _mediaPageIdMeta));
+    } else if (isInserting) {
+      context.missing(_mediaPageIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(_positionMeta,
+          position.isAcceptableOrUnknown(data['position']!, _positionMeta));
+    }
+    if (data.containsKey('title_key')) {
+      context.handle(_titleKeyMeta,
+          titleKey.isAcceptableOrUnknown(data['title_key']!, _titleKeyMeta));
+    }
+    if (data.containsKey('layout')) {
+      context.handle(_layoutMeta,
+          layout.isAcceptableOrUnknown(data['layout']!, _layoutMeta));
+    } else if (isInserting) {
+      context.missing(_layoutMeta);
+    }
+    if (data.containsKey('sort')) {
+      context.handle(
+          _sortMeta, sort.isAcceptableOrUnknown(data['sort']!, _sortMeta));
+    } else if (isInserting) {
+      context.missing(_sortMeta);
+    }
+    if (data.containsKey('max_items')) {
+      context.handle(_maxItemsMeta,
+          maxItems.isAcceptableOrUnknown(data['max_items']!, _maxItemsMeta));
+    }
+    if (data.containsKey('destination_family')) {
+      context.handle(
+          _destinationFamilyMeta,
+          destinationFamily.isAcceptableOrUnknown(
+              data['destination_family']!, _destinationFamilyMeta));
+    } else if (isInserting) {
+      context.missing(_destinationFamilyMeta);
+    }
+    if (data.containsKey('destination_rubric')) {
+      context.handle(
+          _destinationRubricMeta,
+          destinationRubric.isAcceptableOrUnknown(
+              data['destination_rubric']!, _destinationRubricMeta));
+    }
+    if (data.containsKey('destination_branch')) {
+      context.handle(
+          _destinationBranchMeta,
+          destinationBranch.isAcceptableOrUnknown(
+              data['destination_branch']!, _destinationBranchMeta));
+    }
+    if (data.containsKey('destination_search')) {
+      context.handle(
+          _destinationSearchMeta,
+          destinationSearch.isAcceptableOrUnknown(
+              data['destination_search']!, _destinationSearchMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MediaPageSectionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MediaPageSectionRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      mediaPageId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}media_page_id'])!,
+      position: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position'])!,
+      titleKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title_key']),
+      title: $MediaPageSectionsTable.$convertertitlen.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])),
+      layout: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}layout'])!,
+      sort: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sort'])!,
+      maxItems: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}max_items'])!,
+      destinationFamily: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_family'])!,
+      destinationRubric: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_rubric']),
+      destinationBranch: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_branch']),
+      destinationSearch: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}destination_search']),
+      manualIds: $MediaPageSectionsTable.$convertermanualIdsn.fromSql(
+          attachedDatabase.typeMapping
+              .read(DriftSqlType.string, data['${effectivePrefix}manual_ids'])),
+      rankedIds: $MediaPageSectionsTable.$converterrankedIdsn.fromSql(
+          attachedDatabase.typeMapping
+              .read(DriftSqlType.string, data['${effectivePrefix}ranked_ids'])),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $MediaPageSectionsTable createAlias(String alias) {
+    return $MediaPageSectionsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Map<String, String>, String> $convertertitle =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>?, String?> $convertertitlen =
+      NullAwareTypeConverter.wrap($convertertitle);
+  static TypeConverter<List<String>, String> $convertermanualIds =
+      const StringListConverter();
+  static TypeConverter<List<String>?, String?> $convertermanualIdsn =
+      NullAwareTypeConverter.wrap($convertermanualIds);
+  static TypeConverter<List<String>, String> $converterrankedIds =
+      const StringListConverter();
+  static TypeConverter<List<String>?, String?> $converterrankedIdsn =
+      NullAwareTypeConverter.wrap($converterrankedIds);
+}
+
+class MediaPageSectionRow extends DataClass
+    implements Insertable<MediaPageSectionRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final int id;
+  final int mediaPageId;
+  final int position;
+
+  /// Un mot du vocabulaire réglable (`sectionLatestTeachings`), prioritaire
+  /// sur [title]. Les deux nuls : pas d'en-tête.
+  final String? titleKey;
+  final Map<String, String>? title;
+
+  /// `hero` · `carousel` · `list` · `grid`, en chaîne libre.
+  final String layout;
+
+  /// `latest` · `popular` · `manual`, en chaîne libre.
+  final String sort;
+  final int maxItems;
+
+  /// La source. La famille est requise côté serveur.
+  final String destinationFamily;
+  final String? destinationRubric;
+  final String? destinationBranch;
+  final String? destinationSearch;
+
+  /// Tri `manual` : la sélection ordonnée. `null` = rien choisi.
+  final List<String>? manualIds;
+
+  /// Tri `popular` : le classement matérialisé chaque nuit. `null` = jamais
+  /// calculé, et la section montre alors les plus récents.
+  final List<String>? rankedIds;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const MediaPageSectionRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.mediaPageId,
+      required this.position,
+      this.titleKey,
+      this.title,
+      required this.layout,
+      required this.sort,
+      required this.maxItems,
+      required this.destinationFamily,
+      this.destinationRubric,
+      this.destinationBranch,
+      this.destinationSearch,
+      this.manualIds,
+      this.rankedIds,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['media_page_id'] = Variable<int>(mediaPageId);
+    map['position'] = Variable<int>(position);
+    if (!nullToAbsent || titleKey != null) {
+      map['title_key'] = Variable<String>(titleKey);
+    }
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(
+          $MediaPageSectionsTable.$convertertitlen.toSql(title));
+    }
+    map['layout'] = Variable<String>(layout);
+    map['sort'] = Variable<String>(sort);
+    map['max_items'] = Variable<int>(maxItems);
+    map['destination_family'] = Variable<String>(destinationFamily);
+    if (!nullToAbsent || destinationRubric != null) {
+      map['destination_rubric'] = Variable<String>(destinationRubric);
+    }
+    if (!nullToAbsent || destinationBranch != null) {
+      map['destination_branch'] = Variable<String>(destinationBranch);
+    }
+    if (!nullToAbsent || destinationSearch != null) {
+      map['destination_search'] = Variable<String>(destinationSearch);
+    }
+    if (!nullToAbsent || manualIds != null) {
+      map['manual_ids'] = Variable<String>(
+          $MediaPageSectionsTable.$convertermanualIdsn.toSql(manualIds));
+    }
+    if (!nullToAbsent || rankedIds != null) {
+      map['ranked_ids'] = Variable<String>(
+          $MediaPageSectionsTable.$converterrankedIdsn.toSql(rankedIds));
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  MediaPageSectionsCompanion toCompanion(bool nullToAbsent) {
+    return MediaPageSectionsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      mediaPageId: Value(mediaPageId),
+      position: Value(position),
+      titleKey: titleKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(titleKey),
+      title:
+          title == null && nullToAbsent ? const Value.absent() : Value(title),
+      layout: Value(layout),
+      sort: Value(sort),
+      maxItems: Value(maxItems),
+      destinationFamily: Value(destinationFamily),
+      destinationRubric: destinationRubric == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationRubric),
+      destinationBranch: destinationBranch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationBranch),
+      destinationSearch: destinationSearch == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destinationSearch),
+      manualIds: manualIds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(manualIds),
+      rankedIds: rankedIds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rankedIds),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory MediaPageSectionRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MediaPageSectionRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      mediaPageId: serializer.fromJson<int>(json['mediaPageId']),
+      position: serializer.fromJson<int>(json['position']),
+      titleKey: serializer.fromJson<String?>(json['titleKey']),
+      title: serializer.fromJson<Map<String, String>?>(json['title']),
+      layout: serializer.fromJson<String>(json['layout']),
+      sort: serializer.fromJson<String>(json['sort']),
+      maxItems: serializer.fromJson<int>(json['maxItems']),
+      destinationFamily: serializer.fromJson<String>(json['destinationFamily']),
+      destinationRubric:
+          serializer.fromJson<String?>(json['destinationRubric']),
+      destinationBranch:
+          serializer.fromJson<String?>(json['destinationBranch']),
+      destinationSearch:
+          serializer.fromJson<String?>(json['destinationSearch']),
+      manualIds: serializer.fromJson<List<String>?>(json['manualIds']),
+      rankedIds: serializer.fromJson<List<String>?>(json['rankedIds']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'mediaPageId': serializer.toJson<int>(mediaPageId),
+      'position': serializer.toJson<int>(position),
+      'titleKey': serializer.toJson<String?>(titleKey),
+      'title': serializer.toJson<Map<String, String>?>(title),
+      'layout': serializer.toJson<String>(layout),
+      'sort': serializer.toJson<String>(sort),
+      'maxItems': serializer.toJson<int>(maxItems),
+      'destinationFamily': serializer.toJson<String>(destinationFamily),
+      'destinationRubric': serializer.toJson<String?>(destinationRubric),
+      'destinationBranch': serializer.toJson<String?>(destinationBranch),
+      'destinationSearch': serializer.toJson<String?>(destinationSearch),
+      'manualIds': serializer.toJson<List<String>?>(manualIds),
+      'rankedIds': serializer.toJson<List<String>?>(rankedIds),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  MediaPageSectionRow copyWith(
+          {int? syncStamp,
+          int? id,
+          int? mediaPageId,
+          int? position,
+          Value<String?> titleKey = const Value.absent(),
+          Value<Map<String, String>?> title = const Value.absent(),
+          String? layout,
+          String? sort,
+          int? maxItems,
+          String? destinationFamily,
+          Value<String?> destinationRubric = const Value.absent(),
+          Value<String?> destinationBranch = const Value.absent(),
+          Value<String?> destinationSearch = const Value.absent(),
+          Value<List<String>?> manualIds = const Value.absent(),
+          Value<List<String>?> rankedIds = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      MediaPageSectionRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        mediaPageId: mediaPageId ?? this.mediaPageId,
+        position: position ?? this.position,
+        titleKey: titleKey.present ? titleKey.value : this.titleKey,
+        title: title.present ? title.value : this.title,
+        layout: layout ?? this.layout,
+        sort: sort ?? this.sort,
+        maxItems: maxItems ?? this.maxItems,
+        destinationFamily: destinationFamily ?? this.destinationFamily,
+        destinationRubric: destinationRubric.present
+            ? destinationRubric.value
+            : this.destinationRubric,
+        destinationBranch: destinationBranch.present
+            ? destinationBranch.value
+            : this.destinationBranch,
+        destinationSearch: destinationSearch.present
+            ? destinationSearch.value
+            : this.destinationSearch,
+        manualIds: manualIds.present ? manualIds.value : this.manualIds,
+        rankedIds: rankedIds.present ? rankedIds.value : this.rankedIds,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  MediaPageSectionRow copyWithCompanion(MediaPageSectionsCompanion data) {
+    return MediaPageSectionRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      mediaPageId:
+          data.mediaPageId.present ? data.mediaPageId.value : this.mediaPageId,
+      position: data.position.present ? data.position.value : this.position,
+      titleKey: data.titleKey.present ? data.titleKey.value : this.titleKey,
+      title: data.title.present ? data.title.value : this.title,
+      layout: data.layout.present ? data.layout.value : this.layout,
+      sort: data.sort.present ? data.sort.value : this.sort,
+      maxItems: data.maxItems.present ? data.maxItems.value : this.maxItems,
+      destinationFamily: data.destinationFamily.present
+          ? data.destinationFamily.value
+          : this.destinationFamily,
+      destinationRubric: data.destinationRubric.present
+          ? data.destinationRubric.value
+          : this.destinationRubric,
+      destinationBranch: data.destinationBranch.present
+          ? data.destinationBranch.value
+          : this.destinationBranch,
+      destinationSearch: data.destinationSearch.present
+          ? data.destinationSearch.value
+          : this.destinationSearch,
+      manualIds: data.manualIds.present ? data.manualIds.value : this.manualIds,
+      rankedIds: data.rankedIds.present ? data.rankedIds.value : this.rankedIds,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaPageSectionRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('mediaPageId: $mediaPageId, ')
+          ..write('position: $position, ')
+          ..write('titleKey: $titleKey, ')
+          ..write('title: $title, ')
+          ..write('layout: $layout, ')
+          ..write('sort: $sort, ')
+          ..write('maxItems: $maxItems, ')
+          ..write('destinationFamily: $destinationFamily, ')
+          ..write('destinationRubric: $destinationRubric, ')
+          ..write('destinationBranch: $destinationBranch, ')
+          ..write('destinationSearch: $destinationSearch, ')
+          ..write('manualIds: $manualIds, ')
+          ..write('rankedIds: $rankedIds, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp,
+      id,
+      mediaPageId,
+      position,
+      titleKey,
+      title,
+      layout,
+      sort,
+      maxItems,
+      destinationFamily,
+      destinationRubric,
+      destinationBranch,
+      destinationSearch,
+      manualIds,
+      rankedIds,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MediaPageSectionRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.mediaPageId == this.mediaPageId &&
+          other.position == this.position &&
+          other.titleKey == this.titleKey &&
+          other.title == this.title &&
+          other.layout == this.layout &&
+          other.sort == this.sort &&
+          other.maxItems == this.maxItems &&
+          other.destinationFamily == this.destinationFamily &&
+          other.destinationRubric == this.destinationRubric &&
+          other.destinationBranch == this.destinationBranch &&
+          other.destinationSearch == this.destinationSearch &&
+          other.manualIds == this.manualIds &&
+          other.rankedIds == this.rankedIds &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MediaPageSectionsCompanion extends UpdateCompanion<MediaPageSectionRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<int> mediaPageId;
+  final Value<int> position;
+  final Value<String?> titleKey;
+  final Value<Map<String, String>?> title;
+  final Value<String> layout;
+  final Value<String> sort;
+  final Value<int> maxItems;
+  final Value<String> destinationFamily;
+  final Value<String?> destinationRubric;
+  final Value<String?> destinationBranch;
+  final Value<String?> destinationSearch;
+  final Value<List<String>?> manualIds;
+  final Value<List<String>?> rankedIds;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  const MediaPageSectionsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.mediaPageId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.titleKey = const Value.absent(),
+    this.title = const Value.absent(),
+    this.layout = const Value.absent(),
+    this.sort = const Value.absent(),
+    this.maxItems = const Value.absent(),
+    this.destinationFamily = const Value.absent(),
+    this.destinationRubric = const Value.absent(),
+    this.destinationBranch = const Value.absent(),
+    this.destinationSearch = const Value.absent(),
+    this.manualIds = const Value.absent(),
+    this.rankedIds = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  MediaPageSectionsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required int mediaPageId,
+    this.position = const Value.absent(),
+    this.titleKey = const Value.absent(),
+    this.title = const Value.absent(),
+    required String layout,
+    required String sort,
+    this.maxItems = const Value.absent(),
+    required String destinationFamily,
+    this.destinationRubric = const Value.absent(),
+    this.destinationBranch = const Value.absent(),
+    this.destinationSearch = const Value.absent(),
+    this.manualIds = const Value.absent(),
+    this.rankedIds = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : mediaPageId = Value(mediaPageId),
+        layout = Value(layout),
+        sort = Value(sort),
+        destinationFamily = Value(destinationFamily);
+  static Insertable<MediaPageSectionRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<int>? mediaPageId,
+    Expression<int>? position,
+    Expression<String>? titleKey,
+    Expression<String>? title,
+    Expression<String>? layout,
+    Expression<String>? sort,
+    Expression<int>? maxItems,
+    Expression<String>? destinationFamily,
+    Expression<String>? destinationRubric,
+    Expression<String>? destinationBranch,
+    Expression<String>? destinationSearch,
+    Expression<String>? manualIds,
+    Expression<String>? rankedIds,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (mediaPageId != null) 'media_page_id': mediaPageId,
+      if (position != null) 'position': position,
+      if (titleKey != null) 'title_key': titleKey,
+      if (title != null) 'title': title,
+      if (layout != null) 'layout': layout,
+      if (sort != null) 'sort': sort,
+      if (maxItems != null) 'max_items': maxItems,
+      if (destinationFamily != null) 'destination_family': destinationFamily,
+      if (destinationRubric != null) 'destination_rubric': destinationRubric,
+      if (destinationBranch != null) 'destination_branch': destinationBranch,
+      if (destinationSearch != null) 'destination_search': destinationSearch,
+      if (manualIds != null) 'manual_ids': manualIds,
+      if (rankedIds != null) 'ranked_ids': rankedIds,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  MediaPageSectionsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<int>? mediaPageId,
+      Value<int>? position,
+      Value<String?>? titleKey,
+      Value<Map<String, String>?>? title,
+      Value<String>? layout,
+      Value<String>? sort,
+      Value<int>? maxItems,
+      Value<String>? destinationFamily,
+      Value<String?>? destinationRubric,
+      Value<String?>? destinationBranch,
+      Value<String?>? destinationSearch,
+      Value<List<String>?>? manualIds,
+      Value<List<String>?>? rankedIds,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt}) {
+    return MediaPageSectionsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      mediaPageId: mediaPageId ?? this.mediaPageId,
+      position: position ?? this.position,
+      titleKey: titleKey ?? this.titleKey,
+      title: title ?? this.title,
+      layout: layout ?? this.layout,
+      sort: sort ?? this.sort,
+      maxItems: maxItems ?? this.maxItems,
+      destinationFamily: destinationFamily ?? this.destinationFamily,
+      destinationRubric: destinationRubric ?? this.destinationRubric,
+      destinationBranch: destinationBranch ?? this.destinationBranch,
+      destinationSearch: destinationSearch ?? this.destinationSearch,
+      manualIds: manualIds ?? this.manualIds,
+      rankedIds: rankedIds ?? this.rankedIds,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (mediaPageId.present) {
+      map['media_page_id'] = Variable<int>(mediaPageId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (titleKey.present) {
+      map['title_key'] = Variable<String>(titleKey.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(
+          $MediaPageSectionsTable.$convertertitlen.toSql(title.value));
+    }
+    if (layout.present) {
+      map['layout'] = Variable<String>(layout.value);
+    }
+    if (sort.present) {
+      map['sort'] = Variable<String>(sort.value);
+    }
+    if (maxItems.present) {
+      map['max_items'] = Variable<int>(maxItems.value);
+    }
+    if (destinationFamily.present) {
+      map['destination_family'] = Variable<String>(destinationFamily.value);
+    }
+    if (destinationRubric.present) {
+      map['destination_rubric'] = Variable<String>(destinationRubric.value);
+    }
+    if (destinationBranch.present) {
+      map['destination_branch'] = Variable<String>(destinationBranch.value);
+    }
+    if (destinationSearch.present) {
+      map['destination_search'] = Variable<String>(destinationSearch.value);
+    }
+    if (manualIds.present) {
+      map['manual_ids'] = Variable<String>(
+          $MediaPageSectionsTable.$convertermanualIdsn.toSql(manualIds.value));
+    }
+    if (rankedIds.present) {
+      map['ranked_ids'] = Variable<String>(
+          $MediaPageSectionsTable.$converterrankedIdsn.toSql(rankedIds.value));
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaPageSectionsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('mediaPageId: $mediaPageId, ')
+          ..write('position: $position, ')
+          ..write('titleKey: $titleKey, ')
+          ..write('title: $title, ')
+          ..write('layout: $layout, ')
+          ..write('sort: $sort, ')
+          ..write('maxItems: $maxItems, ')
+          ..write('destinationFamily: $destinationFamily, ')
+          ..write('destinationRubric: $destinationRubric, ')
+          ..write('destinationBranch: $destinationBranch, ')
+          ..write('destinationSearch: $destinationSearch, ')
+          ..write('manualIds: $manualIds, ')
+          ..write('rankedIds: $rankedIds, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DecorTable extends Decor with TableInfo<$DecorTable, DecorRow> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -21330,6 +23282,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PresentationVocabularyTable presentationVocabulary =
       $PresentationVocabularyTable(this);
   late final $MenuEntriesTable menuEntries = $MenuEntriesTable(this);
+  late final $MediaPagesTable mediaPages = $MediaPagesTable(this);
+  late final $MediaPageChipsTable mediaPageChips = $MediaPageChipsTable(this);
+  late final $MediaPageSectionsTable mediaPageSections =
+      $MediaPageSectionsTable(this);
   late final $DecorTable decor = $DecorTable(this);
   late final $AuthChannelsTable authChannels = $AuthChannelsTable(this);
   late final $DeviceSettingsTable deviceSettings = $DeviceSettingsTable(this);
@@ -21373,6 +23329,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final SeasonDao seasonDao = SeasonDao(this as AppDatabase);
   late final VocabularyDao vocabularyDao = VocabularyDao(this as AppDatabase);
   late final MenuDao menuDao = MenuDao(this as AppDatabase);
+  late final MediaPagesDao mediaPagesDao = MediaPagesDao(this as AppDatabase);
   late final AuthChannelsDao authChannelsDao =
       AuthChannelsDao(this as AppDatabase);
   late final DeviceSettingsDao deviceSettingsDao =
@@ -21412,6 +23369,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         seasons,
         presentationVocabulary,
         menuEntries,
+        mediaPages,
+        mediaPageChips,
+        mediaPageSections,
         decor,
         authChannels,
         deviceSettings,
@@ -26620,6 +28580,887 @@ typedef $$MenuEntriesTableProcessedTableManager = ProcessedTableManager<
     ),
     MenuEntryRow,
     PrefetchHooks Function()>;
+typedef $$MediaPagesTableCreateCompanionBuilder = MediaPagesCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String?> labelKey,
+  Value<Map<String, String>?> label,
+  Value<int> position,
+  Value<String?> destinationFamily,
+  Value<String?> destinationRubric,
+  Value<String?> destinationBranch,
+  Value<String?> destinationSearch,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$MediaPagesTableUpdateCompanionBuilder = MediaPagesCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String?> labelKey,
+  Value<Map<String, String>?> label,
+  Value<int> position,
+  Value<String?> destinationFamily,
+  Value<String?> destinationRubric,
+  Value<String?> destinationBranch,
+  Value<String?> destinationSearch,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$MediaPagesTableFilterComposer
+    extends Composer<_$AppDatabase, $MediaPagesTable> {
+  $$MediaPagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get labelKey => $composableBuilder(
+      column: $table.labelKey, builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<Map<String, String>?, Map<String, String>,
+          String>
+      get label => $composableBuilder(
+          column: $table.label,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationFamily => $composableBuilder(
+      column: $table.destinationFamily,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationRubric => $composableBuilder(
+      column: $table.destinationRubric,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationBranch => $composableBuilder(
+      column: $table.destinationBranch,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationSearch => $composableBuilder(
+      column: $table.destinationSearch,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MediaPagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MediaPagesTable> {
+  $$MediaPagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get labelKey => $composableBuilder(
+      column: $table.labelKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationFamily => $composableBuilder(
+      column: $table.destinationFamily,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationRubric => $composableBuilder(
+      column: $table.destinationRubric,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationBranch => $composableBuilder(
+      column: $table.destinationBranch,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationSearch => $composableBuilder(
+      column: $table.destinationSearch,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MediaPagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MediaPagesTable> {
+  $$MediaPagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get labelKey =>
+      $composableBuilder(column: $table.labelKey, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationFamily => $composableBuilder(
+      column: $table.destinationFamily, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationRubric => $composableBuilder(
+      column: $table.destinationRubric, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationBranch => $composableBuilder(
+      column: $table.destinationBranch, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationSearch => $composableBuilder(
+      column: $table.destinationSearch, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MediaPagesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $MediaPagesTable,
+    MediaPageRow,
+    $$MediaPagesTableFilterComposer,
+    $$MediaPagesTableOrderingComposer,
+    $$MediaPagesTableAnnotationComposer,
+    $$MediaPagesTableCreateCompanionBuilder,
+    $$MediaPagesTableUpdateCompanionBuilder,
+    (
+      MediaPageRow,
+      BaseReferences<_$AppDatabase, $MediaPagesTable, MediaPageRow>
+    ),
+    MediaPageRow,
+    PrefetchHooks Function()> {
+  $$MediaPagesTableTableManager(_$AppDatabase db, $MediaPagesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MediaPagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MediaPagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MediaPagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String?> labelKey = const Value.absent(),
+            Value<Map<String, String>?> label = const Value.absent(),
+            Value<int> position = const Value.absent(),
+            Value<String?> destinationFamily = const Value.absent(),
+            Value<String?> destinationRubric = const Value.absent(),
+            Value<String?> destinationBranch = const Value.absent(),
+            Value<String?> destinationSearch = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              MediaPagesCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            labelKey: labelKey,
+            label: label,
+            position: position,
+            destinationFamily: destinationFamily,
+            destinationRubric: destinationRubric,
+            destinationBranch: destinationBranch,
+            destinationSearch: destinationSearch,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String?> labelKey = const Value.absent(),
+            Value<Map<String, String>?> label = const Value.absent(),
+            Value<int> position = const Value.absent(),
+            Value<String?> destinationFamily = const Value.absent(),
+            Value<String?> destinationRubric = const Value.absent(),
+            Value<String?> destinationBranch = const Value.absent(),
+            Value<String?> destinationSearch = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              MediaPagesCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            labelKey: labelKey,
+            label: label,
+            position: position,
+            destinationFamily: destinationFamily,
+            destinationRubric: destinationRubric,
+            destinationBranch: destinationBranch,
+            destinationSearch: destinationSearch,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MediaPagesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $MediaPagesTable,
+    MediaPageRow,
+    $$MediaPagesTableFilterComposer,
+    $$MediaPagesTableOrderingComposer,
+    $$MediaPagesTableAnnotationComposer,
+    $$MediaPagesTableCreateCompanionBuilder,
+    $$MediaPagesTableUpdateCompanionBuilder,
+    (
+      MediaPageRow,
+      BaseReferences<_$AppDatabase, $MediaPagesTable, MediaPageRow>
+    ),
+    MediaPageRow,
+    PrefetchHooks Function()>;
+typedef $$MediaPageChipsTableCreateCompanionBuilder = MediaPageChipsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required int mediaPageId,
+  required Map<String, String> label,
+  Value<int> position,
+  Value<String?> filterRubric,
+  Value<String?> filterBranch,
+  Value<String?> filterSearch,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$MediaPageChipsTableUpdateCompanionBuilder = MediaPageChipsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<int> mediaPageId,
+  Value<Map<String, String>> label,
+  Value<int> position,
+  Value<String?> filterRubric,
+  Value<String?> filterBranch,
+  Value<String?> filterSearch,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$MediaPageChipsTableFilterComposer
+    extends Composer<_$AppDatabase, $MediaPageChipsTable> {
+  $$MediaPageChipsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mediaPageId => $composableBuilder(
+      column: $table.mediaPageId, builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<Map<String, String>, Map<String, String>,
+          String>
+      get label => $composableBuilder(
+          column: $table.label,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get filterRubric => $composableBuilder(
+      column: $table.filterRubric, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get filterBranch => $composableBuilder(
+      column: $table.filterBranch, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get filterSearch => $composableBuilder(
+      column: $table.filterSearch, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MediaPageChipsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MediaPageChipsTable> {
+  $$MediaPageChipsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mediaPageId => $composableBuilder(
+      column: $table.mediaPageId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get filterRubric => $composableBuilder(
+      column: $table.filterRubric,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get filterBranch => $composableBuilder(
+      column: $table.filterBranch,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get filterSearch => $composableBuilder(
+      column: $table.filterSearch,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MediaPageChipsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MediaPageChipsTable> {
+  $$MediaPageChipsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get mediaPageId => $composableBuilder(
+      column: $table.mediaPageId, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>, String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get filterRubric => $composableBuilder(
+      column: $table.filterRubric, builder: (column) => column);
+
+  GeneratedColumn<String> get filterBranch => $composableBuilder(
+      column: $table.filterBranch, builder: (column) => column);
+
+  GeneratedColumn<String> get filterSearch => $composableBuilder(
+      column: $table.filterSearch, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MediaPageChipsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $MediaPageChipsTable,
+    MediaPageChipRow,
+    $$MediaPageChipsTableFilterComposer,
+    $$MediaPageChipsTableOrderingComposer,
+    $$MediaPageChipsTableAnnotationComposer,
+    $$MediaPageChipsTableCreateCompanionBuilder,
+    $$MediaPageChipsTableUpdateCompanionBuilder,
+    (
+      MediaPageChipRow,
+      BaseReferences<_$AppDatabase, $MediaPageChipsTable, MediaPageChipRow>
+    ),
+    MediaPageChipRow,
+    PrefetchHooks Function()> {
+  $$MediaPageChipsTableTableManager(
+      _$AppDatabase db, $MediaPageChipsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MediaPageChipsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MediaPageChipsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MediaPageChipsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<int> mediaPageId = const Value.absent(),
+            Value<Map<String, String>> label = const Value.absent(),
+            Value<int> position = const Value.absent(),
+            Value<String?> filterRubric = const Value.absent(),
+            Value<String?> filterBranch = const Value.absent(),
+            Value<String?> filterSearch = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              MediaPageChipsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            mediaPageId: mediaPageId,
+            label: label,
+            position: position,
+            filterRubric: filterRubric,
+            filterBranch: filterBranch,
+            filterSearch: filterSearch,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required int mediaPageId,
+            required Map<String, String> label,
+            Value<int> position = const Value.absent(),
+            Value<String?> filterRubric = const Value.absent(),
+            Value<String?> filterBranch = const Value.absent(),
+            Value<String?> filterSearch = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              MediaPageChipsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            mediaPageId: mediaPageId,
+            label: label,
+            position: position,
+            filterRubric: filterRubric,
+            filterBranch: filterBranch,
+            filterSearch: filterSearch,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MediaPageChipsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $MediaPageChipsTable,
+    MediaPageChipRow,
+    $$MediaPageChipsTableFilterComposer,
+    $$MediaPageChipsTableOrderingComposer,
+    $$MediaPageChipsTableAnnotationComposer,
+    $$MediaPageChipsTableCreateCompanionBuilder,
+    $$MediaPageChipsTableUpdateCompanionBuilder,
+    (
+      MediaPageChipRow,
+      BaseReferences<_$AppDatabase, $MediaPageChipsTable, MediaPageChipRow>
+    ),
+    MediaPageChipRow,
+    PrefetchHooks Function()>;
+typedef $$MediaPageSectionsTableCreateCompanionBuilder
+    = MediaPageSectionsCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required int mediaPageId,
+  Value<int> position,
+  Value<String?> titleKey,
+  Value<Map<String, String>?> title,
+  required String layout,
+  required String sort,
+  Value<int> maxItems,
+  required String destinationFamily,
+  Value<String?> destinationRubric,
+  Value<String?> destinationBranch,
+  Value<String?> destinationSearch,
+  Value<List<String>?> manualIds,
+  Value<List<String>?> rankedIds,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+typedef $$MediaPageSectionsTableUpdateCompanionBuilder
+    = MediaPageSectionsCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<int> mediaPageId,
+  Value<int> position,
+  Value<String?> titleKey,
+  Value<Map<String, String>?> title,
+  Value<String> layout,
+  Value<String> sort,
+  Value<int> maxItems,
+  Value<String> destinationFamily,
+  Value<String?> destinationRubric,
+  Value<String?> destinationBranch,
+  Value<String?> destinationSearch,
+  Value<List<String>?> manualIds,
+  Value<List<String>?> rankedIds,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+});
+
+class $$MediaPageSectionsTableFilterComposer
+    extends Composer<_$AppDatabase, $MediaPageSectionsTable> {
+  $$MediaPageSectionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mediaPageId => $composableBuilder(
+      column: $table.mediaPageId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get titleKey => $composableBuilder(
+      column: $table.titleKey, builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<Map<String, String>?, Map<String, String>,
+          String>
+      get title => $composableBuilder(
+          column: $table.title,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<String> get layout => $composableBuilder(
+      column: $table.layout, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sort => $composableBuilder(
+      column: $table.sort, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get maxItems => $composableBuilder(
+      column: $table.maxItems, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationFamily => $composableBuilder(
+      column: $table.destinationFamily,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationRubric => $composableBuilder(
+      column: $table.destinationRubric,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationBranch => $composableBuilder(
+      column: $table.destinationBranch,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get destinationSearch => $composableBuilder(
+      column: $table.destinationSearch,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<List<String>?, List<String>, String>
+      get manualIds => $composableBuilder(
+          column: $table.manualIds,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnWithTypeConverterFilters<List<String>?, List<String>, String>
+      get rankedIds => $composableBuilder(
+          column: $table.rankedIds,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MediaPageSectionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MediaPageSectionsTable> {
+  $$MediaPageSectionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mediaPageId => $composableBuilder(
+      column: $table.mediaPageId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get position => $composableBuilder(
+      column: $table.position, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get titleKey => $composableBuilder(
+      column: $table.titleKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get layout => $composableBuilder(
+      column: $table.layout, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sort => $composableBuilder(
+      column: $table.sort, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get maxItems => $composableBuilder(
+      column: $table.maxItems, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationFamily => $composableBuilder(
+      column: $table.destinationFamily,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationRubric => $composableBuilder(
+      column: $table.destinationRubric,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationBranch => $composableBuilder(
+      column: $table.destinationBranch,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get destinationSearch => $composableBuilder(
+      column: $table.destinationSearch,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get manualIds => $composableBuilder(
+      column: $table.manualIds, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get rankedIds => $composableBuilder(
+      column: $table.rankedIds, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MediaPageSectionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MediaPageSectionsTable> {
+  $$MediaPageSectionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get mediaPageId => $composableBuilder(
+      column: $table.mediaPageId, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get titleKey =>
+      $composableBuilder(column: $table.titleKey, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get layout =>
+      $composableBuilder(column: $table.layout, builder: (column) => column);
+
+  GeneratedColumn<String> get sort =>
+      $composableBuilder(column: $table.sort, builder: (column) => column);
+
+  GeneratedColumn<int> get maxItems =>
+      $composableBuilder(column: $table.maxItems, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationFamily => $composableBuilder(
+      column: $table.destinationFamily, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationRubric => $composableBuilder(
+      column: $table.destinationRubric, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationBranch => $composableBuilder(
+      column: $table.destinationBranch, builder: (column) => column);
+
+  GeneratedColumn<String> get destinationSearch => $composableBuilder(
+      column: $table.destinationSearch, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<String>?, String> get manualIds =>
+      $composableBuilder(column: $table.manualIds, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<String>?, String> get rankedIds =>
+      $composableBuilder(column: $table.rankedIds, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MediaPageSectionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $MediaPageSectionsTable,
+    MediaPageSectionRow,
+    $$MediaPageSectionsTableFilterComposer,
+    $$MediaPageSectionsTableOrderingComposer,
+    $$MediaPageSectionsTableAnnotationComposer,
+    $$MediaPageSectionsTableCreateCompanionBuilder,
+    $$MediaPageSectionsTableUpdateCompanionBuilder,
+    (
+      MediaPageSectionRow,
+      BaseReferences<_$AppDatabase, $MediaPageSectionsTable,
+          MediaPageSectionRow>
+    ),
+    MediaPageSectionRow,
+    PrefetchHooks Function()> {
+  $$MediaPageSectionsTableTableManager(
+      _$AppDatabase db, $MediaPageSectionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MediaPageSectionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MediaPageSectionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MediaPageSectionsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<int> mediaPageId = const Value.absent(),
+            Value<int> position = const Value.absent(),
+            Value<String?> titleKey = const Value.absent(),
+            Value<Map<String, String>?> title = const Value.absent(),
+            Value<String> layout = const Value.absent(),
+            Value<String> sort = const Value.absent(),
+            Value<int> maxItems = const Value.absent(),
+            Value<String> destinationFamily = const Value.absent(),
+            Value<String?> destinationRubric = const Value.absent(),
+            Value<String?> destinationBranch = const Value.absent(),
+            Value<String?> destinationSearch = const Value.absent(),
+            Value<List<String>?> manualIds = const Value.absent(),
+            Value<List<String>?> rankedIds = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              MediaPageSectionsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            mediaPageId: mediaPageId,
+            position: position,
+            titleKey: titleKey,
+            title: title,
+            layout: layout,
+            sort: sort,
+            maxItems: maxItems,
+            destinationFamily: destinationFamily,
+            destinationRubric: destinationRubric,
+            destinationBranch: destinationBranch,
+            destinationSearch: destinationSearch,
+            manualIds: manualIds,
+            rankedIds: rankedIds,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required int mediaPageId,
+            Value<int> position = const Value.absent(),
+            Value<String?> titleKey = const Value.absent(),
+            Value<Map<String, String>?> title = const Value.absent(),
+            required String layout,
+            required String sort,
+            Value<int> maxItems = const Value.absent(),
+            required String destinationFamily,
+            Value<String?> destinationRubric = const Value.absent(),
+            Value<String?> destinationBranch = const Value.absent(),
+            Value<String?> destinationSearch = const Value.absent(),
+            Value<List<String>?> manualIds = const Value.absent(),
+            Value<List<String>?> rankedIds = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+          }) =>
+              MediaPageSectionsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            mediaPageId: mediaPageId,
+            position: position,
+            titleKey: titleKey,
+            title: title,
+            layout: layout,
+            sort: sort,
+            maxItems: maxItems,
+            destinationFamily: destinationFamily,
+            destinationRubric: destinationRubric,
+            destinationBranch: destinationBranch,
+            destinationSearch: destinationSearch,
+            manualIds: manualIds,
+            rankedIds: rankedIds,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MediaPageSectionsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $MediaPageSectionsTable,
+    MediaPageSectionRow,
+    $$MediaPageSectionsTableFilterComposer,
+    $$MediaPageSectionsTableOrderingComposer,
+    $$MediaPageSectionsTableAnnotationComposer,
+    $$MediaPageSectionsTableCreateCompanionBuilder,
+    $$MediaPageSectionsTableUpdateCompanionBuilder,
+    (
+      MediaPageSectionRow,
+      BaseReferences<_$AppDatabase, $MediaPageSectionsTable,
+          MediaPageSectionRow>
+    ),
+    MediaPageSectionRow,
+    PrefetchHooks Function()>;
 typedef $$DecorTableCreateCompanionBuilder = DecorCompanion Function({
   Value<int> syncStamp,
   Value<int> id,
@@ -31456,6 +34297,12 @@ class $AppDatabaseManager {
           _db, _db.presentationVocabulary);
   $$MenuEntriesTableTableManager get menuEntries =>
       $$MenuEntriesTableTableManager(_db, _db.menuEntries);
+  $$MediaPagesTableTableManager get mediaPages =>
+      $$MediaPagesTableTableManager(_db, _db.mediaPages);
+  $$MediaPageChipsTableTableManager get mediaPageChips =>
+      $$MediaPageChipsTableTableManager(_db, _db.mediaPageChips);
+  $$MediaPageSectionsTableTableManager get mediaPageSections =>
+      $$MediaPageSectionsTableTableManager(_db, _db.mediaPageSections);
   $$DecorTableTableManager get decor =>
       $$DecorTableTableManager(_db, _db.decor);
   $$AuthChannelsTableTableManager get authChannels =>

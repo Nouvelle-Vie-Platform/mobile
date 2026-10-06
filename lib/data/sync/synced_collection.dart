@@ -351,6 +351,28 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) => referenceId(SyncCollectionKey.menuEntries, item),
         rowOf: menuEntryRowOf,
       ),
+      // **La médiathèque en pages** (#167) : juste après les menus, l'ordre du
+      // registre serveur — elles disent quels onglets existent, donc avant les
+      // listes. Les pages d'abord : une puce ou une section sans sa page n'a
+      // rien sous quoi se poser (et attendrait le cycle suivant).
+      SyncedCollection<MediaPageRow>(
+        key: SyncCollectionKey.mediaPages,
+        local: (dao) => dao.mediaPagesCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.mediaPages, item),
+        rowOf: mediaPageRowOf,
+      ),
+      SyncedCollection<MediaPageChipRow>(
+        key: SyncCollectionKey.mediaPageChips,
+        local: (dao) => dao.mediaPageChipsCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.mediaPageChips, item),
+        rowOf: mediaPageChipRowOf,
+      ),
+      SyncedCollection<MediaPageSectionRow>(
+        key: SyncCollectionKey.mediaPageSections,
+        local: (dao) => dao.mediaPageSectionsCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.mediaPageSections, item),
+        rowOf: mediaPageSectionRowOf,
+      ),
       SyncedCollection<AuthChannelsRow>(
         key: SyncCollectionKey.authChannels,
         local: (dao) => dao.authChannelsCollection,

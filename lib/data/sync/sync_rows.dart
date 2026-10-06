@@ -28,6 +28,7 @@ import 'package:drift/drift.dart';
 import '../../models/legal_document_view.dart';
 import '../../models/teaching_download.dart';
 import '../local/app_database.dart';
+import '../local/converters/string_list_converter.dart';
 import '../local/converters/teaching_download_converter.dart';
 import '../local/converters/waveform_converter.dart';
 
@@ -1126,6 +1127,75 @@ MenuEntriesCompanion menuEntryRowOf(Map<String, Object?> item) {
     publishedUntil: Value(_instant(item, 'publishedUntil')),
     pageTitle: Value(_optionalI18nMap(item, 'pageTitle')),
     pageDescription: Value(_optionalI18nMap(item, 'pageDescription')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/media_pages` — **une page de médiathèque** (#167), relevée sur
+/// `media_page_transformer.ts` : `id`, `labelKey`, `label`, `position`, les
+/// quatre colonnes du filtre, `createdAt`, `updatedAt` (+ `deletedAt`, lu par
+/// le moteur avant ce lecteur). `label = null` est une valeur : « le libellé
+/// du dépôt », porté par `labelKey`.
+MediaPagesCompanion mediaPageRowOf(Map<String, Object?> item) {
+  return MediaPagesCompanion.insert(
+    id: Value(referenceId('media_pages', item)),
+    labelKey: Value(_optionalText(item, 'labelKey')),
+    label: Value(_optionalI18nMap(item, 'label')),
+    position: Value(_optionalInt(item, 'position') ?? 0),
+    destinationFamily: Value(_optionalText(item, 'destinationFamily')),
+    destinationRubric: Value(_optionalText(item, 'destinationRubric')),
+    destinationBranch: Value(_optionalText(item, 'destinationBranch')),
+    destinationSearch: Value(_optionalText(item, 'destinationSearch')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/media_page_chips` — **une puce** (#167), relevée sur
+/// `media_page_chip_transformer.ts`. `mediaPageId` est exigé : sans lui la puce
+/// n'appartient à rien. Le libellé, non nul côté serveur, se lit tolérant —
+/// une carte absente vaut une carte vide, et la puce ne paraît pas.
+MediaPageChipsCompanion mediaPageChipRowOf(Map<String, Object?> item) {
+  const collection = 'media_page_chips';
+  return MediaPageChipsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    mediaPageId: _requiredInt(collection, item, 'mediaPageId'),
+    label: _optionalI18nMap(item, 'label') ?? const {},
+    position: Value(_optionalInt(item, 'position') ?? 0),
+    filterRubric: Value(_optionalText(item, 'filterRubric')),
+    filterBranch: Value(_optionalText(item, 'filterBranch')),
+    filterSearch: Value(_optionalText(item, 'filterSearch')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/media_page_sections` — **une section** (#167), relevée sur
+/// `media_page_section_transformer.ts`.
+///
+/// `layout`, `sort` et `destinationFamily` sont exigés et stockés **en chaîne
+/// libre** : une valeur que ce binaire ne connaît pas se décide à la lecture,
+/// pas en coûtant la page. `manualIds` / `rankedIds` sont des listes
+/// d'identifiants de contenu (UUID) ; `null` y est une valeur (« rien choisi »,
+/// « jamais classé »). `rankedAt` n'est pas servi.
+MediaPageSectionsCompanion mediaPageSectionRowOf(Map<String, Object?> item) {
+  const collection = 'media_page_sections';
+  return MediaPageSectionsCompanion.insert(
+    id: Value(referenceId(collection, item)),
+    mediaPageId: _requiredInt(collection, item, 'mediaPageId'),
+    position: Value(_optionalInt(item, 'position') ?? 0),
+    titleKey: Value(_optionalText(item, 'titleKey')),
+    title: Value(_optionalI18nMap(item, 'title')),
+    layout: _text(collection, item, 'layout'),
+    sort: _text(collection, item, 'sort'),
+    maxItems: Value(_optionalInt(item, 'maxItems') ?? 10),
+    destinationFamily: _text(collection, item, 'destinationFamily'),
+    destinationRubric: Value(_optionalText(item, 'destinationRubric')),
+    destinationBranch: Value(_optionalText(item, 'destinationBranch')),
+    destinationSearch: Value(_optionalText(item, 'destinationSearch')),
+    manualIds: Value(StringListConverter.decode(item['manualIds'])),
+    rankedIds: Value(StringListConverter.decode(item['rankedIds'])),
     createdAt: Value(_instant(item, 'createdAt')),
     updatedAt: Value(_instant(item, 'updatedAt')),
   );
