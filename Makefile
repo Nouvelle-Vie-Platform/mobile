@@ -1,9 +1,12 @@
 # Makefile — Maison du Miracle
 # Raccourcis pour démarrer un émulateur et lancer l'app.
-# Surcharge possible : make android ANDROID_EMULATOR=Pixel_7_API_34
-
-IOS_EMULATOR     ?= apple_ios_simulator
-ANDROID_EMULATOR ?= emulateur_flutter
+#
+# `make ios` et `make android` choisissent eux-mêmes la cible (tool/run_on.sh) : le simulateur
+# ou l'émulateur qui tourne déjà, sinon le premier disponible. Pour en imposer un :
+#   make ios IOS_SIMULATOR="iPhone 17 Pro"
+#   make android ANDROID_EMULATOR=android_28
+# `make ipad` lance sur l'iPad physique branché. Pour voir le choix sans rien démarrer :
+#   make ios DRY_RUN=1
 
 # URL du backend, passée à l'app par --dart-define (jamais codée en dur dans
 # les sources). Sur un appareil physique, viser l'IP locale du Mac :
@@ -23,13 +26,14 @@ DART_DEFINES         := --dart-define=API_BASE_URL=$(API_BASE_URL)
 ANDROID_DART_DEFINES := --dart-define=API_BASE_URL=$(ANDROID_API_BASE_URL)
 
 .DEFAULT_GOAL := help
-.PHONY: help ios android web web-assets hls-probe devices test analyze format \
+.PHONY: help ios android ipad web web-assets hls-probe devices test analyze format \
         l10n gen migrations icons clean
 
 help: ## Affiche cette aide
 	@echo "Maison du Miracle — cibles disponibles :"
-	@echo "  make ios       Démarre le simulateur iOS + lance l'app"
-	@echo "  make android   Démarre l'émulateur Android + lance l'app (JDK 17/21 requis)"
+	@echo "  make ios       Premier simulateur iOS (déjà démarré, sinon le premier iPhone) + app"
+	@echo "  make android   Premier émulateur Android (déjà lancé, sinon le premier AVD) + app (JDK 17/21)"
+	@echo "  make ipad      L'iPad physique branché + app"
 	@echo "  make web       Lance l'app dans Chrome"
 	@echo "  make devices   Liste les émulateurs et appareils"
 	@echo "  make test      flutter test"
@@ -47,22 +51,21 @@ help: ## Affiche cette aide
 	@echo "  iOS / web  $(API_BASE_URL)"
 	@echo "  Android    $(ANDROID_API_BASE_URL)"
 	@echo "  Surcharge  make ios API_BASE_URL=http://192.168.1.20:3333"
+	@echo ""
+	@echo "Choisir la cible : make ios IOS_SIMULATOR=\"iPhone 17 Pro\" · make android ANDROID_EMULATOR=android_28"
+	@echo "Voir le choix sans rien lancer : make ios DRY_RUN=1"
 
-ios: ## Simulateur iOS + app
-	@echo "▶ Démarrage du simulateur iOS ($(IOS_EMULATOR))…"
-	-@flutter emulators --launch $(IOS_EMULATOR)
-	@echo "⏳ Attente du simulateur…"
-	@until xcrun simctl list devices booted | grep -q "Booted"; do sleep 2; done
-	@echo "🚀 Lancement de l'app sur iOS…"
-	@flutter run $(DART_DEFINES) -d $$(xcrun simctl list devices booted | grep -oE "[0-9A-Fa-f-]{36}" | head -1)
+ios: ## Premier simulateur iOS disponible + app
+	@DART_DEFINES="$(DART_DEFINES)" IOS_SIMULATOR="$(IOS_SIMULATOR)" \
+		FLUTTER_ARGS="$(FLUTTER_ARGS)" DRY_RUN="$(DRY_RUN)" ./tool/run_on.sh ios
 
-android: ## Émulateur Android + app (nécessite un JDK 17/21)
-	@echo "▶ Démarrage de l'émulateur Android ($(ANDROID_EMULATOR))…"
-	-@flutter emulators --launch $(ANDROID_EMULATOR)
-	@echo "⏳ Attente de l'émulateur…"
-	@until adb devices | grep -qw device; do sleep 2; done
-	@echo "🚀 Lancement de l'app sur Android…"
-	@flutter run $(ANDROID_DART_DEFINES) -d $$(adb devices | awk '$$2=="device"{print $$1; exit}')
+android: ## Premier émulateur Android disponible + app (nécessite un JDK 17/21)
+	@DART_DEFINES="$(ANDROID_DART_DEFINES)" ANDROID_EMULATOR="$(ANDROID_EMULATOR)" \
+		FLUTTER_ARGS="$(FLUTTER_ARGS)" DRY_RUN="$(DRY_RUN)" ./tool/run_on.sh android
+
+ipad: ## L'iPad physique branché + app (vise le backend en ligne par défaut)
+	@DART_DEFINES="$(DART_DEFINES)" FLUTTER_ARGS="$(FLUTTER_ARGS)" \
+		DRY_RUN="$(DRY_RUN)" ./tool/run_on.sh ipad
 
 web: ## Lance l'app dans Chrome
 	flutter run $(DART_DEFINES) -d chrome
