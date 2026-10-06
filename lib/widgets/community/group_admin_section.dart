@@ -377,7 +377,7 @@ class GroupMemberActions extends ConsumerWidget {
   ) async {
     final actions = ref.read(groupActionsProvider);
     final groupId = group.groupId;
-    GroupActionOutcome? outcome;
+    final GroupActionOutcome outcome;
     switch (gesture) {
       case _MemberGesture.promote:
         outcome = await actions.setRole(groupId, member.userId, 'moderator');
@@ -405,7 +405,7 @@ class GroupMemberActions extends ConsumerWidget {
         if (confirmed != true) return;
         outcome = await actions.removeMember(groupId, member.userId);
     }
-    if (outcome != null && context.mounted) {
+    if (context.mounted) {
       showGroupActionOutcome(context, outcome);
     }
   }
