@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// **Ouvrir une adresse dans le navigateur du système**, derrière une
 /// abstraction (#82).
@@ -20,22 +21,40 @@ abstract interface class ExternalLinkLauncher {
   Future<bool> open(String url);
 }
 
-/// L'implémentation en service aujourd'hui — **elle n'ouvre rien**, et c'est
-/// assumé, pour exactement la raison d'`UnavailableStoreLauncher`.
+/// L'implémentation en service : **le navigateur du système**, par
+/// `url_launcher`.
 ///
-/// **Le dépôt n'a pas `url_launcher`.** L'ajouter est un greffon natif de plus,
-/// qui exige une déclaration `<queries>` dans le manifeste Android et une entrée
-/// `LSApplicationQueriesSchemes` côté iOS — pour un geste qu'aucun fidèle ne peut
-/// atteindre aujourd'hui : la graine de la médiathèque mobile ne contient
-/// **aucune** entrée `externe` (`menu_seed.ts` n'en sème qu'une, le catalogue
-/// entier), et il faut qu'un administrateur en crée une au portail pour que le
-/// chemin existe.
+/// Le greffon est arrivé avec les médias de la messagerie (M4, #143), qui
+/// ouvrent une position dans l'application de cartes et un numéro dans le
+/// composeur ; le manifeste Android déclare depuis les `<queries>` `https`,
+/// `geo` et `tel`. Il n'y avait donc plus de raison de laisser ce chemin
+/// inerte.
 ///
-/// Il se câble donc **le jour où le portail en publiera une**, et c'est le même
-/// arbitrage qu'`UnavailableStoreLauncher` : le chemin complet est écrit et
-/// testé, seule la dernière ligne attend. Ce qui n'attend pas, en revanche, c'est
-/// la décision — une entrée `externe` est une destination **résolue**, elle
-/// paraît dans la barre, et elle ne se replie sur aucune autre.
+/// Seule une adresse `http`/`https` bien formée s'ouvre : une entrée `externe`
+/// est écrite à la main au portail, et un schéma inattendu (`intent:`,
+/// `file:`) ne doit rien lancer. [open] **ne lève jamais**.
+class UrlLauncherExternalLinkLauncher implements ExternalLinkLauncher {
+  const UrlLauncherExternalLinkLauncher();
+
+  @override
+  Future<bool> open(String url) async {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null ||
+        !(uri.scheme == 'https' || uri.scheme == 'http') ||
+        uri.host.isEmpty) {
+      return false;
+    }
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } on Object {
+      return false;
+    }
+  }
+}
+
+/// L'implémentation **qui n'ouvre rien** : celle d'avant `url_launcher`,
+/// gardée pour un contexte sans greffon (un banc, une plateforme non prise en
+/// charge). Elle rend toujours `false`.
 class UnavailableExternalLinkLauncher implements ExternalLinkLauncher {
   const UnavailableExternalLinkLauncher();
 

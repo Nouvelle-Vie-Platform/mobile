@@ -1606,10 +1606,10 @@ actif, et ce qu'il montre ». Cinq points s'y ratent en silence :
 3. **Un lien externe n'est jamais l'onglet actif** : il ouvre le navigateur
    (`ExternalLinkLauncher`) et laisse la liste où elle est. Il n'y a pas de liste
    dont il serait le filtre, et le souligner laisserait un écran qui ne change
-   pas. ⚠️ `UnavailableExternalLinkLauncher` **n'ouvre rien** aujourd'hui, pour la
-   raison d'`UnavailableStoreLauncher` : le dépôt n'a pas `url_launcher`, et la
-   graine ne sème aucune entrée `externe`. Le chemin est écrit et testé ; seule la
-   dernière ligne attend.
+   pas. Le lanceur en service est `UrlLauncherExternalLinkLauncher` (`url_launcher`,
+   arrivé avec les médias de la messagerie, M4) : il n'ouvre qu'une adresse
+   `http`/`https` bien formée et ne lève jamais. La graine ne sème encore aucune
+   entrée `externe`.
 4. **Les puces d'un onglet sont ses sous-entrées**, jamais une liste fabriquée
    depuis `filterRubric` / `filterBranch` / `filterFamily` : ces trois cases sont
    stockées et **n'ont pas de lecteur ici**, parce que les générer donnerait un
@@ -3173,9 +3173,9 @@ n'aurait rien cassé de visible, puisqu'un bandeau qui se tait ressemble à un
 bandeau qui n'a rien à dire.
 
 ⚠️ **`UnavailableStoreLauncher` n'ouvre rien**, et c'est assumé pour la même
-fenêtre : il n'y a ni fiche App Store ni fiche Play Store à ouvrir, et le dépôt
-n'a pas `url_launcher` (greffon natif de plus, `<queries>` dans le manifeste
-Android). Les deux se câblent **à la première soumission au magasin** — le
+fenêtre : il n'y a ni fiche App Store ni fiche Play Store à ouvrir. `url_launcher`
+et les `<queries>` `https` du manifeste Android sont là depuis M4 ; seule
+l'adresse manque, et elle se câble **à la première soumission au magasin** — le
 chemin complet est écrit et testé, seule la dernière ligne attend, exactement
 comme `BestEffortDiskSpace` attend sa mesure.
 

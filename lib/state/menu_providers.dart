@@ -147,10 +147,9 @@ final teachingRubricIdProvider = StreamProvider.family<int?, String>(
 
 /// **Le navigateur du système**, pour les destinations `externe`.
 ///
-/// À surcharger par `RecordingExternalLinkLauncher` dans les tests. L'implémentation
-/// en service n'ouvre rien aujourd'hui, et son en-tête dit pourquoi : le dépôt
-/// n'a pas `url_launcher`, et aucune entrée `externe` n'est semée. Le chemin est
-/// écrit et testé ; seule la dernière ligne attend.
+/// À surcharger par `RecordingExternalLinkLauncher` dans les tests. En service,
+/// `url_launcher` (arrivé avec les médias de la messagerie, M4) ouvre le
+/// navigateur du système.
 final externalLinkLauncherProvider = Provider<ExternalLinkLauncher>(
-  (ref) => const UnavailableExternalLinkLauncher(),
+  (ref) => const UrlLauncherExternalLinkLauncher(),
 );
