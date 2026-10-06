@@ -52,6 +52,9 @@ class HomeScreen extends ConsumerWidget {
   /// réservé.
   static const Key bibleButtonKey = Key('home_bible_button');
 
+  /// L'en-tête (sa boîte de hauteur variable) : les tests du repli la mesurent.
+  static const Key headerKey = Key('home_header');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
@@ -70,44 +73,155 @@ class HomeScreen extends ConsumerWidget {
       });
     }
 
+    return _CollapsingHome(
+      expandedHeight: headerHeight,
+      header: (height, collapse, contentKey) => _WavyHeader(
+        name: user?.firstName,
+        height: height,
+        collapse: collapse,
+        contentKey: contentKey,
+        onMenuTap: onMenuTap,
+      ),
+      list: ListView(
+        padding: EdgeInsets.only(
+          top: headerHeight + AppSpacing.md,
+          bottom: bottomInset,
+        ),
+        children: [
+          if (showBanner) ...[
+            Padding(
+              padding: AppSpacing.screenPadding,
+              child: const ProfileCompletionBanner(),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          Padding(
+            padding: AppSpacing.screenPadding,
+            child: SectionHeader(
+              title: context.l10n.sectionUpcoming,
+              icon: Icons.calendar_month_outlined,
+              actionLabel: context.l10n.actionSeeAll,
+              onAction: () => context.pushNamed(AppRoute.agenda),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const _UpcomingSection(),
+          const _MediathequeHome(),
+        ],
+      ),
+    );
+  }
+}
+
+/// La hauteur du corps de l'en-tête **déplié**, sous la barre d'état.
+///
+/// Réduite de 294 à 256 (06/10/2026) : l'en-tête prenait trop de l'écran au
+/// repos. Le contenu (menu, salutation, bouton radio) n'en perd rien : c'est la
+/// marge sous le bouton, où paraît l'église, qui raccourcit.
+const double _headerBodyHeight = 256;
+
+/// **L'accueil, son en-tête qui se replie, et sa liste.**
+///
+/// Descendre la liste replie l'en-tête au rythme exact du défilement, jusqu'à
+/// ce qu'il s'arrête **juste sous le bouton radio**, la vague du bas aplatie.
+/// Remonter, **où qu'on soit dans la page**, le déplie au même rythme, vague
+/// comprise (décision utilisateur du 06/10/2026 : « dès qu'on remonte »,
+/// comme Chrome ou Instagram). Tout en haut, il est toujours déplié.
+///
+/// La hauteur repliée n'est pas un chiffre deviné : c'est le bas mesuré du
+/// contenu de l'en-tête (le bouton radio), plus un petit dégagement — une
+/// salutation sur deux lignes ou un texte agrandi la déplacent avec elle. Tant
+/// que la mesure n'a pas eu lieu (premier rendu), l'en-tête ne se replie pas.
+class _CollapsingHome extends StatefulWidget {
+  const _CollapsingHome({
+    required this.expandedHeight,
+    required this.header,
+    required this.list,
+  });
+
+  final double expandedHeight;
+
+  /// L'en-tête pour une hauteur, un taux de repli (0 déplié → 1 replié) et la
+  /// clé posée sur son contenu, que ce widget mesure.
+  final Widget Function(double height, double collapse, GlobalKey contentKey)
+      header;
+  final Widget list;
+
+  @override
+  State<_CollapsingHome> createState() => _CollapsingHomeState();
+}
+
+class _CollapsingHomeState extends State<_CollapsingHome> {
+  final GlobalKey _contentKey = GlobalKey();
+
+  /// La hauteur repliée mesurée ; `null` tant qu'elle ne l'est pas.
+  double? _collapsedHeight;
+
+  /// Les points retirés à la hauteur dépliée, entre 0 et [_range].
+  double _shrink = 0;
+
+  double get _range {
+    final collapsed = _collapsedHeight;
+    if (collapsed == null) return 0;
+    return math.max(0, widget.expandedHeight - collapsed);
+  }
+
+  void _measure() {
+    if (!mounted) return;
+    final content = _contentKey.currentContext?.findRenderObject();
+    final self = context.findRenderObject();
+    if (content is! RenderBox || !content.hasSize || self is! RenderBox) {
+      return;
+    }
+    final bottom = content
+        .localToGlobal(Offset(0, content.size.height), ancestor: self)
+        .dy;
+    final collapsed = bottom + AppSpacing.sm;
+    if (_collapsedHeight == null ||
+        (collapsed - _collapsedHeight!).abs() > 0.5) {
+      setState(() {
+        _collapsedHeight = collapsed;
+        _shrink = _shrink.clamp(0.0, _range);
+      });
+    }
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.depth != 0 ||
+        notification.metrics.axis != Axis.vertical ||
+        notification is! ScrollUpdateNotification) {
+      return false;
+    }
+    final delta = notification.scrollDelta ?? 0;
+    var next = (_shrink + delta).clamp(0.0, _range);
+    // Tout en haut — et dans le rebond iOS au-delà : toujours déplié.
+    if (notification.metrics.pixels <= 0) next = 0;
+    if (next != _shrink) setState(() => _shrink = next);
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Une mesure par rendu, sans effet si rien n'a bougé : la salutation (le
+    // prénom arrive après la session) et l'échelle du texte peuvent changer.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+    final range = _range;
+    final collapse = range == 0 ? 0.0 : _shrink / range;
     return Stack(
       fit: StackFit.expand,
       children: [
-        ListView(
-          padding: EdgeInsets.only(
-            top: headerHeight + AppSpacing.md,
-            bottom: bottomInset,
-          ),
-          children: [
-            if (showBanner) ...[
-              Padding(
-                padding: AppSpacing.screenPadding,
-                child: const ProfileCompletionBanner(),
-              ),
-              const SizedBox(height: AppSpacing.md),
-            ],
-            Padding(
-              padding: AppSpacing.screenPadding,
-              child: SectionHeader(
-                title: context.l10n.sectionUpcoming,
-                icon: Icons.calendar_month_outlined,
-                actionLabel: context.l10n.actionSeeAll,
-                onAction: () => context.pushNamed(AppRoute.agenda),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const _UpcomingSection(),
-            const _MediathequeHome(),
-          ],
+        NotificationListener<ScrollNotification>(
+          onNotification: _onScroll,
+          child: widget.list,
         ),
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          child: _WavyHeader(
-            name: user?.firstName,
-            height: headerHeight,
-            onMenuTap: onMenuTap,
+          child: widget.header(
+            widget.expandedHeight - _shrink,
+            collapse,
+            _contentKey,
           ),
         ),
       ],
@@ -115,25 +229,30 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-const double _headerBodyHeight = 294;
-
 class _WavyHeader extends StatelessWidget {
   const _WavyHeader({
     required this.name,
     required this.height,
+    required this.collapse,
+    required this.contentKey,
     required this.onMenuTap,
   });
   final String? name;
   final double height;
+
+  /// 0 : déplié, vague complète ; 1 : replié sous le bouton radio, bas plat.
+  final double collapse;
+  final GlobalKey contentKey;
   final VoidCallback? onMenuTap;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
+      key: HomeScreen.headerKey,
       height: height,
       width: double.infinity,
       child: ClipPath(
-        clipper: _HeaderWaveClipper(),
+        clipper: _HeaderWaveClipper(collapse: collapse),
         child: DecoratedBox(
           decoration:
               const BoxDecoration(gradient: AppColors.gradientHomeHeader),
@@ -187,9 +306,11 @@ class _WavyHeader extends StatelessWidget {
                   top: MediaQuery.paddingOf(context).top + AppSpacing.xs,
                   left: AppSpacing.lg,
                   right: AppSpacing.lg,
-                  bottom: AppSpacing.lg, // Réduit pour libérer de la hauteur
                 ),
+                // Pas de marge basse : replié, l'en-tête s'arrête juste sous
+                // ce contenu, et une marge le ferait déborder.
                 child: Column(
+                  key: contentKey,
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -702,15 +823,22 @@ class _LatestTeachingsShelf extends ConsumerWidget {
 }
 
 class _HeaderWaveClipper extends CustomClipper<Path> {
+  const _HeaderWaveClipper({this.collapse = 0});
+
+  /// 0 : la vague complète ; 1 : un bas plat. Entre les deux, la vague
+  /// s'aplatit au rythme du repli.
+  final double collapse;
+
   @override
   Path getClip(Size size) {
+    final wave = 1 - collapse.clamp(0.0, 1.0);
     final path = Path()
-      ..lineTo(0, size.height - 40)
+      ..lineTo(0, size.height - 40 * wave)
       ..quadraticBezierTo(
         size.width * 0.35,
-        size.height + 20,
+        size.height + 20 * wave,
         size.width,
-        size.height - 60,
+        size.height - 60 * wave,
       )
       ..lineTo(size.width, 0)
       ..close();
@@ -718,5 +846,6 @@ class _HeaderWaveClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+  bool shouldReclip(covariant _HeaderWaveClipper oldClipper) =>
+      oldClipper.collapse != collapse;
 }
