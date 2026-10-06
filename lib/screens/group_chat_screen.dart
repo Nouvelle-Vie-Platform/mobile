@@ -629,6 +629,7 @@ class _Thread extends StatelessWidget {
 
   /// M8 (#146) : le fond du message trouvé est encore allumé.
   final bool focusLit;
+
   /// Les coches de mes messages (#142), par identifiant.
   final Map<String, ReceiptStatus> receipts;
 

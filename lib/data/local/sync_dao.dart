@@ -241,6 +241,7 @@ abstract final class SyncCollectionKey {
   /// épinglée. `partition: 'private'`, **sans tombstone**, rangée par
   /// `groupId` — désarchiver revient avec le champ nul.
   static const String groupArrangements = 'group_arrangements';
+
   /// **L'accusé de chacun de mes messages** (#142, serveur M3) : ✓✓ et ✓✓
   /// bleu. `partition: 'private'` (servie à l'auteur seul), **sans
   /// tombstone**, rangée par l'identifiant du message, et **après**
@@ -463,6 +464,7 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
         SyncCollectionKey.groupArrangements,
         groupArrangements,
       );
+
   /// **Sans tombstone**, rangée par l'identifiant du message (#142). Le canal
   /// `users/{id}` l'écrit aussi (`receipt.updated`).
   LocalCollection<MessageReceiptRow> get messageReceiptsCollection =>
