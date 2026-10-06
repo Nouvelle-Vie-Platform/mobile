@@ -2204,7 +2204,7 @@ envoi de lecture inerte et aucun historique (paramètres nommés `channel:`,
 
 #### Discussions et groupes gérés depuis l'application (#145, M6)
 
-Voir `docs/messagerie-groupe.md` §11. En bref : « Message » et « Nouvelle
+Voir `docs/messagerie-groupe.md` §12. En bref : « Message » et « Nouvelle
 discussion » ouvrent `DirectChatScreen` **avec une personne** ; sans fil
 existant, l'écho du premier message vit sous la clé `direct:<userId>`
 (`directThreadKey`) et l'envoyeur poste à `POST /groups/direct/:id/messages`.
