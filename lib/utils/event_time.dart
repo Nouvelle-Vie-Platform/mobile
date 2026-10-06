@@ -218,3 +218,12 @@ String formatConversationStamp(
 
   return DateFormat.yMd(locale).format(local);
 }
+
+/// **La date d'envoi d'une requête** (« 5 oct. 2026 »), dans le fuseau **du
+/// lecteur** (#148).
+///
+/// `toLocal()`, comme [formatMessageTime] et pour sa raison : une requête a été
+/// envoyée à un instant que son auteur a vécu, chez lui. Mois abrégé : la date
+/// partage sa ligne avec l'état de traitement.
+String formatRequestDate(DateTime instant, String locale) =>
+    DateFormat.yMMMd(locale).format(instant.toLocal());

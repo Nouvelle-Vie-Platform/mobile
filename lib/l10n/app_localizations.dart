@@ -880,29 +880,77 @@ abstract class AppLocalizations {
   /// **'Animé par {name}'**
   String echangesHostedBy(String name);
 
-  /// Titre de l'écran Requêtes, ouvert par le bouton en haut à droite du hub Échanges (et tooltip de ce bouton)
+  /// Titre de l'onglet « Requêtes » de la page Échanges (#148), et de la page /requests qui en reprend le contenu
   ///
   /// In fr, this message translates to:
   /// **'Requêtes'**
   String get requestsTitle;
 
-  /// Écran Requêtes : titre de l'état vide (aucune requête envoyée pour l'instant)
+  /// Page Échanges : premier onglet, la liste des discussions (#148)
+  ///
+  /// In fr, this message translates to:
+  /// **'Messages'**
+  String get echangesTabMessages;
+
+  /// Page Échanges : second onglet, mes requêtes envoyées — prière, suggestion, réclamation (#148)
+  ///
+  /// In fr, this message translates to:
+  /// **'Requêtes'**
+  String get echangesTabRequests;
+
+  /// Onglet Requêtes : titre de l'état vide (aucune requête envoyée pour l'instant)
   ///
   /// In fr, this message translates to:
   /// **'Aucune requête'**
   String get requestsEmptyTitle;
 
-  /// Écran Requêtes : explication de l'état vide
+  /// Onglet Requêtes : explication de l'état vide
   ///
   /// In fr, this message translates to:
-  /// **'Vos requêtes et suggestions apparaîtront ici.'**
+  /// **'Vos demandes de prière, suggestions et réclamations apparaîtront ici, avec leur suivi.'**
   String get requestsEmpty;
 
-  /// Écran Requêtes : bouton d'ajout, ouvre le formulaire existant de nouvelle requête
+  /// Onglet Requêtes : bouton d'ajout, ouvre le formulaire de nouvelle requête
   ///
   /// In fr, this message translates to:
   /// **'Nouvelle requête'**
   String get requestsAdd;
+
+  /// Onglet Requêtes : échec de lecture du magasin local (pas une panne réseau)
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de lire vos requêtes.'**
+  String get requestsLoadError;
+
+  /// Onglet Requêtes : état d'une requête reçue, pas encore prise en charge (statut serveur « new »)
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle'**
+  String get requestStatusNew;
+
+  /// Onglet Requêtes : état d'une requête prise en charge par un responsable (« in_progress »)
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours'**
+  String get requestStatusInProgress;
+
+  /// Onglet Requêtes : état d'une requête traitée (« resolved »)
+  ///
+  /// In fr, this message translates to:
+  /// **'Traitée'**
+  String get requestStatusResolved;
+
+  /// Onglet Requêtes : état d'une requête archivée après traitement (« archived »)
+  ///
+  /// In fr, this message translates to:
+  /// **'Archivée'**
+  String get requestStatusArchived;
+
+  /// Onglet Requêtes : date d'envoi d'une requête
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyée le {date}'**
+  String requestSentOn(String date);
 
   /// Écran profil-membre : bouton qui démarre une conversation directe avec ce membre
   ///
@@ -1444,6 +1492,12 @@ abstract class AppLocalizations {
   /// **'Type de requête'**
   String get newRequestTypeLabel;
 
+  /// Genre de requête : demande de prière (« prayer_request ») — formulaire et onglet Requêtes
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande de prière'**
+  String get requestTypePrayer;
+
   /// No description provided for @requestTypeSuggestion.
   ///
   /// In fr, this message translates to:
@@ -1453,20 +1507,62 @@ abstract class AppLocalizations {
   /// No description provided for @requestTypeComplaint.
   ///
   /// In fr, this message translates to:
-  /// **'Plainte'**
+  /// **'Réclamation'**
   String get requestTypeComplaint;
 
-  /// No description provided for @requestTypeReport.
+  /// Formulaire de nouvelle requête : champ de l'objet (titre court, exigé par le serveur, 3 à 200 caractères)
   ///
   /// In fr, this message translates to:
-  /// **'Signalement'**
-  String get requestTypeReport;
+  /// **'Objet'**
+  String get newRequestTitleLabel;
 
-  /// No description provided for @requestTypeOther.
+  /// No description provided for @newRequestTitleHint.
   ///
   /// In fr, this message translates to:
-  /// **'Autre'**
-  String get requestTypeOther;
+  /// **'En quelques mots'**
+  String get newRequestTitleHint;
+
+  /// Formulaire de nouvelle requête : objet trop court (le serveur exige 3 caractères)
+  ///
+  /// In fr, this message translates to:
+  /// **'Au moins 3 caractères.'**
+  String get newRequestTitleTooShort;
+
+  /// Formulaire de nouvelle requête : message vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez votre message.'**
+  String get newRequestContentEmpty;
+
+  /// Formulaire de nouvelle requête, prière seulement : poser la prière sur le mur de prière (sinon réservée à l'équipe pastorale)
+  ///
+  /// In fr, this message translates to:
+  /// **'Partager avec la communauté'**
+  String get newRequestShareLabel;
+
+  /// No description provided for @newRequestShareSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Elle apparaîtra sur le mur de prière. Sinon, seule l\'équipe pastorale la lira.'**
+  String get newRequestShareSubtitle;
+
+  /// Formulaire de nouvelle requête : confirmation après un envoi réussi
+  ///
+  /// In fr, this message translates to:
+  /// **'Requête envoyée.'**
+  String get newRequestSent;
+
+  /// Formulaire de nouvelle requête : le serveur n'a pas été joint
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoi impossible : vérifiez votre connexion.'**
+  String get newRequestErrorNetwork;
+
+  /// Formulaire de nouvelle requête : toute autre panne d'envoi
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'envoi a échoué. Réessayez.'**
+  String get newRequestErrorGeneric;
 
   /// No description provided for @newRequestDescribeLabel.
   ///

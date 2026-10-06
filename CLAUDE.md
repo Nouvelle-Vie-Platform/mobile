@@ -1122,6 +1122,13 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   `group_join_requests` —, et deux collections **sans tombstone** (`groups`,
   `profiles`), dont le coût est borné par la lecture : une conversation se lit sur
   `group_members`, qui en a un.
+  `tables/interaction_tables.dart` — `my_interactions` (#148, schéma v21) :
+  **mes** requêtes envoyées (prière, suggestion, réclamation) et leur statut,
+  servies par la collection privée serveur du même nom. **Avec** tombstone.
+  `InteractionDao.watchMine(actor)` est la seule lecture, et elle **filtre sur
+  `authorId`** : sans ce filtre, la personne suivante sur le téléphone lirait
+  les requêtes de la précédente. Écriture par `POST /interactions`
+  (`HttpRequestSubmitter`), suivie d'un cycle — le réseau ne peint jamais.
   `tables/device_tables.dart` — `device_settings` (#91) : **une seule ligne**, le
   **réglage d'exploitation du parc** installé, et par lui le seuil du bandeau de
   mise à jour. **Sans tombstone** — retirer le seuil met la colonne à `null`, et
@@ -1186,7 +1193,9 @@ qu'elle remplit. Le réseau ne peint jamais.
   `presentation_vocabulary`, `menu_entries`, `auth_channels`, `device_settings`,
   `decor`, `contributors`,
   `branches`, puis `teachings`, `teaching_guests`, `gatherings`,
-  `announcements`, `playback_progress`, et enfin les cinq d'« Échanges » —
+  `announcements`, `playback_progress`, `my_interactions` (**mes requêtes**,
+  #148 — privée, filtrée **en plus** sur `authorId` à la lecture, parce que le
+  magasin survit à la déconnexion), et enfin les cinq d'« Échanges » —
   `profiles`, `groups`, `group_members`, `group_join_requests`,
   `group_messages`. **`profiles` passe avant `group_messages`** : elle nomme ce
   que les messages désignent, et c'est la seule contrainte d'ordre que le cadrage
@@ -2559,6 +2568,22 @@ provisoire, à savoir le jour où il portera une position de lecture.
 profond, cible web) avec sa flèche de retour ; l'onglet, lui, est la porte
 d'entrée. ⚠️ **`memberOnlyRoutes` ne protège que la route** : l'onglet est fermé
 par son **contenu**, et rien d'autre ne le ferme.
+
+### La page Échanges : deux onglets (#148)
+
+`GroupsScreen` porte un `DefaultTabController` : **« Messages »**
+(`EchangesMessagesTab`, la liste des discussions, déplacée telle quelle) puis
+**« Requêtes »** (`MyRequestsTab`, `widgets/community/`). La `TabBar` est peinte
+**dans** le bandeau (`CommunityHeader.bottom`), on change d'onglet au toucher ou
+au balayage. Le balayage ne vit que sur cette page : un fil est une route
+poussée hors du `TabBarView`, il ne dispute jamais le geste « répondre ». Le
+bouton Requêtes du bandeau a disparu ; `/requests` reste servie et montre le
+même `MyRequestsTab` sur une page à part.
+
+**Un invité n'a pas l'onglet Requêtes** (ADR-0040 : `POST /interactions` n'est
+pas une écriture d'invité) — en pratique la coquille ne lui monte même pas la
+page. `MyRequestsTab` pousse `/new-request` (réservée) : il figure donc dans
+la liste des écrans « derrière la garde » de `guest_affordances_test.dart`.
 
 ### Le mode invité (issue #398 côté serveur, ADR-0040/0041)
 

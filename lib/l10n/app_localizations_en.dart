@@ -454,13 +454,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get requestsTitle => 'Requests';
 
   @override
+  String get echangesTabMessages => 'Messages';
+
+  @override
+  String get echangesTabRequests => 'Requests';
+
+  @override
   String get requestsEmptyTitle => 'No requests yet';
 
   @override
-  String get requestsEmpty => 'Your requests and suggestions will appear here.';
+  String get requestsEmpty =>
+      'Your prayer requests, suggestions and complaints will appear here, with their follow-up.';
 
   @override
   String get requestsAdd => 'New request';
+
+  @override
+  String get requestsLoadError => 'Couldn\'t read your requests.';
+
+  @override
+  String get requestStatusNew => 'New';
+
+  @override
+  String get requestStatusInProgress => 'In progress';
+
+  @override
+  String get requestStatusResolved => 'Resolved';
+
+  @override
+  String get requestStatusArchived => 'Archived';
+
+  @override
+  String requestSentOn(String date) {
+    return 'Sent on $date';
+  }
 
   @override
   String get memberMessage => 'Message';
@@ -783,16 +810,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newRequestTypeLabel => 'Request type';
 
   @override
+  String get requestTypePrayer => 'Prayer request';
+
+  @override
   String get requestTypeSuggestion => 'Suggestion';
 
   @override
   String get requestTypeComplaint => 'Complaint';
 
   @override
-  String get requestTypeReport => 'Report';
+  String get newRequestTitleLabel => 'Subject';
 
   @override
-  String get requestTypeOther => 'Other';
+  String get newRequestTitleHint => 'In a few words';
+
+  @override
+  String get newRequestTitleTooShort => 'At least 3 characters.';
+
+  @override
+  String get newRequestContentEmpty => 'Write your message.';
+
+  @override
+  String get newRequestShareLabel => 'Share with the community';
+
+  @override
+  String get newRequestShareSubtitle =>
+      'It will appear on the prayer wall. Otherwise only the pastoral team will read it.';
+
+  @override
+  String get newRequestSent => 'Request sent.';
+
+  @override
+  String get newRequestErrorNetwork => 'Couldn\'t send: check your connection.';
+
+  @override
+  String get newRequestErrorGeneric => 'Sending failed. Please try again.';
 
   @override
   String get newRequestDescribeLabel => 'Describe your request';

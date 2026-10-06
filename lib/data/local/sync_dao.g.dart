@@ -38,6 +38,7 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
       attachedDatabase.groupJoinRequests;
   $GroupMessagesTable get groupMessages => attachedDatabase.groupMessages;
   $GroupReadsTable get groupReads => attachedDatabase.groupReads;
+  $MyInteractionsTable get myInteractions => attachedDatabase.myInteractions;
   SyncDaoManager get managers => SyncDaoManager(this);
 }
 
@@ -111,4 +112,7 @@ class SyncDaoManager {
       $$GroupMessagesTableTableManager(_db.attachedDatabase, _db.groupMessages);
   $$GroupReadsTableTableManager get groupReads =>
       $$GroupReadsTableTableManager(_db.attachedDatabase, _db.groupReads);
+  $$MyInteractionsTableTableManager get myInteractions =>
+      $$MyInteractionsTableTableManager(
+          _db.attachedDatabase, _db.myInteractions);
 }

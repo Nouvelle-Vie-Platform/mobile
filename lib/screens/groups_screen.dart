@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/echanges_view.dart';
 import '../router/app_router.dart';
+import '../state/auth_providers.dart';
 import '../state/echanges_providers.dart';
 import '../state/sync_providers.dart';
 import '../theme/app_spacing.dart';
@@ -14,15 +15,87 @@ import '../widgets/app_error_state.dart';
 import '../widgets/community/community_header.dart';
 import '../widgets/community/conversation_tile.dart';
 import '../widgets/community/join_group_card.dart';
+import '../widgets/community/my_requests_tab.dart';
 
-/// Hub **« Échanges »** : groupes et discussions réunis au même endroit, **peints
-/// par le magasin local** (#96).
+/// Page **« Échanges »** : deux onglets, **« Messages »** puis **« Requêtes »**
+/// (#148), sous le **bandeau diagonal** ([CommunityHeader]) qui porte leur barre.
 ///
-/// L'écran est fait d'un **bandeau diagonal** ([CommunityHeader]), d'une rangée
-/// horizontale de **groupes à rejoindre** (découverte, distincte des
-/// conversations — D6), puis d'une **liste à plat** de conversations (groupes et
-/// tête-à-tête mêlés, triés par récence — D7). Aucun onglet, aucun FAB (le FAB
-/// central de la coquille reste inchangé — D9), aucune icône d'appel (D8).
+/// On passe de l'un à l'autre en touchant l'onglet **ou en balayant** la page.
+/// Le balayage ne vit que **sur cette page** : un fil ouvert est une route
+/// poussée par-dessus la coquille, hors de ce `TabBarView`, donc le glissement
+/// « répondre » d'une bulle n'a jamais à lui disputer le geste.
+///
+/// Le bouton « Requêtes » du bandeau a disparu avec eux : l'onglet est la porte.
+///
+/// ## Un invité ne voit pas l'onglet Requêtes
+///
+/// ADR-0040 ne compte pas `POST /interactions` parmi les écritures d'invité, et
+/// la collection `my_interactions` est privée : un invité n'a rien à envoyer ni à
+/// suivre. L'onglet **n'apparaît pas** pour lui — pas de grisage. En pratique la
+/// coquille ne monte même pas cette page sans session (`HomeTab.requiresSession`
+/// rend `SignInTab` à sa place) ; la condition ici est la seconde ceinture, pour
+/// le jour où la page servirait ailleurs.
+class GroupsScreen extends ConsumerWidget {
+  const GroupsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isGuest = ref.watch(authProvider.select((s) => s.isGuest));
+    if (isGuest) {
+      return const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CommunityHeader(),
+          Expanded(child: EchangesMessagesTab()),
+        ],
+      );
+    }
+
+    final l = context.l10n;
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CommunityHeader(
+            bottom: TabBar(
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              indicatorColor: Colors.white,
+              indicatorSize: TabBarIndicatorSize.label,
+              dividerColor: Colors.transparent,
+              labelStyle: AppTypography.bodyStrong,
+              unselectedLabelStyle: AppTypography.body,
+              tabs: [
+                Tab(text: l.echangesTabMessages),
+                Tab(text: l.echangesTabRequests),
+              ],
+            ),
+          ),
+          const Expanded(
+            child: TabBarView(
+              children: [
+                EchangesMessagesTab(),
+                MyRequestsTab(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Onglet **« Messages »** de la page Échanges : groupes et discussions réunis
+/// au même endroit, **peints par le magasin local** (#96).
+///
+/// C'était le corps entier de la page avant #148 ; il y a été **déplacé tel
+/// quel**, sans le bandeau, qui appartient désormais à la page. L'onglet est
+/// fait d'une rangée horizontale de **groupes à rejoindre** (découverte,
+/// distincte des conversations — D6), puis d'une **liste à plat** de
+/// conversations (groupes et tête-à-tête mêlés, triés par récence — D7). Aucun
+/// FAB (le FAB central de la coquille reste inchangé — D9), aucune icône
+/// d'appel (D8).
 ///
 /// ## Ce qui change avec le branchement
 ///
@@ -36,10 +109,11 @@ import '../widgets/community/join_group_card.dart';
 ///   nouveaux messages, puisque le réveil push est de la tranche 2 ;
 /// - **erreur** est une panne de magasin, pas de réseau (`AppErrorState`).
 ///
-/// Le nom de fichier/classe reste `groups_screen` / `GroupsScreen` : la coquille
-/// et les tests s'y réfèrent, et le renommer n'aurait apporté que du bruit.
-class GroupsScreen extends ConsumerWidget {
-  const GroupsScreen({super.key});
+/// Le nom de fichier/classe de la page reste `groups_screen` / `GroupsScreen` :
+/// la coquille et les tests s'y réfèrent, et le renommer n'aurait apporté que
+/// du bruit.
+class EchangesMessagesTab extends ConsumerWidget {
+  const EchangesMessagesTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,12 +130,11 @@ class GroupsScreen extends ConsumerWidget {
     final bottomInset =
         MediaQuery.paddingOf(context).bottom + AppSpacing.xxxl + AppSpacing.xl;
 
+    // Une `Column` à un seul enfant : le bandeau est monté au-dessus, par la
+    // page (#148), et le corps est resté tel quel.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CommunityHeader(
-          onRequests: () => context.pushNamed(AppRoute.requests),
-        ),
         Expanded(
           child: RefreshIndicator(
             // Le même geste que la médiathèque, et ici il porte deux choses : les

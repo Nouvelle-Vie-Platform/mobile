@@ -885,6 +885,50 @@ void main() {
     expect(await db.syncDao.cursorFor('group_reads'), isNull);
   });
 
+  test('v20 → v21 : la table de mes requêtes apparaît', () async {
+    // Le palier de **mes requêtes** (#148) : une création de table, et rien
+    // d'autre.
+    final connection = await verifier.startAt(20);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 21);
+  });
+
+  test('v1 → v21 : un appareil resté en v1 rejoue tous les paliers', () async {
+    final connection = await verifier.startAt(1);
+    final db = AppDatabase(connection);
+    addTearDown(db.close);
+
+    await verifier.migrateAndValidate(db, 21);
+  });
+
+  test('v20 → v21 : le fil survit, et mes requêtes naissent vides', () async {
+    // Ce que le palier ne doit pas toucher : le reste du magasin, curseurs
+    // compris. La table neuve naît vide et sans curseur — le prochain
+    // manifeste l'annoncera `from_zero`, et le premier cycle ramènera aussi les
+    // requêtes envoyées avant cette version.
+    final schema = await verifier.schemaAt(20);
+    schema.rawDatabase.execute(
+      "INSERT INTO group_messages (id, group_id, author_id, is_system, body, "
+      "created_at, sync_stamp) VALUES ('m-1', 'g-1', 'u-1', 0, 'Amen', "
+      "1700000000, 7)",
+    );
+    schema.rawDatabase.execute(
+      "INSERT INTO sync_cursors (collection, cursor, synced_at) "
+      "VALUES ('group_messages', 'un-curseur-opaque', 1)",
+    );
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 21);
+
+    expect((await db.select(db.groupMessages).get()).single.body, 'Amen');
+    expect(await db.syncDao.cursorFor('group_messages'), 'un-curseur-opaque');
+    expect(await db.select(db.myInteractions).get(), isEmpty);
+    expect(await db.syncDao.cursorFor('my_interactions'), isNull);
+  });
+
   test('la version de schéma couvre bien toutes les versions exportées', () {
     final db = openTestDatabase();
     addTearDown(db.close);

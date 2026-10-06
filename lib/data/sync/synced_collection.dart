@@ -409,6 +409,14 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) => contentId(SyncCollectionKey.playbackProgress, item),
         rowOf: playbackProgressRowOf,
       ),
+      // **Mes requêtes** (#148) : privée, sans dépendance d'ordre — une requête
+      // ne joint rien d'autre du magasin.
+      SyncedCollection<MyInteractionRow>(
+        key: SyncCollectionKey.myInteractions,
+        local: (dao) => dao.myInteractionsCollection,
+        idOf: (item) => contentId(SyncCollectionKey.myInteractions, item),
+        rowOf: myInteractionRowOf,
+      ),
       SyncedCollection<ProfileRow>(
         key: SyncCollectionKey.profiles,
         local: (dao) => dao.profilesCollection,

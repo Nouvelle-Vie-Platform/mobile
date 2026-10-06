@@ -30,6 +30,7 @@ import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/data/repositories/playback_progress_reporter.dart';
 import 'package:maison_du_miracle/data/repositories/menu_repository.dart';
+import 'package:maison_du_miracle/data/repositories/my_requests_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_providers.dart';
@@ -43,6 +44,7 @@ import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/menu_providers.dart';
 import 'package:maison_du_miracle/state/radio_live_providers.dart';
+import 'package:maison_du_miracle/state/requests_providers.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/theme_provider.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
@@ -184,6 +186,8 @@ Future<void> pumpRouter(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
+  MyRequestsRepository? myRequests,
+  RequestSubmitter? requestSubmitter,
   MessagingChannel? channel,
   GroupReadSender? readSender,
   GroupHistory? history,
@@ -214,6 +218,8 @@ Future<void> pumpRouter(
           authChannels: authChannels,
           updateThreshold: updateThreshold,
           echanges: echanges,
+          myRequests: myRequests,
+          requestSubmitter: requestSubmitter,
           channel: channel,
           readSender: readSender,
           history: history,
@@ -267,6 +273,8 @@ List<Override> _commonOverrides(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
+  MyRequestsRepository? myRequests,
+  RequestSubmitter? requestSubmitter,
   MessagingChannel? channel,
   GroupReadSender? readSender,
   GroupHistory? history,
@@ -342,6 +350,20 @@ List<Override> _commonOverrides(
       // quel identifiant la session en mémoire a résolu.
       echangesRepositoryProvider.overrideWith(
         (ref, actor) => echanges ?? InMemoryEchangesRepository(),
+      ),
+      // **Mes requêtes** (#148), posées sur un double vide pour la raison de la
+      // rubrique Échanges : l'implémentation réelle lit le magasin Drift, dont
+      // un flux attendu sous l'horloge factice fige le montage — et l'onglet vit
+      // dans la page Échanges, que la coquille monte. Une famille se surcharge
+      // en entier : tous les acteurs reçoivent le même double.
+      myRequestsRepositoryProvider.overrideWith(
+        (ref, actor) => myRequests ?? InMemoryMyRequestsRepository(),
+      ),
+      // **L'envoi d'une requête**, posé indisponible par défaut : le réel est
+      // HTTP dès que `AppEnv.useBackend` est vrai, et un appui sur « Envoyer »
+      // ouvrirait une socket que `flutter test` refuse.
+      requestSubmitterProvider.overrideWithValue(
+        requestSubmitter ?? const UnavailableRequestSubmitter(),
       ),
       // **L'envoyeur est inerte**, pour la raison de l'auth et du rapporteur de
       // progression : l'implémentation réelle est HTTP dès que `AppEnv.useBackend`
@@ -457,6 +479,8 @@ Future<void> pumpScreen(
   AuthChannelOffer? authChannels,
   String? updateThreshold,
   EchangesRepository? echanges,
+  MyRequestsRepository? myRequests,
+  RequestSubmitter? requestSubmitter,
   MessagingChannel? channel,
   GroupReadSender? readSender,
   GroupHistory? history,
@@ -493,6 +517,8 @@ Future<void> pumpScreen(
           authChannels: authChannels,
           updateThreshold: updateThreshold,
           echanges: echanges,
+          myRequests: myRequests,
+          requestSubmitter: requestSubmitter,
           channel: channel,
           readSender: readSender,
           history: history,

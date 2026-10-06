@@ -9,8 +9,15 @@ import '../../theme/app_typography.dart';
 /// la maquette mais **habillé aux couleurs New Life** (bleu de marque, avec des
 /// diagonales teal et jaune) — jamais le rose Dribbble (décision D4).
 ///
-/// Contenu : le titre « Échanges » à gauche, le **bouton Requêtes** à droite. Pas
-/// de hamburger, pas d'avatar central (décision D5).
+/// Contenu : le titre « Échanges », puis — sous lui, dans le même bandeau — la
+/// **barre d'onglets** de la page ([bottom]). Pas de hamburger, pas d'avatar
+/// central (décision D5).
+///
+/// ## Le bouton Requêtes **a disparu** (#148)
+///
+/// Il ouvrait un écran à part, en haut à droite. « Requêtes » est désormais le
+/// second onglet de la page, qu'on atteint en touchant l'onglet ou en balayant :
+/// une porte de plus vers le même endroit n'aurait fait que dédoubler le chemin.
 ///
 /// ## La pile d'avatars **a disparu** (#96, décision 10 du cadrage)
 ///
@@ -24,10 +31,11 @@ import '../../theme/app_typography.dart';
 ///
 /// C'est la règle de la décision 10 : **on retire ce qui ne peut pas être vrai**.
 class CommunityHeader extends StatelessWidget {
-  const CommunityHeader({super.key, required this.onRequests});
+  const CommunityHeader({super.key, this.bottom});
 
-  /// Ouvre l'écran Requêtes (bouton tout à droite du bandeau).
-  final VoidCallback onRequests;
+  /// La barre d'onglets de la page, peinte **dans** le bandeau, sous le titre.
+  /// Nulle quand la page n'a qu'un onglet (un invité, voir `GroupsScreen`).
+  final PreferredSizeWidget? bottom;
 
   @override
   Widget build(BuildContext context) {
@@ -42,27 +50,29 @@ class CommunityHeader extends StatelessWidget {
             top: topInset + AppSpacing.md,
             left: AppSpacing.lg,
             right: AppSpacing.sm,
-            bottom: AppSpacing.lg,
+            bottom: bottom == null ? AppSpacing.lg : 0,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Text(
-                  // Titre de **page** : `communityTitle` (« Échanges »).
-                  // `navGroups`, même mot, ne sert plus que la barre de nav.
-                  context.l10n.communityTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.h2.copyWith(color: Colors.white),
+              // La hauteur du titre est celle qu'il avait à côté du bouton
+              // disparu (un `IconButton`, 48 px) : le bandeau ne rétrécit pas.
+              SizedBox(
+                height: kMinInteractiveDimension,
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    // Titre de **page** : `communityTitle` (« Échanges »).
+                    // `navGroups`, même mot, ne sert plus que la barre de nav.
+                    context.l10n.communityTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.h2.copyWith(color: Colors.white),
+                  ),
                 ),
               ),
-              IconButton(
-                onPressed: onRequests,
-                tooltip: context.l10n.requestsTitle,
-                icon:
-                    const Icon(Icons.assignment_outlined, color: Colors.white),
-              ),
+              if (bottom != null) bottom!,
             ],
           ),
         ),

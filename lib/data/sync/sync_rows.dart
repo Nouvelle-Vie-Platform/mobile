@@ -449,6 +449,39 @@ PlaybackProgressCompanion playbackProgressRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/my_interactions` — **mes requêtes** (#148).
+///
+/// Quatorze clés servies, relevées sur `interaction_transformer.ts` (via
+/// `InteractionPresenter.forViewer`, le lecteur étant l'auteur) et le
+/// descripteur `my_interactions_descriptor.ts` : `id`, `type`, `status`,
+/// `visibility`, `isAnonymous`, `branchId`, `title`, `content`, `authorId`,
+/// `revealed`, `clientCreatedAt`, `createdAt`, `updatedAt`, `deletedAt`.
+///
+/// **Ni `branchId`, ni `revealed`** : le premier dit où la requête a été
+/// routée, ce qu'aucun écran ne montre ; le second vaut toujours `false` pour
+/// l'auteur (un démasquage n'a de sens que pour un autre lecteur). `authorId`
+/// est gardé, et c'est le seul qui serve à filtrer : voir `MyInteractions`.
+///
+/// Les trois énumérations sont **exigées** et stockées brutes : une requête
+/// sans type ni statut n'a rien à montrer, et l'écrire vide la rendrait
+/// illisible tout en occupant la place.
+MyInteractionsCompanion myInteractionRowOf(Map<String, Object?> item) {
+  const collection = 'my_interactions';
+  return MyInteractionsCompanion.insert(
+    id: contentId(collection, item),
+    type: _text(collection, item, 'type'),
+    status: _text(collection, item, 'status'),
+    visibility: _text(collection, item, 'visibility'),
+    isAnonymous: Value(item['isAnonymous'] == true),
+    title: _text(collection, item, 'title'),
+    content: _text(collection, item, 'content'),
+    authorId: Value(_optionalText(item, 'authorId')),
+    clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 /// `GET /sync/legal_documents` — CGU, confidentialité, « à propos ».
 ///
 /// Huit clés, relevées sur `legal_document_transformer.ts` : `id`, `kind`,

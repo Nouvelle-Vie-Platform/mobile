@@ -1,47 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../l10n/l10n_extension.dart';
-import '../router/app_router.dart';
-import '../theme/app_spacing.dart';
-import '../widgets/app_button.dart';
-import '../widgets/app_empty_state.dart';
 import '../widgets/brand_app_bar.dart';
+import '../widgets/community/my_requests_tab.dart';
 
-/// Écran **« Requêtes »**, ouvert par le bouton en haut à droite du hub
-/// « Échanges » (décision D11).
+/// La route **`/requests`** — le contenu de l'onglet « Requêtes » de la page
+/// Échanges, sur une page à part avec sa flèche de retour.
 ///
-/// C'est une **liste avec état vide** au départ : il n'y a **pas** de nouveau
-/// modèle de donnée (décision D12), rien n'est stocké. Le bouton d'ajout ouvre
-/// le formulaire existant (`new_request_screen`).
+/// Depuis #148, plus aucun écran ne l'ouvre : le bouton en haut à droite du
+/// bandeau a disparu, et « Requêtes » est le second onglet d'Échanges. La route
+/// reste servie pour qu'un lien qui y mènerait (cible web, lien gardé) montre
+/// **la même liste**, et non l'ancienne liste vide qui ne lisait rien. Ouvrir
+/// directement l'onglet demanderait de choisir l'onglet de départ de la
+/// coquille, ce que la page ne sait pas encore faire.
 class RequestsScreen extends StatelessWidget {
   const RequestsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final l = context.l10n;
     return Scaffold(
-      appBar: BrandAppBar(title: l.requestsTitle),
-      body: SafeArea(
-        child: ListView(
-          padding: AppSpacing.screenPadding,
-          children: [
-            const SizedBox(height: AppSpacing.xxl),
-            AppEmptyState(
-              icon: Icons.assignment_outlined,
-              title: l.requestsEmptyTitle,
-              message: l.requestsEmpty,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            AppButton(
-              label: l.requestsAdd,
-              icon: Icons.add,
-              onPressed: () => context.pushNamed(AppRoute.newRequest),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-          ],
-        ),
-      ),
+      appBar: BrandAppBar(title: context.l10n.requestsTitle),
+      body: const SafeArea(child: MyRequestsTab()),
     );
   }
 }

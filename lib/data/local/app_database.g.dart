@@ -15902,6 +15902,633 @@ class PendingGroupReadsCompanion extends UpdateCompanion<PendingGroupReadRow> {
   }
 }
 
+class $MyInteractionsTable extends MyInteractions
+    with TableInfo<$MyInteractionsTable, MyInteractionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MyInteractionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+      'type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _visibilityMeta =
+      const VerificationMeta('visibility');
+  @override
+  late final GeneratedColumn<String> visibility = GeneratedColumn<String>(
+      'visibility', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _isAnonymousMeta =
+      const VerificationMeta('isAnonymous');
+  @override
+  late final GeneratedColumn<bool> isAnonymous = GeneratedColumn<bool>(
+      'is_anonymous', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_anonymous" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _contentMeta =
+      const VerificationMeta('content');
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+      'content', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _authorIdMeta =
+      const VerificationMeta('authorId');
+  @override
+  late final GeneratedColumn<String> authorId = GeneratedColumn<String>(
+      'author_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _clientCreatedAtMeta =
+      const VerificationMeta('clientCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientCreatedAt =
+      GeneratedColumn<DateTime>('client_created_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        type,
+        status,
+        visibility,
+        isAnonymous,
+        title,
+        content,
+        authorId,
+        clientCreatedAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'my_interactions';
+  @override
+  VerificationContext validateIntegrity(Insertable<MyInteractionRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('visibility')) {
+      context.handle(
+          _visibilityMeta,
+          visibility.isAcceptableOrUnknown(
+              data['visibility']!, _visibilityMeta));
+    } else if (isInserting) {
+      context.missing(_visibilityMeta);
+    }
+    if (data.containsKey('is_anonymous')) {
+      context.handle(
+          _isAnonymousMeta,
+          isAnonymous.isAcceptableOrUnknown(
+              data['is_anonymous']!, _isAnonymousMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(_contentMeta,
+          content.isAcceptableOrUnknown(data['content']!, _contentMeta));
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('author_id')) {
+      context.handle(_authorIdMeta,
+          authorId.isAcceptableOrUnknown(data['author_id']!, _authorIdMeta));
+    }
+    if (data.containsKey('client_created_at')) {
+      context.handle(
+          _clientCreatedAtMeta,
+          clientCreatedAt.isAcceptableOrUnknown(
+              data['client_created_at']!, _clientCreatedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MyInteractionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MyInteractionRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      type: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      visibility: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}visibility'])!,
+      isAnonymous: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_anonymous'])!,
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      content: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}content'])!,
+      authorId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}author_id']),
+      clientCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_created_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $MyInteractionsTable createAlias(String alias) {
+    return $MyInteractionsTable(attachedDatabase, alias);
+  }
+}
+
+class MyInteractionRow extends DataClass
+    implements Insertable<MyInteractionRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+
+  /// UUIDv7 — pré-généré par le client à l'envoi (`POST /interactions`).
+  final String id;
+
+  /// `prayer_request` | `suggestion` | `complaint`.
+  final String type;
+
+  /// `new` | `in_progress` | `resolved` | `archived`.
+  final String status;
+
+  /// `community` | `private` — seule une prière peut être `community`.
+  final String visibility;
+
+  /// Anonymat **souple** (ADR-0007) : masqué aux autres, jamais à moi.
+  final bool isAnonymous;
+  final String title;
+  final String content;
+
+  /// Moi, par construction — stocké pour **filtrer** à la lecture (voir
+  /// l'en-tête), et nullable parce que le magasin ne refuse pas une page pour
+  /// une clé manquante : une ligne sans auteur n'est simplement lue par
+  /// personne.
+  final String? authorId;
+  final DateTime? clientCreatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const MyInteractionRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.type,
+      required this.status,
+      required this.visibility,
+      required this.isAnonymous,
+      required this.title,
+      required this.content,
+      this.authorId,
+      this.clientCreatedAt,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    map['type'] = Variable<String>(type);
+    map['status'] = Variable<String>(status);
+    map['visibility'] = Variable<String>(visibility);
+    map['is_anonymous'] = Variable<bool>(isAnonymous);
+    map['title'] = Variable<String>(title);
+    map['content'] = Variable<String>(content);
+    if (!nullToAbsent || authorId != null) {
+      map['author_id'] = Variable<String>(authorId);
+    }
+    if (!nullToAbsent || clientCreatedAt != null) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  MyInteractionsCompanion toCompanion(bool nullToAbsent) {
+    return MyInteractionsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      type: Value(type),
+      status: Value(status),
+      visibility: Value(visibility),
+      isAnonymous: Value(isAnonymous),
+      title: Value(title),
+      content: Value(content),
+      authorId: authorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorId),
+      clientCreatedAt: clientCreatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientCreatedAt),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory MyInteractionRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MyInteractionRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      type: serializer.fromJson<String>(json['type']),
+      status: serializer.fromJson<String>(json['status']),
+      visibility: serializer.fromJson<String>(json['visibility']),
+      isAnonymous: serializer.fromJson<bool>(json['isAnonymous']),
+      title: serializer.fromJson<String>(json['title']),
+      content: serializer.fromJson<String>(json['content']),
+      authorId: serializer.fromJson<String?>(json['authorId']),
+      clientCreatedAt: serializer.fromJson<DateTime?>(json['clientCreatedAt']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'type': serializer.toJson<String>(type),
+      'status': serializer.toJson<String>(status),
+      'visibility': serializer.toJson<String>(visibility),
+      'isAnonymous': serializer.toJson<bool>(isAnonymous),
+      'title': serializer.toJson<String>(title),
+      'content': serializer.toJson<String>(content),
+      'authorId': serializer.toJson<String?>(authorId),
+      'clientCreatedAt': serializer.toJson<DateTime?>(clientCreatedAt),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  MyInteractionRow copyWith(
+          {int? syncStamp,
+          String? id,
+          String? type,
+          String? status,
+          String? visibility,
+          bool? isAnonymous,
+          String? title,
+          String? content,
+          Value<String?> authorId = const Value.absent(),
+          Value<DateTime?> clientCreatedAt = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      MyInteractionRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        type: type ?? this.type,
+        status: status ?? this.status,
+        visibility: visibility ?? this.visibility,
+        isAnonymous: isAnonymous ?? this.isAnonymous,
+        title: title ?? this.title,
+        content: content ?? this.content,
+        authorId: authorId.present ? authorId.value : this.authorId,
+        clientCreatedAt: clientCreatedAt.present
+            ? clientCreatedAt.value
+            : this.clientCreatedAt,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  MyInteractionRow copyWithCompanion(MyInteractionsCompanion data) {
+    return MyInteractionRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      type: data.type.present ? data.type.value : this.type,
+      status: data.status.present ? data.status.value : this.status,
+      visibility:
+          data.visibility.present ? data.visibility.value : this.visibility,
+      isAnonymous:
+          data.isAnonymous.present ? data.isAnonymous.value : this.isAnonymous,
+      title: data.title.present ? data.title.value : this.title,
+      content: data.content.present ? data.content.value : this.content,
+      authorId: data.authorId.present ? data.authorId.value : this.authorId,
+      clientCreatedAt: data.clientCreatedAt.present
+          ? data.clientCreatedAt.value
+          : this.clientCreatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MyInteractionRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('type: $type, ')
+          ..write('status: $status, ')
+          ..write('visibility: $visibility, ')
+          ..write('isAnonymous: $isAnonymous, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('authorId: $authorId, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp,
+      id,
+      type,
+      status,
+      visibility,
+      isAnonymous,
+      title,
+      content,
+      authorId,
+      clientCreatedAt,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MyInteractionRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.type == this.type &&
+          other.status == this.status &&
+          other.visibility == this.visibility &&
+          other.isAnonymous == this.isAnonymous &&
+          other.title == this.title &&
+          other.content == this.content &&
+          other.authorId == this.authorId &&
+          other.clientCreatedAt == this.clientCreatedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MyInteractionsCompanion extends UpdateCompanion<MyInteractionRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String> type;
+  final Value<String> status;
+  final Value<String> visibility;
+  final Value<bool> isAnonymous;
+  final Value<String> title;
+  final Value<String> content;
+  final Value<String?> authorId;
+  final Value<DateTime?> clientCreatedAt;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const MyInteractionsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.type = const Value.absent(),
+    this.status = const Value.absent(),
+    this.visibility = const Value.absent(),
+    this.isAnonymous = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    this.authorId = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MyInteractionsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    required String type,
+    required String status,
+    required String visibility,
+    this.isAnonymous = const Value.absent(),
+    required String title,
+    required String content,
+    this.authorId = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        type = Value(type),
+        status = Value(status),
+        visibility = Value(visibility),
+        title = Value(title),
+        content = Value(content);
+  static Insertable<MyInteractionRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? type,
+    Expression<String>? status,
+    Expression<String>? visibility,
+    Expression<bool>? isAnonymous,
+    Expression<String>? title,
+    Expression<String>? content,
+    Expression<String>? authorId,
+    Expression<DateTime>? clientCreatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (type != null) 'type': type,
+      if (status != null) 'status': status,
+      if (visibility != null) 'visibility': visibility,
+      if (isAnonymous != null) 'is_anonymous': isAnonymous,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (authorId != null) 'author_id': authorId,
+      if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MyInteractionsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String>? type,
+      Value<String>? status,
+      Value<String>? visibility,
+      Value<bool>? isAnonymous,
+      Value<String>? title,
+      Value<String>? content,
+      Value<String?>? authorId,
+      Value<DateTime?>? clientCreatedAt,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return MyInteractionsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      visibility: visibility ?? this.visibility,
+      isAnonymous: isAnonymous ?? this.isAnonymous,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      authorId: authorId ?? this.authorId,
+      clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (visibility.present) {
+      map['visibility'] = Variable<String>(visibility.value);
+    }
+    if (isAnonymous.present) {
+      map['is_anonymous'] = Variable<bool>(isAnonymous.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (authorId.present) {
+      map['author_id'] = Variable<String>(authorId.value);
+    }
+    if (clientCreatedAt.present) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MyInteractionsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('type: $type, ')
+          ..write('status: $status, ')
+          ..write('visibility: $visibility, ')
+          ..write('isAnonymous: $isAnonymous, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('authorId: $authorId, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AppSettingsTable extends AppSettings
     with TableInfo<$AppSettingsTable, AppSettingRow> {
   @override
@@ -17218,6 +17845,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GroupReadsTable groupReads = $GroupReadsTable(this);
   late final $PendingGroupReadsTable pendingGroupReads =
       $PendingGroupReadsTable(this);
+  late final $MyInteractionsTable myInteractions = $MyInteractionsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $DownloadsTable downloads = $DownloadsTable(this);
   late final $DownloadTitlesTable downloadTitles = $DownloadTitlesTable(this);
@@ -17239,6 +17867,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final DeviceSettingsDao deviceSettingsDao =
       DeviceSettingsDao(this as AppDatabase);
   late final GroupDao groupDao = GroupDao(this as AppDatabase);
+  late final InteractionDao interactionDao =
+      InteractionDao(this as AppDatabase);
   late final SettingsDao settingsDao = SettingsDao(this as AppDatabase);
   late final DownloadsDao downloadsDao = DownloadsDao(this as AppDatabase);
   late final DownloadNotificationsDao downloadNotificationsDao =
@@ -17279,6 +17909,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         pendingGroupMessages,
         groupReads,
         pendingGroupReads,
+        myInteractions,
         appSettings,
         downloads,
         downloadTitles,
@@ -24654,6 +25285,287 @@ typedef $$PendingGroupReadsTableProcessedTableManager = ProcessedTableManager<
     ),
     PendingGroupReadRow,
     PrefetchHooks Function()>;
+typedef $$MyInteractionsTableCreateCompanionBuilder = MyInteractionsCompanion
+    Function({
+  Value<int> syncStamp,
+  required String id,
+  required String type,
+  required String status,
+  required String visibility,
+  Value<bool> isAnonymous,
+  required String title,
+  required String content,
+  Value<String?> authorId,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$MyInteractionsTableUpdateCompanionBuilder = MyInteractionsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String> type,
+  Value<String> status,
+  Value<String> visibility,
+  Value<bool> isAnonymous,
+  Value<String> title,
+  Value<String> content,
+  Value<String?> authorId,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$MyInteractionsTableFilterComposer
+    extends Composer<_$AppDatabase, $MyInteractionsTable> {
+  $$MyInteractionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get visibility => $composableBuilder(
+      column: $table.visibility, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isAnonymous => $composableBuilder(
+      column: $table.isAnonymous, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get authorId => $composableBuilder(
+      column: $table.authorId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MyInteractionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MyInteractionsTable> {
+  $$MyInteractionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get type => $composableBuilder(
+      column: $table.type, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get visibility => $composableBuilder(
+      column: $table.visibility, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isAnonymous => $composableBuilder(
+      column: $table.isAnonymous, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get authorId => $composableBuilder(
+      column: $table.authorId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MyInteractionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MyInteractionsTable> {
+  $$MyInteractionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get visibility => $composableBuilder(
+      column: $table.visibility, builder: (column) => column);
+
+  GeneratedColumn<bool> get isAnonymous => $composableBuilder(
+      column: $table.isAnonymous, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get authorId =>
+      $composableBuilder(column: $table.authorId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MyInteractionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $MyInteractionsTable,
+    MyInteractionRow,
+    $$MyInteractionsTableFilterComposer,
+    $$MyInteractionsTableOrderingComposer,
+    $$MyInteractionsTableAnnotationComposer,
+    $$MyInteractionsTableCreateCompanionBuilder,
+    $$MyInteractionsTableUpdateCompanionBuilder,
+    (
+      MyInteractionRow,
+      BaseReferences<_$AppDatabase, $MyInteractionsTable, MyInteractionRow>
+    ),
+    MyInteractionRow,
+    PrefetchHooks Function()> {
+  $$MyInteractionsTableTableManager(
+      _$AppDatabase db, $MyInteractionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MyInteractionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MyInteractionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MyInteractionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> type = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String> visibility = const Value.absent(),
+            Value<bool> isAnonymous = const Value.absent(),
+            Value<String> title = const Value.absent(),
+            Value<String> content = const Value.absent(),
+            Value<String?> authorId = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MyInteractionsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            type: type,
+            status: status,
+            visibility: visibility,
+            isAnonymous: isAnonymous,
+            title: title,
+            content: content,
+            authorId: authorId,
+            clientCreatedAt: clientCreatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            required String type,
+            required String status,
+            required String visibility,
+            Value<bool> isAnonymous = const Value.absent(),
+            required String title,
+            required String content,
+            Value<String?> authorId = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MyInteractionsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            type: type,
+            status: status,
+            visibility: visibility,
+            isAnonymous: isAnonymous,
+            title: title,
+            content: content,
+            authorId: authorId,
+            clientCreatedAt: clientCreatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MyInteractionsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $MyInteractionsTable,
+    MyInteractionRow,
+    $$MyInteractionsTableFilterComposer,
+    $$MyInteractionsTableOrderingComposer,
+    $$MyInteractionsTableAnnotationComposer,
+    $$MyInteractionsTableCreateCompanionBuilder,
+    $$MyInteractionsTableUpdateCompanionBuilder,
+    (
+      MyInteractionRow,
+      BaseReferences<_$AppDatabase, $MyInteractionsTable, MyInteractionRow>
+    ),
+    MyInteractionRow,
+    PrefetchHooks Function()>;
 typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
     Function({
   required String key,
@@ -25399,6 +26311,8 @@ class $AppDatabaseManager {
       $$GroupReadsTableTableManager(_db, _db.groupReads);
   $$PendingGroupReadsTableTableManager get pendingGroupReads =>
       $$PendingGroupReadsTableTableManager(_db, _db.pendingGroupReads);
+  $$MyInteractionsTableTableManager get myInteractions =>
+      $$MyInteractionsTableTableManager(_db, _db.myInteractions);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$DownloadsTableTableManager get downloads =>
