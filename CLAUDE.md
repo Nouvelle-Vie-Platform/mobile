@@ -136,13 +136,28 @@ La CI (`.github/workflows/flutter-ci.yml`) lance format + analyze + test.
 **Elle ne lance pas `build_runner`** : les `.g.dart` et `drift_schemas/` sont
 **versionnés**. Oublier `make gen` fait passer la CI sur du code périmé.
 
-**Un tag `vX.Y.Z` publie l'APK** (`.github/workflows/android-release.yml`) :
-analyze et test, puis `flutter build apk --release`, puis une Release GitHub qui
-porte `nouvelle-vie-X.Y.Z.apk`. **Le tag fixe la version** (`versionName`), et le
-`versionCode` est le numéro de run : le `version:` du pubspec n'est pas lu par
-ce chemin. Un tag hors de la forme `vX.Y.Z` est refusé. ⚠️ L'APK est **signé avec
-la clé de debug**, régénérée sur chaque runner : deux APK successifs ne
-s'installent pas l'un par-dessus l'autre, il faut désinstaller entre les deux.
+**Un tag `vX.Y.Z` publie les APK** (`.github/workflows/android-release.yml`) :
+analyze et test, puis `flutter build apk --release --split-per-abi`, puis une
+Release GitHub qui porte `nouvelle-vie-X.Y.Z-arm64-v8a.apk` et
+`nouvelle-vie-X.Y.Z-armeabi-v7a.apk` (pas x86_64), déposés aussi sur le portail
+(`/application`, un dépôt par ABI). **Le tag fixe la version** (`versionName`),
+le numéro de build est le numéro de run, et Flutter en tire le `versionCode` de
+chaque ABI : `1000 × rang + run` (armeabi-v7a 1, arm64-v8a 2) — le workflow
+refuse un run ≥ 1000, où les deux ABI se chevaucheraient. Le `version:` du
+pubspec n'est pas lu par ce chemin. Un tag hors de la forme `vX.Y.Z` est refusé.
+
+**Signature (#159)** : `android/app/build.gradle.kts` signe la release avec la
+clé lue dans `ANDROID_KEYSTORE_PATH` / `ANDROID_KEYSTORE_PASSWORD` /
+`ANDROID_KEY_ALIAS` / `ANDROID_KEY_PASSWORD`, ou à défaut dans
+`android/key.properties` (`storeFile`, `storePassword`, `keyAlias`,
+`keyPassword`). **Ni la clé ni ce fichier n'entrent jamais dans le dépôt**
+(`.gitignore` : `key.properties`, `*.jks`, `*.keystore`). La CI reconstitue le
+keystore depuis le secret `ANDROID_KEYSTORE_BASE64` dans `$RUNNER_TEMP`, et
+l'efface en fin de job. Sans les quatre secrets, ou si le keystore ne s'ouvre
+pas, elle retombe sur la clé de debug avec un `::warning::` — jamais un échec —
+et le portail continue de demander de désinstaller avant d'installer. ⚠️ Perdre
+la clé de release, c'est ne plus jamais pouvoir publier une mise à jour qui
+s'installe par-dessus : elle se sauvegarde hors du Mac.
 
 ### `test/integration/` — contre un **vrai** serveur
 Les tests qui parlent en HTTP à une instance `new-life-server` en marche, sans

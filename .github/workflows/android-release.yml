@@ -1,17 +1,29 @@
 name: APK sur tag
 
-# Un tag `vX.Y.Z` poussé construit l'APK et le publie dans une Release GitHub.
+# Un tag `vX.Y.Z` poussé construit les APK et les publie dans une Release GitHub.
 #
 # **Le tag fixe la version** : `v1.2.0` donne `versionName` 1.2.0, sans toucher
-# au pubspec. Le `versionCode` est le numéro de run de ce workflow : il ne fait
-# que croître, ce qu'Android exige d'une mise à jour.
+# au pubspec. Le numéro de build est le numéro de run de ce workflow.
 #
-# ⚠️ **Signé avec la clé de debug** (choix du 2026-10-05, en attendant une clé de
-# release). Elle est régénérée sur chaque runner : deux APK successifs ne portent
-# donc PAS la même signature, et Android refuse d'installer l'un par-dessus
-# l'autre. Il faut désinstaller l'app avant chaque nouvel APK — on perd alors la
-# session et les téléchargements. Le jour où une clé de release existera, c'est
-# `signingConfig` dans `android/app/build.gradle.kts` et ce workflow qui changent.
+# **Un APK par type de processeur** (#159) : `--split-per-abi`, limité à
+# arm64-v8a (téléphones récents) et armeabi-v7a (anciens téléphones 32 bits) —
+# pas x86_64, qui ne sert qu'aux émulateurs. Chacun pèse le tiers de l'APK
+# « universel » d'avant. Flutter donne à chacun le `versionCode`
+# `<rang de l'ABI> × 1000 + numéro de build` (armeabi-v7a 1, arm64-v8a 2 :
+# `FlutterPluginConstants.ABI_VERSION`) — croissant d'un run à l'autre pour une
+# même ABI, et toujours plus haut que les APK universels d'avant (versionCode =
+# numéro de run). Tant que le numéro de run reste sous 1000, l'APK arm64 d'un
+# run passe aussi au-dessus de l'armeabi-v7a de n'importe quel run : un
+# téléphone 64 bits qui aurait pris l'APK 32 bits monte sans encombre. D'où le
+# garde-fou de la première étape.
+#
+# **Signé avec la clé de release** (#159), reconstituée depuis quatre secrets :
+# `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
+# `ANDROID_KEY_PASSWORD`. Même clé d'un tag à l'autre : la mise à jour
+# s'installe par-dessus, sans rien effacer. **Sans ces secrets** (ou s'ils ne
+# s'ouvrent pas), la construction retombe sur la clé de debug régénérée sur le
+# runner, avec un avertissement visible : jamais d'échec pour ça, mais il faudra
+# alors désinstaller avant d'installer — et le portail le dira.
 
 on:
   push:
@@ -39,6 +51,13 @@ jobs:
           # par segment — un `1.2.0-rc1` le rendrait muet.
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Tag « $tag » invalide : attendu vX.Y.Z (ex. v1.2.0)."
+            exit 1
+          fi
+          # Au-delà de 999, `1000 + n` (armeabi-v7a) rattraperait `2000 + 0`
+          # (arm64-v8a) : l'ordre entre les deux ABI ne tiendrait plus. Ce jour-là,
+          # il faudra un autre numéro de build — pas un APK au versionCode faux.
+          if [ "$GITHUB_RUN_NUMBER" -ge 1000 ]; then
+            echo "::error::Numéro de run ${GITHUB_RUN_NUMBER} ≥ 1000 : les versionCode par ABI se chevaucheraient (voir l'en-tête du workflow)."
             exit 1
           fi
           echo "name=$version" >> "$GITHUB_OUTPUT"
@@ -72,30 +91,117 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      # La clé de release (#159), reconstituée dans un fichier temporaire du
+      # runner — jamais dans le dépôt, effacé à la fin du job (`Effacer la clé`).
+      # Elle est **ouverte** ici, avant la construction : un mot de passe ou un
+      # alias faux devient un avertissement et un repli sur la clé de debug,
+      # jamais une Release ratée.
+      - name: Préparer la clé de signature
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          fallback() {
+            echo "::warning title=Signature::$1 APK signés avec une clé de debug : il faudra désinstaller l'app avant de les installer."
+            rm -f "$keystore"
+            echo "stable=false" >> "$GITHUB_OUTPUT"
+            echo "path=" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          keystore="${RUNNER_TEMP}/release.jks"
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] \
+            || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            fallback "Secrets de signature absents (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD)."
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$keystore" \
+            || fallback "ANDROID_KEYSTORE_BASE64 n'est pas du base64 valide."
+          keytool -list -keystore "$keystore" -storepass "$KEYSTORE_PASSWORD" \
+            -alias "$KEY_ALIAS" > /dev/null 2>&1 \
+            || fallback "Le keystore ne s'ouvre pas avec ce mot de passe et cet alias."
+          # Un keystore PKCS12 (le défaut de `keytool`) n'a qu'un mot de passe :
+          # `keytool` ignorerait un mot de passe de clé différent, Gradle non.
+          type=$(keytool -list -keystore "$keystore" -storepass "$KEYSTORE_PASSWORD" \
+            2>/dev/null | sed -n 's/^Keystore type: //p')
+          if [ "$type" = "PKCS12" ] \
+            && [ "$KEY_PASSWORD" != "$KEYSTORE_PASSWORD" ]; then
+            fallback "Keystore PKCS12 : ANDROID_KEY_PASSWORD doit valoir ANDROID_KEYSTORE_PASSWORD."
+          fi
+          # Un keystore JKS peut en avoir deux : la clé doit s'ouvrir aussi.
+          keytool -certreq -keystore "$keystore" -storepass "$KEYSTORE_PASSWORD" \
+            -alias "$KEY_ALIAS" -keypass "$KEY_PASSWORD" > /dev/null 2>&1 \
+            || fallback "La clé « ${KEY_ALIAS} » ne s'ouvre pas avec ANDROID_KEY_PASSWORD."
+          echo "stable=true" >> "$GITHUB_OUTPUT"
+          echo "path=$keystore" >> "$GITHUB_OUTPUT"
+
+      # `android/app/build.gradle.kts` lit la clé dans ces variables ; un chemin
+      # vide le fait signer avec la clé de debug.
       - name: Build APK
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ steps.signing.outputs.path }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: >
-          flutter build apk --release
+          flutter build apk --release --split-per-abi
+          --target-platform android-arm,android-arm64
           --build-name=${{ steps.version.outputs.name }}
           --build-number=${{ steps.version.outputs.code }}
           --dart-define=API_BASE_URL=https://eenv.brainsial.com
 
-      - name: Nommer l'APK
+      # Les deux APK doivent porter **le même certificat** : c'est lui que le
+      # résumé du run affiche, pour le comparer d'un tag à l'autre.
+      - name: Nommer les APK et lire leur certificat
         id: apk
         run: |
-          file="nouvelle-vie-${{ steps.version.outputs.name }}.apk"
-          mv build/app/outputs/flutter-apk/app-release.apk "$file"
-          echo "file=$file" >> "$GITHUB_OUTPUT"
+          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          files=""
+          certs=""
+          for abi in arm64-v8a armeabi-v7a; do
+            file="nouvelle-vie-${{ steps.version.outputs.name }}-${abi}.apk"
+            mv "build/app/outputs/flutter-apk/app-${abi}-release.apk" "$file"
+            cert=$("$apksigner" verify --print-certs "$file" \
+              | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+            echo "${file} : $(du -h "$file" | cut -f1), certificat SHA-256 ${cert}"
+            files="${files} ${file}"
+            certs="${certs}${cert}\n"
+          done
+          if [ "$(printf "$certs" | sort -u | wc -l)" -ne 1 ]; then
+            echo "::error::Les deux APK ne portent pas le même certificat."
+            exit 1
+          fi
+          cert=$(printf "$certs" | head -1)
+          echo "files=${files# }" >> "$GITHUB_OUTPUT"
+          echo "cert=${cert}" >> "$GITHUB_OUTPUT"
+          echo "Certificat de signature (SHA-256) : \`${cert}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Effacer la clé
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/release.jks"
 
       - name: Publier la Release
         env:
           GH_TOKEN: ${{ github.token }}
+          STABLE: ${{ steps.signing.outputs.stable }}
         run: |
+          if [ "$STABLE" = "true" ]; then
+            signature="Signés avec la clé de release : la mise à jour s'installe par-dessus la version précédente (une seule exception : une version d'avant la clé de release, à désinstaller une dernière fois)."
+          else
+            signature="⚠️ Signés avec une clé de debug : pour installer ces APK sur un téléphone qui a déjà l'app, il faut d'abord la désinstaller."
+          fi
           cat > notes.md <<EOF
-          APK Android ${{ steps.version.outputs.name }} (versionCode ${{ steps.version.outputs.code }}).
+          APK Android ${{ steps.version.outputs.name }} (numéro de build ${{ steps.version.outputs.code }}).
 
-          ⚠️ Signé avec une clé de debug : pour installer cet APK sur un téléphone qui a déjà l'app, il faut d'abord la désinstaller.
+          - \`arm64-v8a\` : la plupart des téléphones.
+          - \`armeabi-v7a\` : anciens téléphones 32 bits.
+
+          ${signature}
+
+          Certificat (SHA-256) : \`${{ steps.apk.outputs.cert }}\`
           EOF
-          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.file }}" \
+          gh release create "$GITHUB_REF_NAME" ${{ steps.apk.outputs.files }} \
             --title "Nouvelle Vie ${{ steps.version.outputs.name }}" \
             --notes-file notes.md \
             --generate-notes \
@@ -103,7 +209,8 @@ jobs:
 
       # Le dépôt est privé : la page Releases ci-dessus rend 404 aux personnes
       # invitées. Le portail sert donc le dernier APK sur sa page publique
-      # `/application` (server-portal#524), et c'est cette étape qui le lui dépose.
+      # `/application` (server-portal#524), et c'est cette étape qui le lui dépose
+      # — un fichier par ABI depuis #159.
       #
       # ⚠️ Elle ne fait JAMAIS échouer le workflow : la Release est déjà publiée,
       # et un portail injoignable ne doit pas la faire passer pour ratée. Tout
@@ -114,44 +221,55 @@ jobs:
       # À poser une fois (voir server-portal/deploy/README.md) :
       # - le secret `APP_RELEASE_TOKEN`, même valeur que sur le VPS ;
       # - la variable `PORTAL_URL`, facultative (défaut : le domaine de prod).
-      - name: Déposer l'APK sur le portail
+      - name: Déposer les APK sur le portail
         env:
           APP_RELEASE_TOKEN: ${{ secrets.APP_RELEASE_TOKEN }}
           PORTAL_URL: ${{ vars.PORTAL_URL || 'https://eenv.brainsial.com' }}
-          APK: ${{ steps.apk.outputs.file }}
           VERSION: ${{ steps.version.outputs.name }}
+          STABLE: ${{ steps.signing.outputs.stable }}
         run: |
           if [ -z "$APP_RELEASE_TOKEN" ]; then
-            echo "::warning title=Portail::Secret APP_RELEASE_TOKEN absent : l'APK n'a pas été déposé sur le portail."
+            echo "::warning title=Portail::Secret APP_RELEASE_TOKEN absent : les APK n'ont pas été déposés sur le portail."
             exit 0
           fi
 
-          url="${PORTAL_URL%/}/app-releases/${VERSION}"
-          # Pas de réponse d'un essai précédent : un échec de connexion n'en écrit aucune.
-          rm -f response.json
-          code=$(curl -sS -o response.json -w '%{http_code}' \
-            --max-time 900 --retry 3 --retry-delay 15 --retry-connrefused \
-            -X POST \
-            -H "Authorization: Bearer ${APP_RELEASE_TOKEN}" \
-            -H "Content-Type: application/vnd.android.package-archive" \
-            --data-binary "@${APK}" \
-            "$url") || code="000"
+          # Un dépôt par ABI (#159). `signature=stable` dit au portail que la clé
+          # de release a servi : sa page cesse alors de demander de désinstaller.
+          #
+          # armeabi-v7a d'abord, arm64-v8a ensuite : un portail d'avant #159
+          # ignore `?abi=` et garde le dernier reçu sous la version — autant que
+          # ce soit l'APK de la plupart des téléphones.
+          signature=""
+          [ "$STABLE" = "true" ] && signature="&signature=stable"
+          for abi in armeabi-v7a arm64-v8a; do
+            apk="nouvelle-vie-${VERSION}-${abi}.apk"
+            url="${PORTAL_URL%/}/app-releases/${VERSION}?abi=${abi}${signature}"
+            # Pas de réponse d'un essai précédent : un échec de connexion n'en écrit aucune.
+            rm -f response.json
+            code=$(curl -sS -o response.json -w '%{http_code}' \
+              --max-time 900 --retry 3 --retry-delay 15 --retry-connrefused \
+              -X POST \
+              -H "Authorization: Bearer ${APP_RELEASE_TOKEN}" \
+              -H "Content-Type: application/vnd.android.package-archive" \
+              --data-binary "@${apk}" \
+              "$url") || code="000"
 
-          case "$code" in
-            200|201) ;;
-            *)
-              echo "::warning title=Portail::Dépôt de l'APK sur ${url} en échec (HTTP ${code}) : $(head -c 300 response.json 2>/dev/null)"
-              exit 0
-              ;;
-          esac
+            case "$code" in
+              200|201) ;;
+              *)
+                echo "::warning title=Portail::Dépôt de ${apk} sur ${url} en échec (HTTP ${code}) : $(head -c 300 response.json 2>/dev/null)"
+                continue
+                ;;
+            esac
 
-          # Le portail calcule l'empreinte lui-même : elle doit être celle du
-          # fichier construit ici, sinon ce que la page affiche ne prouve rien.
-          local_sha=$(sha256sum "$APK" | cut -d' ' -f1)
-          remote_sha=$(jq -r '.sha256 // empty' response.json)
-          if [ "$local_sha" != "$remote_sha" ]; then
-            echo "::warning title=Portail::Empreinte différente — locale ${local_sha}, portail ${remote_sha:-absente}."
-            exit 0
-          fi
-          echo "APK ${VERSION} déposé ($(jq -r '.outcome' response.json)) — SHA-256 ${local_sha}"
-          echo "APK ${VERSION} sur le portail : ${PORTAL_URL%/}/application" >> "$GITHUB_STEP_SUMMARY"
+            # Le portail calcule l'empreinte lui-même : elle doit être celle du
+            # fichier construit ici, sinon ce que la page affiche ne prouve rien.
+            local_sha=$(sha256sum "$apk" | cut -d' ' -f1)
+            remote_sha=$(jq -r '.sha256 // empty' response.json)
+            if [ "$local_sha" != "$remote_sha" ]; then
+              echo "::warning title=Portail::${apk} : empreinte différente — locale ${local_sha}, portail ${remote_sha:-absente}."
+              continue
+            fi
+            echo "${apk} déposé ($(jq -r '.outcome' response.json)) — SHA-256 ${local_sha}"
+            echo "${apk} sur le portail : ${PORTAL_URL%/}/application" >> "$GITHUB_STEP_SUMMARY"
+          done
