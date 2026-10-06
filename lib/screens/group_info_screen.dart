@@ -13,6 +13,7 @@ import '../theme/app_typography.dart';
 import '../widgets/app_avatar.dart';
 import '../widgets/app_card.dart';
 import '../widgets/community/group_admin_section.dart';
+import '../widgets/chat/media/group_shared_media.dart';
 import '../widgets/content_absence.dart';
 
 /// Fiche d'un groupe — **inspiration Telegram** (D15) : en-tête immersif (logo,
@@ -28,13 +29,11 @@ import '../widgets/content_absence.dart';
 /// collections répliquées : `groups` (nom, description, effectif compté par le
 /// serveur), `group_members` (le roster) et `profiles` (les noms).
 ///
-/// ## La section « Médias partagés » **a disparu de la tranche 1**
+/// ## La section « Médias partagés » est revenue avec les médias (M4, #143)
 ///
-/// C'étaient des `picsum.photos` tirées du nom du groupe. Le serveur ne sert aucune
-/// pièce jointe aujourd'hui — elles n'existent **nulle part**, des deux côtés, et
-/// le PRD d'ADR-0006 les exclut nommément de la V1. La section reviendra en tranche
-/// 3, remplie des **images du fil** ; garder la place en l'habillant d'images
-/// inventées aurait promis une fonctionnalité qui n'existe pas.
+/// La tranche 1 avait retiré des `picsum.photos` tirées du nom du groupe. Elle
+/// revient remplie des **images du fil** (`GroupSharedMedia`), et absente quand
+/// le fil n'en porte aucune.
 class GroupInfoScreen extends ConsumerWidget {
   const GroupInfoScreen({super.key, required this.groupId});
 
@@ -121,6 +120,10 @@ class _Body extends StatelessWidget {
           _DescriptionCard(text: description),
           const SizedBox(height: AppSpacing.xl),
         ],
+        // Les médias partagés (M4, #143) : les images du fil — la section
+        // revient, remplie de vrais messages, et absente quand il n'y en a pas.
+        GroupSharedMedia(groupId: group.groupId),
+        const SizedBox(height: AppSpacing.lg),
         // #145 : rejoindre, demander, ajouter, quitter — selon mes droits ;
         // puis la file des demandes, pour un animateur ou un modérateur.
         GroupMembershipActions(group: group, requestPending: requestPending),

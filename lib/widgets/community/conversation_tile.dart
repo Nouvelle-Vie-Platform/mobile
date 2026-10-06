@@ -8,6 +8,7 @@ import '../../theme/app_typography.dart';
 import '../../utils/event_time.dart';
 import '../app_avatar.dart';
 import '../app_card.dart';
+import '../chat/media/media_labels.dart';
 import '../unread_badge.dart';
 import 'muted_indicator.dart';
 
@@ -47,11 +48,14 @@ class ConversationTile extends StatelessWidget {
     final stamp = conversation.lastMessageAt;
     // **Un dernier message sans texte est un média** (#140) : il y a un instant,
     // mais pas de phrase. On le dit, plutôt que de laisser croire au vide.
+    // M2 (#141) : un dernier message supprimé pour tous le dit. Depuis M4
+    // (#143), la forme du média se dit : « 🎤 Message vocal », « 📍 Position »…
+    // La mention générique reste pour une forme inconnue.
     final preview = typingLabel ??
         (conversation.lastMessageDeleted
-            // M2 (#141) : un dernier message supprimé pour tous le dit.
             ? l.chatMessageDeleted
             : conversation.lastMessagePreview ??
+                mediaPreviewLabel(l, conversation.lastMessageMedia) ??
                 (stamp != null ? l.echangesMediaPreview : null));
     final unread = conversation.unreadCount;
 

@@ -28,8 +28,14 @@
 	<true/>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Enregistrez dans vos photos les médias partagés dans vos échanges.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Prenez une photo ou filmez une vidéo à envoyer dans vos échanges.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Partagez votre position dans une discussion, quand vous le choisissez.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Enregistrez des messages vocaux pour vos échanges.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choisissez une image pour illustrer l'annonce que vous publiez au nom de votre compte officiel.</string>
+	<string>Choisissez une image pour une annonce de votre compte officiel, ou une photo ou une vidéo à envoyer dans vos échanges.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

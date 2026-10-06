@@ -53,6 +53,7 @@ import '../data/repositories/group_message_sender.dart';
 import '../data/repositories/store_echanges_repository.dart';
 import '../models/echanges_view.dart';
 import 'auth_providers.dart';
+import 'chat_media_providers.dart';
 import 'chat_organization_providers.dart';
 import 'receipts_providers.dart'
     show deliveryAcknowledgerProvider, messagingSignalHandlerProvider;
@@ -186,6 +187,9 @@ final groupMessageComposerProvider = Provider<GroupMessageComposer>(
     // cycle en cours plutôt que d'en lancer un second, qui se disputerait les
     // mêmes curseurs.
     resynchronize: ref.watch(pullToRefreshProvider),
+    // Un écho de média (M4) repart par le chemin présigné.
+    resendMedia: (id, {required manual}) =>
+        ref.read(groupMediaComposerProvider).deliver(id, manual: manual),
   ),
 );
 

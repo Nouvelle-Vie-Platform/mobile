@@ -64,6 +64,7 @@ import 'package:maison_du_miracle/state/vocabulary_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
 import 'package:maison_du_miracle/widgets/mini_player_host.dart';
 
+import 'chat_media_doubles.dart';
 import 'playback_doubles.dart';
 
 /// Monte un écran isolé dans un environnement minimal (ProviderScope + thème).
@@ -523,6 +524,9 @@ List<Override> _commonOverrides(
               MessagingStoreWriter(db).store(SyncCollectionKey.groupMutes, row),
         ),
       ),
+      // **Les médias du fil** (M4, #143) — enregistreur, lecteur, compresseur,
+      // chemin présigné : tous des greffons ou du réseau, posés inertes.
+      ...chatMediaTestOverrides(db),
     ];
 
 Future<void> pumpScreen(

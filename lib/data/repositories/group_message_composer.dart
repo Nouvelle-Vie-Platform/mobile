@@ -41,11 +41,20 @@ class GroupMessageComposer {
     required Future<void> Function() resynchronize,
     DateTime Function()? now,
     String Function()? mintId,
+    Future<bool> Function(String clientMessageId, {required bool manual})?
+        resendMedia,
   })  : _dao = dao,
         _sender = sender,
         _resynchronize = resynchronize,
         _now = now ?? DateTime.now,
-        _mintId = mintId ?? mintClientMessageId;
+        _mintId = mintId ?? mintClientMessageId,
+        _resendMedia = resendMedia;
+
+  /// **Le renvoi d'un écho de média** (M4, #143) — délégué au composeur des
+  /// médias, qui reprend le chemin présigné où il s'était arrêté. `null` =
+  /// pas de médias (un écho de média n'est alors pas renvoyé).
+  final Future<bool> Function(String clientMessageId, {required bool manual})?
+      _resendMedia;
 
   final GroupDao _dao;
   final GroupMessageSender _sender;
@@ -170,7 +179,7 @@ class GroupMessageComposer {
     // Le geste de la personne passe outre un refus définitif retenu : c'est elle
     // qui décide de retenter, et un second refus la remettra de côté.
     _refused.remove(clientMessageId);
-    if (!await _resend(clientMessageId)) return false;
+    if (!await _resend(clientMessageId, manual: true)) return false;
     await _resynchronize();
     await _dao.purgeReconciled();
     return true;
@@ -196,11 +205,18 @@ class GroupMessageComposer {
     await _dao.purgeReconciled();
   }
 
-  Future<bool> _resend(String clientMessageId) async {
+  Future<bool> _resend(String clientMessageId, {bool manual = false}) async {
     if (!_inFlight.add(clientMessageId)) return false;
     try {
       final pending = await _dao.pendingById(clientMessageId);
       if (pending == null) return false;
+
+      // Un écho de **média** (M4) suit le chemin présigné, pas le `POST` texte.
+      if (pending.mediaKind != null) {
+        final resendMedia = _resendMedia;
+        if (resendMedia == null) return false;
+        return resendMedia(clientMessageId, manual: manual);
+      }
 
       await _dao.markPendingSending(clientMessageId);
       final sent = await _post(

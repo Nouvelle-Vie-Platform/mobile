@@ -25,6 +25,7 @@ import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/chat_bubble.dart';
 import '../widgets/chat/chat_info_banner.dart';
 import '../widgets/chat/chat_mute_menu.dart';
+import '../widgets/chat/media/chat_composer.dart';
 import '../widgets/chat/forward_sheet.dart';
 import '../widgets/chat/message_actions_sheet.dart';
 import '../widgets/chat/message_focus_highlight.dart';
@@ -917,7 +918,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 onCancel: _cancelComposerContext,
               ),
             if (group != null && group.canWrite)
-              MessageInputBar(
+              // M4 (#143) : la barre de saisie et ses médias — trombone,
+              // appareil photo, micro.
+              ChatComposer(
+                groupId: widget.groupId,
                 hintText: l.chatMessageHint,
                 controller: _controller,
                 focusNode: _composerFocus,

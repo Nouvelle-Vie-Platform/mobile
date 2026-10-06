@@ -479,3 +479,77 @@ résultat. Un 409 « déjà fait » se lit comme un succès.
 
 La file des demandes se lit au réseau (`GET /groups/:id/join-requests`) : la
 collection synchronisée ne porte pas le nom du demandeur.
+
+## 13. Les médias (M4, #143 — reprend #98)
+
+Le plan est `server-portal/docs/messagerie-whatsapp-plan.md` (décision 6) ; la
+règle est celle d'Échanges : **le téléphone dégrade, le serveur borne**.
+
+| forme | ce que le téléphone fait | bulle |
+| --- | --- | --- |
+| vocal | appui maintenu sur le micro (glisser à gauche : annuler ; vers le haut : mains libres) ; AAC mono 32 kbit/s, gain automatique, 10 min au plus ; forme d'onde relevée | forme d'onde, durée, position, 1× / 1,5× / 2× ; **un seul son à la fois** |
+| fichier audio | choisi (`file_picker`), envoyé tel quel, `voice: false` | nom, progression, même lecteur |
+| image | galerie ou appareil photo, légende facultative ; **JPEG q80, ≤ 1600 px, EXIF retiré** (pur Dart, `image_degrade.dart`) | la même image, redimensionnée ; visionneuse au toucher |
+| vidéo | compressée sur l'appareil (H.264 720p, métadonnées retirées) + vignette ; durée refusée **avant** compression si elle dépasse le plafond servi | vignette, durée ; lecteur plein écran |
+| document | choisi parmi les types acceptés (PDF, Word, Excel, PowerPoint, ODF, texte) | icône, nom, taille ; ouvert par l'application du système |
+| position | `geolocator`, permission **au geste**, libellé facultatif | pavé de carte **dessiné** (aucune tuile, aucune clé), libellé, coordonnées ; Cartes au toucher |
+| contact | **un** contact, par le sélecteur du système (aucune permission de lecture du carnet) ; nom + numéros | nom, numéros, « Appeler » |
+
+### Le chemin d'envoi
+
+`GroupMediaComposer` (`lib/data/messaging/media/`) : clé d'idempotence,
+**écho posé avant toute dégradation ni montée** (fichier recopié dans l'outbox,
+`MediaOutbox`), dégradation, ticket (`POST /groups/:id/media-uploads`) dont les
+bornes — `maxBytes`, `maxDurationSeconds` — sont vérifiées **avant** la montée,
+`PUT` droit au magasin (un `Dio` **nu** : jamais de jeton vers le magasin),
+message qui cite la clé. Chaque étape franchie est écrite dans l'écho
+(`pending_group_messages.media_*`) : un renvoi reprend sans redégrader ni
+remonter. Un échec reste à l'écran avec sa **cause** quand on la connaît (trop
+lourd, trop long, type refusé, fichier disparu) ; une cause définitive n'est pas
+rejouée par le renvoi automatique, le geste manuel essaie quand même. Position
+et contact n'ont pas de fichier : seulement le message.
+
+La progression de la montée vit **en mémoire** (`MediaUploadProgress`) : l'écrire
+au magasin réveillerait le fil à chaque paquet.
+
+### La lecture
+
+Un message confirmé n'a qu'une clé. `GroupMediaUrls` appelle
+`GET /groups/:id/messages/:mid/media` **sans suivre** le 302 et donne au lecteur
+l'URL présignée **nue** (gardée 50 min en mémoire, jamais sur disque) : laisser
+le lecteur suivre la redirection recopierait l'en-tête `Authorization` vers le
+magasin.
+
+### Le magasin (palier v26)
+
+Sept colonnes sur `group_messages` (`media_key`, `media_kind`, `media_duration`,
+`media_meta` en JSON, `media_size`, `media_mime`, `media_thumbnail_key`), dix sur
+`pending_group_messages`, et **le curseur de `group_messages` effacé** : les
+médias reçus avant ce palier avaient été rangés sans leur média. L'écho d'un
+média sans légende porte un corps **vide** (la colonne garde son `NOT NULL`),
+que la lecture rend nul.
+
+Avec les gestes de M2 : un message **supprimé pour tous** ne peint aucun média
+(le serveur n'en sert plus, et la vue l'ignore de toute façon) ; la citation
+d'un média dit sa forme (`replyTo.mediaKind`, y compris pour un écho : la forme
+est lue sur l'origine en magasin) ; un **transfert** recopie le média entier
+côté serveur. Un média envoyé pendant qu'une réponse est préparée ne porte
+pas la citation : seul le texte la porte aujourd'hui.
+
+### Les coutures
+
+Chaque greffon est derrière un contrat, inerte dans les tests
+(`test/helpers/chat_media_doubles.dart`, posé par `pumpScreen`) :
+`VoiceRecorder` (`record`), `ChatAudioEngine` (`just_audio`, un `AudioPlayer`
+**à part** de la médiathèque), `ChatVideoSurfaceFactory` (`video_player`),
+`VideoCompressionEngine` (`v_video_compressor`), `ChatMediaPicker` /
+`MediaOpener` (`image_picker`, `file_picker`, `geolocator`,
+`flutter_native_contact_picker`, `url_launcher`, `open_file`).
+
+### Ce qui reste à vérifier sur appareil
+
+- la sortie réelle de l'enregistreur (conteneur `audio/mp4`, débit) et la
+  compression vidéo (MP4 H.264) sur Android d'entrée de gamme ;
+- le 302 lu sans le suivre derrière Caddy, et la lecture progressive d'un MP4
+  présigné par ExoPlayer ;
+- l'ouverture d'un document téléchargé par `open_file` (FileProvider du greffon).

@@ -264,21 +264,39 @@ void main() {
       expect(dots, findsNothing);
     });
 
-    testWidgets('la barre de saisie n\'offre plus trois boutons inertes',
-        (tester) async {
+    testWidgets(
+        'la barre de saisie : plus d\'emoji inerte, et le trombone et '
+        'l\'appareil photo reviennent avec les médias (M4)', (tester) async {
       await _pumpThread(tester, [_message('m-1')]);
       final bar = find.byType(MessageInputBar);
       expect(bar, findsOneWidget);
-      for (final icon in const [
-        Icons.emoji_emotions_outlined,
-        Icons.attach_file,
-        Icons.photo_camera_outlined,
-      ]) {
-        expect(
-          find.descendant(of: bar, matching: find.byIcon(icon)),
-          findsNothing,
-        );
-      }
+      expect(
+        find.descendant(
+          of: bar,
+          matching: find.byIcon(Icons.emoji_emotions_outlined),
+        ),
+        findsNothing,
+      );
+      // M1b les avait retirés parce qu'inertes ; M4 (#143) les rend utiles.
+      expect(
+        find.descendant(of: bar, matching: find.byIcon(Icons.attach_file)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: bar,
+          matching: find.byIcon(Icons.photo_camera_outlined),
+        ),
+        findsOneWidget,
+      );
+
+      // Le trombone ouvre la feuille des pièces jointes.
+      await tester.tap(find.byKey(const Key('m4_attach_button')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byKey(const Key('m4_attach_document')), findsOneWidget);
+      expect(find.byKey(const Key('m4_attach_location')), findsOneWidget);
+      expect(find.byKey(const Key('m4_attach_contact')), findsOneWidget);
     });
 
     testWidgets(

@@ -8,6 +8,7 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../utils/event_time.dart';
 import '../app_avatar.dart';
+import 'media/message_media_view.dart';
 
 /// Bulle de message d'une discussion.
 ///
@@ -112,22 +113,31 @@ class ChatBubble extends StatelessWidget {
             const SizedBox(height: 2),
           ],
           if (header != null) header!,
+          // **Le média** (M4, #143), au-dessus de la légende : la bulle empile.
+          // Un message supprimé pour tous (M2) n'en peint aucun.
+          if (message.media != null && !message.deleted) ...[
+            MessageMediaView(message: message),
+            if (message.body != null) const SizedBox(height: 4),
+          ],
           // **Un message-média n'a pas de texte** (#140, piège 1) : on le dit,
           // en italique, plutôt que de rendre une bulle vide qui se lirait comme
           // un message effacé. **Un message supprimé pour tous** (M2, #141) le
-          // dit aussi — et ne dit que cela.
-          Text(
-            message.deleted
-                ? l.chatMessageDeleted
-                : message.body ?? l.chatMediaUnsupported,
-            style: AppTypography.body.copyWith(
-              fontSize: 14,
-              fontStyle: message.deleted || message.body == null
-                  ? FontStyle.italic
-                  : null,
-              color: mine ? Colors.white : palette.textPrimary,
+          // dit aussi — et ne dit que cela. Depuis M4, un média connu se peint
+          // lui-même, et une bulle sans légende **ne peint pas de ligne de texte
+          // vide**.
+          if (message.deleted || message.media == null || message.body != null)
+            Text(
+              message.deleted
+                  ? l.chatMessageDeleted
+                  : message.body ?? l.chatMediaUnsupported,
+              style: AppTypography.body.copyWith(
+                fontSize: 14,
+                fontStyle: message.deleted || message.body == null
+                    ? FontStyle.italic
+                    : null,
+                color: mine ? Colors.white : palette.textPrimary,
+              ),
             ),
-          ),
           const SizedBox(height: 3),
           Row(
             mainAxisSize: MainAxisSize.min,

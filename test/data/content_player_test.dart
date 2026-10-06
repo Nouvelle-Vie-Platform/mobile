@@ -330,11 +330,13 @@ void main() {
       if (code.contains('package:just_audio/')) coupables.add(source.path);
     }
 
-    // Deux lecteurs réels, deux contrats : la médiathèque derrière
-    // `ContentPlayer`, les statuts derrière `StatusPlayer` (#130). Aucun écran.
+    // Trois lecteurs réels, trois contrats : la médiathèque derrière
+    // `ContentPlayer`, les statuts derrière `StatusPlayer` (#130), les vocaux
+    // du fil derrière `ChatAudioEngine` (M4, #143). Aucun écran.
     expect(
       coupables..sort(),
       [
+        'lib/data/players/just_audio_chat_engine.dart',
         'lib/data/players/just_audio_content_player.dart',
         'lib/data/players/media_status_player.dart',
       ],
@@ -343,7 +345,8 @@ void main() {
     );
   });
 
-  test('la couture tient : un seul fichier de `lib/` importe video_player', () {
+  test('la couture tient : seuls les lecteurs réels importent video_player',
+      () {
     // Même garde-fou pour le moteur vidéo des statuts (#130) : un
     // `VideoPlayerController` construit dans un `State` lèverait
     // `MissingPluginException` sous `flutter test`, et l'écran ne serait plus
@@ -360,10 +363,14 @@ void main() {
       if (code.contains('package:video_player/')) coupables.add(source.path);
     }
 
+    // Et la vidéo d'un message (M4, #143), derrière `ChatVideoSurfaceFactory`.
     expect(
-      coupables,
-      ['lib/data/players/media_status_player.dart'],
-      reason: 'seul le lecteur réel des statuts connaît le moteur vidéo',
+      coupables..sort(),
+      [
+        'lib/data/players/chat_video_surface.dart',
+        'lib/data/players/media_status_player.dart',
+      ],
+      reason: 'seuls les lecteurs réels connaissent le moteur vidéo',
     );
   });
 }

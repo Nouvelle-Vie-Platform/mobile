@@ -117,6 +117,17 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   `web/` n'a aucun actif de plus à versionner. Le jour où le web aurait du push,
   c'est cette règle-là qu'il faudrait rouvrir d'abord. Aucune des trois
   dépendances n'a bougé `drift`, `sqlite3` ni `hls.js` : pas de `make web-assets`.
+- **Médias de la messagerie** (M4, #143) — `record ^7.1` (vocal AAC mono
+  32 kbit/s), `image ^4.10` (pur Dart : JPEG q80, ≤ 1600 px, **EXIF retiré**),
+  `v_video_compressor ^2.2` (vidéo H.264 compressée sur l'appareil),
+  `file_picker ^13.1`, `geolocator ^14.1`, `flutter_native_contact_picker
+  ^0.0.12` (un contact, sans permission de lecture du carnet), `url_launcher
+  ^6.3` (cartes, composeur), `open_file ^4.0`. Tous Swift Packages ; chacun
+  derrière une couture de `lib/data/messaging/media/` ou `lib/data/players/`,
+  posée inerte par `pumpScreen` (`test/helpers/chat_media_doubles.dart`).
+  Permissions demandées **au geste** : `RECORD_AUDIO`, `ACCESS_FINE_LOCATION`
+  (Android), micro, appareil photo, position (iOS). Voir
+  `docs/messagerie-groupe.md` §11.
 
 ## Commandes
 ```bash
