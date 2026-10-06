@@ -162,11 +162,12 @@ class HttpMessageGestureSender implements MessageGestureSender {
     Map<String, Object?> row(Map raw) =>
         {for (final e in raw.entries) e.key.toString(): e.value};
     if (data is Map) return [row(data)];
-    if (data is List)
+    if (data is List) {
       return [
         for (final item in data)
           if (item is Map) row(item)
       ];
+    }
     return const [];
   }
 }

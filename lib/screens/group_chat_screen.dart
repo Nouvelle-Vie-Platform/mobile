@@ -521,10 +521,16 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       _jumpTargetId = messageId;
       _highlightId = messageId;
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revealJumpTarget());
+  }
+
+  /// La mise en évidence s'éteint 1,6 s **après** que le message est à l'écran
+  /// — pas après le toucher : remonter un long fil prend plusieurs images.
+  void _dimHighlightLater() {
+    _highlightTimer?.cancel();
     _highlightTimer = Timer(const Duration(milliseconds: 1600), () {
       if (mounted) setState(() => _highlightId = null);
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _revealJumpTarget());
   }
 
   /// Amène la ligne du message visé à l'écran. La liste est paresseuse et
@@ -539,9 +545,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
         alignment: 0.5,
         duration: const Duration(milliseconds: 250),
       );
+      _dimHighlightLater();
       return;
     }
-    if (!_scroll.hasClients || attempt > 40) return;
+    if (!_scroll.hasClients || attempt > 40) {
+      _dimHighlightLater();
+      return;
+    }
     final position = _scroll.position;
     if (attempt == 0) {
       _scroll.jumpTo(0);
@@ -549,7 +559,10 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       if (position.pixels >= position.maxScrollExtent) {
         // Le haut est atteint sans la ligne : la fenêtre s'élargit peut-être
         // encore ; on laisse une image de plus avant d'abandonner.
-        if (attempt > 35) return;
+        if (attempt > 35) {
+          _dimHighlightLater();
+          return;
+        }
       }
       _scroll.jumpTo(
         math.min(
@@ -1168,6 +1181,9 @@ class _GesturedMessage extends StatelessWidget {
         children: [
           GestureDetector(
             key: Key('message_gestures_${message.id}'),
+            // Toute la ligne répond à l'appui long, pas seulement la bulle —
+            // comme WhatsApp, et comme l'appui long « Infos » de M3 (#142).
+            behavior: HitTestBehavior.opaque,
             onLongPress: onLongPress,
             child: SwipeToReply(
               enabled: canSwipe,
