@@ -393,3 +393,43 @@ coalescé, lancé dès la fin du premier.
 - la reconnexion après une bascule bleu/vert (~120 s sans flux) et après un
   passage en arrière-plan ;
 - le retour depuis une notification (flèche et geste système Android).
+
+## 11. Archiver, épingler, rechercher (#146, tranche M8)
+
+Le contrat serveur est `server-portal/docs/messagerie-temps-reel-contrat.md` §5.
+
+### Le rangement, pour moi seul
+
+`group_arrangements` (collection `private`, rangée par `groupId`) porte **mon**
+rangement servi : `archivedAt`, `pinnedAt`, `arrangedAt`. `pending_group_arrangements`
+(locale seule) porte le geste pas encore confirmé, **état voulu complet** (jamais
+une bascule) ; il l'emporte à la lecture (`GroupDao.conversationsOf`), donc la
+discussion change de place à l'instant du geste, réseau ou pas. `GroupArranger`
+poste `PUT /groups/:id/arrangement`, range la ligne rendue, puis oublie le geste ;
+il le rejoue après chaque cycle réussi (`messagingOutboxProvider`).
+
+| règle | où |
+| --- | --- |
+| archiver désépingle, épingler désarchive | `GroupArranger` (et le serveur) |
+| trois épingles au plus — refusé **avant** d'écrire, `409` du serveur retire le geste | `GroupArranger`, `ChatOrganizationDao.pinnedCount` |
+| une archive **reste** archivée quand un message arrive ; sa notification reste | personne ne désarchive de soi-même |
+| le badge de l'onglet ignore les archives | `totalUnread` |
+| `arrangement.changed` ne recule jamais (deux appareils) | `MessagingStoreWriter`, `arrangementIsNotOlder` |
+
+### Les gestes, et le balayage d'onglet
+
+Appui long sur une tuile → Archiver / Épingler / Marquer comme lu. Glissement de
+la tuile vers la gauche → archiver (désarchiver dans l'écran des archives). Le
+`Dismissible` ne prend que le glissement **commencé sur une tuile** ; ailleurs
+(barre de recherche, rangée de découverte, liste vide), le `TabBarView` des
+Échanges (#148) garde la main. Testé dans `test/screens/chat_organization_test.dart`.
+
+### La recherche
+
+Le magasin d'abord (noms de discussions en Dart, accents ignorés ; texte des
+messages en SQL, jokers échappés, bornée à mes appartenances), puis le serveur
+après 400 ms (`GET /groups/messages/search`) pour l'historique non chargé. Les
+résultats serveur **ne sont pas rangés** (ils feraient un trou d'historique) :
+ouvrir un résultat (`/group-chat/:id?message=<id>`) remonte le fil par pages
+(`ThreadMessageLocator`) jusqu'au message, l'amène à l'écran et le met en
+évidence (`MessageFocusHighlight`).

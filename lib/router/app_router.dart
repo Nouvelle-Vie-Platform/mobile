@@ -6,10 +6,12 @@ import '../models/models.dart';
 import '../screens/about_screen.dart';
 import '../screens/agenda_screen.dart';
 import '../screens/announcement_composer_screen.dart';
+import '../screens/archived_chats_screen.dart';
 import '../screens/auth/code_screen.dart';
 import '../screens/auth/identifier_screen.dart';
 import '../screens/auth/profile_form_screen.dart';
 import '../screens/bible_screen.dart';
+import '../screens/chat_search_screen.dart';
 import '../screens/delete_account_screen.dart';
 import '../screens/donations_screen.dart';
 import '../screens/downloads_screen.dart';
@@ -76,6 +78,12 @@ abstract final class AppRoute {
   static const gatheringDetail = 'gathering';
   static const groupChat = 'group-chat';
   static const groupInfo = 'group-info';
+
+  /// **Mes discussions archivées** (#146, M8).
+  static const chatArchived = 'chat-archived';
+
+  /// **Rechercher dans mes discussions** (#146, M8).
+  static const chatSearch = 'chat-search';
   static const mediaViewer = 'media-viewer';
   static const memberProfile = 'member-profile';
   static const requests = 'requests';
@@ -180,6 +188,9 @@ const memberOnlyRoutes = <String>{
   '/group-chat/:id',
   '/group-info/:id',
   '/member-profile/:id',
+  // M8 (#146) : mes archives et la recherche dans mes messages.
+  '/chats/archived',
+  '/chats/search',
   // La barrière de consentement.
   _legalGate,
 };
@@ -473,8 +484,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.groupChat,
         path: '/group-chat/:id',
         builder: (_, state) => AppBackground(
-          child: GroupChatScreen(groupId: state.pathParameters['id']!),
+          child: GroupChatScreen(
+            groupId: state.pathParameters['id']!,
+            // M8 (#146) : ouvert depuis la recherche, sur le message trouvé.
+            focusMessageId: state.uri.queryParameters['message'],
+          ),
         ),
+      ),
+      GoRoute(
+        name: AppRoute.chatArchived,
+        path: '/chats/archived',
+        builder: (_, __) => const AppBackground(child: ArchivedChatsScreen()),
+      ),
+      GoRoute(
+        name: AppRoute.chatSearch,
+        path: '/chats/search',
+        builder: (_, __) => const AppBackground(child: ChatSearchScreen()),
       ),
       GoRoute(
         name: AppRoute.groupInfo,

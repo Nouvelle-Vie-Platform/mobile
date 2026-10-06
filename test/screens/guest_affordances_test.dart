@@ -61,6 +61,9 @@ const _screensBehindTheGuard = <String, String>{
   // pour un invité — et par `/requests`, route réservée.
   'lib/widgets/community/my_requests_tab.dart':
       'onglet de membre, sous Échanges ou /requests',
+  // M8 (#146) : les archives et la recherche sont des routes réservées.
+  'lib/screens/archived_chats_screen.dart': '/chats/archived est réservé',
+  'lib/screens/chat_search_screen.dart': '/chats/search est réservé',
   // Le bandeau de complétion de profil ne se rend que si `authProvider.user`
   // n'est pas nul (`showBanner` dans `HomeScreen`, et son jumeau dans le Profil).
   // Il vit sur un écran ouvert, mais il n'existe que pour un membre — et un
