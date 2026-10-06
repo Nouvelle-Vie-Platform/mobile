@@ -18,6 +18,10 @@ mixin _$GroupDaoMixin on DatabaseAccessor<AppDatabase> {
   $OfficialAccountsTable get officialAccounts =>
       attachedDatabase.officialAccounts;
   $ContributorsTable get contributors => attachedDatabase.contributors;
+  $GroupArrangementsTable get groupArrangements =>
+      attachedDatabase.groupArrangements;
+  $PendingGroupArrangementsTable get pendingGroupArrangements =>
+      attachedDatabase.pendingGroupArrangements;
   GroupDaoManager get managers => GroupDaoManager(this);
 }
 
@@ -48,4 +52,10 @@ class GroupDaoManager {
           _db.attachedDatabase, _db.officialAccounts);
   $$ContributorsTableTableManager get contributors =>
       $$ContributorsTableTableManager(_db.attachedDatabase, _db.contributors);
+  $$GroupArrangementsTableTableManager get groupArrangements =>
+      $$GroupArrangementsTableTableManager(
+          _db.attachedDatabase, _db.groupArrangements);
+  $$PendingGroupArrangementsTableTableManager get pendingGroupArrangements =>
+      $$PendingGroupArrangementsTableTableManager(
+          _db.attachedDatabase, _db.pendingGroupArrangements);
 }

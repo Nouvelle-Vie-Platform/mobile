@@ -9,6 +9,7 @@ import '../data/messaging/group_history.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/echanges_view.dart';
 import '../router/app_router.dart';
+import '../state/chat_organization_providers.dart';
 import '../state/echanges_providers.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -16,6 +17,7 @@ import '../theme/app_typography.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/chat_bubble.dart';
 import '../widgets/chat/chat_info_banner.dart';
+import '../widgets/chat/message_focus_highlight.dart';
 import '../widgets/chat/message_input_bar.dart';
 import '../widgets/content_absence.dart';
 import '../widgets/home_tab.dart';
@@ -66,9 +68,19 @@ import '../widgets/home_tab.dart';
 /// Échanges (`/home?tab=community`) — jamais hors de l'application, jamais sur
 /// un écran vide.
 class GroupChatScreen extends ConsumerStatefulWidget {
-  const GroupChatScreen({super.key, required this.groupId});
+  const GroupChatScreen({
+    super.key,
+    required this.groupId,
+    this.focusMessageId,
+  });
 
   final String groupId;
+
+  /// **Le message sur lequel ouvrir** (#146, M8) — un résultat de recherche. Le
+  /// fil remonte l'historique jusqu'à lui s'il le faut, le montre et le met en
+  /// évidence ; le séparateur des non-lus n'est alors pas posé. `null` : le fil
+  /// s'ouvre comme d'habitude.
+  final String? focusMessageId;
 
   @override
   ConsumerState<GroupChatScreen> createState() => _GroupChatScreenState();
@@ -110,6 +122,15 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
 
   bool _foreground = true;
 
+  /// M8 (#146) : porte la bulle du message trouvé, pour s'y rendre.
+  final GlobalKey _focusKey = GlobalKey();
+
+  /// M8 (#146) : le message trouvé est en évidence. Allumé une fois, à
+  /// l'arrivée sur lui, et éteint par [_focusTimer] — jamais rallumé, même si
+  /// la liste recrée sa bulle.
+  bool _focusLit = false;
+  Timer? _focusTimer;
+
   @override
   void initState() {
     super.initState();
@@ -121,6 +142,7 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _focusTimer?.cancel();
     _scroll.dispose();
     _controller.dispose();
     super.dispose();
@@ -145,9 +167,23 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
       // Le compte n'est qu'un confort d'ouverture : sans lui, le fil s'ouvre
       // sur sa fenêtre par défaut.
     }
+    // M8 (#146) : ouvert sur un message trouvé — la fenêtre doit le contenir,
+    // quitte à remonter l'historique jusqu'à lui.
+    var focusWindow = 0;
+    final focus = widget.focusMessageId;
+    if (focus != null) {
+      try {
+        focusWindow = await ref
+                .read(threadMessageLocatorProvider)
+                .windowFor(widget.groupId, focus) ??
+            0;
+      } catch (_) {
+        // Introuvable ou réseau absent : le fil s'ouvre comme d'habitude.
+      }
+    }
     if (!mounted) return;
     setState(() {
-      _limit = math.max(kThreadWindow, unread + 10);
+      _limit = math.max(kThreadWindow, math.max(unread, focusWindow) + 10);
       _ready = true;
     });
   }
@@ -267,6 +303,23 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
     _lastMessages = messages;
     if (_separatorFrozen || !_ready) return;
     _separatorFrozen = true;
+
+    // M8 (#146) : ouvert sur un message trouvé — c'est lui qu'on montre.
+    final focus = widget.focusMessageId;
+    if (focus != null && messages.any((m) => m.id == focus)) {
+      _focusLit = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        revealKeyedItem(
+          target: _focusKey,
+          scroll: _scroll,
+          mounted: () => mounted,
+        );
+        _focusTimer = Timer(kMessageFocusDuration, () {
+          if (mounted) setState(() => _focusLit = false);
+        });
+      });
+      return;
+    }
 
     final unread = messages.where((m) => m.unread).toList();
     if (unread.isNotEmpty) {
@@ -419,6 +472,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen>
                 separatorKey: _separatorKey,
                 scroll: _scroll,
                 onFailedTap: _onFailedTap,
+                focusMessageId: widget.focusMessageId,
+                focusKey: _focusKey,
+                focusLit: _focusLit,
               ),
             ),
             // **La barre de saisie n'existe que si l'on peut écrire.** Le
@@ -483,6 +539,9 @@ class _Thread extends StatelessWidget {
     required this.separatorKey,
     required this.scroll,
     required this.onFailedTap,
+    this.focusMessageId,
+    this.focusKey,
+    this.focusLit = false,
   });
 
   final AsyncValue<List<GroupMessageView>> thread;
@@ -492,6 +551,13 @@ class _Thread extends StatelessWidget {
   final GlobalKey separatorKey;
   final ScrollController scroll;
   final void Function(GroupMessageView message) onFailedTap;
+
+  /// M8 (#146) : le message trouvé, mis en évidence et porteur de [focusKey].
+  final String? focusMessageId;
+  final GlobalKey? focusKey;
+
+  /// M8 (#146) : le fond du message trouvé est encore allumé.
+  final bool focusLit;
 
   @override
   Widget build(BuildContext context) {
@@ -558,7 +624,7 @@ class _Thread extends StatelessWidget {
           return ChatInfoBanner(text: m.body ?? l.chatMediaUnsupported);
         }
 
-        return ChatBubble(
+        final bubble = ChatBubble(
           key: ValueKey(m.id),
           message: m,
           // Répondre en privé à un membre qui intervient : tap sur son
@@ -577,6 +643,14 @@ class _Thread extends StatelessWidget {
               ? () => onFailedTap(m)
               : null,
         );
+        // M8 (#146) : le message trouvé par la recherche.
+        if (m.id == focusMessageId) {
+          return KeyedSubtree(
+            key: focusKey,
+            child: MessageFocusHighlight(lit: focusLit, child: bubble),
+          );
+        }
+        return bubble;
       },
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/l10n_extension.dart';
+import '../models/chat_organization.dart';
 import '../models/echanges_view.dart';
 import '../router/app_router.dart';
 import '../state/auth_providers.dart';
@@ -12,10 +13,11 @@ import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_state.dart';
+import '../widgets/community/chat_list_header.dart';
 import '../widgets/community/community_header.dart';
-import '../widgets/community/conversation_tile.dart';
 import '../widgets/community/join_group_card.dart';
 import '../widgets/community/my_requests_tab.dart';
+import '../widgets/community/organizable_conversation_tile.dart';
 
 /// Page **« Échanges »** : deux onglets, **« Messages »** puis **« Requêtes »**
 /// (#148), sous le **bandeau diagonal** ([CommunityHeader]) qui porte leur barre.
@@ -145,6 +147,16 @@ class EchangesMessagesTab extends ConsumerWidget {
             child: ListView(
               padding: EdgeInsets.only(top: AppSpacing.lg, bottom: bottomInset),
               children: [
+                // M8 (#146) : la loupe, en tête — membres seulement.
+                if (me != null) ...[
+                  Padding(
+                    padding: AppSpacing.screenPadding,
+                    child: ChatSearchBar(
+                      onTap: () => context.pushNamed(AppRoute.chatSearch),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
                 ..._discoverSection(context, toJoin),
                 ..._conversationsSection(ref, context, me, conversations),
               ],
@@ -232,12 +244,25 @@ class EchangesMessagesTab extends ConsumerWidget {
               ),
             );
           }
+          // M8 (#146) : les archives à part, les épingles en tête. Une
+          // discussion archivée **reste** aux archives quand un message arrive.
+          final shelves = organizeConversations(items);
           return Column(
             children: [
-              for (final c in items) ...[
+              if (shelves.archived.isNotEmpty) ...[
                 Padding(
                   padding: AppSpacing.screenPadding,
-                  child: ConversationTile(
+                  child: ArchivedChatsRow(
+                    count: shelves.archived.length,
+                    onTap: () => context.pushNamed(AppRoute.chatArchived),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+              for (final c in shelves.main) ...[
+                Padding(
+                  padding: AppSpacing.screenPadding,
+                  child: OrganizableConversationTile(
                     conversation: c,
                     // **L'identifiant, jamais l'objet** : un objet en `extra` est
                     // une copie figée hors du magasin, et il ne survit ni à un

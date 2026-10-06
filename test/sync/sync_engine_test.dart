@@ -181,6 +181,8 @@ void main() {
           // Ma lecture (#140), **avant** le fil : arrivée après lui, elle
           // allumerait tout l'historique en non-lu le temps d'un tirage.
           'group_reads',
+          // Mon rangement (#146, M8) : il ne fait que classer des discussions.
+          'group_arrangements',
           'group_messages',
         ],
         reason: 'ça ne supprime pas la fenêtre où un enseignement arrive sans '

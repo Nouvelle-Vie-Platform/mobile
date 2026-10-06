@@ -159,7 +159,8 @@ final String staleCursor = serverCursor(
 /// « vingt-neuf » ; les deux s'accordent cette fois, et c'est le tableau qui a
 /// été cru. Trentième en #140 (serveur M1a) — `group_reads`.
 /// Trente et unième en #148 — `my_interactions`, mes requêtes —, comptée de
-/// la même façon sur la branche serveur jumelle.
+/// la même façon sur la branche serveur jumelle. Trente-deuxième en #146 (M8)
+/// — `group_arrangements`, mes discussions archivées et épinglées.
 ///
 /// La partition de chaque entrée est relevée sur le champ `partition:` de son
 /// descripteur, jamais sur l'intuition de ce qu'une collection « devrait » être.
@@ -230,6 +231,9 @@ const Map<String, String> kSyncCollections = {
   // Ma position de lecture (serveur M1a, mobile #140) : privée — seule ma
   // lecture voyage, et seulement chez moi.
   'group_reads': 'private',
+  // Mon rangement (#146, M8) : privé — archiver une discussion ne se voit que
+  // chez moi.
+  'group_arrangements': 'private',
   'official_account_memberships': 'private',
   // **Mes requêtes** (issue serveur liée à mobile #148) : `owner_id = soi`, et
   // rien d'autre — jamais servie à un porteur sans compte.

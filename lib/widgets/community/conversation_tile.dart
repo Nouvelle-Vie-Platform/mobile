@@ -78,7 +78,7 @@ class ConversationTile extends StatelessWidget {
               ],
             ),
           ),
-          if (stamp != null || unread > 0) ...[
+          if (stamp != null || unread > 0 || conversation.pinned) ...[
             const SizedBox(width: AppSpacing.sm),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -92,6 +92,17 @@ class ConversationTile extends StatelessWidget {
                 if (unread > 0) ...[
                   const SizedBox(height: 4),
                   UnreadBadge(count: unread),
+                ],
+                // M8 (#146) : une discussion épinglée le montre.
+                if (conversation.pinned) ...[
+                  const SizedBox(height: 4),
+                  Icon(
+                    Icons.push_pin,
+                    key: const Key('conversation_pinned_icon'),
+                    size: 14,
+                    color: palette.textSecondary,
+                    semanticLabel: l.chatPinnedLabel,
+                  ),
                 ],
               ],
             ),

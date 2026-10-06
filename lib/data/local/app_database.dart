@@ -11,6 +11,7 @@ import '../../models/legal_document_view.dart';
 import '../../models/teaching_download.dart';
 import 'announcement_dao.dart';
 import 'auth_channels_dao.dart';
+import 'chat_organization_dao.dart';
 // Utilisé par le code généré (`app_database.g.dart`), qui est une `part` de ce
 // fichier : le convertisseur de carte de traduction y est instancié.
 import 'converters/i18n_map_converter.dart';
@@ -109,6 +110,9 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     GroupReads,
     PendingGroupReads,
     MyInteractions,
+    // M8 (#146) : mon rangement des discussions, et son outbox.
+    GroupArrangements,
+    PendingGroupArrangements,
     AppSettings,
     Downloads,
     DownloadTitles,
@@ -128,6 +132,8 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     DeviceSettingsDao,
     GroupDao,
     InteractionDao,
+    // M8 (#146) : archiver, épingler, rechercher.
+    ChatOrganizationDao,
     SettingsDao,
     DownloadsDao,
     DownloadNotificationsDao,
@@ -230,8 +236,12 @@ class AppDatabase extends _$AppDatabase {
   /// naît **vide**, et vide veut dire « aucune requête reçue » — l'onglet
   /// Requêtes montre son état vide, ce que l'écran affichait déjà (il ne lisait
   /// rien).
+  ///
+  /// **v22** (#146) — **archiver, épingler** : `group_arrangements`, une
+  /// collection répliquée **privée** de plus, et `pending_group_arrangements`,
+  /// son outbox locale. Deux créations de table, et rien d'autre.
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   /// Les cinq colonnes du média d'une annonce, ajoutées ensemble au palier
   /// v18 → v19 — et retirées ensemble d'une table créée pour une version
@@ -708,6 +718,27 @@ class AppDatabase extends _$AppDatabase {
           // surnuméraire**.
           if (from < 21) {
             await m.createTable(myInteractions);
+          }
+
+          // v21 → v22 — **archiver, épingler** (#146). Deux créations de table,
+          // et rien d'autre : aucune colonne existante ne bouge, aucune ligne
+          // n'est réécrite.
+          //
+          // - `group_arrangements` naît vide, son curseur n'existe pas : le
+          //   prochain manifeste l'annoncera `from_zero` et le premier cycle
+          //   ramènera les rangements faits sur un autre appareil. Sur un
+          //   serveur en retard d'une version, la collection prend un `404` et
+          //   se saute — aucune discussion n'est alors archivée ni épinglée, ce
+          //   qui est l'état d'avant.
+          // - `pending_group_arrangements` naît vide et le reste jusqu'au
+          //   premier geste.
+          //
+          // Pas de garde `to >= 22` pour la raison des paliers qui ne créent que
+          // des tables : le vérificateur de schéma **ignore une table
+          // surnuméraire**.
+          if (from < 22) {
+            await m.createTable(groupArrangements);
+            await m.createTable(pendingGroupArrangements);
           }
         },
         beforeOpen: (details) async {

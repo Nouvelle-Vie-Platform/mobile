@@ -16529,6 +16529,679 @@ class MyInteractionsCompanion extends UpdateCompanion<MyInteractionRow> {
   }
 }
 
+class $GroupArrangementsTable extends GroupArrangements
+    with TableInfo<$GroupArrangementsTable, GroupArrangementRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GroupArrangementsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _membershipIdMeta =
+      const VerificationMeta('membershipId');
+  @override
+  late final GeneratedColumn<int> membershipId = GeneratedColumn<int>(
+      'membership_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _archivedAtMeta =
+      const VerificationMeta('archivedAt');
+  @override
+  late final GeneratedColumn<DateTime> archivedAt = GeneratedColumn<DateTime>(
+      'archived_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _pinnedAtMeta =
+      const VerificationMeta('pinnedAt');
+  @override
+  late final GeneratedColumn<DateTime> pinnedAt = GeneratedColumn<DateTime>(
+      'pinned_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _arrangedAtMeta =
+      const VerificationMeta('arrangedAt');
+  @override
+  late final GeneratedColumn<DateTime> arrangedAt = GeneratedColumn<DateTime>(
+      'arranged_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, groupId, membershipId, archivedAt, pinnedAt, arrangedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'group_arrangements';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<GroupArrangementRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('membership_id')) {
+      context.handle(
+          _membershipIdMeta,
+          membershipId.isAcceptableOrUnknown(
+              data['membership_id']!, _membershipIdMeta));
+    }
+    if (data.containsKey('archived_at')) {
+      context.handle(
+          _archivedAtMeta,
+          archivedAt.isAcceptableOrUnknown(
+              data['archived_at']!, _archivedAtMeta));
+    }
+    if (data.containsKey('pinned_at')) {
+      context.handle(_pinnedAtMeta,
+          pinnedAt.isAcceptableOrUnknown(data['pinned_at']!, _pinnedAtMeta));
+    }
+    if (data.containsKey('arranged_at')) {
+      context.handle(
+          _arrangedAtMeta,
+          arrangedAt.isAcceptableOrUnknown(
+              data['arranged_at']!, _arrangedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId};
+  @override
+  GroupArrangementRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GroupArrangementRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      membershipId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}membership_id']),
+      archivedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}archived_at']),
+      pinnedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}pinned_at']),
+      arrangedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}arranged_at']),
+    );
+  }
+
+  @override
+  $GroupArrangementsTable createAlias(String alias) {
+    return $GroupArrangementsTable(attachedDatabase, alias);
+  }
+}
+
+class GroupArrangementRow extends DataClass
+    implements Insertable<GroupArrangementRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String groupId;
+
+  /// L'identifiant de l'appartenance côté serveur (un entier). Non lu.
+  final int? membershipId;
+
+  /// La discussion a quitté la liste principale pour la rangée « Archivées ».
+  /// Elle **y reste** quand un message arrive : le serveur ne désarchive jamais,
+  /// et le client non plus.
+  final DateTime? archivedAt;
+
+  /// La discussion est épinglée en tête de liste (trois au plus).
+  final DateTime? pinnedAt;
+
+  /// L'instant serveur du dernier changement — l'ordre des événements.
+  final DateTime? arrangedAt;
+  const GroupArrangementRow(
+      {required this.syncStamp,
+      required this.groupId,
+      this.membershipId,
+      this.archivedAt,
+      this.pinnedAt,
+      this.arrangedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['group_id'] = Variable<String>(groupId);
+    if (!nullToAbsent || membershipId != null) {
+      map['membership_id'] = Variable<int>(membershipId);
+    }
+    if (!nullToAbsent || archivedAt != null) {
+      map['archived_at'] = Variable<DateTime>(archivedAt);
+    }
+    if (!nullToAbsent || pinnedAt != null) {
+      map['pinned_at'] = Variable<DateTime>(pinnedAt);
+    }
+    if (!nullToAbsent || arrangedAt != null) {
+      map['arranged_at'] = Variable<DateTime>(arrangedAt);
+    }
+    return map;
+  }
+
+  GroupArrangementsCompanion toCompanion(bool nullToAbsent) {
+    return GroupArrangementsCompanion(
+      syncStamp: Value(syncStamp),
+      groupId: Value(groupId),
+      membershipId: membershipId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(membershipId),
+      archivedAt: archivedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(archivedAt),
+      pinnedAt: pinnedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pinnedAt),
+      arrangedAt: arrangedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(arrangedAt),
+    );
+  }
+
+  factory GroupArrangementRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GroupArrangementRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      groupId: serializer.fromJson<String>(json['groupId']),
+      membershipId: serializer.fromJson<int?>(json['membershipId']),
+      archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
+      pinnedAt: serializer.fromJson<DateTime?>(json['pinnedAt']),
+      arrangedAt: serializer.fromJson<DateTime?>(json['arrangedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'groupId': serializer.toJson<String>(groupId),
+      'membershipId': serializer.toJson<int?>(membershipId),
+      'archivedAt': serializer.toJson<DateTime?>(archivedAt),
+      'pinnedAt': serializer.toJson<DateTime?>(pinnedAt),
+      'arrangedAt': serializer.toJson<DateTime?>(arrangedAt),
+    };
+  }
+
+  GroupArrangementRow copyWith(
+          {int? syncStamp,
+          String? groupId,
+          Value<int?> membershipId = const Value.absent(),
+          Value<DateTime?> archivedAt = const Value.absent(),
+          Value<DateTime?> pinnedAt = const Value.absent(),
+          Value<DateTime?> arrangedAt = const Value.absent()}) =>
+      GroupArrangementRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        groupId: groupId ?? this.groupId,
+        membershipId:
+            membershipId.present ? membershipId.value : this.membershipId,
+        archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
+        pinnedAt: pinnedAt.present ? pinnedAt.value : this.pinnedAt,
+        arrangedAt: arrangedAt.present ? arrangedAt.value : this.arrangedAt,
+      );
+  GroupArrangementRow copyWithCompanion(GroupArrangementsCompanion data) {
+    return GroupArrangementRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      membershipId: data.membershipId.present
+          ? data.membershipId.value
+          : this.membershipId,
+      archivedAt:
+          data.archivedAt.present ? data.archivedAt.value : this.archivedAt,
+      pinnedAt: data.pinnedAt.present ? data.pinnedAt.value : this.pinnedAt,
+      arrangedAt:
+          data.arrangedAt.present ? data.arrangedAt.value : this.arrangedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupArrangementRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('groupId: $groupId, ')
+          ..write('membershipId: $membershipId, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('pinnedAt: $pinnedAt, ')
+          ..write('arrangedAt: $arrangedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp, groupId, membershipId, archivedAt, pinnedAt, arrangedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GroupArrangementRow &&
+          other.syncStamp == this.syncStamp &&
+          other.groupId == this.groupId &&
+          other.membershipId == this.membershipId &&
+          other.archivedAt == this.archivedAt &&
+          other.pinnedAt == this.pinnedAt &&
+          other.arrangedAt == this.arrangedAt);
+}
+
+class GroupArrangementsCompanion extends UpdateCompanion<GroupArrangementRow> {
+  final Value<int> syncStamp;
+  final Value<String> groupId;
+  final Value<int?> membershipId;
+  final Value<DateTime?> archivedAt;
+  final Value<DateTime?> pinnedAt;
+  final Value<DateTime?> arrangedAt;
+  final Value<int> rowid;
+  const GroupArrangementsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.membershipId = const Value.absent(),
+    this.archivedAt = const Value.absent(),
+    this.pinnedAt = const Value.absent(),
+    this.arrangedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GroupArrangementsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String groupId,
+    this.membershipId = const Value.absent(),
+    this.archivedAt = const Value.absent(),
+    this.pinnedAt = const Value.absent(),
+    this.arrangedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : groupId = Value(groupId);
+  static Insertable<GroupArrangementRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? groupId,
+    Expression<int>? membershipId,
+    Expression<DateTime>? archivedAt,
+    Expression<DateTime>? pinnedAt,
+    Expression<DateTime>? arrangedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (groupId != null) 'group_id': groupId,
+      if (membershipId != null) 'membership_id': membershipId,
+      if (archivedAt != null) 'archived_at': archivedAt,
+      if (pinnedAt != null) 'pinned_at': pinnedAt,
+      if (arrangedAt != null) 'arranged_at': arrangedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GroupArrangementsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? groupId,
+      Value<int?>? membershipId,
+      Value<DateTime?>? archivedAt,
+      Value<DateTime?>? pinnedAt,
+      Value<DateTime?>? arrangedAt,
+      Value<int>? rowid}) {
+    return GroupArrangementsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      groupId: groupId ?? this.groupId,
+      membershipId: membershipId ?? this.membershipId,
+      archivedAt: archivedAt ?? this.archivedAt,
+      pinnedAt: pinnedAt ?? this.pinnedAt,
+      arrangedAt: arrangedAt ?? this.arrangedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (membershipId.present) {
+      map['membership_id'] = Variable<int>(membershipId.value);
+    }
+    if (archivedAt.present) {
+      map['archived_at'] = Variable<DateTime>(archivedAt.value);
+    }
+    if (pinnedAt.present) {
+      map['pinned_at'] = Variable<DateTime>(pinnedAt.value);
+    }
+    if (arrangedAt.present) {
+      map['arranged_at'] = Variable<DateTime>(arrangedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupArrangementsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('groupId: $groupId, ')
+          ..write('membershipId: $membershipId, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('pinnedAt: $pinnedAt, ')
+          ..write('arrangedAt: $arrangedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PendingGroupArrangementsTable extends PendingGroupArrangements
+    with TableInfo<$PendingGroupArrangementsTable, PendingGroupArrangementRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingGroupArrangementsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _archivedMeta =
+      const VerificationMeta('archived');
+  @override
+  late final GeneratedColumn<bool> archived = GeneratedColumn<bool>(
+      'archived', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("archived" IN (0, 1))'));
+  static const VerificationMeta _pinnedMeta = const VerificationMeta('pinned');
+  @override
+  late final GeneratedColumn<bool> pinned = GeneratedColumn<bool>(
+      'pinned', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("pinned" IN (0, 1))'));
+  static const VerificationMeta _requestedAtMeta =
+      const VerificationMeta('requestedAt');
+  @override
+  late final GeneratedColumn<DateTime> requestedAt = GeneratedColumn<DateTime>(
+      'requested_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [groupId, archived, pinned, requestedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_group_arrangements';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<PendingGroupArrangementRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('archived')) {
+      context.handle(_archivedMeta,
+          archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta));
+    } else if (isInserting) {
+      context.missing(_archivedMeta);
+    }
+    if (data.containsKey('pinned')) {
+      context.handle(_pinnedMeta,
+          pinned.isAcceptableOrUnknown(data['pinned']!, _pinnedMeta));
+    } else if (isInserting) {
+      context.missing(_pinnedMeta);
+    }
+    if (data.containsKey('requested_at')) {
+      context.handle(
+          _requestedAtMeta,
+          requestedAt.isAcceptableOrUnknown(
+              data['requested_at']!, _requestedAtMeta));
+    } else if (isInserting) {
+      context.missing(_requestedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId};
+  @override
+  PendingGroupArrangementRow map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingGroupArrangementRow(
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
+      archived: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}archived'])!,
+      pinned: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}pinned'])!,
+      requestedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}requested_at'])!,
+    );
+  }
+
+  @override
+  $PendingGroupArrangementsTable createAlias(String alias) {
+    return $PendingGroupArrangementsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingGroupArrangementRow extends DataClass
+    implements Insertable<PendingGroupArrangementRow> {
+  final String groupId;
+  final bool archived;
+  final bool pinned;
+
+  /// L'horloge de l'appareil au moment du geste : l'ordre d'une épingle neuve
+  /// avant sa confirmation, et l'identité de la demande (une demande plus
+  /// récente posée pendant l'aller-retour n'est pas effacée par la réponse de
+  /// la précédente).
+  final DateTime requestedAt;
+  const PendingGroupArrangementRow(
+      {required this.groupId,
+      required this.archived,
+      required this.pinned,
+      required this.requestedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_id'] = Variable<String>(groupId);
+    map['archived'] = Variable<bool>(archived);
+    map['pinned'] = Variable<bool>(pinned);
+    map['requested_at'] = Variable<DateTime>(requestedAt);
+    return map;
+  }
+
+  PendingGroupArrangementsCompanion toCompanion(bool nullToAbsent) {
+    return PendingGroupArrangementsCompanion(
+      groupId: Value(groupId),
+      archived: Value(archived),
+      pinned: Value(pinned),
+      requestedAt: Value(requestedAt),
+    );
+  }
+
+  factory PendingGroupArrangementRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingGroupArrangementRow(
+      groupId: serializer.fromJson<String>(json['groupId']),
+      archived: serializer.fromJson<bool>(json['archived']),
+      pinned: serializer.fromJson<bool>(json['pinned']),
+      requestedAt: serializer.fromJson<DateTime>(json['requestedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<String>(groupId),
+      'archived': serializer.toJson<bool>(archived),
+      'pinned': serializer.toJson<bool>(pinned),
+      'requestedAt': serializer.toJson<DateTime>(requestedAt),
+    };
+  }
+
+  PendingGroupArrangementRow copyWith(
+          {String? groupId,
+          bool? archived,
+          bool? pinned,
+          DateTime? requestedAt}) =>
+      PendingGroupArrangementRow(
+        groupId: groupId ?? this.groupId,
+        archived: archived ?? this.archived,
+        pinned: pinned ?? this.pinned,
+        requestedAt: requestedAt ?? this.requestedAt,
+      );
+  PendingGroupArrangementRow copyWithCompanion(
+      PendingGroupArrangementsCompanion data) {
+    return PendingGroupArrangementRow(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      archived: data.archived.present ? data.archived.value : this.archived,
+      pinned: data.pinned.present ? data.pinned.value : this.pinned,
+      requestedAt:
+          data.requestedAt.present ? data.requestedAt.value : this.requestedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingGroupArrangementRow(')
+          ..write('groupId: $groupId, ')
+          ..write('archived: $archived, ')
+          ..write('pinned: $pinned, ')
+          ..write('requestedAt: $requestedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, archived, pinned, requestedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingGroupArrangementRow &&
+          other.groupId == this.groupId &&
+          other.archived == this.archived &&
+          other.pinned == this.pinned &&
+          other.requestedAt == this.requestedAt);
+}
+
+class PendingGroupArrangementsCompanion
+    extends UpdateCompanion<PendingGroupArrangementRow> {
+  final Value<String> groupId;
+  final Value<bool> archived;
+  final Value<bool> pinned;
+  final Value<DateTime> requestedAt;
+  final Value<int> rowid;
+  const PendingGroupArrangementsCompanion({
+    this.groupId = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.pinned = const Value.absent(),
+    this.requestedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingGroupArrangementsCompanion.insert({
+    required String groupId,
+    required bool archived,
+    required bool pinned,
+    required DateTime requestedAt,
+    this.rowid = const Value.absent(),
+  })  : groupId = Value(groupId),
+        archived = Value(archived),
+        pinned = Value(pinned),
+        requestedAt = Value(requestedAt);
+  static Insertable<PendingGroupArrangementRow> custom({
+    Expression<String>? groupId,
+    Expression<bool>? archived,
+    Expression<bool>? pinned,
+    Expression<DateTime>? requestedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'group_id': groupId,
+      if (archived != null) 'archived': archived,
+      if (pinned != null) 'pinned': pinned,
+      if (requestedAt != null) 'requested_at': requestedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingGroupArrangementsCompanion copyWith(
+      {Value<String>? groupId,
+      Value<bool>? archived,
+      Value<bool>? pinned,
+      Value<DateTime>? requestedAt,
+      Value<int>? rowid}) {
+    return PendingGroupArrangementsCompanion(
+      groupId: groupId ?? this.groupId,
+      archived: archived ?? this.archived,
+      pinned: pinned ?? this.pinned,
+      requestedAt: requestedAt ?? this.requestedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (archived.present) {
+      map['archived'] = Variable<bool>(archived.value);
+    }
+    if (pinned.present) {
+      map['pinned'] = Variable<bool>(pinned.value);
+    }
+    if (requestedAt.present) {
+      map['requested_at'] = Variable<DateTime>(requestedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingGroupArrangementsCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('archived: $archived, ')
+          ..write('pinned: $pinned, ')
+          ..write('requestedAt: $requestedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AppSettingsTable extends AppSettings
     with TableInfo<$AppSettingsTable, AppSettingRow> {
   @override
@@ -17846,6 +18519,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PendingGroupReadsTable pendingGroupReads =
       $PendingGroupReadsTable(this);
   late final $MyInteractionsTable myInteractions = $MyInteractionsTable(this);
+  late final $GroupArrangementsTable groupArrangements =
+      $GroupArrangementsTable(this);
+  late final $PendingGroupArrangementsTable pendingGroupArrangements =
+      $PendingGroupArrangementsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $DownloadsTable downloads = $DownloadsTable(this);
   late final $DownloadTitlesTable downloadTitles = $DownloadTitlesTable(this);
@@ -17869,6 +18546,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final GroupDao groupDao = GroupDao(this as AppDatabase);
   late final InteractionDao interactionDao =
       InteractionDao(this as AppDatabase);
+  late final ChatOrganizationDao chatOrganizationDao =
+      ChatOrganizationDao(this as AppDatabase);
   late final SettingsDao settingsDao = SettingsDao(this as AppDatabase);
   late final DownloadsDao downloadsDao = DownloadsDao(this as AppDatabase);
   late final DownloadNotificationsDao downloadNotificationsDao =
@@ -17910,6 +18589,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         groupReads,
         pendingGroupReads,
         myInteractions,
+        groupArrangements,
+        pendingGroupArrangements,
         appSettings,
         downloads,
         downloadTitles,
@@ -25566,6 +26247,364 @@ typedef $$MyInteractionsTableProcessedTableManager = ProcessedTableManager<
     ),
     MyInteractionRow,
     PrefetchHooks Function()>;
+typedef $$GroupArrangementsTableCreateCompanionBuilder
+    = GroupArrangementsCompanion Function({
+  Value<int> syncStamp,
+  required String groupId,
+  Value<int?> membershipId,
+  Value<DateTime?> archivedAt,
+  Value<DateTime?> pinnedAt,
+  Value<DateTime?> arrangedAt,
+  Value<int> rowid,
+});
+typedef $$GroupArrangementsTableUpdateCompanionBuilder
+    = GroupArrangementsCompanion Function({
+  Value<int> syncStamp,
+  Value<String> groupId,
+  Value<int?> membershipId,
+  Value<DateTime?> archivedAt,
+  Value<DateTime?> pinnedAt,
+  Value<DateTime?> arrangedAt,
+  Value<int> rowid,
+});
+
+class $$GroupArrangementsTableFilterComposer
+    extends Composer<_$AppDatabase, $GroupArrangementsTable> {
+  $$GroupArrangementsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get membershipId => $composableBuilder(
+      column: $table.membershipId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get archivedAt => $composableBuilder(
+      column: $table.archivedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get pinnedAt => $composableBuilder(
+      column: $table.pinnedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get arrangedAt => $composableBuilder(
+      column: $table.arrangedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$GroupArrangementsTableOrderingComposer
+    extends Composer<_$AppDatabase, $GroupArrangementsTable> {
+  $$GroupArrangementsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get membershipId => $composableBuilder(
+      column: $table.membershipId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get archivedAt => $composableBuilder(
+      column: $table.archivedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get pinnedAt => $composableBuilder(
+      column: $table.pinnedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get arrangedAt => $composableBuilder(
+      column: $table.arrangedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$GroupArrangementsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GroupArrangementsTable> {
+  $$GroupArrangementsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<int> get membershipId => $composableBuilder(
+      column: $table.membershipId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get archivedAt => $composableBuilder(
+      column: $table.archivedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get pinnedAt =>
+      $composableBuilder(column: $table.pinnedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get arrangedAt => $composableBuilder(
+      column: $table.arrangedAt, builder: (column) => column);
+}
+
+class $$GroupArrangementsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $GroupArrangementsTable,
+    GroupArrangementRow,
+    $$GroupArrangementsTableFilterComposer,
+    $$GroupArrangementsTableOrderingComposer,
+    $$GroupArrangementsTableAnnotationComposer,
+    $$GroupArrangementsTableCreateCompanionBuilder,
+    $$GroupArrangementsTableUpdateCompanionBuilder,
+    (
+      GroupArrangementRow,
+      BaseReferences<_$AppDatabase, $GroupArrangementsTable,
+          GroupArrangementRow>
+    ),
+    GroupArrangementRow,
+    PrefetchHooks Function()> {
+  $$GroupArrangementsTableTableManager(
+      _$AppDatabase db, $GroupArrangementsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GroupArrangementsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GroupArrangementsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GroupArrangementsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> groupId = const Value.absent(),
+            Value<int?> membershipId = const Value.absent(),
+            Value<DateTime?> archivedAt = const Value.absent(),
+            Value<DateTime?> pinnedAt = const Value.absent(),
+            Value<DateTime?> arrangedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupArrangementsCompanion(
+            syncStamp: syncStamp,
+            groupId: groupId,
+            membershipId: membershipId,
+            archivedAt: archivedAt,
+            pinnedAt: pinnedAt,
+            arrangedAt: arrangedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String groupId,
+            Value<int?> membershipId = const Value.absent(),
+            Value<DateTime?> archivedAt = const Value.absent(),
+            Value<DateTime?> pinnedAt = const Value.absent(),
+            Value<DateTime?> arrangedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupArrangementsCompanion.insert(
+            syncStamp: syncStamp,
+            groupId: groupId,
+            membershipId: membershipId,
+            archivedAt: archivedAt,
+            pinnedAt: pinnedAt,
+            arrangedAt: arrangedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$GroupArrangementsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $GroupArrangementsTable,
+    GroupArrangementRow,
+    $$GroupArrangementsTableFilterComposer,
+    $$GroupArrangementsTableOrderingComposer,
+    $$GroupArrangementsTableAnnotationComposer,
+    $$GroupArrangementsTableCreateCompanionBuilder,
+    $$GroupArrangementsTableUpdateCompanionBuilder,
+    (
+      GroupArrangementRow,
+      BaseReferences<_$AppDatabase, $GroupArrangementsTable,
+          GroupArrangementRow>
+    ),
+    GroupArrangementRow,
+    PrefetchHooks Function()>;
+typedef $$PendingGroupArrangementsTableCreateCompanionBuilder
+    = PendingGroupArrangementsCompanion Function({
+  required String groupId,
+  required bool archived,
+  required bool pinned,
+  required DateTime requestedAt,
+  Value<int> rowid,
+});
+typedef $$PendingGroupArrangementsTableUpdateCompanionBuilder
+    = PendingGroupArrangementsCompanion Function({
+  Value<String> groupId,
+  Value<bool> archived,
+  Value<bool> pinned,
+  Value<DateTime> requestedAt,
+  Value<int> rowid,
+});
+
+class $$PendingGroupArrangementsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingGroupArrangementsTable> {
+  $$PendingGroupArrangementsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get archived => $composableBuilder(
+      column: $table.archived, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get pinned => $composableBuilder(
+      column: $table.pinned, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get requestedAt => $composableBuilder(
+      column: $table.requestedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$PendingGroupArrangementsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingGroupArrangementsTable> {
+  $$PendingGroupArrangementsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get archived => $composableBuilder(
+      column: $table.archived, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get pinned => $composableBuilder(
+      column: $table.pinned, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get requestedAt => $composableBuilder(
+      column: $table.requestedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PendingGroupArrangementsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingGroupArrangementsTable> {
+  $$PendingGroupArrangementsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<bool> get archived =>
+      $composableBuilder(column: $table.archived, builder: (column) => column);
+
+  GeneratedColumn<bool> get pinned =>
+      $composableBuilder(column: $table.pinned, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get requestedAt => $composableBuilder(
+      column: $table.requestedAt, builder: (column) => column);
+}
+
+class $$PendingGroupArrangementsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PendingGroupArrangementsTable,
+    PendingGroupArrangementRow,
+    $$PendingGroupArrangementsTableFilterComposer,
+    $$PendingGroupArrangementsTableOrderingComposer,
+    $$PendingGroupArrangementsTableAnnotationComposer,
+    $$PendingGroupArrangementsTableCreateCompanionBuilder,
+    $$PendingGroupArrangementsTableUpdateCompanionBuilder,
+    (
+      PendingGroupArrangementRow,
+      BaseReferences<_$AppDatabase, $PendingGroupArrangementsTable,
+          PendingGroupArrangementRow>
+    ),
+    PendingGroupArrangementRow,
+    PrefetchHooks Function()> {
+  $$PendingGroupArrangementsTableTableManager(
+      _$AppDatabase db, $PendingGroupArrangementsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingGroupArrangementsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingGroupArrangementsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingGroupArrangementsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> groupId = const Value.absent(),
+            Value<bool> archived = const Value.absent(),
+            Value<bool> pinned = const Value.absent(),
+            Value<DateTime> requestedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PendingGroupArrangementsCompanion(
+            groupId: groupId,
+            archived: archived,
+            pinned: pinned,
+            requestedAt: requestedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String groupId,
+            required bool archived,
+            required bool pinned,
+            required DateTime requestedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PendingGroupArrangementsCompanion.insert(
+            groupId: groupId,
+            archived: archived,
+            pinned: pinned,
+            requestedAt: requestedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PendingGroupArrangementsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $PendingGroupArrangementsTable,
+        PendingGroupArrangementRow,
+        $$PendingGroupArrangementsTableFilterComposer,
+        $$PendingGroupArrangementsTableOrderingComposer,
+        $$PendingGroupArrangementsTableAnnotationComposer,
+        $$PendingGroupArrangementsTableCreateCompanionBuilder,
+        $$PendingGroupArrangementsTableUpdateCompanionBuilder,
+        (
+          PendingGroupArrangementRow,
+          BaseReferences<_$AppDatabase, $PendingGroupArrangementsTable,
+              PendingGroupArrangementRow>
+        ),
+        PendingGroupArrangementRow,
+        PrefetchHooks Function()>;
 typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
     Function({
   required String key,
@@ -26313,6 +27352,11 @@ class $AppDatabaseManager {
       $$PendingGroupReadsTableTableManager(_db, _db.pendingGroupReads);
   $$MyInteractionsTableTableManager get myInteractions =>
       $$MyInteractionsTableTableManager(_db, _db.myInteractions);
+  $$GroupArrangementsTableTableManager get groupArrangements =>
+      $$GroupArrangementsTableTableManager(_db, _db.groupArrangements);
+  $$PendingGroupArrangementsTableTableManager get pendingGroupArrangements =>
+      $$PendingGroupArrangementsTableTableManager(
+          _db, _db.pendingGroupArrangements);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$DownloadsTableTableManager get downloads =>

@@ -1638,4 +1638,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get miniPlayerClose => 'Close player';
+
+  @override
+  String get chatSearchHint => 'Search';
+
+  @override
+  String get chatSearchTitle => 'Search';
+
+  @override
+  String chatSearchMinLength(int count) {
+    return 'Type at least $count characters to search chat names and messages.';
+  }
+
+  @override
+  String get chatSearchChats => 'Chats';
+
+  @override
+  String get chatSearchMessages => 'Messages';
+
+  @override
+  String get chatSearchMore => 'More results';
+
+  @override
+  String get chatSearchOffline =>
+      'Older history couldn\'t be searched. The results above come from this phone.';
+
+  @override
+  String get chatSearchNoResult => 'No results.';
+
+  @override
+  String get chatSearchUnknownChat => 'Chat';
+
+  @override
+  String get chatArchive => 'Archive';
+
+  @override
+  String get chatUnarchive => 'Unarchive';
+
+  @override
+  String get chatPin => 'Pin';
+
+  @override
+  String get chatUnpin => 'Unpin';
+
+  @override
+  String get chatMarkRead => 'Mark as read';
+
+  @override
+  String get chatPinnedLabel => 'Pinned';
+
+  @override
+  String chatPinLimit(int count) {
+    return 'You can pin up to $count chats. Unpin one first.';
+  }
+
+  @override
+  String get chatArrangeFailed => 'This chat couldn\'t be moved.';
+
+  @override
+  String get chatArchivedNotice => 'Chat archived';
+
+  @override
+  String get chatUndo => 'Undo';
+
+  @override
+  String chatArchivedRow(int count) {
+    return 'Archived ($count)';
+  }
+
+  @override
+  String get chatArchivedTitle => 'Archived';
+
+  @override
+  String get chatArchivedEmptyTitle => 'No archived chats';
+
+  @override
+  String get chatArchivedEmpty =>
+      'Swipe a chat to the left to archive it. It stays here even when a new message arrives.';
 }

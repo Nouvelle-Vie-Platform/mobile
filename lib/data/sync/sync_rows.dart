@@ -870,6 +870,33 @@ String groupReadKey(Map<String, Object?> item) {
   throw MalformedSyncRow('group_reads', 'groupId', id);
 }
 
+/// `GET /sync/group_arrangements` — **cinq clés** : `id`, `groupId`,
+/// `archivedAt`, `pinnedAt`, `arrangedAt` (#146, M8, `groupArrangementSyncRow`).
+///
+/// La même fonction range la ligne du tirage, celle du canal
+/// (`arrangement.changed`) et celle que rend `PUT /groups/:id/arrangement` —
+/// dont la réponse porte une sixième clé, `changed`, qui n'est pas stockée.
+///
+/// **Rangée par `groupId`**, exigé. Les trois instants sont tolérés absents :
+/// une discussion désarchivée revient avec `archivedAt: null`.
+GroupArrangementsCompanion groupArrangementRowOf(Map<String, Object?> item) {
+  const collection = 'group_arrangements';
+  return GroupArrangementsCompanion.insert(
+    groupId: _text(collection, item, 'groupId'),
+    membershipId: Value(_optionalInt(item, 'id')),
+    archivedAt: Value(_instant(item, 'archivedAt')),
+    pinnedAt: Value(_instant(item, 'pinnedAt')),
+    arrangedAt: Value(_instant(item, 'arrangedAt')),
+  );
+}
+
+/// L'identifiant **local** d'une ligne `group_arrangements` : son `groupId`.
+String groupArrangementKey(Map<String, Object?> item) {
+  final id = item['groupId'];
+  if (id is String) return id;
+  throw MalformedSyncRow('group_arrangements', 'groupId', id);
+}
+
 /// `GET /sync/menu_entries` — **une entrée de menu** (#82).
 ///
 /// **Trente et une clés**, relevées une à une sur
