@@ -131,32 +131,38 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
         children: [
           AppCard(
             padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                SwitchListTile(
-                  key: PrivacySettingsScreen.readReceiptsKey,
-                  value: privacy.readReceipts,
-                  onChanged: (value) => _set(readReceipts: value),
-                  title: Text(l.privacyReadReceipts),
-                  subtitle: Text(
-                    l.privacyReadReceiptsHint,
-                    style: AppTypography.caption
-                        .copyWith(color: palette.textSecondary),
+            // La carte peint son propre fond ; un `ListTile` peint le sien sur
+            // le Material le plus proche. Sans ce Material transparent, Flutter
+            // avertit que l'encre des interrupteurs serait masquée.
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    key: PrivacySettingsScreen.readReceiptsKey,
+                    value: privacy.readReceipts,
+                    onChanged: (value) => _set(readReceipts: value),
+                    title: Text(l.privacyReadReceipts),
+                    subtitle: Text(
+                      l.privacyReadReceiptsHint,
+                      style: AppTypography.caption
+                          .copyWith(color: palette.textSecondary),
+                    ),
                   ),
-                ),
-                Divider(height: 1, color: palette.divider),
-                SwitchListTile(
-                  key: PrivacySettingsScreen.presenceKey,
-                  value: privacy.presence,
-                  onChanged: (value) => _set(presence: value),
-                  title: Text(l.privacyPresence),
-                  subtitle: Text(
-                    l.privacyPresenceHint,
-                    style: AppTypography.caption
-                        .copyWith(color: palette.textSecondary),
+                  Divider(height: 1, color: palette.divider),
+                  SwitchListTile(
+                    key: PrivacySettingsScreen.presenceKey,
+                    value: privacy.presence,
+                    onChanged: (value) => _set(presence: value),
+                    title: Text(l.privacyPresence),
+                    subtitle: Text(
+                      l.privacyPresenceHint,
+                      style: AppTypography.caption
+                          .copyWith(color: palette.textSecondary),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
