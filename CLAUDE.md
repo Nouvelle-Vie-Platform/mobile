@@ -822,9 +822,10 @@ montage** (`ContentPlayerView._loadOnce`, direct seulement) : c'est l'écran, pa
 le bouton, qui lance alors l'écoute — comme pour un lien profond.
 
 **Le geste se découvre au moment où il sert** : au **premier son** d'un lancement
-parti du bouton, `radioLongPressTip` paraît **en fondu à droite du bouton**,
-quelques secondes, puis s'efface (une animation, jamais une minuterie : le texte
-n'est dans l'arbre que tant qu'elle court). Le drapeau
+parti du bouton, `radioLongPressTip` (court : « Appui long pour ouvrir le
+live ») paraît en pastille **sous le bouton**, trois secondes, en
+surimpression (`OverlayPortal` + `CompositedTransformFollower`) : elle ne pousse
+rien — l'en-tête ne bouge pas — et suit le bouton s'il se replie. Le drapeau
 `_awaitingFirstSound` est posé par l'appui qui lance et lui seul, levé au premier
 son, à l'arrêt ou à l'abandon — jamais de message à l'échec, ni pour un
 lancement venu de l'écran ou du mini-lecteur, ni quand l'accueil n'est plus au

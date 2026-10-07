@@ -523,7 +523,7 @@ abstract class AppLocalizations {
   /// Message bref à l'accueil, au premier son d'un lancement réussi depuis le bouton radio (jamais à l'échec, jamais pour un lancement venu d'ailleurs) : il fait découvrir l'appui long
   ///
   /// In fr, this message translates to:
-  /// **'Astuce : un appui long sur ce bouton ouvre le live à tout moment.'**
+  /// **'Appui long pour ouvrir le live'**
   String get radioLongPressTip;
 
   /// Indice d'accessibilité de l'appui long sur le bouton radio de l'accueil — le lecteur d'écran le lit après sa propre consigne (« touchez deux fois et maintenez pour… »)
