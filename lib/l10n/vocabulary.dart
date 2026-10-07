@@ -102,6 +102,11 @@ class AppWords {
   String get sectionLatestTeachings =>
       label('sectionLatestTeachings', _l10n.sectionLatestTeachings);
 
+  /// La bénédiction sous la salutation de l'accueil. Réglée au portail, elle
+  /// peut tenir sur deux ou trois lignes — l'en-tête grandit avec elle — et le
+  /// téléphone garde la dernière reçue hors ligne (le magasin la porte).
+  String get homeBlessing => label('homeBlessing', _l10n.homeBlessing);
+
   /// Le texte qui explique ce que change le choix d'assemblée.
   String get branchScopeLead => label('branchScopeLead', _l10n.branchScopeLead);
 

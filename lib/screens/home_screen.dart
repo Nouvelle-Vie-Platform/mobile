@@ -74,7 +74,7 @@ class HomeScreen extends ConsumerWidget {
     }
 
     return _CollapsingHome(
-      expandedHeight: headerHeight,
+      minExpandedHeight: headerHeight,
       header: (height, collapse, contentKey) => _WavyHeader(
         name: user?.firstName,
         height: height,
@@ -82,9 +82,9 @@ class HomeScreen extends ConsumerWidget {
         contentKey: contentKey,
         onMenuTap: onMenuTap,
       ),
-      list: ListView(
+      list: (expandedHeight) => ListView(
         padding: EdgeInsets.only(
-          top: headerHeight + AppSpacing.md,
+          top: expandedHeight + AppSpacing.md,
           bottom: bottomInset,
         ),
         children: [
@@ -120,6 +120,12 @@ class HomeScreen extends ConsumerWidget {
 /// marge sous le bouton, où paraît l'église, qui raccourcit.
 const double _headerBodyHeight = 256;
 
+/// **Sous le bouton radio, la place où paraît l'église**, en-tête déplié. Avec
+/// une bénédiction d'une ligne, contenu + cette marge ≈ la hauteur de base ;
+/// une bénédiction de deux ou trois lignes pousse le bouton, et l'en-tête
+/// grandit d'autant au lieu de rogner cette marge.
+const double _headerRoomBelowContent = 46;
+
 /// **L'accueil, son en-tête qui se replie, et sa liste.**
 ///
 /// Descendre la liste replie l'en-tête au rythme exact du défilement, jusqu'à
@@ -134,18 +140,21 @@ const double _headerBodyHeight = 256;
 /// que la mesure n'a pas eu lieu (premier rendu), l'en-tête ne se replie pas.
 class _CollapsingHome extends StatefulWidget {
   const _CollapsingHome({
-    required this.expandedHeight,
+    required this.minExpandedHeight,
     required this.header,
     required this.list,
   });
 
-  final double expandedHeight;
+  /// La hauteur dépliée **au moins** : le contenu mesuré peut l'augmenter.
+  final double minExpandedHeight;
 
   /// L'en-tête pour une hauteur, un taux de repli (0 déplié → 1 replié) et la
   /// clé posée sur son contenu, que ce widget mesure.
   final Widget Function(double height, double collapse, GlobalKey contentKey)
       header;
-  final Widget list;
+
+  /// La liste, pour une hauteur dépliée — son retrait du haut la suit.
+  final Widget Function(double expandedHeight) list;
 
   @override
   State<_CollapsingHome> createState() => _CollapsingHomeState();
@@ -160,10 +169,21 @@ class _CollapsingHomeState extends State<_CollapsingHome> {
   /// Les points retirés à la hauteur dépliée, entre 0 et [_range].
   double _shrink = 0;
 
+  /// La hauteur dépliée : la base, ou le contenu mesuré plus la place de
+  /// l'église si la bénédiction a poussé le bouton plus bas.
+  double get _expandedHeight {
+    final collapsed = _collapsedHeight;
+    if (collapsed == null) return widget.minExpandedHeight;
+    return math.max(
+      widget.minExpandedHeight,
+      collapsed + _headerRoomBelowContent,
+    );
+  }
+
   double get _range {
     final collapsed = _collapsedHeight;
     if (collapsed == null) return 0;
-    return math.max(0, widget.expandedHeight - collapsed);
+    return math.max(0, _expandedHeight - collapsed);
   }
 
   void _measure() {
@@ -207,19 +227,20 @@ class _CollapsingHomeState extends State<_CollapsingHome> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
     final range = _range;
     final collapse = range == 0 ? 0.0 : _shrink / range;
+    final expanded = _expandedHeight;
     return Stack(
       fit: StackFit.expand,
       children: [
         NotificationListener<ScrollNotification>(
           onNotification: _onScroll,
-          child: widget.list,
+          child: widget.list(expanded),
         ),
         Positioned(
           top: 0,
           left: 0,
           right: 0,
           child: widget.header(
-            widget.expandedHeight - _shrink,
+            expanded - _shrink,
             collapse,
             _contentKey,
           ),
@@ -353,8 +374,12 @@ class _WavyHeader extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
+                    // Réglée au portail (vocabulaire, trois langues) : jusqu'à
+                    // trois lignes, et l'en-tête déplié grandit avec elle.
                     Text(
-                      context.l10n.homeBlessing,
+                      context.words.homeBlessing,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTypography.bodyLarge.copyWith(
                           color: Colors.white.withValues(alpha: 0.88)),
                     ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/models/vocabulary.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/widgets/home/radio_cta_pill.dart';
 
@@ -15,12 +16,14 @@ void main() {
   double radioBottom(WidgetTester tester) =>
       tester.getBottomLeft(find.byType(RadioCtaPill)).dy;
 
-  Future<void> pumpHome(WidgetTester tester) async {
+  Future<void> pumpHome(WidgetTester tester,
+      {VocabularyOverrides? vocabulary}) async {
     // Un écran court, pour que la liste de l'accueil défile sans contenu forgé.
     tester.view.physicalSize = const Size(390, 520);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await pumpScreen(tester, const Scaffold(body: HomeScreen()));
+    await pumpScreen(tester, const Scaffold(body: HomeScreen()),
+        vocabulary: vocabulary);
     // La mesure de la hauteur repliée se fait après le premier rendu.
     await tester.pump();
   }
@@ -37,6 +40,28 @@ void main() {
     expect(height, 256, reason: 'hauteur du corps, sans barre d’état en test');
     expect(height - radioBottom(tester), greaterThan(40),
         reason: 'la marge où paraît l’église reste sous le bouton');
+  });
+
+  testWidgets(
+      'une bénédiction de trois lignes, réglée au portail, agrandit l’en-tête',
+      (tester) async {
+    await pumpHome(
+      tester,
+      vocabulary: const VocabularyOverrides(labels: {
+        'homeBlessing': {
+          'fr': 'Que la paix du Seigneur soit avec vous en ce jour, dans vos '
+              'maisons, vos familles et vos cœurs, et que sa lumière guide '
+              'chacun de vos pas jusqu’au soir.',
+        },
+      }),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('Que la paix du Seigneur'), findsOneWidget);
+    expect(headerHeight(tester), greaterThan(256),
+        reason: 'l’en-tête grandit au lieu de rogner la place de l’église');
+    expect(headerHeight(tester) - radioBottom(tester), greaterThan(40),
+        reason: 'la marge sous le bouton est gardée');
   });
 
   testWidgets(
