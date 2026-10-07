@@ -121,7 +121,7 @@
   "@radioGaveUpMessage": { "description": "Écran /radio, sous la cause de l'abandon : vrai pour les trois causes, il dit qu'on a renoncé et que le geste appartient à l'auditeur" },
   "radioUnavailableMessage": "New Life Radio ne diffuse pas pour le moment.",
   "@radioUnavailableMessage": { "description": "Écran d'antenne quand aucune adresse de flux n'est connue" },
-  "radioLongPressTip": "Astuce : un appui long sur ce bouton ouvre le live à tout moment.",
+  "radioLongPressTip": "Appui long pour ouvrir le live",
   "@radioLongPressTip": { "description": "Message bref à l'accueil, au premier son d'un lancement réussi depuis le bouton radio (jamais à l'échec, jamais pour un lancement venu d'ailleurs) : il fait découvrir l'appui long" },
   "radioOpenLiveHint": "ouvrir le live",
   "@radioOpenLiveHint": { "description": "Indice d'accessibilité de l'appui long sur le bouton radio de l'accueil — le lecteur d'écran le lit après sa propre consigne (« touchez deux fois et maintenez pour… »)" },

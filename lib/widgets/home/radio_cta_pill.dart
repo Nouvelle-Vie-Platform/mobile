@@ -95,17 +95,20 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
   late AnimationController _animController;
   late Animation<Color?> _iconColorAnim;
 
-  /// **L'astuce en fondu**, à droite du bouton : elle paraît, reste quelques
-  /// secondes, puis s'efface. Une animation et non une minuterie : le texte
-  /// n'est dans l'arbre que tant qu'elle court.
+  /// **L'astuce, sous le bouton**, en surimpression : elle ne pousse rien, donc
+  /// l'en-tête ne bouge pas, et elle suit le bouton s'il se replie.
+  final OverlayPortalController _tipPortal = OverlayPortalController();
+  final LayerLink _tipAnchor = LayerLink();
+
+  /// Fondu d'entrée, trois secondes lisibles, fondu de sortie. Une animation et
+  /// non une minuterie : l'astuce n'est dans l'arbre que tant qu'elle court.
   late final AnimationController _tip = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 5),
+    duration: const Duration(milliseconds: 3600),
   )..addStatusListener((status) {
-      if (status == AnimationStatus.completed && mounted) setState(() {});
+      if (status == AnimationStatus.completed) _tipPortal.hide();
     });
 
-  /// Fondu d'entrée, quatre secondes lisibles, fondu de sortie.
   late final Animation<double> _tipOpacity = TweenSequence<double>([
     TweenSequenceItem(tween: Tween(begin: 0, end: 1), weight: 8),
     TweenSequenceItem(tween: ConstantTween(1), weight: 80),
@@ -117,8 +120,9 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
   ///
   /// Posé par l'appui qui lance, et par lui seul : un lancement venu de l'écran
   /// d'antenne ou du mini-lecteur ne le pose pas. Levé au premier son, à
-  /// l'échec, ou à l'arrêt — un seul message par lancement, et jamais pour
-  /// annoncer une panne. La reprise (`retrying`) ne le lève pas : une antenne
+  /// l'échec, ou à l'arrêt demandé par l'appui — un seul message par
+  /// lancement, et jamais pour annoncer une panne. Le repos transitoire du
+  /// chargement ne le lève pas (voir `_onStatusChanged`). La reprise (`retrying`) ne le lève pas : une antenne
   /// qui finit par répondre est un lancement réussi.
   bool _awaitingFirstSound = false;
 
@@ -190,12 +194,16 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
   void _onStatusChanged(RadioStatus? previous, RadioStatus next) {
     if (!_awaitingFirstSound) return;
     switch (next.phase) {
+      // **Le repos n'annule rien** : au lancement réel, le lecteur repasse
+      // brièvement au repos pendant qu'il charge l'antenne (connexion → repos
+      // → lecture, relevé sur iPhone). Le lire comme un arrêt perdait l'astuce
+      // à chaque fois. L'arrêt voulu passe par l'appui, qui lève déjà l'attente.
       case RadioPhase.connecting:
       case RadioPhase.retrying:
-        return; // pas encore : on attend la suite
       case RadioPhase.idle:
+        return; // pas encore : on attend la suite
       case RadioPhase.failed:
-        _awaitingFirstSound = false; // arrêté ou abandonné : rien à dire
+        _awaitingFirstSound = false; // abandonné : rien à dire
         return;
       case RadioPhase.playing:
         _awaitingFirstSound = false;
@@ -203,8 +211,8 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
     // L'accueil n'est plus au premier plan — l'auditeur a déjà ouvert la page
     // ou s'en est allé ailleurs : le message tomberait hors de propos.
     if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+    _tipPortal.show();
     _tip.forward(from: 0);
-    setState(() {});
   }
 
   Color? _getIconColor(RadioStatus status) {
@@ -223,12 +231,35 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
     // s'afficher au repos.
     final silent = ref.watch(radioAntennaProvider).value?.isSilent ?? false;
 
+    return OverlayPortal(
+      controller: _tipPortal,
+      overlayChildBuilder: (_) => Positioned(
+        left: 0,
+        top: 0,
+        child: CompositedTransformFollower(
+          link: _tipAnchor,
+          showWhenUnlinked: false,
+          targetAnchor: Alignment.bottomLeft,
+          offset: const Offset(0, AppSpacing.sm),
+          child: FadeTransition(
+            opacity: _tipOpacity,
+            child: const _LongPressTip(),
+          ),
+        ),
+      ),
+      child: CompositedTransformTarget(
+        link: _tipAnchor,
+        child: _buildPill(context, status, silent),
+      ),
+    );
+  }
+
+  Widget _buildPill(BuildContext context, RadioStatus status, bool silent) {
     // **Un libellé fixe** : le nom de l'antenne, dans tous les états. La phase se
     // lit sur l'icône et l'atténuation ; la cause d'une panne, sur `/radio`.
     final label = context.l10n.radioTitle;
     final dimmed =
         status.phase == RadioPhase.failed || (silent && !status.isOn);
-
     return AnimatedBuilder(
       animation: _iconColorAnim,
       builder: (context, child) {
@@ -308,31 +339,42 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
                 ),
               ),
             ),
-            // **L'astuce**, en fondu à côté du bouton, le temps de la lire —
-            // jamais un bandeau en bas de l'écran, loin du geste qu'elle décrit.
-            if (_tip.isAnimating) ...[
-              const SizedBox(width: AppSpacing.md),
-              Flexible(
-                child: FadeTransition(
-                  opacity: _tipOpacity,
-                  child: Text(
-                    context.l10n.radioLongPressTip,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.caption.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      shadows: const [
-                        Shadow(blurRadius: 4, color: Colors.black45),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ],
         );
       },
+    );
+  }
+}
+
+/// **L'astuce de l'appui long**, en pastille sous le bouton radio.
+class _LongPressTip extends StatelessWidget {
+  const _LongPressTip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.neutralDark.withValues(alpha: 0.9),
+      shape: const StadiumBorder(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.touch_app_outlined, color: Colors.white, size: 16),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              context.l10n.radioLongPressTip,
+              style: AppTypography.caption.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

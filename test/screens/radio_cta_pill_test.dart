@@ -101,8 +101,7 @@ void main() {
   }
 
   /// Le message qui fait découvrir l'appui long (décision 15).
-  const tip =
-      'Astuce : un appui long sur ce bouton ouvre le live à tout moment.';
+  const tip = 'Appui long pour ouvrir le live';
 
   late InertContentPlayer player;
 
@@ -335,6 +334,28 @@ void main() {
       await paintPlaying(tester);
       await tester.pump(const Duration(milliseconds: 500));
 
+      expect(find.text(tip), findsOneWidget);
+    });
+
+    testWidgets(
+        'aussi quand le lecteur repasse au repos pendant le chargement '
+        '(connexion → repos → lecture, relevé sur iPhone)', (tester) async {
+      await pumpPill(tester);
+      await tapOnce(tester);
+
+      // Le repos transitoire : l'antenne déjà entendue, pas encore relancée —
+      // `hasStarted` vrai, `isPlaying` faux. Ce n'est pas un arrêt.
+      player.emit(
+        const ContentPlayback(
+          contentId: RadioConfig.contentId,
+          hasStarted: true,
+        ),
+      );
+      await tester.pump();
+      expect(find.text(tip), findsNothing);
+
+      await paintPlaying(tester);
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.text(tip), findsOneWidget);
     });
 

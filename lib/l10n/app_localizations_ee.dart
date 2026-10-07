@@ -252,8 +252,7 @@ class AppLocalizationsEe extends AppLocalizations {
       'New Life Radio ne diffuse pas pour le moment.';
 
   @override
-  String get radioLongPressTip =>
-      'Astuce : un appui long sur ce bouton ouvre le live à tout moment.';
+  String get radioLongPressTip => 'Appui long pour ouvrir le live';
 
   @override
   String get radioOpenLiveHint => 'ouvrir le live';
