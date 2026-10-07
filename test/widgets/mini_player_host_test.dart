@@ -451,12 +451,14 @@ void main() {
     double bottomPadding(WidgetTester tester, Finder list) =>
         (tester.widget<ListView>(list).padding! as EdgeInsets).bottom;
 
-    /// **La carte au-dessus de la barre**, bouton central dégagé — la même
-    /// règle que sur l'accueil.
+    /// **La carte au-dessus de la barre**, et descendue dans le haut du bouton
+    /// central, qui passe devant elle par l'encoche — la même règle que sur
+    /// l'accueil.
     void expectAboveBar(WidgetTester tester) {
       final bar = tester.getRect(find.byType(AppBottomNav));
       expect(mini, findsOneWidget);
-      expect(tester.getRect(mini).bottom, lessThanOrEqualTo(bar.top - 56 / 2));
+      expect(tester.getRect(mini).bottom, lessThanOrEqualTo(bar.top));
+      expect(tester.getRect(mini).bottom, greaterThan(bar.top - 56 / 2));
       expect(bar.height, lessThan(AppBottomNav.barHeight + 1));
     }
 
@@ -535,8 +537,10 @@ void main() {
 
       final bar = tester.getRect(find.byType(AppBottomNav));
       final card = tester.getRect(mini);
-      // Le bouton central déborde de la barre : la carte doit le dégager.
-      expect(card.bottom, lessThanOrEqualTo(bar.top - 56 / 2));
+      // La carte descend dans le haut du bouton central (qui passe devant
+      // par l'encoche), sans recouvrir la barre.
+      expect(card.bottom, lessThanOrEqualTo(bar.top));
+      expect(card.bottom, greaterThan(bar.top - 56 / 2));
       expect(
         tester.getRect(notice).bottom,
         lessThanOrEqualTo(card.top),
