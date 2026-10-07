@@ -566,9 +566,11 @@ Cinq points qui se ratent en silence :
 1. **La route du sommet se lit dans le routeur**
    (`routerDelegate.currentConfiguration.last.route.name`, le délégué prévient
    à chaque `push`/`pop`/`go`) — jamais par `GoRouterState.of`, introuvable
-   au-dessus du `Navigator`. Sur `/home`, la carte se pose au-dessus de la
-   barre (marge basse qui dégage la moitié du bouton central) ; ailleurs, au
-   ras de la zone sûre. **Masqué** (`MiniPlayerHost.hiddenRoutes`) sur
+   au-dessus du `Navigator`. Sur `/home`, la carte descend dans le haut du
+   bouton central (`MiniPlayerHost.shellDrop`) et une **encoche** découpée
+   autour de lui (`fabNotchRadius`) le fait paraître devant elle — la carte
+   est peinte au-dessus du `Navigator`, donc du bouton ; un appui dans
+   l'encoche atteint le bouton. Ailleurs, au ras de la zone sûre. **Masqué** (`MiniPlayerHost.hiddenRoutes`) sur
    `/teaching/:id` et `/gathering/:id` (la fiche a déjà le lecteur complet ;
    le rassemblement sans condition, sa fiche **est** un `ContentPlayerView`),
    `/radio`, `/media-viewer`, et sur les parcours bloquants : `/`, `/auth*`,
@@ -820,7 +822,9 @@ montage** (`ContentPlayerView._loadOnce`, direct seulement) : c'est l'écran, pa
 le bouton, qui lance alors l'écoute — comme pour un lien profond.
 
 **Le geste se découvre au moment où il sert** : au **premier son** d'un lancement
-parti du bouton, un `SnackBar` dit `radioLongPressTip`. Le drapeau
+parti du bouton, `radioLongPressTip` paraît **en fondu à droite du bouton**,
+quelques secondes, puis s'efface (une animation, jamais une minuterie : le texte
+n'est dans l'arbre que tant qu'elle court). Le drapeau
 `_awaitingFirstSound` est posé par l'appui qui lance et lui seul, levé au premier
 son, à l'arrêt ou à l'abandon — jamais de message à l'échec, ni pour un
 lancement venu de l'écran ou du mini-lecteur, ni quand l'accueil n'est plus au

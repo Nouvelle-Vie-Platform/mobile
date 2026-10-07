@@ -31,11 +31,15 @@ import '../../theme/app_typography.dart';
 ///
 /// C'est la règle de la décision 10 : **on retire ce qui ne peut pas être vrai**.
 class CommunityHeader extends StatelessWidget {
-  const CommunityHeader({super.key, this.bottom});
+  const CommunityHeader({super.key, this.bottom, this.actions = const []});
 
   /// La barre d'onglets de la page, peinte **dans** le bandeau, sous le titre.
   /// Nulle quand la page n'a qu'un onglet (un invité, voir `GroupsScreen`).
   final PreferredSizeWidget? bottom;
+
+  /// Les gestes de la page, à droite du titre (la loupe, le « + ») : ils vivent
+  /// dans le bandeau, **jamais dans le corps d'un onglet**.
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -60,16 +64,21 @@ class CommunityHeader extends StatelessWidget {
               // disparu (un `IconButton`, 48 px) : le bandeau ne rétrécit pas.
               SizedBox(
                 height: kMinInteractiveDimension,
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(
-                    // Titre de **page** : `communityTitle` (« Échanges »).
-                    // `navGroups`, même mot, ne sert plus que la barre de nav.
-                    context.l10n.communityTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.h2.copyWith(color: Colors.white),
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        // Titre de **page** : `communityTitle` (« Échanges »).
+                        // `navGroups`, même mot, ne sert plus que la barre de
+                        // nav.
+                        context.l10n.communityTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.h2.copyWith(color: Colors.white),
+                      ),
+                    ),
+                    ...actions,
+                  ],
                 ),
               ),
               if (bottom != null) bottom!,

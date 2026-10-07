@@ -28,7 +28,7 @@ import 'package:maison_du_miracle/screens/new_conversation_screen.dart';
 import 'package:maison_du_miracle/widgets/community/contact_picker.dart';
 import 'package:maison_du_miracle/widgets/community/group_admin_section.dart';
 import 'package:maison_du_miracle/widgets/community/join_group_card.dart';
-import 'package:maison_du_miracle/widgets/community/new_conversation_entry.dart';
+import 'package:maison_du_miracle/widgets/community/my_requests_tab.dart';
 
 import '../data/local/local_database_fixtures.dart';
 import '../helpers/guest_app.dart';
@@ -191,7 +191,30 @@ void main() {
         const Scaffold(body: GroupsScreen()),
         auth: SignedInAuthRepository(),
       );
-      expect(find.byKey(NewConversationEntry.buttonKey), findsOneWidget);
+      expect(find.byKey(GroupsScreen.addKey), findsOneWidget);
+    });
+
+    testWidgets(
+        'le « + » et la loupe sont dans le bandeau, et suivent l\'onglet',
+        (tester) async {
+      await pumpScreen(
+        tester,
+        const Scaffold(body: GroupsScreen()),
+        auth: SignedInAuthRepository(),
+      );
+      final l = _fr;
+
+      // Messages : la loupe, et « + » = nouvelle discussion.
+      expect(find.byKey(GroupsScreen.searchKey), findsOneWidget);
+      expect(find.byTooltip(l.m6NewConversation), findsOneWidget);
+
+      // Requêtes : plus de loupe, et « + » = nouvelle requête — et le corps de
+      // l'onglet n'a plus son propre bouton.
+      await tester.tap(find.text(l.echangesTabRequests));
+      await tester.pumpAndSettle();
+      expect(find.byKey(GroupsScreen.searchKey), findsNothing);
+      expect(find.byTooltip(l.requestsAdd), findsOneWidget);
+      expect(find.byKey(MyRequestsTab.addButtonKey), findsNothing);
     });
 
     testWidgets('un invité ne l\'a pas', (tester) async {
@@ -200,7 +223,7 @@ void main() {
         const Scaffold(body: GroupsScreen()),
         auth: GuestAuthRepository(),
       );
-      expect(find.byKey(NewConversationEntry.buttonKey), findsNothing);
+      expect(find.byKey(GroupsScreen.addKey), findsNothing);
     });
   });
 
@@ -352,6 +375,69 @@ void main() {
       await tester.pump();
       expect(admin.calls, ['join g-open']);
     });
+  });
+
+  testWidgets('« Groupes à rejoindre » se replie et se déplie', (tester) async {
+    await pumpScreen(
+      tester,
+      const Scaffold(body: GroupsScreen()),
+      auth: SignedInAuthRepository(),
+      echanges: InMemoryEchangesRepository(
+        discoverGroups: const [
+          DiscoverGroupView(
+            groupId: 'g-open',
+            title: 'Étude biblique',
+            joinPolicy: 'open',
+            memberCount: 24,
+          ),
+        ],
+      ),
+    );
+
+    // Dépliée par défaut.
+    expect(find.byKey(JoinGroupCard.joinKey('g-open')), findsOneWidget);
+
+    await tester.tap(find.byKey(GroupsScreen.discoverToggleKey));
+    await tester.pumpAndSettle();
+    expect(find.byKey(JoinGroupCard.joinKey('g-open')), findsNothing);
+    // Le titre reste : c'est par lui qu'on déplie.
+    expect(find.text(_fr.echangesDiscover), findsOneWidget);
+
+    await tester.tap(find.byKey(GroupsScreen.discoverToggleKey));
+    await tester.pumpAndSettle();
+    expect(find.byKey(JoinGroupCard.joinKey('g-open')), findsOneWidget);
+  });
+
+  testWidgets(
+      '« Groupes à rejoindre » défile horizontalement, sans changer d\'onglet',
+      (tester) async {
+    await pumpScreen(
+      tester,
+      const Scaffold(body: GroupsScreen()),
+      auth: SignedInAuthRepository(),
+      echanges: InMemoryEchangesRepository(
+        discoverGroups: [
+          for (var i = 0; i < 5; i++)
+            DiscoverGroupView(
+              groupId: 'g-$i',
+              title: 'Groupe $i',
+              joinPolicy: 'open',
+              memberCount: 3,
+            ),
+        ],
+      ),
+    );
+
+    final first = find.byKey(JoinGroupCard.joinKey('g-0'));
+    final before = tester.getTopLeft(first).dx;
+    await tester.drag(first, const Offset(-300, 0));
+    await tester.pumpAndSettle();
+
+    // La rangée a défilé…
+    expect(tester.getTopLeft(find.byKey(JoinGroupCard.joinKey('g-0'))).dx,
+        lessThan(before));
+    // … et on est toujours sur Messages.
+    expect(find.byKey(GroupsScreen.searchKey), findsOneWidget);
   });
 
   group('Quitter', () {

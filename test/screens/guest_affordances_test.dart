@@ -55,6 +55,8 @@ const _screensBehindTheGuard = <String, String>{
   // place (`HomeShell._screenFor`). Un invité ne le monte donc même pas — il le
   // montait jusqu'ici hors de l'écran, un `IndexedStack` construisant tous ses
   // enfants.
+  // Le « + » et la loupe du bandeau (nouvelle discussion, nouvelle requête,
+  // recherche) : posés pour un membre seulement — un invité n'a pas d'onglets.
   'lib/screens/groups_screen.dart': 'onglet 2, remplacé par le formulaire',
   // L'onglet « Requêtes » de la page Échanges (#148) : monté par
   // `GroupsScreen` pour un membre seulement — la page elle-même ne l'est pas
@@ -76,11 +78,6 @@ const _screensBehindTheGuard = <String, String>{
   // Les gestes de la fiche d'un groupe : montés par `/group-info`, réservé.
   'lib/widgets/community/group_admin_section.dart':
       'monté par /group-info, réservé',
-  // Le bouton « Nouvelle discussion » : monté par l'onglet Messages (onglet 2,
-  // remplacé par le formulaire sans session), et seulement si l'acteur est
-  // connu.
-  'lib/widgets/community/new_conversation_entry.dart':
-      'onglet 2, et seulement pour un acteur connu',
 };
 
 /// Les fichiers qui **nomment** les routes sans y naviguer.

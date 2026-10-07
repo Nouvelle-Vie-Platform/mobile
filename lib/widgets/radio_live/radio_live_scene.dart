@@ -3,13 +3,12 @@
 /// ```
 /// ┌────────────────────────┐
 /// │ ←  ● EN DIRECT  👁 128 ⚑│  badge en direct seulement ; compteur absent si null ;
-/// │ New Life Radio         │  ⚑ = file des signalements, modérateur seulement
-/// │   (état de l'écoute)   │
+/// │ New Life Radio    ■  ⏯ │  ⚑ = file des signalements, modérateur seulement
+/// │                        │  (l'état de l'écoute : pastille en haut, abandon au centre)
 /// │                     ❤️ │  réactions qui montent
 /// │ Ama K.  Amen !      🙏 │  fil sur un voile, en direct seulement
 /// │ Kossi  gloire à Dieu 🔥│  boutons de réaction, toujours
 /// │ [ Écrire…         ] ➤  │  champ, en direct seulement
-/// │      ■     ⏸            │  arrêt, lecture/pause
 /// └────────────────────────┘
 /// ```
 ///
@@ -18,6 +17,8 @@
 /// pas l'écoute. Deux intensités (décision 2) : hors direct, compteur et
 /// réactions ; en direct, badge et fil en plus.
 library;
+
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,6 +38,7 @@ import '../content_player_view.dart';
 import 'radio_comment_feed.dart';
 import 'radio_live_sheets.dart';
 import 'radio_reaction_particles.dart';
+import 'radio_spectrum.dart';
 
 /// La largeur de la colonne des réactions, à droite.
 const double _kReactionColumn = 56;
@@ -79,33 +81,43 @@ class RadioLiveScene extends ConsumerWidget {
     // En direct, une écoute qui va bien n'a rien à dire de plus que le badge
     // EN DIRECT : la pastille ne revient que pour une reprise, une panne ou
     // « hors antenne ».
-    final playing = ref.watch(
-        radioListeningProvider.select((s) => s.phase == RadioPhase.playing));
-    final showsStatus = !(isLive && playing);
+    final phase = ref.watch(radioListeningProvider.select((s) => s.phase));
+    final showsStatus = !(isLive && phase == RadioPhase.playing);
+    // **Deux places pour l'état** : une pastille (« À l'antenne », reprise,
+    // « hors antenne ») se range en haut, à la place du badge EN DIRECT ; seul
+    // l'abandon, une carte avec son bouton « Réessayer », garde le centre.
+    final failed = phase == RadioPhase.failed;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _TopRow(),
+          _TopRow(status: showsStatus && !failed ? status : null),
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.h2.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          _TitleRow(title: title, parts: parts),
           Expanded(
             child: LayoutBuilder(
               builder: (context, box) => Stack(
+                // Le spectre déborde à gauche jusqu'au bord de l'écran.
+                clipBehavior: Clip.none,
                 children: [
+                  // **Le spectre**, derrière tout le reste : collé au bord
+                  // gauche de l'écran (au-delà de la marge de la page), il
+                  // s'allonge vers la droite jusqu'à la colonne des réactions.
+                  Positioned(
+                    left: -AppSpacing.lg,
+                    top: AppSpacing.md,
+                    bottom: 0,
+                    width: box.maxWidth +
+                        AppSpacing.lg -
+                        _kReactionColumn -
+                        AppSpacing.sm,
+                    child: const RadioSpectrum(),
+                  ),
                   // Centrée sur toute la largeur, pas sur celle que laisse
                   // la colonne des réactions : décentrée, elle se voyait.
-                  if (showsStatus)
+                  if (showsStatus && failed)
                     Positioned.fill(
                       child: Align(
                         alignment: const Alignment(0, -0.4),
@@ -140,8 +152,6 @@ class RadioLiveScene extends ConsumerWidget {
             const _Composer()
           else if (silenced)
             const _SilencedNotice(),
-          const SizedBox(height: AppSpacing.md),
-          _Transport(parts: parts),
           const SizedBox(height: AppSpacing.lg),
         ],
       ),
@@ -151,7 +161,10 @@ class RadioLiveScene extends ConsumerWidget {
 
 /// En haut : retour, badge du direct, compteur, et la file d'un modérateur.
 class _TopRow extends ConsumerWidget {
-  const _TopRow();
+  const _TopRow({this.status});
+
+  /// La pastille d'état, à côté du badge — `null` quand il n'y a rien à dire.
+  final Widget? status;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -176,6 +189,10 @@ class _TopRow extends ConsumerWidget {
         ),
         if (isLive) ...[
           const _LiveBadge(),
+          const SizedBox(width: AppSpacing.sm),
+        ],
+        if (status case final status?) ...[
+          Flexible(child: status),
           const SizedBox(width: AppSpacing.sm),
         ],
         if (listeners != null)
@@ -445,30 +462,52 @@ class _ComposerState extends ConsumerState<_Composer> {
     return Row(
       children: [
         Expanded(
-          child: TextField(
-            key: RadioLiveScene.composerKey,
-            controller: _field,
-            maxLength: kRadioCommentMaxLength,
-            textInputAction: TextInputAction.send,
-            onSubmitted: (_) => _submit(),
-            style: AppTypography.body.copyWith(color: Colors.white),
-            cursorColor: Colors.white,
-            decoration: InputDecoration(
-              hintText: l10n.radioCommentHint,
-              hintStyle: AppTypography.body.copyWith(
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
-              counterText: '',
-              isDense: true,
-              filled: true,
-              fillColor: Colors.black.withValues(alpha: 0.3),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                borderSide: BorderSide.none,
+          // **Le fond se floute sous le champ**, et le champ a son propre fond
+          // sombre : le texte reste lisible sur n'importe quel décor de saison.
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: TextField(
+                key: RadioLiveScene.composerKey,
+                controller: _field,
+                maxLength: kRadioCommentMaxLength,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _submit(),
+                style: AppTypography.bodyStrong.copyWith(color: Colors.white),
+                cursorColor: Colors.white,
+                decoration: InputDecoration(
+                  hintText: l10n.radioCommentHint,
+                  hintStyle: AppTypography.body.copyWith(
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
+                  counterText: '',
+                  isDense: true,
+                  filled: true,
+                  fillColor: Colors.black.withValues(alpha: 0.6),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.18),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.18),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -500,12 +539,20 @@ class _SilencedNotice extends StatelessWidget {
   }
 }
 
-/// En bas : l'arrêt et le gros bouton, chacun **nommé** pour le lecteur
-/// d'écran — le bouton de la fiche n'a pas de libellé à lui.
-class _Transport extends ConsumerWidget {
-  const _Transport({required this.parts});
+/// **Le titre et le transport sur une ligne** : le nom de l'antenne, puis
+/// l'arrêt et la lecture, chacun **nommé** pour le lecteur d'écran — le bouton
+/// de la fiche n'a pas de libellé à lui. Les deux boutons de la fiche sont
+/// réduits à l'échelle (`FittedBox`, cible tactile comprise), la lecture restant
+/// la plus grande.
+class _TitleRow extends ConsumerWidget {
+  const _TitleRow({required this.title, required this.parts});
 
+  final String title;
   final ContentPlayerSceneParts parts;
+
+  /// La lecture, un peu plus grande que l'arrêt.
+  static const double _playSize = 52;
+  static const double _stopSize = 40;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -518,23 +565,39 @@ class _Transport extends ConsumerWidget {
     );
     final stop = parts.stopButton;
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.h2.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
         if (stop != null) ...[
+          const SizedBox(width: AppSpacing.sm),
           Semantics(
             container: true,
             label: l10n.radioStopListening,
-            child: stop,
+            child: SizedBox.square(
+              dimension: _stopSize,
+              child: FittedBox(child: stop),
+            ),
           ),
-          const SizedBox(width: AppSpacing.xl),
         ],
+        const SizedBox(width: AppSpacing.md),
         Semantics(
           container: true,
           button: true,
           label: playing ? l10n.actionPause : l10n.actionListen,
-          child: parts.playButton,
+          child: SizedBox.square(
+            dimension: _playSize,
+            child: FittedBox(child: parts.playButton),
+          ),
         ),
-        if (stop != null) const SizedBox(width: 44 + AppSpacing.xl),
       ],
     );
   }

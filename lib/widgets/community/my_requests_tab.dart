@@ -28,7 +28,12 @@ import '../app_error_state.dart';
 /// tirer-pour-rafraîchir et après chaque envoi. Jamais de requête réseau ici :
 /// le mobile ne sonde pas.
 class MyRequestsTab extends ConsumerWidget {
-  const MyRequestsTab({super.key});
+  const MyRequestsTab({super.key, this.showAddButton = true});
+
+  /// Le bouton « Nouvelle requête » dans la liste. Faux dans la page Échanges,
+  /// où le « + » du bandeau le remplace ; vrai sur la page autonome `/requests`,
+  /// qui n'a pas ce bandeau.
+  final bool showAddButton;
 
   /// Le bouton « Nouvelle requête » — exposé pour les tests.
   static const addButtonKey = ValueKey('my-requests-add');
@@ -83,12 +88,16 @@ class MyRequestsTab extends ConsumerWidget {
                     title: l.requestsEmptyTitle,
                     message: l.requestsEmpty,
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-                  addButton,
+                  if (showAddButton) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    addButton,
+                  ],
                 ]
               : [
-                  addButton,
-                  const SizedBox(height: AppSpacing.lg),
+                  if (showAddButton) ...[
+                    addButton,
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
                   for (final request in items) ...[
                     MyRequestTile(request: request),
                     const SizedBox(height: AppSpacing.md),

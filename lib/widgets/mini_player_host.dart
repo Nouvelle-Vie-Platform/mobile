@@ -86,15 +86,25 @@ class MiniPlayerHost extends ConsumerStatefulWidget {
     AppRoute.mediaViewer,
   };
 
-  /// La marge dans la coquille : la gouttière sur les côtés, et en bas de quoi
-  /// dégager le bouton central — la moitié d'un `FloatingActionButton` standard
-  /// (56 px) dépasse au-dessus de la barre, plus un intervalle.
+  /// La marge dans la coquille : la gouttière sur les côtés, et en bas un
+  /// intervalle seulement. La carte **descend dans le haut du bouton central**
+  /// (la moitié d'un `FloatingActionButton` standard, 56 px, dépasse de la
+  /// barre) : le bouton paraît devant elle grâce à l'encoche ([fabNotchRadius]),
+  /// puisque la carte est peinte au-dessus du `Navigator`, donc du bouton.
   static const EdgeInsets shellMargin = EdgeInsets.fromLTRB(
     AppSpacing.sm,
     AppSpacing.sm,
     AppSpacing.sm,
-    56 / 2 + AppSpacing.sm,
+    AppSpacing.sm,
   );
+
+  /// Le rayon de l'encoche découpée dans la carte autour du bouton central :
+  /// le bouton (28) plus un liseré, comme l'encoche de la barre du bas.
+  static const double fabNotchRadius = 56 / 2 + 6;
+
+  /// **De combien la carte descend sous le haut de la barre**, dans la
+  /// coquille : assez pour que le bouton central en masque une bonne part.
+  static const double shellDrop = 6;
 
   /// La marge sur un écran empilé : rien à dégager, la carte se pose au ras de
   /// la zone sûre.
@@ -240,8 +250,10 @@ class _MiniPlayerHostState extends ConsumerState<MiniPlayerHost> {
             Positioned(
               left: 0,
               right: 0,
-              bottom:
-                  media.padding.bottom + (inShell ? AppBottomNav.barHeight : 0),
+              bottom: media.padding.bottom +
+                  (inShell
+                      ? AppBottomNav.barHeight - MiniPlayerHost.shellDrop
+                      : 0),
               // **Le routeur posé à la main** : au-dessus du `Navigator`,
               // `GoRouter.of` ne trouverait rien, et l'appui sur la carte doit
               // ouvrir la fiche dans *ce* routeur.
@@ -250,11 +262,18 @@ class _MiniPlayerHostState extends ConsumerState<MiniPlayerHost> {
                 child: ContentMaxWidth(
                   child: _MeasureHeight(
                     onChanged: _onMeasured,
-                    child: MiniPlayer(
-                      margin: inShell
-                          ? MiniPlayerHost.shellMargin
-                          : MiniPlayerHost.stackedMargin,
-                    ),
+                    // L'encoche ne se contente pas de dessiner : un appui
+                    // dedans traverse la carte et atteint le bouton central.
+                    child: inShell
+                        ? const ClipPath(
+                            clipper: _FabNotchClipper(),
+                            child: MiniPlayer(
+                              margin: MiniPlayerHost.shellMargin,
+                            ),
+                          )
+                        : const MiniPlayer(
+                            margin: MiniPlayerHost.stackedMargin,
+                          ),
                   ),
                 ),
               ),
@@ -477,4 +496,28 @@ class _RenderMeasureHeight extends RenderProxyBox {
     // Jamais pendant la mise en page : l'hôte se reconstruirait au milieu.
     SchedulerBinding.instance.addPostFrameCallback((_) => onChanged(height));
   }
+}
+
+/// **L'encoche du bouton central** : un disque retiré au bas de la carte,
+/// centré sur le haut de la barre — le centre du bouton (`centerDocked`) —,
+/// soit [MiniPlayerHost.shellDrop] au-dessus du bord bas, marge comprise.
+class _FabNotchClipper extends CustomClipper<Path> {
+  const _FabNotchClipper();
+
+  @override
+  Path getClip(Size size) => Path.combine(
+        PathOperation.difference,
+        Path()..addRect(Offset.zero & size),
+        Path()
+          ..addOval(Rect.fromCircle(
+            center: Offset(
+              size.width / 2,
+              size.height - MiniPlayerHost.shellDrop,
+            ),
+            radius: MiniPlayerHost.fabNotchRadius,
+          )),
+      );
+
+  @override
+  bool shouldReclip(_FabNotchClipper oldClipper) => false;
 }

@@ -440,7 +440,7 @@ Décisions 8 et 9 du plan `server-portal/docs/messagerie-whatsapp-plan.md`.
 
 ### Démarrer une discussion privée
 
-« Nouvelle discussion » (onglet Messages), « Message » sur la fiche d'un membre
+Le « + » du bandeau d'Échanges (onglet Messages), « Message » sur la fiche d'un membre
 et sur chaque ligne du roster d'un groupe ouvrent `DirectChatScreen` **avec la
 personne**, pas avec un groupe :
 

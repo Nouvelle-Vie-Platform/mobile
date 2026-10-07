@@ -91,9 +91,26 @@ class RadioCtaPill extends ConsumerStatefulWidget {
 }
 
 class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _animController;
   late Animation<Color?> _iconColorAnim;
+
+  /// **L'astuce en fondu**, à droite du bouton : elle paraît, reste quelques
+  /// secondes, puis s'efface. Une animation et non une minuterie : le texte
+  /// n'est dans l'arbre que tant qu'elle court.
+  late final AnimationController _tip = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 5),
+  )..addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) setState(() {});
+    });
+
+  /// Fondu d'entrée, quatre secondes lisibles, fondu de sortie.
+  late final Animation<double> _tipOpacity = TweenSequence<double>([
+    TweenSequenceItem(tween: Tween(begin: 0, end: 1), weight: 8),
+    TweenSequenceItem(tween: ConstantTween(1), weight: 80),
+    TweenSequenceItem(tween: Tween(begin: 1, end: 0), weight: 12),
+  ]).animate(_tip);
 
   /// **Un lancement parti d'ici attend son premier son**, pour dire alors
   /// qu'un appui long ouvre le live (décision 15).
@@ -124,6 +141,7 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _animController.dispose();
+    _tip.dispose();
     super.dispose();
   }
 
@@ -185,11 +203,8 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
     // L'accueil n'est plus au premier plan — l'auditeur a déjà ouvert la page
     // ou s'en est allé ailleurs : le message tomberait hors de propos.
     if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null || !messenger.mounted) return;
-    messenger.showSnackBar(
-      SnackBar(content: Text(context.l10n.radioLongPressTip)),
-    );
+    _tip.forward(from: 0);
+    setState(() {});
   }
 
   Color? _getIconColor(RadioStatus status) {
@@ -293,6 +308,28 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
                 ),
               ),
             ),
+            // **L'astuce**, en fondu à côté du bouton, le temps de la lire —
+            // jamais un bandeau en bas de l'écran, loin du geste qu'elle décrit.
+            if (_tip.isAnimating) ...[
+              const SizedBox(width: AppSpacing.md),
+              Flexible(
+                child: FadeTransition(
+                  opacity: _tipOpacity,
+                  child: Text(
+                    context.l10n.radioLongPressTip,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.caption.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      shadows: const [
+                        Shadow(blurRadius: 4, color: Colors.black45),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         );
       },

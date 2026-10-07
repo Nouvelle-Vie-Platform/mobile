@@ -34,10 +34,14 @@ class _RecordingReporter implements PlaybackProgressReporter {
   /// [PlaybackProgressReporter] est de ne jamais lever.
   bool offline = false;
 
+  /// Chaque essai, parti ou non : c'est ce qui coûte une requête.
+  int attempts = 0;
+
   PlaybackProgressReport get last => sent.last;
 
   @override
   Future<bool> report(PlaybackProgressReport report) async {
+    attempts++;
     if (offline) return false;
     sent.add(report);
     return true;
@@ -548,6 +552,27 @@ void main() {
       await recorder.onPaused();
 
       expect(reporter.sent.single.positionSeconds, 30);
+    });
+
+    test(
+        'un échec n\'est PAS retenté à chaque émission de position, mais '
+        'trente secondes de lecture plus tard', () async {
+      final recorder = await openRecorder();
+      reporter.offline = true;
+
+      // Quatre émissions par seconde, comme le lecteur réel, pendant une
+      // minute. Avant la correction, chaque émission au-delà de trente
+      // secondes retentait : plus d'une centaine d'essais ici, des milliers à
+      // l'heure en production.
+      for (var q = 1; q <= 240; q++) {
+        await recorder.onPosition(
+          Duration(milliseconds: q * 250),
+          duration: null,
+          isPlaying: true,
+        );
+      }
+
+      expect(reporter.attempts, 2);
     });
 
     test('un rapporteur qui LÈVE ne fait pas tomber la lecture', () async {

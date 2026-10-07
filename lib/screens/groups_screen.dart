@@ -9,6 +9,7 @@ import '../router/app_router.dart';
 import '../state/auth_providers.dart';
 import '../state/echanges_providers.dart';
 import '../state/sync_providers.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_empty_state.dart';
@@ -19,7 +20,6 @@ import '../widgets/community/join_group_card.dart';
 import '../widgets/community/join_from_card.dart';
 import '../widgets/community/my_requests_tab.dart';
 import '../widgets/community/organizable_conversation_tile.dart';
-import '../widgets/community/new_conversation_entry.dart';
 
 /// Page **« Échanges »** : deux onglets, **« Messages »** puis **« Requêtes »**
 /// (#148), sous le **bandeau diagonal** ([CommunityHeader]) qui porte leur barre.
@@ -39,8 +39,19 @@ import '../widgets/community/new_conversation_entry.dart';
 /// coquille ne monte même pas cette page sans session (`HomeTab.requiresSession`
 /// rend `SignInTab` à sa place) ; la condition ici est la seconde ceinture, pour
 /// le jour où la page servirait ailleurs.
+///
+/// ## Les gestes de la page vivent dans le bandeau
+///
+/// À droite du titre : la **loupe** (onglet Messages seulement — la recherche ne
+/// fouille que les discussions) et le **« + »**, qui suit l'onglet : nouvelle
+/// discussion sur Messages (et « Nouveau groupe » pour un responsable, #145),
+/// nouvelle requête sur Requêtes. Rien de cela n'est dans le corps des onglets.
 class GroupsScreen extends ConsumerWidget {
   const GroupsScreen({super.key});
+
+  static const Key searchKey = Key('echanges-search');
+  static const Key addKey = Key('echanges-add');
+  static const Key discoverToggleKey = Key('echanges-discover-toggle');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -61,8 +72,8 @@ class GroupsScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CommunityHeader(
-            bottom: TabBar(
+          _EchangesHeader(
+            tabBar: TabBar(
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white70,
               indicatorColor: Colors.white,
@@ -80,12 +91,59 @@ class GroupsScreen extends ConsumerWidget {
             child: TabBarView(
               children: [
                 EchangesMessagesTab(),
-                MyRequestsTab(),
+                MyRequestsTab(showAddButton: false),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Le bandeau d'un membre, et ses gestes **selon l'onglet** : il écoute le
+/// `TabController` de la page, qui prévient à chaque changement d'onglet —
+/// toucher comme balayer.
+class _EchangesHeader extends StatelessWidget {
+  const _EchangesHeader({required this.tabBar});
+
+  final PreferredSizeWidget tabBar;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = DefaultTabController.of(context);
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final l = context.l10n;
+        final onMessages = controller.index == 0;
+        return CommunityHeader(
+          bottom: tabBar,
+          actions: [
+            if (onMessages)
+              IconButton(
+                key: GroupsScreen.searchKey,
+                tooltip: l.chatSearchHint,
+                icon: const Icon(Icons.search, color: Colors.white),
+                onPressed: () => context.pushNamed(AppRoute.chatSearch),
+              ),
+            // Un rond vert : le geste principal de la page, de la couleur du
+            // « Rejoindre » des cartes.
+            IconButton.filled(
+              key: GroupsScreen.addKey,
+              tooltip: onMessages ? l.m6NewConversation : l.requestsAdd,
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.secondary,
+                foregroundColor: Colors.white,
+              ),
+              icon: const Icon(Icons.add, size: 26),
+              onPressed: () => context.pushNamed(
+                onMessages ? AppRoute.newConversation : AppRoute.newRequest,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -148,21 +206,9 @@ class EchangesMessagesTab extends ConsumerWidget {
             onRefresh: () => ref.read(pullToRefreshProvider)(),
             child: ListView(
               padding: EdgeInsets.only(top: AppSpacing.lg, bottom: bottomInset),
+              // La loupe et « Nouvelle discussion » sont dans le bandeau de la
+              // page (`_EchangesHeader`), plus dans la liste.
               children: [
-                // M8 (#146) : la loupe, en tête — membres seulement.
-                if (me != null) ...[
-                  Padding(
-                    padding: AppSpacing.screenPadding,
-                    child: ChatSearchBar(
-                      onTap: () => context.pushNamed(AppRoute.chatSearch),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  // #145 : démarrer une discussion (et, pour un responsable,
-                  // créer un groupe). Seulement pour un membre identifié.
-                  const NewConversationEntry(),
-                  const SizedBox(height: AppSpacing.lg),
-                ],
                 ..._discoverSection(context, ref, toJoin),
                 ..._conversationsSection(ref, context, me, conversations),
               ],
@@ -188,29 +234,26 @@ class EchangesMessagesTab extends ConsumerWidget {
     if (groups.isEmpty) return const [];
 
     return [
-      Padding(
-        padding: AppSpacing.screenPadding,
-        child: Text(context.l10n.echangesDiscover, style: AppTypography.h5),
-      ),
-      const SizedBox(height: AppSpacing.md),
-      SizedBox(
-        height: JoinGroupCard.rowHeight,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: AppSpacing.screenPadding,
-          itemCount: groups.length,
-          separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-          itemBuilder: (context, i) => JoinGroupCard(
-            group: groups[i],
-            // #145 : rejoindre (ouvert) ou demander (sur demande), d'ici.
-            onJoin: () => joinFromCard(context, ref, groups[i]),
-            // Le tap ouvre la **fiche du groupe**, et non plus le profil de
-            // l'animateur : on découvre un groupe, on ne découvre pas une
-            // personne. La fiche porte la description, l'effectif et l'animateur
-            // — tout ce qu'il faut pour décider.
-            onTap: () => context.pushNamed(
-              AppRoute.groupInfo,
-              pathParameters: {'id': groups[i].groupId},
+      _DiscoverSection(
+        cards: SizedBox(
+          height: JoinGroupCard.rowHeight,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: AppSpacing.screenPadding,
+            itemCount: groups.length,
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+            itemBuilder: (context, i) => JoinGroupCard(
+              group: groups[i],
+              // #145 : rejoindre (ouvert) ou demander (sur demande), d'ici.
+              onJoin: () => joinFromCard(context, ref, groups[i]),
+              // Le tap ouvre la **fiche du groupe**, et non plus le profil de
+              // l'animateur : on découvre un groupe, on ne découvre pas une
+              // personne. La fiche porte la description, l'effectif et l'animateur
+              // — tout ce qu'il faut pour décider.
+              onTap: () => context.pushNamed(
+                AppRoute.groupInfo,
+                pathParameters: {'id': groups[i].groupId},
+              ),
             ),
           ),
         ),
@@ -292,5 +335,70 @@ class EchangesMessagesTab extends ConsumerWidget {
         },
       ),
     ];
+  }
+}
+
+/// **« Groupes à rejoindre », repliable** : on touche l'en-tête pour replier ou
+/// déplier la rangée de cartes. Dépliée par défaut — c'est une découverte, elle
+/// doit se voir. L'état est local à l'onglet : il tient le temps de la session
+/// (la coquille garde ses onglets montés), pas d'un lancement à l'autre.
+class _DiscoverSection extends StatefulWidget {
+  const _DiscoverSection({required this.cards});
+
+  final Widget cards;
+
+  @override
+  State<_DiscoverSection> createState() => _DiscoverSectionState();
+}
+
+class _DiscoverSectionState extends State<_DiscoverSection> {
+  bool _expanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _expanded,
+          child: InkWell(
+            key: GroupsScreen.discoverToggleKey,
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: AppSpacing.screenPadding.add(
+                const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      context.l10n.echangesDiscover,
+                      style: AppTypography.h5,
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _expanded ? 0 : -0.25,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.expand_more),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: _expanded
+              ? Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
+                  child: widget.cards,
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
   }
 }
