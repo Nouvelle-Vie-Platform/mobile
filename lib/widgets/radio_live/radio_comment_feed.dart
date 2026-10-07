@@ -17,9 +17,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/radio/radio_live.dart';
 import '../../l10n/l10n_extension.dart';
 import '../../state/radio_live_providers.dart';
-import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
+import '../app_avatar.dart';
 import 'radio_live_sheets.dart';
 
 /// Au-delà de ce décalage depuis le bas, l'auditeur est « remonté ».
@@ -183,28 +183,31 @@ class _CommentLine extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onLongPress: open,
+          // **Un rond aux initiales, pas le pseudo en entier** : le fil reste
+          // court et se lit d'un coup d'œil. Le nom complet reste dans le
+          // libellé du lecteur d'écran, ci-dessus.
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: '${comment.authorName}  ',
-                    style: AppTypography.bodyStrong.copyWith(
-                      color: comment.byGuest
-                          ? Colors.white.withValues(alpha: 0.85)
-                          : AppColors.accent,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppAvatar(name: comment.authorName, size: 26),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      comment.body,
+                      style: AppTypography.body.copyWith(
+                        color: Colors.white,
+                        shadows: const [
+                          Shadow(blurRadius: 4, color: Colors.black54),
+                        ],
+                      ),
                     ),
                   ),
-                  TextSpan(
-                    text: comment.body,
-                    style: AppTypography.body.copyWith(color: Colors.white),
-                  ),
-                ],
-              ),
-              style: const TextStyle(
-                shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
-              ),
+                ),
+              ],
             ),
           ),
         ),

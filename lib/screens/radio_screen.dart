@@ -40,7 +40,6 @@ import '../state/radio_live_providers.dart';
 import '../state/radio_providers.dart';
 import '../state/season_providers.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../widgets/app_error_state.dart';
@@ -178,32 +177,36 @@ class RadioAirStatus extends ConsumerWidget {
         ),
       RadioPhase.retrying => _StatusPill(
           key: retryingKey,
-          leading: SizedBox.square(
-            dimension: 14,
+          leading: const SizedBox.square(
+            dimension: 10,
             child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: context.palette.textSecondary,
+              strokeWidth: 1.5,
+              color: Colors.white,
             ),
           ),
           label: l10n.radioRetrying,
         ),
       RadioPhase.playing => _StatusPill(
           key: liveKey,
+          color: AppColors.primary,
           leading: const _LiveDot(),
           label: l10n.radioLive,
         ),
       RadioPhase.idle || RadioPhase.connecting when silent => _StatusPill(
           key: offAirKey,
-          leading: Icon(
+          leading: const Icon(
             Icons.sensors_off_rounded,
-            size: 16,
-            color: context.palette.textSecondary,
+            size: 12,
+            color: Colors.white,
           ),
           label: l10n.radioOffAir,
         ),
       _ => const SizedBox.shrink(),
     };
 
+    // Seul l'abandon occupe le centre de la page ; une pastille se range dans
+    // la rangée du haut, à la place du badge EN DIRECT (`RadioLiveScene`).
+    if (status.phase != RadioPhase.failed) return line;
     return Center(child: SingleChildScrollView(child: line));
   }
 
@@ -224,37 +227,49 @@ class RadioAirStatus extends ConsumerWidget {
       };
 }
 
-/// Une ligne d'état courte, sur une pastille aux couleurs du thème : lisible
-/// sur le fond sombre de la fiche, en clair comme en sombre.
+/// Une ligne d'état courte, sur une pastille de la forme du badge EN DIRECT
+/// (`RadioLiveScene`), dont elle partage la place : texte blanc sur un voile
+/// sombre, ou sur le bleu de marque quand l'antenne joue — la pastille
+/// « À l'antenne » du mini-lecteur.
 class _StatusPill extends StatelessWidget {
-  const _StatusPill({super.key, required this.leading, required this.label});
+  const _StatusPill({
+    super.key,
+    required this.leading,
+    required this.label,
+    this.color,
+  });
 
   final Widget leading;
   final String label;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: palette.surface.withValues(alpha: 0.92),
+        color: color ?? Colors.black.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             leading,
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: AppSpacing.xs),
             Flexible(
               child: Text(
                 label,
-                style: AppTypography.bodyStrong
-                    .copyWith(color: palette.textPrimary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
               ),
             ),
           ],
@@ -264,8 +279,8 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-/// Le voyant d'antenne : un point rouge fixe. Fixe, et pas clignotant — une
-/// animation continue de plus interdirait `pumpAndSettle` à tous les tests qui
+/// Le voyant d'antenne : un point blanc fixe, comme celui du badge EN DIRECT.
+/// Fixe, et pas clignotant — une animation continue de plus interdirait `pumpAndSettle` à tous les tests qui
 /// montent cet écran, et le bouton de lecture dit déjà que ça joue.
 class _LiveDot extends StatelessWidget {
   const _LiveDot();
@@ -273,9 +288,9 @@ class _LiveDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const DecoratedBox(
         decoration: BoxDecoration(
-          color: AppColors.danger,
+          color: Colors.white,
           shape: BoxShape.circle,
         ),
-        child: SizedBox.square(dimension: 10),
+        child: SizedBox.square(dimension: 8),
       );
 }
