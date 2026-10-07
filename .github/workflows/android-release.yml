@@ -222,10 +222,13 @@ jobs:
               echo "::error title=Certificat::apksigner refuse ${file}."
               exit 1
             fi
-            # « Signer #1 certificate SHA-256 digest: … », ou « Signer (minSdkVersion=…)
-            # certificate SHA-256 digest: … » selon la version d'apksigner.
+            # « Signer #1 certificate SHA-256 digest: … », « Signer (minSdkVersion=…)
+            # certificate SHA-256 digest: … », ou, depuis les build-tools 37,
+            # « V2 Signer: certificate SHA-256 digest: … » selon la version d'apksigner.
+            # Un motif ancré sur `^Signer` ratait cette dernière forme : v1.3.1 a publié
+            # un certificat vide, et v1.4.0 a échoué sur la garde qui l'interdit.
             cert=$(printf '%s\n' "$out" \
-              | sed -n 's/^Signer[^:]*certificate SHA-256 digest: *//p' | head -1)
+              | sed -n 's/.*[Ss]igner[^:]*:\{0,1\} *certificate SHA-256 digest: *//p' | head -1)
             if [ -z "$cert" ]; then
               echo "$out"
               echo "::error title=Certificat::certificat illisible pour ${file} : un certificat vide n'est jamais une égalité."
