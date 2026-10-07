@@ -49,10 +49,38 @@ void main() {
   }
 
   setUp(() {
-    FlutterSecureStorage.setMockInitialValues({});
+    // Un porteur de **membre** : c'est le seul à qui la route répond.
+    FlutterSecureStorage.setMockInitialValues({
+      'auth_token': 'jeton-membre',
+      'auth_token_kind': 'member',
+    });
     api = ApiClient.instance;
     reporter = HttpPlaybackProgressReporter(client: api);
     serve((_) => jsonReply(200, null));
+  });
+
+  group('Un invité n\'a pas de progression serveur', () {
+    // La route est sous le seul guard `api` : un jeton d'appareil y prend un
+    // 401 à coup sûr, et chaque 401 coûte en plus un renouvellement et un
+    // rejeu. Mesuré sur la prod : des milliers de requêtes à l'heure pour un
+    // seul invité à l'écoute.
+    test('jeton d\'appareil : rien ne part, et rien n\'est à retenter',
+        () async {
+      FlutterSecureStorage.setMockInitialValues({
+        'auth_token': 'jeton-appareil',
+        'auth_token_kind': 'device',
+      });
+
+      expect(await reporter.report(_report()), isTrue);
+      expect(adapter.requests, isEmpty);
+    });
+
+    test('aucun porteur : c\'est un invité, rien ne part', () async {
+      FlutterSecureStorage.setMockInitialValues({});
+
+      expect(await reporter.report(_report()), isTrue);
+      expect(adapter.requests, isEmpty);
+    });
   });
 
   group('POST /teachings/:teachingId/progress', () {

@@ -48,9 +48,9 @@ import 'playback_progress_reporter.dart';
 /// endroit où l'échec est visible, et il n'est lu par aucun écran.
 class HttpPlaybackProgressReporter implements PlaybackProgressReporter {
   HttpPlaybackProgressReporter({ApiClient? client})
-      : _client = (client ?? ApiClient.instance).dio;
+      : _api = client ?? ApiClient.instance;
 
-  final Dio _client;
+  final ApiClient _api;
 
   /// Le dernier échec avalé, `null` si le dernier rapport est passé.
   ///
@@ -63,8 +63,17 @@ class HttpPlaybackProgressReporter implements PlaybackProgressReporter {
 
   @override
   Future<bool> report(PlaybackProgressReport report) async {
+    // **Un invité n'a pas de progression serveur** : la route est sous le seul
+    // guard `api` (server-portal, `app/mediatheque/routes.ts`), donc un jeton
+    // d'appareil y prend un 401 à coup sûr — et chaque 401 coûte en plus un
+    // renouvellement de jeton et un rejeu. Sans ce garde, un invité qui
+    // écoutait un enseignement envoyait des milliers de requêtes à l'heure.
+    // Sa progression reste locale, et la fusion de la connexion la porte au
+    // compte. « Rien à envoyer » se rend comme un rapport parti : il n'y a rien
+    // à retenter.
+    if (!await _carriesMemberToken()) return true;
     try {
-      await _client.post<void>(
+      await _api.dio.post<void>(
         '/teachings/${report.contentId}/progress',
         data: playbackProgressPayload(report),
       );
@@ -80,6 +89,11 @@ class HttpPlaybackProgressReporter implements PlaybackProgressReporter {
       return false;
     }
   }
+
+  /// Un porteur absent est un invité, comme pour `UnauthorizedInterceptor`.
+  Future<bool> _carriesMemberToken() async =>
+      await _api.readToken() != null &&
+      await _api.readTokenKind() == AuthTokenKind.member;
 }
 
 /// **Le corps du rapport**, en `camelCase`.

@@ -323,13 +323,16 @@ class PlaybackProgressRecorder {
           completed: completed ?? _completed,
         ),
       );
-      // Le compteur ne se remet à zéro que sur un rapport **parti**. Un échec
-      // laisse donc le prochain déclencheur retenter tout de suite, au lieu de
-      // croire le serveur au courant et de se taire jusqu'au prochain
-      // déplacement.
+      // Le temps joué repart de zéro dans les deux cas, et c'est ce qui borne
+      // les essais : sans cela, un échec laissait le compteur au-dessus du
+      // seuil, et **chaque émission de position** — plusieurs par seconde —
+      // retentait le rapport (mesuré : des milliers de requêtes à l'heure).
+      // Un échec se retente donc trente secondes de lecture plus tard, ou tout
+      // de suite sur une pause, une sortie ou la fin : `_reportedSeconds` ne
+      // bouge que sur un rapport **parti**, et ces déclencheurs-là le lisent.
+      _playedSinceReport = Duration.zero;
       if (!delivered) return;
       _reportedSeconds = seconds;
-      _playedSinceReport = Duration.zero;
     } catch (error, stack) {
       // Muet à l'écran, visible au diagnostic. Une progression perdue est un
       // désagrément ; une erreur affichée pendant un prêche est une panne.
