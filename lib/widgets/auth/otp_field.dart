@@ -268,10 +268,20 @@ class _OtpFieldState extends State<OtpField> {
         cursorColor: AppColors.primary,
         // Pas de maxLength (collage réparti) ; on filtre les non-chiffres.
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        // **La case est le champ** : c'est le conteneur qui porte le fond et
+        // la bordure. Le thème pose un fond et une bordure par état
+        // (`enabledBorder`, `focusedBorder`…), qui l'emportent sur `border` —
+        // d'où une pilule dessinée DANS la case. On les neutralise tous.
         decoration: const InputDecoration(
           counterText: '',
           isCollapsed: true,
+          filled: false,
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
           contentPadding: EdgeInsets.zero,
         ),
         onChanged: (value) => _onChanged(index, value),
