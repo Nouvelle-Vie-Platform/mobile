@@ -214,9 +214,9 @@ void main() {
         _conversation('g-1', 'Chorale'),
       ]);
 
-      // Commencé sur la barre de recherche : pas sur une tuile.
-      await tester.fling(
-        find.byKey(ChatSearchBar.barKey),
+      // Commencé sous la liste : pas sur une tuile.
+      await tester.flingFrom(
+        tester.getBottomLeft(find.byType(TabBarView)) + const Offset(200, -40),
         const Offset(-400, 0),
         1000,
       );

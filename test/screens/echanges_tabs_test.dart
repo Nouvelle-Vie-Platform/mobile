@@ -110,7 +110,8 @@ void main() {
 
       expect(find.byIcon(Icons.assignment_outlined), findsNothing);
       expect(find.byTooltip(_fr.requestsTitle), findsNothing);
-      expect(find.byType(IconButton), findsNothing);
+      // Le bandeau ne porte plus que la loupe et le « + » de la page.
+      expect(find.byType(IconButton), findsNWidgets(2));
     });
 
     testWidgets('toucher l\'onglet ouvre Requêtes, et revient', (tester) async {
