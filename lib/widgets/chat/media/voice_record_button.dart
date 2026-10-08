@@ -23,12 +23,23 @@ const double kVoiceLockDistance = 80;
 /// - **appui maintenu** : on enregistre ; **relâcher** envoie ;
 /// - **glisser à gauche** : on annule, rien ne part ;
 /// - **glisser vers le haut** : on verrouille — le doigt se lève,
-///   l'enregistrement continue, et ce bouton devient « envoyer » ;
+///   l'enregistrement continue, et ce bouton devient « envoyer » (une pastille
+///   cadenas, au-dessus du micro, montre le geste pendant l'enregistrement) ;
 /// - un **appui bref** ne fait rien d'autre que dire le geste.
 ///
 /// L'état est dans [VoiceRecordingController] ; ce widget ne porte que le
 /// geste. La permission du micro est demandée **au premier appui**.
-class VoiceRecordButton extends StatelessWidget {
+///
+/// ## Le geste est retenu pendant le démarrage
+///
+/// `begin()` attend la permission puis le micro, ce qui prend plusieurs
+/// centaines de millisecondes — et, au premier appui, une fenêtre système qui
+/// **interrompt** le geste. Un relâchement ou un glissement survenus dans cet
+/// intervalle étaient ignorés (l'enregistrement n'était pas encore « en
+/// cours »), alors que le micro démarrait quand même : l'enregistrement restait
+/// **orphelin**, et seul un second appui long le terminait (relevé sur iPad).
+/// Le geste est donc retenu, et appliqué dès que le micro tourne.
+class VoiceRecordButton extends StatefulWidget {
   const VoiceRecordButton({
     super.key,
     required this.controller,
@@ -42,12 +53,71 @@ class VoiceRecordButton extends StatelessWidget {
   final VoidCallback onDenied;
   final VoidCallback onTooShort;
 
+  static const Key lockHintKey = Key('m4_voice_lock_hint');
+
+  @override
+  State<VoiceRecordButton> createState() => _VoiceRecordButtonState();
+}
+
+class _VoiceRecordButtonState extends State<VoiceRecordButton> {
+  VoiceRecordingController get _controller => widget.controller;
+
+  /// Le doigt est-il encore posé ? Faux dès le relâchement ou l'interruption,
+  /// y compris pendant le démarrage du micro.
+  bool _held = false;
+
+  /// Ce que le doigt a demandé pendant le démarrage.
+  bool _wantsLock = false;
+  bool _wantsCancel = false;
+
   Future<void> _finish() async {
-    final voice = await controller.finish();
+    final voice = await _controller.finish();
     if (voice == null) {
-      onTooShort();
+      widget.onTooShort();
     } else {
-      onRecorded(voice);
+      widget.onRecorded(voice);
+    }
+  }
+
+  Future<void> _start() async {
+    _held = true;
+    _wantsLock = false;
+    _wantsCancel = false;
+    if (!await _controller.begin()) {
+      widget.onDenied();
+      return;
+    }
+    if (!mounted) return;
+    // Le micro tourne : on applique ce que le doigt a fait entre-temps.
+    if (_wantsCancel) {
+      unawaited(_controller.cancel());
+    } else if (_wantsLock) {
+      _controller.lock();
+    } else if (!_held) {
+      // Relâché avant que le micro ne démarre : rien de valable n'a été dit.
+      // Annulé, jamais laissé tourner sans personne pour le finir.
+      unawaited(_controller.cancel());
+      widget.onTooShort();
+    }
+  }
+
+  void _move(LongPressMoveUpdateDetails details) {
+    final offset = details.offsetFromOrigin;
+    if (offset.dx < -kVoiceCancelDistance) {
+      _wantsCancel = true;
+      unawaited(_controller.cancel());
+    } else if (offset.dy < -kVoiceLockDistance) {
+      _wantsLock = true;
+      _controller.lock();
+    }
+  }
+
+  /// Relâché — ou interrompu par le système (une fenêtre, un appel) : un
+  /// enregistrement en cours est **envoyé**, jamais laissé orphelin.
+  void _release() {
+    _held = false;
+    if (_controller.phase == VoiceRecordingPhase.recording) {
+      unawaited(_finish());
     }
   }
 
@@ -55,58 +125,80 @@ class VoiceRecordButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     return ListenableBuilder(
-      listenable: controller,
+      listenable: _controller,
       builder: (context, _) {
-        final locked = controller.phase == VoiceRecordingPhase.locked;
-        final recording = controller.phase == VoiceRecordingPhase.recording;
+        final locked = _controller.phase == VoiceRecordingPhase.locked;
+        final recording = _controller.phase == VoiceRecordingPhase.recording;
 
         return Semantics(
           button: true,
           label: locked ? l.m4VoiceSend : l.m4ChatRecordVoice,
           child: GestureDetector(
             key: const Key('m4_voice_button'),
-            onTap: locked ? () => unawaited(_finish()) : onTooShort,
-            onLongPressStart: locked
-                ? null
-                : (_) async {
-                    if (!await controller.begin()) onDenied();
-                  },
-            onLongPressMoveUpdate: locked
-                ? null
-                : (details) {
-                    final offset = details.offsetFromOrigin;
-                    if (offset.dx < -kVoiceCancelDistance) {
-                      unawaited(controller.cancel());
-                    } else if (offset.dy < -kVoiceLockDistance) {
-                      controller.lock();
-                    }
-                  },
-            onLongPressEnd: locked
-                ? null
-                : (_) {
-                    // Annulé en route, ou verrouillé : le relâcher n'envoie rien.
-                    if (controller.phase == VoiceRecordingPhase.recording) {
-                      unawaited(_finish());
-                    }
-                  },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              width: recording ? 64 : 48,
-              height: recording ? 64 : 48,
-              decoration: BoxDecoration(
-                gradient: recording ? null : AppColors.gradientSecondary,
-                color: recording ? AppColors.danger : null,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                locked ? Icons.send : Icons.mic,
-                color: Colors.white,
-                size: 24,
-              ),
+            onTap: locked ? () => unawaited(_finish()) : widget.onTooShort,
+            onLongPressStart: locked ? null : (_) => unawaited(_start()),
+            onLongPressMoveUpdate: locked ? null : _move,
+            onLongPressEnd: locked ? null : (_) => _release(),
+            onLongPressCancel: locked ? null : _release,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  width: recording ? 64 : 48,
+                  height: recording ? 64 : 48,
+                  decoration: BoxDecoration(
+                    gradient: recording ? null : AppColors.gradientSecondary,
+                    color: recording ? AppColors.danger : null,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    locked ? Icons.send : Icons.mic,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                // **Le cadenas, au-dessus du micro** : glisser jusqu'à lui
+                // verrouille l'enregistrement, mains libres.
+                if (recording) const Positioned(bottom: 76, child: _LockHint()),
+              ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _LockHint extends StatelessWidget {
+  const _LockHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      key: VoiceRecordButton.lockHintKey,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: palette.border),
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock_outline, size: 20, color: palette.textSecondary),
+          const SizedBox(height: AppSpacing.xs),
+          Icon(Icons.keyboard_arrow_up, size: 20, color: palette.textSecondary),
+        ],
+      ),
     );
   }
 }

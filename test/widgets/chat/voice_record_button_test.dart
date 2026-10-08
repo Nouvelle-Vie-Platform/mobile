@@ -3,6 +3,8 @@
 /// pour annuler, glisser vers le haut pour verrouiller.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -97,6 +99,82 @@ void main() {
     expect(recorded.single.duration, const Duration(seconds: 3));
     expect(recorded.single.waveform, [60]);
     expect(recorder.stops, 1);
+  });
+
+  group('Le micro met du temps à démarrer (relevé sur iPad)', () {
+    testWidgets(
+        'relâché avant que le micro ne démarre : rien ne reste orphelin',
+        (tester) async {
+      final gate = Completer<void>();
+      recorder.startGate = gate;
+      await pump(tester);
+      final gesture = await hold(tester);
+      expect(controller.isActive, isFalse, reason: 'le micro démarre encore');
+
+      await gesture.up();
+      await tester.pump();
+      gate.complete();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      // Avant : l'enregistrement restait en cours, et seul un second appui
+      // long le terminait.
+      expect(controller.isActive, isFalse);
+      expect(recorder.cancels, 1);
+      expect(recorded, isEmpty);
+      expect(tooShort, 1);
+    });
+
+    testWidgets('glissé vers le haut pendant le démarrage : verrouillé',
+        (tester) async {
+      final gate = Completer<void>();
+      recorder.startGate = gate;
+      await pump(tester);
+      final gesture = await hold(tester);
+
+      await gesture.moveBy(const Offset(0, -(kVoiceLockDistance + 20)));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+      gate.complete();
+      await tester.pump();
+
+      expect(controller.phase, VoiceRecordingPhase.locked);
+      expect(recorded, isEmpty);
+    });
+
+    testWidgets('maintenu jusqu\'au démarrage, puis relâché : le vocal part',
+        (tester) async {
+      final gate = Completer<void>();
+      recorder.startGate = gate;
+      await pump(tester);
+      final gesture = await hold(tester);
+      gate.complete();
+      await tester.pump();
+      expect(controller.phase, VoiceRecordingPhase.recording);
+
+      now = now.add(const Duration(seconds: 2));
+      await gesture.up();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(recorded.single.duration, const Duration(seconds: 2));
+    });
+  });
+
+  testWidgets('pendant l\'enregistrement, le cadenas montre où glisser',
+      (tester) async {
+    await pump(tester);
+    expect(find.byKey(VoiceRecordButton.lockHintKey), findsNothing);
+    final gesture = await hold(tester);
+    expect(find.byKey(VoiceRecordButton.lockHintKey), findsOneWidget);
+
+    await gesture.moveBy(const Offset(0, -(kVoiceLockDistance + 20)));
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+    // Verrouillé : plus rien à montrer, le bouton envoie.
+    expect(find.byKey(VoiceRecordButton.lockHintKey), findsNothing);
   });
 
   testWidgets('glisser à gauche annule : rien ne part', (tester) async {
