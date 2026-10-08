@@ -186,6 +186,25 @@ et le portail continue de demander de désinstaller avant d'installer. ⚠️ Pe
 la clé de release, c'est ne plus jamais pouvoir publier une mise à jour qui
 s'installe par-dessus : elle se sauvegarde hors du Mac.
 
+**La mémoire de Gradle est bornée sur la CI (#174), et il ne faut pas l'en
+retirer.** `android/gradle.properties` réserve `-Xmx8G -XX:MaxMetaspaceSize=4G`
+— réglage de poste de développement —, alors qu'une machine GitHub de **dépôt
+privé** n'a que **7 Go**. Sans borne, `assembleRelease` épuise la mémoire et
+Gradle est tué en plein build : `Gradle task assembleRelease failed with exit
+code 143` puis « The operation was canceled », ou le job disparaît sans que son
+étape se termine (v1.4.0, puis trois fois v1.4.3, le 07-08/10/2026). Ça
+**ressemble à un incident GitHub, et ce n'en est pas un** — le build passait
+seulement quand il restait sous la limite par chance. L'étape « Borner la
+mémoire de Gradle » écrit `~/.gradle/gradle.properties` (`-Xmx3g`, métaspace
+768m, démon Kotlin 1g, 2 workers), qui l'emporte sur les propriétés du projet ;
+le poste garde son réglage. Deux corollaires :
+
+- une dépendance native lourde de plus peut refaire monter la mémoire : si le
+  code 143 revient, c'est cette borne qu'on regarde d'abord ;
+- **`gh run rerun` rejoue le workflow du commit tagué**, pas celui de `main` :
+  une correction du workflow ne sert un tag qu'en **reposant** le tag (s'il n'a
+  rien publié) ou en taguant la version suivante.
+
 ### `test/integration/` — contre un **vrai** serveur
 Les tests qui parlent en HTTP à une instance `new-life-server` en marche, sans
 aucun double d'`HttpClientAdapter` : ils vérifient ce qu'une fixture ne peut pas
