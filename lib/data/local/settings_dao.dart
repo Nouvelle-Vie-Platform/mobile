@@ -43,6 +43,7 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
       // Absent = wifi seulement (F8), le défaut sûr. Seul `'true'` autorise le
       // cellulaire : toute autre valeur (base bricolée) retombe côté prudent.
       downloadOnCellular: byKey[_downloadOnCellularKey] == 'true',
+      radio: RadioQuality.parse(byKey[MediaUsage.radio.key]),
     );
   }
 
@@ -105,6 +106,10 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   /// une — le réglage n'a pas d'historique.
   Future<void> setMediaQuality(MediaUsage usage, MediaQuality quality) =>
       _put(usage.key, quality.key);
+
+  /// Pose le choix de la radio (Automatique / Économie).
+  Future<void> setRadioQuality(RadioQuality quality) =>
+      _put(MediaUsage.radio.key, quality.key);
 
   /// Autorise (ou non) les téléchargements en données mobiles (F8).
   Future<void> setDownloadOnCellular(bool allowed) =>

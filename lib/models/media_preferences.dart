@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-/// **Les trois usages réglables** de la médiathèque.
+/// **Les usages réglables** de la médiathèque, et la radio.
 ///
 /// Deux d'entre eux ne pilotent rien aujourd'hui, et c'est assumé : le direct
 /// est un écran sans lecteur (`LiveScreen` affiche une vignette décorative), et
@@ -11,6 +11,11 @@ import 'package:flutter/foundation.dart';
 enum MediaUsage {
   /// L'écoute d'un enseignement ou d'un rassemblement. **Le seul branché.**
   streaming('streaming'),
+
+  /// **New Life Radio.** Le seul usage qui ne se règle pas sur l'échelle des
+  /// enseignements : ses choix sont [RadioQuality], lus par
+  /// [MediaPreferences.radio] et non par [MediaPreferences.of].
+  radio('radio'),
 
   /// Le direct. Sans effet tant que `LiveScreen` n'a pas de lecteur.
   live('live'),
@@ -77,6 +82,47 @@ enum MediaQuality {
   }
 }
 
+/// **Les deux choix de la radio** (décisions 4 et 10 du plan
+/// `server-portal/docs/radio-adaptative-plan.md`).
+///
+/// Un type à lui et non [MediaQuality], parce que ni l'échelle ni la règle ne
+/// sont les mêmes : l'antenne a ses propres paliers (32 / 64 / 128 k, écrits par
+/// liquidsoap), aucun choix « 192 k » n'y aurait de sens, et son automatique est
+/// adaptatif **partout** — y compris en données mobiles, là où celui des
+/// enseignements bride à 64 k. Réutiliser [MediaQuality] aurait offert trois
+/// paliers sans rendu derrière, et laissé [effectiveBitrateCap] brider la radio
+/// en 4G à l'encontre de la décision 10.
+enum RadioQuality {
+  /// Le défaut : `master.m3u8`, le lecteur choisit le palier (ABR natif), en
+  /// wifi comme en données mobiles.
+  auto('auto', 128000),
+
+  /// **Bloquée sur le palier 32 k** — l'URL économie que rend la route
+  /// d'antenne (`ecoStreamUrl`).
+  economy('economy', 32000);
+
+  const RadioQuality(this.key, this.bitsPerSecond);
+
+  /// Clé de rangement, stable pour la même raison que [MediaUsage.key].
+  final String key;
+
+  /// Le débit **le plus haut** que ce choix peut consommer : le palier haut de
+  /// l'antenne pour [auto], le seul palier pour [economy].
+  final int bitsPerSecond;
+
+  /// Coût d'une heure au pire, arrondi comme [MediaQuality.megabytesPerHour] :
+  /// 14 Mo pour [economy], 58 pour [auto].
+  int get megabytesPerHour => (bitsPerSecond * 3600 / 8 / 1000000).round();
+
+  /// Tolérante comme [MediaQuality.parse] : l'inconnu rend [auto].
+  static RadioQuality parse(String? raw) {
+    for (final value in RadioQuality.values) {
+      if (value.key == raw) return value;
+    }
+    return RadioQuality.auto;
+  }
+}
+
 /// L'état des réglages média, tel qu'un écran le lit.
 @immutable
 class MediaPreferences {
@@ -85,6 +131,7 @@ class MediaPreferences {
     this.live = MediaQuality.auto,
     this.download = MediaQuality.auto,
     this.downloadOnCellular = false,
+    this.radio = RadioQuality.auto,
   });
 
   final MediaQuality streaming;
@@ -98,10 +145,17 @@ class MediaPreferences {
   /// valeur qui alimente `DownloadManager.mobileDataAllowed`.
   final bool downloadOnCellular;
 
+  /// Le choix de la radio — voir [RadioQuality].
+  final RadioQuality radio;
+
+  /// Le palier d'un usage **de l'échelle des enseignements**. La radio n'y est
+  /// pas : elle se lit par [radio], et la demander ici est une erreur d'appel.
   MediaQuality of(MediaUsage usage) => switch (usage) {
         MediaUsage.streaming => streaming,
         MediaUsage.live => live,
         MediaUsage.download => download,
+        MediaUsage.radio => throw ArgumentError.value(
+            usage, 'usage', 'la radio se lit par MediaPreferences.radio'),
       };
 
   @override
@@ -110,11 +164,12 @@ class MediaPreferences {
       other.streaming == streaming &&
       other.live == live &&
       other.download == download &&
-      other.downloadOnCellular == downloadOnCellular;
+      other.downloadOnCellular == downloadOnCellular &&
+      other.radio == radio;
 
   @override
   int get hashCode =>
-      Object.hash(streaming, live, download, downloadOnCellular);
+      Object.hash(streaming, live, download, downloadOnCellular, radio);
 }
 
 /// Le plafond **effectif**, une fois le transport connu.

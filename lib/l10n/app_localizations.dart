@@ -1822,6 +1822,24 @@ abstract class AppLocalizations {
   /// **'La liste des assemblées arrivera à la première synchronisation.'**
   String get branchScopeEmpty;
 
+  /// Titre de la section radio du panneau qualité. Ses deux choix réutilisent mediaQualityAuto et mediaQualityLow
+  ///
+  /// In fr, this message translates to:
+  /// **'Radio'**
+  String get mediaSettingsRadio;
+
+  /// Impact du choix automatique de la radio. Contrairement aux enseignements, il ne bride PAS en données mobiles : on annonce donc le coût du palier haut
+  ///
+  /// In fr, this message translates to:
+  /// **'Le débit suit votre réseau, en wifi comme en données mobiles · jusqu\'à ≈ {mb} Mo par heure.'**
+  String radioQualityImpactAuto(int mb);
+
+  /// Impact du choix économie de la radio (palier 32 k). Dit aussi ce qu'on perd
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure · la parole reste claire, la louange y perd.'**
+  String radioQualityImpactEconomy(int mb);
+
   /// No description provided for @mediaQualityAuto.
   ///
   /// In fr, this message translates to:

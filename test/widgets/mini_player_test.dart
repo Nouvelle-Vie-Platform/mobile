@@ -40,6 +40,9 @@ class _CountingRadioRepository implements RadioRepository {
     reads++;
     return value;
   }
+
+  @override
+  Future<void> reportListening(String listenId) async {}
 }
 
 /// **Le mini-lecteur dans les onglets** (#116).

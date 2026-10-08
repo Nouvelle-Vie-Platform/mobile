@@ -1197,4 +1197,7 @@ class _CountingRadioRepository implements RadioRepository {
     if (error != null) throw error;
     return kTestAntennaOnAir;
   }
+
+  @override
+  Future<void> reportListening(String listenId) async {}
 }

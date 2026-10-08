@@ -50,6 +50,8 @@ void main() {
       await pump(tester);
 
       for (final usage in MediaUsage.values) {
+        // La radio a ses deux choix à elle : voir son groupe.
+        if (usage == MediaUsage.radio) continue;
         for (final quality in MediaQuality.values) {
           expect(
             find.byKey(MediaSettingsScreen.optionKey(usage, quality)),
@@ -110,6 +112,43 @@ void main() {
       expect(find.textContaining('29'), findsWidgets);
       expect(find.textContaining('58'), findsWidgets);
       expect(find.textContaining('86'), findsWidgets);
+    });
+  });
+
+  group('La radio', () {
+    testWidgets('deux choix, Automatique coché par défaut', (tester) async {
+      await pump(tester);
+
+      for (final quality in RadioQuality.values) {
+        expect(find.byKey(MediaSettingsScreen.radioOptionKey(quality)),
+            findsOneWidget);
+      }
+      // Aucun palier des enseignements sous la radio.
+      expect(
+        find.byKey(
+            MediaSettingsScreen.optionKey(MediaUsage.radio, MediaQuality.high)),
+        findsNothing,
+      );
+      // Le coût d'Économie vient de `RadioQuality`.
+      expect(find.textContaining('14'), findsWidgets);
+    });
+
+    testWidgets('toucher Économie écrit le réglage dans le magasin',
+        (tester) async {
+      await pump(tester);
+
+      await tester.tap(
+        find.byKey(MediaSettingsScreen.radioOptionKey(RadioQuality.economy)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // `runAsync` : voir le test des enseignements ci-dessus.
+      final stored = await tester.runAsync(
+        () => database.settingsDao.watchMediaPreferences().first,
+      );
+      expect(stored!.radio, RadioQuality.economy);
+      expect(stored.streaming, MediaQuality.auto);
     });
   });
 

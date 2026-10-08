@@ -45,6 +45,7 @@ import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/group_management_providers.dart';
 import 'package:maison_du_miracle/state/legal_notice_providers.dart';
 import 'package:maison_du_miracle/state/measurement_providers.dart';
+import 'package:maison_du_miracle/models/media_preferences.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
 import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
@@ -323,6 +324,10 @@ List<Override> _commonOverrides(
       radioRepositoryProvider.overrideWithValue(
         radio ?? const FixedRadioRepository(RadioAntenna.unknown),
       ),
+      // **Le choix radio, figé** : la vraie valeur ouvre le flux Drift des
+      // réglages, et un flux Drift fige `testWidgets`. Voir
+      // `radioQualityProvider`.
+      radioQualityProvider.overrideWithValue(RadioQuality.auto),
       // **Le pré-vol de la poignée de main de MediaMTX** (#108) — voir l'en-tête.
       radioHandshakeProvider.overrideWithValue(
         handshake ?? const DirectRadioHandshake(),

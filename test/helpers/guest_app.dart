@@ -43,6 +43,7 @@ import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/legal_notice_providers.dart';
 import 'package:maison_du_miracle/state/legal_providers.dart';
+import 'package:maison_du_miracle/models/media_preferences.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
@@ -114,6 +115,9 @@ ProviderContainer guestContainer({
       playbackProgressReporterProvider
           .overrideWithValue(FakePlaybackProgressReporter()),
       networkTransportProvider.overrideWithValue(FixedNetworkTransport()),
+      // Le choix radio, figé : la vraie valeur ouvre le flux Drift des
+      // réglages dès que le bouton d'antenne de l'accueil se monte.
+      radioQualityProvider.overrideWithValue(RadioQuality.auto),
       // **L'offre de canaux, par un flux nu** (#83). La coquille monte désormais
       // le formulaire de connexion dans les onglets réservés d'un invité, et ce
       // formulaire lit cette offre : un flux Drift attendu sous l'horloge

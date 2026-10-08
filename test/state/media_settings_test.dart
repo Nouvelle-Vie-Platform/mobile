@@ -102,6 +102,60 @@ void main() {
     });
   });
 
+  group('La radio (M2 du plan radio adaptative)', () {
+    late AppDatabase db;
+
+    setUp(() {
+      db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+    });
+
+    test('deux choix, et Économie coûte ≈ 14 Mo/h', () {
+      expect(RadioQuality.values, [RadioQuality.auto, RadioQuality.economy]);
+      expect(RadioQuality.economy.bitsPerSecond, 32000);
+      expect(RadioQuality.economy.megabytesPerHour, 14);
+      // L'automatique de la radio ne bride pas : il annonce le palier haut.
+      expect(RadioQuality.auto.megabytesPerHour, 58);
+    });
+
+    test('clé stable, lecture tolérante', () {
+      expect(MediaUsage.radio.key, 'radio');
+      expect(RadioQuality.parse(null), RadioQuality.auto);
+      expect(RadioQuality.parse('mid'), RadioQuality.auto);
+      expect(RadioQuality.parse('economy'), RadioQuality.economy);
+    });
+
+    test('défaut Automatique, sans ligne écrite', () async {
+      final prefs = await db.settingsDao.watchMediaPreferences().first;
+      expect(prefs.radio, RadioQuality.auto);
+    });
+
+    test('Économie se persiste, sans toucher aux enseignements', () async {
+      await db.settingsDao.setRadioQuality(RadioQuality.economy);
+
+      final rows = await db.select(db.appSettings).get();
+      expect(rows.single.key, 'radio');
+      expect(rows.single.value, 'economy');
+      final prefs = await db.settingsDao.watchMediaPreferences().first;
+      expect(prefs.radio, RadioQuality.economy);
+      expect(prefs.streaming, MediaQuality.auto);
+    });
+
+    test('radioQualityProvider suit le magasin', () async {
+      final container = ProviderContainer(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(container.dispose);
+      container.listen(radioQualityProvider, (_, __) {});
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(container.read(radioQualityProvider), RadioQuality.auto);
+
+      await db.settingsDao.setRadioQuality(RadioQuality.economy);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(container.read(radioQualityProvider), RadioQuality.economy);
+    });
+  });
+
   group('Le plafond visé — une dérivation pure', () {
     late AppDatabase db;
     late FixedNetworkTransport transport;

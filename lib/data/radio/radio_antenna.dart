@@ -11,12 +11,19 @@ library;
 
 import 'package:flutter/foundation.dart';
 
+import '../../models/media_preferences.dart';
 import 'radio_live.dart';
 
 /// L'état d'antenne, tel qu'une route publique le rend.
 @immutable
 class RadioAntenna {
-  const RadioAntenna({this.streamUrl, this.onAir, this.listeners, this.live});
+  const RadioAntenna({
+    this.streamUrl,
+    this.ecoStreamUrl,
+    this.onAir,
+    this.listeners,
+    this.live,
+  });
 
   /// **Ce qu'on sait avant la première réponse** : rien.
   ///
@@ -30,6 +37,20 @@ class RadioAntenna {
   /// L'URL de la liste de lecture HLS à ouvrir, ou `null` quand la route n'a rien
   /// dit (ou n'a pas encore répondu).
   final String? streamUrl;
+
+  /// **L'URL économie** — la playlist de la variante 32 k —, ou `null` quand le
+  /// serveur n'en a pas (champ nul, ou absent d'une réponse d'avant la
+  /// tranche A2). Lue seulement par [streamUrlFor].
+  final String? ecoStreamUrl;
+
+  /// **L'URL à ouvrir pour ce choix de qualité** — le seul endroit où le choix
+  /// se fait. Économie **et** URL économie connue → l'URL économie ; tout le
+  /// reste → [streamUrl] (adaptative). Une économie sans URL économie ne prive
+  /// pas de son : elle retombe sur l'adaptative.
+  String? streamUrlFor(RadioQuality quality) =>
+      quality == RadioQuality.economy && ecoStreamUrl != null
+          ? ecoStreamUrl
+          : streamUrl;
 
   /// Vrai quand l'antenne émet, faux quand elle se tait, **`null` quand on ne
   /// sait pas** — voir [unknown].
@@ -70,6 +91,7 @@ class RadioAntenna {
   /// | ce qu'on cherche | clés acceptées |
   /// | --- | --- |
   /// | l'adresse | `streamUrl`, `url`, `hlsUrl` |
+  /// | l'adresse économie | `ecoStreamUrl` |
   /// | l'état | `onAir`, `isOnAir` |
   /// | le compteur (#135) | `listeners` |
   /// | le direct (#135) | `live` |
@@ -90,6 +112,7 @@ class RadioAntenna {
     if (body == null) return unknown;
     return RadioAntenna(
       streamUrl: _url(body),
+      ecoStreamUrl: _ecoUrl(body['ecoStreamUrl']),
       onAir: _onAir(body),
       listeners: _listeners(body['listeners']),
       live: RadioLive.fromJson(body['live']),
@@ -112,6 +135,7 @@ class RadioAntenna {
   }) =>
       RadioAntenna(
         streamUrl: streamUrl,
+        ecoStreamUrl: ecoStreamUrl,
         onAir: onAir,
         listeners: listeners,
         live: live,
@@ -125,6 +149,9 @@ class RadioAntenna {
     return null;
   }
 
+  static String? _ecoUrl(Object? raw) =>
+      raw is String && raw.trim().isNotEmpty ? raw.trim() : null;
+
   static bool? _onAir(Map<String, dynamic> body) {
     for (final key in const ['onAir', 'isOnAir']) {
       final raw = body[key];
@@ -137,14 +164,17 @@ class RadioAntenna {
   bool operator ==(Object other) =>
       other is RadioAntenna &&
       other.streamUrl == streamUrl &&
+      other.ecoStreamUrl == ecoStreamUrl &&
       other.onAir == onAir &&
       other.listeners == listeners &&
       other.live == live;
 
   @override
-  int get hashCode => Object.hash(streamUrl, onAir, listeners, live);
+  int get hashCode =>
+      Object.hash(streamUrl, ecoStreamUrl, onAir, listeners, live);
 
   @override
-  String toString() => 'RadioAntenna(streamUrl: $streamUrl, onAir: $onAir, '
+  String toString() =>
+      'RadioAntenna(streamUrl: $streamUrl, ecoStreamUrl: $ecoStreamUrl, onAir: $onAir, '
       'listeners: $listeners, live: $live)';
 }
