@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/legal_notice_store.dart';
+import 'auth_providers.dart';
 import 'sync_providers.dart';
 
 /// Politique de réessai : **aucun réessai automatique**.
@@ -35,3 +36,28 @@ final legalNoticeSeenProvider = FutureProvider<bool>(
   (ref) => ref.watch(legalNoticeStoreProvider).seen(),
   retry: _noAutomaticRetry,
 );
+
+/// **La fermeture de la session en cours**, immédiate à l'écran : l'écriture
+/// dans le magasin suit (`LegalNoticeStore.markSeen`), sans la faire attendre.
+class LegalNoticeDismissed extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void dismiss() => state = true;
+}
+
+final legalNoticeDismissedProvider =
+    NotifierProvider<LegalNoticeDismissed, bool>(LegalNoticeDismissed.new);
+
+/// **Le consentement du premier lancement est-il en attente ?** Un invité,
+/// jamais vu, pas fermé dans cette session. Tant qu'il l'est, l'application est
+/// **bloquée** derrière le popup (la coquille pose une barrière sur tout) : seuls
+/// « J'ai compris » et les deux liens de lecture répondent.
+///
+/// Chargement et échec du magasin valent « déjà vu » (`?? true`), comme avant :
+/// on ne bloque jamais l'application sur une incertitude.
+final legalNoticePendingProvider = Provider<bool>((ref) {
+  if (!ref.watch(authProvider.select((s) => s.isGuest))) return false;
+  if (ref.watch(legalNoticeDismissedProvider)) return false;
+  return !(ref.watch(legalNoticeSeenProvider).value ?? true);
+});

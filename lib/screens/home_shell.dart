@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../models/legal_document_view.dart';
 import '../router/app_router.dart';
+import '../state/legal_notice_providers.dart';
 import '../state/auth_providers.dart';
 import '../state/echanges_providers.dart';
 import '../theme/app_colors.dart';
@@ -87,6 +88,7 @@ class HomeShell extends ConsumerStatefulWidget {
   final HomeTab? initialTab;
 
   static const Key tabsKey = Key('home_shell_tabs');
+  static const Key consentBarrierKey = Key('home_shell_consent_barrier');
 
   @override
   ConsumerState<HomeShell> createState() => _HomeShellState();
@@ -254,24 +256,17 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               ),
             ),
           ),
-          // **La mention légale du premier lancement**, posée par-dessus les
-          // onglets et non dans l'un d'eux : elle parle de l'application, pas de
-          // l'accueil, et un invité qui ouvrirait d'abord les annonces doit la
-          // voir aussi. Elle ne bloque rien — elle ne capte les gestes que sur sa
-          // propre surface, et se retire d'elle-même quand il n'y a rien à dire
-          // (voir `LegalNoticeBanner`).
+          // **Le bandeau de mise à jour**, posé par-dessus les onglets et non
+          // dans l'un d'eux : il parle de l'application, pas de l'accueil. Il
+          // ne bloque rien, et se retire de lui-même quand il n'a rien à dire.
           //
-          // Elle est posée **au-dessus de la barre** : la coquille garde
+          // Il est posé **au-dessus de la barre** : la coquille garde
           // `extendBody: true`, donc le bas du corps passe derrière la barre
           // givrée, et un bandeau à `bottom: 0` recouvrirait les onglets.
           //
-          // **Le bandeau de mise à jour** partage cette place, et pour les
-          // mêmes raisons : il parle de l'application, pas de l'accueil, et il
-          // ne bloque rien. Les deux sont empilés dans une `Column` plutôt que
-          // superposés — ils peuvent être là en même temps (une installation
-          // neuve sur une version dépassée), et deux bandeaux au même endroit
-          // en masqueraient un. Chacun se retire de lui-même quand il n'a rien
-          // à dire, la colonne est alors vide et ne mesure rien.
+          // La mention légale du premier lancement n'est plus ici : elle
+          // **bloque** l'application, et se pose donc au-dessus de toute la
+          // coquille (voir la fin de `build`).
           //
           // **Le mini-lecteur prend la place la plus basse**, juste au-dessus
           // de la barre : il revient à chaque écoute, les bandeaux une fois, et
@@ -289,7 +284,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AppUpdateBanner(),
-                LegalNoticeBanner(),
               ],
             ),
           ),
@@ -328,7 +322,13 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     // visionneuse d'Annonces le masque elle-même (`AnnouncementsScreen`), sur
     // tout statut et pas seulement une vidéo : `dimFab` ne règle que le bouton
     // central.
-    return MiniPlayerShield(
+    // **Le consentement du premier lancement bloque l'application** : tant qu'il
+    // est en attente, une barrière couvre tout — onglets, barre, bouton
+    // central, menu —, et seul le popup répond (« J'ai compris », et ses deux
+    // liens de lecture, qui poussent une page par-dessus et y reviennent).
+    final consentPending = ref.watch(legalNoticePendingProvider);
+
+    final shell = MiniPlayerShield(
       hidden: _menuOpen,
       child: PopScope(
         canPop: !_menuOpen,
@@ -359,6 +359,29 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           showShadow: true,
         ),
       ),
+    );
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        shell,
+        if (consentPending) ...[
+          ModalBarrier(
+            key: HomeShell.consentBarrierKey,
+            dismissible: false,
+            color: Colors.black.withValues(alpha: 0.5),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            // Au-dessus de la barre — et du mini-lecteur s'il est là : le
+            // padding de la coquille porte déjà sa hauteur (#117).
+            bottom:
+                MediaQuery.paddingOf(context).bottom + AppBottomNav.barHeight,
+            child: const LegalNoticeBanner(),
+          ),
+        ],
+      ],
     );
   }
 }

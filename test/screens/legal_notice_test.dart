@@ -12,6 +12,7 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/screens/home_shell.dart';
 import 'package:maison_du_miracle/data/legal_notice_store.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/screens/legal_acceptance_screen.dart';
@@ -24,28 +25,35 @@ import '../helpers/guest_app.dart';
 final _fr = AppLocalizationsFr();
 
 void main() {
-  testWidgets('premier lancement : le bandeau est là, et il n\'enferme rien',
-      (tester) async {
+  testWidgets(
+      'premier lancement : le consentement BLOQUE l\'application jusqu\'à '
+      '« J\'ai compris »', (tester) async {
     final store = InMemoryLegalNoticeStore();
     final router =
         await pumpGuestApp(tester, guestContainer(legalNotice: store));
 
     expect(find.byKey(LegalNoticeBanner.bannerKey), findsOneWidget);
     expect(find.text(_fr.legalNoticeBody), findsOneWidget);
-
-    // **Non bloquant, et c'est ce qui le distingue de la barrière.** Pas de
-    // route, pas de `PopScope`, pas de barrière modale : l'accueil répond
-    // derrière, et la barre d'onglets aussi.
-    expect(find.byType(LegalAcceptanceScreen), findsNothing);
+    expect(find.byKey(HomeShell.consentBarrierKey), findsOneWidget);
     expect(router.state.matchedLocation, '/home');
+
+    // **Obligatoire** : la barre d'onglets ne répond pas tant qu'on n'a pas
+    // consenti — ni la navigation, ni rien d'autre derrière la barrière.
+    await tester.tap(navTab(_fr.navAnnouncements), warnIfMissed: false);
+    await settle(tester);
+    expect(shellTab(tester), HomeTab.home,
+        reason: 'aucun geste ne passe la barrière du consentement');
+    expect(find.byKey(LegalNoticeBanner.bannerKey), findsOneWidget);
+
+    // « J'ai compris » libère l'application.
+    await tester.tap(find.byKey(LegalNoticeBanner.dismissKey));
+    await settle(tester);
+    expect(find.byKey(HomeShell.consentBarrierKey), findsNothing);
+    expect(find.byKey(LegalNoticeBanner.bannerKey), findsNothing);
 
     await tester.tap(navTab(_fr.navAnnouncements));
     await settle(tester);
-    expect(shellTab(tester), HomeTab.announcements,
-        reason: 'l\'application s\'utilise pendant que le bandeau est affiché');
-    // Et il ne disparaît pas parce qu'on a touché autre chose : il ne part que
-    // par son propre bouton.
-    expect(find.byKey(LegalNoticeBanner.bannerKey), findsOneWidget);
+    expect(shellTab(tester), HomeTab.announcements);
   });
 
   testWidgets('les deux liens mènent aux documents, ouverts sans compte',
