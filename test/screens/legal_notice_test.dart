@@ -15,7 +15,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/screens/home_shell.dart';
 import 'package:maison_du_miracle/data/legal_notice_store.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
-import 'package:maison_du_miracle/screens/legal_acceptance_screen.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
 import 'package:maison_du_miracle/widgets/home_tab.dart';
 import 'package:maison_du_miracle/widgets/legal_notice_banner.dart';
