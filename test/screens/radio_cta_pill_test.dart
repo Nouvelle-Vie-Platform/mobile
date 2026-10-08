@@ -869,6 +869,98 @@ void main() {
       await paintPlaying(tester);
       expect(player.statusLine, isNull);
     });
+
+    testWidgets(
+        'une pause pendant la reconnexion annule tout — et l\'auditeur '
+        'reprend au bord du direct', (tester) async {
+      final network = StreamController<void>.broadcast();
+      addTearDown(network.close);
+      final handshake = RecordingRadioHandshake();
+      await pumpPill(
+        tester,
+        handshake: handshake,
+        radioNetwork: network.stream,
+      );
+      await tapOnce(tester);
+      await paintPlaying(tester);
+      await paintFailure(tester, 'Response code: 500');
+      expectPhase(tester, RadioPhase.retrying);
+
+      // Le bouton pause, ou un appel : le lecteur se met en pause.
+      player.pause();
+      await tester.pump();
+      expectPhase(tester, RadioPhase.idle);
+
+      network.add(null);
+      await tester.pump(const Duration(minutes: 5));
+      expect(player.loadCount, 1, reason: 'aucun essai ne remet le son');
+      expect(player.value.isPlaying, isFalse);
+      expectPhase(tester, RadioPhase.idle);
+
+      await tapOnce(tester);
+      expect(player.loadCount, 2, reason: 'un démarrage frais');
+      expect(handshake.count, 2, reason: 'pré-vol neuf');
+      expect(player.resumeCount, 0);
+    });
+
+    testWidgets(
+        'une pause pendant « Connexion instable… » : pas de relance à 8 s, et '
+        'la reprise rouvre au lieu de jouer la source figée', (tester) async {
+      final handshake = RecordingRadioHandshake();
+      await pumpPill(tester, handshake: handshake);
+      await tapOnce(tester);
+      await paintPlaying(tester);
+      await paintBuffering(tester);
+      await tester.pump(const Duration(seconds: 2));
+      expectPhase(tester, RadioPhase.unstable);
+
+      player.pause();
+      await tester.pump();
+      expectPhase(tester, RadioPhase.idle);
+      await tester.pump(const Duration(minutes: 1));
+      expect(player.loadCount, 1, reason: 'la relance à 8 s est désarmée');
+      expect(player.value.isPlaying, isFalse);
+
+      // Sans panne en main, c'est la pause elle-même qui exige la réouverture.
+      await tapOnce(tester);
+      expect(player.loadCount, 2);
+      expect(handshake.count, 2);
+      expect(player.resumeCount, 0);
+    });
+
+    testWidgets(
+        'un appel pendant un essai en vol : l\'essai renonce, et la fin de '
+        'l\'appel rouvre au bord du direct', (tester) async {
+      final handshake = _ManualRadioHandshake();
+      await pumpPill(tester, handshake: handshake);
+      await tapOnce(tester);
+      handshake.complete(0);
+      await tester.pump();
+      await paintPlaying(tester);
+      await paintFailure(tester, 'Response code: 500');
+      await tester.pump(const Duration(seconds: 1));
+      expect(handshake.calls, 2, reason: 'un essai résout son pré-vol');
+
+      // `just_audio` met en pause de lui-même à l'interruption.
+      player.pause();
+      await tester.pump();
+      expectPhase(tester, RadioPhase.idle);
+      handshake.complete(1);
+      await tester.pump(const Duration(minutes: 1));
+      expect(player.loadCount, 1, reason: 'l\'essai en vol a renoncé');
+      expect(player.value.isPlaying, isFalse);
+
+      // Fin de l'appel : `just_audio` relance la lecture sans passer par le
+      // contrôleur — la notification fait de même. La source périmée n'est
+      // pas reprise : on rouvre.
+      player.play();
+      await tester.pump();
+      expect(handshake.calls, 3, reason: 'un démarrage frais');
+      handshake.complete(2);
+      await tester.pump();
+      expect(player.loadCount, 2);
+      expect(player.loadedHeaders, {'Cookie': 'hlsSession=manual-2'});
+    });
   });
 
   group('Un seul lecteur : la radio remplace', () {

@@ -359,8 +359,16 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     _request = request;
     _statusLine = null;
     // Valeur **neuve** : durée, fin atteinte et panne du contenu précédent
-    // doivent disparaître, et `copyWith` ne sait pas effacer.
-    _emit(ContentPlayback(contentId: contentId, isBuffering: true));
+    // doivent disparaître, et `copyWith` ne sait pas effacer. `isPlaying`,
+    // lui, est l'**intention** de `just_audio`, que `setUrl` ne touche pas : la
+    // remettre à faux ferait lire une pause à la reprise radio (#179).
+    _emit(
+      ContentPlayback(
+        contentId: contentId,
+        isBuffering: true,
+        isPlaying: _handler.player.playing,
+      ),
+    );
     await _open(request);
   }
 

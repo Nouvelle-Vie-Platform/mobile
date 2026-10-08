@@ -213,6 +213,21 @@ class RadioListening extends Notifier<RadioStatus> {
   /// venu du système (notification balayée) pendant un démarrage en vol.
   bool _heldRadio = false;
 
+  /// La dernière émission de l'antenne la disait-elle en lecture ? C'est ce
+  /// qui reconnaît une **pause** : le bouton de l'auditeur, la notification,
+  /// ou une interruption du système (appel) — `just_audio` met lui-même le
+  /// lecteur en pause, sans passer par le contrôleur.
+  bool _wasPlaying = false;
+
+  /// Vrai le temps de l'appel synchrone à `load`, qui émet une valeur neuve
+  /// (`isPlaying` faux sur les doubles) : ce n'est pas une pause.
+  bool _loadingReset = false;
+
+  /// **La source tenue est périmée** : une pause est tombée pendant un état
+  /// instable ou une reconnexion. La reprise, quel que soit le geste — bouton,
+  /// notification, fin d'appel —, rouvre au bord du direct.
+  bool _reopenOnResume = false;
+
   /// Le dernier titre annoncé au système, pour qu'une tentative puisse rouvrir la
   /// source sans écran devant elle.
   String? _title;
@@ -223,6 +238,7 @@ class RadioListening extends Notifier<RadioStatus> {
     void onChanged() => _onPlayback(player.value);
     player.addListener(onChanged);
     _heldRadio = player.value.contentId == RadioConfig.contentId;
+    _wasPlaying = _heldRadio && player.value.isPlaying;
     // **La notification suit l'état**, d'un seul endroit : « Connexion
     // instable… » et « Reconnexion… » y remplacent la seconde ligne.
     listenSelf((_, next) => _announce(next));
@@ -255,7 +271,10 @@ class RadioListening extends Notifier<RadioStatus> {
     final controller = ref.read(playbackControllerProvider.notifier);
     final playback = controller.playback;
     final held = playback.contentId == RadioConfig.contentId;
-    final reopen = fresh || _reconnecting || (held && playback.hasError);
+    final reopen = fresh ||
+        _reconnecting ||
+        _reopenOnResume ||
+        (held && playback.hasError);
     if (held && !reopen) {
       // Déjà en main — mis en pause depuis l'écran d'antenne ou la notification.
       // On ne recharge pas : rouvrir la source couperait le tampon déjà rempli.
@@ -265,6 +284,7 @@ class RadioListening extends Notifier<RadioStatus> {
     }
 
     _cancelTimers();
+    _reopenOnResume = false;
     final generation = ++_generation;
     _starting = true;
     if (!_reconnecting) state = RadioStatus.connecting;
@@ -308,7 +328,8 @@ class RadioListening extends Notifier<RadioStatus> {
       final handshake = await resolver.resolve(url);
       if (generation != _generation) return;
       _traceHandshake(resolver, handshake);
-      await controller.load(
+      _loadingReset = true;
+      final loading = controller.load(
         ContentRequest(
           contentId: RadioConfig.contentId,
           // L'URL **finale**, pas celle de départ : le `Location` du 302 est
@@ -326,6 +347,8 @@ class RadioListening extends Notifier<RadioStatus> {
           isLive: true,
         ),
       );
+      _loadingReset = false;
+      await loading;
       if (generation != _generation) return;
       // Une ouverture refusée se lit sur la valeur du lecteur, pas sur une
       // exception : `load` la range dans `error` et rend normalement.
@@ -443,6 +466,8 @@ class RadioListening extends Notifier<RadioStatus> {
     final held = playback.contentId == RadioConfig.contentId;
     final wasHeld = _heldRadio;
     _heldRadio = held;
+    final paused = held && !_loadingReset && _wasPlaying && !playback.isPlaying;
+    _wasPlaying = held && playback.isPlaying;
     if (!held) {
       // Pendant un démarrage, le contenu remplacé bat encore : seule une
       // émission qui **quitte** l'antenne — la ✕, la notification balayée, un
@@ -454,9 +479,28 @@ class RadioListening extends Notifier<RadioStatus> {
       return;
     }
 
+    // **Une pause pendant la réparation l'arrête net** — essai programmé,
+    // seuils, réseau, et l'essai en vol, qui renonce avant de rendre le son.
+    // Avant le garde du démarrage : c'est la seule émission qu'un essai en vol
+    // ne peut pas ignorer.
+    if (paused && (_reconnecting || state.phase == RadioPhase.unstable)) {
+      _reset();
+      _reopenOnResume = true;
+      state = RadioStatus.idle;
+      return;
+    }
+
     // Un démarrage en vol décide seul de son issue : l'ancienne source peut
     // encore émettre sa panne ou son tampon.
     if (_starting) return;
+
+    // **La reprise après cette pause**, par un geste qui ne passe pas par
+    // [start] (notification, mini-lecteur, fin d'appel) : la source périmée
+    // n'est pas reprise, on rouvre au bord du direct.
+    if (_reopenOnResume && playback.isPlaying) {
+      unawaited(start(title: _title ?? _l10n.radioTitle, fresh: true));
+      return;
+    }
 
     final error = playback.error;
     if (error != null) {
@@ -611,6 +655,7 @@ class RadioListening extends Notifier<RadioStatus> {
     _generation++;
     _starting = false;
     _reconnecting = false;
+    _reopenOnResume = false;
     _attempts = 0;
   }
 
