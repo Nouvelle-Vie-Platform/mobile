@@ -115,6 +115,22 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      # **La mémoire de Gradle, bornée pour la machine de la CI.** Le projet
+      # réserve 8 Go de tas et 4 Go de métaspace (`android/gradle.properties`),
+      # réglage pensé pour un poste de développement. Une machine GitHub de
+      # dépôt privé n'a que 7 Go en tout : la compilation de release finissait
+      # par épuiser la mémoire et Gradle était tué en plein build (code 143, ou
+      # job disparu) — v1.4.0 et v1.4.3, deux fois. Les propriétés du dossier
+      # utilisateur l'emportent sur celles du projet, sans toucher au poste.
+      - name: Borner la mémoire de Gradle
+        run: |
+          mkdir -p ~/.gradle
+          cat >> ~/.gradle/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=768m -XX:ReservedCodeCacheSize=256m -XX:+HeapDumpOnOutOfMemoryError
+          kotlin.daemon.jvmargs=-Xmx1g
+          org.gradle.workers.max=2
+          EOF
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
