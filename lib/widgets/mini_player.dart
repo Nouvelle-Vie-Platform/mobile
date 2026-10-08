@@ -315,8 +315,8 @@ class _StatusLine extends ConsumerWidget {
     // lecteur : la reprise est en cours et sans fin, « Lecture interrompue »
     // ferait croire qu'il faut agir.
     if (isRadio) {
-      final repair = switch (
-          ref.watch(radioListeningProvider.select((s) => s.phase))) {
+      final repair =
+          switch (ref.watch(radioListeningProvider.select((s) => s.phase))) {
         RadioPhase.unstable => l10n.radioUnstable,
         RadioPhase.retrying => l10n.radioRetrying,
         _ => null,

@@ -261,7 +261,8 @@ void main() {
       await paintBuffering(tester);
 
       await tester.pump(const Duration(milliseconds: 1999));
-      expect(find.text(live), findsOneWidget, reason: 'un hoquet ne se dit pas');
+      expect(find.text(live), findsOneWidget,
+          reason: 'un hoquet ne se dit pas');
 
       await tester.pump(const Duration(milliseconds: 1));
       expect(find.text(unstable), findsOneWidget);

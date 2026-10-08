@@ -705,7 +705,8 @@ void main() {
       final network = StreamController<void>.broadcast();
       addTearDown(network.close);
       final handshake = _ManualRadioHandshake();
-      await pumpPill(tester, handshake: handshake, radioNetwork: network.stream);
+      await pumpPill(tester,
+          handshake: handshake, radioNetwork: network.stream);
       await tapOnce(tester);
       handshake.complete(0);
       await tester.pump();
@@ -713,7 +714,8 @@ void main() {
       await paintFailure(tester, 'Response code: 500');
 
       await tester.pump(const Duration(seconds: 1));
-      expect(handshake.calls, 2, reason: 'l\'essai est en vol, pré-vol en cours');
+      expect(handshake.calls, 2,
+          reason: 'l\'essai est en vol, pré-vol en cours');
 
       network.add(null);
       await tester.pump();
