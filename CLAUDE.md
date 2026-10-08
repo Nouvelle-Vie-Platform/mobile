@@ -2148,7 +2148,8 @@ bleu/vert coupe tous les flux ~120 s).
 `lib/data/messaging/` :
 
 - `messaging_channel.dart` — le contrat : `userChannelName`, les événements
-  (`MessagingChannelOpened`, `MessagingHeartbeat`, `MessagingRowEvent`), la table
+  (`MessagingChannelOpened`, `MessagingHeartbeat`, `MessagingRowEvent`,
+  `MessagingSyncNudge`), la table
   type → collection, `decodeMessagingData`, `MessagingChannelRefused`,
   `SilentMessagingChannel` ;
 - `sse_messaging_channel.dart` — le transport Transmit (réemploie le
@@ -2158,6 +2159,16 @@ bleu/vert coupe tous les flux ~120 s).
   constat de silence ;
 - `group_read_advancer.dart` — l'outbox de la lecture (`POST /groups/:id/read`) ;
 - `group_history.dart` — l'historique par pages (`GET /groups/:id/messages?before=`).
+
+**`sync.nudge` — le réveil push du premier plan.** `SyncNudge` (portail)
+diffuse aussi `{"type":"sync.nudge","collection":"announcements"}` sur
+`users/{id}` : sans APNs, iPhone et iPad ne reçoivent pas le push `sync_nudge`,
+et un Spark publié n'apparaissait qu'au redémarrage. Décodé en
+`MessagingSyncNudge` (collection chaîne non vide, sinon ignoré), il lance **un
+cycle entier** par le même chemin que la reconnexion (`SyncTrigger.realtime`) —
+le planificateur coalesce, le manifeste dit ce qui a bougé. Pas de cycle
+restreint, pas de minuterie. `test/sync/sync_nudge_realtime_test.dart` le suit
+jusqu'au magasin.
 
 Sept points qui se ratent en silence :
 
