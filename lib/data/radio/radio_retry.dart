@@ -1,44 +1,77 @@
-/// **La reprise insiste en espaçant, et abandonne à deux minutes.**
+/// **La reprise de l'antenne : réactive, et sans abandon** (#179, plan
+/// `server-portal/docs/radio-adaptative-plan.md`, décisions 2, 8 et 9).
 ///
-/// Deux bornes, écrites ici une seule fois, et elles ne disent pas la même
-/// chose — c'est tout l'intérêt d'en avoir deux :
+/// Nos auditeurs écoutent sur des réseaux instables, souvent en 2G/EDGE : la
+/// coupure y est ordinaire, et l'auditeur ne doit rien avoir à faire pour
+/// qu'elle se répare. Toutes les durées de la reprise sont écrites ici, une
+/// seule fois :
 ///
-/// - [kRadioRetryDelays] borne **l'insistance** : six tentatives, dont l'attente
-///   double, pour ne pas marteler un réseau déjà à genoux ;
-/// - [kRadioRetryDeadline] borne **le temps** : au bout de deux minutes, le bouton
-///   s'éteint et dit pourquoi.
+/// | moment | ce qui se passe |
+/// | --- | --- |
+/// | tampon ≥ [kRadioUnstableAfter] après le premier son | « Connexion instable… » |
+/// | tampon ≥ [kRadioStallRelaunchAfter] | relance immédiate, « Reconnexion… » |
+/// | une tentative sans son au bout de [kRadioAttemptTimeout] | elle compte comme un échec |
+/// | après un échec | tentative suivante à 1, 2, 4 s, puis toutes les [kRadioRetryInterval] |
 ///
-/// Les deux sont nécessaires parce qu'une tentative **prend du temps à échouer**.
-/// Les six attentes ne font que 63 secondes cumulées ; une ouverture HLS qui part
-/// dans le vide met dix à trente secondes à renoncer, et six de ces ouvertures
-/// plus leurs attentes tombent très exactement autour de deux minutes. Celle des
-/// deux bornes qui mord dépend donc du réseau, et c'est bien ainsi : sur une
-/// coupure franche, ce sont les six tentatives ; sur un réseau qui fait attendre,
-/// c'est l'horloge.
+/// **Aucune borne de fin** : seul l'arrêt de l'auditeur (le bouton, la ✕ du
+/// mini-lecteur, la notification balayée) arrête la radio. L'ancienne règle
+/// « six attentes, deux minutes, puis extinction » éteignait l'écoute sur une
+/// coupure de trois minutes — c'est-à-dire là où la radio sert le plus.
 ///
-/// ⚠️ **Rien ici ne consulte le système.** « Reprise immédiate si le réseau
-/// revient » a été écrit puis retiré du cadrage : ce n'est pas tenable sans
-/// déroger à la doctrine du dépôt sur `connectivity_plus` (voir
-/// `radio_failure.dart`). La reprise est **purement temporelle**.
+/// **Toute relance repart du bord du direct** : nouvelle lecture de
+/// `GET /radio/antenna`, nouveau pré-vol, nouvelle ouverture sans position.
+/// Jamais `resume()` à l'ancienne position, jamais l'ancien cookie : la fenêtre
+/// de l'antenne ne porte que quarante secondes, et une session MediaMTX expire.
 ///
-/// Pourquoi pas trois tentatives rapides : elles abandonneraient sur une coupure
-/// de dix secondes dont l'auditeur ne s'est pas aperçu — au Togo, c'est la coupure
-/// ordinaire. Pourquoi pas indéfiniment : un bouton qui tourne sans fin **ment**,
-/// et vide la batterie dans un tunnel.
+/// ## Le réseau : un accélérateur, jamais un frein
+///
+/// `connectivity_plus` est **écouté** pendant un état instable ou une
+/// reconnexion : un retour ou un changement de réseau déclenche un essai
+/// immédiat et réarme la séquence (1, 2, 4, 5 s…). Il **ne suspend jamais** un
+/// essai, et c'est toute la réserve qui reste de l'ancienne doctrine : ce
+/// paquet ment dans le sens « pas de réseau » comme dans le sens « connecté »
+/// (portail captif), donc « pas de réseau » n'est jamais lu. Un signal manqué
+/// ne coûte que l'attente de la prochaine tentative.
 library;
 
-/// Les six attentes, **comptées depuis l'échec précédent**.
+/// **Le tampon toléré avant de dire « Connexion instable… ».**
 ///
-/// Cumulées, les tentatives tombent à 1 s, 3 s, 7 s, 15 s, 31 s et 63 s après le
-/// premier échec — si chacune échoue instantanément.
+/// En deçà, un hoquet que l'auditeur n'entend presque pas : l'annoncer ferait
+/// clignoter l'état à chaque changement de cellule.
+const Duration kRadioUnstableAfter = Duration(seconds: 2);
+
+/// **Le tampon au bout duquel on relance** au bord du direct.
+///
+/// Assez long pour laisser à l'ABR le temps de descendre sur le palier bas
+/// avant de brutaliser ; assez court pour que l'auditeur n'ait pas rangé son
+/// téléphone. Android **et** iOS : sur iOS, un décrochage ne remonte aucune
+/// erreur, et c'est ce seuil qui le répare.
+const Duration kRadioStallRelaunchAfter = Duration(seconds: 8);
+
+/// **Le temps laissé à une tentative pour sortir un premier son.**
+///
+/// Compté depuis le début du démarrage — route d'antenne, pré-vol et ouverture
+/// compris —, parce qu'une ouverture HLS peut rester pendue sans jamais lever
+/// d'erreur (iOS) : sans cette borne, une tentative pendue resterait « en vol »
+/// pour toujours, et plus rien ne partirait. Plus large que
+/// [kRadioStallRelaunchAfter] : une ouverture à froid sur EDGE doit charger la
+/// playlist et plusieurs segments avant de jouer. **Valeur à confirmer sur le
+/// terrain.**
+const Duration kRadioAttemptTimeout = Duration(seconds: 20);
+
+/// Les premières attentes après un échec, **comptées depuis cet échec**.
 const List<Duration> kRadioRetryDelays = [
   Duration(seconds: 1),
   Duration(seconds: 2),
   Duration(seconds: 4),
-  Duration(seconds: 8),
-  Duration(seconds: 16),
-  Duration(seconds: 32),
 ];
 
-/// **Deux minutes depuis le premier échec**, et le bouton s'éteint avec un motif.
-const Duration kRadioRetryDeadline = Duration(minutes: 2);
+/// L'attente entre deux tentatives une fois [kRadioRetryDelays] consommées —
+/// **sans fin**.
+const Duration kRadioRetryInterval = Duration(seconds: 5);
+
+/// L'attente avant la tentative n° [attempt] (0 pour la première après un
+/// échec) : 1, 2, 4 s, puis 5 s indéfiniment.
+Duration radioRetryDelay(int attempt) => attempt < kRadioRetryDelays.length
+    ? kRadioRetryDelays[attempt]
+    : kRadioRetryInterval;

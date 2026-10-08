@@ -1,7 +1,7 @@
 /// **Ce que le bouton d'antenne a à dire**, en une valeur immuable.
 ///
-/// Cinq états, et ils viennent du tableau d'apparence du cadrage — pas d'une
-/// envie de symétrie :
+/// Cinq états, et ils viennent des tableaux d'apparence des cadrages (#104,
+/// #179) — pas d'une envie de symétrie :
 ///
 /// | état | apparence |
 /// | --- | --- |
@@ -9,7 +9,8 @@
 /// | au repos | « Suivre New Life Radio » |
 /// | en connexion | animation continue |
 /// | en lecture | couleur changée, « New Life Radio » |
-/// | en reprise | animation, et le bouton dit qu'il réessaie |
+/// | connexion instable | animation, « Connexion instable… » |
+/// | en reprise | animation, « Reconnexion… » — sans fin, sans abandon |
 ///
 /// ⚠️ **« Hors antenne » n'est pas un état de ce type-ci**, et c'est délibéré :
 /// il ne décrit pas ce que l'application *fait*, mais ce que la route publique a
@@ -20,8 +21,6 @@
 library;
 
 import 'package:flutter/foundation.dart';
-
-import 'radio_failure.dart';
 
 enum RadioPhase {
   /// Le lecteur ne tient pas la radio, ou ne la joue plus.
@@ -35,49 +34,42 @@ enum RadioPhase {
   /// Le son est sorti au moins une fois, et il sort.
   playing,
 
-  /// Un échec a eu lieu, les tentatives espacées sont en cours.
-  retrying,
+  /// **« Connexion instable… »** (#179) : l'antenne devrait jouer, et le tampon
+  /// attend depuis au moins deux secondes. On n'a encore rien relancé — l'ABR a
+  /// peut-être de quoi descendre de palier.
+  unstable,
 
-  /// Deux minutes (ou six tentatives) sans succès : le bouton s'éteint et dit
-  /// pourquoi.
-  failed,
+  /// **« Reconnexion… »** : une relance est en cours ou programmée, au bord du
+  /// direct, et elle se répète **sans fin** tant que l'auditeur n'arrête pas.
+  retrying,
 }
 
 @immutable
 class RadioStatus {
-  const RadioStatus(this.phase) : failure = null;
-
-  const RadioStatus.failed(this.failure) : phase = RadioPhase.failed;
+  const RadioStatus(this.phase);
 
   static const RadioStatus idle = RadioStatus(RadioPhase.idle);
   static const RadioStatus connecting = RadioStatus(RadioPhase.connecting);
   static const RadioStatus playing = RadioStatus(RadioPhase.playing);
+  static const RadioStatus unstable = RadioStatus(RadioPhase.unstable);
   static const RadioStatus retrying = RadioStatus(RadioPhase.retrying);
 
   final RadioPhase phase;
 
-  /// La cause, **et seulement quand on a renoncé** : c'est le seul moment où une
-  /// phrase d'échec a sa place sur le bouton. Pendant les tentatives, le bouton
-  /// dit qu'il réessaie — nommer la panne pendant qu'on la combat ferait
-  /// renoncer l'auditeur avant l'application.
-  final RadioFailureKind? failure;
-
-  /// **Quelque chose tourne** — on cherche, on joue, ou on réessaie.
+  /// **Quelque chose tourne** — on cherche, on joue, on vacille ou on réessaie.
   ///
   /// La connexion en fait partie, et ce n'est pas une subtilité : c'est ce qui
   /// rend [allowsTransport] nécessaire plutôt que décoratif. Sans elle, un appui
   /// pendant la connexion **arrêterait** — exactement ce que le cadrage interdit.
-  bool get isOn =>
-      phase == RadioPhase.connecting ||
-      phase == RadioPhase.playing ||
-      phase == RadioPhase.retrying;
+  bool get isOn => phase != RadioPhase.idle;
 
   /// Vrai quand le bouton accepte de lancer ou d'arrêter.
   ///
   /// **L'inertie protège la connexion, pas la navigation** : seule la connexion
   /// *initiale* la pose — une antenne déjà entendue s'arrête toujours, y compris
-  /// pendant qu'elle regarnit son tampon —, et ouvrir la page reste possible dans
-  /// tous les cas (c'est l'appelant du geste qui le sait, pas cette valeur).
+  /// pendant qu'elle vacille ou se reconnecte —, et ouvrir la page reste
+  /// possible dans tous les cas (c'est l'appelant du geste qui le sait, pas
+  /// cette valeur).
   bool get allowsTransport => phase != RadioPhase.connecting;
 
   /// Vrai quand il y a un arrêt à **offrir**.
@@ -91,16 +83,17 @@ class RadioStatus {
 
   /// Vrai quand le bouton doit montrer qu'il travaille.
   bool get isWorking =>
-      phase == RadioPhase.connecting || phase == RadioPhase.retrying;
+      phase == RadioPhase.connecting ||
+      phase == RadioPhase.unstable ||
+      phase == RadioPhase.retrying;
 
   @override
   bool operator ==(Object other) =>
-      other is RadioStatus && other.phase == phase && other.failure == failure;
+      other is RadioStatus && other.phase == phase;
 
   @override
-  int get hashCode => Object.hash(phase, failure);
+  int get hashCode => phase.hashCode;
 
   @override
-  String toString() =>
-      'RadioStatus($phase${failure == null ? '' : ', $failure'})';
+  String toString() => 'RadioStatus($phase)';
 }

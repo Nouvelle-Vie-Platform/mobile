@@ -1,13 +1,18 @@
 /// **Pourquoi l'écoute n'a pas marché — lu sur l'échec, jamais sur un test de
 /// connectivité.**
 ///
+/// ⚠️ **Depuis #179, la cause ne s'affiche plus** : la reprise ne s'arrête
+/// jamais, et une panne se combat sans être nommée (« Reconnexion… »). Ce
+/// classement ne sert plus qu'au journal de debug de `RadioListening` — le
+/// message brut de la plateforme y reste le seul indice d'une vraie panne.
+///
 /// ⚠️ **Le dépôt refuse `connectivity_plus` pour trancher « y a-t-il
 /// internet »**, et la raison est écrite dans `network_transport.dart` : il
 /// répond « connecté » derrière un portail captif — un hôtel, **un wifi d'église
-/// mal configuré** —, c'est-à-dire exactement quand sa réponse compterait. Un
-/// seul fichier du dépôt l'importe, et ce fichier-ci **n'en fait pas un
-/// second** : il ne consulte aucun signal système, même pour avancer une
-/// tentative. La reprise est purement temporelle (`radio_retry.dart`).
+/// mal configuré** —, c'est-à-dire exactement quand sa réponse compterait. Ce
+/// fichier n'en consulte aucun. La reprise, elle, l'écoute **pour avancer** un
+/// essai quand le réseau revient, jamais pour en suspendre un
+/// (`radio_retry.dart`).
 ///
 /// La question n'est pas « y a-t-il du réseau » mais « **à qui dire d'agir** » :
 ///

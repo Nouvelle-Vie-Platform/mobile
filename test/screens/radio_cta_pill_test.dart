@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/core/config/radio_config.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
-import 'package:maison_du_miracle/data/radio/radio_failure.dart';
 import 'package:maison_du_miracle/data/radio/radio_handshake.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/radio/radio_status.dart';
@@ -50,11 +49,7 @@ void main() {
         tester.element(find.byType(RadioCtaPill, skipOffstage: false)),
       ).read(radioListeningProvider);
 
-  void expectPhase(
-    WidgetTester tester,
-    RadioPhase phase, {
-    RadioFailureKind? failure,
-  }) {
+  void expectPhase(WidgetTester tester, RadioPhase phase) {
     // Dans le bouton : le mini-lecteur (#117) porte le même titre pendant que
     // l'antenne joue, et chercher dans tout l'écran le compterait deux fois.
     expect(
@@ -65,7 +60,6 @@ void main() {
       findsOneWidget,
     );
     expect(status(tester).phase, phase);
-    if (phase == RadioPhase.failed) expect(status(tester).failure, failure);
   }
 
   /// La phase seule, sans chercher le libellé : la page d'antenne couvre le
@@ -130,12 +124,14 @@ void main() {
     WidgetTester tester, {
     RadioRepository radio = const FixedRadioRepository(kTestAntennaOnAir),
     RadioHandshakeResolver? handshake,
+    Stream<void>? radioNetwork,
   }) async {
     await pumpRouter(
       tester,
       buildRouter(),
       radio: radio,
       handshake: handshake,
+      radioNetwork: radioNetwork,
       overrides: [contentPlayerProvider.overrideWithValue(player)],
     );
   }
@@ -359,20 +355,21 @@ void main() {
       expect(find.text(tip), findsOneWidget);
     });
 
-    testWidgets('pas à l\'échec', (tester) async {
+    testWidgets('pas pendant la reprise — puis au son qui finit par venir',
+        (tester) async {
       await pumpPill(tester,
           radio: const FixedRadioRepository(RadioAntenna.unknown));
       await tapOnce(tester);
 
       await tester.pump(const Duration(minutes: 2));
-      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
+      expectPhase(tester, RadioPhase.retrying);
       expect(find.text(tip), findsNothing);
 
-      // Et un son qui viendrait après l'abandon ne le ressuscite pas : le
-      // lancement qui l'attendait est clos.
+      // La reprise ne s'arrête jamais (#179) : une antenne qui finit par
+      // répondre est un lancement réussi, et le message vient alors.
       await paintPlaying(tester);
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text(tip), findsNothing);
+      expect(find.text(tip), findsOneWidget);
     });
 
     testWidgets('pas pour un lancement venu d\'ailleurs', (tester) async {
@@ -529,187 +526,348 @@ void main() {
     });
   });
 
-  group('La reprise : six attentes, et deux minutes', () {
-    testWidgets('les six délais, et pas de septième tentative', (tester) async {
+  /// **La reprise réactive** (#179, plan radio adaptative, décisions 2, 8, 9) :
+  /// instable à 2 s, relance à 8 s, essais 1, 2, 4 puis 5 s **sans fin**, un
+  /// seul essai en vol, le réseau qui revient comme accélérateur, et l'arrêt
+  /// qui arrête tout.
+  ///
+  /// ⚠️ Les durées sont écrites **ici, en clair**, et jamais relues depuis
+  /// `radio_retry.dart` : la constante est ce qu'on éprouve. Un test qui la
+  /// relirait passerait au vert sur n'importe quelle valeur.
+  group('La reprise : réactive, et sans abandon', () {
+    /// Peint un tampon qui attend après le premier son — le blocage d'iOS, qui
+    /// ne remonte aucune erreur.
+    Future<void> paintBuffering(WidgetTester tester) async {
+      player.emit(
+        const ContentPlayback(
+          contentId: RadioConfig.contentId,
+          isPlaying: true,
+          isBuffering: true,
+          hasStarted: true,
+        ),
+      );
+      await tester.pump();
+    }
+
+    RadioListening listening(WidgetTester tester) => ProviderScope.containerOf(
+          tester.element(find.byType(RadioCtaPill, skipOffstage: false)),
+        ).read(radioListeningProvider.notifier);
+
+    testWidgets('« Connexion instable… » à 2 s de tampon, pas avant',
+        (tester) async {
       await pumpPill(tester);
       await tapOnce(tester);
       await paintPlaying(tester);
+      await paintBuffering(tester);
 
-      // Chaque échec est instantané : ce sont les six attentes qui bornent.
+      await tester.pump(const Duration(milliseconds: 1999));
+      expectPhase(tester, RadioPhase.playing);
+      expect(find.byKey(RadioCtaPill.workingKey), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 1));
+      expectPhase(tester, RadioPhase.unstable);
+      expect(find.byKey(RadioCtaPill.workingKey), findsOneWidget);
+      // Une antenne qui vacille s'arrête toujours.
+      expect(status(tester).offersStop, isTrue);
+
+      // Le son revient : tout s'efface, rien n'a été rouvert.
+      await paintPlaying(tester);
+      expectPhase(tester, RadioPhase.playing);
+      expect(player.loadCount, 1);
+      await tester.pump(const Duration(seconds: 30));
+      expect(player.loadCount, 1, reason: 'la relance à 8 s est désarmée');
+    });
+
+    testWidgets(
+        'à 8 s de tampon, une relance au bord du direct : route relue, pré-vol '
+        'neuf, jamais resume()', (tester) async {
+      final repository = _CountingRadioRepository();
+      final handshake = RecordingRadioHandshake();
+      await pumpPill(tester, radio: repository, handshake: handshake);
+      await tapOnce(tester);
+      await paintPlaying(tester);
+      final reads = repository.calls;
+      await paintBuffering(tester);
+
+      await tester.pump(const Duration(milliseconds: 7999));
+      expectPhase(tester, RadioPhase.unstable);
+      expect(player.loadCount, 1);
+
+      await tester.pump(const Duration(milliseconds: 1));
+      expectPhase(tester, RadioPhase.retrying);
+      expect(player.loadCount, 2, reason: 'la source est rouverte');
+      expect(repository.calls, reads + 1, reason: 'GET /radio/antenna relu');
+      expect(handshake.count, 2, reason: 'un pré-vol neuf');
+      expect(player.loadedHeaders,
+          {'Cookie': RecordingRadioHandshake.sessionAt(2)},
+          reason: 'jamais l\'ancien cookie');
+      expect(player.resumeCount, 0, reason: 'jamais à l\'ancienne position');
+      // Ouverte sans position : le lecteur part du bord du direct.
+      expect(player.value.position, Duration.zero);
+      expect(player.value.hasStarted, isFalse);
+
+      // Le son revient : la reconnexion s'efface.
+      await paintPlaying(tester);
+      expectPhase(tester, RadioPhase.playing);
+    });
+
+    testWidgets('après une panne : 1, 2, 4, puis 5 s, indéfiniment',
+        (tester) async {
+      final handshake = RecordingRadioHandshake();
+      await pumpPill(tester, handshake: handshake);
+      await tapOnce(tester);
+      await paintPlaying(tester);
+
+      // Chaque échec est instantané : ce sont les attentes qui bornent.
       await paintFailure(tester, 'Response code: 500');
       expectPhase(tester, RadioPhase.retrying);
 
-      // ⚠️ Les six attentes sont écrites **ici, en clair**, et pas relues depuis
-      // `kRadioRetryDelays` : la constante est ce qu'on éprouve. Un test qui la
-      // relirait passerait au vert sur six attentes d'une seconde — mesuré, c'est
-      // exactement ce qu'il a fait avant cette ligne.
-      const expected = [1, 2, 4, 8, 16, 32];
-      var fired = 0;
+      const expected = [1, 2, 4, 5, 5, 5, 5, 5, 5, 5];
+      var loads = player.loadCount;
       for (final seconds in expected) {
         final delay = Duration(seconds: seconds);
         await tester.pump(delay - const Duration(milliseconds: 1));
-        expect(player.resumeCount, fired, reason: 'avant $delay');
+        expect(player.loadCount, loads, reason: 'avant $delay');
         await tester.pump(const Duration(milliseconds: 1));
-        fired++;
-        expect(player.resumeCount, fired, reason: 'à $delay');
-        // La tentative a effacé la panne de la valeur ; l'échec suivant la
-        // ramène, et c'est lui qui programme l'attente d'après.
-        if (fired < expected.length) {
-          await paintFailure(tester, 'Response code: 500');
-          expectPhase(tester, RadioPhase.retrying);
-        }
+        loads++;
+        expect(player.loadCount, loads, reason: 'à $delay');
+        expectPhase(tester, RadioPhase.retrying);
+        await paintFailure(tester, 'Response code: 500');
       }
-      expect(fired, 6);
-
-      // Le septième échec ne trouve plus d'attente : on renonce.
-      await paintFailure(tester, 'Response code: 500');
-      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
-      expect(dimmed(tester), isTrue);
-      await tester.pump(const Duration(minutes: 10));
-      expect(player.resumeCount, 6, reason: 'aucune septième tentative');
+      // Chaque essai est un démarrage frais, pré-vol compris.
+      expect(handshake.count, 1 + expected.length);
+      expect(player.resumeCount, 0);
     });
 
-    testWidgets('l\'abandon tombe à deux minutes quand les échecs traînent',
+    testWidgets('aucun abandon : dix minutes de pannes, et ça essaie encore',
         (tester) async {
-      await pumpPill(tester);
-      await tapOnce(tester);
-      await paintPlaying(tester);
-
-      // Chaque tentative met vingt secondes à échouer — le cas d'un réseau qui
-      // fait attendre plutôt que de refuser. Les six attentes n'auront pas le
-      // temps d'être consommées : c'est l'horloge qui mord.
-      const slow = Duration(seconds: 20);
-      await paintFailure(tester, const SocketException('Failed host lookup'));
-
-      var elapsed = Duration.zero;
-      Future<void> advance(Duration step) async {
-        elapsed += step;
-        await tester.pump(step);
-      }
-
-      // Quatre tentatives, chacune suivie de ses vingt secondes d'agonie : elles
-      // partent à t=1, 23, 47 et 75, et le cinquième échec tombe à t=95. Les
-      // attentes sont écrites en clair, pour la raison du test précédent.
-      for (final seconds in const [1, 2, 4, 8]) {
-        await advance(Duration(seconds: seconds));
-        await advance(slow);
-        await paintFailure(tester, const SocketException('Failed host lookup'));
-      }
-      expect(player.resumeCount, 4);
-      expect(elapsed, const Duration(seconds: 95));
-
-      // La cinquième attente est de seize secondes : la tentative part à t=111.
-      await advance(const Duration(seconds: 16));
-      expect(player.resumeCount, 5);
-      expect(elapsed, const Duration(seconds: 111));
-      expectPhase(tester, RadioPhase.retrying);
-
-      // Encore huit secondes : on en est à 119, et le bouton essaie toujours.
-      await advance(const Duration(seconds: 8));
-      expect(elapsed, const Duration(seconds: 119));
-      expectPhase(tester, RadioPhase.retrying);
-
-      // La seconde suivante : deux minutes pile, et le bouton s'éteint en disant
-      // pourquoi — alors qu'il restait une attente à consommer.
-      await advance(const Duration(seconds: 1));
-      expect(elapsed, const Duration(minutes: 2));
-      expectPhase(tester, RadioPhase.failed,
-          failure: RadioFailureKind.connection);
-      expect(dimmed(tester), isTrue);
-      expect(status(tester).phase, isNot(RadioPhase.retrying));
-
-      await advance(const Duration(minutes: 5));
-      expect(player.resumeCount, 5,
-          reason: 'plus rien ne part après l\'abandon');
-    });
-
-    testWidgets('le bouton éteint par un échec repart à l\'appui',
-        (tester) async {
-      await pumpPill(tester);
-      await tapOnce(tester);
-      await paintPlaying(tester);
-      await paintFailure(tester, 'Response code: 404');
-      // On laisse les deux minutes s'écouler sans qu'aucune tentative n'aboutisse.
-      await tester.pump(const Duration(minutes: 2));
-      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
-      expect(dimmed(tester), isTrue);
-
-      await tapOnce(tester);
-
-      // Un geste efface le renoncement : c'est l'auditeur qui décide de réessayer.
-      expect(player.loadedUrl, kTestAntennaOnAir.streamUrl);
-      expect(player.value.isPlaying, isTrue);
-    });
-  });
-
-  group('Les trois phrases, selon la nature de l\'échec', () {
-    testWidgets(
-        'la route d\'antenne injoignable → « vérifiez votre connexion »',
-        (tester) async {
-      await pumpPill(
-        tester,
-        radio: const FailingRadioRepository(
-          SocketException('Failed host lookup'),
-        ),
+      final repository = _CountingRadioRepository(
+        failure: const SocketException('Failed host lookup'),
       );
-
+      await pumpPill(tester, radio: repository);
       await tapOnce(tester);
-      // Aucune adresse n'a pu être lue : la rafale part sans que le lecteur ait
-      // jamais rien reçu.
+      expectPhase(tester, RadioPhase.retrying);
+      final before = repository.calls;
+
+      for (var i = 0; i < 60; i++) {
+        await tester.pump(const Duration(seconds: 10));
+        expectPhase(tester, RadioPhase.retrying);
+      }
+      // 1 + 2 + 4, puis une toutes les cinq secondes : bien plus de cent.
+      expect(repository.calls - before, greaterThan(100));
       expect(player.loadCount, 0);
-      expectPhase(tester, RadioPhase.retrying);
 
-      await tester.pump(const Duration(minutes: 2));
-      expectPhase(tester, RadioPhase.failed,
-          failure: RadioFailureKind.connection);
-      expect(dimmed(tester), isTrue);
-    });
-
-    testWidgets('une antenne sans adresse → « antenne indisponible »',
-        (tester) async {
-      // Le serveur a répondu, et il n'a pas d'antenne à donner : ce n'est pas le
-      // réseau de l'auditeur qui manque.
-      await pumpPill(tester,
-          radio: const FixedRadioRepository(RadioAntenna.unknown));
-
-      await tapOnce(tester);
-      expectPhase(tester, RadioPhase.retrying);
-
-      await tester.pump(const Duration(minutes: 2));
-      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
-      expect(dimmed(tester), isTrue);
+      // La route revient : la tentative suivante joue.
+      repository.failure = null;
+      await tester.pump(const Duration(seconds: 5));
+      expect(player.loadCount, 1);
+      await paintPlaying(tester);
+      expectPhase(tester, RadioPhase.playing);
     });
 
     testWidgets(
-        'une panne opaque du lecteur ne dit PAS « vérifiez votre connexion »',
-        (tester) async {
-      // **Le défaut constaté sur iPhone**, et c'est pourquoi la troisième phrase
-      // existe : AVFoundation rend sa panne sans code HTTP ni nom d'exception de
-      // transport, et le repli de #104 l'habillait en coupure de réseau. Le
-      // téléphone était connecté, et le bouton lui disait le contraire.
+        'une tentative sans son ni panne (iOS) compte comme un échec au bout '
+        'de 20 s', (tester) async {
       await pumpPill(tester);
       await tapOnce(tester);
-      await paintFailure(
-        tester,
-        'PlatformException(abort, The operation could not be completed, '
-        'AVFoundationErrorDomain, -11800)',
-      );
+      expectPhase(tester, RadioPhase.connecting);
 
+      // Le lecteur inerte ne sort jamais de son : la connexion pend.
+      await tester.pump(const Duration(milliseconds: 19999));
+      expectPhase(tester, RadioPhase.connecting);
+      await tester.pump(const Duration(milliseconds: 1));
       expectPhase(tester, RadioPhase.retrying);
 
-      await tester.pump(const Duration(minutes: 2));
-      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.unknown);
-      expect(dimmed(tester), isTrue);
-      expect(
-        status(tester).failure,
-        isNot(RadioFailureKind.connection),
-        reason: 'rien ne dit que le réseau de l\'auditeur soit en cause',
-      );
-      expect(
-        status(tester).failure,
-        isNot(RadioFailureKind.antenna),
-        reason: 'et rien ne dit que l\'église ait cessé de diffuser',
-      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(player.loadCount, 2, reason: 'la séquence a pris le relais');
+    });
+
+    testWidgets(
+        'un seul essai en vol : la relance à 8 s ne double pas un essai '
+        'programmé', (tester) async {
+      await pumpPill(tester);
+      await tapOnce(tester);
+      await paintPlaying(tester);
+      await paintFailure(tester, 'Response code: 500');
+      // Un essai est programmé dans une seconde. Le lecteur se remet à
+      // attendre son tampon, sans panne : la relance à 8 s ne s'arme pas.
+      await paintBuffering(tester);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(player.loadCount, 2, reason: 'l\'essai programmé est parti');
+      await tester.pump(const Duration(seconds: 15));
+      expect(player.loadCount, 2, reason: 'et rien ne s\'y est ajouté');
+    });
+
+    testWidgets(
+        'un seul essai en vol : ni la séquence ni le réseau ne doublent un '
+        'démarrage qui résout', (tester) async {
+      final network = StreamController<void>.broadcast();
+      addTearDown(network.close);
+      final handshake = _ManualRadioHandshake();
+      await pumpPill(tester, handshake: handshake, radioNetwork: network.stream);
+      await tapOnce(tester);
+      handshake.complete(0);
+      await tester.pump();
+      await paintPlaying(tester);
+      await paintFailure(tester, 'Response code: 500');
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(handshake.calls, 2, reason: 'l\'essai est en vol, pré-vol en cours');
+
+      network.add(null);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 6));
+      expect(handshake.calls, 2, reason: 'rien ne s\'est cumulé');
+      expect(player.loadCount, 1);
+
+      handshake.complete(1);
+      await tester.pump();
+      expect(player.loadCount, 2);
+    });
+
+    testWidgets(
+        'le réseau qui revient : un essai tout de suite, et la séquence '
+        'réarmée', (tester) async {
+      final network = StreamController<void>.broadcast();
+      addTearDown(network.close);
+      await pumpPill(tester, radioNetwork: network.stream);
+      await tapOnce(tester);
+      await paintPlaying(tester);
+
+      // Tant que tout va bien, le réseau ne déclenche rien.
+      network.add(null);
+      await tester.pump();
+      expect(player.loadCount, 1);
+
+      await paintFailure(tester, 'Response code: 500');
+      await tester.pump(const Duration(seconds: 1));
+      await paintFailure(tester, 'Response code: 500');
+      await tester.pump(const Duration(seconds: 2));
+      await paintFailure(tester, 'Response code: 500');
+      expect(player.loadCount, 3);
+      // La prochaine attente serait de quatre secondes.
+
+      network.add(null);
+      await tester.pump();
+      expect(player.loadCount, 4, reason: 'essai immédiat');
+
+      // La séquence repart de 1 s, et l'attente de 4 s a disparu.
+      await paintFailure(tester, 'Response code: 500');
+      await tester.pump(const Duration(milliseconds: 999));
+      expect(player.loadCount, 4);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(player.loadCount, 5);
+    });
+
+    testWidgets('le réseau qui change pendant « Connexion instable… » relance',
+        (tester) async {
+      final network = StreamController<void>.broadcast();
+      addTearDown(network.close);
+      await pumpPill(tester, radioNetwork: network.stream);
+      await tapOnce(tester);
+      await paintPlaying(tester);
+      await paintBuffering(tester);
+      await tester.pump(const Duration(seconds: 2));
+      expectPhase(tester, RadioPhase.unstable);
+
+      network.add(null);
+      await tester.pump();
+
+      expectPhase(tester, RadioPhase.retrying);
+      expect(player.loadCount, 2);
+      // La relance à 8 s ne part pas en plus.
+      await tester.pump(const Duration(seconds: 7));
+      expect(player.loadCount, 2);
+    });
+
+    testWidgets('le bouton arrête tout : essai programmé, seuils et réseau',
+        (tester) async {
+      final network = StreamController<void>.broadcast();
+      addTearDown(network.close);
+      await pumpPill(tester, radioNetwork: network.stream);
+      await tapOnce(tester);
+      await paintPlaying(tester);
+      await paintFailure(tester, 'Response code: 500');
+      expectPhase(tester, RadioPhase.retrying);
+
+      await tapOnce(tester); // arrête
+      expectPhase(tester, RadioPhase.idle);
+      expect(player.value.contentId, isNull);
+
+      network.add(null);
+      await tester.pump(const Duration(minutes: 5));
+      expect(player.loadCount, 1, reason: 'plus rien ne part après l\'arrêt');
+      expectPhase(tester, RadioPhase.idle);
+    });
+
+    testWidgets('l\'arrêt pendant un pré-vol en vol : rien ne rouvre après',
+        (tester) async {
+      final handshake = _ManualRadioHandshake();
+      await pumpPill(tester, handshake: handshake);
+      await tapOnce(tester);
+      handshake.complete(0);
+      await tester.pump();
+      await paintPlaying(tester);
+      await paintFailure(tester, 'Response code: 500');
+      await tester.pump(const Duration(seconds: 1));
+      expect(handshake.calls, 2, reason: 'un essai résout son pré-vol');
+
+      // La ✕ du mini-lecteur passe par là.
+      listening(tester).stop();
+      await tester.pump();
+      handshake.complete(1);
+      await tester.pump(const Duration(minutes: 1));
+
+      expect(player.loadCount, 1, reason: 'le démarrage en vol a renoncé');
+      expect(player.value.contentId, isNull);
+      expectPhase(tester, RadioPhase.idle);
+    });
+
+    testWidgets(
+        'la notification balayée pendant un pré-vol en vol arrête aussi tout',
+        (tester) async {
+      final handshake = _ManualRadioHandshake();
+      await pumpPill(tester, handshake: handshake);
+      await tapOnce(tester);
+      handshake.complete(0);
+      await tester.pump();
+      await paintPlaying(tester);
+      await paintFailure(tester, 'Response code: 500');
+      await tester.pump(const Duration(seconds: 1));
+      expect(handshake.calls, 2);
+
+      // Le système relâche le lecteur : il oublie ce qu'il tenait.
+      player.stop();
+      await tester.pump();
+      handshake.complete(1);
+      await tester.pump(const Duration(minutes: 1));
+
+      expect(player.loadCount, 1);
+      expect(player.value.contentId, isNull);
+      expectPhase(tester, RadioPhase.idle);
+    });
+
+    testWidgets('la notification dit l\'état, y compris après une relance',
+        (tester) async {
+      await pumpPill(tester);
+      await tapOnce(tester);
+      await paintPlaying(tester);
+      expect(player.statusLine, isNull);
+
+      await paintBuffering(tester);
+      await tester.pump(const Duration(seconds: 2));
+      expect(player.statusLine, 'Connexion instable…');
+
+      await tester.pump(const Duration(seconds: 6));
+      expectPhase(tester, RadioPhase.retrying);
+      // La relance a rouvert la source — et `load` efface la ligne : elle a
+      // été reposée.
+      expect(player.loadCount, 2);
+      expect(player.statusLine, 'Reconnexion…');
+
+      await paintPlaying(tester);
+      expect(player.statusLine, isNull);
     });
   });
 
@@ -836,13 +994,10 @@ void main() {
       ]);
     });
 
-    testWidgets('un pré-vol sans réponse → « vérifiez votre connexion »',
+    testWidgets('un pré-vol sans réponse : rien n\'est ouvert, et on insiste',
         (tester) async {
-      // Son échec se lit **comme les autres** : il n'a pas de voix à lui. Même
-      // phrase que la route d'antenne injoignable, et c'est `classifyRadioFailure`
-      // qui la choisit — pour les deux. (La troisième phrase du bouton n'est pas
-      // une voix de plus pour le pré-vol : elle ne sert que les échecs dont on ne
-      // sait pas s'il y a eu une réponse, et un pré-vol sait toujours le dire.)
+      // Son échec se lit **comme les autres** : il n'a pas de voix à lui, et la
+      // reprise le combat sans le nommer (#179).
       await pumpPill(
         tester,
         handshake: const FailingRadioHandshake(
@@ -856,16 +1011,13 @@ void main() {
       expectPhase(tester, RadioPhase.retrying);
 
       await tester.pump(const Duration(minutes: 2));
-      expectPhase(tester, RadioPhase.failed,
-          failure: RadioFailureKind.connection);
-      expect(dimmed(tester), isTrue);
+      expectPhase(tester, RadioPhase.retrying);
+      expect(player.loadCount, 0);
+      expect(dimmed(tester), isFalse);
     });
 
-    testWidgets('un 401 « session not found » → « antenne indisponible »',
+    testWidgets('un 401 « session not found » : rien n\'est ouvert nu',
         (tester) async {
-      // Le serveur a répondu, et il a dit non : ce n'est pas le réseau de
-      // l'auditeur qui manque, et l'inviter à le vérifier l'enverrait chercher une
-      // panne qui n'est pas la sienne.
       final options = RequestOptions(path: '/antenne/index.m3u8');
       await pumpPill(
         tester,
@@ -888,8 +1040,8 @@ void main() {
       expectPhase(tester, RadioPhase.retrying);
 
       await tester.pump(const Duration(minutes: 2));
-      expectPhase(tester, RadioPhase.failed, failure: RadioFailureKind.antenna);
-      expect(dimmed(tester), isTrue);
+      expectPhase(tester, RadioPhase.retrying);
+      expect(player.loadCount, 0);
     });
   });
 }
@@ -910,5 +1062,45 @@ class _GatedRadioHandshake implements RadioHandshakeResolver {
   Future<RadioHandshake> resolve(String url) {
     calls++;
     return _gate.future;
+  }
+}
+
+/// **Un pré-vol qu'on libère à la main**, appel par appel — pour voir ce qui se
+/// passe pendant qu'un essai est en vol.
+class _ManualRadioHandshake implements RadioHandshakeResolver {
+  final List<Completer<RadioHandshake>> _pending = [];
+
+  int get calls => _pending.length;
+
+  /// Libère le n-ième appel (le premier vaut 0), avec une session propre.
+  void complete(int call) => _pending[call].complete(
+        RadioHandshake(
+          url: 'https://antenne.test/antenne/stream.m3u8',
+          headers: {'Cookie': 'hlsSession=manual-$call'},
+        ),
+      );
+
+  @override
+  Future<RadioHandshake> resolve(String url) {
+    final pending = Completer<RadioHandshake>();
+    _pending.add(pending);
+    return pending.future;
+  }
+}
+
+/// **Une route d'antenne qui compte ses lectures**, et qu'on peut faire
+/// échouer puis revenir — pour prouver qu'une relance la relit.
+class _CountingRadioRepository implements RadioRepository {
+  _CountingRadioRepository({this.failure});
+
+  Object? failure;
+  int calls = 0;
+
+  @override
+  Future<RadioAntenna> antenna() async {
+    calls++;
+    final error = failure;
+    if (error != null) throw error;
+    return kTestAntennaOnAir;
   }
 }

@@ -11,11 +11,11 @@
 /// son propre chantier ; garder le nom « live » sur un écran qui diffuse la radio
 /// aurait installé le mensonge pour longtemps.
 ///
-/// ## C'est ici que la cause se lit (#125)
+/// ## C'est ici que l'état se lit (#125, #179)
 ///
-/// Le bouton de l'accueil porte un libellé fixe (44092f0) : il ne nomme aucune
-/// panne. C'est donc cet écran qui dit pourquoi l'antenne ne joue pas, à la
-/// place de la scène centrale de la fiche ([RadioAirStatus]).
+/// Le bouton de l'accueil porte un libellé fixe (44092f0) : il ne nomme aucun
+/// état. C'est donc cet écran qui dit ce que fait l'antenne — instable, en
+/// reconnexion, à l'antenne ([RadioAirStatus]).
 ///
 /// ## La page live (#135)
 ///
@@ -32,9 +32,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/radio/radio_failure.dart';
 import '../data/radio/radio_status.dart';
-import '../l10n/app_localizations.dart';
 import '../l10n/l10n_extension.dart';
 import '../state/radio_live_providers.dart';
 import '../state/radio_providers.dart';
@@ -42,7 +40,6 @@ import '../state/season_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
-import '../widgets/app_error_state.dart';
 import '../widgets/content_player_view.dart';
 import '../widgets/radio_live/radio_live_scene.dart';
 
@@ -92,10 +89,10 @@ class RadioScreen extends ConsumerWidget {
       // tient déjà l'antenne reçoit un simple `play()`. Rien n'est pris de plus
       // sur la fenêtre de rattrapage de 40 secondes de l'antenne.
       openSource: start,
-      // **La scène dit l'état réel de l'antenne** (#125), à la place de « Lecture
-      // interrompue » et d'« il faut du réseau » : ces deux phrases ignoraient la
-      // reprise en cours et la cause classée, et leur « Reprendre » rouvrait
-      // sans pré-vol. Ici, toute relance passe par `start`.
+      // **La scène dit l'état réel de l'antenne** (#125, #179), à la place de
+      // « Lecture interrompue » et d'« il faut du réseau » : ces deux phrases
+      // ignoraient la reprise en cours, et leur « Reprendre » rouvrait sans
+      // pré-vol. Ici, toute relance passe par `start`.
       //
       // **La page live** (#135) : la scène dispose les pièces du lecteur —
       // le gros bouton déjà câblé, l'arrêt — autour de la couche sociale.
@@ -103,7 +100,7 @@ class RadioScreen extends ConsumerWidget {
       scene: (context, parts) => RadioLiveScene(
         parts: parts,
         title: title,
-        status: RadioAirStatus(onRetry: start),
+        status: const RadioAirStatus(),
       ),
       // Le plancher de la cascade : la saison gagne quand le portail en a une.
       // Même image que l'écran de démarrage et que le splash natif.
@@ -120,21 +117,25 @@ class RadioScreen extends ConsumerWidget {
   }
 }
 
-/// **Ce que l'antenne fait, dit en une ligne — ou, après abandon, sa cause.**
+/// **Ce que l'antenne fait, dit en une ligne.**
 ///
-/// Quatre états, lus sur [RadioStatus] et sur la route d'antenne, par ordre de
-/// priorité :
+/// Lu sur [RadioStatus] et sur la route d'antenne, par ordre de priorité :
 ///
 /// | état | ce qui s'affiche |
 /// | --- | --- |
-/// | abandon | la cause (`radio_failure.dart`), et « Réessayer » |
-/// | reprise | « Nouvelle tentative… » — **sans** nommer la panne qu'on combat |
+/// | reconnexion | « Reconnexion… » — **sans** nommer la panne, et sans fin (#179) |
+/// | connexion instable | « Connexion instable… » — le tampon attend depuis 2 s (#179) |
 /// | lecture | « À l'antenne » — pas « En direct », réservé au badge d'un direct de la régie (#135) |
 /// | hors antenne | « Hors antenne », quand la route a dit `onAir: false` |
 ///
 /// Sinon — au repos ou en connexion sur une antenne qui émet ou dont on ne sait
 /// rien —, rien : le bouton de lecture montre déjà qu'il cherche, et le fond de
 /// l'écran reste visible, comme avant.
+///
+/// ⚠️ **Il n'y a plus d'abandon, donc plus de carte d'échec** (#179) : la
+/// reprise ne s'arrête qu'avec l'auditeur. « Connexion instable… » met fin au
+/// faux « À l'antenne » qu'iOS affichait pendant un blocage — le lecteur y
+/// reste « en lecture » sans rien dire.
 ///
 /// ⚠️ **`onAir` nul n'est pas `onAir` faux** : seul [RadioAntenna.isSilent]
 /// affiche « Hors antenne ». Un échec de lecture de la route, un premier
@@ -145,19 +146,14 @@ class RadioScreen extends ConsumerWidget {
 /// lu qu'au lancement et au retour à l'écran, et l'antenne a pu reprendre
 /// entre-temps — le son qui sort l'emporte sur ce que la route disait.
 class RadioAirStatus extends ConsumerWidget {
-  const RadioAirStatus({super.key, required this.onRetry});
-
-  /// La relance. **Toujours `RadioListening.start`**, jamais le contrôleur seul :
-  /// c'est lui qui fait le pré-vol et porte le cookie (#108, #110), et c'est
-  /// aussi lui qui efface le renoncement.
-  final VoidCallback onRetry;
+  const RadioAirStatus({super.key});
 
   /// Les témoins de chaque état, visés par clé dans les tests : c'est « l'écran
   /// montre la reprise » qu'on vérifie, pas la forme du widget qui la montre.
   static const Key offAirKey = Key('radio_air_off');
   static const Key liveKey = Key('radio_air_live');
+  static const Key unstableKey = Key('radio_air_unstable');
   static const Key retryingKey = Key('radio_air_retrying');
-  static const Key failedKey = Key('radio_air_failed');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -167,24 +163,23 @@ class RadioAirStatus extends ConsumerWidget {
       radioAntennaProvider.select((a) => a.value?.isSilent ?? false),
     );
 
-    final Widget line = switch (status.phase) {
-      RadioPhase.failed => AppErrorState(
-          key: failedKey,
-          title: _cause(status.failure, l10n),
-          message: l10n.radioGaveUpMessage,
-          icon: _causeIcon(status.failure),
-          onRetry: onRetry,
-        ),
+    const spinner = SizedBox.square(
+      dimension: 10,
+      child: CircularProgressIndicator(
+        strokeWidth: 1.5,
+        color: Colors.white,
+      ),
+    );
+    return switch (status.phase) {
       RadioPhase.retrying => _StatusPill(
           key: retryingKey,
-          leading: const SizedBox.square(
-            dimension: 10,
-            child: CircularProgressIndicator(
-              strokeWidth: 1.5,
-              color: Colors.white,
-            ),
-          ),
+          leading: spinner,
           label: l10n.radioRetrying,
+        ),
+      RadioPhase.unstable => _StatusPill(
+          key: unstableKey,
+          leading: spinner,
+          label: l10n.radioUnstable,
         ),
       RadioPhase.playing => _StatusPill(
           key: liveKey,
@@ -203,28 +198,7 @@ class RadioAirStatus extends ConsumerWidget {
         ),
       _ => const SizedBox.shrink(),
     };
-
-    // Seul l'abandon occupe le centre de la page ; une pastille se range dans
-    // la rangée du haut, à la place du badge EN DIRECT (`RadioLiveScene`).
-    if (status.phase != RadioPhase.failed) return line;
-    return Center(child: SingleChildScrollView(child: line));
   }
-
-  /// Les trois phrases de `radio_failure.dart`. `null` ne devrait pas arriver
-  /// sur un abandon — `_abandon` tombe sur « connexion » faute de cause — mais le
-  /// type le permet, et le repli suit la même règle.
-  static String _cause(RadioFailureKind? kind, AppLocalizations l10n) =>
-      switch (kind) {
-        RadioFailureKind.antenna => l10n.radioFailureAntenna,
-        RadioFailureKind.unknown => l10n.radioFailureUnknown,
-        RadioFailureKind.connection || null => l10n.radioFailureConnection,
-      };
-
-  static IconData _causeIcon(RadioFailureKind? kind) => switch (kind) {
-        RadioFailureKind.antenna => Icons.sensors_off_rounded,
-        RadioFailureKind.unknown => Icons.error_outline_rounded,
-        RadioFailureKind.connection || null => Icons.wifi_off_rounded,
-      };
 }
 
 /// Une ligne d'état courte, sur une pastille de la forme du badge EN DIRECT

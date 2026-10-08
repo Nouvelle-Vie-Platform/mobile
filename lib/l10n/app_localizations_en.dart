@@ -230,20 +230,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radioLive => 'On air';
 
   @override
-  String get radioRetrying => 'Trying again…';
+  String get radioUnstable => 'Unstable connection…';
 
   @override
-  String get radioFailureConnection => 'Check your connection';
+  String get radioRetrying => 'Reconnecting…';
 
   @override
   String get radioFailureAntenna => 'Station unavailable';
-
-  @override
-  String get radioFailureUnknown => 'Can\'t listen right now';
-
-  @override
-  String get radioGaveUpMessage =>
-      'The app stopped trying. Start listening again whenever you like.';
 
   @override
   String get radioUnavailableMessage =>

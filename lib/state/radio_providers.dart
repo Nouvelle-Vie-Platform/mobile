@@ -32,11 +32,14 @@ library;
 
 import 'dart:async';
 
+import 'dart:ui' show Locale;
+
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
 import '../core/config/radio_config.dart';
+import '../data/network/network_transport.dart';
 import '../data/players/content_player.dart';
 import '../data/radio/http_radio_repository.dart';
 import '../data/radio/radio_antenna.dart';
@@ -45,7 +48,9 @@ import '../data/radio/radio_handshake.dart';
 import '../data/radio/radio_repository.dart';
 import '../data/radio/radio_retry.dart';
 import '../data/radio/radio_status.dart';
+import '../l10n/app_localizations.dart';
 import '../models/gathering_view.dart';
+import 'locale_providers.dart';
 import 'playback_controller.dart';
 import 'player_providers.dart';
 
@@ -125,7 +130,19 @@ final radioContentProvider =
       );
 });
 
-/// **Le contrôleur d'écoute** : il lance, il arrête, et il insiste.
+/// **« Le réseau a changé »** — l'accélérateur de la reprise (#179, décision 9
+/// du plan radio adaptative).
+///
+/// Écouté **seulement** pendant un état instable ou une reconnexion, et
+/// seulement pour avancer un essai : il ne suspend jamais rien (voir
+/// `radio_retry.dart`). Les tests le surchargent (`pumpScreen(radioNetwork:
+/// …)`) : l'implémentation réelle ouvre un canal de plugin que `flutter test`
+/// n'a pas.
+final radioNetworkChangesProvider = Provider<Stream<void>>(
+  (ref) => ConnectivityNetworkStatus().onTransportChanged,
+);
+
+/// **Le contrôleur d'écoute** : il lance, il arrête, et il insiste — sans fin.
 ///
 /// Jamais `autoDispose`, pour la raison de `contentPlayerProvider` : l'écoute
 /// survit à l'écran. Une reprise en cours doit survivre au retour à l'accueil, et
@@ -134,35 +151,67 @@ final radioContentProvider =
 final radioListeningProvider =
     NotifierProvider<RadioListening, RadioStatus>(RadioListening.new);
 
+/// **La machine d'états de l'écoute** (#179).
+///
+/// ```
+/// idle ──start──► connecting ──son──► playing ◄──────────── son ──┐
+///                    │                 │ tampon ≥ 2 s             │
+///                    │                 ▼                          │
+///                    │              unstable                      │
+///                    │                 │ tampon ≥ 8 s : relance   │
+///                    │ panne, ou 20 s  ▼                          │
+///                    └────────────► retrying ── essai frais ──────┘
+///                                    ▲   │ panne, ou 20 s sans son :
+///                                    └───┘ attente 1, 2, 4, 5, 5… s
+/// ```
+///
+/// - **Un seul essai en vol** : un essai est un `start(fresh: true)` — route
+///   d'antenne, pré-vol, ouverture au bord du direct. [_starting] le garde
+///   pendant qu'il résout, [_attemptDeadline] le borne jusqu'au premier son.
+///   La relance à 8 s, l'essai programmé ([_retry]) et le signal réseau passent
+///   tous par [start], qui annule les deux autres avant de partir.
+/// - **Aucun abandon** : seul [stop] (le bouton, la ✕, la notification balayée)
+///   arrête — et il arrête tout, y compris un démarrage en vol ([_generation]).
+/// - Le réseau qui revient ou change, pendant `unstable` ou `retrying`, lance
+///   un essai tout de suite et réarme la séquence ; il ne suspend rien.
 class RadioListening extends Notifier<RadioStatus> {
-  /// **Vrai pendant qu'un démarrage est en vol** — résolution de l'URL, puis
+  /// **Vrai pendant qu'un démarrage résout** — route d'antenne, pré-vol, puis
   /// `load`.
   ///
-  /// Il existe parce que, pendant ces quelques millisecondes, le lecteur ne tient
-  /// **pas encore** la radio : sans ce drapeau, une émission du lecteur portant
-  /// encore l'enseignement précédent ferait retomber le bouton au repos juste
-  /// après qu'on l'a touché.
+  /// Pendant ce temps, le lecteur tient encore l'ancienne source (ou
+  /// l'enseignement remplacé) : ses émissions — une panne, un tampon — ne
+  /// disent rien de la tentative en cours, et sont ignorées.
   bool _starting = false;
 
-  /// **Les deux minutes**, armées au premier échec de la rafale et à lui seul.
-  ///
-  /// Son existence distingue « la première panne » de « encore une » : tant
-  /// qu'elle court, on est dans la même rafale, et c'est depuis le premier échec
-  /// que l'abandon se compte. Un succès l'efface.
-  Timer? _deadline;
+  /// **Le numéro du démarrage courant.** Un démarrage en vol qui le trouve
+  /// changé à son réveil renonce sans toucher au lecteur : c'est ce qui rend
+  /// l'arrêt définitif, même pendant les cinq secondes d'un pré-vol.
+  int _generation = 0;
 
-  /// La prochaine tentative, déjà programmée.
-  Timer? _attempt;
+  /// Vrai de la première panne (ou de la relance à 8 s) jusqu'au son : on
+  /// est en reconnexion, et c'est ce que l'état affiche, quoi que le lecteur
+  /// émette entre-temps.
+  bool _reconnecting = false;
 
-  /// Combien des six attentes ont été consommées par la rafale en cours.
+  /// Combien d'attentes de la séquence 1, 2, 4, 5… ont été consommées.
   int _attempts = 0;
 
-  /// La dernière cause lue, celle qui s'affichera si l'on renonce.
-  RadioFailureKind? _cause;
+  /// La prochaine tentative, déjà programmée.
+  Timer? _retry;
 
-  /// Vrai quand on a renoncé : le bouton est éteint et porte le motif. Un geste
-  /// de l'auditeur l'efface — c'est lui qui décide de réessayer.
-  bool _abandoned = false;
+  /// La borne d'une tentative sans son ([kRadioAttemptTimeout]).
+  Timer? _attemptDeadline;
+
+  /// Les deux seuils du tampon après le premier son : 2 s, puis 8 s.
+  Timer? _unstable;
+  Timer? _stalled;
+
+  /// L'écoute du réseau, ouverte pendant `unstable` et `retrying` seulement.
+  StreamSubscription<void>? _network;
+
+  /// La dernière émission tenait-elle l'antenne ? Sert à reconnaître l'arrêt
+  /// venu du système (notification balayée) pendant un démarrage en vol.
+  bool _heldRadio = false;
 
   /// Le dernier titre annoncé au système, pour qu'une tentative puisse rouvrir la
   /// source sans écran devant elle.
@@ -173,9 +222,13 @@ class RadioListening extends Notifier<RadioStatus> {
     final player = ref.watch(contentPlayerProvider);
     void onChanged() => _onPlayback(player.value);
     player.addListener(onChanged);
+    _heldRadio = player.value.contentId == RadioConfig.contentId;
+    // **La notification suit l'état**, d'un seul endroit : « Connexion
+    // instable… » et « Reconnexion… » y remplacent la seconde ligne.
+    listenSelf((_, next) => _announce(next));
     ref.onDispose(() {
       player.removeListener(onChanged);
-      _cancelRetry();
+      _reset();
     });
     // L'état se **dérive** du lecteur, il ne part pas de zéro : revenir à
     // l'accueil pendant que l'antenne joue doit retrouver un bouton allumé.
@@ -185,27 +238,16 @@ class RadioListening extends Notifier<RadioStatus> {
   /// **Lance l'écoute.** Idempotent : rappelé pendant qu'un démarrage est en vol,
   /// il ne fait rien.
   ///
-  /// [fresh] force la **réouverture** de la source, pré-vol compris, même quand
-  /// le lecteur tient déjà l'antenne en pause : c'est ce qui rend le direct
-  /// après une interruption (voir [rejoinLive]). Sans lui, un lecteur qui tient
-  /// l'antenne reçoit un simple `play()`, qui reprendrait là où le tampon s'est
-  /// arrêté — en retard sur l'antenne, ou dans le vide si la fenêtre de
-  /// rattrapage de quarante secondes est passée.
+  /// [fresh] force la **réouverture** de la source au bord du direct, route
+  /// d'antenne relue et pré-vol compris, même quand le lecteur tient déjà
+  /// l'antenne en pause : c'est ce que fait toute relance (#179) et ce qui rend
+  /// le direct après une interruption (voir [rejoinLive]). Sans lui, un lecteur
+  /// qui tient l'antenne saine reçoit un simple `play()`, qui reprendrait là où
+  /// le tampon s'est arrêté. Une reconnexion en cours ou une panne en main
+  /// valent [fresh] : un geste de l'auditeur à ce moment-là est une relance.
   Future<void> start({required String title, bool fresh = false}) async {
     if (_starting) return;
     _title = title;
-    // Un geste efface le renoncement : c'est l'auditeur qui décide de réessayer,
-    // et un bouton éteint qui refuserait de repartir serait un interdit de plus.
-    //
-    // ⚠️ **Après un abandon, le geste repart de zéro** (#125) : la cause est
-    // oubliée — sans quoi l'écran garderait la panne affichée pendant la
-    // connexion — et la source est **rouverte**, pré-vol compris. Le lecteur peut
-    // en effet tenir l'antenne *sans* panne : la dernière tentative a effacé
-    // l'erreur (`resume()` publie `isPlaying` et `isBuffering`) puis s'est
-    // enlisée. Un simple `play()` y relancerait un tampon mort.
-    final wasAbandoned = _abandoned;
-    _abandoned = false;
-    if (wasAbandoned) _cause = null;
 
     // **Le transport passe par le contrôleur global** (#114), comme partout :
     // ce qui reste propre à l'antenne — l'adresse, le pré-vol, l'insistance —
@@ -213,19 +255,32 @@ class RadioListening extends Notifier<RadioStatus> {
     final controller = ref.read(playbackControllerProvider.notifier);
     final playback = controller.playback;
     final held = playback.contentId == RadioConfig.contentId;
-    if (held && !playback.hasError && !wasAbandoned && !fresh) {
+    final reopen = fresh || _reconnecting || (held && playback.hasError);
+    if (held && !reopen) {
       // Déjà en main — mis en pause depuis l'écran d'antenne ou la notification.
       // On ne recharge pas : rouvrir la source couperait le tampon déjà rempli.
-      if (_cause == null) state = RadioStatus.connecting;
+      state = RadioStatus.connecting;
       controller.play();
       return;
     }
 
+    _cancelTimers();
+    final generation = ++_generation;
     _starting = true;
-    if (_cause == null) state = RadioStatus.connecting;
+    if (!_reconnecting) state = RadioStatus.connecting;
+    // **La tentative a une durée de vie**, du premier octet au premier son :
+    // une ouverture HLS pendue ne lève rien sur iOS, et sans cette borne elle
+    // resterait « en vol » pour toujours.
+    _attemptDeadline = Timer(kRadioAttemptTimeout, () {
+      _attemptDeadline = null;
+      if (generation != _generation) return;
+      _generation++; // le démarrage pendu renonce à son réveil
+      _starting = false;
+      _fail(TimeoutException('aucun son', kRadioAttemptTimeout));
+    });
     try {
-      final url = await _resolveUrl();
-      if (url == null) return; // `_fail` a déjà parlé
+      final url = await _resolveUrl(fresh: reopen);
+      if (generation != _generation) return;
       // **LA POIGNÉE DE MAIN PAR COOKIE, HONORÉE ICI** (#108) — et c'est ce qui
       // décide si l'écoute marche en vrai.
       //
@@ -240,21 +295,18 @@ class RadioListening extends Notifier<RadioStatus> {
       // lecteur l'**URL absolue finale** et l'en-tête `Cookie:` —
       // `radio_handshake.dart` porte tout le détail, bocal compris.
       //
-      // ⚠️ **Il est renégocié à chaque fois, et c'est le cœur de la tranche.**
+      // ⚠️ **Il est renégocié à chaque fois, et c'est le cœur de la reprise.**
       // Rien n'est mis en cache entre deux `start` : une session expire, donc une
-      // reprise après deux minutes de coupure ne peut pas rejouer l'ancien
-      // cookie. Mémoriser le résultat pour épargner un aller-retour rendrait
-      // l'antenne muette précisément dans le cas où l'auditeur insiste.
+      // reprise après une coupure ne peut pas rejouer l'ancien cookie.
       //
-      // ⚠️ **Son échec n'a pas de voix à lui.** Il lève, la prise d'erreur de
-      // cette méthode le range par `classifyRadioFailure`, et il se lit donc
-      // comme les autres : réponse absente → « vérifiez votre connexion » ;
-      // 401 / 404 / 5xx → « antenne indisponible ». Sa borne de temps lui est en
-      // revanche propre (`kRadioHandshakeTimeout`), parce qu'il est **sur le
-      // chemin critique de l'écoute** et que ce qu'il consomme est pris sur la
-      // fenêtre de rattrapage de 40 secondes de l'antenne.
+      // ⚠️ **Son échec n'a pas de voix à lui** : il lève, et la tentative échoue
+      // comme les autres. Sa borne de temps lui est en revanche propre
+      // (`kRadioHandshakeTimeout`), parce qu'il est **sur le chemin critique de
+      // l'écoute** et que ce qu'il consomme est pris sur la fenêtre de rattrapage
+      // de 40 secondes de l'antenne.
       final resolver = ref.read(radioHandshakeProvider);
       final handshake = await resolver.resolve(url);
+      if (generation != _generation) return;
       _traceHandshake(resolver, handshake);
       await controller.load(
         ContentRequest(
@@ -265,41 +317,44 @@ class RadioListening extends Notifier<RadioStatus> {
           url: handshake.url,
           title: title,
           // Ils descendent jusqu'à la source (#108), donc jusqu'aux
-          // sous-playlists et aux segments, et ils sont retenus par
-          // `ContentRequest` pour que le chien de garde ne rouvre pas sans
-          // eux.
+          // sous-playlists et aux segments.
           headers: handshake.headers,
-          // **Pas de ±30 s ni de barre de progression sur un direct** : c'est
-          // ce drapeau, et lui seul, qui le dit à la notification et à l'écran
-          // verrouillé.
+          // **Pas de ±30 s ni de barre de progression sur un direct**, et pas
+          // de position d'ouverture : la source s'ouvre **au bord du direct**.
+          // C'est aussi ce drapeau qui écarte le chien de garde de 25 s des
+          // lecteurs — l'antenne a le sien, ici.
           isLive: true,
         ),
       );
-      controller.play();
+      if (generation != _generation) return;
+      // Une ouverture refusée se lit sur la valeur du lecteur, pas sur une
+      // exception : `load` la range dans `error` et rend normalement.
+      final error = controller.playback.error;
+      if (error != null) throw error;
     } catch (error) {
-      _fail(_classify(error));
-    } finally {
+      if (generation != _generation) return;
       _starting = false;
+      _fail(error);
+      return;
     }
+    // **Avant `play()`, et pas après** : l'émission « ça joue » doit trouver le
+    // démarrage terminé, sans quoi elle serait ignorée et le bouton resterait
+    // en connexion.
+    _starting = false;
+    // `load` a effacé la ligne de la notification : on la repose.
+    _announce(state);
+    controller.play();
   }
 
-  /// **Range la panne, et laisse une trace de ce qu'on n'a pas su lire.**
-  ///
-  /// Le journal n'est pas de la décoration : l'écoute qui a coûté une soirée
-  /// s'est présentée comme « vérifiez votre connexion » sur un téléphone
-  /// connecté, et le message brut de la plateforme était le **seul** indice de la
-  /// vraie cause — il n'allait nulle part. Il va désormais dans le journal, en
-  /// debug, pour que la prochaine enquête commence par le lire au lieu de le
-  /// deviner. En release, rien.
-  RadioFailureKind _classify(Object error) {
-    final kind = classifyRadioFailure(error);
-    if (kind == RadioFailureKind.unknown) {
-      assert(() {
-        debugPrint('[radio] panne non classée, message brut : $error');
-        return true;
-      }());
-    }
-    return kind;
+  /// **Range la panne dans le journal, en debug** — la cause ne s'affiche plus
+  /// (la reprise ne s'arrête jamais), mais le message brut de la plateforme
+  /// reste le **seul** indice d'une vraie panne. En release, rien.
+  void _trace(Object error) {
+    assert(() {
+      final kind = classifyRadioFailure(error);
+      debugPrint('[radio] échec ($kind) : $error');
+      return true;
+    }());
   }
 
   /// **Dit, en debug, qu'une négociation réelle n'a rapporté aucun cookie.**
@@ -351,176 +406,232 @@ class RadioListening extends Notifier<RadioStatus> {
     await start(title: known, fresh: true);
   }
 
-  /// **Arrête l'écoute**, et renonce à toute reprise en cours.
+  /// **Arrête l'écoute**, et renonce à toute reprise en cours — tentative
+  /// programmée, relance à 8 s, écoute du réseau, et démarrage en vol.
   ///
   /// Un arrêt demandé est une décision : relancer dans son dos après coup serait
   /// faire sortir du son que personne n'a demandé.
   void stop() {
-    _cancelRetry();
-    _cause = null;
-    _abandoned = false;
-    _starting = false;
+    _reset();
     ref.read(playbackControllerProvider.notifier).stop();
     state = RadioStatus.idle;
   }
 
-  /// L'adresse à ouvrir : celle que la route a déjà rendue, sinon une lecture
-  /// fraîche.
+  /// **L'adresse à ouvrir — le seul endroit où elle se choisit.**
   ///
-  /// La lecture fraîche n'est pas un doublon du provider : au premier appui, la
-  /// route peut n'avoir jamais répondu (échec au lancement, application ouverte
-  /// hors ligne puis réseau revenu), et refuser de lancer pour cette raison
-  /// transformerait une information en interdit.
-  Future<String?> _resolveUrl() async {
-    final known = ref.read(radioAntennaProvider).value?.streamUrl;
-    if (known != null) return known;
-    try {
-      final fresh = await ref.read(radioRepositoryProvider).antenna();
-      if (fresh.streamUrl != null) return fresh.streamUrl;
-      // Le serveur a répondu, et il n'a pas d'antenne à donner.
-      _fail(RadioFailureKind.antenna);
-      return null;
-    } catch (error) {
-      _fail(_classify(error));
-      return null;
-    }
+  /// Sans [fresh], celle que la route a déjà rendue, sinon une lecture
+  /// fraîche : au premier appui, la route peut n'avoir jamais répondu (échec au
+  /// lancement, application ouverte hors ligne puis réseau revenu), et refuser
+  /// de lancer pour cette raison transformerait une information en interdit.
+  /// Avec [fresh] — toute relance —, **toujours** une lecture fraîche de
+  /// `GET /radio/antenna` : l'adresse a pu changer pendant la coupure.
+  ///
+  /// Une antenne sans adresse lève : la tentative échoue, et la séquence
+  /// continue — l'adresse peut revenir.
+  Future<String> _resolveUrl({required bool fresh}) async {
+    final known = fresh ? null : ref.read(radioAntennaProvider).value;
+    final antenna = known?.streamUrl != null
+        ? known!
+        : await ref.read(radioRepositoryProvider).antenna();
+    final url = antenna.streamUrl;
+    if (url == null) throw StateError('antenne sans adresse');
+    return url;
   }
 
   /// Une émission du lecteur. C'est **la** source de vérité de l'état.
   void _onPlayback(ContentPlayback playback) {
     final held = playback.contentId == RadioConfig.contentId;
+    final wasHeld = _heldRadio;
+    _heldRadio = held;
     if (!held) {
-      // Un démarrage en vol n'a pas encore posé son contenu : ne pas prendre
-      // l'émission précédente pour un abandon.
-      if (_starting) return;
-      _cancelRetry();
-      _cause = null;
-      _abandoned = false;
+      // Pendant un démarrage, le contenu remplacé bat encore : seule une
+      // émission qui **quitte** l'antenne — la ✕, la notification balayée, un
+      // autre contenu chargé — arrête, et elle arrête aussi le démarrage en
+      // vol. Sans quoi le son reviendrait après la notification balayée.
+      if (_starting && !wasHeld) return;
+      _reset();
       state = RadioStatus.idle;
       return;
     }
 
+    // Un démarrage en vol décide seul de son issue : l'ancienne source peut
+    // encore émettre sa panne ou son tampon.
+    if (_starting) return;
+
     final error = playback.error;
     if (error != null) {
-      _fail(_classify(error));
+      _fail(error);
       return;
     }
 
-    // **Le son coule vraiment** : la rafale s'efface, et l'insistance repart de
-    // zéro pour la prochaine panne.
+    // **Le son coule vraiment** : la reconnexion s'efface, et la séquence
+    // repart de zéro pour la prochaine panne.
     //
-    // ⚠️ `!isBuffering` est ce qui sépare « ça joue » de « ça vient de rouvrir »,
-    // et sans lui la reprise ne reprendrait rien : `resume()` publie
-    // `isPlaying` **et** `isBuffering` avant le moindre aller-retour réseau
-    // (c'est écrit dans les deux implémentations), si bien que chaque tentative
-    // passerait pour un succès. Les six attentes deviendraient six attentes d'une
-    // seconde, et rien dans l'affichage ne l'aurait montré.
+    // ⚠️ `hasStarted` **et** `!isBuffering` : les deux implémentations posent
+    // `isBuffering` dès le chargement, avant tout aller-retour, et `hasStarted`
+    // ne se pose qu'au premier instant où le média peut sortir du son.
     if (playback.hasStarted && playback.isPlaying && !playback.isBuffering) {
       _heard();
       return;
     }
 
-    // Une rafale en cours garde la main sur l'affichage : la panne a disparu de
-    // la valeur, mais on réessaie toujours, et c'est ce que le bouton doit dire.
-    if (_abandoned || _cause != null) return;
+    // **L'antenne devrait jouer, et le tampon attend** : les deux seuils
+    // s'arment, une seule fois par attente continue.
+    if (playback.hasStarted && playback.isPlaying) {
+      _watchStall();
+    } else {
+      _cancelStall();
+    }
+
+    // Une reconnexion garde la main sur l'affichage, quoi que la source
+    // émette en attendant le son.
+    if (_reconnecting) return;
 
     // **`hasStarted` est la frontière, et il ne redevient jamais faux** sur un
     // même contenu. Au-delà, il ne peut plus s'agir d'une connexion initiale :
     //
-    // - elle joue — y compris pendant qu'elle regarnit son tampon, et c'est ce qui
-    //   laisse arrêter une antenne qui hoquette ;
-    // - elle est **en pause** : le lecteur de l'écran d'antenne et la notification
-    //   savent tous deux mettre en pause, et ce n'est pas une connexion en cours.
-    //   La prendre pour telle laisserait un bouton qui tourne et qui refuse de
-    //   s'arrêter (l'inertie), sur une antenne parfaitement silencieuse. Au repos,
-    //   un appui redémarre — `start` voit le contenu déjà en main et se contente
-    //   d'un `play()`, sans rouvrir la source.
+    // - elle joue — y compris pendant qu'elle regarnit son tampon, et c'est ce
+    //   qui laisse arrêter une antenne qui hoquette ; « Connexion instable… »
+    //   ne vient qu'au bout de deux secondes, et reste jusqu'au son ;
+    // - elle est **en pause** : le lecteur de l'écran d'antenne et la
+    //   notification savent tous deux mettre en pause, et ce n'est pas une
+    //   connexion en cours. Au repos, un appui redémarre.
     if (playback.hasStarted) {
-      state = playback.isPlaying ? RadioStatus.playing : RadioStatus.idle;
+      if (!playback.isPlaying) {
+        state = RadioStatus.idle;
+      } else if (state.phase != RadioPhase.unstable) {
+        state = RadioStatus.playing;
+      }
       return;
     }
     state = RadioStatus.connecting;
   }
 
-  /// **Le son est sorti** : la rafale s'efface, et l'insistance repart de zéro
-  /// pour la prochaine panne.
+  /// **Le son est sorti** : tout s'efface, et la séquence repart de zéro.
   void _heard() {
-    _cancelRetry();
-    _cause = null;
-    _abandoned = false;
+    _cancelTimers();
+    _closeNetwork();
+    _reconnecting = false;
+    _attempts = 0;
     state = RadioStatus.playing;
   }
 
-  /// Un échec : on retient la cause, on arme la borne de deux minutes au premier,
-  /// et on programme la tentative suivante.
-  ///
-  /// ⚠️ **Une seconde émission de la même panne ne repousse pas la tentative**, et
-  /// ce garde-là n'est pas défensif : `ContentPlayback.copyWith` **ne sait pas
-  /// effacer** une panne, donc toute émission suivante du lecteur — un dernier
-  /// battement de position, un changement d'état — la porte encore. Sans ce
-  /// `return`, chaque battement réarmerait l'attente, et la tentative n'aurait
-  /// jamais lieu : une reprise qui ne reprend rien, sans qu'aucun test d'unité du
-  /// contrôleur ne rougisse.
-  void _fail(RadioFailureKind cause) {
-    if (_abandoned) return;
-    _cause = cause;
-    _deadline ??= Timer(kRadioRetryDeadline, _abandon);
-    state = RadioStatus.retrying;
-    if (_attempt != null) return;
-    _schedule();
-  }
-
-  void _schedule() {
-    if (_attempts >= kRadioRetryDelays.length) {
-      // Les six attentes sont consommées : l'insistance s'arrête, même si les
-      // deux minutes ne sont pas écoulées.
-      _abandon();
-      return;
-    }
-    final delay = kRadioRetryDelays[_attempts];
-    _attempt = Timer(delay, () {
-      _attempt = null;
-      _attempts++;
-      _retry();
+  /// **Les deux seuils du tampon** : « Connexion instable… » à 2 s, relance au
+  /// bord du direct à 8 s. Rien si une attente est déjà armée, ou si une
+  /// tentative est déjà programmée — elle partira de toute façon.
+  void _watchStall() {
+    if (_stalled != null || _retry != null) return;
+    _unstable = Timer(kRadioUnstableAfter, () {
+      _unstable = null;
+      if (_reconnecting) return;
+      state = RadioStatus.unstable;
+      _listenNetwork();
+    });
+    _stalled = Timer(kRadioStallRelaunchAfter, () {
+      _stalled = null;
+      _relaunch();
     });
   }
 
-  /// **Une tentative, et elle réutilise ce qui existe.**
+  /// **Une tentative tout de suite**, au bord du direct. [start] annule
+  /// l'essai programmé et les seuils : rien ne se cumule.
+  void _relaunch() {
+    _reconnecting = true;
+    state = RadioStatus.retrying;
+    _listenNetwork();
+    final title = _title ?? _l10n.radioTitle;
+    unawaited(start(title: title, fresh: true));
+  }
+
+  /// Un échec : on passe en reconnexion, et on programme la tentative suivante.
   ///
-  /// `ContentPlayer.resume()` est le chemin à deux voies documenté dans
-  /// `just_audio_content_player.dart` : le raccourci quand la plateforme a gardé
-  /// la source, le repli explicite sinon. On ne réécrit pas une troisième
-  /// réouverture. Quand le lecteur ne tient plus rien — l'échec est arrivé avant
-  /// le `load`, ou sur la route d'antenne —, la tentative est un démarrage
-  /// complet, qui relit l'adresse au passage.
-  void _retry() {
-    final controller = ref.read(playbackControllerProvider.notifier);
-    if (controller.playback.contentId == RadioConfig.contentId) {
-      unawaited(controller.resume());
-      return;
-    }
-    final title = _title;
-    if (title == null) {
-      _abandon();
-      return;
-    }
-    unawaited(start(title: title));
+  /// ⚠️ **Une seconde émission de la même panne ne repousse pas la tentative**,
+  /// et ce garde-là n'est pas défensif : `ContentPlayback.copyWith` **ne sait
+  /// pas effacer** une panne, donc toute émission suivante du lecteur — un
+  /// dernier battement de position, un changement d'état — la porte encore.
+  /// Sans ce `return`, chaque battement réarmerait l'attente, et la tentative
+  /// n'aurait jamais lieu.
+  void _fail(Object error) {
+    _trace(error);
+    _cancelStall();
+    _attemptDeadline?.cancel();
+    _attemptDeadline = null;
+    _reconnecting = true;
+    state = RadioStatus.retrying;
+    _listenNetwork();
+    if (_retry != null) return;
+    _retry = Timer(radioRetryDelay(_attempts++), () {
+      _retry = null;
+      _relaunch();
+    });
   }
 
-  /// On renonce : le bouton s'éteint **et dit pourquoi**.
-  void _abandon() {
-    _cancelRetry();
-    _abandoned = true;
-    state = RadioStatus.failed(_cause ?? RadioFailureKind.connection);
+  /// **Le réseau est revenu ou a changé** : pendant un état instable ou une
+  /// reconnexion, un essai part tout de suite et la séquence est réarmée.
+  ///
+  /// Un démarrage déjà en vol n'est pas doublé — un seul essai à la fois : la
+  /// séquence réarmée servira s'il échoue.
+  void _onNetwork() {
+    if (!_reconnecting && state.phase != RadioPhase.unstable) return;
+    _attempts = 0;
+    if (_starting) return;
+    _relaunch();
   }
 
-  void _cancelRetry() {
-    _attempt?.cancel();
-    _attempt = null;
-    _deadline?.cancel();
-    _deadline = null;
+  void _listenNetwork() {
+    _network ??=
+        ref.read(radioNetworkChangesProvider).listen((_) => _onNetwork());
+  }
+
+  void _closeNetwork() {
+    unawaited(_network?.cancel());
+    _network = null;
+  }
+
+  void _cancelStall() {
+    _unstable?.cancel();
+    _unstable = null;
+    _stalled?.cancel();
+    _stalled = null;
+  }
+
+  void _cancelTimers() {
+    _cancelStall();
+    _retry?.cancel();
+    _retry = null;
+    _attemptDeadline?.cancel();
+    _attemptDeadline = null;
+  }
+
+  /// **Tout s'arrête** : minuteries, écoute du réseau, et le démarrage en vol
+  /// renonce à son réveil.
+  void _reset() {
+    _cancelTimers();
+    _closeNetwork();
+    _generation++;
+    _starting = false;
+    _reconnecting = false;
     _attempts = 0;
   }
+
+  /// **La seconde ligne de la notification**, posée d'après l'état — et
+  /// seulement sur l'antenne : un enseignement qui l'a remplacée garde son
+  /// auteur.
+  void _announce(RadioStatus status) {
+    final controller = ref.read(playbackControllerProvider.notifier);
+    if (controller.playback.contentId != RadioConfig.contentId) return;
+    final l10n = _l10n;
+    controller.setStatusLine(switch (status.phase) {
+      RadioPhase.unstable => l10n.radioUnstable,
+      RadioPhase.retrying => l10n.radioRetrying,
+      _ => null,
+    });
+  }
+
+  /// Les textes de l'interface, **hors de l'arbre** : la langue que
+  /// `MaterialApp` a résolue, recopiée dans [contentLocaleProvider].
+  AppLocalizations get _l10n =>
+      lookupAppLocalizations(Locale(ref.read(contentLocaleProvider)));
 
   /// L'état de départ, **lu sur le lecteur**.
   ///

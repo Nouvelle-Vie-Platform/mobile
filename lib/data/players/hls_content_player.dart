@@ -45,7 +45,9 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     // propres réessais, et Safari partage le moteur natif de l'iPhone.
     armStallWatchdog((at) {
       final request = _request;
-      if (request == null) return;
+      // **Pas sur un direct** (#179) : l'antenne se répare chez
+      // `RadioListening`, au bord du direct, et jamais à l'ancienne position.
+      if (request == null || request.isLive) return;
       _reopenAt(request, at);
     });
     // `auto` et non `metadata` : un enseignement s'écoute d'un bout à l'autre,
@@ -315,6 +317,11 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     }
     engine.autoLevelCapping = best;
   }
+
+  /// Le web n'a ni notification ni écran verrouillé à tenir : la ligne d'état
+  /// de l'antenne s'y lit seulement dans l'application.
+  @override
+  void setStatusLine(String? line) {}
 
   @override
   void stop() {

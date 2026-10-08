@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/core/config/radio_config.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
@@ -8,7 +6,6 @@ import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/screens/radio_screen.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:maison_du_miracle/widgets/app_error_state.dart';
 import 'package:maison_du_miracle/widgets/content_player_view.dart';
 
 import '../helpers/pump_screen.dart';
@@ -156,14 +153,15 @@ void main() {
     });
   });
 
-  /// **Ce que l'écran dit de l'antenne** (#125) — le bouton de l'accueil ne
-  /// nomme aucune cause, c'est ici qu'elle se lit.
+  /// **Ce que l'écran dit de l'antenne** (#125, #179) — le bouton de l'accueil
+  /// ne nomme rien, c'est ici que l'état se lit.
   group('L\'état de l\'antenne se lit sur /radio', () {
     const offAir = 'Hors antenne';
     // « À l'antenne » et non plus « En direct » (#135) : ce mot-là est le badge
     // d'un direct de la régie, et la radio tourne 24 h/24 sans direct.
     const live = 'À l\'antenne';
-    const retrying = 'Nouvelle tentative…';
+    const unstable = 'Connexion instable…';
+    const retrying = 'Reconnexion…';
 
     /// Peint « le son sort » : le lecteur inerte ne pose jamais `hasStarted` de
     /// lui-même.
@@ -172,6 +170,20 @@ void main() {
         const ContentPlayback(
           contentId: RadioConfig.contentId,
           isPlaying: true,
+          hasStarted: true,
+        ),
+      );
+      await tester.pump();
+    }
+
+    /// Peint un tampon qui attend, en cours d'écoute — ce qu'iOS montre
+    /// pendant un blocage, sans aucune erreur.
+    Future<void> paintBuffering(WidgetTester tester) async {
+      player.emit(
+        const ContentPlayback(
+          contentId: RadioConfig.contentId,
+          isPlaying: true,
+          isBuffering: true,
           hasStarted: true,
         ),
       );
@@ -195,19 +207,8 @@ void main() {
     void expectNothingSaid() {
       expect(find.byKey(RadioAirStatus.offAirKey), findsNothing);
       expect(find.byKey(RadioAirStatus.liveKey), findsNothing);
+      expect(find.byKey(RadioAirStatus.unstableKey), findsNothing);
       expect(find.byKey(RadioAirStatus.retryingKey), findsNothing);
-      expect(find.byKey(RadioAirStatus.failedKey), findsNothing);
-    }
-
-    /// Une panne, puis les deux minutes sans succès : l'abandon.
-    Future<void> abandonOn(WidgetTester tester, Object error) async {
-      await paintPlaying(tester);
-      await paintFailure(tester, error);
-      expect(find.text(retrying), findsOneWidget);
-      await tester.pump(const Duration(minutes: 2));
-      expect(find.byKey(RadioAirStatus.retryingKey), findsNothing);
-      expect(find.byKey(RadioAirStatus.failedKey), findsOneWidget);
-      expect(find.byKey(AppErrorState.retryKey), findsOneWidget);
     }
 
     testWidgets('hors antenne quand la route a dit onAir: false',
@@ -251,100 +252,59 @@ void main() {
     });
 
     testWidgets(
-        'nouvelle tentative pendant les six attentes, puis la cause à l\'abandon',
-        (tester) async {
+        'un tampon de 2 s remplace « À l\'antenne » par « Connexion '
+        'instable… » (#179)', (tester) async {
+      // Le faux « À l'antenne » d'iOS : le lecteur reste « en lecture »
+      // pendant un blocage, sans erreur. C'est le tampon qui le trahit.
       await pumpRadio(tester);
       await paintPlaying(tester);
-      await paintFailure(tester, 'Response code: 500');
+      await paintBuffering(tester);
 
-      // ⚠️ Les six attentes sont écrites **en clair**, jamais relues depuis
-      // `kRadioRetryDelays` : la constante est ce qu'on éprouve.
-      const expected = [1, 2, 4, 8, 16, 32];
-      var fired = 0;
-      for (final seconds in expected) {
-        // Pendant toute l'attente, l'écran dit qu'il réessaie — et ne nomme
-        // pas la panne qu'il combat encore.
-        expect(find.text(retrying), findsOneWidget,
-            reason: 'avant ${seconds}s');
-        expect(find.text('Antenne indisponible'), findsNothing);
-        expect(find.text('Lecture interrompue'), findsNothing);
-        await tester.pump(Duration(seconds: seconds));
-        fired++;
-        expect(player.resumeCount, fired, reason: 'à ${seconds}s');
-        if (fired < expected.length) {
-          await paintFailure(tester, 'Response code: 500');
-        }
-      }
+      await tester.pump(const Duration(milliseconds: 1999));
+      expect(find.text(live), findsOneWidget, reason: 'un hoquet ne se dit pas');
 
-      // Le septième échec ne trouve plus d'attente : on renonce, et on dit
-      // pourquoi.
-      await paintFailure(tester, 'Response code: 500');
-      expect(find.text(retrying), findsNothing);
-      expect(find.text('Antenne indisponible'), findsOneWidget);
-      expect(find.byKey(AppErrorState.retryKey), findsOneWidget);
-    });
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(find.text(unstable), findsOneWidget);
+      expect(find.byKey(RadioAirStatus.unstableKey), findsOneWidget);
+      expect(find.text(live), findsNothing);
 
-    testWidgets('abandon sur une coupure → « vérifiez votre connexion »',
-        (tester) async {
-      await pumpRadio(tester);
-      await abandonOn(tester, const SocketException('Failed host lookup'));
-
-      expect(find.text('Vérifiez votre connexion'), findsOneWidget);
-    });
-
-    testWidgets('abandon sur un refus → « antenne indisponible »',
-        (tester) async {
-      await pumpRadio(tester);
-      await abandonOn(tester, 'Response code: 404');
-
-      expect(find.text('Antenne indisponible'), findsOneWidget);
-    });
-
-    testWidgets('abandon sur une panne opaque → « écoute impossible »',
-        (tester) async {
-      // La panne d'AVFoundation ne dit pas s'il y a eu une réponse (#110) :
-      // l'écran ne nomme ni le réseau ni l'antenne.
-      await pumpRadio(tester);
-      await abandonOn(
-        tester,
-        'PlatformException(abort, The operation could not be completed, '
-        'AVFoundationErrorDomain, -11800)',
-      );
-
-      expect(find.text('Écoute impossible'), findsOneWidget);
-      expect(find.text('Vérifiez votre connexion'), findsNothing);
-    });
-
-    testWidgets('« Réessayer » relance par le pré-vol, jamais le lecteur seul',
-        (tester) async {
-      final handshake = await pumpRadio(tester);
-      await abandonOn(tester, 'Response code: 404');
-      expect(handshake.count, 1);
-      final resumes = player.resumeCount;
-
-      await tester.tap(find.byKey(AppErrorState.retryKey));
-      for (var i = 0; i < 6; i++) {
-        await tester.pump(const Duration(milliseconds: 20));
-      }
-
-      // Une nouvelle négociation, puis une réouverture avec le cookie neuf :
-      // c'est `RadioListening.start`, pas un `resume()` nu.
-      expect(handshake.count, 2);
-      expect(player.loadCount, 2);
-      expect(player.loadedHeaders, {
-        'Cookie': RecordingRadioHandshake.sessionAt(2),
-      });
-      expect(player.resumeCount, resumes);
-      expect(find.byKey(RadioAirStatus.failedKey), findsNothing);
+      // Le son revient : l'état aussi.
+      await paintPlaying(tester);
+      expect(find.text(live), findsOneWidget);
+      expect(find.text(unstable), findsNothing);
     });
 
     testWidgets(
-        'après abandon, le gros bouton offre ▶ et un appui relance par le pré-vol',
-        (tester) async {
+        '« Reconnexion… » pendant la reprise, sans nommer la panne — et sans '
+        'abandon', (tester) async {
+      await pumpRadio(tester);
+      await paintPlaying(tester);
+      await paintFailure(tester, 'Response code: 404');
+
+      expect(find.text(retrying), findsOneWidget);
+      final loads = player.loadCount;
+
+      // Dix minutes de tentatives qui n'aboutissent pas : l'écran dit toujours
+      // qu'il se reconnecte, ne nomme pas la panne, et n'offre aucune carte
+      // d'échec — seul l'auditeur arrête.
+      for (var i = 0; i < 60; i++) {
+        await tester.pump(const Duration(seconds: 10));
+        expect(find.text(retrying), findsOneWidget, reason: 'à ${i * 10}s');
+      }
+      expect(find.text('Antenne indisponible'), findsNothing);
+      expect(find.text('Lecture interrompue'), findsNothing);
+      expect(player.loadCount, greaterThan(loads + 10),
+          reason: 'les tentatives continuent');
+      expect(player.resumeCount, 0, reason: 'jamais un resume() à la position');
+    });
+
+    testWidgets(
+        'en reconnexion, le gros bouton offre ▶ et un appui relance par le '
+        'pré-vol', (tester) async {
       final handshake = await pumpRadio(tester);
       // Le lecteur porte la panne **et** `isPlaying` : c'est l'état qui
       // affichait ⏸ et dont le premier appui « mettait en pause » un silence.
-      await abandonOn(tester, 'Response code: 404');
+      await paintPlaying(tester);
       await paintFailure(tester, 'Response code: 404');
       expect(handshake.count, 1);
 
@@ -357,7 +317,6 @@ void main() {
         find.descendant(of: button, matching: find.byIcon(Icons.pause)),
         findsNothing,
       );
-      final resumes = player.resumeCount;
 
       await tester.tap(button);
       for (var i = 0; i < 6; i++) {
@@ -371,8 +330,7 @@ void main() {
       expect(player.loadedHeaders, {
         'Cookie': RecordingRadioHandshake.sessionAt(2),
       });
-      expect(player.resumeCount, resumes);
-      expect(find.byKey(RadioAirStatus.failedKey), findsNothing);
+      expect(player.resumeCount, 0);
     });
   });
 }

@@ -183,6 +183,15 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
     await super.stop();
   }
 
+  /// **Remplace la seconde ligne** de la notification et de l'écran verrouillé
+  /// — l'auteur, ou l'état d'une antenne qui se répare (#179). Sans effet quand
+  /// rien n'est affiché.
+  void setArtist(String? artist) {
+    final item = mediaItem.value;
+    if (item == null || item.artist == artist) return;
+    mediaItem.add(item.copyWith(artist: artist));
+  }
+
   /// Libère le lecteur natif. Appelée à la fin de vie de l'application.
   Future<void> close() => _player.dispose();
 
@@ -304,10 +313,17 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
   /// Sur iOS, un décrochage réseau ne remonte aucune erreur et il n'y a pas de
   /// reconnexion native : sans lui, un prêche d'une heure s'arrête au bout de
   /// dix minutes, définitivement, et rien n'en portera jamais la trace.
+  ///
+  /// ⚠️ **Il ne rouvre jamais un direct** (#179). L'antenne a son propre
+  /// régime, plus serré (2 s puis 8 s) et qui repart du **bord du direct** avec
+  /// un pré-vol neuf — `RadioListening`, `radio_retry.dart`. Le rouvrir ici, à
+  /// l'ancienne position et avec l'ancien cookie, ferait une seconde reprise
+  /// concurrente, en retard sur l'antenne et vouée au 401. Les enseignements
+  /// gardent ce chien de garde tel quel.
   late final PlaybackWatchdog _watchdog = PlaybackWatchdog(
     onStalled: (at) {
       final request = _request;
-      if (request == null) return;
+      if (request == null || request.isLive) return;
       unawaited(_reopenAt(request, at));
     },
   );
@@ -341,6 +357,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
       headers: headers,
     );
     _request = request;
+    _statusLine = null;
     // Valeur **neuve** : durée, fin atteinte et panne du contenu précédent
     // doivent disparaître, et `copyWith` ne sait pas effacer.
     _emit(ContentPlayback(contentId: contentId, isBuffering: true));
@@ -427,7 +444,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
           // notifications), et le système le rendra un jour à Android Auto.
           id: request.contentId,
           title: request.title,
-          artist: request.author,
+          artist: _statusLine ?? request.author,
           artUri: request.artUrl == null ? null : Uri.tryParse(request.artUrl!),
         ),
       );
@@ -487,9 +504,22 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     _variant = variant;
   }
 
+  /// La ligne d'état en cours, **reposée à chaque réouverture** de la même
+  /// source (chien de garde, repli de [resume]) : sans elle, un `MediaItem`
+  /// neuf effacerait « Reconnexion… » de la notification.
+  String? _statusLine;
+
+  @override
+  void setStatusLine(String? line) {
+    if (_disposed) return;
+    _statusLine = line;
+    _handler.setArtist(line ?? _request?.author);
+  }
+
   @override
   void stop() {
     if (_disposed) return;
+    _statusLine = null;
     _forget();
     unawaited(_handler.release());
   }

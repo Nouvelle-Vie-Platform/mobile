@@ -367,6 +367,10 @@ class PlaybackController extends Notifier<ContentRequest?> {
   /// promesse du bouton « Reprendre » (#42).
   Future<void> resume() => _player.resume();
 
+  /// **La seconde ligne de la notification**, par-dessus l'auteur — l'état
+  /// d'une antenne qui se répare (#179). Voir [ContentPlayer.setStatusLine].
+  void setStatusLine(String? line) => _player.setStatusLine(line);
+
   /// **Un statut à son commence : ce qui joue se tait** (#130, décision du
   /// 05/10/2026).
   ///

@@ -4,7 +4,7 @@
 /// ┌────────────────────────┐
 /// │ ←  ● EN DIRECT  👁 128 ⚑│  badge en direct seulement ; compteur absent si null ;
 /// │ New Life Radio    ■  ⏯ │  ⚑ = file des signalements, modérateur seulement
-/// │                        │  (l'état de l'écoute : pastille en haut, abandon au centre)
+/// │                        │  (l'état de l'écoute : une pastille en haut)
 /// │                     ❤️ │  réactions qui montent
 /// │ Ama K.  Amen !      🙏 │  fil sur un voile, en direct seulement
 /// │ Kossi  gloire à Dieu 🔥│  boutons de réaction, toujours
@@ -58,8 +58,8 @@ class RadioLiveScene extends ConsumerWidget {
   final ContentPlayerSceneParts parts;
   final String title;
 
-  /// L'état de l'écoute (`RadioAirStatus`) : reprise, abandon et sa cause,
-  /// « hors antenne ». Il garde la place centrale qu'il avait sur la fiche.
+  /// L'état de l'écoute (`RadioAirStatus`) : à l'antenne, instable,
+  /// reconnexion, « hors antenne ».
   final Widget status;
 
   static const Key liveBadgeKey = Key('radio_live_badge');
@@ -83,17 +83,15 @@ class RadioLiveScene extends ConsumerWidget {
     // « hors antenne ».
     final phase = ref.watch(radioListeningProvider.select((s) => s.phase));
     final showsStatus = !(isLive && phase == RadioPhase.playing);
-    // **Deux places pour l'état** : une pastille (« À l'antenne », reprise,
-    // « hors antenne ») se range en haut, à la place du badge EN DIRECT ; seul
-    // l'abandon, une carte avec son bouton « Réessayer », garde le centre.
-    final failed = phase == RadioPhase.failed;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TopRow(status: showsStatus && !failed ? status : null),
+          // L'état — « À l'antenne », instable, reconnexion, « hors antenne »
+          // — se range en haut, à la place du badge EN DIRECT.
+          _TopRow(status: showsStatus ? status : null),
           const SizedBox(height: AppSpacing.xs),
           _TitleRow(title: title, parts: parts),
           Expanded(
@@ -115,15 +113,6 @@ class RadioLiveScene extends ConsumerWidget {
                         AppSpacing.sm,
                     child: const RadioSpectrum(),
                   ),
-                  // Centrée sur toute la largeur, pas sur celle que laisse
-                  // la colonne des réactions : décentrée, elle se voyait.
-                  if (showsStatus && failed)
-                    Positioned.fill(
-                      child: Align(
-                        alignment: const Alignment(0, -0.4),
-                        child: status,
-                      ),
-                    ),
                   if (isLive)
                     Positioned(
                       left: 0,

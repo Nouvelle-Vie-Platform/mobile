@@ -628,6 +628,44 @@ void main() {
       expect(player.loadCount, 1);
     });
 
+    testWidgets(
+        'l\'antenne qui se répare le dit sous le titre : instable, puis '
+        'reconnexion (#179)', (tester) async {
+      await pumpApp(tester);
+      await loadRadio(tester);
+      controllerOf(tester).play();
+      await paint(
+        tester,
+        const ContentPlayback(
+          contentId: RadioConfig.contentId,
+          isPlaying: true,
+          hasStarted: true,
+        ),
+      );
+      expect(find.byKey(MiniPlayer.onAirBadgeKey), findsOneWidget);
+
+      // Un blocage sans erreur — ce qu'iOS montre — : le tampon attend.
+      await paint(
+        tester,
+        const ContentPlayback(
+          contentId: RadioConfig.contentId,
+          isPlaying: true,
+          isBuffering: true,
+          hasStarted: true,
+        ),
+      );
+      await tester.pump(const Duration(seconds: 2));
+      expect(inMini(find.text('Connexion instable…')), findsOneWidget);
+      expect(find.byKey(MiniPlayer.onAirBadgeKey), findsNothing);
+
+      // À 8 s, la relance : l'antenne de test n'a pas d'adresse, la tentative
+      // échoue et la reprise continue — sans « Lecture interrompue ».
+      await tester.pump(const Duration(seconds: 6));
+      expect(inMini(find.text('Reconnexion…')), findsOneWidget);
+      expect(find.text('Lecture interrompue'), findsNothing);
+      expect(player.resumeCount, 0);
+    });
+
     testWidgets('la ✕ arrête l\'antenne', (tester) async {
       await pumpApp(tester);
       await loadRadio(tester);
