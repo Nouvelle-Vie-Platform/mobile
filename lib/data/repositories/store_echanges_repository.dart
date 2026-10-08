@@ -72,6 +72,20 @@ class StoreEchangesRepository implements EchangesRepository {
   }
 
   @override
+  Stream<List<GroupMessageView>> sharedFiles(String groupId) =>
+      _dao.sharedFilesOf(groupId).watch().map(
+            (rows) => [
+              for (final row in rows) _message(groupId, row),
+            ].where(isSharedFile).toList(),
+          );
+
+  @override
+  Stream<List<GroupMessageView>> sharedLinks(String groupId) =>
+      _dao.sharedLinksOf(groupId).watch().map(
+            (rows) => [for (final row in rows) _message(groupId, row)],
+          );
+
+  @override
   Stream<GroupDetailView?> group(String groupId) {
     // Deux lectures, et une seule suffirait presque : la fiche a besoin du groupe
     // **et** de son roster. On observe le groupe et on relit les membres à chaque

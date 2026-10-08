@@ -1,5 +1,6 @@
 import '../../models/echanges_view.dart';
 import '../../models/group_management.dart';
+import '../../models/message_media.dart';
 
 /// **Le contrat de lecture de la rubrique « Échanges »** (#96).
 ///
@@ -43,6 +44,15 @@ abstract interface class EchangesRepository {
   /// tout ce que le magasin possède.
   Stream<List<GroupMessageView>> thread(String groupId, {int? limit});
 
+  /// **Les fichiers partagés au fil** — images, vidéos, documents et fichiers
+  /// audio, **jamais les vocaux** (comme WhatsApp) —, les plus récents d'abord.
+  /// Ni supprimés pour tous, ni pour moi, ni échos.
+  Stream<List<GroupMessageView>> sharedFiles(String groupId);
+
+  /// **Les messages dont le texte porte un lien `http(s)`**, les plus récents
+  /// d'abord, mêmes exclusions que [sharedFiles].
+  Stream<List<GroupMessageView>> sharedLinks(String groupId);
+
   /// **Le nombre de non-lus** d'une conversation, une fois (#140) — de quoi
   /// ouvrir le fil sur le premier non-lu.
   Future<int> unreadCount(String groupId);
@@ -72,6 +82,17 @@ abstract interface class EchangesRepository {
   /// **Le plus ancien message du fil en magasin**, ou `null` (M2, #141).
   Future<String?> oldestMessageId(String groupId);
 }
+
+/// **Un fichier qui a sa place dans « Médias, liens et docs »** : image,
+/// vidéo, document ou fichier audio — un vocal n'en est pas un.
+bool isSharedFile(GroupMessageView message) => switch (message.media?.kind) {
+      MessageMediaKind.image ||
+      MessageMediaKind.video ||
+      MessageMediaKind.document ||
+      MessageMediaKind.audio =>
+        true,
+      _ => false,
+    };
 
 /// Double **en mémoire** du contrat, servi quand `AppEnv.useBackend` est faux et
 /// dans les tests d'écran.
@@ -130,6 +151,22 @@ class InMemoryEchangesRepository implements EchangesRepository {
           : all.sublist(all.length - limit),
     );
   }
+
+  @override
+  Stream<List<GroupMessageView>> sharedFiles(String groupId) =>
+      Stream.value(_shared(groupId).where(isSharedFile).toList());
+
+  @override
+  Stream<List<GroupMessageView>> sharedLinks(String groupId) => Stream.value(
+        _shared(groupId)
+            .where((m) => m.body?.toLowerCase().contains('http') ?? false)
+            .toList(),
+      );
+
+  Iterable<GroupMessageView> _shared(String groupId) =>
+      (_threads[groupId] ?? const <GroupMessageView>[]).reversed.where(
+            (m) => m.delivery == MessageDelivery.sent && !m.deleted,
+          );
 
   @override
   Future<int> unreadCount(String groupId) async =>

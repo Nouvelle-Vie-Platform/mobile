@@ -142,13 +142,84 @@ void main() {
       'createdAt': '2026-09-03T12:00:00.000Z',
     });
 
-    expect(await db.groupDao.sharedImagesOf(kGroupId).get(), [kept]);
+    expect((await repository().sharedFiles(kGroupId).first).map((m) => m.id),
+        [kept]);
 
     final thread = await repository().thread(kGroupId).first;
     final tombstone = thread.singleWhere((m) => m.id == gone);
     expect(tombstone.deleted, isTrue);
     expect(tombstone.media, isNull);
     expect(thread.where((m) => m.id == hidden), isEmpty);
+  });
+
+  test(
+      'Médias, liens et docs : fichiers sans vocaux, liens par texte, plus '
+      'récents d’abord, supprimés et masqués exclus', () async {
+    await seedGroup();
+    String id(String n) => '019a3000-0000-7000-8000-0000000000$n';
+    Future<void> put(String n, String minute,
+            {required String kind,
+            String? key,
+            Map<String, Object?>? meta,
+            String? body,
+            String? deletedAt}) =>
+        writer.store(SyncCollectionKey.groupMessages, {
+          ..._media(id(n), '2026-09-03T11:$minute:00.000Z',
+              kind: kind, key: key, meta: meta, body: body),
+          if (deletedAt != null) 'deletedAt': deletedAt,
+        });
+
+    await put('f1', '01', kind: 'image', key: 'k/i.jpg');
+    await put('f2', '02', kind: 'video', key: 'k/v.mp4');
+    await put('f3', '03',
+        kind: 'document', key: 'k/d.pdf', meta: {'name': 'Programme.pdf'});
+    await put('f4', '04',
+        kind: 'audio',
+        key: 'k/s.mp3',
+        meta: {'voice': false, 'name': 'Chant.mp3'});
+    await put('f5', '05', kind: 'audio', key: 'k/v.m4a', meta: {'voice': true});
+    await put('f6', '06',
+        kind: 'location', meta: {'latitude': 6.1, 'longitude': 1.2});
+    await put('f7', '07',
+        kind: 'image', key: 'k/x.jpg', deletedAt: '2026-09-03T12:00:00.000Z');
+    await put('f8', '08', kind: 'image', key: 'k/h.jpg');
+    await writer.store(SyncCollectionKey.groupMessageHides, {
+      'id': 1,
+      'groupId': kGroupId,
+      'messageId': id('f8'),
+      'createdAt': '2026-09-03T12:00:00.000Z',
+    });
+    // Les liens : un texte, une légende de média, un supprimé, un sans lien.
+    await writer.store(SyncCollectionKey.groupMessages, {
+      ..._media(id('t1'), '2026-09-03T11:10:00.000Z', kind: 'x'),
+      'mediaKind': null,
+      'body': 'Le direct : https://a.fr/live et https://b.fr.',
+    });
+    await writer.store(SyncCollectionKey.groupMessages, {
+      ..._media(id('t2'), '2026-09-03T11:11:00.000Z', kind: 'x'),
+      'mediaKind': null,
+      'body': 'Bonjour à tous',
+    });
+    await writer.store(SyncCollectionKey.groupMessages, {
+      ..._media(id('t3'), '2026-09-03T11:12:00.000Z', kind: 'x'),
+      'mediaKind': null,
+      'body': 'retiré https://c.fr',
+      'deletedAt': '2026-09-03T12:00:00.000Z',
+    });
+
+    final files = await repository().sharedFiles(kGroupId).first;
+    expect(files.map((m) => m.id), [id('f4'), id('f3'), id('f2'), id('f1')]);
+    expect(files.map((m) => m.media!.kind), [
+      MessageMediaKind.audio,
+      MessageMediaKind.document,
+      MessageMediaKind.video,
+      MessageMediaKind.image,
+    ]);
+    expect(files[1].media!.name, 'Programme.pdf');
+
+    final links = await repository().sharedLinks(kGroupId).first;
+    expect(links.map((m) => m.id), [id('t1')]);
+    expect(links.single.body, contains('https://a.fr/live'));
   });
 
   test('une position (sans clé) se range et se relit', () async {

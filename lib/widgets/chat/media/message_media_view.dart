@@ -188,14 +188,24 @@ double _visualHeight(MessageMedia media) {
 /// l'affichage (#98 : un seul fichier par image). Au toucher, la visionneuse
 /// existante.
 class ImageMediaTile extends ConsumerWidget {
-  const ImageMediaTile({super.key, required this.message, required this.media});
+  const ImageMediaTile({
+    super.key,
+    required this.message,
+    required this.media,
+    this.extent,
+  });
 
   final GroupMessageView message;
   final MessageMedia media;
 
+  /// Un carré de ce côté (grille de « Médias, liens et docs », rangée de la
+  /// fiche) ; `null` = le cadre de la bulle.
+  final double? extent;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final height = _visualHeight(media);
+    final width = extent ?? _kVisualWidth;
+    final height = extent ?? _visualHeight(media);
     final local = media.localPath;
 
     Widget frame(Widget child, {VoidCallback? onTap}) => GestureDetector(
@@ -203,7 +213,7 @@ class ImageMediaTile extends ConsumerWidget {
           onTap: onTap,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.md),
-            child: SizedBox(width: _kVisualWidth, height: height, child: child),
+            child: SizedBox(width: width, height: height, child: child),
           ),
         );
 
@@ -234,7 +244,7 @@ class ImageMediaTile extends ConsumerWidget {
             fit: BoxFit.cover,
             // Le fil peint des vignettes : décoder 1600 px pour 220 serait
             // gaspiller la mémoire de petits téléphones.
-            cacheWidth: (_kVisualWidth * 2).round(),
+            cacheWidth: (width * 2).round(),
             errorBuilder: (_, __, ___) => const _VisualPlaceholder(),
           ),
           onTap: () => context.pushNamed(
@@ -276,14 +286,23 @@ class _VisualPlaceholder extends StatelessWidget {
 /// **Une vidéo** : sa vignette, sa durée, et le lecteur plein écran au
 /// toucher. Le fichier est un MP4 unique, lu en progressif.
 class VideoMediaTile extends ConsumerWidget {
-  const VideoMediaTile({super.key, required this.message, required this.media});
+  const VideoMediaTile({
+    super.key,
+    required this.message,
+    required this.media,
+    this.extent,
+  });
 
   final GroupMessageView message;
   final MessageMedia media;
 
+  /// Voir [ImageMediaTile.extent].
+  final double? extent;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final height = _visualHeight(media);
+    final width = extent ?? _kVisualWidth;
+    final height = extent ?? _visualHeight(media);
     final duration = media.durationSeconds;
 
     Widget frame(Widget thumb, {VoidCallback? onTap}) => GestureDetector(
@@ -292,17 +311,17 @@ class VideoMediaTile extends ConsumerWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.md),
             child: SizedBox(
-              width: _kVisualWidth,
+              width: width,
               height: height,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   thumb,
-                  const Center(
+                  Center(
                     child: Icon(
                       Icons.play_circle_fill,
                       color: Colors.white,
-                      size: 52,
+                      size: extent == null ? 52 : 32,
                     ),
                   ),
                   if (duration != null)
@@ -387,11 +406,15 @@ class AudioMediaTile extends ConsumerWidget {
     required this.message,
     required this.media,
     required this.ink,
+    this.width = 240,
   });
 
   final GroupMessageView message;
   final MessageMedia media;
   final Color ink;
+
+  /// La largeur de la tuile — celle de la bulle par défaut.
+  final double width;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -459,7 +482,7 @@ class AudioMediaTile extends ConsumerWidget {
         );
 
         return SizedBox(
-          width: 240,
+          width: width,
           child: Row(
             children: [
               if (voice)
@@ -565,11 +588,15 @@ class DocumentMediaTile extends ConsumerWidget {
     required this.message,
     required this.media,
     required this.ink,
+    this.width = 240,
   });
 
   final GroupMessageView message;
   final MessageMedia media;
   final Color ink;
+
+  /// Voir [AudioMediaTile.width].
+  final double width;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -613,7 +640,7 @@ class DocumentMediaTile extends ConsumerWidget {
       onTap: open,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
-        width: 240,
+        width: width,
         padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: ink.withValues(alpha: 0.08),
