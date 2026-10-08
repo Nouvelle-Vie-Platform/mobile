@@ -51,8 +51,9 @@
 /// ## Le bouton éteint reste appuyable
 ///
 /// Le libellé ne change pas — c'est le nom de l'antenne, dans tous les états.
-/// Une antenne annoncée muette, ou un renoncement, se voit à l'**atténuation**
-/// du bouton ; la cause d'une panne se lit sur `/radio`, pas ici.
+/// Une antenne annoncée muette se voit à l'**atténuation** du bouton ; une
+/// antenne instable ou en reconnexion, au témoin qui tourne (#179) — ce qu'elle
+/// fait se lit en toutes lettres sur `/radio`, pas ici.
 ///
 /// L'atténuation **informe, elle n'interdit pas**. Si l'antenne a repris sans
 /// qu'on le sache — l'état n'est lu qu'au lancement et au retour à l'écran —,
@@ -199,12 +200,10 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
       // → lecture, relevé sur iPhone). Le lire comme un arrêt perdait l'astuce
       // à chaque fois. L'arrêt voulu passe par l'appui, qui lève déjà l'attente.
       case RadioPhase.connecting:
+      case RadioPhase.unstable:
       case RadioPhase.retrying:
       case RadioPhase.idle:
         return; // pas encore : on attend la suite
-      case RadioPhase.failed:
-        _awaitingFirstSound = false; // abandonné : rien à dire
-        return;
       case RadioPhase.playing:
         _awaitingFirstSound = false;
     }
@@ -258,8 +257,7 @@ class _RadioCtaPillState extends ConsumerState<RadioCtaPill>
     // **Un libellé fixe** : le nom de l'antenne, dans tous les états. La phase se
     // lit sur l'icône et l'atténuation ; la cause d'une panne, sur `/radio`.
     final label = context.l10n.radioTitle;
-    final dimmed =
-        status.phase == RadioPhase.failed || (silent && !status.isOn);
+    final dimmed = silent && !status.isOn;
     return AnimatedBuilder(
       animation: _iconColorAnim,
       builder: (context, child) {

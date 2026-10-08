@@ -484,35 +484,23 @@ abstract class AppLocalizations {
   /// **'À l\'antenne'**
   String get radioLive;
 
-  /// Écran /radio pendant la reprise (les six attentes) : il dit qu'il réessaie, sans nommer la panne qu'il combat encore
+  /// Radio (page /radio, mini-lecteur, notification) : l'antenne devrait jouer et le tampon attend depuis au moins 2 s (#179). Rien n'est encore relancé ; « instable » et non « coupée » — le son peut revenir de lui-même
   ///
   /// In fr, this message translates to:
-  /// **'Nouvelle tentative…'**
+  /// **'Connexion instable…'**
+  String get radioUnstable;
+
+  /// Radio (page /radio, mini-lecteur, notification) : une relance au bord du direct est en cours ou programmée, et elle se répète sans fin tant que l'auditeur n'arrête pas (#179). Ne nomme pas la panne
+  ///
+  /// In fr, this message translates to:
+  /// **'Reconnexion…'**
   String get radioRetrying;
 
-  /// Écran /radio, cause de l'abandon : rien n'a répondu (DNS, socket refusée, délai dépassé)
-  ///
-  /// In fr, this message translates to:
-  /// **'Vérifiez votre connexion'**
-  String get radioFailureConnection;
-
-  /// Écran /radio : quelque chose a répondu et ce n'était pas une playlist (404, 401, page HTML) — cause de l'abandon, et titre de l'écran quand la route d'antenne ne donne aucune adresse de flux
+  /// Écran /radio : titre de l'écran quand la route d'antenne ne donne aucune adresse de flux
   ///
   /// In fr, this message translates to:
   /// **'Antenne indisponible'**
   String get radioFailureAntenna;
-
-  /// Écran /radio, cause de l'abandon quand on ignore s'il y a eu une réponse — la panne du lecteur iOS n'en porte aucune trace lisible. Ne nomme ni le réseau ni l'antenne : affirmer l'un des deux serait inventer la moitié du diagnostic
-  ///
-  /// In fr, this message translates to:
-  /// **'Écoute impossible'**
-  String get radioFailureUnknown;
-
-  /// Écran /radio, sous la cause de l'abandon : vrai pour les trois causes, il dit qu'on a renoncé et que le geste appartient à l'auditeur
-  ///
-  /// In fr, this message translates to:
-  /// **'L\'application a cessé de réessayer. Relancez l\'écoute quand vous voulez.'**
-  String get radioGaveUpMessage;
 
   /// Écran d'antenne quand aucune adresse de flux n'est connue
   ///

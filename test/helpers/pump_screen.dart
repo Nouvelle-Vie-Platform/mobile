@@ -161,6 +161,9 @@ import 'playback_doubles.dart';
 /// poignée de main passent par ce paramètre nommé, et jamais par un `Override` de
 /// plus : Riverpod 3 refuse deux surcharges du même provider.
 ///
+/// **Le signal réseau de la reprise radio** ([radioNetwork]) est posé muet
+/// (#179) : voir la surcharge, plus bas.
+///
 /// Le **contrôleur d'écoute**, lui, n'est pas doublé : il observe le lecteur, et
 /// `contentPlayerProvider` est déjà inerte par défaut.
 ///
@@ -208,6 +211,7 @@ Future<void> pumpRouter(
   RadioHandshakeResolver? handshake,
   RadioChannel? radioChannel,
   RadioLiveRepository? radioLive,
+  Stream<void>? radioNetwork,
   PlaybackProgressReporter? progress,
   PlayReporter? plays,
   PlaySpool? playSpool,
@@ -244,6 +248,7 @@ Future<void> pumpRouter(
           handshake: handshake,
           radioChannel: radioChannel,
           radioLive: radioLive,
+          radioNetwork: radioNetwork,
           progress: progress,
           plays: plays,
           playSpool: playSpool,
@@ -303,6 +308,7 @@ List<Override> _commonOverrides(
   RadioHandshakeResolver? handshake,
   RadioChannel? radioChannel,
   RadioLiveRepository? radioLive,
+  Stream<void>? radioNetwork,
   PlaybackProgressReporter? progress,
   PlayReporter? plays,
   PlaySpool? playSpool,
@@ -334,6 +340,13 @@ List<Override> _commonOverrides(
       ),
       radioLiveRepositoryProvider.overrideWithValue(
         radioLive ?? const InertRadioLiveRepository(),
+      ),
+      // **Le signal « le réseau a changé » de la reprise radio** (#179), posé
+      // **muet** : l'implémentation réelle ouvre un canal de plugin
+      // (`connectivity_plus`) dès la première panne de l'antenne, et `flutter
+      // test` n'en a pas. Les tests de l'accélérateur passent leur propre flux.
+      radioNetworkChangesProvider.overrideWithValue(
+        radioNetwork ?? const Stream<void>.empty(),
       ),
       // **Le canal temps réel `users/{id}`, posé muet** (#140), pour la raison
       // de l'auth et de l'envoyeur de messages : l'implémentation réelle est SSE
@@ -569,6 +582,7 @@ Future<void> pumpScreen(
   RadioHandshakeResolver? handshake,
   RadioChannel? radioChannel,
   RadioLiveRepository? radioLive,
+  Stream<void>? radioNetwork,
   PlaybackProgressReporter? progress,
   PlayReporter? plays,
   PlaySpool? playSpool,
@@ -614,6 +628,7 @@ Future<void> pumpScreen(
           handshake: handshake,
           radioChannel: radioChannel,
           radioLive: radioLive,
+          radioNetwork: radioNetwork,
           progress: progress,
           plays: plays,
           playSpool: playSpool,

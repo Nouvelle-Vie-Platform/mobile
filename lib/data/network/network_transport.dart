@@ -93,6 +93,10 @@ class ConnectivityNetworkTransport implements NetworkTransport {
 /// C'est ce que ce fichier anticipait : « si un second consommateur apparaît et
 /// qu'il a besoin de savoir s'il y a du réseau, ce n'est pas dans
 /// [NetworkTransport] qu'il faut l'ajouter ». Le voici, à côté, et non dedans.
+///
+/// La reprise radio (#179) s'y branche aussi, par
+/// [ConnectivityNetworkStatus.onTransportChanged] : un **changement** de tuyau
+/// avance un essai, rien de plus — jamais une décision « hors ligne ».
 abstract interface class NetworkStatus {
   /// `true` quand l'OS ne rapporte **aucun** transport réseau.
   Future<bool> isOffline();
@@ -121,6 +125,37 @@ class ConnectivityNetworkStatus implements NetworkStatus {
       return false;
     }
   }
+
+  /// **« Un tuyau vient d'apparaître ou de changer »** — l'accélérateur de la
+  /// reprise radio (#179, décision 9 du plan radio adaptative).
+  ///
+  /// Émet à chaque transport rapporté par l'OS qui **diffère du précédent et
+  /// n'est pas « aucun »** : retour du wifi, passage du wifi aux données, mode
+  /// avion levé. La perte du réseau n'émet **rien** : ce signal-là ment trop
+  /// souvent (portail captif, iOS qui tarde à publier) pour qu'on le laisse
+  /// suspendre quoi que ce soit — il ne sert qu'à avancer un essai.
+  ///
+  /// La première valeur d'un abonnement est l'état courant (Android et iOS la
+  /// publient à l'abonnement) : elle sert de point de départ et n'émet pas.
+  /// L'état est **propre à chaque abonnement** (`Stream.multi`) — un
+  /// abonnement repris à la prochaine coupure ne doit pas prendre l'état
+  /// courant pour un changement. Une erreur du canal est tue : l'écoute ne
+  /// dépend pas de ce signal.
+  Stream<void> get onTransportChanged => Stream<void>.multi((out) {
+        List<ConnectivityResult>? last;
+        final subscription = _connectivity.onConnectivityChanged.listen(
+          (results) {
+            final before = last;
+            last = results;
+            if (before == null) return;
+            if (results.contains(ConnectivityResult.none)) return;
+            out.add(null);
+          },
+          onError: (Object _) {},
+          onDone: out.close,
+        );
+        out.onCancel = subscription.cancel;
+      });
 }
 
 /// État réseau **figé**, pour les tests et le double de maquette.

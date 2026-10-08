@@ -232,20 +232,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get radioLive => 'À l\'antenne';
 
   @override
-  String get radioRetrying => 'Nouvelle tentative…';
+  String get radioUnstable => 'Connexion instable…';
 
   @override
-  String get radioFailureConnection => 'Vérifiez votre connexion';
+  String get radioRetrying => 'Reconnexion…';
 
   @override
   String get radioFailureAntenna => 'Antenne indisponible';
-
-  @override
-  String get radioFailureUnknown => 'Écoute impossible';
-
-  @override
-  String get radioGaveUpMessage =>
-      'L\'application a cessé de réessayer. Relancez l\'écoute quand vous voulez.';
 
   @override
   String get radioUnavailableMessage =>

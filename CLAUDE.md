@@ -65,8 +65,12 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   (`lib/data/app_version.dart`), et voir « À propos » plus bas : sous
   `flutter test`, un canal de plugin lève `MissingPluginException`.
 - **connectivity_plus ^7.3.1** — le **type de transport** (wifi / données
-  mobiles), et rien d'autre. Il alimente le seul mode « Automatique » de la
-  qualité d'écoute : plafond à 64 kbps hors wifi.
+  mobiles), et ses **changements**. Il alimente le mode « Automatique » de la
+  qualité d'écoute (plafond à 64 kbps hors wifi), et, depuis #179, **accélère**
+  la reprise radio : un retour ou un changement de réseau pendant un état
+  instable ou une reconnexion lance un essai tout de suite
+  (`ConnectivityNetworkStatus.onTransportChanged`). Il ne suspend **jamais** un
+  essai : « pas de réseau » n'est jamais lu.
 
   **La réserve écrite plus bas reste valable là où elle a été écrite**, et il ne
   faut pas la lire comme une contradiction : pour savoir si l'appareil a
@@ -498,7 +502,9 @@ réelles :
    dans le `State` d'un widget (même raison que `StatusPlayer` : « pending
    timer »). Règle : lecture demandée + tampon en attente + position immobile
    pendant `kPlaybackStallTimeout` (**25 s**, nommé à un seul endroit, **valeur
-   à confirmer**) → rouvrir la source à la position courante, indéfiniment. Il
+   à confirmer**) → rouvrir la source à la position courante, indéfiniment —
+   **sauf un direct** (#179) : l'antenne se répare chez `RadioListening`, au
+   bord du direct et à 8 s. Il
    existe pour **iOS**, où un décrochage ne remonte *aucune* erreur vers Dart et
    où il n'y a *pas* de reconnexion native (contrairement à ExoPlayer) : sans
    lui, l'écoute meurt en silence et rien n'en porte la trace. Une panne déjà
@@ -659,17 +665,17 @@ propre chantier.
 **Ce que le bouton affiche (44092f0, voulu)** : un **libellé fixe**, le nom de
 l'antenne (`radioTitle`), dans tous les états — il se replie en points de
 suspension sur un en-tête étroit. L'état se lit ailleurs : l'icône tourne en
-connexion ou en reprise (`workingKey`), passe au vert quand l'antenne joue, et
-le bouton **s'atténue** (fond à 55 %) quand l'antenne est annoncée muette sans
-qu'on l'écoute, ou après un renoncement. Il ne nomme **aucune cause** : une
-panne se lit sur `/radio` (#125, voir « Ce que `/radio` affiche » plus bas) —
+connexion, quand l'antenne vacille ou se reconnecte (`workingKey`), passe au
+vert quand l'antenne joue, et le bouton **s'atténue** (fond à 55 %) quand
+l'antenne est annoncée muette sans qu'on l'écoute. Il ne nomme **aucun état** :
+il se lit sur `/radio` (#125, voir « Ce que `/radio` affiche » plus bas) —
 l'absence d'adresse (`radioFailureAntenna`), l'échec de la route
-(`errorStateMessage`), et l'état réel de l'écoute (`RadioAirStatus`). Seul
-`radioFollow` a quitté les `.arb` pour de bon (#123) ; `radioOffAir`,
-`radioRetrying`, `radioFailureConnection` et `radioFailureUnknown` y sont
-revenus avec #125, parce que `/radio` les appelle.
+(`errorStateMessage`), et l'état réel de l'écoute (`RadioAirStatus`). Depuis
+#179 il n'y a plus d'abandon : `radioFailureConnection`, `radioFailureUnknown`
+et `radioGaveUpMessage` ont quitté les `.arb` ; `radioUnstable` (« Connexion
+instable… ») est arrivé, et `radioRetrying` dit « Reconnexion… ».
 
-#### Ce que `/radio` affiche (#125)
+#### Ce que `/radio` affiche (#125, #179)
 
 `RadioAirStatus` (`screens/radio_screen.dart`) **remplace la scène centrale** de
 la fiche — d'abord par le paramètre `stage:` de `ContentPlayerView`, depuis #135
@@ -679,8 +685,8 @@ d'`openSource` : qui ouvre la source sait pourquoi elle ne joue pas). Il lit
 
 | état | ce qui s'affiche |
 | --- | --- |
-| abandon (`RadioPhase.failed`) | carte `AppErrorState` : la cause (`radioFailure*`), `radioGaveUpMessage`, « Réessayer » |
-| reprise (`retrying`) | pastille « Nouvelle tentative… », **sans** nommer la panne |
+| reconnexion (`retrying`) | pastille « Reconnexion… », **sans** nommer la panne — et sans fin |
+| instable (`unstable`) | pastille « Connexion instable… » : le tampon attend depuis 2 s |
 | lecture (`playing`) | pastille « À l'antenne » (`radioLive`) — **plus « En direct »** depuis #135 : ce mot est le badge d'un direct de la régie, et la radio tourne 24 h/24 sans direct |
 | repos ou connexion, `isSilent` | pastille « Hors antenne » |
 | sinon | rien — le bouton de lecture montre déjà qu'il cherche |
@@ -690,17 +696,15 @@ Trois règles à ne pas défaire :
 1. **`onAir` nul n'affiche rien** : seul `RadioAntenna.isSilent` (un `false`
    reçu) dit « Hors antenne ». Et la lecture ou la reprise passent avant :
    l'antenne a pu reprendre depuis la dernière lecture de la route.
-2. **Toute relance passe par `RadioListening.start`** : « Réessayer », et aussi
-   le bouton lecture de la fiche quand `openSource` est posé (`_togglePlayback`
-   délègue à l'appelant tout ce qui n'est pas une pause). L'ancienne scène
-   offrait « Reprendre » → `resume()`, c'est-à-dire une réouverture **sans
-   pré-vol**.
-3. ⚠️ **Après un abandon, `start` rouvre la source et oublie la cause**, même si
-   le lecteur tient l'antenne sans panne : la dernière tentative a pu effacer
-   l'erreur (`resume()` publie `isPlaying` + `isBuffering`) puis s'enliser. Avant
-   #125, le geste n'y faisait qu'un `play()` sur un tampon mort, et la cause
-   restait affichée — c'est le test « Réessayer relance par le pré-vol » de
-   `radio_screen_test.dart` qui l'a révélé.
+2. **Toute relance passe par `RadioListening.start`** : les essais
+   automatiques, et aussi le bouton lecture de la fiche quand `openSource` est
+   posé (`_togglePlayback` délègue à l'appelant tout ce qui n'est pas une
+   pause). L'ancienne scène offrait « Reprendre » → `resume()`, c'est-à-dire
+   une réouverture **sans pré-vol**.
+3. ⚠️ **Plus de carte d'échec** (#179) : la reprise ne s'arrête qu'avec
+   l'auditeur, il n'y a donc plus de cause à afficher. « Connexion instable… »
+   met fin au faux « À l'antenne » d'iOS, où le lecteur reste « en lecture »
+   pendant un blocage sans remonter d'erreur.
 
 La médiathèque ne passe pas `scene:` et garde sa fiche (« Lecture
 interrompue », « il faut du réseau »).
@@ -846,7 +850,8 @@ live ») paraît en pastille **sous le bouton**, trois secondes, en
 surimpression (`OverlayPortal` + `CompositedTransformFollower`) : elle ne pousse
 rien — l'en-tête ne bouge pas — et suit le bouton s'il se replie. Le drapeau
 `_awaitingFirstSound` est posé par l'appui qui lance et lui seul, levé au premier
-son, à l'arrêt ou à l'abandon — jamais de message à l'échec, ni pour un
+son ou à l'arrêt (il n'y a plus d'abandon, #179) — jamais de message pendant
+une reconnexion, ni pour un
 lancement venu de l'écran ou du mini-lecteur, ni quand l'accueil n'est plus au
 premier plan (`ModalRoute.isCurrent`). La reprise ne le lève pas : une antenne
 qui finit par répondre est un lancement réussi.
@@ -868,47 +873,65 @@ appui en lecture.
 
 L'atténuation **informe, elle n'interdit pas** : l'état n'est lu qu'au lancement
 et au retour à l'écran (`ref.invalidate(radioAntennaProvider)` sur `resumed`), et
-l'antenne a pu reprendre entre-temps. Même esprit qu'ADR-0040. Idem après un
-abandon : un geste efface le renoncement.
+l'antenne a pu reprendre entre-temps. Même esprit qu'ADR-0040.
 
-#### La reprise : six attentes, et deux minutes
+#### La reprise : réactive, et sans abandon (#179)
 
-`lib/data/radio/radio_retry.dart` — **1 s · 2 s · 4 s · 8 s · 16 s · 32 s**, puis
-extinction. Les deux bornes disent deux choses différentes, et il faut les deux :
-les six attentes ne font que 63 s cumulées, mais **une tentative met du temps à
-échouer** (dix à trente secondes pour une ouverture HLS qui part dans le vide).
-Celle des deux qui mord dépend donc du réseau — coupure franche : les six
-tentatives ; réseau qui fait attendre : l'horloge.
+Plan : `server-portal/docs/radio-adaptative-plan.md` (décisions 2, 8, 9).
+Durées : `lib/data/radio/radio_retry.dart`. Machine : `RadioListening`
+(`state/radio_providers.dart`), dont l'en-tête porte le schéma.
 
-Chaque tentative est `ContentPlayer.resume()`, le chemin à deux voies déjà
-documenté, **pas une troisième réouverture**. Quand le lecteur ne tient rien
-(l'échec est venu de la route d'antenne), la tentative est un démarrage complet,
-qui relit l'adresse au passage.
+```
+tampon ≥ 2 s après le premier son  → « Connexion instable… » (unstable)
+tampon ≥ 8 s                        → relance tout de suite, « Reconnexion… » (retrying)
+panne, ou 20 s sans son             → essai suivant à 1, 2, 4 s, puis toutes les 5 s, SANS FIN
+réseau revenu ou changé (unstable/retrying) → essai immédiat, séquence réarmée
+```
+
+1. **Toute relance est un `start(fresh: true)`** : `GET /radio/antenna` relu,
+   pré-vol neuf, ouverture **sans position**, donc au bord du direct. Plus
+   jamais `resume()` ni l'ancien cookie pour l'antenne. Les chiens de garde de
+   25 s des lecteurs (`playback_watchdog.dart`) **ne rouvrent plus un direct**
+   (`request.isLive`) ; les enseignements gardent le leur, inchangé.
+2. **Un seul essai en vol.** `start` annule l'essai programmé et les seuils
+   avant de partir ; `_starting` écarte la relance à 8 s, l'essai programmé et
+   le signal réseau pendant qu'un démarrage résout ; `kRadioAttemptTimeout`
+   (**20 s, à confirmer**) borne une tentative jusqu'au premier son, faute de
+   quoi une ouverture pendue (iOS) resterait « en vol » pour toujours.
+3. **Seul l'arrêt de l'auditeur arrête** — le bouton, la ✕
+   (`RadioListening.stop`), la notification balayée (le lecteur lâche
+   l'antenne). Un numéro de démarrage (`_generation`) fait renoncer un pré-vol
+   en vol : sans lui, le son reviendrait après la notification balayée.
+4. **La notification suit l'état** : `ContentPlayer.setStatusLine` remplace sa
+   seconde ligne par « Connexion instable… » / « Reconnexion… » ; un `load`
+   l'efface, et `start` la repose. Textes lus hors de l'arbre par
+   `lookupAppLocalizations(contentLocaleProvider)`.
 
 ⚠️ **Deux pièges qui ne se voient pas :**
 1. `ContentPlayback.copyWith` **ne sait pas effacer** une panne : toute émission
    suivante la porte encore. Sans le garde « une tentative est déjà programmée »,
    chaque battement réarmerait l'attente et **la tentative n'aurait jamais lieu**.
-2. `resume()` publie `isPlaying` **et** `isBuffering` avant tout aller-retour :
-   prendre cela pour un succès remettrait l'insistance à zéro à chaque
-   tentative — six attentes d'une seconde. Le succès exige donc `!isBuffering`.
+2. Le succès exige `hasStarted` **et** `!isBuffering` : les lecteurs posent
+   `isBuffering` dès le chargement, avant tout aller-retour.
 
 #### La cause se lit sur l'échec, jamais sur un test de connectivité
 
-`lib/data/radio/radio_failure.dart`. Le bouton de l'accueil ne porte plus de
-phrase depuis 44092f0 ; **la cause se lit sur `/radio`** depuis #125, à
-l'abandon seulement (`RadioStatus.failure` → `RadioAirStatus`). Pendant la
-reprise, l'écran dit qu'il réessaie sans nommer la panne : la nommer pendant
-qu'on la combat ferait renoncer l'auditeur avant l'application.
+`lib/data/radio/radio_failure.dart`. ⚠️ **Depuis #179, la cause ne s'affiche
+plus nulle part** : sans abandon, il n'y a plus de moment où la nommer — on la
+combat sans la dire (« Reconnexion… »). Le classement ne sert plus qu'au
+journal de debug de `RadioListening` ; ce qui suit en garde l'histoire et les
+règles, pour le jour où une cause reviendrait à l'écran.
 
 DNS, socket refusée, délai dépassé → « vérifiez votre connexion » ; 404, 401,
 une page HTML là où on attend une playlist → « antenne indisponible ». Le partage se fait sur **l'existence d'une
 réponse**, comme `mapCalendarError`.
 
-⚠️ **`connectivity_plus` n'est pas consulté**, et cette tranche n'en fait pas un
-second importeur : il répond « connecté » derrière un portail captif. La reprise
-est **purement temporelle** — « reprise immédiate si le réseau revient » a été
-écrit puis retiré du cadrage, faute d'être tenable sans déroger à la doctrine.
+⚠️ **`connectivity_plus` ne tranche jamais une panne** : il répond « connecté »
+derrière un portail captif. Depuis #179 la reprise l'**écoute** quand même,
+comme **accélérateur seulement** (décision 9 du plan radio adaptative) : un
+retour ou un changement de réseau avance un essai ; « pas de réseau » n'est
+jamais lu et ne suspend rien. Toujours un seul importeur
+(`network_transport.dart`).
 
 ⚠️ La panne du lecteur ne peut pas se reconnaître **par son type** :
 `PlayerException` appartient à `just_audio`, qu'aucun autre fichier de `lib/` n'a
@@ -1087,9 +1110,11 @@ Côté tests : `pumpScreen` / `pumpRouter` posent un `FixedRadioRepository` sur
 premier appui) — tout test qui monte l'accueil monte ce bouton. Les deux sont des
 paramètres nommés et non des `Override` de plus : Riverpod 3 refuse deux
 surcharges du même provider. **Jamais `pumpAndSettle`** : le bouton porte une animation
-continue. Et les six attentes sont écrites **en clair** dans le test, jamais
-relues depuis `kRadioRetryDelays` : la constante est ce qu'on éprouve — mesuré,
-un test qui la relisait passait au vert sur six attentes d'une seconde.
+continue. Et les attentes de la reprise (1, 2, 4, 5 s, 2 s, 8 s) sont écrites
+**en clair** dans le test, jamais relues depuis `radio_retry.dart` : la
+constante est ce qu'on éprouve — mesuré, un test qui la relisait passait au
+vert sur six attentes d'une seconde. Le signal réseau se pose par
+`radioNetwork:` (muet par défaut : le vrai ouvre un canal de plugin).
 
 ⚠️ **Et ce qu'aucun de ces tests ne prouve, en toutes lettres** : qu'un cookie
 traverse jusqu'à ExoPlayer ou AVFoundation. `radio_screen_test.dart` s'arrête à

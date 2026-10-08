@@ -28,6 +28,10 @@
 ///    sur la page live (#135). Le badge le lit dans l'antenne **déjà connue**
 ///    (`radioAntennaProvider`) — jamais dans `radioLiveProvider`, dont la seule
 ///    lecture ouvrirait le canal temps réel, et sans sondage.
+/// 5. **L'antenne qui se répare le dit sous le titre** (#179) : « Connexion
+///    instable… » ou « Reconnexion… », lus sur `radioListeningProvider` — à la
+///    place du badge et de toute phrase de panne, puisque la reprise ne
+///    s'arrête qu'avec l'auditeur.
 library;
 
 import 'dart:async';
@@ -38,6 +42,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/config/radio_config.dart';
 import '../data/players/content_player.dart';
+import '../data/radio/radio_status.dart';
 import '../l10n/l10n_extension.dart';
 import '../router/app_router.dart';
 import '../state/playback_controller.dart';
@@ -305,6 +310,30 @@ class _StatusLine extends ConsumerWidget {
     );
     final palette = context.palette;
     final l10n = context.l10n;
+
+    // **L'antenne qui se répare le dit ici** (#179), avant toute panne du
+    // lecteur : la reprise est en cours et sans fin, « Lecture interrompue »
+    // ferait croire qu'il faut agir.
+    if (isRadio) {
+      final repair =
+          switch (ref.watch(radioListeningProvider.select((s) => s.phase))) {
+        RadioPhase.unstable => l10n.radioUnstable,
+        RadioPhase.retrying => l10n.radioRetrying,
+        _ => null,
+      };
+      if (repair != null) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Text(
+            repair,
+            key: MiniPlayer.statusKey,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.caption.copyWith(color: palette.textSecondary),
+          ),
+        );
+      }
+    }
 
     final failure = switch (status) {
       _Status.normal => null,

@@ -393,6 +393,14 @@ abstract interface class ContentPlayer
   /// `null` = le master, donc l'adaptation automatique.
   void setPreferredVariant(String? variant);
 
+  /// **La seconde ligne de la notification et de l'écran verrouillé**, posée
+  /// par-dessus l'auteur (#179) : l'antenne y dit « Connexion instable… » ou
+  /// « Reconnexion… » pendant qu'elle se répare.
+  ///
+  /// `null` rend l'auteur du chargement. Un [load] l'efface : la ligne décrit
+  /// l'état d'**un** contenu, et c'est à l'appelant de la reposer s'il rouvre.
+  void setStatusLine(String? line);
+
   /// Relâche le média : la valeur repart à vide, la notification disparaît.
   ///
   /// À distinguer de [dispose] — après `stop`, le lecteur peut encore charger.
@@ -523,6 +531,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     loadedIsLive = isLive;
     loadedHeaders = headers;
     loadCount++;
+    statusLine = null;
     _request = ContentRequest(
       contentId: contentId,
       url: url,
@@ -598,9 +607,21 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     preferredVariant = variant;
   }
 
+  /// La ligne d'état annoncée au système, **relue par les tests** — `null`
+  /// quand c'est l'auteur qui s'affiche.
+  @visibleForTesting
+  String? statusLine;
+
+  @override
+  void setStatusLine(String? line) {
+    if (_disposed) return;
+    statusLine = line;
+  }
+
   @override
   void stop() {
     if (_disposed) return;
+    statusLine = null;
     // Le média est relâché **et** ce que le système affiche est vidé — c'est ce
     // que fait `ContentAudioHandler.stop()` avec `mediaItem.add(null)`.
     loadedUrl = null;
