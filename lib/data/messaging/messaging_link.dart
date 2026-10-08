@@ -1,7 +1,7 @@
 /// **Le lien temps réel de la messagerie : ouvert au premier plan, session
 /// ouverte, et fermé sinon** (#140).
 ///
-/// Il tient le canal `users/{monId}` et fait trois choses de ce qu'il reçoit :
+/// Il tient le canal `users/{monId}` et fait quatre choses de ce qu'il reçoit :
 ///
 /// 1. **une ligne** → elle est rangée dans le magasin, par la même fonction que
 ///    la ligne de synchronisation ([MessagingStoreWriter]) ; si elle cite un
@@ -10,7 +10,10 @@
 /// 2. **l'ouverture** (première ou reconnexion) → **un cycle** de rattrapage. Un
 ///    canal neuf n'a aucune mémoire de ce qui s'est diffusé pendant la coupure,
 ///    et la synchronisation ne perd rien (piège 4 du plan) ;
-/// 3. **le silence** → au-delà de [kMessagingSilenceLimit] sans rien recevoir —
+/// 3. **`sync.nudge`** → **un cycle** : une collection a changé côté serveur
+///    (un Spark publié). C'est le réveil push de l'application au premier plan,
+///    seul messager sur iPhone/iPad sans APNs ;
+/// 4. **le silence** → au-delà de [kMessagingSilenceLimit] sans rien recevoir —
 ///    ni ligne, ni battement —, la connexion est morte même si le système ne l'a
 ///    pas dit : on la ferme et on en rouvre une. **Seulement si un battement a
 ///    été vu sur cette connexion** : le chien de garde est adaptatif (voir
@@ -189,6 +192,10 @@ class MessagingLink with WidgetsBindingObserver {
     switch (event) {
       case MessagingChannelOpened():
         lastFailure = null;
+        _cycle();
+      case MessagingSyncNudge():
+        // Une collection a changé (un Spark publié…) : le planificateur
+        // coalesce, dix signaux pendant un cycle n'en font qu'un de plus.
         _cycle();
       case MessagingHeartbeat():
         break;

@@ -186,6 +186,39 @@ void main() {
       expect(decodeMessagingData('pas du json', channel: _channel), isNull);
     });
 
+    test('`sync.nudge` dit quelle collection a changé', () {
+      final event = decodeMessagingData(
+        _frame(_channel, {'type': 'sync.nudge', 'collection': 'announcements'}),
+        channel: _channel,
+      );
+      expect(event, isA<MessagingSyncNudge>());
+      expect((event! as MessagingSyncNudge).collection, 'announcements');
+    });
+
+    test('`sync.nudge` sans collection, ou d\'un autre canal : rien', () {
+      for (final payload in [
+        {'type': 'sync.nudge'},
+        {'type': 'sync.nudge', 'collection': ''},
+        {'type': 'sync.nudge', 'collection': 42},
+      ]) {
+        expect(
+          decodeMessagingData(_frame(_channel, payload), channel: _channel),
+          isNull,
+          reason: '$payload',
+        );
+      }
+      expect(
+        decodeMessagingData(
+          _frame('users/quelqu-un-d-autre', {
+            'type': 'sync.nudge',
+            'collection': 'announcements',
+          }),
+          channel: _channel,
+        ),
+        isNull,
+      );
+    });
+
     test('le groupe d\'une ligne `groups` est son `id`', () {
       const event = MessagingRowEvent(
         type: 'group.updated',
@@ -337,6 +370,14 @@ void main() {
 
       expect(log, ['cycle']);
       expect(failing.lastFailure, isA<StateError>());
+    });
+
+    test('`sync.nudge` lance un cycle, et ne range rien', () async {
+      link.open();
+      channel.emit(const MessagingSyncNudge('announcements'));
+      await pumpEventQueue();
+      expect(log, ['cycle']);
+      expect(applied, isEmpty);
     });
 
     test('le battement ne range rien et ne lance rien', () async {
