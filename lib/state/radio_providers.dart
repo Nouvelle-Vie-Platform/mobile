@@ -45,12 +45,15 @@ import '../data/radio/http_radio_repository.dart';
 import '../data/radio/radio_antenna.dart';
 import '../data/radio/radio_failure.dart';
 import '../data/radio/radio_handshake.dart';
+import '../data/radio/radio_heartbeat.dart';
 import '../data/radio/radio_repository.dart';
 import '../data/radio/radio_retry.dart';
 import '../data/radio/radio_status.dart';
 import '../l10n/app_localizations.dart';
 import '../models/gathering_view.dart';
+import '../models/media_preferences.dart';
 import 'locale_providers.dart';
+import 'media_settings_providers.dart';
 import 'playback_controller.dart';
 import 'player_providers.dart';
 
@@ -246,6 +249,7 @@ class RadioListening extends Notifier<RadioStatus> {
       player.removeListener(onChanged);
       _reset();
     });
+    _wireEconomyAndHeartbeat();
     // L'état se **dérive** du lecteur, il ne part pas de zéro : revenir à
     // l'accueil pendant que l'antenne joue doit retrouver un bouton allumé.
     return _derive(player.value);
@@ -440,7 +444,31 @@ class RadioListening extends Notifier<RadioStatus> {
     state = RadioStatus.idle;
   }
 
-  /// **L'adresse à ouvrir — le seul endroit où elle se choisit.**
+  /// **Le réglage radio et le battement d'écoute** (M2 du plan radio
+  /// adaptative) — tout ce que cette tranche ajoute au contrôleur, hors le
+  /// choix d'URL de [_resolveUrl].
+  ///
+  /// - changer Automatique / Économie pendant l'écoute **relance** l'antenne
+  ///   (`fresh`), donc sur l'URL du nouveau choix. Le `listen` garde aussi le
+  ///   réglage chargé, pour que [_resolveUrl] lise le vrai choix et non le
+  ///   défaut d'un flux pas encore ouvert ;
+  /// - le battement suit l'état du contrôleur : voir [RadioHeartbeat].
+  void _wireEconomyAndHeartbeat() {
+    ref.listen<RadioQuality>(radioQualityProvider, (previous, next) {
+      final title = _title;
+      if (previous == next || title == null || !state.isOn) return;
+      unawaited(start(title: title, fresh: true));
+    });
+    final heartbeat = RadioHeartbeat(
+      send: (listenId) =>
+          ref.read(radioRepositoryProvider).reportListening(listenId),
+    );
+    ref.onDispose(heartbeat.dispose);
+    listenSelf((_, next) => heartbeat.onStatus(next));
+  }
+
+  /// **L'adresse à ouvrir — le seul endroit où elle se choisit**, selon le
+  /// choix radio (`RadioAntenna.streamUrlFor`).
   ///
   /// Sans [fresh], celle que la route a déjà rendue, sinon une lecture
   /// fraîche : au premier appui, la route peut n'avoir jamais répondu (échec au
@@ -452,11 +480,12 @@ class RadioListening extends Notifier<RadioStatus> {
   /// Une antenne sans adresse lève : la tentative échoue, et la séquence
   /// continue — l'adresse peut revenir.
   Future<String> _resolveUrl({required bool fresh}) async {
+    final quality = ref.read(radioQualityProvider);
     final known = fresh ? null : ref.read(radioAntennaProvider).value;
-    final antenna = known?.streamUrl != null
+    final antenna = known?.streamUrlFor(quality) != null
         ? known!
         : await ref.read(radioRepositoryProvider).antenna();
-    final url = antenna.streamUrl;
+    final url = antenna.streamUrlFor(quality);
     if (url == null) throw StateError('antenne sans adresse');
     return url;
   }

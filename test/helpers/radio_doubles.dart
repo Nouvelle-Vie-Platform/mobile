@@ -19,6 +19,9 @@ class FailingRadioRepository implements RadioRepository {
 
   @override
   Future<RadioAntenna> antenna() async => throw error;
+
+  @override
+  Future<void> reportListening(String listenId) async {}
 }
 
 /// Une antenne de test : l'adresse est courte et visiblement factice, pour qu'un

@@ -3,8 +3,11 @@
 /// ```
 /// GET /radio/antenna
 /// aucune garde — les invités écoutent (décision 7 du cadrage)
-/// 200 → { data: { streamUrl: "https://…/antenne/index.m3u8", onAir: true,
+/// 200 → { data: { streamUrl: "https://…/antenne/index.m3u8",
+///                  ecoStreamUrl: "https://…/a32.m3u8" | null, onAir: true,
 ///                  listeners: 128 | null, live: { startedAt } | null } }
+///
+/// POST /radio/listening   { listenId }   anonyme — le battement d'écoute
 /// ```
 ///
 /// Deux choses dont cette classe **n'a pas** à s'occuper, traitées une fois dans
@@ -43,9 +46,13 @@ import 'radio_repository.dart';
 /// réconciliation avec `server-portal#493` une édition d'une ligne.
 const String kRadioAntennaPath = '/radio/antenna';
 
+/// Le battement d'écoute (tranche A2 du plan radio adaptative).
+const String kRadioListeningPath = '/radio/listening';
+
 class HttpRadioRepository implements RadioRepository {
-  HttpRadioRepository({ApiClient? client})
-      : _client = (client ?? ApiClient.instance).dio;
+  /// [client] : un `Dio` de test, comme `HttpRadioLiveRepository`.
+  HttpRadioRepository({Dio? client})
+      : _client = client ?? ApiClient.instance.dio;
 
   final Dio _client;
 
@@ -71,5 +78,15 @@ class HttpRadioRepository implements RadioRepository {
     final body = res.data;
     if (body is! Map) return RadioAntenna.unknown;
     return RadioAntenna.fromJson(body.cast<String, dynamic>());
+  }
+
+  /// Rien à lire dans la réponse ; un 429 ou une panne lèvent, et l'appelant
+  /// les tait.
+  @override
+  Future<void> reportListening(String listenId) async {
+    await _client.post<dynamic>(
+      kRadioListeningPath,
+      data: {'listenId': listenId},
+    );
   }
 }

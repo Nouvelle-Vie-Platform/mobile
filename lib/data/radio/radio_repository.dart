@@ -26,6 +26,11 @@ abstract interface class RadioRepository {
   /// des deux phrases. Ne jamais rendre « hors antenne » pour un échec — ce
   /// serait affirmer une panne de l'église là où on n'a rien pu lire.
   Future<RadioAntenna> antenna();
+
+  /// **Le battement d'écoute** (`POST /radio/listening`, décision 7 du plan
+  /// radio adaptative) : « [listenId] écoute en ce moment ». Lève comme
+  /// [antenna] ; c'est `RadioHeartbeat` qui rend l'échec muet.
+  Future<void> reportListening(String listenId);
 }
 
 /// **Le double : une réponse fixe, aucune socket.**
@@ -60,4 +65,8 @@ class FixedRadioRepository implements RadioRepository {
 
   @override
   Future<RadioAntenna> antenna() async => _antenna;
+
+  /// Muet : le double ne compte personne.
+  @override
+  Future<void> reportListening(String listenId) async {}
 }

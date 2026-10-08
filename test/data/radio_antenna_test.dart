@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
+import 'package:maison_du_miracle/models/media_preferences.dart';
 
 /// La route publique d'antenne n'existe pas encore (`server-portal#493`), et ce
 /// lecteur porte **l'hypothèse** de cette tranche. Ces tests ne prouvent donc pas
@@ -119,6 +120,53 @@ void main() {
       });
       expect(antenna.onAir, isNull);
       expect(antenna.isSilent, isFalse);
+    });
+  });
+
+  group('L\'URL économie (M2 du plan radio adaptative)', () {
+    const adaptive = 'https://stream.example/antenne-hls/master.m3u8';
+    const eco = 'https://stream.example/antenne-hls/a32/index.m3u8';
+
+    test('ecoStreamUrl présent : lu', () {
+      final antenna = RadioAntenna.fromJson(
+          const {'streamUrl': adaptive, 'ecoStreamUrl': eco});
+      expect(antenna.ecoStreamUrl, eco);
+    });
+
+    test('ecoStreamUrl nul, blanc ou absent : null', () {
+      for (final body in <Map<String, dynamic>>[
+        const {'streamUrl': adaptive, 'ecoStreamUrl': null},
+        const {'streamUrl': adaptive, 'ecoStreamUrl': '  '},
+        // Une réponse d'avant la tranche A2 n'a pas le champ.
+        const {'streamUrl': adaptive},
+      ]) {
+        expect(RadioAntenna.fromJson(body).ecoStreamUrl, isNull,
+            reason: 'corps : $body');
+      }
+    });
+
+    test('Économie et URL économie : l\'URL économie', () {
+      const antenna = RadioAntenna(streamUrl: adaptive, ecoStreamUrl: eco);
+      expect(antenna.streamUrlFor(RadioQuality.economy), eco);
+    });
+
+    test('Automatique : toujours l\'adaptative, même avec une URL économie',
+        () {
+      const antenna = RadioAntenna(streamUrl: adaptive, ecoStreamUrl: eco);
+      expect(antenna.streamUrlFor(RadioQuality.auto), adaptive);
+    });
+
+    test('Économie sans URL économie : l\'adaptative, pas le silence', () {
+      const antenna = RadioAntenna(streamUrl: adaptive);
+      expect(antenna.streamUrlFor(RadioQuality.economy), adaptive);
+    });
+
+    test('le compteur poussé en temps réel garde l\'URL économie', () {
+      const antenna = RadioAntenna(streamUrl: adaptive, ecoStreamUrl: eco);
+      expect(
+        antenna.withAudience(listeners: 12, live: null).ecoStreamUrl,
+        eco,
+      );
     });
   });
 }
