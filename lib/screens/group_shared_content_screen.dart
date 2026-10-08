@@ -40,9 +40,10 @@ class GroupSharedContentScreen extends ConsumerWidget {
     final files = ref.watch(groupSharedFilesProvider(key)).value ?? const [];
     final links = ref.watch(groupSharedLinksProvider(key)).value ?? const [];
 
+    // **Médias** : photos, vidéos et fichiers audio (décision utilisateur du
+    // 08/10) ; **Docs** : les documents seuls. Les vocaux ne sont nulle part.
     bool isVisual(GroupMessageView m) =>
-        m.media!.kind == MessageMediaKind.image ||
-        m.media!.kind == MessageMediaKind.video;
+        m.media!.kind != MessageMediaKind.document;
 
     return DefaultTabController(
       length: 3,
@@ -124,19 +125,95 @@ class _MediaGrid extends StatelessWidget {
         final message = messages[i];
         final media = message.media!;
         return LayoutBuilder(
-          builder: (context, box) => media.kind == MessageMediaKind.video
-              ? VideoMediaTile(
-                  message: message,
-                  media: media,
-                  extent: box.maxWidth,
-                )
-              : ImageMediaTile(
-                  message: message,
-                  media: media,
-                  extent: box.maxWidth,
-                ),
+          builder: (context, box) => switch (media.kind) {
+            MessageMediaKind.video => VideoMediaTile(
+                message: message,
+                media: media,
+                extent: box.maxWidth,
+              ),
+            MessageMediaKind.audio => _AudioCell(message: message),
+            _ => ImageMediaTile(
+                message: message,
+                media: media,
+                extent: box.maxWidth,
+              ),
+          },
         );
       },
+    );
+  }
+}
+
+/// **Un fichier audio dans la grille** : une note de musique, le nom et la
+/// durée ; au toucher, le lecteur de la bulle dans une feuille.
+class _AudioCell extends StatelessWidget {
+  const _AudioCell({required this.message});
+
+  final GroupMessageView message;
+
+  static Key keyOf(String id) => Key('shared_audio_$id');
+
+  void _open(BuildContext context) {
+    final media = message.media!;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: AppSpacing.screenPadding.add(
+            const EdgeInsets.only(bottom: AppSpacing.lg),
+          ),
+          child: AudioMediaTile(
+            message: message,
+            media: media,
+            ink: context.palette.textPrimary,
+            width: double.infinity,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final media = message.media!;
+    final seconds = media.durationSeconds;
+    return Material(
+      color: AppColors.secondary,
+      child: InkWell(
+        key: keyOf(message.id),
+        onTap: () => _open(context),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.music_note_rounded,
+                  color: Colors.white, size: 32),
+              if (media.name case final name?) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.caption.copyWith(color: Colors.white),
+                ),
+              ],
+              if (seconds != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  formatMediaDuration(Duration(seconds: seconds)),
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -219,21 +296,13 @@ class _DocList extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             // La tuile de la bulle, et son geste : le document s'ouvre dans
-            // l'application du système, le fichier audio se joue sur place.
-            if (media.kind == MessageMediaKind.document)
-              DocumentMediaTile(
-                message: message,
-                media: media,
-                ink: ink,
-                width: double.infinity,
-              )
-            else
-              AudioMediaTile(
-                message: message,
-                media: media,
-                ink: ink,
-                width: double.infinity,
-              ),
+            // l'application du système.
+            DocumentMediaTile(
+              message: message,
+              media: media,
+              ink: ink,
+              width: double.infinity,
+            ),
             Text(
               _date(context, message.createdAt),
               style: AppTypography.caption

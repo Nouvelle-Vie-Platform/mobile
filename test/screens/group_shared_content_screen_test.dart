@@ -133,6 +133,18 @@ void main() {
     expect(find.byKey(const Key('m4_image_tile')), findsOneWidget);
     expect(find.byKey(const Key('m4_video_tile')), findsOneWidget);
     expect(find.text('1:15'), findsOneWidget, reason: 'la durée de la vidéo');
+    // Le fichier audio rejoint la grille (décision du 08/10), pas le vocal.
+    expect(find.text('Chant.mp3'), findsOneWidget);
+    expect(find.byKey(const Key('shared_audio_voice')), findsNothing);
+  });
+
+  testWidgets('Médias : toucher un fichier audio ouvre son lecteur',
+      (tester) async {
+    await _pumpScreen(tester, _thread());
+
+    await tester.tap(find.byKey(const Key('shared_audio_song')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('m4_audio_play_song')), findsOneWidget);
   });
 
   testWidgets(
@@ -152,15 +164,15 @@ void main() {
     expect(launcher.opened, ['https://youtu.be/abc']);
   });
 
-  testWidgets('Docs : documents et fichiers audio, jamais les vocaux',
+  testWidgets('Docs : les documents seuls — ni audio, ni vocaux',
       (tester) async {
     await _pumpScreen(tester, _thread());
     await _openTab(tester, _fr.sharedContentDocs);
 
     expect(find.text('Programme.pdf'), findsOneWidget);
-    expect(find.text('Chant.mp3'), findsOneWidget);
     expect(find.byKey(const Key('m4_document_tile')), findsOneWidget);
-    expect(find.byKey(const Key('m4_audio_play_song')), findsOneWidget);
+    expect(find.text('Chant.mp3'), findsNothing);
+    expect(find.byKey(const Key('m4_audio_play_song')), findsNothing);
     expect(find.byKey(const Key('m4_audio_play_voice')), findsNothing);
   });
 
