@@ -148,6 +148,21 @@ final class MessagingPresenceEvent extends MessagingEvent {
   }
 }
 
+/// **Une collection a changé sur le serveur : resynchronise** — `sync.nudge`.
+///
+/// Le même signal que le réveil push `sync_nudge` (`SyncNudge` côté portail),
+/// mais sur le canal : iPhone et iPad n'ont pas de push sans APNs, et un
+/// Spark publié n'apparaissait qu'au redémarrage. Ne porte aucune ligne — le
+/// lien demande un cycle, et le tirage ramène ce qui a changé.
+@immutable
+final class MessagingSyncNudge extends MessagingEvent {
+  const MessagingSyncNudge(this.collection);
+
+  /// La clé de collection (`announcements`, `teachings`, …). Indicative : le
+  /// cycle est entier, le manifeste dit ce qui a bougé.
+  final String collection;
+}
+
 /// La table du contrat : quel type d'événement porte quelle collection, sous
 /// quelle clé. Écrite **une fois**.
 const Map<String, ({String collection, String key})> _kEventRows = {
@@ -196,6 +211,7 @@ const Map<String, ({String collection, String key})> _kEventRows = {
 ///
 /// - le battement (`$$transmit/ping`) → [MessagingHeartbeat] ;
 /// - un événement de [channel] dont le type est au contrat → [MessagingRowEvent] ;
+/// - `sync.nudge` → [MessagingSyncNudge] ;
 /// - tout le reste (autre canal, type inconnu d'un serveur plus récent, charge
 ///   mal formée) → `null`. Un événement ignoré ne coûte rien : le cycle suivant
 ///   ramène la ligne. Un événement inventé rangerait un faux.
@@ -228,6 +244,12 @@ MessagingEvent? decodeMessagingData(String data, {required String channel}) {
   }
   if (type == 'presence.changed') {
     return MessagingPresenceEvent.fromJson(payload['presence']);
+  }
+
+  if (type == 'sync.nudge') {
+    final collection = payload['collection'];
+    if (collection is! String || collection.isEmpty) return null;
+    return MessagingSyncNudge(collection);
   }
 
   final shape = _kEventRows[type];
