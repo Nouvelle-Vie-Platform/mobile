@@ -46,11 +46,16 @@ class FakeVoiceRecorder implements VoiceRecorder {
   /// Pousse un niveau, comme le ferait le micro.
   void emit(double level) => _levels.add(level);
 
+  /// Retient [start] jusqu'à sa complétion — un micro réel met plusieurs
+  /// centaines de millisecondes à démarrer (session audio, autorisation).
+  Completer<void>? startGate;
+
   @override
   Future<bool> ensurePermission() async => granted;
 
   @override
   Future<void> start(String path) async {
+    await startGate?.future;
     recordingTo = path;
     started.add(path);
   }

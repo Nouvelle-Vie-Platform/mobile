@@ -87,27 +87,40 @@ class MessageInputBar extends StatelessWidget {
           AppSpacing.sm,
           AppSpacing.sm,
         ),
+        // Les boutons restent **en bas** quand le champ grandit, comme
+        // WhatsApp : le pouce les trouve au même endroit.
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
               child: replacement ??
                   Container(
                     decoration: BoxDecoration(
                       color: palette.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      // Un rayon fixe, pas une pilule : sur plusieurs lignes, un
+                      // rayon « pill » ferait un ovale.
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: palette.border),
                     ),
                     padding:
                         const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Expanded(
+                          // **Le texte passe à la ligne** au bord du champ, et
+                          // la touche Entrée insère une ligne : on envoie avec
+                          // le bouton. Le champ grandit jusqu'à six lignes, puis
+                          // défile.
                           child: TextField(
                             controller: controller,
                             focusNode: focusNode,
                             cursorColor: AppColors.secondary,
                             textCapitalization: TextCapitalization.sentences,
-                            onSubmitted: (_) => _send(),
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            minLines: 1,
+                            maxLines: 6,
                             style: AppTypography.bodyLarge
                                 .copyWith(color: palette.textPrimary),
                             decoration: InputDecoration(

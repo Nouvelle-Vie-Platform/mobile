@@ -406,7 +406,8 @@ void main() {
 
       expect(find.byKey(const Key('composer_edit_bar')), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'Coquille');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      // Le champ est multiligne : Entrée passe à la ligne, le bouton envoie.
+      await tester.tap(find.byIcon(Icons.send));
       await tester.pumpAndSettle();
 
       expect(sender.calls, ['edit m-1 Coquille']);
