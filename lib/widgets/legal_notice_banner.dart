@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/legal_document_view.dart';
 import '../router/app_router.dart';
-import '../state/auth_providers.dart';
 import '../state/legal_notice_providers.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -65,10 +64,8 @@ class _LegalNoticeBannerState extends ConsumerState<LegalNoticeBanner> {
   /// battement à répondre, et un bouton qui met un battement à répondre se
   /// presse deux fois. L'écriture, elle, ne peut pas échouer vers l'écran (voir
   /// [LegalNoticeStore.markSeen]).
-  bool _dismissed = false;
-
   void _dismiss() {
-    setState(() => _dismissed = true);
+    ref.read(legalNoticeDismissedProvider.notifier).dismiss();
     ref.read(legalNoticeStoreProvider).markSeen();
   }
 
@@ -79,14 +76,9 @@ class _LegalNoticeBannerState extends ConsumerState<LegalNoticeBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (_dismissed) return const SizedBox.shrink();
-    // Un membre n'a rien à lire ici — voir la décision 2 de l'en-tête.
-    if (!ref.watch(authProvider).isGuest) return const SizedBox.shrink();
-    // `?? true` : sur un `AsyncValue`, `value` est nul en chargement **et** en
-    // échec, et les deux valent ici « déjà vu », donc rien à l'écran. Voir
-    // `legalNoticeSeenProvider` pour le pourquoi de ce côté-là du défaut.
-    final seen = ref.watch(legalNoticeSeenProvider).value ?? true;
-    if (seen) return const SizedBox.shrink();
+    // Un membre n'a rien à lire ici (décision 2 de l'en-tête), et chargement ou
+    // échec du magasin valent « déjà vu » : voir `legalNoticePendingProvider`.
+    if (!ref.watch(legalNoticePendingProvider)) return const SizedBox.shrink();
 
     final l10n = context.l10n;
     final palette = context.palette;

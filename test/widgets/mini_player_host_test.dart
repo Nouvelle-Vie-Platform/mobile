@@ -521,7 +521,7 @@ void main() {
   group('Dans la coquille', () {
     testWidgets(
         'au-dessus de la barre ; les bandeaux de mise à jour et de mention '
-        'légale au-dessus de lui, visibles ensemble', (tester) async {
+        'légale au-dessus de lui', (tester) async {
       await pumpApp(
         tester,
         legalNotice: InMemoryLegalNoticeStore(),
@@ -545,9 +545,12 @@ void main() {
         tester.getRect(notice).bottom,
         lessThanOrEqualTo(card.top),
       );
+      // Le bandeau de mise à jour reste au-dessus de la carte. La mention
+      // légale, elle, se pose par-dessus toute la coquille (elle bloque
+      // l'application) : le bandeau est alors derrière sa barrière.
       expect(
         tester.getRect(update).bottom,
-        lessThanOrEqualTo(tester.getRect(notice).top),
+        lessThanOrEqualTo(card.top),
       );
       // La barre ne grandit pas de la place de la carte.
       expect(bar.height, lessThan(AppBottomNav.barHeight + 1));

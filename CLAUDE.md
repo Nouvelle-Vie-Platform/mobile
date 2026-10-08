@@ -2990,8 +2990,13 @@ sans quoi l'enregistreur rapporterait ensuite une position en retard qui
 
 #### Le bandeau légal du premier lancement
 
-Non bloquant, invités seulement, **une seule fois** (`legal_notice_seen` dans
-`app_settings`). Il existe parce que l'application pose un **identifiant
+**Bloquant** (décision utilisateur du 08/10/2026), invités seulement, **une
+seule fois** (`legal_notice_seen` dans `app_settings`). Tant qu'il est en
+attente (`legalNoticePendingProvider`), une barrière modale couvre toute la
+coquille — onglets, barre, bouton central, menu, bouton radio — et seuls
+« J'ai compris » et ses deux liens de lecture répondent (ils poussent
+`/legal/:kind` par-dessus, et on y revient). Chargement ou échec du magasin
+valent « déjà vu » : on ne bloque jamais sur une incertitude. Il existe parce que l'application pose un **identifiant
 d'appareil** — donnée personnelle — dès avant tout compte, et qu'un invité ne
 voit jamais la barrière de consentement. Ce n'est pas une décoration.
 
