@@ -449,15 +449,25 @@ class RadioListening extends Notifier<RadioStatus> {
   /// choix d'URL de [_resolveUrl].
   ///
   /// - changer Automatique / Économie pendant l'écoute **relance** l'antenne
-  ///   (`fresh`), donc sur l'URL du nouveau choix. Le `listen` garde aussi le
+  ///   (`fresh`), donc sur l'URL du nouveau choix — y compris pendant un
+  ///   essai en vol, qui a pu lire l'ancien choix et renonce. En pause, la
+  ///   source tenue garde l'ancienne URL : la reprise la rouvrira
+  ///   ([_reopenOnResume]) au lieu de la rejouer. Le `listen` garde aussi le
   ///   réglage chargé, pour que [_resolveUrl] lise le vrai choix et non le
   ///   défaut d'un flux pas encore ouvert ;
   /// - le battement suit l'état du contrôleur : voir [RadioHeartbeat].
   void _wireEconomyAndHeartbeat() {
     ref.listen<RadioQuality>(radioQualityProvider, (previous, next) {
+      if (previous == next) return;
       final title = _title;
-      if (previous == next || title == null || !state.isOn) return;
-      unawaited(start(title: title, fresh: true));
+      if (title != null && state.isOn) {
+        _generation++;
+        _starting = false;
+        unawaited(start(title: title, fresh: true));
+        return;
+      }
+      final held = ref.read(playbackControllerProvider.notifier).playback;
+      if (held.contentId == RadioConfig.contentId) _reopenOnResume = true;
     });
     final heartbeat = RadioHeartbeat(
       send: (listenId) =>
