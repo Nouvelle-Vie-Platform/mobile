@@ -31,6 +31,9 @@ import '../widgets/brand_app_bar.dart';
 /// - **le téléchargement** n'existe pas, et `docs/mediatheque-en-ligne.md` §2
 ///   en fait un refus **documenté**, pas un reste-à-faire.
 ///
+/// **La radio** a sa section à elle, deux choix et non quatre paliers
+/// (`RadioQuality`) : elle agit partout, par l'URL que `RadioListening` ouvre.
+///
 /// Les trois sont néanmoins réglables et enregistrés, à la demande explicite du
 /// produit. Le jour où l'un des deux derniers existera, la préférence sera déjà
 /// là et il n'y aura rien à changer ici.
@@ -59,6 +62,10 @@ class MediaSettingsScreen extends ConsumerWidget {
   /// Clés de test : une par usage, pour cibler le bon groupe d'options.
   static Key optionKey(MediaUsage usage, MediaQuality quality) =>
       Key('media_${usage.key}_${quality.key}');
+
+  /// Clé de test d'un choix de la radio.
+  static Key radioOptionKey(RadioQuality quality) =>
+      Key('media_${MediaUsage.radio.key}_${quality.key}');
 
   /// Le toggle « Télécharger en données mobiles » (F8).
   static const Key downloadOnCellularKey = Key('media_download_on_cellular');
@@ -93,12 +100,23 @@ class MediaSettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           for (final usage in MediaUsage.values) ...[
-            _UsageSection(
-              usage: usage,
-              selected: preferences.of(usage),
-              onSelect: (quality) =>
-                  ref.read(settingsDaoProvider).setMediaQuality(usage, quality),
-            ),
+            if (usage == MediaUsage.radio)
+              // La radio a ses deux choix à elle (`RadioQuality`). Changer
+              // pendant l'écoute relance l'antenne sur la bonne URL : c'est
+              // `RadioListening` qui écoute le réglage, pas cet écran.
+              _RadioSection(
+                selected: preferences.radio,
+                onSelect: (quality) =>
+                    ref.read(settingsDaoProvider).setRadioQuality(quality),
+              )
+            else
+              _UsageSection(
+                usage: usage,
+                selected: preferences.of(usage),
+                onSelect: (quality) => ref
+                    .read(settingsDaoProvider)
+                    .setMediaQuality(usage, quality),
+              ),
             const SizedBox(height: AppSpacing.xl),
           ],
           // **Le réseau autorisé pour les téléchargements** (F8), distinct des
@@ -183,7 +201,7 @@ class _BranchScopeSectionState extends ConsumerState<_BranchScopeSection> {
               // **« Toutes » est toujours là**, même quand la liste n'est pas
               // arrivée : c'est le défaut, et un panneau qui ne proposerait
               // rien du tout donnerait l'impression d'un réglage en panne.
-              _BranchOption(
+              _ChoiceOption(
                 key: MediaSettingsScreen.branchOptionKey(null),
                 label: l.branchScopeAll,
                 impact: l.branchScopeAllSubtitle,
@@ -206,7 +224,7 @@ class _BranchScopeSectionState extends ConsumerState<_BranchScopeSection> {
                   ),
                 ),
               for (final branch in branches)
-                _BranchOption(
+                _ChoiceOption(
                   key: MediaSettingsScreen.branchOptionKey(branch.id),
                   label: branch.name,
                   impact: null,
@@ -246,15 +264,15 @@ class _BranchScopeSectionState extends ConsumerState<_BranchScopeSection> {
   }
 }
 
-/// Une ligne d'assemblée, sur le patron exact de [_Option] — même rond de
+/// Une ligne d'assemblée — ou un choix de la radio —, sur le patron exact de [_Option] — même rond de
 /// sélection, même séparateur, même place réservée pour la phrase d'impact.
 ///
 /// Un type distinct et non [_Option] paramétré : celui-ci porte un
 /// [MediaQuality] et en dérive son libellé et son coût horaire. Les fondre
 /// obligerait à passer des chaînes toutes faites à l'un et un enum à l'autre,
 /// et ferait entrer un réglage d'affichage dans le type du réglage de débit.
-class _BranchOption extends StatelessWidget {
-  const _BranchOption({
+class _ChoiceOption extends StatelessWidget {
+  const _ChoiceOption({
     super.key,
     required this.label,
     required this.impact,
@@ -265,8 +283,8 @@ class _BranchOption extends StatelessWidget {
 
   final String label;
 
-  /// La phrase qui dit ce que l'option fait voir, `null` quand il n'y a rien à
-  /// ajouter — un nom d'assemblée se passe de commentaire.
+  /// La phrase qui dit ce que l'option fait voir ou coûte, `null` quand il n'y
+  /// a rien à ajouter — un nom d'assemblée se passe de commentaire.
   final String? impact;
   final bool selected;
   final bool last;
@@ -388,6 +406,60 @@ class _DownloadOnCellularToggle extends StatelessWidget {
   }
 }
 
+/// **La radio et ses deux choix** (décision 10 du plan radio adaptative).
+///
+/// Les libellés reprennent ceux des paliers (« Automatique », « Économie ») ;
+/// les phrases d'impact sont propres à la radio, parce que son automatique ne
+/// bride pas en données mobiles. Les Mo viennent de [RadioQuality], jamais
+/// d'une traduction.
+class _RadioSection extends StatelessWidget {
+  const _RadioSection({required this.selected, required this.onSelect});
+
+  final RadioQuality selected;
+  final ValueChanged<RadioQuality> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final palette = context.palette;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l.mediaSettingsRadio,
+          style: AppTypography.bodyStrong.copyWith(color: palette.textPrimary),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              for (final quality in RadioQuality.values)
+                _ChoiceOption(
+                  key: MediaSettingsScreen.radioOptionKey(quality),
+                  label: switch (quality) {
+                    RadioQuality.auto => l.mediaQualityAuto,
+                    RadioQuality.economy => l.mediaQualityLow,
+                  },
+                  impact: switch (quality) {
+                    RadioQuality.auto =>
+                      l.radioQualityImpactAuto(quality.megabytesPerHour),
+                    RadioQuality.economy =>
+                      l.radioQualityImpactEconomy(quality.megabytesPerHour),
+                  },
+                  selected: quality == selected,
+                  last: quality == RadioQuality.values.last,
+                  onTap: () => onSelect(quality),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Un usage et ses quatre paliers.
 class _UsageSection extends StatelessWidget {
   const _UsageSection({
@@ -406,6 +478,8 @@ class _UsageSection extends StatelessWidget {
         MediaUsage.streaming => context.words.mediaSettingsStreaming,
         MediaUsage.live => l.mediaSettingsLive,
         MediaUsage.download => l.mediaSettingsDownload,
+        // Jamais atteint : la radio a sa propre section.
+        MediaUsage.radio => l.mediaSettingsRadio,
       };
 
   @override

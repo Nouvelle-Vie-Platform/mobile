@@ -998,6 +998,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'La liste des assemblées arrivera à la première synchronisation.';
 
   @override
+  String get mediaSettingsRadio => 'Radio';
+
+  @override
+  String radioQualityImpactAuto(int mb) {
+    return 'Le débit suit votre réseau, en wifi comme en données mobiles · jusqu\'à ≈ $mb Mo par heure.';
+  }
+
+  @override
+  String radioQualityImpactEconomy(int mb) {
+    return '≈ $mb Mo par heure · la parole reste claire, la louange y perd.';
+  }
+
+  @override
   String get mediaQualityAuto => 'Automatique';
 
   @override

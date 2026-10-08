@@ -95,3 +95,14 @@ final streamingBitrateTargetProvider = Provider<int?>((ref) {
   final onCellular = ref.watch(onCellularProvider).value ?? false;
   return effectiveBitrateCap(quality, onCellular: onCellular);
 });
+
+/// **Le choix de la radio** — Automatique ou Économie.
+///
+/// Lu par `RadioListening`, qui l'écoute pour relancer l'antenne sur la bonne
+/// URL quand il change en cours d'écoute. ⚠️ Il ouvre le **flux Drift** des
+/// réglages : `pumpScreen` le surcharge donc par une valeur fixe, sans quoi
+/// tout test d'écran qui monte la radio se figerait sous l'horloge factice de
+/// `testWidgets` (voir l'en-tête de `media_settings_screen_test.dart`).
+final radioQualityProvider = Provider<RadioQuality>((ref) {
+  return ref.watch(mediaPreferencesProvider).value?.radio ?? RadioQuality.auto;
+});

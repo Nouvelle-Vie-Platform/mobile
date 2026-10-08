@@ -987,6 +987,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'The list of assemblies will arrive with the first sync.';
 
   @override
+  String get mediaSettingsRadio => 'Radio';
+
+  @override
+  String radioQualityImpactAuto(int mb) {
+    return 'Bitrate follows your network, on wifi and mobile data alike · up to ≈ $mb MB per hour.';
+  }
+
+  @override
+  String radioQualityImpactEconomy(int mb) {
+    return '≈ $mb MB per hour · speech stays clear, worship loses depth.';
+  }
+
+  @override
   String get mediaQualityAuto => 'Automatic';
 
   @override
