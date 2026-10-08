@@ -482,8 +482,14 @@ ORDER BY created_at ASC, entry_id ASC
         groupMessageReactions,
         groupMessageHides,
       },
-    ).map(
-      (row) => ThreadEntryRecord(
+    ).map(_threadEntryOf);
+  }
+
+  /// **La ligne du fil devenue [ThreadEntryRecord]** — une seule lecture des
+  /// colonnes, partagée par [threadOf] et les lectures de « Médias, liens et
+  /// docs » ([sharedFilesOf], [sharedLinksOf]), qui sélectionnent les mêmes
+  /// alias.
+  static ThreadEntryRecord _threadEntryOf(QueryRow row) => ThreadEntryRecord(
         id: row.read<String>('entry_id'),
         body: row.read<String?>('body'),
         authorId: row.read<String?>('author_id'),
@@ -517,9 +523,7 @@ ORDER BY created_at ASC, entry_id ASC
         mediaPath: row.read<String?>('media_path'),
         mediaThumbPath: row.read<String?>('media_thumb_path'),
         mediaError: row.read<String?>('media_error'),
-      ),
-    );
-  }
+      );
 
   /// **Les réactions d'un message, en une colonne** (M2, #141) : chaque
   /// réaction `emoji␟userId`, jointes par `␞` (séparateurs ASCII 31 et 30, qui
@@ -891,24 +895,67 @@ ORDER BY p.display_name IS NULL, p.display_name COLLATE NOCASE, p.id
     );
   }
 
-  /// **Les images du fil** (M4, #143 — #98) : les « médias partagés » de la
-  /// fiche du groupe, les plus récentes d'abord. Un message supprimé a quitté le
-  /// magasin (tombstone), son image avec lui.
-  Selectable<String> sharedImagesOf(String groupId, {int limit = 30}) {
+  /// **Les messages confirmés du fil qui portent un fichier** —
+  /// `image`, `video`, `document` et `audio` (vocaux compris : `mediaMeta.voice`
+  /// les distingue, et c'est `MessageMedia.fromColumns` qui le lit, à l'étage
+  /// du dessus). Les plus récents d'abord. Ni supprimé pour tous, ni supprimé
+  /// pour moi (M2) : un média retiré du fil ne reste pas dans la fiche.
+  Selectable<ThreadEntryRecord> sharedFilesOf(String groupId) => _sharedOf(
+        groupId,
+        "m.media_kind IN ('image', 'video', 'document', 'audio') "
+        'AND m.media_key IS NOT NULL',
+      );
+
+  /// **Les messages confirmés dont le texte porte une adresse `http`** — les
+  /// liens se découpent à l'étage du dessus (`extractLinks`). Les plus récents
+  /// d'abord, mêmes exclusions que [sharedFilesOf].
+  Selectable<ThreadEntryRecord> sharedLinksOf(String groupId) =>
+      _sharedOf(groupId, "m.body LIKE '%http%'");
+
+  Selectable<ThreadEntryRecord> _sharedOf(String groupId, String filter) {
     return customSelect(
       '''
-SELECT id FROM group_messages
-WHERE group_id = ?1 AND media_kind = 'image' AND media_key IS NOT NULL
-  AND deleted_at IS NULL
-  AND ${_notHidden('group_messages')}
-ORDER BY created_at DESC, id DESC
-LIMIT ?2
+SELECT
+  m.id            AS entry_id,
+  m.body          AS body,
+  m.author_id     AS author_id,
+  m.is_system     AS is_system,
+  m.created_at    AS created_at,
+  0               AS is_pending,
+  0               AS has_failed,
+  author.display_name AS author_name,
+  author.avatar_url   AS author_avatar_url,
+  0               AS is_unread,
+  m.deleted_at          AS deleted_at,
+  m.edited_at           AS edited_at,
+  m.is_forwarded        AS is_forwarded,
+  NULL                  AS reply_to_message_id,
+  NULL                  AS reply_to_author_id,
+  NULL                  AS reply_to_author_name,
+  NULL                  AS reply_to_excerpt,
+  NULL                  AS reply_to_media_kind,
+  0                     AS reply_to_deleted,
+  NULL                  AS reactions,
+  m.media_kind          AS media_kind,
+  m.media_key           AS media_key,
+  m.media_thumbnail_key AS media_thumbnail_key,
+  m.media_duration      AS media_duration,
+  m.media_meta          AS media_meta,
+  m.media_size          AS media_size,
+  m.media_mime          AS media_mime,
+  NULL                  AS media_path,
+  NULL                  AS media_thumb_path,
+  NULL                  AS media_error
+FROM group_messages AS m
+LEFT JOIN profiles AS author ON author.id = m.author_id
+WHERE m.group_id = ?1 AND $filter
+  AND m.deleted_at IS NULL
+  AND ${_notHidden('m')}
+ORDER BY m.created_at DESC, m.id DESC
 ''',
-      variables: [Variable<String>(groupId), Variable<int>(limit)],
-      // Ni supprimé pour tous, ni supprimé pour moi (M2) : une image retirée
-      // du fil ne reste pas dans la fiche du groupe.
-      readsFrom: {groupMessages, groupMessageHides},
-    ).map((row) => row.read<String>('id'));
+      variables: [Variable<String>(groupId)],
+      readsFrom: {groupMessages, profiles, groupMessageHides},
+    ).map(_threadEntryOf);
   }
 
   /// **Les fichiers locaux encore cités par un écho** (M4) — tout le reste du

@@ -52,6 +52,7 @@ import '../data/repositories/group_message_composer.dart';
 import '../data/repositories/group_message_sender.dart';
 import '../data/repositories/store_echanges_repository.dart';
 import '../models/echanges_view.dart';
+import '../utils/message_links.dart';
 import 'auth_providers.dart';
 import 'chat_media_providers.dart';
 import 'chat_organization_providers.dart';
@@ -157,6 +158,33 @@ final unreadTotalProvider = Provider.family<int, String?>(
 final groupDetailProvider =
     StreamProvider.family<GroupDetailView?, EchangesKey>(
   (ref, key) => ref.watch(echangesRepositoryProvider(key.actor)).group(key.id),
+  retry: _noAutomaticRetry,
+);
+
+/// **Les fichiers partagés d'un groupe** — « Médias, liens et docs » : images,
+/// vidéos, documents et fichiers audio, les plus récents d'abord.
+final groupSharedFilesProvider =
+    StreamProvider.family<List<GroupMessageView>, EchangesKey>(
+  (ref, key) =>
+      ref.watch(echangesRepositoryProvider(key.actor)).sharedFiles(key.id),
+  retry: _noAutomaticRetry,
+);
+
+/// Un lien partagé : l'adresse, et le message qui la porte.
+typedef SharedLink = ({GroupMessageView message, String url});
+
+/// **Les liens partagés d'un groupe**, un par adresse — un message qui en
+/// porte trois donne trois lignes, comme dans WhatsApp.
+final groupSharedLinksProvider =
+    StreamProvider.family<List<SharedLink>, EchangesKey>(
+  (ref, key) =>
+      ref.watch(echangesRepositoryProvider(key.actor)).sharedLinks(key.id).map(
+            (messages) => [
+              for (final message in messages)
+                for (final url in extractLinks(message.body))
+                  (message: message, url: url),
+            ],
+          ),
   retry: _noAutomaticRetry,
 );
 

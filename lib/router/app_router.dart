@@ -34,6 +34,7 @@ import '../screens/new_conversation_screen.dart';
 import '../screens/new_request_screen.dart';
 import '../screens/notes_screen.dart';
 import '../screens/group_info_screen.dart';
+import '../screens/group_shared_content_screen.dart';
 import '../screens/media_viewer_screen.dart';
 import '../screens/prayer_requests_screen.dart';
 import '../screens/requests_screen.dart';
@@ -87,6 +88,9 @@ abstract final class AppRoute {
   static const gatheringDetail = 'gathering';
   static const groupChat = 'group-chat';
   static const groupInfo = 'group-info';
+
+  /// **« Médias, liens et docs »** d'un groupe, ouvert depuis sa fiche.
+  static const groupSharedContent = 'group-shared-content';
 
   /// **Mes discussions archivées** (#146, M8).
   static const chatArchived = 'chat-archived';
@@ -214,6 +218,7 @@ const memberOnlyRoutes = <String>{
   // fermer.
   '/group-chat/:id',
   '/group-info/:id',
+  '/group-info/:id/media',
   '/member-profile/:id',
   // M8 (#146) : mes archives et la recherche dans mes messages.
   '/chats/archived',
@@ -545,6 +550,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/group-info/:id',
         builder: (_, state) => AppBackground(
           child: GroupInfoScreen(groupId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        name: AppRoute.groupSharedContent,
+        path: '/group-info/:id/media',
+        builder: (_, state) => AppBackground(
+          child: GroupSharedContentScreen(groupId: state.pathParameters['id']!),
         ),
       ),
       GoRoute(

@@ -78,6 +78,9 @@ const _screensBehindTheGuard = <String, String>{
   // Les gestes de la fiche d'un groupe : montés par `/group-info`, réservé.
   'lib/widgets/community/group_admin_section.dart':
       'monté par /group-info, réservé',
+  // La ligne « Médias, liens et docs » de la fiche d'un groupe.
+  'lib/widgets/chat/media/group_shared_media.dart':
+      'monté par /group-info, réservé',
 };
 
 /// Les fichiers qui **nomment** les routes sans y naviguer.

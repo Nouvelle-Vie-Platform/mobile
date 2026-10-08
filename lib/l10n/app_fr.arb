@@ -1302,5 +1302,19 @@
   "m4QuoteLocation": "Position",
   "@m4QuoteLocation": { "description": "Citation d'une réponse (M2 × M4) : une position partagée" },
   "m4QuoteContact": "Contact",
-  "@m4QuoteContact": { "description": "Citation d'une réponse (M2 × M4) : un contact partagé" }
+  "@m4QuoteContact": { "description": "Citation d'une réponse (M2 × M4) : un contact partagé" },
+  "sharedContentTitle": "Médias, liens et docs",
+  "@sharedContentTitle": { "description": "Fiche d'un groupe : ligne et titre de l'écran des médias, liens et documents partagés au fil" },
+  "sharedContentMedia": "Médias",
+  "@sharedContentMedia": { "description": "Médias, liens et docs : onglet des images et vidéos" },
+  "sharedContentLinks": "Liens",
+  "@sharedContentLinks": { "description": "Médias, liens et docs : onglet des liens" },
+  "sharedContentDocs": "Docs",
+  "@sharedContentDocs": { "description": "Médias, liens et docs : onglet des documents et fichiers audio" },
+  "sharedContentMediaEmpty": "Aucune image ni vidéo partagée",
+  "@sharedContentMediaEmpty": { "description": "Médias, liens et docs : onglet Médias vide" },
+  "sharedContentLinksEmpty": "Aucun lien partagé",
+  "@sharedContentLinksEmpty": { "description": "Médias, liens et docs : onglet Liens vide" },
+  "sharedContentDocsEmpty": "Aucun document partagé",
+  "@sharedContentDocsEmpty": { "description": "Médias, liens et docs : onglet Docs vide" }
 }

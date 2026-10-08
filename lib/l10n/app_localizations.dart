@@ -4089,6 +4089,48 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Contact'**
   String get m4QuoteContact;
+
+  /// Fiche d'un groupe : ligne et titre de l'écran des médias, liens et documents partagés au fil
+  ///
+  /// In fr, this message translates to:
+  /// **'Médias, liens et docs'**
+  String get sharedContentTitle;
+
+  /// Médias, liens et docs : onglet des images et vidéos
+  ///
+  /// In fr, this message translates to:
+  /// **'Médias'**
+  String get sharedContentMedia;
+
+  /// Médias, liens et docs : onglet des liens
+  ///
+  /// In fr, this message translates to:
+  /// **'Liens'**
+  String get sharedContentLinks;
+
+  /// Médias, liens et docs : onglet des documents et fichiers audio
+  ///
+  /// In fr, this message translates to:
+  /// **'Docs'**
+  String get sharedContentDocs;
+
+  /// Médias, liens et docs : onglet Médias vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune image ni vidéo partagée'**
+  String get sharedContentMediaEmpty;
+
+  /// Médias, liens et docs : onglet Liens vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun lien partagé'**
+  String get sharedContentLinksEmpty;
+
+  /// Médias, liens et docs : onglet Docs vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun document partagé'**
+  String get sharedContentDocsEmpty;
 }
 
 class _AppLocalizationsDelegate

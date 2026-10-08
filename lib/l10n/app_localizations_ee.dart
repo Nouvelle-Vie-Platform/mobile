@@ -2264,4 +2264,25 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get m4QuoteContact => 'Contact';
+
+  @override
+  String get sharedContentTitle => 'Médias, liens et docs';
+
+  @override
+  String get sharedContentMedia => 'Médias';
+
+  @override
+  String get sharedContentLinks => 'Liens';
+
+  @override
+  String get sharedContentDocs => 'Docs';
+
+  @override
+  String get sharedContentMediaEmpty => 'Aucune image ni vidéo partagée';
+
+  @override
+  String get sharedContentLinksEmpty => 'Aucun lien partagé';
+
+  @override
+  String get sharedContentDocsEmpty => 'Aucun document partagé';
 }

@@ -101,10 +101,3 @@ final chatVideoSurfaceProvider = Provider<ChatVideoSurfaceFactory>(
       ? const VideoPlayerChatSurfaceFactory()
       : const InertChatVideoSurfaceFactory(),
 );
-
-/// **Les images du fil d'un groupe** — les « médias partagés » de sa fiche
-/// (#98 : « vide en 1, rempli en 3 »). Des identifiants de messages : l'URL se
-/// résout à l'affichage.
-final groupSharedImagesProvider = StreamProvider.family<List<String>, String>(
-  (ref, groupId) => ref.watch(groupDaoProvider).sharedImagesOf(groupId).watch(),
-);

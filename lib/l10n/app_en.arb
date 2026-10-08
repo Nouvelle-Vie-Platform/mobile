@@ -724,5 +724,12 @@
   "m4QuoteVideo": "Video",
   "m4QuoteDocument": "Document",
   "m4QuoteLocation": "Location",
-  "m4QuoteContact": "Contact"
+  "m4QuoteContact": "Contact",
+  "sharedContentTitle": "Media, links and docs",
+  "sharedContentMedia": "Media",
+  "sharedContentLinks": "Links",
+  "sharedContentDocs": "Docs",
+  "sharedContentMediaEmpty": "No photos or videos shared",
+  "sharedContentLinksEmpty": "No links shared",
+  "sharedContentDocsEmpty": "No documents shared"
 }

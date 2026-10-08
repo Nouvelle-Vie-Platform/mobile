@@ -2245,4 +2245,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get m4QuoteContact => 'Contact';
+
+  @override
+  String get sharedContentTitle => 'Media, links and docs';
+
+  @override
+  String get sharedContentMedia => 'Media';
+
+  @override
+  String get sharedContentLinks => 'Links';
+
+  @override
+  String get sharedContentDocs => 'Docs';
+
+  @override
+  String get sharedContentMediaEmpty => 'No photos or videos shared';
+
+  @override
+  String get sharedContentLinksEmpty => 'No links shared';
+
+  @override
+  String get sharedContentDocsEmpty => 'No documents shared';
 }
