@@ -667,13 +667,13 @@ void main() {
 
     testWidgets(
         'une tentative sans son ni panne (iOS) compte comme un échec au bout '
-        'de 20 s', (tester) async {
+        'de 12 s', (tester) async {
       await pumpPill(tester);
       await tapOnce(tester);
       expectPhase(tester, RadioPhase.connecting);
 
       // Le lecteur inerte ne sort jamais de son : la connexion pend.
-      await tester.pump(const Duration(milliseconds: 19999));
+      await tester.pump(const Duration(milliseconds: 11999));
       expectPhase(tester, RadioPhase.connecting);
       await tester.pump(const Duration(milliseconds: 1));
       expectPhase(tester, RadioPhase.retrying);
@@ -695,13 +695,39 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
       expect(player.loadCount, 2, reason: 'l\'essai programmé est parti');
-      await tester.pump(const Duration(seconds: 15));
+      // Au-delà des 8 s de la relance, en deçà des 12 s de la borne de
+      // l'essai (qui, sur ce lecteur inerte, finirait par échouer).
+      await tester.pump(const Duration(seconds: 10));
       expect(player.loadCount, 2, reason: 'et rien ne s\'y est ajouté');
     });
 
     testWidgets(
-        'un seul essai en vol : ni la séquence ni le réseau ne doublent un '
-        'démarrage qui résout', (tester) async {
+        'un seul essai en vol : la séquence ne double pas un démarrage qui '
+        'résout', (tester) async {
+      final handshake = _ManualRadioHandshake();
+      await pumpPill(tester, handshake: handshake);
+      await tapOnce(tester);
+      handshake.complete(0);
+      await tester.pump();
+      await paintPlaying(tester);
+      await paintFailure(tester, 'Response code: 500');
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(handshake.calls, 2,
+          reason: 'l\'essai est en vol, pré-vol en cours');
+
+      await tester.pump(const Duration(seconds: 6));
+      expect(handshake.calls, 2, reason: 'rien ne s\'est cumulé');
+      expect(player.loadCount, 1);
+
+      handshake.complete(1);
+      await tester.pump();
+      expect(player.loadCount, 2);
+    });
+
+    testWidgets(
+        'le réseau qui revient fait renoncer l\'essai en vol : un essai neuf '
+        'part, l\'ancien ne rouvre rien', (tester) async {
       final network = StreamController<void>.broadcast();
       addTearDown(network.close);
       final handshake = _ManualRadioHandshake();
@@ -719,11 +745,13 @@ void main() {
 
       network.add(null);
       await tester.pump();
-      await tester.pump(const Duration(seconds: 6));
-      expect(handshake.calls, 2, reason: 'rien ne s\'est cumulé');
-      expect(player.loadCount, 1);
+      expect(handshake.calls, 3, reason: 'un essai neuf, tout de suite');
 
       handshake.complete(1);
+      await tester.pump();
+      expect(player.loadCount, 1, reason: 'l\'essai abandonné ne rouvre rien');
+
+      handshake.complete(2);
       await tester.pump();
       expect(player.loadCount, 2);
     });

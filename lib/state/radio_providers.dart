@@ -652,12 +652,20 @@ class RadioListening extends Notifier<RadioStatus> {
   /// **Le réseau est revenu ou a changé** : pendant un état instable ou une
   /// reconnexion, un essai part tout de suite et la séquence est réarmée.
   ///
-  /// Un démarrage déjà en vol n'est pas doublé — un seul essai à la fois : la
-  /// séquence réarmée servira s'il échoue.
+  /// Un démarrage déjà en vol est abandonné au profit d'un essai neuf : un
+  /// seul essai à la fois, mais jamais celui qui a commencé sans réseau.
   void _onNetwork() {
     if (!_reconnecting && state.phase != RadioPhase.unstable) return;
     _attempts = 0;
-    if (_starting) return;
+    // **Un essai en vol renonce** : parti sans réseau, ou juste avant son
+    // retour, il peut rester suspendu jusqu'à sa limite de 20 s — ExoPlayer
+    // réessaie ses chargements en silence. Mesuré sur émulateur le 09/10/2026 :
+    // réseau revenu en 0,9 s, son revenu en 34 s. Le signal ne bat qu'une fois
+    // par transition : relancer ici ne peut pas boucler.
+    if (_starting) {
+      _generation++;
+      _starting = false;
+    }
     _relaunch();
   }
 

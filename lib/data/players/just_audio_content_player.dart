@@ -39,6 +39,12 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
   ContentAudioHandler() {
     // Un seul abonnement pour republier l'état système : `playbackEventStream`
     // bat à chaque changement utile (lecture, tampon, position corrigée).
+    // La panne, elle, arrive par `errorStream` depuis just_audio 0.10 (voir
+    // `JustAudioContentPlayer`) : sans lui, la notification ne la verrait pas.
+    _player.errorStream.listen((error) {
+      _failure = error;
+      _broadcastState();
+    });
     _player.playbackEventStream.listen(
       (_) => _broadcastState(),
       // Une panne de lecture arrive **par le flux**, jamais par une exception
@@ -289,8 +295,19 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
           ),
         );
       }),
-      // Les pannes de lecture voyagent par le flux d'événements, pas par une
-      // exception. On ne s'abonne qu'à son canal d'erreur.
+      // **Les pannes de lecture arrivent par `errorStream`.** Depuis
+      // just_audio 0.10, une panne de la plateforme (réseau coupé, hôte
+      // introuvable…) n'est PLUS une erreur de `playbackEventStream` : elle
+      // voyage dans les champs `errorCode`/`errorMessage` de l'événement, que
+      // seul `errorStream` republie. Constaté le 09/10/2026 sur émulateur :
+      // ExoPlayer journalisait « Playback error », le lecteur retombait au repos
+      // avec `playing` vrai, et la radio se croyait toujours à l'antenne — ni
+      // erreur, ni tampon, donc ni reprise ni « Reconnexion… ».
+      player.errorStream.listen((error) {
+        _emit(value.copyWith(error: error, isBuffering: false));
+      }),
+      // L'ancien canal reste branché : une erreur levée par le flux lui-même
+      // ne doit pas devenir une erreur asynchrone non rattrapée.
       player.playbackEventStream.listen(
         (_) {},
         onError: (Object error, StackTrace stackTrace) {

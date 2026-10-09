@@ -135,20 +135,31 @@ class ConnectivityNetworkStatus implements NetworkStatus {
   /// souvent (portail captif, iOS qui tarde à publier) pour qu'on le laisse
   /// suspendre quoi que ce soit — il ne sert qu'à avancer un essai.
   ///
-  /// La première valeur d'un abonnement est l'état courant (Android et iOS la
-  /// publient à l'abonnement) : elle sert de point de départ et n'émet pas.
+  /// **Le point de départ vient de `checkConnectivity()`**, pas de la première
+  /// valeur du flux. Android ne republie l'état courant à l'abonnement **que
+  /// s'il existe un réseau** : abonné pendant une coupure — le cas même de la
+  /// reprise radio —, il ne publie rien, et le retour du wifi devenait le point
+  /// de départ, avalé. Mesuré sur émulateur le 09/10/2026 : la relance attendait
+  /// la cadence de 5 s au lieu de partir au retour du réseau. Une valeur égale à
+  /// la précédente (l'état courant republié) n'émet pas.
   /// L'état est **propre à chaque abonnement** (`Stream.multi`) — un
   /// abonnement repris à la prochaine coupure ne doit pas prendre l'état
   /// courant pour un changement. Une erreur du canal est tue : l'écoute ne
   /// dépend pas de ce signal.
   Stream<void> get onTransportChanged => Stream<void>.multi((out) {
-        List<ConnectivityResult>? last;
+        Set<ConnectivityResult>? last;
+        _connectivity
+            .checkConnectivity()
+            .then((results) => last ??= results.toSet())
+            .catchError((Object _) => <ConnectivityResult>{});
         final subscription = _connectivity.onConnectivityChanged.listen(
           (results) {
             final before = last;
-            last = results;
+            final now = results.toSet();
+            last = now;
             if (before == null) return;
-            if (results.contains(ConnectivityResult.none)) return;
+            if (now.isEmpty || now.contains(ConnectivityResult.none)) return;
+            if (now.length == before.length && now.containsAll(before)) return;
             out.add(null);
           },
           onError: (Object _) {},

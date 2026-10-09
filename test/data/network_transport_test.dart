@@ -11,12 +11,18 @@ void main() {
   late List<void> signals;
   late StreamSubscription<void> subscription;
 
-  setUp(() {
+  Future<void> subscribe(List<ConnectivityResult> current) async {
+    subscription =
+        ConnectivityNetworkStatus(_FakeConnectivity(os.stream, current))
+            .onTransportChanged
+            .listen(signals.add);
+    await Future<void>.delayed(Duration.zero);
+  }
+
+  setUp(() async {
     os = StreamController<List<ConnectivityResult>>.broadcast();
     signals = [];
-    subscription = ConnectivityNetworkStatus(_FakeConnectivity(os.stream))
-        .onTransportChanged
-        .listen(signals.add);
+    await subscribe([ConnectivityResult.wifi]);
   });
 
   tearDown(() async {
@@ -29,10 +35,20 @@ void main() {
     await Future<void>.delayed(Duration.zero);
   }
 
-  test('la première valeur est le point de départ, pas un changement',
+  test('l\'état courant republié à l\'abonnement n\'est pas un changement',
       () async {
-    await report([ConnectivityResult.mobile]);
+    await report([ConnectivityResult.wifi]);
     expect(signals, isEmpty);
+  });
+
+  test(
+      'abonné PENDANT la coupure, sans rien de publié : le retour du réseau '
+      'émet', () async {
+    await subscription.cancel();
+    // Android ne publie rien à l'abonnement quand il n'y a aucun réseau.
+    await subscribe([ConnectivityResult.none]);
+    await report([ConnectivityResult.wifi]);
+    expect(signals, hasLength(1));
   });
 
   test('le retour du réseau et le changement de tuyau émettent', () async {
@@ -44,33 +60,31 @@ void main() {
   });
 
   test('la perte du réseau n\'émet jamais', () async {
-    await report([ConnectivityResult.wifi]);
     await report([ConnectivityResult.none]);
     expect(signals, isEmpty);
   });
 
   test('chaque abonnement a son propre point de départ', () async {
-    await report([ConnectivityResult.wifi]);
+    await report([ConnectivityResult.mobile]);
+    expect(signals, hasLength(1), reason: 'le wifi cède aux données');
     await subscription.cancel();
-    final again = <void>[];
-    subscription = ConnectivityNetworkStatus(_FakeConnectivity(os.stream))
-        .onTransportChanged
-        .listen(again.add);
+    signals.clear();
+    await subscribe([ConnectivityResult.mobile]);
     // L'état courant republié à l'abonnement n'est pas un changement.
     await report([ConnectivityResult.mobile]);
-    expect(again, isEmpty);
+    expect(signals, isEmpty);
   });
 }
 
 class _FakeConnectivity implements Connectivity {
-  _FakeConnectivity(this._changes);
+  _FakeConnectivity(this._changes, this._current);
 
   final Stream<List<ConnectivityResult>> _changes;
+  final List<ConnectivityResult> _current;
 
   @override
   Stream<List<ConnectivityResult>> get onConnectivityChanged => _changes;
 
   @override
-  Future<List<ConnectivityResult>> checkConnectivity() async =>
-      [ConnectivityResult.wifi];
+  Future<List<ConnectivityResult>> checkConnectivity() async => _current;
 }
