@@ -55,9 +55,12 @@ const Duration kRadioStallRelaunchAfter = Duration(seconds: 8);
 /// d'erreur (iOS) : sans cette borne, une tentative pendue resterait « en vol »
 /// pour toujours, et plus rien ne partirait. Plus large que
 /// [kRadioStallRelaunchAfter] : une ouverture à froid sur EDGE doit charger la
-/// playlist et plusieurs segments avant de jouer. **Valeur à confirmer sur le
-/// terrain.**
-const Duration kRadioAttemptTimeout = Duration(seconds: 20);
+/// playlist et plusieurs segments avant de jouer — 7 à 9 s estimées, d'où
+/// 3 à 5 s de marge. Ramenée de 20 à **12 s** le 09/10/2026 (décision
+/// utilisateur) : sur émulateur, un essai parti au retour du réseau, avant
+/// qu'il ne marche vraiment, restait pendu jusqu'à la borne — 27 s de silence
+/// dans le pire cas mesuré. **Valeur à confirmer sur le terrain.**
+const Duration kRadioAttemptTimeout = Duration(seconds: 12);
 
 /// Les premières attentes après un échec, **comptées depuis cet échec**.
 const List<Duration> kRadioRetryDelays = [
