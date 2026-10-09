@@ -2,10 +2,10 @@
 ///
 /// ```
 /// GET  /radio/comments                              ['api','device']
-/// POST /radio/comments            { body }          ['api','device'] → 201 RadioCommentView
+/// POST /radio/comments            { body, heardAt? } ['api','device'] → 201 RadioCommentView
 /// PUT  /radio/pseudonym           { pseudonym }     ['api','device'] → 200 { pseudonym }
 /// POST /radio/comments/:id/reports                  ['api','device'] → 201
-/// POST /radio/reactions           { reaction }      ['api','device'] → 202
+/// POST /radio/reactions           { reaction, heardAt? } ['api','device'] → 202
 /// GET  /radio/moderation/comments                   ['api']          (modérateurs)
 /// POST /radio/moderation/comments/:id/{hide|keep|silence|reset-pseudonym}
 /// ```
@@ -51,18 +51,26 @@ class HttpRadioLiveRepository implements RadioLiveRepository {
       });
 
   @override
-  Future<void> react(RadioReaction reaction) => _guard(() async {
+  Future<void> react(RadioReaction reaction, {DateTime? heardAt}) =>
+      _guard(() async {
         await _dio.post<dynamic>(
           kRadioReactionsPath,
-          data: {'reaction': reaction.wire},
+          data: {
+            'reaction': reaction.wire,
+            if (heardAt != null) 'heardAt': heardAt.toUtc().toIso8601String(),
+          },
         );
       });
 
   @override
-  Future<RadioComment> postComment(String body) => _guard(() async {
+  Future<RadioComment> postComment(String body, {DateTime? heardAt}) =>
+      _guard(() async {
         final res = await _dio.post<dynamic>(
           kRadioCommentsPath,
-          data: {'body': body},
+          data: {
+            'body': body,
+            if (heardAt != null) 'heardAt': heardAt.toUtc().toIso8601String(),
+          },
         );
         final comment = RadioComment.fromJson(res.data);
         if (comment == null) {

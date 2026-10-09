@@ -275,6 +275,14 @@ dev_dependencies:
   build_runner: ^2.15.1
   crypto: ^3.0.7
 
+# **Copie modifiée de just_audio 0.10.6** : elle ajoute `programTimeMs()`,
+# l'heure de programme (EXT-X-PROGRAM-DATE-TIME) de ce qu'on entend — le
+# direct aligné sur l'écoute (mobile#187). Écarts et montée de version :
+# `third_party/just_audio/NOUVELLE_VIE.md`.
+dependency_overrides:
+  just_audio:
+    path: third_party/just_audio
+
 flutter:
   uses-material-design: true
   generate: true

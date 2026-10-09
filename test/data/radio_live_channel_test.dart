@@ -145,6 +145,56 @@ void main() {
       expect(event.comment.avatarUrl, isNull);
     });
 
+    test('les heures d\'antenne (#187), et leur absence sur un vieux serveur',
+        () {
+      final comment = decodeRadioChannelData(_frame('radio', {
+        'type': 'comment.posted',
+        'comment': {
+          'id': 'c-1',
+          'body': 'Amen !',
+          'createdAt': '2026-10-05T18:02:11.000Z',
+          'airedAt': '2026-10-05T18:01:50.500Z',
+          'author': {'kind': 'member', 'name': 'Ama K.'},
+        },
+      })) as RadioCommentPosted;
+      expect(
+          comment.comment.airedAt, DateTime.utc(2026, 10, 5, 18, 1, 50, 500));
+
+      final old = RadioComment.fromJson({
+        'id': 'c-2',
+        'body': 'x',
+        'createdAt': '2026-10-05T18:02:11.000Z',
+        'author': {'name': 'Ama K.'},
+      })!;
+      expect(old.airedAt, old.createdAt, reason: 'absent : createdAt');
+
+      final reactions = decodeRadioChannelData(_frame('radio', {
+        'type': 'reactions',
+        'counts': {'heart': 1},
+        'airedAt': '2026-10-05T18:01:00.000Z',
+      })) as RadioReactionsAggregated;
+      expect(reactions.airedAt, DateTime.utc(2026, 10, 5, 18, 1));
+      final bare = decodeRadioChannelData(_frame('radio', {
+        'type': 'reactions',
+        'counts': {'heart': 1},
+      })) as RadioReactionsAggregated;
+      expect(bare.airedAt, isNull, reason: 'absent : tout de suite');
+
+      final ended = DateTime.utc(2026, 10, 5, 19);
+      for (final payload in [
+        {'type': 'live.ended', 'live': null, 'endedAt': '2026-10-05T19:00Z'},
+        {
+          'type': 'live.ended',
+          'live': {'endedAt': '2026-10-05T19:00Z'},
+        },
+      ]) {
+        final event = decodeRadioChannelData(_frame('radio', payload))
+            as RadioLiveChanged;
+        expect(event.live, isNull);
+        expect(event.endedAt, ended);
+      }
+    });
+
     test('comment.hidden : l\'identifiant seul', () {
       final event = decodeRadioChannelData(_frame('radio', {
         'type': 'comment.hidden',

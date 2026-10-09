@@ -156,6 +156,24 @@ void main() {
       expect(comment.id, _comment['id']);
     });
 
+    test('l\'heure entendue part avec le commentaire et la réaction (#187)',
+        () async {
+      final (:repo, :server) = _setUp();
+      final heard = DateTime.utc(2026, 10, 5, 18, 2, 3, 250);
+      server.status = 201;
+      server.body = {'data': _comment};
+      await repo.postComment('Amen !', heardAt: heard);
+      server.status = 202;
+      server.body = {
+        'data': {'reaction': 'fire'},
+      };
+      await repo.react(RadioReaction.fire, heardAt: heard);
+      expect(server.requests.map((r) => r.data), [
+        {'body': 'Amen !', 'heardAt': '2026-10-05T18:02:03.250Z'},
+        {'reaction': 'fire', 'heardAt': '2026-10-05T18:02:03.250Z'},
+      ]);
+    });
+
     test('le pseudo', () async {
       final (:repo, :server) = _setUp();
       server.body = {

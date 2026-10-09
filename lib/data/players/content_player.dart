@@ -401,6 +401,14 @@ abstract interface class ContentPlayer
   /// l'état d'**un** contenu, et c'est à l'appelant de la reposer s'il rouvre.
   void setStatusLine(String? line);
 
+  /// **L'heure d'antenne de ce qu'on entend** (mobile#187), en UTC — lue sur
+  /// `EXT-X-PROGRAM-DATE-TIME`, écrit par liquidsoap à l'heure du VPS.
+  ///
+  /// `null` quand on ne sait pas : flux sans PDT, rien de chargé, web. Le
+  /// direct aligné (`radio_live_providers.dart`) lit alors tout tout de suite,
+  /// comme avant.
+  Future<DateTime?> heardTime();
+
   /// Relâche le média : la valeur repart à vide, la notification disparaît.
   ///
   /// À distinguer de [dispose] — après `stop`, le lecteur peut encore charger.
@@ -617,6 +625,14 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     if (_disposed) return;
     statusLine = line;
   }
+
+  /// L'heure entendue que [heardTime] rend, **posée par les tests** — `null`
+  /// par défaut : tout s'affiche tout de suite, comme sans PDT.
+  @visibleForTesting
+  DateTime? heard;
+
+  @override
+  Future<DateTime?> heardTime() async => heard;
 
   @override
   void stop() {

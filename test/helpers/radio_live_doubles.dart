@@ -73,6 +73,10 @@ class RecordingRadioLiveRepository implements RadioLiveRepository {
   int queueReads = 0;
   final List<RadioReaction> reactions = [];
   final List<String> posted = [];
+
+  /// Le `heardAt` joint à chaque réaction, puis à chaque envoi (mobile#187).
+  final List<DateTime?> reactionHeardAts = [];
+  final List<DateTime?> postHeardAts = [];
   final List<String> pseudonyms = [];
   final List<String> reports = [];
   final List<String> moderation = [];
@@ -97,15 +101,17 @@ class RecordingRadioLiveRepository implements RadioLiveRepository {
   }
 
   @override
-  Future<void> react(RadioReaction reaction) async {
+  Future<void> react(RadioReaction reaction, {DateTime? heardAt}) async {
     reactions.add(reaction);
+    reactionHeardAts.add(heardAt);
     final error = reactionError;
     if (error != null) throw error;
   }
 
   @override
-  Future<RadioComment> postComment(String body) async {
+  Future<RadioComment> postComment(String body, {DateTime? heardAt}) async {
     posted.add(body);
+    postHeardAts.add(heardAt);
     if (postResults.isNotEmpty) {
       final result = postResults.removeFirst();
       if (result is RadioLiveException) throw result;
@@ -172,6 +178,7 @@ RadioComment testComment(
   String body, {
   String name = 'Ama K.',
   RadioAuthorKind kind = RadioAuthorKind.member,
+  DateTime? airedAt,
 }) =>
     RadioComment(
       id: id,
@@ -179,6 +186,7 @@ RadioComment testComment(
       createdAt: DateTime.utc(2026, 10, 5, 18, 2),
       authorKind: kind,
       authorName: name,
+      airedAt: airedAt,
     );
 
 /// Les refus du serveur, sous la forme que le repository lève.

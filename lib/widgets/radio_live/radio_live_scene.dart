@@ -81,8 +81,9 @@ class RadioLiveScene extends ConsumerWidget {
     // En direct, une écoute qui va bien n'a rien à dire de plus que le badge
     // EN DIRECT : la pastille ne revient que pour une reprise, une panne ou
     // « hors antenne ».
+    final badge = ref.watch(radioLiveProvider.select((s) => s.showsLiveBadge));
     final phase = ref.watch(radioListeningProvider.select((s) => s.phase));
-    final showsStatus = !(isLive && phase == RadioPhase.playing);
+    final showsStatus = !(badge && phase == RadioPhase.playing);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -158,7 +159,8 @@ class _TopRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final isLive = ref.watch(radioLiveProvider.select((s) => s.isLive));
+    // Le badge s'allume avec la voix entendue, pas avec la régie (#187).
+    final badge = ref.watch(radioLiveProvider.select((s) => s.showsLiveBadge));
     final listeners = ref.watch(radioLiveProvider.select((s) => s.listeners));
     final moderator =
         ref.watch(radioLiveProvider.select((s) => s.viewer.moderator));
@@ -176,7 +178,7 @@ class _TopRow extends ConsumerWidget {
           ),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        if (isLive) ...[
+        if (badge) ...[
           const _LiveBadge(),
           const SizedBox(width: AppSpacing.sm),
         ],

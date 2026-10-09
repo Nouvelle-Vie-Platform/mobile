@@ -111,11 +111,14 @@ abstract interface class RadioLiveRepository {
   /// `GET /radio/comments` — le fil, le direct et ce que ce porteur peut faire.
   Future<RadioThread> thread();
 
-  /// `POST /radio/reactions`.
-  Future<void> react(RadioReaction reaction);
+  /// `POST /radio/reactions`. [heardAt] : l'heure d'antenne entendue au
+  /// geste (mobile#187), absente quand on ne la sait pas — le serveur prend
+  /// alors l'heure de réception.
+  Future<void> react(RadioReaction reaction, {DateTime? heardAt});
 
   /// `POST /radio/comments` → le commentaire tel que le canal le diffusera.
-  Future<RadioComment> postComment(String body);
+  /// [heardAt] : comme pour [react].
+  Future<RadioComment> postComment(String body, {DateTime? heardAt});
 
   /// `PUT /radio/pseudonym` (invité seulement) → le pseudo retenu.
   Future<String> savePseudonym(String pseudonym);
@@ -152,10 +155,10 @@ class InertRadioLiveRepository implements RadioLiveRepository {
   Future<RadioThread> thread() async => RadioThread.closed;
 
   @override
-  Future<void> react(RadioReaction reaction) async {}
+  Future<void> react(RadioReaction reaction, {DateTime? heardAt}) async {}
 
   @override
-  Future<RadioComment> postComment(String body) async =>
+  Future<RadioComment> postComment(String body, {DateTime? heardAt}) async =>
       throw const RadioLiveException(RadioLiveRefusal.closed, status: 409);
 
   @override

@@ -65,11 +65,20 @@ final class RadioChannelOpened extends RadioChannelEvent {
 
 /// `live.started` / `live.ended` : l'état public **en entier**, jamais un delta.
 final class RadioLiveChanged extends RadioChannelEvent {
-  const RadioLiveChanged({required this.live, required this.listeners});
+  const RadioLiveChanged({
+    required this.live,
+    required this.listeners,
+    this.endedAt,
+  });
 
   /// `null` : le direct vient de finir, **le fil est fermé**.
   final RadioLive? live;
   final int? listeners;
+
+  /// `live.ended` seulement : l'heure de fin à l'antenne (mobile#187). Le fil
+  /// reste ouvert jusqu'à ce qu'on l'**entende**. Absente d'un vieux serveur :
+  /// on ferme tout de suite.
+  final DateTime? endedAt;
 }
 
 /// `listeners` : le chiffre affiché vient de changer (`null` = le cacher).
@@ -80,11 +89,15 @@ final class RadioListenersChanged extends RadioChannelEvent {
 
 /// `reactions` : l'agrégat d'**une seconde** de toute l'audience.
 final class RadioReactionsAggregated extends RadioChannelEvent {
-  const RadioReactionsAggregated(this.counts);
+  const RadioReactionsAggregated(this.counts, {this.airedAt});
 
   /// Les cinq clés, zéro compris — un agrégat entièrement nul n'est jamais
   /// diffusé.
   final Map<RadioReaction, int> counts;
+
+  /// La seconde d'antenne agrégée (mobile#187) ; absente d'un vieux serveur :
+  /// l'agrégat monte tout de suite.
+  final DateTime? airedAt;
 }
 
 /// `comment.posted`.
@@ -136,20 +149,28 @@ RadioChannelEvent? decodeRadioChannelData(String data) {
     switch (type) {
       case 'live.started':
       case 'live.ended':
+        final live = payload['live'];
         return RadioLiveChanged(
-          live:
-              type == 'live.ended' ? null : RadioLive.fromJson(payload['live']),
+          live: type == 'live.ended' ? null : RadioLive.fromJson(live),
           listeners: _listeners(payload['listeners']),
+          // `endedAt` à la racine, ou dans `live` : les deux formes passent.
+          endedAt: type == 'live.ended'
+              ? _date(payload['endedAt']) ??
+                  (live is Map ? _date(live['endedAt']) : null)
+              : null,
         );
       case 'listeners':
         return RadioListenersChanged(_listeners(payload['listeners']));
       case 'reactions':
         final counts = payload['counts'];
         if (counts is! Map) return null;
-        return RadioReactionsAggregated({
-          for (final reaction in RadioReaction.values)
-            reaction: _count(counts[reaction.wire]),
-        });
+        return RadioReactionsAggregated(
+          {
+            for (final reaction in RadioReaction.values)
+              reaction: _count(counts[reaction.wire]),
+          },
+          airedAt: _date(payload['airedAt']),
+        );
       case 'comment.posted':
         final comment = RadioComment.fromJson(payload['comment']);
         return comment == null ? null : RadioCommentPosted(comment);
@@ -182,6 +203,8 @@ int? _listeners(Object? raw) {
   if (raw is double && raw.isFinite && raw >= 0) return raw.round();
   return null;
 }
+
+DateTime? _date(Object? raw) => raw is String ? DateTime.tryParse(raw) : null;
 
 int _count(Object? raw) {
   if (raw is int && raw > 0) return raw;

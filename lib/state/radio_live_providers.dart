@@ -25,6 +25,17 @@
 /// déclenche une relecture. Un garde-fou de source le verrouille
 /// (`test/state/radio_live_controller_test.dart`).
 ///
+/// ## Aligné sur l'écoute de chacun (mobile#187)
+///
+/// L'auditeur entend l'antenne ~24 s en retard. Un commentaire, un agrégat de
+/// réactions, le début et la fin du direct portent leur **heure d'antenne**
+/// (`airedAt`, `startedAt`, `endedAt`) ; ils s'appliquent quand le lecteur
+/// **entend** cette heure (`ContentPlayer.heardTime`). Entre-temps ils
+/// attendent dans une file triée, qu'**un seul `Timer` ponctuel** réarmé sur
+/// sa tête fait avancer — jamais un battement. Sans heure entendue (`null` :
+/// flux sans PDT, web), tout s'applique tout de suite, comme avant. Mes propres
+/// envois et `comment.hidden` ne passent jamais par la file.
+///
 /// ## Ouvert avec la page, fermé avec elle
 ///
 /// `autoDispose` : l'écran l'observe, Riverpod le jette quand l'écran s'en va,
@@ -39,6 +50,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_env.dart';
+import '../data/players/content_player.dart';
 import '../data/radio/http_radio_live_repository.dart';
 import '../data/radio/radio_antenna.dart';
 import '../data/radio/radio_channel.dart';
@@ -46,6 +58,7 @@ import '../data/radio/radio_live.dart';
 import '../data/radio/radio_live_repository.dart';
 import '../data/radio/radio_repository.dart';
 import '../data/radio/sse_radio_channel.dart';
+import 'player_providers.dart';
 import 'radio_providers.dart';
 
 /// Le délai avant de rouvrir un canal tombé. Nommé **une seule fois**, et
@@ -96,6 +109,7 @@ class RadioLiveState {
     this.viewer = RadioViewer.unknown,
     this.reported = const [],
     this.connected = false,
+    this.liveHeard = false,
   });
 
   final RadioLive? live;
@@ -115,7 +129,14 @@ class RadioLiveState {
   /// la page doit marcher pareil sans temps réel.
   final bool connected;
 
+  /// Le début du direct est **entendu** (`startedAt + kLiveAudioLatency`), et
+  /// sa fin pas encore. Vrai d'emblée sans heure entendue.
+  final bool liveHeard;
+
   bool get isLive => live != null;
+
+  /// **Le badge « EN DIRECT »** : il s'allume avec la voix, pas avec la régie.
+  bool get showsLiveBadge => isLive && liveHeard;
 
   /// Le champ de saisie est offert : un direct, et pas réduit au silence. Un
   /// invité sans pseudo **l'a aussi** — le serveur répondra
@@ -131,6 +152,7 @@ class RadioLiveState {
     RadioViewer? viewer,
     List<RadioReportedComment>? reported,
     bool? connected,
+    bool? liveHeard,
   }) =>
       RadioLiveState(
         live: identical(live, _keep) ? this.live : live as RadioLive?,
@@ -140,6 +162,7 @@ class RadioLiveState {
         viewer: viewer ?? this.viewer,
         reported: reported ?? this.reported,
         connected: connected ?? this.connected,
+        liveHeard: liveHeard ?? this.liveHeard,
       );
 }
 
@@ -189,11 +212,32 @@ final radioLiveProvider =
   RadioLiveController.new,
 );
 
+/// Ce que la file retardée retient : un commentaire, un agrégat, ou une
+/// bascule du direct (début ou fin entendus).
+enum _AiredKind { comment, reactions, live }
+
+/// **Un événement qui attend d'être entendu.**
+class _Aired {
+  _Aired(this.at, this.kind, this.apply, {this.commentId});
+
+  /// L'heure d'antenne à laquelle l'appliquer.
+  final DateTime at;
+  final _AiredKind kind;
+  final void Function() apply;
+  final String? commentId;
+}
+
 class RadioLiveController extends Notifier<RadioLiveState>
     with WidgetsBindingObserver {
   late RadioChannel _channel;
   late RadioLiveRepository _repository;
   late RadioRepository _antenna;
+  late ContentPlayer _player;
+
+  /// **La file retardée**, triée par heure d'antenne, et sa **seule** minuterie
+  /// — ponctuelle, armée sur la tête. Voir « Aligné sur l'écoute ».
+  final List<_Aired> _aired = [];
+  Timer? _airedTimer;
 
   StreamSubscription<RadioChannelEvent>? _subscription;
   Timer? _reopen;
@@ -236,6 +280,7 @@ class RadioLiveController extends Notifier<RadioLiveState>
     _channel = ref.watch(radioChannelProvider);
     _repository = ref.watch(radioLiveRepositoryProvider);
     _antenna = ref.watch(radioRepositoryProvider);
+    _player = ref.read(contentPlayerProvider);
     if (_bursts.isClosed) {
       _bursts = StreamController<RadioReactionBurst>.broadcast(sync: true);
     }
@@ -254,7 +299,13 @@ class RadioLiveController extends Notifier<RadioLiveState>
     // l'abonnement ne peut manquer.
     scheduleMicrotask(() => unawaited(resynchronize()));
 
-    return RadioLiveState(live: known?.live, listeners: known?.listeners);
+    return RadioLiveState(
+      live: known?.live,
+      listeners: known?.listeners,
+      // L'heure entendue n'est pas encore lue : comme avant, le badge est là
+      // dès la première image ; la relecture le corrige.
+      liveHeard: known?.live != null,
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -275,6 +326,7 @@ class RadioLiveController extends Notifier<RadioLiveState>
       onError: (Object error) {
         lastFailure = error;
         _subscription = null;
+        _forgetAired();
         _setConnected(false);
         // Un refus ne se réessaie pas : insister ne changerait pas la
         // réponse. La page vit alors de ses relectures, sans temps réel.
@@ -283,6 +335,7 @@ class RadioLiveController extends Notifier<RadioLiveState>
       },
       onDone: () {
         _subscription = null;
+        _forgetAired();
         _setConnected(false);
         _reopenLater();
       },
@@ -292,6 +345,7 @@ class RadioLiveController extends Notifier<RadioLiveState>
   }
 
   void _disconnect() {
+    _forgetAired();
     _reopen?.cancel();
     _reopen = null;
     final open = _subscription;
@@ -337,31 +391,55 @@ class RadioLiveController extends Notifier<RadioLiveState>
         lastFailure = null;
         _setConnected(true);
         unawaited(resynchronize());
-      case RadioLiveChanged(:final live, :final listeners):
+      case RadioLiveChanged(:final live, :final listeners, :final endedAt):
         if (live == null) {
-          // **Le direct est fini : le fil est fermé**, et la file avec lui.
-          state = state.copyWith(
-            live: null,
-            listeners: listeners,
-            comments: const [],
-            reported: const [],
-          );
+          state = state.copyWith(listeners: listeners);
+          final ended = state.live;
+          if (ended == null || endedAt == null) {
+            _close();
+          } else {
+            // **Le fil se ferme quand on entend la fin** — d'ici là, la fin
+            // du direct reste commentable (décision 5 du plan).
+            unawaited(_endWhenHeard(ended, endedAt.add(kLiveAudioLatency)));
+          }
         } else {
           final same = state.live == live;
           state = state.copyWith(
             live: live,
             listeners: listeners,
             comments: same ? state.comments : const [],
+            liveHeard: same ? state.liveHeard : false,
           );
+          if (!same) unawaited(_followLive(live));
           // Le porteur peut désormais écrire : `viewer` se relit.
           unawaited(_readThread());
         }
       case RadioListenersChanged(:final listeners):
         state = state.copyWith(listeners: listeners);
-      case RadioReactionsAggregated(:final counts):
-        _onAggregate(counts);
+      case RadioReactionsAggregated(:final counts, :final airedAt):
+        final bursts = _othersOf(counts);
+        if (bursts.isEmpty) break;
+        if (airedAt == null) {
+          bursts.forEach(_emit);
+        } else {
+          unawaited(_whenHeard(_Aired(
+            airedAt,
+            _AiredKind.reactions,
+            () => bursts.forEach(_emit),
+          )));
+        }
       case RadioCommentPosted(:final comment):
-        _append(comment);
+        // Déjà affiché (le mien, rendu par le `POST`) : remplacé tout de suite.
+        if (state.comments.any((shown) => shown.id == comment.id)) {
+          _append(comment);
+        } else {
+          unawaited(_whenHeard(_Aired(
+            comment.airedAt,
+            _AiredKind.comment,
+            () => _append(comment),
+            commentId: comment.id,
+          )));
+        }
       case RadioCommentHidden(:final commentId):
         _forget(commentId);
       case RadioModerationChanged(:final commentId, :final isReview):
@@ -379,7 +457,10 @@ class RadioLiveController extends Notifier<RadioLiveState>
     }
   }
 
-  void _onAggregate(Map<RadioReaction, int> counts) {
+  /// Les réactions **des autres** dans un agrégat. Les miennes sont décomptées
+  /// à la réception, pas à l'affichage : elles sont déjà montées.
+  List<RadioReactionBurst> _othersOf(Map<RadioReaction, int> counts) {
+    final bursts = <RadioReactionBurst>[];
     for (final MapEntry(key: reaction, value: count) in counts.entries) {
       if (count <= 0) continue;
       final own = _ownPending[reaction] ?? 0;
@@ -387,11 +468,12 @@ class RadioLiveController extends Notifier<RadioLiveState>
       if (matched > 0) _ownPending[reaction] = own - matched;
       final others = count - matched;
       if (others <= 0) continue;
-      _emit(RadioReactionBurst(
+      bursts.add(RadioReactionBurst(
         reaction,
         math.min(others, kRadioReactionBurstCap),
       ));
     }
+    return bursts;
   }
 
   void _emit(RadioReactionBurst burst) {
@@ -416,6 +498,7 @@ class RadioLiveController extends Notifier<RadioLiveState>
 
   void _forget(String commentId) {
     if (_disposed) return;
+    _aired.removeWhere((item) => item.commentId == commentId);
     state = state.copyWith(
       comments: [
         for (final comment in state.comments)
@@ -454,8 +537,10 @@ class RadioLiveController extends Notifier<RadioLiveState>
         return null;
       },
     );
+    final heardRead = _heardTime();
     final antenna = await antennaRead;
     final thread = await threadRead;
+    final heard = await heardRead;
     if (_disposed || generation != _generation) return;
 
     var next = state;
@@ -463,14 +548,13 @@ class RadioLiveController extends Notifier<RadioLiveState>
       next = next.copyWith(listeners: antenna.listeners, live: antenna.live);
     }
     if (thread != null) {
-      next = next.copyWith(
-        live: thread.live,
-        comments: thread.comments,
-        viewer: thread.viewer,
+      next = _withThread(next, thread, heard).copyWith(
         reported: thread.viewer.moderator ? next.reported : const [],
       );
     }
+    if (antenna != null || thread != null) next = _withLive(next, heard);
     state = next;
+    _arm(heard);
     if (thread != null) _followModeration(thread.viewer.moderator);
   }
 
@@ -478,16 +562,154 @@ class RadioLiveController extends Notifier<RadioLiveState>
     final generation = _generation;
     try {
       final thread = await _repository.thread();
+      final heard = await _heardTime();
       if (_disposed || generation != _generation) return;
-      state = state.copyWith(
-        live: thread.live,
-        comments: thread.comments,
-        viewer: thread.viewer,
-      );
+      state = _withThread(state, thread, heard);
+      _arm(heard);
       _followModeration(thread.viewer.moderator);
     } catch (error) {
       lastFailure = error;
     }
+  }
+
+  /// **Le fil relu remplace l'affichage** — mais seulement ce qu'on a déjà
+  /// entendu ; le reste repart en file, à son heure.
+  RadioLiveState _withThread(
+    RadioLiveState from,
+    RadioThread thread,
+    DateTime? heard,
+  ) {
+    _aired.removeWhere((item) => item.kind == _AiredKind.comment);
+    final shown = <RadioComment>[];
+    for (final comment in thread.comments) {
+      if (heard == null || !comment.airedAt.isAfter(heard)) {
+        shown.add(comment);
+      } else {
+        _queue(_Aired(
+          comment.airedAt,
+          _AiredKind.comment,
+          () => _append(comment),
+          commentId: comment.id,
+        ));
+      }
+    }
+    return from.copyWith(
+      live: thread.live,
+      comments: shown,
+      viewer: thread.viewer,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // La file retardée (mobile#187)
+  // ---------------------------------------------------------------------------
+
+  /// L'heure d'antenne entendue ; une panne vaut « je ne sais pas ».
+  Future<DateTime?> _heardTime() async {
+    try {
+      return await _player.heardTime();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Insère à sa place — après ses égaux, pour garder l'ordre d'arrivée.
+  void _queue(_Aired item) {
+    final at = _aired.indexWhere((other) => other.at.isAfter(item.at));
+    _aired.insert(at < 0 ? _aired.length : at, item);
+  }
+
+  Future<void> _whenHeard(_Aired item) async {
+    _queue(item);
+    await _drain();
+  }
+
+  /// **Applique ce qui est entendu, puis réarme sur la tête.**
+  ///
+  /// [reached] : l'heure que la minuterie visait. Elle est tenue pour
+  /// entendue même si le lecteur dit moins (en pause, en tampon) — sans quoi
+  /// une écoute arrêtée réarmerait sans fin la même minuterie.
+  Future<void> _drain({DateTime? reached}) async {
+    final heard = await _heardTime();
+    if (_disposed) return;
+    // `heard` nul : on ne sait pas ce qu'on entend, tout part tout de suite.
+    final now = heard == null || reached == null || heard.isAfter(reached)
+        ? heard
+        : reached;
+    while (
+        _aired.isNotEmpty && (now == null || !_aired.first.at.isAfter(now))) {
+      _aired.removeAt(0).apply();
+    }
+    _arm(heard);
+  }
+
+  /// **La seule minuterie de la file**, ponctuelle, sur sa tête.
+  void _arm(DateTime? heard) {
+    _airedTimer?.cancel();
+    _airedTimer = null;
+    if (_disposed || _aired.isEmpty) return;
+    if (heard == null) {
+      unawaited(_drain());
+      return;
+    }
+    final head = _aired.first.at;
+    _airedTimer = Timer(
+      head.difference(heard),
+      () => unawaited(_drain(reached: head)),
+    );
+  }
+
+  /// La file ne survit pas au canal : la prochaine connexion relit, et
+  /// remplace. Seules les bascules du direct restent — elles ne viennent pas
+  /// du canal.
+  void _forgetAired() {
+    _aired.removeWhere((item) => item.kind != _AiredKind.live);
+    if (_aired.isEmpty) {
+      _airedTimer?.cancel();
+      _airedTimer = null;
+    }
+  }
+
+  /// **Le badge suit le début entendu** du direct de [from].
+  RadioLiveState _withLive(RadioLiveState from, DateTime? heard) {
+    _aired.removeWhere((item) => item.kind == _AiredKind.live);
+    final live = from.live;
+    if (live == null) return from.copyWith(liveHeard: false);
+    final on = live.startedAt.add(kLiveAudioLatency);
+    if (heard == null || !on.isAfter(heard)) {
+      return from.copyWith(liveHeard: true);
+    }
+    _queue(_Aired(on, _AiredKind.live, () {
+      if (!_disposed && state.live == live) {
+        state = state.copyWith(liveHeard: true);
+      }
+    }));
+    return from.copyWith(liveHeard: false);
+  }
+
+  Future<void> _followLive(RadioLive live) async {
+    final heard = await _heardTime();
+    if (_disposed || state.live != live) return;
+    state = _withLive(state, heard);
+    _arm(heard);
+  }
+
+  Future<void> _endWhenHeard(RadioLive ended, DateTime at) async {
+    await _whenHeard(_Aired(at, _AiredKind.live, () {
+      if (state.live == ended) _close();
+    }));
+  }
+
+  /// **Le direct est fini : le fil est fermé**, et la file avec lui.
+  void _close() {
+    if (_disposed) return;
+    _aired.removeWhere((item) => item.kind != _AiredKind.reactions);
+    state = state.copyWith(
+      live: null,
+      comments: const [],
+      reported: const [],
+      liveHeard: false,
+    );
   }
 
   /// **Le modérateur écoute aussi le canal privé**, et relit sa file.
@@ -529,7 +751,9 @@ class RadioLiveController extends Notifier<RadioLiveState>
     _emit(RadioReactionBurst(reaction, 1, own: true));
     _ownPending[reaction] = (_ownPending[reaction] ?? 0) + 1;
     unawaited(
-      _repository.react(reaction).catchError((Object error) {
+      _heardTime()
+          .then((heard) => _repository.react(reaction, heardAt: heard))
+          .catchError((Object error) {
         // Elle ne reviendra dans aucun agrégat : ne plus l'attendre.
         final pending = _ownPending[reaction] ?? 0;
         if (pending > 0) _ownPending[reaction] = pending - 1;
@@ -546,7 +770,10 @@ class RadioLiveController extends Notifier<RadioLiveState>
       return RadioSendOutcome.invalid;
     }
     try {
-      final comment = await _repository.postComment(text);
+      // L'heure entendue **au geste** : le serveur en tire `airedAt`.
+      final heardAt = await _heardTime();
+      final comment = await _repository.postComment(text, heardAt: heardAt);
+      _aired.removeWhere((item) => item.commentId == comment.id);
       _append(comment);
       return RadioSendOutcome.sent;
     } on RadioLiveException catch (error) {
@@ -563,13 +790,7 @@ class RadioLiveController extends Notifier<RadioLiveState>
         case RadioLiveRefusal.closed:
           // Le serveur dit qu'il n'y a pas de direct : on le croit, même si
           // `live.ended` s'est perdu en route.
-          if (!_disposed) {
-            state = state.copyWith(
-              live: null,
-              comments: const [],
-              reported: const [],
-            );
-          }
+          _close();
           return RadioSendOutcome.closed;
         case RadioLiveRefusal.throttled:
           return RadioSendOutcome.throttled;
@@ -689,6 +910,9 @@ class RadioLiveController extends Notifier<RadioLiveState>
   void _dispose() {
     _disposed = true;
     _disconnect();
+    _aired.clear();
+    _airedTimer?.cancel();
+    _airedTimer = null;
     if (_observing) {
       WidgetsBinding.instance.removeObserver(this);
       _observing = false;

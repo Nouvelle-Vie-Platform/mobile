@@ -44,7 +44,9 @@ dépôt. Le respecter prime sur les habitudes par défaut.
   notification, et « −30 s / +30 s » est une exigence produit. Voir « Le lecteur
   de la médiathèque » plus bas — configuration native obligatoire des deux
   côtés. **Aucun des trois ne sert sur le web** (#46) : `just_audio_web` ne joue
-  rien hors Safari, et `audio_service` y est un no-op.
+  rien hors Safari, et `audio_service` y est un no-op. ⚠️ **`just_audio` est
+  une copie modifiée** (`third_party/just_audio`, `dependency_overrides`,
+  mobile#187) — voir « La copie de just_audio » plus bas.
 - **video_player ^2.11.1** (#130) — la **vidéo des statuts** (HLS du profil
   `sparks`). Swift Package, aucune permission. Lu **uniquement** par
   `lib/data/players/media_status_player.dart`, derrière `StatusPlayer` — qui
@@ -365,6 +367,28 @@ Cinq points qui se ratent en silence :
 5. **La session audio se configure APRÈS `AudioService.init()`**, en profil
    `speech()` — les plugins audio s'écrasent mutuellement, et le profil
    « musique » baisse le volume à chaque instruction du GPS.
+
+#### La copie de just_audio (`third_party/just_audio`) — mobile#187
+
+`just_audio` 0.10.6 est **copié entier** dans `third_party/just_audio` et
+branché par `dependency_overrides` : il lui manquait **l'heure de programme
+de ce qu'on entend** (`EXT-X-PROGRAM-DATE-TIME`), dont la page live a besoin
+pour s'aligner sur l'écoute de chacun. Trois ajouts, une méthode
+(`getProgramTime` sur le canal du lecteur, `AudioPlayer.programTimeMs()` en
+Dart) : Android lit `windowStartTimeMs + currentPosition` de la fenêtre
+courante, iOS `currentItem.currentDate`. Sans PDT dans le flux : `null`.
+Fichiers, lignes et montée de version (rejouer le diff) :
+`third_party/just_audio/NOUVELLE_VIE.md`.
+
+Côté application, le contrat porte `ContentPlayer.heardTime()`
+(`Future<DateTime?>`, UTC) : `JustAudioContentPlayer` la sert par
+`programTimeMs()` (toujours **le seul fichier** de `lib/` à importer
+`just_audio` pour la médiathèque), le web rend `null`, et le double inerte rend
+`heard`, qu'un test pose (défaut `null`).
+
+⚠️ **La CI ne formate que `lib test tool`**, et `flutter analyze` exclut
+`third_party/**` : le code amont n'a pas à suivre notre style, et ne doit pas
+être reformaté — le diff à rejouer en dépend.
 
 #### Le transport passe par un seul contrôleur (#114)
 
@@ -738,7 +762,7 @@ continue. Fichiers : `data/radio/radio_live.dart` (modèles),
 `radio_live_repository.dart` + `http_radio_live_repository.dart` (routes),
 `widgets/radio_live/` (scène, fil, réactions, feuilles).
 
-Six points qui se ratent en silence :
+Sept points qui se ratent en silence :
 
 1. **Le canal radio vit dans `lib/data/radio/`**, et ce n'est pas un oubli : ici
    la charge de l'événement **est** la donnée (un cœur, un message, un
@@ -777,6 +801,32 @@ Six points qui se ratent en silence :
    `E_RADIO_PSEUDONYM_REQUIRED` ouvre « Choisissez un pseudo », et le message
    (ou le signalement) **repart seul**. Le serveur se souvient du pseudo, lié au
    jeton d'appareil.
+
+7. **Aligné sur l'écoute de chacun** (mobile#187, plan
+   `server-portal/docs/radio-direct-aligne-plan.md`). L'auditeur entend
+   l'antenne ~24 s en retard ; les événements des **autres** portent leur heure
+   d'antenne (`comment.airedAt` — `createdAt` sur un vieux serveur —,
+   `reactions.airedAt`, `startedAt`, `live.ended.endedAt`) et s'appliquent
+   quand `ContentPlayer.heardTime()` l'atteint. Ils attendent dans une **file
+   triée à un seul `Timer` ponctuel**, réarmé sur sa tête (garde-fou de
+   source : deux `Timer(` dans le contrôleur, la réouverture et la file).
+   Quand la minuterie sonne, sa tête est tenue pour entendue même si le
+   lecteur, en pause, dit moins : pas de réarmement sans fin. **Sans heure
+   entendue (`null`), tout est immédiat**, comme avant. Restent immédiats :
+   mes envois (le `POST` et leur écho), `comment.hidden` (qui retire aussi
+   de la file), et `_ownPending`, décompté à la réception de l'agrégat. La
+   relecture n'affiche que ce qui est entendu et met le reste en file ; la
+   chute du canal et `dispose` vident la file (sauf les bascules du direct,
+   qui ne viennent pas du canal). Le badge « EN DIRECT » lit
+   `showsLiveBadge` : vrai de `startedAt + kLiveAudioLatency` à
+   `endedAt + kLiveAudioLatency` **entendus** (`kLiveAudioLatency`, 4 s,
+   `radio_live.dart`, **à mesurer**) ; `live.ended` laisse le fil et le champ
+   ouverts jusqu'à la fin entendue (décision 5 : la fin se commente).
+   `heardAt` part avec `POST /radio/comments` et `POST /radio/reactions`
+   quand il est connu. ⚠️ Une relecture pendant ce dernier quart de minute
+   ferme le fil aussitôt (le serveur dit déjà « fini ») ; et **le mini-lecteur
+   n'est pas aligné** : son badge lit toujours `radioAntennaProvider`, sans
+   heure entendue ni minuterie.
 
 **Les invités n'ont rien de particulier à faire** : le coffre ne tient qu'un
 jeton, et `ApiClient` pose le jeton d'appareil sur le flux SSE comme sur les
