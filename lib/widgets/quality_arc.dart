@@ -53,7 +53,7 @@ class QualityArc<T> extends StatelessWidget {
   final Key? sliderKey;
 
   static const double _small = 60;
-  static const double _big = 96;
+  static const double _big = 112;
   static const double _step = 32 * math.pi / 180;
   static const double _sliderHeight = 76;
   static const double _sliderMargin = 28;
@@ -227,7 +227,7 @@ class _ArcPainter extends CustomPainter {
   final double fraction;
   final Color track;
 
-  static const double _stroke = 10;
+  static const double _stroke = 14;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -244,9 +244,9 @@ class _ArcPainter extends CustomPainter {
     final dashes = Paint()
       ..color = track
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
+      ..strokeWidth = 6
       ..strokeCap = StrokeCap.round;
-    final dash = 6 / geometry.radius;
+    final dash = 5 / geometry.radius;
     final end = start + sweep;
     for (var a = start + filled + 2 * dash; a < end; a += 2 * dash) {
       canvas.drawArc(rect, a, dash, false, dashes);
@@ -271,10 +271,10 @@ class _ArcPainter extends CustomPainter {
         ..color = AppColors.primary.withValues(alpha: 0.18)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
-    canvas.drawCircle(handle, 13, Paint()..color = Colors.white);
+    canvas.drawCircle(handle, 15, Paint()..color = Colors.white);
     canvas.drawCircle(
       handle,
-      13,
+      15,
       Paint()
         ..color = AppColors.primary
         ..style = PaintingStyle.stroke
@@ -313,7 +313,10 @@ class _Pastille extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final inner = size * 0.64;
+    // Le choix porte son nom DANS sa bulle, sous le pictogramme : le rond
+    // plein rétrécit et remonte à mesure que le nom paraît.
+    final inner = size * (0.64 - 0.14 * labelOpacity);
+    final lift = size * 0.12 * labelOpacity;
 
     return Semantics(
       container: true,
@@ -332,21 +335,24 @@ class _Pastille extends StatelessWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: palette.surface.withValues(alpha: 0.7),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
+                  color: palette.surface.withValues(alpha: 0.55),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.10),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
+                      color: Colors.white.withValues(alpha: 0.9),
+                      blurRadius: 18,
+                      spreadRadius: 4,
+                    ),
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.06),
+                      blurRadius: 28,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
               ),
             ),
-            Center(
+            Align(
+              alignment: Alignment(0, -lift / (size / 2)),
               child: Container(
                 width: inner,
                 height: inner,
@@ -363,9 +369,9 @@ class _Pastille extends StatelessWidget {
             ),
             if (labelOpacity > 0)
               Positioned(
-                top: size + 6,
-                left: -40,
-                right: -40,
+                bottom: size * 0.14,
+                left: 4,
+                right: 4,
                 child: Opacity(
                   opacity: labelOpacity,
                   child: Text(
@@ -374,8 +380,9 @@ class _Pastille extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.caption.copyWith(
+                      fontSize: 11,
                       color: palette.textPrimary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),

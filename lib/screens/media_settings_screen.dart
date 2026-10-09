@@ -90,12 +90,16 @@ class MediaSettingsScreen extends ConsumerWidget {
             TabBar(
               labelColor: palette.textPrimary,
               unselectedLabelColor: palette.textSecondary,
+              // Trois mots en capitales espacées sur la largeur d'un
+              // téléphone étroit : marges serrées, et chaque libellé se
+              // réduit plutôt que de se couper.
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
               labelStyle: AppTypography.caption.copyWith(
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.4,
+                letterSpacing: 1.1,
               ),
               unselectedLabelStyle: AppTypography.caption.copyWith(
-                letterSpacing: 1.4,
+                letterSpacing: 1.1,
               ),
               indicatorSize: TabBarIndicatorSize.label,
               indicator: UnderlineTabIndicator(
@@ -103,9 +107,9 @@ class MediaSettingsScreen extends ConsumerWidget {
               ),
               dividerColor: Colors.transparent,
               tabs: [
-                Tab(text: l.mediaSettingsRadio.toUpperCase()),
-                Tab(text: l.mediaSettingsListening.toUpperCase()),
-                Tab(text: l.mediaSettingsDownload.toUpperCase()),
+                _tab(l.mediaSettingsRadio),
+                _tab(l.mediaSettingsListening),
+                _tab(l.mediaSettingsDownload),
               ],
             ),
             Expanded(
@@ -144,6 +148,13 @@ class MediaSettingsScreen extends ConsumerWidget {
       ),
     );
   }
+
+  static Widget _tab(String label) => Tab(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(label.toUpperCase(), maxLines: 1),
+        ),
+      );
 
   Widget _usagePage(
     AppLocalizations l,
@@ -242,14 +253,17 @@ class _QualityPage<T> extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: 0,
-          height: 280,
+          height: 380,
           child: IgnorePointer(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment.bottomCenter,
-                  radius: 1.1,
-                  colors: [Color(0x598FB0F5), Color(0x008FB0F5)],
+                  // Le rayon se compte sur la hauteur de la boîte : à 0,9 le
+                  // dégradé s'éteint avant son bord haut, qui sinon se lirait
+                  // comme une ligne en travers de l'écran.
+                  radius: 0.9,
+                  colors: [Color(0x998FB0F5), Color(0x008FB0F5)],
                 ),
               ),
             ),
@@ -257,7 +271,7 @@ class _QualityPage<T> extends StatelessWidget {
         ),
         SingleChildScrollView(
           padding: const EdgeInsets.only(
-            top: AppSpacing.xl,
+            top: AppSpacing.xxl,
             bottom: AppSpacing.xxl,
           ),
           child: Column(
@@ -268,9 +282,9 @@ class _QualityPage<T> extends StatelessWidget {
                   question,
                   textAlign: TextAlign.center,
                   style: AppTypography.h1.copyWith(
-                    fontSize: 36,
+                    fontSize: 34,
                     height: 1.15,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w400,
                     color: palette.textPrimary,
                   ),
                 ),
@@ -287,7 +301,7 @@ class _QualityPage<T> extends StatelessWidget {
                       AppTypography.body.copyWith(color: palette.textSecondary),
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: 48),
               QualityArc<T>(
                 values: values,
                 selected: selected,

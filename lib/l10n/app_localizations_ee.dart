@@ -997,14 +997,13 @@ class AppLocalizationsEe extends AppLocalizations {
   String get mediaSettingsListening => 'Écoute';
 
   @override
-  String get qualityQuestionRadio => 'Quelle qualité pour la radio ?';
+  String get qualityQuestionRadio => 'Quelle qualité pour la radio ?';
 
   @override
-  String get qualityQuestionListening => 'Quelle qualité pour l\'écoute ?';
+  String get qualityQuestionListening => 'Quelle qualité pour l\'écoute ?';
 
   @override
-  String get qualityQuestionDownload =>
-      'Quelle qualité pour les téléchargements ?';
+  String get qualityQuestionDownload => 'Quelle qualité en téléchargement ?';
 
   @override
   String get qualityLead =>

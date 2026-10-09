@@ -1825,19 +1825,19 @@ abstract class AppLocalizations {
   /// Grand titre centré de l'onglet Radio de la page Qualité, posé en question
   ///
   /// In fr, this message translates to:
-  /// **'Quelle qualité pour la radio ?'**
+  /// **'Quelle qualité pour la radio ?'**
   String get qualityQuestionRadio;
 
   /// No description provided for @qualityQuestionListening.
   ///
   /// In fr, this message translates to:
-  /// **'Quelle qualité pour l\'écoute ?'**
+  /// **'Quelle qualité pour l\'écoute ?'**
   String get qualityQuestionListening;
 
   /// No description provided for @qualityQuestionDownload.
   ///
   /// In fr, this message translates to:
-  /// **'Quelle qualité pour les téléchargements ?'**
+  /// **'Quelle qualité en téléchargement ?'**
   String get qualityQuestionDownload;
 
   /// Ligne d'explication grise sous le titre de la page Qualité, deux lignes au plus
