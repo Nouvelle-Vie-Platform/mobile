@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/core/config/radio_config.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
@@ -6,6 +8,7 @@ import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/screens/radio_screen.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:maison_du_miracle/widgets/app_error_state.dart';
 import 'package:maison_du_miracle/widgets/content_player_view.dart';
 
 import '../helpers/pump_screen.dart';
@@ -334,4 +337,58 @@ void main() {
       expect(player.resumeCount, 0);
     });
   });
+  testWidgets(
+      'ouverte hors ligne : l\'état se fond dans la scène, et le retour du '
+      'réseau relit l\'antenne sans geste', (tester) async {
+    final network = StreamController<void>.broadcast();
+    addTearDown(network.close);
+    final repo = _OfflineThenOnline();
+    await pumpScreen(
+      tester,
+      const RadioScreen(),
+      radio: repo,
+      radioNetwork: network.stream,
+      overrides: [contentPlayerProvider.overrideWithValue(player)],
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+
+    expect(find.byKey(AppErrorState.retryKey), findsOneWidget);
+    // Pas de carte posée sur l'image : aucun AppCard dans l'état d'erreur.
+    expect(
+      find.descendant(
+        of: find.byType(AppErrorState),
+        matching: find
+            .byWidgetPredicate((w) => w.runtimeType.toString() == 'AppCard'),
+      ),
+      findsNothing,
+    );
+    final offline = repo.calls;
+
+    repo.online = true;
+    network.add(null);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(
+      repo.calls,
+      greaterThan(offline),
+      reason: 'relue au retour du réseau, sans appui',
+    );
+    expect(find.byKey(AppErrorState.retryKey), findsNothing);
+  });
+}
+
+class _OfflineThenOnline implements RadioRepository {
+  var online = false;
+  var calls = 0;
+
+  @override
+  Future<RadioAntenna> antenna() async {
+    calls++;
+    if (!online) throw Exception('Failed host lookup');
+    return kTestAntennaOnAir;
+  }
+
+  @override
+  Future<void> reportListening(String listenId) async {}
 }

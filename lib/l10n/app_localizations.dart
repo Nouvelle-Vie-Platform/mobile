@@ -4233,6 +4233,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'La meilleure que permet votre réseau'**
   String get qualitySoundAdaptive;
+
+  /// Titre de la page radio ouverte hors ligne, sur la scène sombre
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de réseau pour l\'instant'**
+  String get radioOfflineTitle;
+
+  /// Phrase de la page radio ouverte hors ligne : la relance est automatique
+  ///
+  /// In fr, this message translates to:
+  /// **'La radio repart toute seule dès que le réseau revient.'**
+  String get radioOfflineMessage;
 }
 
 class _AppLocalizationsDelegate

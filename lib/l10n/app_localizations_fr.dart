@@ -2337,4 +2337,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get qualitySoundAdaptive => 'La meilleure que permet votre réseau';
+
+  @override
+  String get radioOfflineTitle => 'Pas de réseau pour l\'instant';
+
+  @override
+  String get radioOfflineMessage =>
+      'La radio repart toute seule dès que le réseau revient.';
 }

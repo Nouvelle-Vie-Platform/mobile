@@ -38,6 +38,8 @@ class ContentPlayerView extends ConsumerStatefulWidget {
     required this.retractedTitle,
     required this.retractedMessage,
     required this.onRetry,
+    this.errorTitle,
+    this.errorMessage,
     this.guests,
     this.downloadContentType,
     this.isLive = false,
@@ -121,6 +123,12 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   final String retractedTitle;
   final String retractedMessage;
   final VoidCallback onRetry;
+
+  /// Le titre et la phrase d'un échec de chargement, quand l'écran sait mieux
+  /// que le message générique ce qui se passe — la radio, qui repart seule au
+  /// retour du réseau. Nuls : `errorStateMessage` décide.
+  final String? errorTitle;
+  final String? errorMessage;
   final String? downloadContentType;
 
   /// Mode live : masque les options secondaires et adapte les contrôles.
@@ -266,8 +274,11 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
               child: Padding(
                 padding: AppSpacing.screenPadding,
                 child: AppErrorState(
-                  message: errorStateMessage(error, context.l10n),
+                  title: widget.errorTitle,
+                  message: widget.errorMessage ??
+                      errorStateMessage(error, context.l10n),
                   onRetry: widget.onRetry,
+                  onDark: true,
                 ),
               ),
             ),
@@ -834,6 +845,7 @@ class _PlayerStage extends ConsumerWidget {
             message: l10n.playerErrorMessage,
             retryLabel: l10n.playerErrorRetry,
             onRetry: onResume,
+            onDark: true,
           ),
         ),
       _Stage.needsNetwork => ContentAbsenceView(

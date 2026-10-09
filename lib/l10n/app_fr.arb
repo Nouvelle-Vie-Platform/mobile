@@ -1349,5 +1349,9 @@
   "qualitySoundFull": "Voix et musique pleines",
   "@qualitySoundFull": {"description": "Rendu des paliers hauts"},
   "qualitySoundAdaptive": "La meilleure que permet votre réseau",
-  "@qualitySoundAdaptive": {"description": "Rendu du choix Automatique"}
+  "@qualitySoundAdaptive": {"description": "Rendu du choix Automatique"},
+  "radioOfflineTitle": "Pas de réseau pour l'instant",
+  "@radioOfflineTitle": {"description": "Titre de la page radio ouverte hors ligne, sur la scène sombre"},
+  "radioOfflineMessage": "La radio repart toute seule dès que le réseau revient.",
+  "@radioOfflineMessage": {"description": "Phrase de la page radio ouverte hors ligne : la relance est automatique"}
 }

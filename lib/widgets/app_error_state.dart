@@ -31,6 +31,7 @@ class AppErrorState extends StatelessWidget {
     this.message,
     this.retryLabel,
     this.icon = Icons.wifi_off_rounded,
+    this.onDark = false,
   });
 
   /// Rappelé au clic sur « Réessayer ». Un état d'erreur sans porte de sortie
@@ -49,6 +50,12 @@ class AppErrorState extends StatelessWidget {
 
   final IconData icon;
 
+  /// **Sur une scène sombre** (les lecteurs plein écran) : pas de carte rose
+  /// posée sur l'image, mais le texte blanc et le rond translucide de
+  /// `ContentAbsenceView(onDark: true)` — les états d'un même écran parlent
+  /// le même langage. La carte claire jurait sur le fond de l'antenne.
+  final bool onDark;
+
   /// Clé du bouton d'action, pour le cibler depuis les tests.
   static const Key retryKey = Key('app_error_state_retry');
 
@@ -56,6 +63,58 @@ class AppErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = context.l10n;
+
+    if (onDark) {
+      const primary = Colors.white;
+      final secondary = Colors.white.withValues(alpha: 0.75);
+      return Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 32, color: primary),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              title ?? l10n.stateErrorTitle,
+              textAlign: TextAlign.center,
+              style: AppTypography.h4.copyWith(color: primary),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              message ?? l10n.stateErrorMessage,
+              textAlign: TextAlign.center,
+              style: AppTypography.body.copyWith(color: secondary),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            // Une pilule en contour translucide : sur une image, un bouton
+            // plein et blanc pèserait plus que le message qu'il accompagne.
+            OutlinedButton.icon(
+              key: retryKey,
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: Text(retryLabel ?? l10n.stateRetry),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: primary,
+                side: BorderSide(color: primary.withValues(alpha: 0.45)),
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
+                ),
+                textStyle: AppTypography.bodyStrong,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return AppCard(
       color: palette.dangerBg,
