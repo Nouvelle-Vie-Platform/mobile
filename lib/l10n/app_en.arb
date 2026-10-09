@@ -732,5 +732,21 @@
   "sharedContentDocs": "Docs",
   "sharedContentMediaEmpty": "No photos or videos shared",
   "sharedContentLinksEmpty": "No links shared",
-  "sharedContentDocsEmpty": "No documents shared"
+  "sharedContentDocsEmpty": "No documents shared",
+  "qualityHoursPerGigabyte": "1 GB of data ≈ {hours} h of listening",
+  "qualityHoursPerGigabyteAtLeast": "1 GB of data ≈ at least {hours} h of listening",
+  "qualityNowWifi": "You are on wifi",
+  "qualityNowCellular": "You are on mobile data",
+  "qualityNetworkEdge": "Works even on 2G (EDGE)",
+  "qualityNetworkWeak": "Decent 2G or 3G is enough",
+  "qualityNetwork3g": "3G is enough",
+  "qualityNetworkGood": "Good 3G or 4G",
+  "qualityNetworkStrong": "Needs 4G or wifi",
+  "qualityNetworkAdaptive": "Any network: steps down by itself when it weakens",
+  "qualityNetworkListeningAuto": "Thrifty on mobile data, full on wifi",
+  "qualitySoundVoice": "Clear voice, muffled music",
+  "qualitySoundVoiceMusic": "Crisp voice, decent music",
+  "qualitySoundClear": "Crisp voice and music",
+  "qualitySoundFull": "Full voice and music",
+  "qualitySoundAdaptive": "The best your network allows"
 }

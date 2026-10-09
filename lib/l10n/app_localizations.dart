@@ -4137,6 +4137,102 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Aucun document partagé'**
   String get sharedContentDocsEmpty;
+
+  /// Ligne de la carte d'informations : combien d'heures tient un forfait de 1 Go à ce palier
+  ///
+  /// In fr, this message translates to:
+  /// **'1 Go de forfait ≈ {hours} h d\'écoute'**
+  String qualityHoursPerGigabyte(int hours);
+
+  /// Même ligne pour Automatique : calculée au palier le plus haut, donc un minimum
+  ///
+  /// In fr, this message translates to:
+  /// **'1 Go de forfait ≈ {hours} h d\'écoute au moins'**
+  String qualityHoursPerGigabyteAtLeast(int hours);
+
+  /// Réseau actuel de l'appareil, en tête de la carte d'informations
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes en wifi'**
+  String get qualityNowWifi;
+
+  /// Réseau actuel de l'appareil, en tête de la carte d'informations
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes en données mobiles'**
+  String get qualityNowCellular;
+
+  /// Réseau qui suffit au palier radio 16 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Passe même en 2G (EDGE)'**
+  String get qualityNetworkEdge;
+
+  /// Réseau qui suffit au palier radio 32 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Une 2G correcte ou la 3G suffisent'**
+  String get qualityNetworkWeak;
+
+  /// Réseau qui suffit au palier d'écoute 64 k
+  ///
+  /// In fr, this message translates to:
+  /// **'La 3G suffit'**
+  String get qualityNetwork3g;
+
+  /// Réseau qui suffit au palier d'écoute 128 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Une bonne 3G ou la 4G'**
+  String get qualityNetworkGood;
+
+  /// Réseau qu'exigent les paliers hauts (128 k radio, 192 k écoute)
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande la 4G ou le wifi'**
+  String get qualityNetworkStrong;
+
+  /// Réseau du choix Automatique de la radio
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous réseaux : descend seule quand ça faiblit'**
+  String get qualityNetworkAdaptive;
+
+  /// Ce que fait Automatique pour l'écoute des enseignements
+  ///
+  /// In fr, this message translates to:
+  /// **'Économe en données mobiles, pleine en wifi'**
+  String get qualityNetworkListeningAuto;
+
+  /// Rendu du palier radio 16 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix claire, musique sourde'**
+  String get qualitySoundVoice;
+
+  /// Rendu des paliers radio 32 k et écoute 64 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix nette, musique correcte'**
+  String get qualitySoundVoiceMusic;
+
+  /// Rendu du palier d'écoute 128 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix et musique nettes'**
+  String get qualitySoundClear;
+
+  /// Rendu des paliers hauts
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix et musique pleines'**
+  String get qualitySoundFull;
+
+  /// Rendu du choix Automatique
+  ///
+  /// In fr, this message translates to:
+  /// **'La meilleure que permet votre réseau'**
+  String get qualitySoundAdaptive;
 }
 
 class _AppLocalizationsDelegate

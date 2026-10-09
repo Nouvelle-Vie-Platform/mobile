@@ -74,7 +74,7 @@ void main() {
       expect(find.text('RADIO'), findsOneWidget);
       expect(find.text('ÉCOUTE'), findsOneWidget);
       expect(find.text('TÉLÉCHARGEMENT'), findsOneWidget);
-      expect(find.text('Quelle qualité pour la radio ?'), findsOneWidget);
+      expect(find.text('Quelle qualité pour la radio\u00a0?'), findsOneWidget);
     });
 
     testWidgets('ni Direct ni Mon assemblée ici', (tester) async {
@@ -116,7 +116,7 @@ void main() {
         RadioQuality.high,
       ]) {
         final width = tester.getSize(radioOption(other)).width;
-        expect(chosenWidth / width, closeTo(1.6, 0.01), reason: '$other');
+        expect(chosenWidth / width, closeTo(104 / 60, 0.01), reason: '$other');
       }
       expect(
         find.descendant(of: chosen, matching: find.text('Économie')),
@@ -127,6 +127,53 @@ void main() {
       expect(find.text('Minimum'), findsNothing);
       // La consommation vient du débit : 32 k ≈ 14 Mo par heure.
       expect(find.text('≈ 14 Mo par heure'), findsOneWidget);
+    });
+
+    testWidgets(
+        'les pastilles restent à leur place : seule la taille suit le choix',
+        (tester) async {
+      Map<RadioQuality, Offset> centers() => {
+            for (final q in RadioQuality.values)
+              q: tester.getCenter(radioOption(q)),
+          };
+
+      await pump(
+        tester,
+        preferences: const MediaPreferences(radio: RadioQuality.economy),
+      );
+      final before = centers();
+      await pump(
+        tester,
+        preferences: const MediaPreferences(radio: RadioQuality.high),
+      );
+      final after = centers();
+
+      for (final q in RadioQuality.values) {
+        expect(after[q]!.dx, closeTo(before[q]!.dx, 0.5), reason: '$q');
+        expect(after[q]!.dy, closeTo(before[q]!.dy, 0.5), reason: '$q');
+      }
+      // De gauche à droite, dans l'ordre de l'arc.
+      for (var i = 1; i < RadioQuality.values.length; i++) {
+        expect(
+          before[RadioQuality.values[i]]!.dx,
+          greaterThan(before[RadioQuality.values[i - 1]]!.dx),
+        );
+      }
+    });
+
+    testWidgets('la carte dit le forfait en heures, le réseau et le rendu',
+        (tester) async {
+      await pump(
+        tester,
+        preferences: const MediaPreferences(radio: RadioQuality.minimum),
+      );
+      expect(find.text('≈ 7 Mo par heure'), findsOneWidget);
+      expect(
+        find.text('1 Go de forfait ≈ 142 h d\'écoute'),
+        findsOneWidget,
+      );
+      expect(find.text('Passe même en 2G (EDGE)'), findsOneWidget);
+      expect(find.text('Voix claire, musique sourde'), findsOneWidget);
     });
 
     testWidgets('Automatique dit qu\'il s\'adapte', (tester) async {
@@ -184,7 +231,7 @@ void main() {
       await pump(tester);
       await openTab(tester, 'ÉCOUTE');
 
-      expect(find.text('Quelle qualité pour l\'écoute ?'), findsOneWidget);
+      expect(find.text('Quelle qualité pour l\'écoute\u00a0?'), findsOneWidget);
       for (final quality in MediaSettingsScreen.arcOrder) {
         await tester.tap(find.byKey(
           MediaSettingsScreen.optionKey(MediaUsage.streaming, quality),
@@ -231,7 +278,7 @@ void main() {
       await openTab(tester, 'TÉLÉCHARGEMENT');
 
       expect(
-        find.text('Quelle qualité pour les téléchargements ?'),
+        find.text('Quelle qualité en téléchargement\u00a0?'),
         findsOneWidget,
       );
       for (final quality in MediaSettingsScreen.arcOrder) {

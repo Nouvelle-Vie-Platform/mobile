@@ -14,10 +14,10 @@ import '../theme/app_typography.dart';
 /// pas le même type de valeur que l'écoute — d'où le paramètre de type.
 ///
 /// Géométrie :
-/// - **les pastilles** tournent sur un cercle de rayon `0,52 × largeur` dont
-///   le sommet porte le choix ; chaque voisine est décalée de 32°. Le choix
-///   est 1,6 fois plus grand et porte son nom ; au-delà de deux crans une
-///   pastille s'efface, et celles du bord sont coupées par l'écran ;
+/// - **les pastilles sont fixes** : chacune reste au-dessus de son cran du
+///   curseur, le long de la normale à l'arc. Quand la poignée arrive à son
+///   niveau, elle grossit (×1,7) et porte son nom ; les autres reprennent
+///   leur petite taille sur place ;
 /// - **le curseur** est un arc de cercle tendu d'un bord à l'autre (corde =
 ///   largeur − 2 × marge, flèche [_sliderSag]). Les valeurs y sont réparties
 ///   à intervalles égaux ; le trait plein va du bord gauche à la poignée.
@@ -42,7 +42,9 @@ class QualityArc<T> extends StatelessWidget {
   final List<T> values;
   final T selected;
   final String Function(T value) labelOf;
-  final IconData Function(T value) iconOf;
+
+  /// Le pictogramme d'un choix, dessiné en blanc à la taille donnée.
+  final Widget Function(T value, double size) iconOf;
   final ValueChanged<T> onSelected;
 
   /// Le nom du curseur pour les lecteurs d'écran.
@@ -53,11 +55,22 @@ class QualityArc<T> extends StatelessWidget {
   final Key? sliderKey;
 
   static const double _small = 60;
-  static const double _big = 112;
-  static const double _step = 32 * math.pi / 180;
+  static const double _big = 104;
   static const double _sliderHeight = 76;
   static const double _sliderMargin = 28;
   static const double _sliderSag = 40;
+
+  /// Distance entre le cran du curseur et le centre de sa pastille, le long
+  /// de la normale à l'arc : les pastilles suivent la courbe, au-dessus.
+  static const double _lift = 84;
+
+  /// Hauteur réservée aux pastilles au-dessus du curseur.
+  static const double _zone = _lift + _big / 2 - 4;
+
+  /// La fraction d'arc du cran [i] : les crans sont au milieu de parts
+  /// égales, jamais aux bouts — une grande pastille au bord sortirait de
+  /// l'écran.
+  double _stop(double i) => (i + 0.5) / values.length;
 
   @override
   Widget build(BuildContext context) {
@@ -69,84 +82,79 @@ class QualityArc<T> extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
+        final geometry = _ArcGeometry(width);
         return TweenAnimationBuilder<double>(
           tween: Tween(end: index.toDouble()),
           duration: duration,
           curve: Curves.easeOutCubic,
-          builder: (context, position, _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _pastilles(width, position),
-              _slider(context, width, position, index),
-            ],
+          builder: (context, position, _) => SizedBox(
+            width: width,
+            height: _zone + _sliderHeight,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: _zone,
+                  height: _sliderHeight,
+                  child: _slider(context, geometry, position, index),
+                ),
+                // **Les pastilles ne bougent pas** : chacune reste au-dessus
+                // de son cran, et c'est sa taille qui suit la poignée. Le
+                // choix se peint en dernier, donc par-dessus ses voisines.
+                for (final i in _paintOrder(position))
+                  _placed(i, position, geometry),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _pastilles(double width, double position) {
-    final radius = width * 0.52;
-    const top = _big / 2 + 8;
-    final height = top + radius * (1 - math.cos(2 * _step)) + _small / 2 + 8;
+  List<int> _paintOrder(double position) =>
+      List.generate(values.length, (i) => i)
+        ..sort((a, b) => (b - position).abs().compareTo((a - position).abs()));
 
-    // Le choix se peint en dernier, donc par-dessus ses voisines.
-    final order = List.generate(values.length, (i) => i)
-      ..sort((a, b) => (b - position).abs().compareTo((a - position).abs()));
-
-    return SizedBox(
-      width: width,
-      height: height,
-      child: Stack(
-        children: [
-          for (final i in order)
-            _placed(i - position, width, radius, top, values[i]),
-        ],
-      ),
-    );
-  }
-
-  Widget _placed(double d, double width, double radius, double top, T value) {
-    final distance = d.abs();
-    final size = _big + (_small - _big) * distance.clamp(0.0, 1.0);
-    final angle = d * _step;
-    final x = width / 2 + radius * math.sin(angle);
-    final y = top + radius * (1 - math.cos(angle));
-    final opacity = (3 - distance).clamp(0.0, 1.0);
-    final labelOpacity = (1 - distance * 2).clamp(0.0, 1.0);
+  Widget _placed(int i, double position, _ArcGeometry geometry) {
+    final distance = (i - position).abs();
+    final grow = (1 - distance).clamp(0.0, 1.0);
+    final size = _small + (_big - _small) * grow;
+    final onArc = geometry.pointAt(_stop(i.toDouble()));
+    final normal = (onArc - geometry.center) / geometry.radius;
+    final center = onArc + normal * _lift + const Offset(0, _zone);
+    final value = values[i];
 
     return Positioned(
-      left: x - size / 2,
-      top: y - size / 2,
+      left: center.dx - size / 2,
+      top: center.dy - size / 2,
       width: size,
       height: size,
-      child: IgnorePointer(
-        ignoring: opacity == 0,
-        child: Opacity(
-          opacity: opacity,
-          child: _Pastille(
-            key: keyOf?.call(value),
-            size: size,
-            icon: iconOf(value),
-            label: labelOf(value),
-            labelOpacity: labelOpacity,
-            selected: value == selected,
-            onTap: () => onSelected(value),
-          ),
-        ),
+      child: _Pastille(
+        key: keyOf?.call(value),
+        size: size,
+        glyph: (size) => iconOf(value, size),
+        label: labelOf(value),
+        labelOpacity: (grow * 2 - 1).clamp(0.0, 1.0),
+        selected: value == selected,
+        onTap: () => onSelected(value),
       ),
     );
   }
 
   Widget _slider(
-      BuildContext context, double width, double position, int index) {
+    BuildContext context,
+    _ArcGeometry geometry,
+    double position,
+    int index,
+  ) {
     final palette = context.palette;
-    final geometry = _ArcGeometry(width);
     final last = values.length - 1;
-    final t = last == 0 ? 0.0 : position / last;
 
     void selectAt(Offset local) {
-      final i = (geometry.fractionAt(local) * last).round();
+      final f = geometry.fractionAt(local);
+      final i = (f * values.length - 0.5).round().clamp(0, last);
       if (i != index) onSelected(values[i]);
     }
 
@@ -166,10 +174,10 @@ class QualityArc<T> extends StatelessWidget {
         onHorizontalDragStart: (details) => selectAt(details.localPosition),
         onHorizontalDragUpdate: (details) => selectAt(details.localPosition),
         child: CustomPaint(
-          size: Size(width, _sliderHeight),
+          size: Size(geometry.width, _sliderHeight),
           painter: _ArcPainter(
             geometry: geometry,
-            fraction: t,
+            fraction: _stop(position),
             track: palette.border,
           ),
         ),
@@ -181,7 +189,7 @@ class QualityArc<T> extends StatelessWidget {
 /// L'arc du curseur : un cercle dont on ne garde que la calotte, posée sur
 /// toute la largeur. φ se mesure depuis le sommet, positif vers la droite.
 class _ArcGeometry {
-  _ArcGeometry(double width)
+  _ArcGeometry(this.width)
       : center = Offset(
           width / 2,
           QualityArc._sliderMargin / 2 + _radiusFor(width),
@@ -199,6 +207,7 @@ class _ArcGeometry {
     return (half * half + sag * sag) / (2 * sag);
   }
 
+  final double width;
   final Offset center;
   final double radius;
   final double halfAngle;
@@ -296,7 +305,7 @@ class _Pastille extends StatelessWidget {
   const _Pastille({
     super.key,
     required this.size,
-    required this.icon,
+    required this.glyph,
     required this.label,
     required this.labelOpacity,
     required this.selected,
@@ -304,7 +313,7 @@ class _Pastille extends StatelessWidget {
   });
 
   final double size;
-  final IconData icon;
+  final Widget Function(double size) glyph;
   final String label;
   final double labelOpacity;
   final bool selected;
@@ -364,7 +373,7 @@ class _Pastille extends StatelessWidget {
                     colors: [Color(0xFF5B7FE0), AppColors.primary],
                   ),
                 ),
-                child: Icon(icon, color: Colors.white, size: inner * 0.5),
+                child: Center(child: glyph(inner * 0.5)),
               ),
             ),
             if (labelOpacity > 0)
@@ -392,4 +401,53 @@ class _Pastille extends StatelessWidget {
       ),
     );
   }
+}
+
+/// **Trois barres de signal, dont [level] pleines** — le pictogramme des
+/// paliers fixes. Les icônes Material d'une seule barre se lisent comme un
+/// point à cette taille ; ici les barres vides restent visibles en filigrane,
+/// et « une sur trois » se comprend d'un coup d'œil.
+class SignalLevelGlyph extends StatelessWidget {
+  const SignalLevelGlyph({super.key, required this.level, required this.size});
+
+  /// 1, 2 ou 3.
+  final int level;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+        size: Size.square(size),
+        painter: _SignalPainter(level),
+      );
+}
+
+class _SignalPainter extends CustomPainter {
+  _SignalPainter(this.level);
+
+  final int level;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bar = size.width * 0.22;
+    final gap = (size.width - 3 * bar) / 2;
+    for (var i = 0; i < 3; i++) {
+      final height = size.height * (0.4 + 0.3 * i);
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          i * (bar + gap),
+          size.height - height,
+          bar,
+          height,
+        ),
+        Radius.circular(bar / 3),
+      );
+      canvas.drawRRect(
+        rect,
+        Paint()..color = Colors.white.withValues(alpha: i < level ? 1 : 0.32),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SignalPainter old) => old.level != level;
 }

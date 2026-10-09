@@ -2283,4 +2283,58 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sharedContentDocsEmpty => 'Aucun document partagé';
+
+  @override
+  String qualityHoursPerGigabyte(int hours) {
+    return '1 Go de forfait ≈ $hours h d\'écoute';
+  }
+
+  @override
+  String qualityHoursPerGigabyteAtLeast(int hours) {
+    return '1 Go de forfait ≈ $hours h d\'écoute au moins';
+  }
+
+  @override
+  String get qualityNowWifi => 'Vous êtes en wifi';
+
+  @override
+  String get qualityNowCellular => 'Vous êtes en données mobiles';
+
+  @override
+  String get qualityNetworkEdge => 'Passe même en 2G (EDGE)';
+
+  @override
+  String get qualityNetworkWeak => 'Une 2G correcte ou la 3G suffisent';
+
+  @override
+  String get qualityNetwork3g => 'La 3G suffit';
+
+  @override
+  String get qualityNetworkGood => 'Une bonne 3G ou la 4G';
+
+  @override
+  String get qualityNetworkStrong => 'Demande la 4G ou le wifi';
+
+  @override
+  String get qualityNetworkAdaptive =>
+      'Tous réseaux : descend seule quand ça faiblit';
+
+  @override
+  String get qualityNetworkListeningAuto =>
+      'Économe en données mobiles, pleine en wifi';
+
+  @override
+  String get qualitySoundVoice => 'Voix claire, musique sourde';
+
+  @override
+  String get qualitySoundVoiceMusic => 'Voix nette, musique correcte';
+
+  @override
+  String get qualitySoundClear => 'Voix et musique nettes';
+
+  @override
+  String get qualitySoundFull => 'Voix et musique pleines';
+
+  @override
+  String get qualitySoundAdaptive => 'La meilleure que permet votre réseau';
 }
