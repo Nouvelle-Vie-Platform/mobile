@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -949,14 +950,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mediaSettingsTitle => 'Quality & data';
 
   @override
-  String get mediaSettingsLead =>
-      'These settings change nothing on the church network. They protect your data plan when you are out.';
-
-  @override
   String get mediaSettingsStreaming => 'Listening to a message';
-
-  @override
-  String get mediaSettingsLive => 'Live';
 
   @override
   String get mediaSettingsDownload => 'Download';
@@ -990,14 +984,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mediaSettingsRadio => 'Radio';
 
   @override
-  String radioQualityImpactAuto(int mb) {
-    return 'Bitrate follows your network, on wifi and mobile data alike · up to ≈ $mb MB per hour.';
+  String get mediaSettingsListening => 'Listening';
+
+  @override
+  String get qualityQuestionRadio => 'What quality for the radio?';
+
+  @override
+  String get qualityQuestionListening => 'What quality for listening?';
+
+  @override
+  String get qualityQuestionDownload => 'What quality for downloads?';
+
+  @override
+  String get qualityLead =>
+      'Quality adapts to your network, or stays fixed to save your data.';
+
+  @override
+  String get radioQualityMinimum => 'Minimum';
+
+  @override
+  String qualityPerHour(int mb) {
+    return '≈ $mb MB per hour';
   }
 
   @override
-  String radioQualityImpactEconomy(int mb) {
-    return '≈ $mb MB per hour · speech stays clear, worship loses depth.';
-  }
+  String get qualityAdaptive => 'Adapts to your network';
 
   @override
   String get mediaQualityAuto => 'Automatic';
@@ -1010,26 +1021,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mediaQualityHigh => 'High';
-
-  @override
-  String mediaQualityImpactAuto(int mb) {
-    return '≈ $mb MB per hour on mobile data, better quality on wifi.';
-  }
-
-  @override
-  String mediaQualityImpactLow(int mb) {
-    return '≈ $mb MB per hour · fine for preaching, the choir loses depth.';
-  }
-
-  @override
-  String mediaQualityImpactMid(int mb) {
-    return '≈ $mb MB per hour · worship regains its fullness.';
-  }
-
-  @override
-  String mediaQualityImpactHigh(int mb) {
-    return '≈ $mb MB per hour · every nuance, at full price.';
-  }
 
   @override
   String get themeSectionTitle => 'Appearance';

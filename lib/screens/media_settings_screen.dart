@@ -1,78 +1,76 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/local/settings_dao.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/media_preferences.dart';
-import '../state/branch_scope_providers.dart';
 import '../state/media_settings_providers.dart';
 import '../state/theme_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
-import '../widgets/app_card.dart';
 import '../widgets/brand_app_bar.dart';
+import '../widgets/quality_arc.dart';
 
-/// **Qualité & données** (`/settings/media`).
+/// **Qualité** (`/settings/media`) — trois onglets, un cadran chacun (#184).
 ///
-/// Trois usages, quatre paliers chacun. Ce que le panneau promet réellement,
-/// aujourd'hui, est plus étroit que ce qu'il montre — et il faut le savoir
-/// avant d'y toucher :
+/// RADIO · ÉCOUTE · TÉLÉCHARGEMENT. Chaque onglet pose une question en grand,
+/// une ligne d'explication, puis le cadran ([QualityArc]) et la consommation
+/// du choix. Le choix s'enregistre au toucher, sans bouton « valider ».
 ///
-/// - **l'écoute** agit sur **iOS** (`AVPlayer.preferredPeakBitRate`) et sur le
-///   **web** (`hls.js`, `autoLevelCapping`), par `BitrateCapController`, câblé
-///   dans `main.dart` — et sur **Android** par l'URL du rendu, `just_audio` y
-///   ignorant le plafond. Seul le mode `auto` reste sans effet sur Android ;
-/// - **le direct** n'a pas de lecteur — `LiveScreen` affiche une vignette
-///   décorative et un compteur de spectateurs en dur ;
-/// - **le téléchargement** n'existe pas, et `docs/mediatheque-en-ligne.md` §2
-///   en fait un refus **documenté**, pas un reste-à-faire.
+/// Ce que chaque réglage fait réellement — et ce qu'il ne fait pas — est écrit
+/// dans `CLAUDE.md`, « Les réglages média » :
 ///
-/// **La radio** a sa section à elle, deux choix et non quatre paliers
-/// (`RadioQuality`) : elle agit partout, par l'URL que `RadioListening` ouvre.
+/// - **la radio** agit partout, par l'URL que `RadioListening` ouvre
+///   (`RadioAntenna.streamUrlFor`) ; changer pendant l'écoute relance
+///   l'antenne, et c'est `RadioListening` qui écoute le réglage, pas cet écran ;
+/// - **l'écoute** agit sur iOS et le web par le plafond
+///   (`BitrateCapController`), sur Android par l'URL du rendu ;
+/// - **le téléchargement** se range sans piloter de débit
+///   (`docs/mediatheque-en-ligne.md` §2) ; son interrupteur de réseau, lui,
+///   alimente `DownloadManager.mobileDataAllowed`.
 ///
-/// Les trois sont néanmoins réglables et enregistrés, à la demande explicite du
-/// produit. Le jour où l'un des deux derniers existera, la préférence sera déjà
-/// là et il n'y aura rien à changer ici.
+/// **Le direct n'est plus réglable** : aucun lecteur ne lisait son palier.
+/// **Mon assemblée** a quitté cette page pour la sienne (`BranchScopeScreen`).
 ///
-/// **Les chiffres ne s'inventent pas.** Les Mo par heure viennent des débits de
-/// `MediaQuality`, eux-mêmes recopiés de l'échelle du transcodeur. Écrire une
-/// valeur en dur dans une traduction la ferait mentir à la première fois qu'on
-/// touche à l'échelle.
+/// **En-tête : `BrandAppBar`**, comme toutes les pages poussées depuis le
+/// Profil (confidentialité, téléchargements, suppression) — même retour, même
+/// bandeau. L'air de la maquette commence dessous, sur `AppBackground`, dont
+/// le dégradé clair est déjà presque blanc-lavande.
 ///
-/// ## **Mon assemblée** — une section qui n'est pas de la qualité
+/// **Les onglets ne glissent pas** : le curseur en arc se tire à
+/// l'horizontale, et un `TabBarView` glissant lui disputerait le geste.
 ///
-/// La **préférence de branche** vit ici, en tête du panneau, et il faut savoir
-/// que ce n'est pas sa place définitive : elle ne parle ni de débit ni de
-/// forfait, et le titre de l'écran (« Qualité & données ») ne la couvre pas.
-/// Elle y est parce que c'est le seul écran de réglages **déjà routé** et
-/// **atteignable par un invité** — l'onglet Profil suppose un compte, et le
-/// réglage doit servir au porteur d'appareil anonyme. Le jour où une route
-/// `/settings` générique existera (`lib/router/app_router.dart`), la section
-/// déménage telle quelle : elle est autonome, elle ne lit rien de cet écran.
-///
-/// Elle est **en tête** et non en pied parce que c'est le réglage qui change ce
-/// qu'on voit, là où les trois autres changent seulement ce qu'on consomme.
+/// **Les chiffres ne s'inventent pas.** Les Mo par heure viennent des débits
+/// de `MediaQuality` et `RadioQuality`, jamais d'une traduction.
 class MediaSettingsScreen extends ConsumerWidget {
   const MediaSettingsScreen({super.key});
 
-  /// Clés de test : une par usage, pour cibler le bon groupe d'options.
+  /// Clé de test d'une pastille, par usage et par palier.
   static Key optionKey(MediaUsage usage, MediaQuality quality) =>
       Key('media_${usage.key}_${quality.key}');
 
-  /// Clé de test d'un choix de la radio.
+  /// Clé de test d'une pastille de la radio.
   static Key radioOptionKey(RadioQuality quality) =>
       Key('media_${MediaUsage.radio.key}_${quality.key}');
+
+  /// Clé de test du curseur en arc d'un usage.
+  static Key sliderKey(MediaUsage usage) => Key('media_${usage.key}_slider');
 
   /// Le toggle « Télécharger en données mobiles » (F8).
   static const Key downloadOnCellularKey = Key('media_download_on_cellular');
 
-  /// Clé de test d'une option d'assemblée. `null` = « toutes les assemblées ».
-  static Key branchOptionKey(int? branchId) =>
-      Key('branch_scope_${branchId ?? 'all'}');
+  /// L'ordre de l'arc pour l'écoute et le téléchargement, du plus économe au
+  /// plus riche — Automatique avant Haute, comme pour la radio. L'ordre de
+  /// l'enum, lui, ne bouge pas.
+  static const List<MediaQuality> arcOrder = [
+    MediaQuality.low,
+    MediaQuality.mid,
+    MediaQuality.auto,
+    MediaQuality.high,
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -80,266 +78,64 @@ class MediaSettingsScreen extends ConsumerWidget {
     final palette = context.palette;
     final preferences =
         ref.watch(mediaPreferencesProvider).value ?? const MediaPreferences();
+    final dao = ref.read(settingsDaoProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: BrandAppBar(title: l.mediaSettingsTitle),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.lg,
-          AppSpacing.lg,
-          AppSpacing.xxl,
-        ),
-        children: [
-          const _BranchScopeSection(),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            l.mediaSettingsLead,
-            style: AppTypography.body.copyWith(color: palette.textSecondary),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          for (final usage in MediaUsage.values) ...[
-            if (usage == MediaUsage.radio)
-              // La radio a ses deux choix à elle (`RadioQuality`). Changer
-              // pendant l'écoute relance l'antenne sur la bonne URL : c'est
-              // `RadioListening` qui écoute le réglage, pas cet écran.
-              _RadioSection(
-                selected: preferences.radio,
-                onSelect: (quality) =>
-                    ref.read(settingsDaoProvider).setRadioQuality(quality),
-              )
-            else
-              _UsageSection(
-                usage: usage,
-                selected: preferences.of(usage),
-                onSelect: (quality) => ref
-                    .read(settingsDaoProvider)
-                    .setMediaQuality(usage, quality),
-              ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          // **Le réseau autorisé pour les téléchargements** (F8), distinct des
-          // qualités : un booléen, pas un palier. Rangé juste sous la section
-          // « Téléchargement », qui est la dernière du panneau.
-          _DownloadOnCellularToggle(
-            value: preferences.downloadOnCellular,
-            onChanged: (allowed) =>
-                ref.read(settingsDaoProvider).setDownloadOnCellular(allowed),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// **Mon assemblée** — la préférence de branche.
-///
-/// **Elle ne lit que le magasin local**, et c'est une décision, pas un
-/// raccourci. Une première version appelait `BranchScope.hydrateFromAccount()`
-/// dans un `initState`, pour adopter au passage ce que le compte porte. Elle est
-/// retirée, pour trois raisons qui vont toutes dans le même sens :
-///
-/// 1. **l'écran n'en a pas besoin.** La préférence est persistée localement : le
-///    panneau est exact sans réseau, et c'est précisément ce qui la rend
-///    utilisable par un invité dans un taxi ;
-/// 2. **le réseau ne peint jamais** (ADR-0026). Faire partir un `GET /auth/me`
-///    au montage d'un panneau de réglages, pour ne rien afficher de nouveau,
-///    contredit la règle qui gouverne tout le reste de ce dépôt ;
-/// 3. **ça a cassé un test qui passait.** `media_settings_screen_test.dart` est
-///    tombé sur « A Timer is still pending » : sous `flutter test`,
-///    `AppEnv.useBackend` vaut vrai, le miroir réel partait sur une socket que
-///    le harnais refuse, et Dio laissait derrière lui sa minuterie de délai. Le
-///    fichier porte déjà en en-tête la trace d'un blocage du même genre. Un test
-///    existant n'a pas à changer pour accommoder une section nouvelle.
-///
-/// `hydrateFromAccount()` reste sur `BranchScope`, vérifiée par
-/// `test/data/branch_scope_test.dart`, et **attend son appelant** : le démarrage
-/// de session (`lib/app.dart` / `lib/state/auth_providers.dart`), qui est sa
-/// vraie place — une seule fois par session, là où un appel réseau est déjà
-/// attendu. Ce n'est pas un oubli.
-///
-/// Corollaire du même souci : la sélection et la liste se lisent **ponctuellement**
-/// et non en flux Drift, parce qu'un `QueryStream` laisse une minuterie pendante
-/// qui tue les tests de cet écran. Voir `preferredBranchProvider`. C'est donc
-/// [_BranchScopeSectionState._choose] qui invalide après un geste.
-class _BranchScopeSection extends ConsumerStatefulWidget {
-  const _BranchScopeSection();
-
-  @override
-  ConsumerState<_BranchScopeSection> createState() =>
-      _BranchScopeSectionState();
-}
-
-/// **Un `State` sans `initState`**, et c'est le point : il n'existe que pour le
-/// `mounted` de [_BranchScopeSectionState._choose]. Rien ne part au montage.
-class _BranchScopeSectionState extends ConsumerState<_BranchScopeSection> {
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final palette = context.palette;
-    final selected = ref.watch(preferredBranchProvider).value;
-    final branches = ref.watch(branchScopeChoicesProvider).value ?? const [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l.branchScopeTitle,
-          style: AppTypography.bodyStrong.copyWith(color: palette.textPrimary),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          context.words.branchScopeLead,
-          style: AppTypography.caption.copyWith(color: palette.textSecondary),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        AppCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              // **« Toutes » est toujours là**, même quand la liste n'est pas
-              // arrivée : c'est le défaut, et un panneau qui ne proposerait
-              // rien du tout donnerait l'impression d'un réglage en panne.
-              _ChoiceOption(
-                key: MediaSettingsScreen.branchOptionKey(null),
-                label: l.branchScopeAll,
-                impact: l.branchScopeAllSubtitle,
-                selected: selected == null,
-                last: branches.isEmpty,
-                onTap: () => _choose(null),
-              ),
-              if (branches.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    0,
-                    AppSpacing.lg,
-                    AppSpacing.md,
-                  ),
-                  child: Text(
-                    l.branchScopeEmpty,
-                    style: AppTypography.caption
-                        .copyWith(color: palette.textSecondary),
-                  ),
-                ),
-              for (final branch in branches)
-                _ChoiceOption(
-                  key: MediaSettingsScreen.branchOptionKey(branch.id),
-                  label: branch.name,
-                  impact: null,
-                  selected: selected == branch.id,
-                  last: branch.id == branches.last.id,
-                  onTap: () => _choose(branch.id),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// **Le seul geste de cet écran qui touche la synchronisation.**
-  ///
-  /// `BranchScope.choose` pose la préférence, marque les quatre collections
-  /// concernées « à remplacer » et relance un cycle. Rien n'est attendu ici :
-  /// l'écran se repeint dès que le magasin change, et le cycle peut durer.
-  void _choose(int? branchId) {
-    unawaited(
-      ref.read(branchScopeProvider).choose(branchId).then((_) {
-        // Le cycle de synchronisation peut durer plus longtemps que l'écran.
-        if (!mounted) return;
-        // **C'est l'écran qui invalide**, parce que c'est l'écran qui a changé
-        // la valeur. La préférence se lit ponctuellement et non en flux (un
-        // `QueryStream` Drift laisse une minuterie pendante qui tue les tests
-        // d'écran — voir `preferredBranchProvider`), donc la coche ne se
-        // déplacerait pas d'elle-même. Une ligne explicite vaut mieux qu'un flux
-        // qui coûte un piège.
-        ref.invalidate(preferredBranchProvider);
-      }).catchError((Object error) {
-        // Muet, comme le reste : le réglage local, lui, est déjà posé.
-        debugPrint('[branche] choix non propagé : $error');
-      }),
-    );
-  }
-}
-
-/// Une ligne d'assemblée — ou un choix de la radio —, sur le patron exact de [_Option] — même rond de
-/// sélection, même séparateur, même place réservée pour la phrase d'impact.
-///
-/// Un type distinct et non [_Option] paramétré : celui-ci porte un
-/// [MediaQuality] et en dérive son libellé et son coût horaire. Les fondre
-/// obligerait à passer des chaînes toutes faites à l'un et un enum à l'autre,
-/// et ferait entrer un réglage d'affichage dans le type du réglage de débit.
-class _ChoiceOption extends StatelessWidget {
-  const _ChoiceOption({
-    super.key,
-    required this.label,
-    required this.impact,
-    required this.selected,
-    required this.last,
-    required this.onTap,
-  });
-
-  final String label;
-
-  /// La phrase qui dit ce que l'option fait voir ou coûte, `null` quand il n'y
-  /// a rien à ajouter — un nom d'assemblée se passe de commentaire.
-  final String? impact;
-  final bool selected;
-  final bool last;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final line = impact;
-
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          border: last
-              ? null
-              : Border(bottom: BorderSide(color: palette.border, width: 0.6)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: BrandAppBar(title: l.mediaSettingsTitle),
+        body: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Icon(
-                selected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-                size: 20,
-                color: selected ? AppColors.primary : palette.textSecondary,
+            TabBar(
+              labelColor: palette.textPrimary,
+              unselectedLabelColor: palette.textSecondary,
+              labelStyle: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.4,
               ),
+              unselectedLabelStyle: AppTypography.caption.copyWith(
+                letterSpacing: 1.4,
+              ),
+              indicatorSize: TabBarIndicatorSize.label,
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(color: palette.textPrimary, width: 1.5),
+              ),
+              dividerColor: Colors.transparent,
+              tabs: [
+                Tab(text: l.mediaSettingsRadio.toUpperCase()),
+                Tab(text: l.mediaSettingsListening.toUpperCase()),
+                Tab(text: l.mediaSettingsDownload.toUpperCase()),
+              ],
             ),
-            const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: TabBarView(
+                physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  Text(
-                    label,
-                    style: AppTypography.body.copyWith(
-                      color: palette.textPrimary,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  _QualityPage<RadioQuality>(
+                    question: l.qualityQuestionRadio,
+                    values: RadioQuality.values,
+                    selected: preferences.radio,
+                    labelOf: (q) => _radioLabel(l, q),
+                    iconOf: _radioIcon,
+                    keyOf: radioOptionKey,
+                    sliderKey: sliderKey(MediaUsage.radio),
+                    consumptionOf: (q) => q == RadioQuality.auto
+                        ? l.qualityAdaptive
+                        : l.qualityPerHour(q.megabytesPerHour),
+                    onSelected: dao.setRadioQuality,
+                  ),
+                  _usagePage(l, MediaUsage.streaming, preferences, dao),
+                  _usagePage(
+                    l,
+                    MediaUsage.download,
+                    preferences,
+                    dao,
+                    footer: _DownloadOnCellularToggle(
+                      value: preferences.downloadOnCellular,
+                      onChanged: dao.setDownloadOnCellular,
                     ),
                   ),
-                  if (line != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      line,
-                      style: AppTypography.caption
-                          .copyWith(color: palette.textSecondary),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -348,13 +144,188 @@ class _ChoiceOption extends StatelessWidget {
       ),
     );
   }
+
+  Widget _usagePage(
+    AppLocalizations l,
+    MediaUsage usage,
+    MediaPreferences preferences,
+    SettingsDao dao, {
+    Widget? footer,
+  }) =>
+      _QualityPage<MediaQuality>(
+        question: usage == MediaUsage.download
+            ? l.qualityQuestionDownload
+            : l.qualityQuestionListening,
+        values: arcOrder,
+        selected: preferences.of(usage),
+        labelOf: (q) => _mediaLabel(l, q),
+        iconOf: _mediaIcon,
+        keyOf: (q) => optionKey(usage, q),
+        sliderKey: sliderKey(usage),
+        consumptionOf: (q) => q == MediaQuality.auto
+            ? l.qualityAdaptive
+            : l.qualityPerHour(q.megabytesPerHour),
+        onSelected: (q) => dao.setMediaQuality(usage, q),
+        footer: footer,
+      );
+
+  static String _radioLabel(AppLocalizations l, RadioQuality q) =>
+      switch (q) {
+        RadioQuality.minimum => l.radioQualityMinimum,
+        RadioQuality.economy => l.mediaQualityLow,
+        RadioQuality.auto => l.mediaQualityAuto,
+        RadioQuality.high => l.mediaQualityHigh,
+      };
+
+  static String _mediaLabel(AppLocalizations l, MediaQuality q) =>
+      switch (q) {
+        MediaQuality.low => l.mediaQualityLow,
+        MediaQuality.mid => l.mediaQualityMid,
+        MediaQuality.auto => l.mediaQualityAuto,
+        MediaQuality.high => l.mediaQualityHigh,
+      };
+
+  /// **Un pictogramme par niveau, le même d'un onglet à l'autre** : les barres
+  /// de signal disent la quantité (une, deux, trois), la feuille dit
+  /// l'économie, l'étincelle dit « l'appli décide ».
+  static IconData _radioIcon(RadioQuality q) => switch (q) {
+        RadioQuality.minimum => Icons.signal_cellular_alt_1_bar,
+        RadioQuality.economy => Icons.eco,
+        RadioQuality.auto => Icons.auto_awesome,
+        RadioQuality.high => Icons.signal_cellular_alt,
+      };
+
+  static IconData _mediaIcon(MediaQuality q) => switch (q) {
+        MediaQuality.low => Icons.eco,
+        MediaQuality.mid => Icons.signal_cellular_alt_2_bar,
+        MediaQuality.auto => Icons.auto_awesome,
+        MediaQuality.high => Icons.signal_cellular_alt,
+      };
 }
 
-/// L'interrupteur « Télécharger en données mobiles » (F8).
+/// Un onglet : la question, l'explication, le cadran, la consommation, et le
+/// halo qui monte du bas de l'écran.
+class _QualityPage<T> extends StatelessWidget {
+  const _QualityPage({
+    required this.question,
+    required this.values,
+    required this.selected,
+    required this.labelOf,
+    required this.iconOf,
+    required this.keyOf,
+    required this.sliderKey,
+    required this.consumptionOf,
+    required this.onSelected,
+    this.footer,
+  });
+
+  final String question;
+  final List<T> values;
+  final T selected;
+  final String Function(T value) labelOf;
+  final IconData Function(T value) iconOf;
+  final Key Function(T value) keyOf;
+  final Key sliderKey;
+  final String Function(T value) consumptionOf;
+  final ValueChanged<T> onSelected;
+  final Widget? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final palette = context.palette;
+    final extra = footer;
+
+    return Stack(
+      children: [
+        // Le halo : un dégradé radial bleu clair, très diffus, qui monte du
+        // bas. Décoratif — il ne prend aucun toucher.
+        const Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 280,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.bottomCenter,
+                  radius: 1.1,
+                  colors: [Color(0x598FB0F5), Color(0x008FB0F5)],
+                ),
+              ),
+            ),
+          ),
+        ),
+        SingleChildScrollView(
+          padding: const EdgeInsets.only(
+            top: AppSpacing.xl,
+            bottom: AppSpacing.xxl,
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  question,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.h1.copyWith(
+                    fontSize: 36,
+                    height: 1.15,
+                    fontWeight: FontWeight.w500,
+                    color: palette.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Text(
+                  l.qualityLead,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body
+                      .copyWith(color: palette.textSecondary),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              QualityArc<T>(
+                values: values,
+                selected: selected,
+                labelOf: labelOf,
+                iconOf: iconOf,
+                keyOf: keyOf,
+                sliderKey: sliderKey,
+                semanticsLabel: l.mediaSettings,
+                onSelected: onSelected,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                consumptionOf(selected),
+                textAlign: TextAlign.center,
+                style: AppTypography.bodyLarge.copyWith(
+                  color: palette.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (extra != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                extra,
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// L'interrupteur « Télécharger en données mobiles » (F8), sobre, sous la
+/// consommation de l'onglet Téléchargement.
 ///
-/// Défaut **désactivé** (wifi seulement) : le sous-titre dit le pourquoi, comme
-/// les phrases d'impact des paliers de qualité — un réglage réseau se choisit en
-/// connaissant ce qu'il coûte.
+/// Défaut **désactivé** (wifi seulement) : le sous-titre dit le pourquoi — un
+/// réglage réseau se choisit en connaissant ce qu'il coûte.
 class _DownloadOnCellularToggle extends StatelessWidget {
   const _DownloadOnCellularToggle({
     required this.value,
@@ -369,245 +340,29 @@ class _DownloadOnCellularToggle extends StatelessWidget {
     final l = context.l10n;
     final palette = context.palette;
 
-    return AppCard(
-      padding: EdgeInsets.zero,
-      // La carte peint son propre fond ; un `ListTile` peint le sien sur le
-      // Material le plus proche. Sans ce Material transparent intermédiaire,
-      // Flutter avertit que l'encre du switch serait masquée.
-      child: Material(
-        type: MaterialType.transparency,
-        child: SwitchListTile(
-          key: MediaSettingsScreen.downloadOnCellularKey,
-          value: value,
-          onChanged: onChanged,
-          activeThumbColor: AppColors.primary,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.xs,
-          ),
-          title: Text(
-            l.mediaSettingsDownloadOnCellular,
-            style: AppTypography.body.copyWith(
-              color: palette.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(
-              l.mediaSettingsDownloadOnCellularSubtitle,
-              style:
-                  AppTypography.caption.copyWith(color: palette.textSecondary),
-            ),
+    // Un `SwitchListTile` peint son encre sur le Material le plus proche : sans
+    // ce Material transparent, Flutter avertit qu'elle serait masquée.
+    return Material(
+      type: MaterialType.transparency,
+      child: SwitchListTile(
+        key: MediaSettingsScreen.downloadOnCellularKey,
+        value: value,
+        onChanged: onChanged,
+        activeThumbColor: AppColors.primary,
+        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+        title: Text(
+          l.mediaSettingsDownloadOnCellular,
+          style: AppTypography.body.copyWith(
+            color: palette.textPrimary,
+            fontWeight: FontWeight.w600,
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// **La radio et ses deux choix** (décision 10 du plan radio adaptative).
-///
-/// Les libellés reprennent ceux des paliers (« Automatique », « Économie ») ;
-/// les phrases d'impact sont propres à la radio, parce que son automatique ne
-/// bride pas en données mobiles. Les Mo viennent de [RadioQuality], jamais
-/// d'une traduction.
-class _RadioSection extends StatelessWidget {
-  const _RadioSection({required this.selected, required this.onSelect});
-
-  final RadioQuality selected;
-  final ValueChanged<RadioQuality> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final palette = context.palette;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l.mediaSettingsRadio,
-          style: AppTypography.bodyStrong.copyWith(color: palette.textPrimary),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        AppCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              for (final quality in RadioQuality.values)
-                _ChoiceOption(
-                  key: MediaSettingsScreen.radioOptionKey(quality),
-                  label: switch (quality) {
-                    RadioQuality.auto => l.mediaQualityAuto,
-                    RadioQuality.economy => l.mediaQualityLow,
-                  },
-                  impact: switch (quality) {
-                    RadioQuality.auto =>
-                      l.radioQualityImpactAuto(quality.megabytesPerHour),
-                    RadioQuality.economy =>
-                      l.radioQualityImpactEconomy(quality.megabytesPerHour),
-                  },
-                  selected: quality == selected,
-                  last: quality == RadioQuality.values.last,
-                  onTap: () => onSelect(quality),
-                ),
-            ],
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Text(
+            l.mediaSettingsDownloadOnCellularSubtitle,
+            style: AppTypography.caption.copyWith(color: palette.textSecondary),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Un usage et ses quatre paliers.
-class _UsageSection extends StatelessWidget {
-  const _UsageSection({
-    required this.usage,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  final MediaUsage usage;
-  final MediaQuality selected;
-  final ValueChanged<MediaQuality> onSelect;
-
-  String _title(BuildContext context, AppLocalizations l) => switch (usage) {
-        // La seule des trois que le catalogue du portail déclare surchargeable
-        // (`surface: 'mobile'`) — d'où `context.words` ici et `l` à côté.
-        MediaUsage.streaming => context.words.mediaSettingsStreaming,
-        MediaUsage.live => l.mediaSettingsLive,
-        MediaUsage.download => l.mediaSettingsDownload,
-        // Jamais atteint : la radio a sa propre section.
-        MediaUsage.radio => l.mediaSettingsRadio,
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final palette = context.palette;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _title(context, l),
-          style: AppTypography.bodyStrong.copyWith(color: palette.textPrimary),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        AppCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              for (final quality in MediaQuality.values)
-                _Option(
-                  key: MediaSettingsScreen.optionKey(usage, quality),
-                  quality: quality,
-                  selected: quality == selected,
-                  last: quality == MediaQuality.values.last,
-                  onTap: () => onSelect(quality),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// **Le sélecteur maison** : un titre, et juste en dessous la phrase qui dit ce
-/// que ce palier coûte et ce qu'il fait perdre.
-///
-/// Une liste de lignes plutôt qu'un `DropdownButton` : le menu déroulant
-/// masquerait justement la phrase d'impact tant qu'on ne l'ouvre pas, alors que
-/// c'est elle qui fait choisir. Ici les quatre arbitrages sont lisibles d'un
-/// seul regard, sans geste préalable.
-class _Option extends StatelessWidget {
-  const _Option({
-    super.key,
-    required this.quality,
-    required this.selected,
-    required this.last,
-    required this.onTap,
-  });
-
-  final MediaQuality quality;
-  final bool selected;
-  final bool last;
-  final VoidCallback onTap;
-
-  String _label(AppLocalizations l) => switch (quality) {
-        MediaQuality.auto => l.mediaQualityAuto,
-        MediaQuality.low => l.mediaQualityLow,
-        MediaQuality.mid => l.mediaQualityMid,
-        MediaQuality.high => l.mediaQualityHigh,
-      };
-
-  /// Le chiffre vient de l'échelle, jamais d'une chaîne écrite à la main.
-  String _impact(AppLocalizations l) {
-    final mb = quality.megabytesPerHour;
-    return switch (quality) {
-      MediaQuality.auto => l.mediaQualityImpactAuto(mb),
-      MediaQuality.low => l.mediaQualityImpactLow(mb),
-      MediaQuality.mid => l.mediaQualityImpactMid(mb),
-      MediaQuality.high => l.mediaQualityImpactHigh(mb),
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final palette = context.palette;
-
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          border: last
-              ? null
-              : Border(bottom: BorderSide(color: palette.border, width: 0.6)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Le rond de sélection occupe sa place même quand il est vide :
-            // sans cela les libellés se décaleraient d'une ligne à l'autre.
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Icon(
-                selected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-                size: 20,
-                color: selected ? AppColors.primary : palette.textSecondary,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _label(l),
-                    style: AppTypography.body.copyWith(
-                      color: palette.textPrimary,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _impact(l),
-                    style: AppTypography.caption
-                        .copyWith(color: palette.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );

@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -959,14 +960,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mediaSettingsTitle => 'Qualité & données';
 
   @override
-  String get mediaSettingsLead =>
-      'Ces réglages ne changent rien à ce que vous entendez sur le réseau de l\'église. Ils protègent votre forfait quand vous êtes dehors.';
-
-  @override
   String get mediaSettingsStreaming => 'Écoute d\'un message';
-
-  @override
-  String get mediaSettingsLive => 'Direct';
 
   @override
   String get mediaSettingsDownload => 'Téléchargement';
@@ -1001,14 +995,32 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mediaSettingsRadio => 'Radio';
 
   @override
-  String radioQualityImpactAuto(int mb) {
-    return 'Le débit suit votre réseau, en wifi comme en données mobiles · jusqu\'à ≈ $mb Mo par heure.';
+  String get mediaSettingsListening => 'Écoute';
+
+  @override
+  String get qualityQuestionRadio => 'Quelle qualité pour la radio ?';
+
+  @override
+  String get qualityQuestionListening => 'Quelle qualité pour l\'écoute ?';
+
+  @override
+  String get qualityQuestionDownload =>
+      'Quelle qualité pour les téléchargements ?';
+
+  @override
+  String get qualityLead =>
+      'La qualité s\'adapte à votre réseau, ou se fixe pour économiser vos données.';
+
+  @override
+  String get radioQualityMinimum => 'Minimum';
+
+  @override
+  String qualityPerHour(int mb) {
+    return '≈ $mb Mo par heure';
   }
 
   @override
-  String radioQualityImpactEconomy(int mb) {
-    return '≈ $mb Mo par heure · la parole reste claire, la louange y perd.';
-  }
+  String get qualityAdaptive => 'S\'adapte à votre réseau';
 
   @override
   String get mediaQualityAuto => 'Automatique';
@@ -1021,26 +1033,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mediaQualityHigh => 'Haute';
-
-  @override
-  String mediaQualityImpactAuto(int mb) {
-    return '≈ $mb Mo par heure en données mobiles, meilleure qualité en wifi.';
-  }
-
-  @override
-  String mediaQualityImpactLow(int mb) {
-    return '≈ $mb Mo par heure · suffisant pour la prédication, la chorale y perd.';
-  }
-
-  @override
-  String mediaQualityImpactMid(int mb) {
-    return '≈ $mb Mo par heure · la louange retrouve son ampleur.';
-  }
-
-  @override
-  String mediaQualityImpactHigh(int mb) {
-    return '≈ $mb Mo par heure · chaque nuance, au prix fort.';
-  }
 
   @override
   String get themeSectionTitle => 'Apparence';

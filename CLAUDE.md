@@ -1908,35 +1908,39 @@ par le code serveur mais **prouvé par aucun test serveur** — à faire épingl
 (PRD `miracle-house-server#151`).
 
 ### Les réglages média (`app_settings`, schéma v7)
-Trois usages réglables — écoute, direct, téléchargement — sur quatre paliers :
-`auto` (défaut), `low` 64k, `mid` 128k, `high` 192k. Les trois débits sont
+**La page Qualité** (`/settings/media`, #184) a trois onglets — RADIO ·
+ÉCOUTE · TÉLÉCHARGEMENT — et un même cadran pour les trois
+(`widgets/quality_arc.dart` : pastilles sur un arc, curseur en arc dessous,
+sans magasin). Le choix s'enregistre au toucher. **Mon assemblée** n'y est
+plus : elle a sa page (`/settings/branch`, ouverte aux invités), poussée
+depuis une ligne du Profil.
+
+Écoute et téléchargement se règlent sur quatre paliers : `auto` (défaut),
+`low` 64k, `mid` 128k, `high` 192k. Les trois débits sont
 **recopiés de l'échelle du transcodeur** (`streaming-service/app/transcodes/
 support/hls.ts`) ; en ajouter un ici sans l'ajouter là-bas donnerait un plafond
 qu'aucun rendu ne peut satisfaire.
+
+**La radio a quatre choix à elle** (`RadioQuality`, dans l'ordre de l'arc) :
+`minimum` 16k, `economy` 32k, `auto` (adaptatif, défaut), `high` 128k. Le
+serveur publie `a16`, `a32`, `a64`, `a128` (`.m3u8`) à côté de `master.m3u8` ;
+`RadioAntenna.streamUrlFor` choisit l'URL — `ecoStreamUrl` servi l'emporte pour
+Économie — et la dérivation échoue du bon côté comme celle des enseignements.
+
+**Le direct (`MediaUsage.live`) a été retiré** : aucun lecteur ne lisait son
+palier. Sa ligne `live` peut rester orpheline en base ; la table est
+clé/valeur, aucune migration.
 
 **Ce que le panneau montre est plus large que ce qu'il fait**, et c'est un choix
 produit explicite, pas un oubli :
 
 | réglage | effet réel |
 | --- | --- |
+| radio | ✅ **par l'URL**, partout (`streamUrlFor`) |
 | écoute, iOS | ✅ `AVPlayer.preferredPeakBitRate` |
 | écoute, web | ✅ `hls.js`, `autoLevelCapping` |
 | écoute, **Android** | ✅ **par l'URL**, pas par le plafond — voir ci-dessous |
-| direct | ❌ **le réglage se range, il ne s'applique pas** — voir ci-dessous |
 | téléchargement | ❌ n'existe pas, et c'est un **refus documenté** (`docs/mediatheque-en-ligne.md` §2) |
-
-Les trois se règlent et s'enregistrent quand même : le jour où la fonction
-existera, la préférence sera déjà là.
-
-⚠️ **La ligne « direct » disait « `LiveScreen` n'a pas de lecteur », et ce n'est
-plus vrai** : depuis #104 l'écran d'antenne joue pour de bon. Ce qui reste vrai,
-et qui est la seule chose qui compte, est que **`MediaUsage.live` n'a aucun
-lecteur** hors de l'écran de réglages : `StreamingBitrateCap` et
-`variantPlaylistUrl` lisent `MediaUsage.streaming`, et c'est donc le palier
-« écoute » qui s'applique à l'antenne. Sans conséquence audible aujourd'hui —
-l'URL d'antenne ne finit pas par `/master.m3u8`, la dérivation de palier la rend
-donc intacte (« la panne du bon côté ») — mais à savoir avant de croire que ce
-réglage-là fait quelque chose.
 
 **Deux leviers, et le second existe pour Android.** `setPreferredPeakBitRate`
 est reçu et **ignoré** par `just_audio` côté Android (`AudioPlayer.java`,

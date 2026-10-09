@@ -44,13 +44,29 @@ class RadioAntenna {
   final String? ecoStreamUrl;
 
   /// **L'URL à ouvrir pour ce choix de qualité** — le seul endroit où le choix
-  /// se fait. Économie **et** URL économie connue → l'URL économie ; tout le
-  /// reste → [streamUrl] (adaptative). Une économie sans URL économie ne prive
-  /// pas de son : elle retombe sur l'adaptative.
-  String? streamUrlFor(RadioQuality quality) =>
-      quality == RadioQuality.economy && ecoStreamUrl != null
-          ? ecoStreamUrl
-          : streamUrl;
+  /// se fait (#184).
+  ///
+  /// Le serveur publie, à côté de `master.m3u8`, une liste de lecture par
+  /// palier : `a16`, `a32`, `a64`, `a128` (`.m3u8`). Automatique → [streamUrl]
+  /// (adaptative) ; Économie → [ecoStreamUrl] s'il est servi, sinon `a32`
+  /// dérivé ; Minimum → `a16` ; Haute → `a128`.
+  ///
+  /// La dérivation **échoue du bon côté**, comme `variantPlaylistUrl` des
+  /// enseignements : une adresse qui ne finit pas par `/master.m3u8` est rendue
+  /// intacte. Le pire cas est « pas de palier forcé », jamais le silence.
+  String? streamUrlFor(RadioQuality quality) => switch (quality) {
+        RadioQuality.auto => streamUrl,
+        RadioQuality.economy => ecoStreamUrl ?? _variant('a32'),
+        RadioQuality.minimum => _variant('a16'),
+        RadioQuality.high => _variant('a128'),
+      };
+
+  String? _variant(String name) {
+    const master = '/master.m3u8';
+    final url = streamUrl;
+    if (url == null || !url.endsWith(master)) return url;
+    return '${url.substring(0, url.length - master.length)}/$name.m3u8';
+  }
 
   /// Vrai quand l'antenne émet, faux quand elle se tait, **`null` quand on ne
   /// sait pas** — voir [unknown].

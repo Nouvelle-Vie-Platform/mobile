@@ -64,7 +64,7 @@ import 'app_localizations_fr.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -87,17 +87,17 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ee'),
     Locale('en'),
-    Locale('fr')
+    Locale('fr'),
   ];
 
   /// Nom **affiché** de l'application — celui que le fidèle lit sous l'icône, et le seul des trois noms du dépôt qui bouge. Il porte déjà « Nouvelle Vie » dans `android:label` et `CFBundleDisplayName` ; cette clé-ci disait encore « Maison du Miracle », et l'écran de démarrage le montrait. Ni le nom du paquet Dart (`maison_du_miracle`) ni l'identifiant d'application (`com.maisondumiracle.*`) ne sont concernés — voir « L'identité de l'application » dans CLAUDE.md. Le nom de l'**église**, lui, vit dans `aboutChurchName`
@@ -1756,23 +1756,11 @@ abstract class AppLocalizations {
   /// **'Qualité & données'**
   String get mediaSettingsTitle;
 
-  /// Panneau qualité : dit d'emblée que le réglage vise le forfait mobile, pas la qualité en général
-  ///
-  /// In fr, this message translates to:
-  /// **'Ces réglages ne changent rien à ce que vous entendez sur le réseau de l\'église. Ils protègent votre forfait quand vous êtes dehors.'**
-  String get mediaSettingsLead;
-
   /// No description provided for @mediaSettingsStreaming.
   ///
   /// In fr, this message translates to:
   /// **'Écoute d\'un message'**
   String get mediaSettingsStreaming;
-
-  /// No description provided for @mediaSettingsLive.
-  ///
-  /// In fr, this message translates to:
-  /// **'Direct'**
-  String get mediaSettingsLive;
 
   /// No description provided for @mediaSettingsDownload.
   ///
@@ -1822,23 +1810,59 @@ abstract class AppLocalizations {
   /// **'La liste des assemblées arrivera à la première synchronisation.'**
   String get branchScopeEmpty;
 
-  /// Titre de la section radio du panneau qualité. Ses deux choix réutilisent mediaQualityAuto et mediaQualityLow
+  /// Onglet Radio de la page Qualité, affiché en capitales. Ses choix réutilisent radioQualityMinimum, mediaQualityLow, mediaQualityAuto et mediaQualityHigh
   ///
   /// In fr, this message translates to:
   /// **'Radio'**
   String get mediaSettingsRadio;
 
-  /// Impact du choix automatique de la radio. Contrairement aux enseignements, il ne bride PAS en données mobiles : on annonce donc le coût du palier haut
+  /// Onglet « écoute des enseignements » de la page Qualité (#184), affiché en capitales
   ///
   /// In fr, this message translates to:
-  /// **'Le débit suit votre réseau, en wifi comme en données mobiles · jusqu\'à ≈ {mb} Mo par heure.'**
-  String radioQualityImpactAuto(int mb);
+  /// **'Écoute'**
+  String get mediaSettingsListening;
 
-  /// Impact du choix économie de la radio (palier 32 k). Dit aussi ce qu'on perd
+  /// Grand titre centré de l'onglet Radio de la page Qualité, posé en question
   ///
   /// In fr, this message translates to:
-  /// **'≈ {mb} Mo par heure · la parole reste claire, la louange y perd.'**
-  String radioQualityImpactEconomy(int mb);
+  /// **'Quelle qualité pour la radio ?'**
+  String get qualityQuestionRadio;
+
+  /// No description provided for @qualityQuestionListening.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelle qualité pour l\'écoute ?'**
+  String get qualityQuestionListening;
+
+  /// No description provided for @qualityQuestionDownload.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelle qualité pour les téléchargements ?'**
+  String get qualityQuestionDownload;
+
+  /// Ligne d'explication grise sous le titre de la page Qualité, deux lignes au plus
+  ///
+  /// In fr, this message translates to:
+  /// **'La qualité s\'adapte à votre réseau, ou se fixe pour économiser vos données.'**
+  String get qualityLead;
+
+  /// Choix radio le plus économe : palier 16 k, environ 7 Mo par heure
+  ///
+  /// In fr, this message translates to:
+  /// **'Minimum'**
+  String get radioQualityMinimum;
+
+  /// Consommation d'un choix de qualité, sous le curseur en arc. Le chiffre vient du débit, jamais d'une traduction
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure'**
+  String qualityPerHour(int mb);
+
+  /// Consommation du choix Automatique, sous le curseur en arc
+  ///
+  /// In fr, this message translates to:
+  /// **'S\'adapte à votre réseau'**
+  String get qualityAdaptive;
 
   /// No description provided for @mediaQualityAuto.
   ///
@@ -1863,30 +1887,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Haute'**
   String get mediaQualityHigh;
-
-  /// Phrase d'impact du mode automatique. Annonce le coût du PIRE cas (données mobiles) — c'est celui contre lequel on se protège
-  ///
-  /// In fr, this message translates to:
-  /// **'≈ {mb} Mo par heure en données mobiles, meilleure qualité en wifi.'**
-  String mediaQualityImpactAuto(int mb);
-
-  /// Phrase d'impact du palier 64k. Dit aussi ce qu'on perd : le chiffre seul ferait choisir à l'aveugle
-  ///
-  /// In fr, this message translates to:
-  /// **'≈ {mb} Mo par heure · suffisant pour la prédication, la chorale y perd.'**
-  String mediaQualityImpactLow(int mb);
-
-  /// No description provided for @mediaQualityImpactMid.
-  ///
-  /// In fr, this message translates to:
-  /// **'≈ {mb} Mo par heure · la louange retrouve son ampleur.'**
-  String mediaQualityImpactMid(int mb);
-
-  /// No description provided for @mediaQualityImpactHigh.
-  ///
-  /// In fr, this message translates to:
-  /// **'≈ {mb} Mo par heure · chaque nuance, au prix fort.'**
-  String mediaQualityImpactHigh(int mb);
 
   /// No description provided for @themeSectionTitle.
   ///
@@ -4168,8 +4168,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

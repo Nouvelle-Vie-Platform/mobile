@@ -72,9 +72,14 @@ final branchScopeProvider = Provider<BranchScope>((ref) {
 /// `SyncEngine`, qui la lit **ponctuellement**, une fois par cycle. Contrairement
 /// au plafond de débit — observé en direct par le lecteur pendant qu'un prêche
 /// joue —, personne n'a besoin d'être réveillé quand elle change. C'est l'écran
-/// qui la change, et c'est lui qui invalide (voir `MediaSettingsScreen`).
+/// qui la change, et c'est lui qui invalide (voir `BranchScopeScreen`).
+///
+/// **Lue au magasin, pas par la façade** (#184) : `BranchScope.read()` ne fait
+/// que relayer `BranchScopeStore.read()`, et passer par la façade construisait
+/// toute la chaîne de synchronisation (`pullToRefreshProvider` → moteur) pour
+/// une simple lecture — or la ligne « Mon assemblée » du Profil la lit aussi.
 final preferredBranchProvider = FutureProvider<int?>(
-  (ref) => ref.watch(branchScopeProvider).read(),
+  (ref) => ref.watch(branchScopeStoreProvider).read(),
   retry: _noAutomaticRetry,
 );
 

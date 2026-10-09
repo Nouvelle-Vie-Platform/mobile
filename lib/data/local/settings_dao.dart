@@ -23,7 +23,7 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
     with _$SettingsDaoMixin {
   SettingsDao(super.db);
 
-  /// Les trois réglages, recomposés à chaque changement de la table.
+  /// Les réglages média, recomposés à chaque changement de la table.
   ///
   /// Une ligne absente **n'est pas une erreur** : c'est le cas normal d'une
   /// installation neuve, et `MediaQuality.parse` rend alors le défaut. On ne
@@ -38,7 +38,6 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
     final byKey = {for (final row in rows) row.key: row.value};
     return MediaPreferences(
       streaming: MediaQuality.parse(byKey[MediaUsage.streaming.key]),
-      live: MediaQuality.parse(byKey[MediaUsage.live.key]),
       download: MediaQuality.parse(byKey[MediaUsage.download.key]),
       // Absent = wifi seulement (F8), le défaut sûr. Seul `'true'` autorise le
       // cellulaire : toute autre valeur (base bricolée) retombe côté prudent.
@@ -107,7 +106,7 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   Future<void> setMediaQuality(MediaUsage usage, MediaQuality quality) =>
       _put(usage.key, quality.key);
 
-  /// Pose le choix de la radio (Automatique / Économie).
+  /// Pose le choix de la radio (`RadioQuality`).
   Future<void> setRadioQuality(RadioQuality quality) =>
       _put(MediaUsage.radio.key, quality.key);
 

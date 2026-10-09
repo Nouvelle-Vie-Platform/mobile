@@ -12,6 +12,7 @@ import '../screens/auth/code_screen.dart';
 import '../screens/auth/identifier_screen.dart';
 import '../screens/auth/profile_form_screen.dart';
 import '../screens/bible_screen.dart';
+import '../screens/branch_scope_screen.dart';
 import '../screens/chat_search_screen.dart';
 import '../screens/create_group_screen.dart';
 import '../screens/delete_account_screen.dart';
@@ -65,6 +66,10 @@ abstract final class AppRoute {
   static const profileEdit = 'profile-edit';
   static const profileDelete = 'profile-delete';
   static const mediaSettings = 'media-settings';
+
+  /// **Mon assemblée** (#184) — la préférence de branche, sortie de la page
+  /// Qualité. Ouverte : un invité doit pouvoir la poser.
+  static const branchScope = 'branch-scope';
 
   /// **Confidentialité de la messagerie** (#142) — accusés de lecture, vu à /
   /// en ligne. Poussée depuis le Profil ; réservée aux membres.
@@ -389,6 +394,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.mediaSettings,
         path: '/settings/media',
         builder: (_, __) => const AppBackground(child: MediaSettingsScreen()),
+      ),
+      // Mon assemblée (#184) — poussée depuis le Profil. **Hors
+      // `memberOnlyRoutes`** : la préférence de branche sert aussi le porteur
+      // d'appareil anonyme, comme `/settings/media` d'où elle vient.
+      GoRoute(
+        name: AppRoute.branchScope,
+        path: '/settings/branch',
+        builder: (_, __) => const AppBackground(child: BranchScopeScreen()),
       ),
       // Page Téléchargements — poussée depuis le Profil, où elle a pris la
       // place de l'hexagone « Ma branche » (#193, F12). L'écran observe le

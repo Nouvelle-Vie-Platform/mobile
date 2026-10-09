@@ -1,6 +1,5 @@
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart' show SwitchListTile;
-import 'package:flutter/widgets.dart' show Size;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/models/media_preferences.dart';
@@ -15,10 +14,12 @@ import '../helpers/pump_screen.dart';
 /// figeait — processus à 0 % de CPU pendant dix minutes, donc une attente de
 /// ressource, avant expiration.
 ///
-/// La lecture est donc **surchargée par un flux nu**. L'écriture, elle, garde le
-/// vrai DAO sur une base en mémoire : c'est un `insert` ponctuel, pas un flux, et
-/// c'est exactement ce que le test doit vérifier — que toucher une ligne écrit
-/// bien le réglage.
+/// La lecture est donc **surchargée par un flux nu**. L'écriture, elle, garde
+/// le vrai DAO sur une base en mémoire : c'est un `insert` ponctuel, pas un
+/// flux, et c'est exactement ce que le test doit vérifier — que toucher une
+/// pastille écrit bien le réglage. Corollaire : le choix affiché ne suit pas
+/// l'écriture (le flux est figé), ce qui garde l'arc immobile d'un toucher à
+/// l'autre.
 void main() {
   late AppDatabase database;
 
@@ -26,8 +27,8 @@ void main() {
     WidgetTester tester, {
     MediaPreferences preferences = const MediaPreferences(),
   }) async {
-    // Un viewport très haut : le `ListView` construit ses enfants
-    // paresseusement, et une option hors champ n'existe pas dans l'arbre.
+    // Un téléphone ordinaire en largeur (390 px logiques), très haut pour que
+    // l'interrupteur du téléchargement soit construit sans défiler.
     tester.view.physicalSize = const Size(1170, 7200);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.reset);
@@ -45,118 +46,212 @@ void main() {
     );
   }
 
-  group('Panneau Qualité & données', () {
-    testWidgets('les trois usages, chacun sur quatre paliers', (tester) async {
+  Future<void> openTab(WidgetTester tester, String label) async {
+    await tester.tap(find.text(label));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+  }
+
+  /// **`runAsync`, sans quoi le test se fige.** Un flux Drift vit sur la vraie
+  /// boucle d'événements ; l'attendre depuis la zone à horloge factice de
+  /// `testWidgets` ne rend jamais la main.
+  Future<MediaPreferences> stored(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    final value = await tester.runAsync(
+      () => database.settingsDao.watchMediaPreferences().first,
+    );
+    return value!;
+  }
+
+  Finder radioOption(RadioQuality quality) =>
+      find.byKey(MediaSettingsScreen.radioOptionKey(quality));
+
+  group('La page Qualité', () {
+    testWidgets('trois onglets, la radio d\'abord', (tester) async {
       await pump(tester);
 
-      for (final usage in MediaUsage.values) {
-        // La radio a ses deux choix à elle : voir son groupe.
-        if (usage == MediaUsage.radio) continue;
-        for (final quality in MediaQuality.values) {
-          expect(
-            find.byKey(MediaSettingsScreen.optionKey(usage, quality)),
-            findsOneWidget,
-            reason: '$usage devrait proposer $quality',
-          );
-        }
+      expect(find.text('RADIO'), findsOneWidget);
+      expect(find.text('ÉCOUTE'), findsOneWidget);
+      expect(find.text('TÉLÉCHARGEMENT'), findsOneWidget);
+      expect(find.text('Quelle qualité pour la radio ?'), findsOneWidget);
+    });
+
+    testWidgets('ni Direct ni Mon assemblée ici', (tester) async {
+      await pump(tester);
+
+      expect(find.text('Mon assemblée'), findsNothing);
+      expect(find.byKey(const Key('branch_scope_all')), findsNothing);
+      for (final tab in ['RADIO', 'ÉCOUTE', 'TÉLÉCHARGEMENT']) {
+        await openTab(tester, tab);
+        expect(find.textContaining('Direct'), findsNothing, reason: tab);
       }
-    });
-
-    testWidgets('toucher une ligne écrit le réglage dans le magasin',
-        (tester) async {
-      await pump(tester);
-
-      await tester.tap(find.byKey(
-        MediaSettingsScreen.optionKey(MediaUsage.streaming, MediaQuality.high),
-      ));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
-
-      // **`runAsync`, sans quoi le test se fige.** Un flux Drift vit sur la
-      // vraie boucle d'événements ; l'attendre depuis la zone à horloge factice
-      // de `testWidgets` ne rend jamais la main — processus à 0 % de CPU
-      // jusqu'à expiration. C'est ce qui a bloqué ce fichier la première fois.
-      final stored = await tester.runAsync(
-        () => database.settingsDao.watchMediaPreferences().first,
-      );
-      expect(stored!.streaming, MediaQuality.high);
-      // Trois réglages séparés, pas un seul appliqué partout.
-      expect(stored.live, MediaQuality.auto);
-      expect(stored.download, MediaQuality.auto);
-    });
-
-    testWidgets('le palier enregistré est celui qui porte la coche',
-        (tester) async {
-      await pump(tester,
-          preferences: const MediaPreferences(live: MediaQuality.mid));
-
-      final selected = tester.widget<MediaSettingsScreen>(
-        find.byType(MediaSettingsScreen),
-      );
-      expect(selected, isNotNull);
-      // La coche se lit sur le rendu : l'option `mid` du direct doit exister et
-      // les quatre du même usage rester présentes.
-      expect(
-        find.byKey(
-            MediaSettingsScreen.optionKey(MediaUsage.live, MediaQuality.mid)),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('la phrase d\'impact affiche les Mo de l\'échelle',
-        (tester) async {
-      await pump(tester);
-
-      // Le chiffre vient de `MediaQuality`, jamais d'une chaîne écrite à la
-      // main : c'est ce qui l'empêche de mentir le jour où l'échelle bouge.
-      expect(find.textContaining('29'), findsWidgets);
-      expect(find.textContaining('58'), findsWidgets);
-      expect(find.textContaining('86'), findsWidgets);
     });
   });
 
-  group('La radio', () {
-    testWidgets('deux choix, Automatique coché par défaut', (tester) async {
+  group('Onglet Radio', () {
+    testWidgets('chaque pastille enregistre son choix', (tester) async {
       await pump(tester);
 
       for (final quality in RadioQuality.values) {
-        expect(find.byKey(MediaSettingsScreen.radioOptionKey(quality)),
-            findsOneWidget);
+        await tester.tap(radioOption(quality));
+        expect((await stored(tester)).radio, quality, reason: '$quality');
       }
-      // Aucun palier des enseignements sous la radio.
-      expect(
-        find.byKey(
-            MediaSettingsScreen.optionKey(MediaUsage.radio, MediaQuality.high)),
-        findsNothing,
-      );
-      // Le coût d'Économie vient de `RadioQuality`.
-      expect(find.textContaining('14'), findsWidgets);
+      // La radio a sa clé à elle : les enseignements n'ont pas bougé.
+      expect((await stored(tester)).streaming, MediaQuality.auto);
     });
 
-    testWidgets('toucher Économie écrit le réglage dans le magasin',
+    testWidgets('la pastille choisie est la grande, et porte le nom',
         (tester) async {
+      await pump(
+        tester,
+        preferences: const MediaPreferences(radio: RadioQuality.economy),
+      );
+
+      final chosen = radioOption(RadioQuality.economy);
+      final chosenWidth = tester.getSize(chosen).width;
+      for (final other in [
+        RadioQuality.minimum,
+        RadioQuality.auto,
+        RadioQuality.high,
+      ]) {
+        final width = tester.getSize(radioOption(other)).width;
+        expect(chosenWidth / width, closeTo(1.6, 0.01), reason: '$other');
+      }
+      expect(
+        find.descendant(of: chosen, matching: find.text('Économie')),
+        findsOneWidget,
+      );
+      // Les autres n'ont pas de libellé.
+      expect(find.text('Automatique'), findsNothing);
+      expect(find.text('Minimum'), findsNothing);
+      // La consommation vient du débit : 32 k ≈ 14 Mo par heure.
+      expect(find.text('≈ 14 Mo par heure'), findsOneWidget);
+    });
+
+    testWidgets('Automatique dit qu\'il s\'adapte', (tester) async {
       await pump(tester);
 
-      await tester.tap(
-        find.byKey(MediaSettingsScreen.radioOptionKey(RadioQuality.economy)),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('S\'adapte à votre réseau'), findsOneWidget);
+    });
 
-      // `runAsync` : voir le test des enseignements ci-dessus.
-      final stored = await tester.runAsync(
-        () => database.settingsDao.watchMediaPreferences().first,
+    testWidgets('glisser le curseur change le choix', (tester) async {
+      await pump(tester);
+      final slider = find.byKey(
+        MediaSettingsScreen.sliderKey(MediaUsage.radio),
       );
-      expect(stored!.radio, RadioQuality.economy);
-      expect(stored.streaming, MediaQuality.auto);
+
+      await tester.drag(slider, const Offset(-180, 0));
+      expect((await stored(tester)).radio, RadioQuality.minimum);
+
+      await tester.drag(slider, const Offset(180, 0));
+      expect((await stored(tester)).radio, RadioQuality.high);
+    });
+
+    testWidgets('pastille et curseur se lisent au lecteur d\'écran',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester);
+
+      expect(
+        tester.getSemantics(radioOption(RadioQuality.auto)),
+        containsSemantics(
+          label: 'Automatique',
+          isButton: true,
+          isSelected: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(
+          find.byKey(MediaSettingsScreen.sliderKey(MediaUsage.radio)),
+        ),
+        containsSemantics(
+          isSlider: true,
+          value: 'Automatique',
+          increasedValue: 'Haute',
+          decreasedValue: 'Économie',
+          hasIncreaseAction: true,
+          hasDecreaseAction: true,
+        ),
+      );
+      handle.dispose();
     });
   });
 
-  group('Télécharger en données mobiles (F8)', () {
-    testWidgets('le toggle est présent et désactivé par défaut',
+  group('Onglet Écoute', () {
+    testWidgets('quatre paliers, chacun enregistré', (tester) async {
+      await pump(tester);
+      await openTab(tester, 'ÉCOUTE');
+
+      expect(find.text('Quelle qualité pour l\'écoute ?'), findsOneWidget);
+      for (final quality in MediaSettingsScreen.arcOrder) {
+        await tester.tap(find.byKey(
+          MediaSettingsScreen.optionKey(MediaUsage.streaming, quality),
+        ));
+        final prefs = await stored(tester);
+        expect(prefs.streaming, quality, reason: '$quality');
+        expect(prefs.download, MediaQuality.auto);
+      }
+    });
+
+    testWidgets('Haute choisie : la grande, et ≈ 86 Mo par heure',
         (tester) async {
+      await pump(
+        tester,
+        preferences: const MediaPreferences(streaming: MediaQuality.high),
+      );
+      await openTab(tester, 'ÉCOUTE');
+
+      final chosen = find.byKey(
+        MediaSettingsScreen.optionKey(MediaUsage.streaming, MediaQuality.high),
+      );
+      expect(
+        find.descendant(of: chosen, matching: find.text('Haute')),
+        findsOneWidget,
+      );
+      expect(find.text('≈ 86 Mo par heure'), findsOneWidget);
+    });
+
+    testWidgets('glisser le curseur change le choix', (tester) async {
+      await pump(tester);
+      await openTab(tester, 'ÉCOUTE');
+
+      await tester.drag(
+        find.byKey(MediaSettingsScreen.sliderKey(MediaUsage.streaming)),
+        const Offset(-180, 0),
+      );
+      expect((await stored(tester)).streaming, MediaQuality.low);
+    });
+  });
+
+  group('Onglet Téléchargement', () {
+    testWidgets('quatre paliers, chacun enregistré', (tester) async {
+      await pump(tester);
+      await openTab(tester, 'TÉLÉCHARGEMENT');
+
+      expect(
+        find.text('Quelle qualité pour les téléchargements ?'),
+        findsOneWidget,
+      );
+      for (final quality in MediaSettingsScreen.arcOrder) {
+        await tester.tap(find.byKey(
+          MediaSettingsScreen.optionKey(MediaUsage.download, quality),
+        ));
+        final prefs = await stored(tester);
+        expect(prefs.download, quality, reason: '$quality');
+        expect(prefs.streaming, MediaQuality.auto);
+      }
+    });
+
+    testWidgets('l\'interrupteur n\'est que dans cet onglet', (tester) async {
       await pump(tester);
 
+      expect(
+        find.byKey(MediaSettingsScreen.downloadOnCellularKey),
+        findsNothing,
+      );
+      await openTab(tester, 'TÉLÉCHARGEMENT');
       final toggle = tester.widget<SwitchListTile>(
         find.byKey(MediaSettingsScreen.downloadOnCellularKey),
       );
@@ -164,11 +259,12 @@ void main() {
       expect(toggle.value, isFalse);
     });
 
-    testWidgets('la coche reflète le réglage enregistré', (tester) async {
+    testWidgets('il reflète le réglage enregistré', (tester) async {
       await pump(
         tester,
         preferences: const MediaPreferences(downloadOnCellular: true),
       );
+      await openTab(tester, 'TÉLÉCHARGEMENT');
 
       final toggle = tester.widget<SwitchListTile>(
         find.byKey(MediaSettingsScreen.downloadOnCellularKey),
@@ -176,17 +272,18 @@ void main() {
       expect(toggle.value, isTrue);
     });
 
-    testWidgets('l\'activer écrit le réglage dans le magasin', (tester) async {
+    testWidgets('l\'activer écrit le réglage', (tester) async {
       await pump(tester);
+      await openTab(tester, 'TÉLÉCHARGEMENT');
 
       await tester.tap(find.byKey(MediaSettingsScreen.downloadOnCellularKey));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      final stored = await tester.runAsync(
+      final value = await tester.runAsync(
         () => database.settingsDao.downloadOnCellular(),
       );
-      expect(stored, isTrue);
+      expect(value, isTrue);
     });
   });
 }

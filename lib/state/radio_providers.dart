@@ -448,7 +448,8 @@ class RadioListening extends Notifier<RadioStatus> {
   /// adaptative) — tout ce que cette tranche ajoute au contrôleur, hors le
   /// choix d'URL de [_resolveUrl].
   ///
-  /// - changer Automatique / Économie pendant l'écoute **relance** l'antenne
+  /// - changer de choix radio (l'un des quatre) pendant l'écoute **relance**
+  ///   l'antenne
   ///   (`fresh`), donc sur l'URL du nouveau choix — y compris pendant un
   ///   essai en vol, qui a pu lire l'ancien choix et renonce. En pause, la
   ///   source tenue garde l'ancienne URL : la reprise la rouvrira
