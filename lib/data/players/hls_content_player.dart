@@ -323,6 +323,11 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
   @override
   void setStatusLine(String? line) {}
 
+  /// `hls.js` aurait l'heure de programme, mais le direct aligné ne vise que
+  /// l'appli mobile : le web reste en temps réel.
+  @override
+  Future<DateTime?> heardTime() async => null;
+
   @override
   void stop() {
     if (isDisposed) return;

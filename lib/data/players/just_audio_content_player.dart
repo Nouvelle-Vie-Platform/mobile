@@ -541,6 +541,21 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     _handler.setArtist(line ?? _request?.author);
   }
 
+  /// Par la copie de just_audio (`third_party/just_audio/NOUVELLE_VIE.md`).
+  /// Une panne du canal vaut « je ne sais pas ».
+  @override
+  Future<DateTime?> heardTime() async {
+    if (_disposed) return null;
+    try {
+      final ms = await _handler.player.programTimeMs();
+      return ms == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   void stop() {
     if (_disposed) return;

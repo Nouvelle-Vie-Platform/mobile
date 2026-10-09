@@ -31,6 +31,14 @@ import 'package:flutter/foundation.dart';
 /// tombent : la page n'est pas une archive.
 const int kRadioCommentWindow = 50;
 
+/// **Le trajet de la voix, de la régie à l'antenne** (mobile#187) : ce que met
+/// le son du studio à atteindre le flux, en plus de l'heure de l'événement.
+/// Le badge « EN DIRECT » s'allume à `startedAt + kLiveAudioLatency` entendus,
+/// et s'éteint à `endedAt + kLiveAudioLatency`. Nommé **une seule fois** ;
+/// **valeur à mesurer** au prochain direct (`radio-direct-aligne-plan.md`,
+/// décision 6).
+const Duration kLiveAudioLatency = Duration(seconds: 4);
+
 /// **Le jeu de réactions, fixe** (décision 9) : ❤️ 🙏 🙌 🔥 « Amen ».
 ///
 /// Le serveur ne manipule que les **identifiants ASCII** ([wire]) ; l'emoji est
@@ -113,12 +121,20 @@ class RadioComment {
     required this.authorKind,
     required this.authorName,
     this.avatarUrl,
-  });
+    DateTime? airedAt,
+  }) : _airedAt = airedAt;
 
   /// UUIDv7 — la clé de masquage, de signalement et de dédoublonnage.
   final String id;
   final String body;
   final DateTime createdAt;
+
+  final DateTime? _airedAt;
+
+  /// **L'instant d'antenne que son auteur écoutait** (mobile#187) : c'est à
+  /// cette heure entendue qu'il s'affiche chez chacun. Un serveur d'avant
+  /// `airedAt` ne le donne pas : on prend [createdAt], l'heure de réception.
+  DateTime get airedAt => _airedAt ?? createdAt;
   final RadioAuthorKind authorKind;
 
   /// Tel qu'affiché au moment d'écrire (décision 13).
@@ -153,6 +169,7 @@ class RadioComment {
           : RadioAuthorKind.member,
       authorName: name.trim(),
       avatarUrl: avatar is String && avatar.isNotEmpty ? avatar : null,
+      airedAt: _date(raw['airedAt']),
     );
   }
 
@@ -164,11 +181,12 @@ class RadioComment {
       other.createdAt == createdAt &&
       other.authorKind == authorKind &&
       other.authorName == authorName &&
-      other.avatarUrl == avatarUrl;
+      other.avatarUrl == avatarUrl &&
+      other.airedAt == airedAt;
 
   @override
-  int get hashCode =>
-      Object.hash(id, body, createdAt, authorKind, authorName, avatarUrl);
+  int get hashCode => Object.hash(
+      id, body, createdAt, authorKind, authorName, avatarUrl, airedAt);
 
   @override
   String toString() => 'RadioComment($id, $authorName: $body)';

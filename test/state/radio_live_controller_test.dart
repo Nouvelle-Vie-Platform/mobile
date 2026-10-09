@@ -11,10 +11,12 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
 import 'package:maison_du_miracle/data/radio/radio_channel.dart';
 import 'package:maison_du_miracle/data/radio/radio_live.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
+import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/state/radio_live_providers.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
 
@@ -29,6 +31,7 @@ const _antenna = RadioAntenna(
 void main() {
   late ControllableRadioChannel channel;
   late RecordingRadioLiveRepository repo;
+  late InertContentPlayer player;
   late ProviderContainer container;
   late ProviderSubscription<RadioLiveState> page;
   late List<RadioReactionBurst> bursts;
@@ -42,6 +45,7 @@ void main() {
       overrides: [
         radioChannelProvider.overrideWithValue(channel),
         radioLiveRepositoryProvider.overrideWithValue(repo),
+        contentPlayerProvider.overrideWithValue(player),
         radioRepositoryProvider
             .overrideWithValue(FixedRadioRepository(antenna)),
       ],
@@ -66,7 +70,20 @@ void main() {
   setUp(() {
     channel = ControllableRadioChannel();
     repo = RecordingRadioLiveRepository();
+    player = InertContentPlayer();
   });
+
+  tearDown(() => player.dispose());
+
+  /// Le temps passe **pour l'oreille aussi** : l'heure entendue avance avec
+  /// l'horloge factice.
+  Future<void> advance(WidgetTester tester, Duration by) async {
+    player.heard = player.heard!.add(by);
+    await tester.pump(by);
+    await settle(tester);
+  }
+
+  List<String> shown() => [for (final c in state().comments) c.id];
 
   group('L\'ouverture', () {
     testWidgets('relit l\'antenne et le fil, et s\'abonne au canal public',
@@ -208,6 +225,219 @@ void main() {
                   'se relit à la connexion, jamais sur un battement');
         }
       }
+    });
+  });
+
+  group('Le direct aligné sur l\'écoute (#187)', () {
+    // J'entends l'antenne avec 20 s de retard sur la régie.
+    final heard = DateTime.utc(2026, 10, 5, 18, 2);
+    Duration s(int seconds) => Duration(seconds: seconds);
+
+    testWidgets('deux commentaires dans le désordre, chacun à son heure',
+        (tester) async {
+      player.heard = heard;
+      repo.threadValue = RadioThread(live: kTestLive);
+      await openPage(tester);
+      channel.open();
+      await settle(tester);
+
+      channel
+        ..emit(RadioCommentPosted(
+          testComment('tard', 'B', airedAt: heard.add(s(5))),
+        ))
+        ..emit(RadioCommentPosted(
+          testComment('tôt', 'A', airedAt: heard.add(s(2))),
+        ));
+      await settle(tester);
+      expect(shown(), isEmpty, reason: 'pas encore entendus');
+
+      await advance(tester, s(2));
+      expect(shown(), ['tôt']);
+      await advance(tester, s(2));
+      expect(shown(), ['tôt']);
+      await advance(tester, s(1));
+      expect(shown(), ['tôt', 'tard']);
+      await closePage(tester);
+    });
+
+    testWidgets('déjà entendu ou sans heure entendue : tout de suite',
+        (tester) async {
+      repo.threadValue = RadioThread(live: kTestLive);
+      await openPage(tester);
+      player.heard = heard;
+      channel.emit(RadioCommentPosted(
+        testComment('passé', 'Déjà dit', airedAt: heard.subtract(s(1))),
+      ));
+      await settle(tester);
+      expect(shown(), ['passé']);
+
+      player.heard = null;
+      channel.emit(RadioCommentPosted(
+        testComment('futur', 'Sans PDT', airedAt: heard.add(s(30))),
+      ));
+      await settle(tester);
+      expect(shown(), ['passé', 'futur'], reason: 'null : comme avant');
+      await closePage(tester);
+    });
+
+    testWidgets('le mien paraît tout de suite, et part avec l\'heure entendue',
+        (tester) async {
+      player.heard = heard;
+      repo.threadValue = RadioThread(live: kTestLive);
+      await openPage(tester);
+      expect(await controller().send('Amen'), RadioSendOutcome.sent);
+      expect(repo.postHeardAts, [heard]);
+      final mine = state().comments.single;
+
+      // L'écho du canal, daté plus tard, remplace sans attendre.
+      channel.emit(RadioCommentPosted(RadioComment(
+        id: mine.id,
+        body: mine.body,
+        createdAt: mine.createdAt,
+        authorKind: mine.authorKind,
+        authorName: mine.authorName,
+        airedAt: heard.add(s(20)),
+      )));
+      await settle(tester);
+      expect(shown(), [mine.id]);
+      await closePage(tester);
+    });
+
+    testWidgets('comment.hidden retire aussi de la file', (tester) async {
+      player.heard = heard;
+      repo.threadValue = RadioThread(live: kTestLive);
+      await openPage(tester);
+      channel.emit(RadioCommentPosted(
+        testComment('c-1', 'Masqué', airedAt: heard.add(s(3))),
+      ));
+      await settle(tester);
+      channel.emit(const RadioCommentHidden('c-1'));
+      await settle(tester);
+      await advance(tester, s(5));
+      expect(shown(), isEmpty);
+      await closePage(tester);
+    });
+
+    testWidgets('la relecture n\'affiche que l\'entendu, le reste attend',
+        (tester) async {
+      player.heard = heard;
+      repo.threadValue = RadioThread(
+        live: kTestLive,
+        comments: [
+          testComment('entendu', 'Un', airedAt: heard.subtract(s(1))),
+          testComment('à venir', 'Deux', airedAt: heard.add(s(4))),
+        ],
+      );
+      await openPage(tester);
+      expect(shown(), ['entendu']);
+      await advance(tester, s(4));
+      expect(shown(), ['entendu', 'à venir']);
+      await closePage(tester);
+    });
+
+    testWidgets('les réactions des autres à leur heure, les miennes aussitôt',
+        (tester) async {
+      player.heard = heard;
+      await openPage(tester);
+      controller().react(RadioReaction.heart);
+      expect(bursts.single.own, isTrue);
+      await settle(tester);
+      expect(repo.reactionHeardAts, [heard]);
+
+      channel.emit(RadioReactionsAggregated(
+        const {
+          RadioReaction.heart: 3,
+          RadioReaction.pray: 0,
+          RadioReaction.praise: 0,
+          RadioReaction.fire: 0,
+          RadioReaction.amen: 0,
+        },
+        airedAt: heard.add(s(2)),
+      ));
+      await settle(tester);
+      expect(bursts, hasLength(1), reason: 'pas encore entendues');
+      await advance(tester, s(2));
+      expect(bursts.last.own, isFalse);
+      expect(bursts.last.count, 2, reason: 'la mienne reste décomptée');
+      await closePage(tester);
+    });
+
+    testWidgets('le badge s\'allume et s\'éteint avec la voix entendue',
+        (tester) async {
+      // La régie ouvre à 18 h ; j'entends 17 h 59 min 40 s.
+      player.heard = kTestLive.startedAt.subtract(s(20));
+      await openPage(tester);
+      channel.open();
+      await settle(tester);
+
+      repo.threadValue = RadioThread(live: kTestLive);
+      channel.emit(RadioLiveChanged(live: kTestLive, listeners: 3));
+      await settle(tester);
+      expect(state().isLive, isTrue);
+      expect(state().showsLiveBadge, isFalse);
+
+      await advance(tester, s(20) + kLiveAudioLatency - s(1));
+      expect(state().showsLiveBadge, isFalse);
+      await advance(tester, s(1));
+      expect(state().showsLiveBadge, isTrue);
+
+      // La régie rend l'antenne à 18 h 10 ; je l'entends 20 s plus tard.
+      final endedAt = kTestLive.startedAt.add(const Duration(minutes: 10));
+      player.heard = endedAt.subtract(s(20));
+      channel.emit(RadioLiveChanged(
+        live: null,
+        listeners: 3,
+        endedAt: endedAt,
+      ));
+      await settle(tester);
+      expect(state().showsLiveBadge, isTrue);
+      expect(state().offersComposer, isTrue, reason: 'la fin se commente');
+
+      await advance(tester, s(20) + kLiveAudioLatency);
+      expect(state().isLive, isFalse);
+      expect(state().showsLiveBadge, isFalse);
+      await closePage(tester);
+    });
+
+    testWidgets('sans heure entendue, le badge suit la régie', (tester) async {
+      repo.threadValue = RadioThread(live: kTestLive);
+      await openPage(tester);
+      expect(state().showsLiveBadge, isTrue);
+      channel.open();
+      await settle(tester);
+      channel.emit(RadioLiveChanged(
+        live: null,
+        listeners: 0,
+        endedAt: DateTime.utc(2030),
+      ));
+      await settle(tester);
+      expect(state().isLive, isFalse);
+      await closePage(tester);
+    });
+
+    testWidgets(
+        'quitter la page avec une file pleine ne laisse aucune minuterie',
+        (tester) async {
+      player.heard = heard;
+      repo.threadValue = RadioThread(live: kTestLive);
+      await openPage(tester);
+      channel.emit(RadioCommentPosted(
+        testComment('c-1', 'Plus tard', airedAt: heard.add(s(30))),
+      ));
+      await settle(tester);
+      // Le harnais échoue sur toute minuterie restée en vol.
+      await closePage(tester);
+    });
+
+    test('garde-fou de source : la file n\'a qu\'une minuterie, ponctuelle',
+        () {
+      final code = File('lib/state/radio_live_providers.dart')
+          .readAsLinesSync()
+          .where((line) => !line.trimLeft().startsWith('//'))
+          .join('\n');
+      // La réouverture du canal, et la tête de la file : rien d'autre.
+      expect(RegExp(r'\bTimer\(').allMatches(code), hasLength(2));
+      expect(RegExp(r'_airedTimer = Timer\(').allMatches(code), hasLength(1));
     });
   });
 
