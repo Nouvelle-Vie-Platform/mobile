@@ -155,7 +155,7 @@ void main() {
 
       expect(
         tester.getSemantics(radioOption(RadioQuality.auto)),
-        containsSemantics(
+        isSemantics(
           label: 'Automatique',
           isButton: true,
           isSelected: true,
@@ -166,7 +166,7 @@ void main() {
         tester.getSemantics(
           find.byKey(MediaSettingsScreen.sliderKey(MediaUsage.radio)),
         ),
-        containsSemantics(
+        isSemantics(
           isSlider: true,
           value: 'Automatique',
           increasedValue: 'Haute',

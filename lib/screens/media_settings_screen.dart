@@ -169,16 +169,14 @@ class MediaSettingsScreen extends ConsumerWidget {
         footer: footer,
       );
 
-  static String _radioLabel(AppLocalizations l, RadioQuality q) =>
-      switch (q) {
+  static String _radioLabel(AppLocalizations l, RadioQuality q) => switch (q) {
         RadioQuality.minimum => l.radioQualityMinimum,
         RadioQuality.economy => l.mediaQualityLow,
         RadioQuality.auto => l.mediaQualityAuto,
         RadioQuality.high => l.mediaQualityHigh,
       };
 
-  static String _mediaLabel(AppLocalizations l, MediaQuality q) =>
-      switch (q) {
+  static String _mediaLabel(AppLocalizations l, MediaQuality q) => switch (q) {
         MediaQuality.low => l.mediaQualityLow,
         MediaQuality.mid => l.mediaQualityMid,
         MediaQuality.auto => l.mediaQualityAuto,
@@ -285,8 +283,8 @@ class _QualityPage<T> extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.body
-                      .copyWith(color: palette.textSecondary),
+                  style:
+                      AppTypography.body.copyWith(color: palette.textSecondary),
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),

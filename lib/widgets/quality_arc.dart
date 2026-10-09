@@ -92,8 +92,7 @@ class QualityArc<T> extends StatelessWidget {
 
     // Le choix se peint en dernier, donc par-dessus ses voisines.
     final order = List.generate(values.length, (i) => i)
-      ..sort((a, b) =>
-          (b - position).abs().compareTo((a - position).abs()));
+      ..sort((a, b) => (b - position).abs().compareTo((a - position).abs()));
 
     return SizedBox(
       width: width,
@@ -158,16 +157,14 @@ class QualityArc<T> extends StatelessWidget {
       value: labelOf(selected),
       increasedValue: index < last ? labelOf(values[index + 1]) : null,
       decreasedValue: index > 0 ? labelOf(values[index - 1]) : null,
-      onIncrease:
-          index < last ? () => onSelected(values[index + 1]) : null,
+      onIncrease: index < last ? () => onSelected(values[index + 1]) : null,
       onDecrease: index > 0 ? () => onSelected(values[index - 1]) : null,
       child: GestureDetector(
         key: sliderKey,
         behavior: HitTestBehavior.opaque,
         onTapUp: (details) => selectAt(details.localPosition),
         onHorizontalDragStart: (details) => selectAt(details.localPosition),
-        onHorizontalDragUpdate: (details) =>
-            selectAt(details.localPosition),
+        onHorizontalDragUpdate: (details) => selectAt(details.localPosition),
         child: CustomPaint(
           size: Size(width, _sliderHeight),
           painter: _ArcPainter(
@@ -192,8 +189,7 @@ class _ArcGeometry {
         radius = _radiusFor(width),
         halfAngle = math.asin(_chord(width) / 2 / _radiusFor(width));
 
-  static double _chord(double width) =>
-      width - 2 * QualityArc._sliderMargin;
+  static double _chord(double width) => width - 2 * QualityArc._sliderMargin;
 
   /// Le rayon du cercle qui passe par les deux bouts de la corde et par le
   /// sommet, [QualityArc._sliderSag] plus haut.
@@ -209,8 +205,7 @@ class _ArcGeometry {
 
   Offset pointAt(double fraction) {
     final phi = -halfAngle + 2 * halfAngle * fraction;
-    return center +
-        Offset(radius * math.sin(phi), -radius * math.cos(phi));
+    return center + Offset(radius * math.sin(phi), -radius * math.cos(phi));
   }
 
   /// La fraction d'arc la plus proche d'un point touché, bornée à [0, 1].

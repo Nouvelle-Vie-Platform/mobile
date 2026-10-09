@@ -217,7 +217,7 @@ void main() {
     });
 
     test('le compteur poussé en temps réel garde l\'URL économie', () {
-      const antenna = RadioAntenna(streamUrl: adaptive, ecoStreamUrl: eco);
+      const antenna = RadioAntenna(streamUrl: master, ecoStreamUrl: eco);
       expect(
         antenna.withAudience(listeners: 12, live: null).ecoStreamUrl,
         eco,

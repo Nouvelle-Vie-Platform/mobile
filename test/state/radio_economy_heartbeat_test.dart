@@ -147,8 +147,7 @@ void main() {
       expect(r.player.loadedUrl, _eco);
     });
 
-    test('Économie sans URL économie : a32 dérivé du master (#184)',
-        () async {
+    test('Économie sans URL économie : a32 dérivé du master (#184)', () async {
       final r = await _setUp(
         quality: RadioQuality.economy,
         antenna: const RadioAntenna(streamUrl: _adaptive),
@@ -160,8 +159,7 @@ void main() {
       );
     });
 
-    test('Minimum et Haute : les paliers dérivés du master (#184)',
-        () async {
+    test('Minimum et Haute : les paliers dérivés du master (#184)', () async {
       final minimum = await _setUp(quality: RadioQuality.minimum);
       await _radio(minimum.container).start(title: _title);
       expect(
