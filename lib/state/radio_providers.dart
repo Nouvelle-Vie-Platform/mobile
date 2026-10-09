@@ -145,6 +145,16 @@ final radioNetworkChangesProvider = Provider<Stream<void>>(
   (ref) => ConnectivityNetworkStatus().onTransportChanged,
 );
 
+/// **Le retour du réseau, compté** : chaque changement de tuyau incrémente.
+/// L'écran d'antenne s'en sert pour relire une adresse qu'il n'a pas pu lire
+/// hors ligne, sans attendre un geste — la radio ne demande jamais
+/// « Réessayer » quand elle peut le faire seule. Un compteur et non `void` :
+/// deux `AsyncData(null)` égaux ne préviendraient pas les écouteurs.
+final radioNetworkReturnProvider = StreamProvider.autoDispose<int>((ref) {
+  var count = 0;
+  return ref.watch(radioNetworkChangesProvider).map((_) => ++count);
+});
+
 /// **Le contrôleur d'écoute** : il lance, il arrête, et il insiste — sans fin.
 ///
 /// Jamais `autoDispose`, pour la raison de `contentPlayerProvider` : l'écoute

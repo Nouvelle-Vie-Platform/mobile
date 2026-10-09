@@ -49,6 +49,14 @@ class RadioScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    // Ouverte hors ligne, la page n'a pas pu lire l'adresse de l'antenne : le
+    // retour du réseau la relit seul. Le bouton « Réessayer » reste pour qui
+    // ne veut pas attendre (et pour un réseau que l'OS ne signale pas).
+    ref.listen(radioNetworkReturnProvider, (_, next) {
+      if (next.hasValue && ref.read(radioAntennaProvider).hasError) {
+        ref.invalidate(radioAntennaProvider);
+      }
+    });
     // Le titre entre par la **clé de famille** du provider : c'est ce qui le fait
     // arriver jusqu'au lecteur, donc jusqu'à la notification et à l'écran
     // verrouillé, sans sortir des `.arb`. Voir `radioContentProvider`.
@@ -73,6 +81,8 @@ class RadioScreen extends ConsumerWidget {
       retractedTitle: l10n.radioFailureAntenna,
       retractedMessage: l10n.radioUnavailableMessage,
       onRetry: () => ref.invalidate(radioAntennaProvider),
+      errorTitle: l10n.radioOfflineTitle,
+      errorMessage: l10n.radioOfflineMessage,
       downloadContentType: null,
       isLive: true,
       // **L'écran n'ouvre plus l'antenne lui-même** (#110), et c'est le seul

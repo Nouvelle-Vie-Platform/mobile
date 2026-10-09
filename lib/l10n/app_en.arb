@@ -748,5 +748,7 @@
   "qualitySoundVoiceMusic": "Crisp voice, decent music",
   "qualitySoundClear": "Crisp voice and music",
   "qualitySoundFull": "Full voice and music",
-  "qualitySoundAdaptive": "The best your network allows"
+  "qualitySoundAdaptive": "The best your network allows",
+  "radioOfflineTitle": "No network right now",
+  "radioOfflineMessage": "The radio starts again on its own as soon as the network is back."
 }

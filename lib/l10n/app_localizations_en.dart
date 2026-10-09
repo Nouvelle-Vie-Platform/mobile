@@ -2316,4 +2316,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get qualitySoundAdaptive => 'The best your network allows';
+
+  @override
+  String get radioOfflineTitle => 'No network right now';
+
+  @override
+  String get radioOfflineMessage =>
+      'The radio starts again on its own as soon as the network is back.';
 }
