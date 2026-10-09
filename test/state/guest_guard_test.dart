@@ -121,6 +121,7 @@ void main() {
         '/about',
         '/media-viewer', // les médias d'une annonce
         '/settings/media', // les réglages de cet appareil-ci
+        '/settings/branch', // Mon assemblée, la préférence de cet appareil
       ];
       for (final pattern in surface) {
         expect(

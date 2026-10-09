@@ -2,12 +2,14 @@ import 'package:flutter/foundation.dart';
 
 /// **Les usages réglables** de la médiathèque, et la radio.
 ///
-/// Deux d'entre eux ne pilotent rien aujourd'hui, et c'est assumé : le direct
-/// est un écran sans lecteur (`LiveScreen` affiche une vignette décorative), et
-/// le téléchargement n'existe pas — `docs/mediatheque-en-ligne.md` §2 en fait un
-/// refus **documenté**, pas un reste-à-faire. Leur préférence est néanmoins
-/// enregistrée : le jour où l'un des deux existera, le réglage sera déjà là et
-/// il n'y aura rien à changer ici.
+/// Le téléchargement ne pilote pas de débit aujourd'hui, et c'est assumé —
+/// `docs/mediatheque-en-ligne.md` §2. Sa préférence est néanmoins enregistrée.
+///
+/// **Le direct (`live`) a été retiré** (#184) : aucun lecteur ne le lisait —
+/// l'antenne suit [RadioQuality]. Sa clé `live` peut rester orpheline dans
+/// `app_settings` sur les appareils déjà installés : la table est clé/valeur,
+/// une ligne que personne ne lit ne coûte rien, et la retirer n'exige donc
+/// aucune migration.
 enum MediaUsage {
   /// L'écoute d'un enseignement ou d'un rassemblement. **Le seul branché.**
   streaming('streaming'),
@@ -16,9 +18,6 @@ enum MediaUsage {
   /// enseignements : ses choix sont [RadioQuality], lus par
   /// [MediaPreferences.radio] et non par [MediaPreferences.of].
   radio('radio'),
-
-  /// Le direct. Sans effet tant que `LiveScreen` n'a pas de lecteur.
-  live('live'),
 
   /// Le téléchargement. Sans effet, et sans fonction derrière.
   download('download');
@@ -82,24 +81,34 @@ enum MediaQuality {
   }
 }
 
-/// **Les deux choix de la radio** (décisions 4 et 10 du plan
-/// `server-portal/docs/radio-adaptative-plan.md`).
+/// **Les quatre choix de la radio** (décisions 4 et 10 du plan
+/// `server-portal/docs/radio-adaptative-plan.md`, étendues par #184).
 ///
 /// Un type à lui et non [MediaQuality], parce que ni l'échelle ni la règle ne
-/// sont les mêmes : l'antenne a ses propres paliers (32 / 64 / 128 k, écrits par
-/// liquidsoap), aucun choix « 192 k » n'y aurait de sens, et son automatique est
-/// adaptatif **partout** — y compris en données mobiles, là où celui des
-/// enseignements bride à 64 k. Réutiliser [MediaQuality] aurait offert trois
-/// paliers sans rendu derrière, et laissé [effectiveBitrateCap] brider la radio
-/// en 4G à l'encontre de la décision 10.
+/// sont les mêmes : l'antenne a ses propres paliers (16 / 32 / 64 / 128 k,
+/// écrits par liquidsoap), aucun choix « 192 k » n'y aurait de sens, et son
+/// automatique est adaptatif **partout** — y compris en données mobiles, là où
+/// celui des enseignements bride à 64 k. Réutiliser [MediaQuality] aurait
+/// offert des paliers sans rendu derrière, et laissé [effectiveBitrateCap]
+/// brider la radio en 4G à l'encontre de la décision 10.
+///
+/// **L'ordre des valeurs est celui de l'arc** du panneau Qualité, du plus
+/// économe au plus riche. Les clés, elles, ne bougent pas : `auto` et
+/// `economy` existent déjà en base.
 enum RadioQuality {
+  /// **Bloquée sur le palier 16 k** (HE-AAC v2) — `a16.m3u8`, dérivé.
+  minimum('minimum', 16000),
+
+  /// **Bloquée sur le palier 32 k** — l'URL économie que rend la route
+  /// d'antenne (`ecoStreamUrl`), sinon `a32.m3u8` dérivé.
+  economy('economy', 32000),
+
   /// Le défaut : `master.m3u8`, le lecteur choisit le palier (ABR natif), en
   /// wifi comme en données mobiles.
   auto('auto', 128000),
 
-  /// **Bloquée sur le palier 32 k** — l'URL économie que rend la route
-  /// d'antenne (`ecoStreamUrl`).
-  economy('economy', 32000);
+  /// **Bloquée sur le palier 128 k** — `a128.m3u8`, dérivé.
+  high('high', 128000);
 
   const RadioQuality(this.key, this.bitsPerSecond);
 
@@ -107,11 +116,11 @@ enum RadioQuality {
   final String key;
 
   /// Le débit **le plus haut** que ce choix peut consommer : le palier haut de
-  /// l'antenne pour [auto], le seul palier pour [economy].
+  /// l'antenne pour [auto], le seul palier pour les trois autres.
   final int bitsPerSecond;
 
   /// Coût d'une heure au pire, arrondi comme [MediaQuality.megabytesPerHour] :
-  /// 14 Mo pour [economy], 58 pour [auto].
+  /// 7 Mo pour [minimum], 14 pour [economy], 58 pour [auto] et [high].
   int get megabytesPerHour => (bitsPerSecond * 3600 / 8 / 1000000).round();
 
   /// Tolérante comme [MediaQuality.parse] : l'inconnu rend [auto].
@@ -128,14 +137,12 @@ enum RadioQuality {
 class MediaPreferences {
   const MediaPreferences({
     this.streaming = MediaQuality.auto,
-    this.live = MediaQuality.auto,
     this.download = MediaQuality.auto,
     this.downloadOnCellular = false,
     this.radio = RadioQuality.auto,
   });
 
   final MediaQuality streaming;
-  final MediaQuality live;
   final MediaQuality download;
 
   /// **Télécharger en données mobiles** (F8). Un booléen, distinct des trois
@@ -152,7 +159,6 @@ class MediaPreferences {
   /// pas : elle se lit par [radio], et la demander ici est une erreur d'appel.
   MediaQuality of(MediaUsage usage) => switch (usage) {
         MediaUsage.streaming => streaming,
-        MediaUsage.live => live,
         MediaUsage.download => download,
         MediaUsage.radio => throw ArgumentError.value(
             usage, 'usage', 'la radio se lit par MediaPreferences.radio'),
@@ -162,14 +168,13 @@ class MediaPreferences {
   bool operator ==(Object other) =>
       other is MediaPreferences &&
       other.streaming == streaming &&
-      other.live == live &&
       other.download == download &&
       other.downloadOnCellular == downloadOnCellular &&
       other.radio == radio;
 
   @override
   int get hashCode =>
-      Object.hash(streaming, live, download, downloadOnCellular, radio);
+      Object.hash(streaming, download, downloadOnCellular, radio);
 }
 
 /// Le plafond **effectif**, une fois le transport connu.

@@ -55,7 +55,7 @@ final onCellularProvider = StreamProvider<bool>((ref) {
   return controller.stream;
 });
 
-/// Les trois réglages, tels que le panneau les affiche.
+/// Les réglages média, tels que le panneau les affiche.
 final mediaPreferencesProvider = StreamProvider<MediaPreferences>(
   (ref) => ref.watch(settingsDaoProvider).watchMediaPreferences(),
   retry: _noAutomaticRetry,
@@ -86,8 +86,8 @@ final streamingQualityProvider = Provider<MediaQuality>((ref) {
 /// il ne vaut que pour la session d'écoute en cours, et `CLAUDE.md` réserve
 /// Riverpod à l'état **partagé**.
 ///
-/// C'est le seul des trois usages qui aboutisse à quelque chose : le direct n'a
-/// pas de lecteur et le téléchargement n'existe pas.
+/// C'est le seul usage de l'échelle des enseignements qui aboutisse à quelque
+/// chose : le téléchargement ne pilote pas de débit.
 final streamingBitrateTargetProvider = Provider<int?>((ref) {
   final quality =
       ref.watch(mediaPreferencesProvider).value?.of(MediaUsage.streaming) ??
@@ -96,7 +96,7 @@ final streamingBitrateTargetProvider = Provider<int?>((ref) {
   return effectiveBitrateCap(quality, onCellular: onCellular);
 });
 
-/// **Le choix de la radio** — Automatique ou Économie.
+/// **Le choix de la radio** — un des quatre de [RadioQuality].
 ///
 /// Lu par `RadioListening`, qui l'écoute pour relancer l'antenne sur la bonne
 /// URL quand il change en cours d'écoute. ⚠️ Il ouvre le **flux Drift** des

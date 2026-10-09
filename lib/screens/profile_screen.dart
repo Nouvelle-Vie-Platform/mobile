@@ -6,6 +6,7 @@ import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
 import '../router/app_router.dart';
 import '../state/auth_providers.dart';
+import '../state/branch_scope_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -28,6 +29,9 @@ class ProfileScreen extends ConsumerWidget {
   /// L'entrée « Confidentialité » (#142).
   static const Key privacyKey = Key('profile_privacy');
   static const Key themeButtonKey = Key('profile_theme_button');
+
+  /// La ligne « Mon assemblée » (#184).
+  static const Key branchScopeKey = Key('profile_branch_scope');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,6 +98,9 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                   ],
+                  // Mon assemblée (#184) — sortie de la page Qualité.
+                  const _BranchScopeTile(),
+                  const SizedBox(height: AppSpacing.sm),
                   // Le contenu des notifications de messages (M5).
                   const NotificationPreviewTile(),
                   const SizedBox(height: AppSpacing.sm),
@@ -306,6 +313,33 @@ class _ProfileHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// **Mon assemblée**, et l'assemblée choisie en sous-titre.
+///
+/// Les deux lectures sont ponctuelles (voir `preferredBranchProvider`) ; la
+/// page invalide la préférence après un choix, et le sous-titre suit.
+class _BranchScopeTile extends ConsumerWidget {
+  const _BranchScopeTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final selected = ref.watch(preferredBranchProvider).value;
+    final branches = ref.watch(branchScopeChoicesProvider).value ?? const [];
+    var subtitle = l.branchScopeAll;
+    for (final branch in branches) {
+      if (branch.id == selected) subtitle = branch.name;
+    }
+
+    return MenuTile(
+      key: ProfileScreen.branchScopeKey,
+      icon: Icons.church_outlined,
+      label: l.branchScopeTitle,
+      subtitle: subtitle,
+      onTap: () => context.pushNamed(AppRoute.branchScope),
     );
   }
 }

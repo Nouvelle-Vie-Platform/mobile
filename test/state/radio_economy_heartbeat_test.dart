@@ -147,13 +147,32 @@ void main() {
       expect(r.player.loadedUrl, _eco);
     });
 
-    test('Économie sans URL économie : l\'adaptative', () async {
+    test('Économie sans URL économie : a32 dérivé du master (#184)', () async {
       final r = await _setUp(
         quality: RadioQuality.economy,
         antenna: const RadioAntenna(streamUrl: _adaptive),
       );
       await _radio(r.container).start(title: _title);
-      expect(r.player.loadedUrl, _adaptive);
+      expect(
+        r.player.loadedUrl,
+        'https://antenne.test/antenne-hls/a32.m3u8',
+      );
+    });
+
+    test('Minimum et Haute : les paliers dérivés du master (#184)', () async {
+      final minimum = await _setUp(quality: RadioQuality.minimum);
+      await _radio(minimum.container).start(title: _title);
+      expect(
+        minimum.player.loadedUrl,
+        'https://antenne.test/antenne-hls/a16.m3u8',
+      );
+
+      final high = await _setUp(quality: RadioQuality.high);
+      await _radio(high.container).start(title: _title);
+      expect(
+        high.player.loadedUrl,
+        'https://antenne.test/antenne-hls/a128.m3u8',
+      );
     });
   });
 

@@ -1756,23 +1756,11 @@ abstract class AppLocalizations {
   /// **'Qualité & données'**
   String get mediaSettingsTitle;
 
-  /// Panneau qualité : dit d'emblée que le réglage vise le forfait mobile, pas la qualité en général
-  ///
-  /// In fr, this message translates to:
-  /// **'Ces réglages ne changent rien à ce que vous entendez sur le réseau de l\'église. Ils protègent votre forfait quand vous êtes dehors.'**
-  String get mediaSettingsLead;
-
   /// No description provided for @mediaSettingsStreaming.
   ///
   /// In fr, this message translates to:
   /// **'Écoute d\'un message'**
   String get mediaSettingsStreaming;
-
-  /// No description provided for @mediaSettingsLive.
-  ///
-  /// In fr, this message translates to:
-  /// **'Direct'**
-  String get mediaSettingsLive;
 
   /// No description provided for @mediaSettingsDownload.
   ///
@@ -1822,23 +1810,59 @@ abstract class AppLocalizations {
   /// **'La liste des assemblées arrivera à la première synchronisation.'**
   String get branchScopeEmpty;
 
-  /// Titre de la section radio du panneau qualité. Ses deux choix réutilisent mediaQualityAuto et mediaQualityLow
+  /// Onglet Radio de la page Qualité, affiché en capitales. Ses choix réutilisent radioQualityMinimum, mediaQualityLow, mediaQualityAuto et mediaQualityHigh
   ///
   /// In fr, this message translates to:
   /// **'Radio'**
   String get mediaSettingsRadio;
 
-  /// Impact du choix automatique de la radio. Contrairement aux enseignements, il ne bride PAS en données mobiles : on annonce donc le coût du palier haut
+  /// Onglet « écoute des enseignements » de la page Qualité (#184), affiché en capitales
   ///
   /// In fr, this message translates to:
-  /// **'Le débit suit votre réseau, en wifi comme en données mobiles · jusqu\'à ≈ {mb} Mo par heure.'**
-  String radioQualityImpactAuto(int mb);
+  /// **'Écoute'**
+  String get mediaSettingsListening;
 
-  /// Impact du choix économie de la radio (palier 32 k). Dit aussi ce qu'on perd
+  /// Grand titre centré de l'onglet Radio de la page Qualité, posé en question
   ///
   /// In fr, this message translates to:
-  /// **'≈ {mb} Mo par heure · la parole reste claire, la louange y perd.'**
-  String radioQualityImpactEconomy(int mb);
+  /// **'Quelle qualité pour la radio ?'**
+  String get qualityQuestionRadio;
+
+  /// No description provided for @qualityQuestionListening.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelle qualité pour l\'écoute ?'**
+  String get qualityQuestionListening;
+
+  /// No description provided for @qualityQuestionDownload.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelle qualité en téléchargement ?'**
+  String get qualityQuestionDownload;
+
+  /// Ligne d'explication grise sous le titre de la page Qualité, deux lignes au plus
+  ///
+  /// In fr, this message translates to:
+  /// **'La qualité s\'adapte à votre réseau, ou se fixe pour économiser vos données.'**
+  String get qualityLead;
+
+  /// Choix radio le plus économe : palier 16 k, environ 7 Mo par heure
+  ///
+  /// In fr, this message translates to:
+  /// **'Minimum'**
+  String get radioQualityMinimum;
+
+  /// Consommation d'un choix de qualité, sous le curseur en arc. Le chiffre vient du débit, jamais d'une traduction
+  ///
+  /// In fr, this message translates to:
+  /// **'≈ {mb} Mo par heure'**
+  String qualityPerHour(int mb);
+
+  /// Consommation du choix Automatique, sous le curseur en arc
+  ///
+  /// In fr, this message translates to:
+  /// **'S\'adapte à votre réseau'**
+  String get qualityAdaptive;
 
   /// No description provided for @mediaQualityAuto.
   ///
@@ -1863,30 +1887,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Haute'**
   String get mediaQualityHigh;
-
-  /// Phrase d'impact du mode automatique. Annonce le coût du PIRE cas (données mobiles) — c'est celui contre lequel on se protège
-  ///
-  /// In fr, this message translates to:
-  /// **'≈ {mb} Mo par heure en données mobiles, meilleure qualité en wifi.'**
-  String mediaQualityImpactAuto(int mb);
-
-  /// Phrase d'impact du palier 64k. Dit aussi ce qu'on perd : le chiffre seul ferait choisir à l'aveugle
-  ///
-  /// In fr, this message translates to:
-  /// **'≈ {mb} Mo par heure · suffisant pour la prédication, la chorale y perd.'**
-  String mediaQualityImpactLow(int mb);
-
-  /// No description provided for @mediaQualityImpactMid.
-  ///
-  /// In fr, this message translates to:
-  /// **'≈ {mb} Mo par heure · la louange retrouve son ampleur.'**
-  String mediaQualityImpactMid(int mb);
-
-  /// No description provided for @mediaQualityImpactHigh.
-  ///
-  /// In fr, this message translates to:
-  /// **'≈ {mb} Mo par heure · chaque nuance, au prix fort.'**
-  String mediaQualityImpactHigh(int mb);
 
   /// No description provided for @themeSectionTitle.
   ///
@@ -4137,6 +4137,102 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Aucun document partagé'**
   String get sharedContentDocsEmpty;
+
+  /// Ligne de la carte d'informations : combien d'heures tient un forfait de 1 Go à ce palier
+  ///
+  /// In fr, this message translates to:
+  /// **'1 Go de forfait ≈ {hours} h d\'écoute'**
+  String qualityHoursPerGigabyte(int hours);
+
+  /// Même ligne pour Automatique : calculée au palier le plus haut, donc un minimum
+  ///
+  /// In fr, this message translates to:
+  /// **'1 Go de forfait ≈ {hours} h d\'écoute au moins'**
+  String qualityHoursPerGigabyteAtLeast(int hours);
+
+  /// Réseau actuel de l'appareil, en tête de la carte d'informations
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes en wifi'**
+  String get qualityNowWifi;
+
+  /// Réseau actuel de l'appareil, en tête de la carte d'informations
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes en données mobiles'**
+  String get qualityNowCellular;
+
+  /// Réseau qui suffit au palier radio 16 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Passe même en 2G (EDGE)'**
+  String get qualityNetworkEdge;
+
+  /// Réseau qui suffit au palier radio 32 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Une 2G correcte ou la 3G suffisent'**
+  String get qualityNetworkWeak;
+
+  /// Réseau qui suffit au palier d'écoute 64 k
+  ///
+  /// In fr, this message translates to:
+  /// **'La 3G suffit'**
+  String get qualityNetwork3g;
+
+  /// Réseau qui suffit au palier d'écoute 128 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Une bonne 3G ou la 4G'**
+  String get qualityNetworkGood;
+
+  /// Réseau qu'exigent les paliers hauts (128 k radio, 192 k écoute)
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande la 4G ou le wifi'**
+  String get qualityNetworkStrong;
+
+  /// Réseau du choix Automatique de la radio
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous réseaux : descend seule quand ça faiblit'**
+  String get qualityNetworkAdaptive;
+
+  /// Ce que fait Automatique pour l'écoute des enseignements
+  ///
+  /// In fr, this message translates to:
+  /// **'Économe en données mobiles, pleine en wifi'**
+  String get qualityNetworkListeningAuto;
+
+  /// Rendu du palier radio 16 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix claire, musique sourde'**
+  String get qualitySoundVoice;
+
+  /// Rendu des paliers radio 32 k et écoute 64 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix nette, musique correcte'**
+  String get qualitySoundVoiceMusic;
+
+  /// Rendu du palier d'écoute 128 k
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix et musique nettes'**
+  String get qualitySoundClear;
+
+  /// Rendu des paliers hauts
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix et musique pleines'**
+  String get qualitySoundFull;
+
+  /// Rendu du choix Automatique
+  ///
+  /// In fr, this message translates to:
+  /// **'La meilleure que permet votre réseau'**
+  String get qualitySoundAdaptive;
 }
 
 class _AppLocalizationsDelegate

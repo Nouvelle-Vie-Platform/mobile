@@ -949,14 +949,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mediaSettingsTitle => 'Quality & data';
 
   @override
-  String get mediaSettingsLead =>
-      'These settings change nothing on the church network. They protect your data plan when you are out.';
-
-  @override
   String get mediaSettingsStreaming => 'Listening to a message';
-
-  @override
-  String get mediaSettingsLive => 'Live';
 
   @override
   String get mediaSettingsDownload => 'Download';
@@ -990,14 +983,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mediaSettingsRadio => 'Radio';
 
   @override
-  String radioQualityImpactAuto(int mb) {
-    return 'Bitrate follows your network, on wifi and mobile data alike · up to ≈ $mb MB per hour.';
+  String get mediaSettingsListening => 'Listening';
+
+  @override
+  String get qualityQuestionRadio => 'What quality for the radio?';
+
+  @override
+  String get qualityQuestionListening => 'What quality for listening?';
+
+  @override
+  String get qualityQuestionDownload => 'What quality for downloads?';
+
+  @override
+  String get qualityLead =>
+      'Quality adapts to your network, or stays fixed to save your data.';
+
+  @override
+  String get radioQualityMinimum => 'Minimum';
+
+  @override
+  String qualityPerHour(int mb) {
+    return '≈ $mb MB per hour';
   }
 
   @override
-  String radioQualityImpactEconomy(int mb) {
-    return '≈ $mb MB per hour · speech stays clear, worship loses depth.';
-  }
+  String get qualityAdaptive => 'Adapts to your network';
 
   @override
   String get mediaQualityAuto => 'Automatic';
@@ -1010,26 +1020,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mediaQualityHigh => 'High';
-
-  @override
-  String mediaQualityImpactAuto(int mb) {
-    return '≈ $mb MB per hour on mobile data, better quality on wifi.';
-  }
-
-  @override
-  String mediaQualityImpactLow(int mb) {
-    return '≈ $mb MB per hour · fine for preaching, the choir loses depth.';
-  }
-
-  @override
-  String mediaQualityImpactMid(int mb) {
-    return '≈ $mb MB per hour · worship regains its fullness.';
-  }
-
-  @override
-  String mediaQualityImpactHigh(int mb) {
-    return '≈ $mb MB per hour · every nuance, at full price.';
-  }
 
   @override
   String get themeSectionTitle => 'Appearance';
@@ -2272,4 +2262,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sharedContentDocsEmpty => 'No documents shared';
+
+  @override
+  String qualityHoursPerGigabyte(int hours) {
+    return '1 GB of data ≈ $hours h of listening';
+  }
+
+  @override
+  String qualityHoursPerGigabyteAtLeast(int hours) {
+    return '1 GB of data ≈ at least $hours h of listening';
+  }
+
+  @override
+  String get qualityNowWifi => 'You are on wifi';
+
+  @override
+  String get qualityNowCellular => 'You are on mobile data';
+
+  @override
+  String get qualityNetworkEdge => 'Works even on 2G (EDGE)';
+
+  @override
+  String get qualityNetworkWeak => 'Decent 2G or 3G is enough';
+
+  @override
+  String get qualityNetwork3g => '3G is enough';
+
+  @override
+  String get qualityNetworkGood => 'Good 3G or 4G';
+
+  @override
+  String get qualityNetworkStrong => 'Needs 4G or wifi';
+
+  @override
+  String get qualityNetworkAdaptive =>
+      'Any network: steps down by itself when it weakens';
+
+  @override
+  String get qualityNetworkListeningAuto =>
+      'Thrifty on mobile data, full on wifi';
+
+  @override
+  String get qualitySoundVoice => 'Clear voice, muffled music';
+
+  @override
+  String get qualitySoundVoiceMusic => 'Crisp voice, decent music';
+
+  @override
+  String get qualitySoundClear => 'Crisp voice and music';
+
+  @override
+  String get qualitySoundFull => 'Full voice and music';
+
+  @override
+  String get qualitySoundAdaptive => 'The best your network allows';
 }

@@ -156,13 +156,68 @@ void main() {
       expect(antenna.streamUrlFor(RadioQuality.auto), adaptive);
     });
 
-    test('Économie sans URL économie : l\'adaptative, pas le silence', () {
+    test('Économie sans URL économie : a32 dérivé du master', () {
       const antenna = RadioAntenna(streamUrl: adaptive);
-      expect(antenna.streamUrlFor(RadioQuality.economy), adaptive);
+      expect(
+        antenna.streamUrlFor(RadioQuality.economy),
+        'https://stream.example/antenne-hls/a32.m3u8',
+      );
+    });
+  });
+
+  group('streamUrlFor, les quatre choix (#184)', () {
+    const master = 'https://stream.example/antenne-hls/master.m3u8';
+    const eco = 'https://stream.example/eco/a32.m3u8';
+    const other = 'https://stream.example/antenne/live.m3u8';
+
+    test('derrière un master : chaque palier a sa liste de lecture', () {
+      const antenna = RadioAntenna(streamUrl: master);
+      expect(antenna.streamUrlFor(RadioQuality.auto), master);
+      expect(
+        antenna.streamUrlFor(RadioQuality.minimum),
+        'https://stream.example/antenne-hls/a16.m3u8',
+      );
+      expect(
+        antenna.streamUrlFor(RadioQuality.economy),
+        'https://stream.example/antenne-hls/a32.m3u8',
+      );
+      expect(
+        antenna.streamUrlFor(RadioQuality.high),
+        'https://stream.example/antenne-hls/a128.m3u8',
+      );
+    });
+
+    test('Économie : l\'URL servie l\'emporte sur la dérivation', () {
+      const antenna = RadioAntenna(streamUrl: master, ecoStreamUrl: eco);
+      expect(antenna.streamUrlFor(RadioQuality.economy), eco);
+      // Les autres paliers dérivent toujours du master.
+      expect(
+        antenna.streamUrlFor(RadioQuality.minimum),
+        'https://stream.example/antenne-hls/a16.m3u8',
+      );
+    });
+
+    test('sans master : l\'adresse intacte, jamais le silence', () {
+      const antenna = RadioAntenna(streamUrl: other);
+      for (final quality in RadioQuality.values) {
+        expect(antenna.streamUrlFor(quality), other, reason: '$quality');
+      }
+    });
+
+    test('sans master mais URL économie servie : l\'économie', () {
+      const antenna = RadioAntenna(streamUrl: other, ecoStreamUrl: eco);
+      expect(antenna.streamUrlFor(RadioQuality.economy), eco);
+      expect(antenna.streamUrlFor(RadioQuality.high), other);
+    });
+
+    test('sans adresse : null pour tous', () {
+      for (final quality in RadioQuality.values) {
+        expect(RadioAntenna.unknown.streamUrlFor(quality), isNull);
+      }
     });
 
     test('le compteur poussé en temps réel garde l\'URL économie', () {
-      const antenna = RadioAntenna(streamUrl: adaptive, ecoStreamUrl: eco);
+      const antenna = RadioAntenna(streamUrl: master, ecoStreamUrl: eco);
       expect(
         antenna.withAudience(listeners: 12, live: null).ecoStreamUrl,
         eco,

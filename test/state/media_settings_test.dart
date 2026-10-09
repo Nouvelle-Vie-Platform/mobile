@@ -75,19 +75,18 @@ void main() {
       // toucherait plus personne.
       expect(await db.select(db.appSettings).get(), isEmpty);
       expect(prefs.streaming, MediaQuality.auto);
-      expect(prefs.live, MediaQuality.auto);
       expect(prefs.download, MediaQuality.auto);
     });
 
     test('les trois usages se règlent séparément', () async {
       await db.settingsDao
           .setMediaQuality(MediaUsage.streaming, MediaQuality.high);
-      await db.settingsDao.setMediaQuality(MediaUsage.live, MediaQuality.low);
+      await db.settingsDao
+          .setMediaQuality(MediaUsage.download, MediaQuality.low);
 
       final prefs = await db.settingsDao.watchMediaPreferences().first;
       expect(prefs.streaming, MediaQuality.high);
-      expect(prefs.live, MediaQuality.low);
-      expect(prefs.download, MediaQuality.auto);
+      expect(prefs.download, MediaQuality.low);
     });
 
     test('réécrire un usage écrase, sans empiler de lignes', () async {
@@ -110,10 +109,17 @@ void main() {
       addTearDown(db.close);
     });
 
-    test('deux choix, et Économie coûte ≈ 14 Mo/h', () {
-      expect(RadioQuality.values, [RadioQuality.auto, RadioQuality.economy]);
+    test('quatre choix dans l\'ordre de l\'arc, et leurs Mo/h', () {
+      expect(RadioQuality.values, [
+        RadioQuality.minimum,
+        RadioQuality.economy,
+        RadioQuality.auto,
+        RadioQuality.high,
+      ]);
+      expect(RadioQuality.minimum.megabytesPerHour, 7);
       expect(RadioQuality.economy.bitsPerSecond, 32000);
       expect(RadioQuality.economy.megabytesPerHour, 14);
+      expect(RadioQuality.high.megabytesPerHour, 58);
       // L'automatique de la radio ne bride pas : il annonce le palier haut.
       expect(RadioQuality.auto.megabytesPerHour, 58);
     });
@@ -123,6 +129,8 @@ void main() {
       expect(RadioQuality.parse(null), RadioQuality.auto);
       expect(RadioQuality.parse('mid'), RadioQuality.auto);
       expect(RadioQuality.parse('economy'), RadioQuality.economy);
+      expect(RadioQuality.parse('minimum'), RadioQuality.minimum);
+      expect(RadioQuality.parse('high'), RadioQuality.high);
     });
 
     test('défaut Automatique, sans ligne écrite', () async {
