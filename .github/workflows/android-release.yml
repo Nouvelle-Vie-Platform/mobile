@@ -141,12 +141,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Un tag ne publie jamais ce que la CI de `main` refuserait.
+      # Un tag ne publie jamais ce que la CI refuserait. L'analyse reste (rapide)
+      # comme garde-fou ; la suite de tests ne se rejoue plus ici (09/10/2026) :
+      # elle a déjà tourné, verte, sur la PR dont le tag pose le commit de
+      # fusion — la rejouer coûtait ~10 min de quota Actions par version.
       - name: Analyze
         run: flutter analyze
-
-      - name: Run tests
-        run: flutter test
 
       # La clé de release (#159), reconstituée dans un fichier temporaire du
       # runner — jamais dans le dépôt, effacé à la fin du job (`Effacer la clé`).

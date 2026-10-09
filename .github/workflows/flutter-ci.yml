@@ -1,8 +1,10 @@
 name: Flutter CI
 
+# **Sur les PR seulement** (09/10/2026) : la fusion d'une PR verte rejouait
+# exactement la même chaîne sur `main` — ~12 min de quota Actions par fusion,
+# pour un verdict déjà rendu. L'organisation est sur le plan gratuit (2000
+# minutes par mois pour les dépôts privés) et le quota a été épuisé.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
 
