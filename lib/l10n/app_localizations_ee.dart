@@ -2412,4 +2412,72 @@ class AppLocalizationsEe extends AppLocalizations {
   @override
   String get radioOfflineMessage =>
       'La radio repart toute seule dès que le réseau revient.';
+
+  @override
+  String get noteEditorPlaceholder => 'Ŋlɔ wò nuŋlɔɖi…';
+
+  @override
+  String get noteEditorOpenFormat => 'Mise en forme';
+
+  @override
+  String get noteEditorFormatTitle => 'Nɔnɔme';
+
+  @override
+  String get noteEditorClose => 'Tu';
+
+  @override
+  String get noteEditorStyleTitle => 'Tanya';
+
+  @override
+  String get noteEditorStyleSubtitle => 'Sous-titre';
+
+  @override
+  String get noteEditorStyleHeading => 'Titre secondaire';
+
+  @override
+  String get noteEditorStyleBody => 'Nuŋɔŋlɔ';
+
+  @override
+  String get noteEditorBold => 'Gras';
+
+  @override
+  String get noteEditorItalic => 'Italique';
+
+  @override
+  String get noteEditorUnderline => 'Souligné';
+
+  @override
+  String get noteEditorStrike => 'Barré';
+
+  @override
+  String get noteEditorHighlight => 'Surligner';
+
+  @override
+  String get noteEditorTextColor => 'Couleur du texte';
+
+  @override
+  String get noteEditorBulletList => 'Liste à puces';
+
+  @override
+  String get noteEditorNumberedList => 'Liste numérotée';
+
+  @override
+  String get noteEditorChecklist => 'Cases à cocher';
+
+  @override
+  String get noteEditorOutdent => 'Diminuer le retrait';
+
+  @override
+  String get noteEditorIndent => 'Augmenter le retrait';
+
+  @override
+  String get noteEditorMonostyle => 'Monostyle';
+
+  @override
+  String get noteEditorQuote => 'Citation';
+
+  @override
+  String noteEditorAttachment(String name) {
+    return 'Nu si wotsɔ kpe ɖe eŋu: $name';
+  }
 }

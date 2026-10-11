@@ -4377,6 +4377,138 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'La radio repart toute seule dès que le réseau revient.'**
   String get radioOfflineMessage;
+
+  /// Éditeur de note (N3) : texte fantôme du corps vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez votre note…'**
+  String get noteEditorPlaceholder;
+
+  /// Pilule de l'éditeur : bouton « T » qui ouvre la feuille Format
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise en forme'**
+  String get noteEditorOpenFormat;
+
+  /// Titre de la feuille de mise en forme façon Apple
+  ///
+  /// In fr, this message translates to:
+  /// **'Format'**
+  String get noteEditorFormatTitle;
+
+  /// Croix de la feuille Format
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get noteEditorClose;
+
+  /// Feuille Format : style de paragraphe header 1
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get noteEditorStyleTitle;
+
+  /// Feuille Format : style de paragraphe header 2
+  ///
+  /// In fr, this message translates to:
+  /// **'Sous-titre'**
+  String get noteEditorStyleSubtitle;
+
+  /// Feuille Format : style de paragraphe header 3
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre secondaire'**
+  String get noteEditorStyleHeading;
+
+  /// Feuille Format : paragraphe sans titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Corps'**
+  String get noteEditorStyleBody;
+
+  /// Pilule et feuille Format : bouton B
+  ///
+  /// In fr, this message translates to:
+  /// **'Gras'**
+  String get noteEditorBold;
+
+  /// Pilule et feuille Format : bouton I
+  ///
+  /// In fr, this message translates to:
+  /// **'Italique'**
+  String get noteEditorItalic;
+
+  /// Pilule et feuille Format : bouton U
+  ///
+  /// In fr, this message translates to:
+  /// **'Souligné'**
+  String get noteEditorUnderline;
+
+  /// Feuille Format : bouton S
+  ///
+  /// In fr, this message translates to:
+  /// **'Barré'**
+  String get noteEditorStrike;
+
+  /// Feuille Format : surlignage jaune de la marque
+  ///
+  /// In fr, this message translates to:
+  /// **'Surligner'**
+  String get noteEditorHighlight;
+
+  /// Feuille Format : pastille qui ouvre la palette de huit couleurs
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleur du texte'**
+  String get noteEditorTextColor;
+
+  /// Pilule et feuille Format : liste à puces
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste à puces'**
+  String get noteEditorBulletList;
+
+  /// Pilule et feuille Format : liste numérotée
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste numérotée'**
+  String get noteEditorNumberedList;
+
+  /// Pilule et feuille Format : liste de cases à cocher
+  ///
+  /// In fr, this message translates to:
+  /// **'Cases à cocher'**
+  String get noteEditorChecklist;
+
+  /// Feuille Format : désindenter
+  ///
+  /// In fr, this message translates to:
+  /// **'Diminuer le retrait'**
+  String get noteEditorOutdent;
+
+  /// Feuille Format : indenter
+  ///
+  /// In fr, this message translates to:
+  /// **'Augmenter le retrait'**
+  String get noteEditorIndent;
+
+  /// Feuille Format : bloc à chasse fixe (code-block)
+  ///
+  /// In fr, this message translates to:
+  /// **'Monostyle'**
+  String get noteEditorMonostyle;
+
+  /// Feuille Format : bloc citation (blockquote)
+  ///
+  /// In fr, this message translates to:
+  /// **'Citation'**
+  String get noteEditorQuote;
+
+  /// Carte d'attente d'un embed nvAttachment tant que N4 n'a pas livré son rendu
+  ///
+  /// In fr, this message translates to:
+  /// **'Pièce jointe : {name}'**
+  String noteEditorAttachment(String name);
 }
 
 class _AppLocalizationsDelegate

@@ -266,6 +266,22 @@ dependencies:
   flutter_native_contact_picker: ^0.0.12
   url_launcher: ^6.3.3
   open_file: ^4.0.0
+  # **L'éditeur des notes** (N3, #191 ; plan « Notes et Bible »). Trois
+  # dépendances, une par rôle, toutes lues **uniquement** sous
+  # `lib/features/notes_editor/` :
+  #
+  # - `flutter_quill` — le texte riche, stocké en Delta JSON. Sa barre d'outils
+  #   et `flutter_quill_extensions` ne sont **pas** importées : la pilule et la
+  #   feuille Format sont à nous, l'embed `nvAttachment` aussi. 11.6.0 exige
+  #   Flutter ≥ 3.44 — le Flutter du dépôt — et corrige le clignotement des
+  #   boutons à la touche d'une case à cocher, ce que la pilule reflète.
+  # - `pdf` — pur Dart : le partage d'une note en PDF, police Atkinson
+  #   Hyperlegible embarquée depuis `assets/fonts/`.
+  # - `share_plus` — la feuille de partage du système pour ce PDF. Swift
+  #   Package, aucune permission.
+  flutter_quill: ^11.6.0
+  pdf: ^3.13.1
+  share_plus: ^13.3.1
 
 dev_dependencies:
   flutter_test:
