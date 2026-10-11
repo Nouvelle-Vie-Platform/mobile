@@ -6,7 +6,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../data/repositories/notes_repository.dart';
 import '../../l10n/l10n_extension.dart';
@@ -113,10 +112,7 @@ class _NotesList extends ConsumerWidget {
         key: NotesTab.addButtonKey,
         backgroundColor: AppColors.primary,
         tooltip: l.notesUntitled,
-        onPressed: () => context.pushNamed(
-          AppRoute.noteEditor,
-          pathParameters: {'id': mintNoteId()},
-        ),
+        onPressed: () => _open(ref, mintNoteId()),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: Column(
@@ -189,6 +185,7 @@ class _NotesList extends ConsumerWidget {
                       itemBuilder: (_, i) => _NoteCard(
                         note: items[i],
                         color: byId[items[i].categoryId]?.color,
+                        onTap: () => _open(ref, items[i].id),
                       ),
                     ),
             ),
@@ -197,6 +194,16 @@ class _NotesList extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// **La route est lue par `ref`, jamais par le `BuildContext`** : la règle
+/// des gestes vers une route réservée (`guest_affordances_test`). Ici la liste
+/// n'est montée que pour un membre, mais la forme reste celle du dépôt.
+void _open(WidgetRef ref, String noteId) {
+  ref.read(routerProvider).pushNamed(
+    AppRoute.noteEditor,
+    pathParameters: {'id': noteId},
+  );
 }
 
 class _FilterChip extends StatelessWidget {
@@ -243,10 +250,15 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _NoteCard extends StatelessWidget {
-  const _NoteCard({required this.note, required this.color});
+  const _NoteCard({
+    required this.note,
+    required this.color,
+    required this.onTap,
+  });
 
   final NoteView note;
   final NoteColor? color;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -260,10 +272,7 @@ class _NoteCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.lg),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.pushNamed(
-          AppRoute.noteEditor,
-          pathParameters: {'id': note.id},
-        ),
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
