@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2461,4 +2462,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String noteEditorAttachment(String name) {
     return 'Attachment: $name';
   }
+
+  @override
+  String get noteLinkAdd => 'Add a link';
+
+  @override
+  String get noteLinkSheetTitle => 'Add a link';
+
+  @override
+  String get noteLinkToNote => 'A note';
+
+  @override
+  String get noteLinkToTeaching => 'A teaching';
+
+  @override
+  String get noteLinkToWeb => 'A web address';
+
+  @override
+  String get noteLinkToBible => 'The Bible';
+
+  @override
+  String get noteLinkSoon => 'soon';
+
+  @override
+  String get noteLinkSearch => 'Search';
+
+  @override
+  String get noteLinkInvalidUrl => 'Invalid web address';
+
+  @override
+  String get noteLinkInsert => 'Insert link';
+
+  @override
+  String get noteLinkNoResult => 'No results';
+
+  @override
+  String get noteLinkNoteMissing => 'This note no longer exists';
+
+  @override
+  String get noteLinkCannotOpen => 'Unable to open this link';
 }
