@@ -43,6 +43,8 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
   $GroupMessagesTable get groupMessages => attachedDatabase.groupMessages;
   $GroupReadsTable get groupReads => attachedDatabase.groupReads;
   $MyInteractionsTable get myInteractions => attachedDatabase.myInteractions;
+  $SpiritualNotesTable get spiritualNotes => attachedDatabase.spiritualNotes;
+  $NoteCategoriesTable get noteCategories => attachedDatabase.noteCategories;
   $GroupArrangementsTable get groupArrangements =>
       attachedDatabase.groupArrangements;
   $MessageReceiptsTable get messageReceipts => attachedDatabase.messageReceipts;
@@ -135,6 +137,12 @@ class SyncDaoManager {
   $$MyInteractionsTableTableManager get myInteractions =>
       $$MyInteractionsTableTableManager(
           _db.attachedDatabase, _db.myInteractions);
+  $$SpiritualNotesTableTableManager get spiritualNotes =>
+      $$SpiritualNotesTableTableManager(
+          _db.attachedDatabase, _db.spiritualNotes);
+  $$NoteCategoriesTableTableManager get noteCategories =>
+      $$NoteCategoriesTableTableManager(
+          _db.attachedDatabase, _db.noteCategories);
   $$GroupArrangementsTableTableManager get groupArrangements =>
       $$GroupArrangementsTableTableManager(
           _db.attachedDatabase, _db.groupArrangements);

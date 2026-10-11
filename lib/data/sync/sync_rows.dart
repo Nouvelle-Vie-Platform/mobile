@@ -487,6 +487,48 @@ MyInteractionsCompanion myInteractionRowOf(Map<String, Object?> item) {
   );
 }
 
+/// `GET /sync/spiritual_notes` — **mes notes** (#190, contrat N1).
+///
+/// Douze clés servies : `id`, `ownerId`, `teachingId`, `title`, `content`,
+/// `body`, `categoryId`, `pinned`, `clientCreatedAt`, `createdAt`,
+/// `updatedAt`, `deletedAt`. Le `content` (Delta Quill) est rangé **brut**,
+/// ré-encodé en JSON : c'est l'éditeur qui le lit, le magasin ne le comprend
+/// pas. `body` absent vaut vide — une note n'est jamais mutilée pour un corps.
+SpiritualNotesCompanion spiritualNoteRowOf(Map<String, Object?> item) {
+  const collection = 'spiritual_notes';
+  return SpiritualNotesCompanion.insert(
+    id: contentId(collection, item),
+    ownerId: Value(_optionalText(item, 'ownerId')),
+    teachingId: Value(_optionalText(item, 'teachingId')),
+    title: Value(_optionalText(item, 'title')),
+    content: Value(_optionalJson(item, 'content')),
+    body: Value(_optionalText(item, 'body') ?? ''),
+    categoryId: Value(_optionalText(item, 'categoryId')),
+    pinned: Value(item['pinned'] == true),
+    clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/note_categories` — **mes catégories** (#190, contrat N1).
+///
+/// Huit clés : `id`, `ownerId`, `name`, `color`, `clientCreatedAt`,
+/// `createdAt`, `updatedAt`, `deletedAt`. Le nom et la couleur sont exigés —
+/// une puce sans nom n'a rien à montrer —, la couleur est stockée brute.
+NoteCategoriesCompanion noteCategoryRowOf(Map<String, Object?> item) {
+  const collection = 'note_categories';
+  return NoteCategoriesCompanion.insert(
+    id: contentId(collection, item),
+    ownerId: Value(_optionalText(item, 'ownerId')),
+    name: _text(collection, item, 'name'),
+    color: _text(collection, item, 'color'),
+    clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
 /// `GET /sync/legal_documents` — CGU, confidentialité, « à propos ».
 ///
 /// Huit clés, relevées sur `legal_document_transformer.ts` : `id`, `kind`,

@@ -36,6 +36,7 @@ import 'legal_dao.dart';
 import 'media_pages_dao.dart';
 import 'mediatheque_dao.dart';
 import 'menu_dao.dart';
+import 'notes_dao.dart';
 import 'playback_dao.dart';
 import 'receipts_dao.dart';
 import 'settings_dao.dart';
@@ -57,6 +58,7 @@ import 'tables/sync_tables.dart';
 import 'tables/decor_tables.dart';
 import 'tables/device_tables.dart';
 import 'tables/menu_tables.dart';
+import 'tables/note_tables.dart';
 import 'tables/season_tables.dart';
 import 'tables/vocabulary_tables.dart';
 import 'vocabulary_dao.dart';
@@ -121,6 +123,12 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     GroupReads,
     PendingGroupReads,
     MyInteractions,
+    // Les notes (#190) : deux collections privées, le brouillon local et
+    // l'outbox des pièces jointes (N4).
+    SpiritualNotes,
+    NoteCategories,
+    LocalNotes,
+    PendingNoteMedia,
     // M8 (#146) : mon rangement des discussions, et son outbox.
     GroupArrangements,
     PendingGroupArrangements,
@@ -152,6 +160,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     DeviceSettingsDao,
     GroupDao,
     InteractionDao,
+    NotesDao,
     // M8 (#146) : archiver, épingler, rechercher.
     ChatOrganizationDao,
     ReceiptsDao,
@@ -285,7 +294,7 @@ class AppDatabase extends _$AppDatabase {
   /// de plus, trois créations de table ; et `branches.slug`, avec l'oubli du
   /// curseur de `branches`. Voir [kMediaPagesSchemaVersion].
   @override
-  int get schemaVersion => kMediaPagesSchemaVersion;
+  int get schemaVersion => kNotesSchemaVersion;
 
   /// **Le palier de la tranche M2** (#141) : v25, après M8 (v22), M3 (v23) et
   /// M5 (v24).
@@ -298,6 +307,11 @@ class AppDatabase extends _$AppDatabase {
   /// Sans rapport avec la tranche M4 de la messagerie, malgré le nom de
   /// tranche que le plan médiathèque lui donne aussi.
   static const int kMediaPagesSchemaVersion = 27;
+
+  /// **Le palier des notes** (#190) : v28, après la médiathèque en pages
+  /// (v27). Quatre créations de table, et rien d'autre — N4 et N5 n'ajoutent
+  /// pas de table.
+  static const int kNotesSchemaVersion = 28;
 
   /// Les sept colonnes du média d'un message (M4), ajoutées ensemble au palier
   /// v26 — et retirées ensemble d'une table créée pour une version antérieure
@@ -922,6 +936,21 @@ class AppDatabase extends _$AppDatabase {
             await (delete(syncCursors)
                   ..where((c) => c.collection.equals('branches')))
                 .go();
+          }
+          // v27 → v28 — les notes (#190). Quatre créations de table, et rien
+          // d'autre : aucune colonne existante ne bouge. `spiritual_notes` et
+          // `note_categories` naissent vides, sans curseur — le prochain
+          // manifeste les annonce `from_zero` et le premier cycle ramène les
+          // notes écrites sur un autre appareil ; sur un serveur en retard
+          // d'une version, un `404` les saute. `local_notes` et
+          // `pending_note_media` naissent vides et le restent jusqu'au premier
+          // geste. Pas de garde `to >= 28` : le vérificateur ignore une table
+          // surnuméraire.
+          if (from < kNotesSchemaVersion) {
+            await m.createTable(spiritualNotes);
+            await m.createTable(noteCategories);
+            await m.createTable(localNotes);
+            await m.createTable(pendingNoteMedia);
           }
         },
         beforeOpen: (details) async {

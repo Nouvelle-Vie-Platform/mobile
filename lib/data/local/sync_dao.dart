@@ -17,6 +17,7 @@ import 'tables/auth_tables.dart';
 import 'tables/device_tables.dart';
 import 'tables/media_page_tables.dart';
 import 'tables/menu_tables.dart';
+import 'tables/note_tables.dart';
 import 'tables/vocabulary_tables.dart';
 
 part 'sync_dao.g.dart';
@@ -186,6 +187,15 @@ abstract final class SyncCollectionKey {
   /// d'un cycle, et c'est ce cycle qui ramène la ligne.
   static const String myInteractions = 'my_interactions';
 
+  /// **Mes notes** (#190) — `partition: 'private'`, **avec** tombstone. Elle se
+  /// remplit par le flux, jamais par l'application : le brouillon vit dans
+  /// `local_notes`, part par `POST /notes`, et c'est le delta qui ramène la
+  /// ligne (ADR-0026).
+  static const String spiritualNotes = 'spiritual_notes';
+
+  /// **Mes catégories de notes** (#190) — privée, avec tombstone, même régime.
+  static const String noteCategories = 'note_categories';
+
   /// **Les profils de mes co-membres** (#96) — la projection `{id, displayName,
   /// avatarUrl}` de `users` qui donne un **nom** à chaque `userId`.
   ///
@@ -340,6 +350,8 @@ const String _kSyncStampColumn = 'sync_stamp';
     GroupMessages,
     GroupReads,
     MyInteractions,
+    SpiritualNotes,
+    NoteCategories,
     GroupArrangements,
     MessageReceipts,
     GroupMutes,
@@ -527,6 +539,15 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// **Avec tombstone** : une requête supprimée côté serveur quitte le magasin.
   LocalCollection<MyInteractionRow> get myInteractionsCollection =>
       LocalCollection._(SyncCollectionKey.myInteractions, myInteractions);
+
+  /// **Avec tombstone** (#190) : une note supprimée quitte le magasin.
+  LocalCollection<SpiritualNoteRow> get spiritualNotesCollection =>
+      LocalCollection._(SyncCollectionKey.spiritualNotes, spiritualNotes);
+
+  /// **Avec tombstone** (#190) : une catégorie supprimée quitte le magasin ;
+  /// ses notes reviennent par le delta, sans catégorie.
+  LocalCollection<NoteCategoryRow> get noteCategoriesCollection =>
+      LocalCollection._(SyncCollectionKey.noteCategories, noteCategories);
 
   /// **Avec tombstone** (M2, #141) : une réaction retirée quitte le magasin.
   LocalCollection<GroupMessageReactionRow>

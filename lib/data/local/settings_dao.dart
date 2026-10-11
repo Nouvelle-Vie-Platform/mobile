@@ -83,6 +83,17 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> setLightFrom(DayTime time) => _put(_lightFromKey, time.key);
 
+  /// **Le dernier onglet de la page Bible** (#190) : `bible` ou `notes`, tel
+  /// que la page l'a écrit. Nul tant qu'on n'y a jamais changé d'onglet.
+  Future<String?> bibleTab() async {
+    final row = await (select(appSettings)
+          ..where((s) => s.key.equals(_bibleTabKey)))
+        .getSingleOrNull();
+    return row?.value;
+  }
+
+  Future<void> setBibleTab(String tab) => _put(_bibleTabKey, tab);
+
   Future<void> _put(String key, String value) {
     return into(appSettings).insert(
       AppSettingsCompanion.insert(key: key, value: value),
@@ -100,6 +111,9 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   /// clés d'usage (`download` porte la **qualité**) : le réseau autorisé et le
   /// débit sont deux réglages, pas un.
   static const String _downloadOnCellularKey = 'download_on_cellular';
+
+  /// La clé de l'onglet de la page Bible (#190).
+  static const String _bibleTabKey = 'bible_tab';
 
   /// Pose la qualité d'un usage. Écrase la valeur précédente s'il y en avait
   /// une — le réglage n'a pas d'historique.

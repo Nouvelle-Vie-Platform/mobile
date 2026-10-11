@@ -231,6 +231,9 @@ const Map<String, String> kSyncCollections = {
   'device_settings': 'reference',
   // Privées — filtrées sur l'acteur, jamais sur une branche.
   'spiritual_notes': 'private',
+  // Mes catégories de notes (serveur N1, mobile #190) : privée, comme les
+  // notes qu'elle colore.
+  'note_categories': 'private',
   'playback_progress': 'private',
   'group_members': 'private',
   'profiles': 'private',

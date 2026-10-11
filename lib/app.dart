@@ -11,6 +11,7 @@ import 'router/app_router.dart';
 import 'state/auth_providers.dart';
 import 'state/downloads_providers.dart';
 import 'state/echanges_providers.dart';
+import 'state/notes_providers.dart';
 import 'state/locale_providers.dart';
 import 'state/push_providers.dart';
 import 'state/session_gate.dart';
@@ -131,6 +132,8 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
           await ref.read(downloadLifecycleProvider).reconcile();
           await ref.read(downloadManagerProvider).reconcile();
           await ref.read(messagingOutboxProvider)();
+          // **Les brouillons de notes** (#190) : même raison, même moment.
+          await ref.read(notesOutboxProvider)();
         };
         // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
         // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.

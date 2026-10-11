@@ -39,8 +39,9 @@ void main() {
       // M2 (#141), où `group_message_reactions` et `group_message_hides`
       // deviennent la trente-cinquième et la trente-sixième ; puis en #167,
       // où les trois collections de la médiathèque en pages portent le compte
-      // à trente-neuf.
-      expect(kSyncCollections, hasLength(39));
+      // à trente-neuf ; puis en #190 (notes N1), où `note_categories` porte
+      // le compte à quarante.
+      expect(kSyncCollections, hasLength(40));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,
