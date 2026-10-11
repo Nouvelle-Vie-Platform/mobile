@@ -57,8 +57,11 @@ void main() {
     );
   }
 
+  /// Le focus s'applique dans une microtâche **après** la trame : le premier
+  /// `pump` le pose, le second repeint la pilule.
   Future<void> focus(WidgetTester tester) async {
     key.currentState!.focusNode.requestFocus();
+    await tester.pump();
     await tester.pump();
   }
 
@@ -115,6 +118,8 @@ void main() {
     expect(find.byKey(const Key('slot_n4')), findsOneWidget);
 
     key.currentState!.focusNode.unfocus();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.byType(FormatPill), findsNothing);
     await tearDownTree(tester);
@@ -187,6 +192,10 @@ void main() {
     expect(find.byType(FormatSheet), findsOneWidget,
         reason: 'la feuille reste ouverte, comme chez Apple');
 
+    // La rangée des styles défile : « Corps » est le quatrième, hors champ
+    // avec la police carrée des tests comme sur un téléphone étroit.
+    await tester.ensureVisible(find.byKey(FormatSheet.bodyKey));
+    await tester.pump();
     await tester.tap(find.byKey(FormatSheet.bodyKey));
     await tester.pump();
     expect(c.headerLevel, isNull);
@@ -216,7 +225,11 @@ void main() {
     expect(find.byKey(FormatSheet.swatchKey('#e53935')), findsNothing);
 
     await tester.tap(find.byKey(FormatSheet.colorKey));
-    await tester.pump(const Duration(milliseconds: 200));
+    // La palette se déplie (AnimatedSize) et la feuille se replace d'une
+    // trame sur l'autre : plusieurs trames avant de viser une pastille.
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     await tester.tap(find.byKey(FormatSheet.swatchKey('#e53935')));
     await tester.pump();
     expect(c.textColor, '#e53935');

@@ -55,16 +55,10 @@ class NotePdfExporter {
       }
     }
 
-    final fonts = await Future.wait([
-      for (final file in const [
-        'Regular',
-        'Bold',
-        'Italic',
-        'BoldItalic',
-      ])
-        rootBundle.load('$_fontDir/AtkinsonHyperlegible-$file.ttf').then(
-            (d) => d.buffer.asUint8List(d.offsetInBytes, d.lengthInBytes)),
-    ]);
+    final fonts = <Uint8List>[];
+    for (final face in const ['Regular', 'Bold', 'Italic', 'BoldItalic']) {
+      fonts.add(await _loadFont('$_fontDir/AtkinsonHyperlegible-$face.ttf'));
+    }
 
     final input = _RenderInput(
       title: title,
@@ -78,6 +72,18 @@ class NotePdfExporter {
     return kIsWeb
         ? _renderNotePdf(input)
         : Isolate.run(() => _renderNotePdf(input));
+  }
+
+  /// Les octets d'une police des actifs ; une absence est une erreur
+  /// **nommée** — un PDF sans sa police n'a pas à sortir.
+  static Future<Uint8List> _loadFont(String asset) async {
+    final ByteData data;
+    try {
+      data = await rootBundle.load(asset);
+    } on Object catch (e) {
+      throw StateError('police introuvable dans les actifs : $asset ($e)');
+    }
+    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   }
 
   static String? _imageKey(NoteSpan span) {
