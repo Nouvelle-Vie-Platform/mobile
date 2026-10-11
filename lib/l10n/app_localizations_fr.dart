@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2486,4 +2485,56 @@ class AppLocalizationsFr extends AppLocalizations {
   String noteEditorAttachment(String name) {
     return 'Pièce jointe : $name';
   }
+
+  @override
+  String get noteAttachmentButton => 'Joindre';
+
+  @override
+  String get noteAttachmentChooseMedia => 'Choisir une photo ou une vidéo';
+
+  @override
+  String get noteAttachmentTakeMedia => 'Prendre une photo ou une vidéo';
+
+  @override
+  String get noteAttachmentTakePhoto => 'Photo';
+
+  @override
+  String get noteAttachmentTakeVideo => 'Vidéo';
+
+  @override
+  String get noteAttachmentRecordAudio => 'Enregistrer un audio';
+
+  @override
+  String get noteAttachmentAttachFile => 'Joindre un fichier';
+
+  @override
+  String get noteAttachmentRecording => 'Enregistrement…';
+
+  @override
+  String get noteAttachmentRecordStop => 'Terminer';
+
+  @override
+  String get noteAttachmentRecordCancel => 'Annuler';
+
+  @override
+  String get noteAttachmentMicDenied =>
+      'Autorisez le micro pour enregistrer un audio.';
+
+  @override
+  String get noteAttachmentRecordingName => 'Enregistrement audio';
+
+  @override
+  String get noteAttachmentPreparing => 'En préparation…';
+
+  @override
+  String get noteAttachmentUploading => 'Envoi…';
+
+  @override
+  String get noteAttachmentFailed => 'Échec de l\'envoi';
+
+  @override
+  String get noteAttachmentRetry => 'Réessayer';
+
+  @override
+  String get noteAttachmentUnavailable => 'Pièce jointe indisponible';
 }

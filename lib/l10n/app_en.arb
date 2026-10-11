@@ -796,5 +796,22 @@
   "noteEditorIndent": "Increase indent",
   "noteEditorMonostyle": "Monostyled",
   "noteEditorQuote": "Block quote",
-  "noteEditorAttachment": "Attachment: {name}"
+  "noteEditorAttachment": "Attachment: {name}",
+  "noteAttachmentButton": "Attach",
+  "noteAttachmentChooseMedia": "Choose Photo or Video",
+  "noteAttachmentTakeMedia": "Take Photo or Video",
+  "noteAttachmentTakePhoto": "Photo",
+  "noteAttachmentTakeVideo": "Video",
+  "noteAttachmentRecordAudio": "Record Audio",
+  "noteAttachmentAttachFile": "Attach File",
+  "noteAttachmentRecording": "Recording…",
+  "noteAttachmentRecordStop": "Done",
+  "noteAttachmentRecordCancel": "Cancel",
+  "noteAttachmentMicDenied": "Allow the microphone to record audio.",
+  "noteAttachmentRecordingName": "Audio recording",
+  "noteAttachmentPreparing": "Preparing…",
+  "noteAttachmentUploading": "Uploading…",
+  "noteAttachmentFailed": "Upload failed",
+  "noteAttachmentRetry": "Retry",
+  "noteAttachmentUnavailable": "Attachment unavailable"
 }
