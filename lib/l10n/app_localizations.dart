@@ -64,7 +64,7 @@ import 'app_localizations_fr.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -87,11 +87,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
@@ -4515,6 +4515,84 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pièce jointe : {name}'**
   String noteEditorAttachment(String name);
+
+  /// Pilule de l'éditeur : bouton lien (N5)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un lien'**
+  String get noteLinkAdd;
+
+  /// Titre de la feuille d'ajout de lien
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un lien'**
+  String get noteLinkSheetTitle;
+
+  /// Feuille lien : lier une autre note
+  ///
+  /// In fr, this message translates to:
+  /// **'Une note'**
+  String get noteLinkToNote;
+
+  /// Feuille lien : lier un enseignement de la médiathèque
+  ///
+  /// In fr, this message translates to:
+  /// **'Un enseignement'**
+  String get noteLinkToTeaching;
+
+  /// Feuille lien : lier une adresse web
+  ///
+  /// In fr, this message translates to:
+  /// **'Une adresse web'**
+  String get noteLinkToWeb;
+
+  /// Feuille lien : lier une référence biblique (grisé pour l'instant)
+  ///
+  /// In fr, this message translates to:
+  /// **'La Bible'**
+  String get noteLinkToBible;
+
+  /// Feuille lien : mention à côté d'un choix pas encore disponible
+  ///
+  /// In fr, this message translates to:
+  /// **'bientôt'**
+  String get noteLinkSoon;
+
+  /// Feuille lien : champ de recherche des notes ou enseignements
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher'**
+  String get noteLinkSearch;
+
+  /// Feuille lien : erreur du champ URL
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse web invalide'**
+  String get noteLinkInvalidUrl;
+
+  /// Feuille lien : bouton de validation de l'adresse web
+  ///
+  /// In fr, this message translates to:
+  /// **'Insérer le lien'**
+  String get noteLinkInsert;
+
+  /// Feuille lien : liste vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun résultat'**
+  String get noteLinkNoResult;
+
+  /// SnackBar : lien vers une note absente
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette note n\'existe plus'**
+  String get noteLinkNoteMissing;
+
+  /// SnackBar : lien illisible ou navigateur indisponible
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir ce lien'**
+  String get noteLinkCannotOpen;
 }
 
 class _AppLocalizationsDelegate

@@ -2484,4 +2484,43 @@ class AppLocalizationsEe extends AppLocalizations {
   String noteEditorAttachment(String name) {
     return 'Nu si wotsɔ kpe ɖe eŋu: $name';
   }
+
+  @override
+  String get noteLinkAdd => 'Ajouter un lien';
+
+  @override
+  String get noteLinkSheetTitle => 'Ajouter un lien';
+
+  @override
+  String get noteLinkToNote => 'Une note';
+
+  @override
+  String get noteLinkToTeaching => 'Un enseignement';
+
+  @override
+  String get noteLinkToWeb => 'Une adresse web';
+
+  @override
+  String get noteLinkToBible => 'La Bible';
+
+  @override
+  String get noteLinkSoon => 'bientôt';
+
+  @override
+  String get noteLinkSearch => 'Rechercher';
+
+  @override
+  String get noteLinkInvalidUrl => 'Adresse web invalide';
+
+  @override
+  String get noteLinkInsert => 'Insérer le lien';
+
+  @override
+  String get noteLinkNoResult => 'Aucun résultat';
+
+  @override
+  String get noteLinkNoteMissing => 'Cette note n\'existe plus';
+
+  @override
+  String get noteLinkCannotOpen => 'Impossible d\'ouvrir ce lien';
 }
