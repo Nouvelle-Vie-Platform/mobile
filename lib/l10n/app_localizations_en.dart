@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2504,4 +2503,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noteLinkCannotOpen => 'Unable to open this link';
+
+  @override
+  String get noteAttachmentButton => 'Attach';
+
+  @override
+  String get noteAttachmentChooseMedia => 'Choose Photo or Video';
+
+  @override
+  String get noteAttachmentTakeMedia => 'Take Photo or Video';
+
+  @override
+  String get noteAttachmentTakePhoto => 'Photo';
+
+  @override
+  String get noteAttachmentTakeVideo => 'Video';
+
+  @override
+  String get noteAttachmentRecordAudio => 'Record Audio';
+
+  @override
+  String get noteAttachmentAttachFile => 'Attach File';
+
+  @override
+  String get noteAttachmentRecording => 'Recording…';
+
+  @override
+  String get noteAttachmentRecordStop => 'Done';
+
+  @override
+  String get noteAttachmentRecordCancel => 'Cancel';
+
+  @override
+  String get noteAttachmentMicDenied => 'Allow the microphone to record audio.';
+
+  @override
+  String get noteAttachmentRecordingName => 'Audio recording';
+
+  @override
+  String get noteAttachmentPreparing => 'Preparing…';
+
+  @override
+  String get noteAttachmentUploading => 'Uploading…';
+
+  @override
+  String get noteAttachmentFailed => 'Upload failed';
+
+  @override
+  String get noteAttachmentRetry => 'Retry';
+
+  @override
+  String get noteAttachmentUnavailable => 'Attachment unavailable';
 }

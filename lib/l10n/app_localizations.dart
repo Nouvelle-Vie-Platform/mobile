@@ -64,7 +64,7 @@ import 'app_localizations_fr.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -87,17 +87,17 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ee'),
     Locale('en'),
-    Locale('fr'),
+    Locale('fr')
   ];
 
   /// Nom **affiché** de l'application — celui que le fidèle lit sous l'icône, et le seul des trois noms du dépôt qui bouge. Il porte déjà « Nouvelle Vie » dans `android:label` et `CFBundleDisplayName` ; cette clé-ci disait encore « Maison du Miracle », et l'écran de démarrage le montrait. Ni le nom du paquet Dart (`maison_du_miracle`) ni l'identifiant d'application (`com.maisondumiracle.*`) ne sont concernés — voir « L'identité de l'application » dans CLAUDE.md. Le nom de l'**église**, lui, vit dans `aboutChurchName`
@@ -4593,6 +4593,108 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible d\'ouvrir ce lien'**
   String get noteLinkCannotOpen;
+
+  /// Pilule de l'éditeur : le trombone, qui ouvre le menu des pièces jointes
+  ///
+  /// In fr, this message translates to:
+  /// **'Joindre'**
+  String get noteAttachmentButton;
+
+  /// Menu du trombone : galerie
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une photo ou une vidéo'**
+  String get noteAttachmentChooseMedia;
+
+  /// Menu du trombone : appareil photo
+  ///
+  /// In fr, this message translates to:
+  /// **'Prendre une photo ou une vidéo'**
+  String get noteAttachmentTakeMedia;
+
+  /// Menu du trombone, appareil photo : prendre une photo
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo'**
+  String get noteAttachmentTakePhoto;
+
+  /// Menu du trombone, appareil photo : filmer une vidéo
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo'**
+  String get noteAttachmentTakeVideo;
+
+  /// Menu du trombone : enregistrement au micro
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer un audio'**
+  String get noteAttachmentRecordAudio;
+
+  /// Menu du trombone : document ou fichier audio
+  ///
+  /// In fr, this message translates to:
+  /// **'Joindre un fichier'**
+  String get noteAttachmentAttachFile;
+
+  /// Feuille d'enregistrement audio : en cours
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement…'**
+  String get noteAttachmentRecording;
+
+  /// Feuille d'enregistrement audio : arrêter et joindre
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminer'**
+  String get noteAttachmentRecordStop;
+
+  /// Feuille d'enregistrement audio : arrêter et jeter
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get noteAttachmentRecordCancel;
+
+  /// Feuille d'enregistrement : permission du micro refusée
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisez le micro pour enregistrer un audio.'**
+  String get noteAttachmentMicDenied;
+
+  /// Nom donné à un audio enregistré dans une note
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement audio'**
+  String get noteAttachmentRecordingName;
+
+  /// Bloc d'une pièce jointe : image ou vidéo en cours de compression
+  ///
+  /// In fr, this message translates to:
+  /// **'En préparation…'**
+  String get noteAttachmentPreparing;
+
+  /// Bloc d'une pièce jointe : montée en cours
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoi…'**
+  String get noteAttachmentUploading;
+
+  /// Bloc d'une pièce jointe : panne réseau, réessayable
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec de l\'envoi'**
+  String get noteAttachmentFailed;
+
+  /// Bloc d'une pièce jointe en échec : relancer l'envoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get noteAttachmentRetry;
+
+  /// Bloc d'une pièce jointe : fichier ni local ni joignable (hors ligne)
+  ///
+  /// In fr, this message translates to:
+  /// **'Pièce jointe indisponible'**
+  String get noteAttachmentUnavailable;
 }
 
 class _AppLocalizationsDelegate
@@ -4624,9 +4726,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }
