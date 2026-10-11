@@ -307,6 +307,7 @@
   "notesCategoryDelete": "Delete category",
   "notesCategoryDeleteConfirm": "Delete \u201c{name}\u201d? Its notes will stay, without a category.",
   "@notesCategoryDeleteConfirm": { "placeholders": { "name": { "type": "String" } } },
+  "notesShareFailed": "Sharing failed.",
 
   "profileRole": "New Life member",
   "profileEdit": "Edit",

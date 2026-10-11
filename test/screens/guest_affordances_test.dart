@@ -84,6 +84,8 @@ const _screensBehindTheGuard = <String, String>{
   // L'éditeur d'une note (#190) : `/notes/:id` est réservé, et son bouton
   // « nouvelle note » ne fait qu'y rester, sous un autre identifiant.
   'lib/screens/notes/note_editor_screen.dart': '/notes/:id est réservé',
+  // L'ouverture d'un lien d'une note (#191) : appelée par l'éditeur seul.
+  'lib/screens/notes/note_link_opener.dart': 'appelé par /notes/:id, réservé',
 };
 
 /// Les fichiers qui **nomment** les routes sans y naviguer.

@@ -511,6 +511,8 @@
   "@notesCategoryDelete": { "description": "Feuille de modification d'une catégorie : bouton de suppression et titre de sa confirmation" },
   "notesCategoryDeleteConfirm": "Supprimer « {name} » ? Ses notes resteront, sans catégorie.",
   "@notesCategoryDeleteConfirm": { "description": "Confirmation de suppression d'une catégorie", "placeholders": { "name": { "type": "String" } } },
+  "notesShareFailed": "Le partage n'a pas abouti.",
+  "@notesShareFailed": { "description": "Éditeur de note : le PDF n'a pu être produit ou partagé" },
 
   "profileRole": "Membre Nouvelle Vie",
   "profileEdit": "Modifier",

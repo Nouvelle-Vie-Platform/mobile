@@ -1,15 +1,17 @@
-/// **L'éditeur d'une note, minimal** (#190) — titre + corps texte, épingle,
-/// catégorie, suppression. La tranche N3 remplace [NoteBodyPlain] par
-/// l'éditeur riche et ajoute la pilule de format ; rien d'autre ici ne bouge.
+/// **L'éditeur d'une note** (#190, #191) — titre, corps riche
+/// ([RichNoteEditor], pilule de format au-dessus du clavier), épingle,
+/// catégorie, partage en PDF, suppression.
 ///
 /// Route `/notes/:id`, membres seulement. L'identifiant est **frappé par
 /// l'appelant** (UUIDv7) : une note qui n'existe pas encore est un brouillon
 /// vide sous cet identifiant, et le bouton du lecteur passe l'enseignement en
 /// `extra` pour le brouillon pré-lié.
 ///
-/// Pas de bouton Enregistrer : chaque frappe écrit `local_notes`, l'envoi part
-/// 2 s après la dernière et à la sortie ([NoteDraftSaver]). La coche de la
-/// barre **ferme le clavier**, et c'est tout ce qu'elle fait.
+/// Pas de bouton Enregistrer : chaque changement écrit `local_notes` — le
+/// Delta dans `content`, son texte aplati dans `body` —, l'envoi part 2 s
+/// après le dernier et à la sortie ([NoteDraftSaver]). La coche de la barre
+/// **ferme le clavier**, et c'est tout ce qu'elle fait. Le fond prend le pastel
+/// de la catégorie, comme la carte de la liste (décision 5).
 library;
 
 import 'dart:async';
@@ -20,17 +22,22 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/repositories/note_draft_saver.dart';
 import '../../data/repositories/notes_repository.dart';
+import '../../features/notes_editor/note_content.dart';
+import '../../features/notes_editor/note_pdf_exporter.dart';
+import '../../features/notes_editor/rich_note_editor.dart';
 import '../../l10n/l10n_extension.dart';
 import '../../models/note_view.dart';
 import '../../router/app_router.dart';
+import '../../state/menu_providers.dart';
 import '../../state/notes_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
+import '../../theme/note_palette.dart';
 import '../../widgets/brand_app_bar.dart';
-import 'note_body_plain.dart';
 import 'note_category_sheet.dart';
+import 'note_link_opener.dart';
 
 class NoteEditorScreen extends ConsumerStatefulWidget {
   const NoteEditorScreen({super.key, required this.noteId, this.teachingId});
@@ -42,6 +49,8 @@ class NoteEditorScreen extends ConsumerStatefulWidget {
   final String? teachingId;
 
   static const titleFieldKey = Key('note_editor_title');
+
+  /// Posée sur le [RichNoteEditor] : les tests y lisent son contrôleur.
   static const bodyFieldKey = Key('note_editor_body');
   static const pinButtonKey = Key('note_editor_pin');
   static const newNoteButtonKey = Key('note_editor_new');
@@ -50,6 +59,7 @@ class NoteEditorScreen extends ConsumerStatefulWidget {
   static const menuCategoryKey = Key('note_editor_menu_category');
   static const menuShareKey = Key('note_editor_menu_share');
   static const menuDeleteKey = Key('note_editor_menu_delete');
+  static const shareProgressKey = Key('note_editor_share_progress');
 
   @override
   ConsumerState<NoteEditorScreen> createState() => _NoteEditorScreenState();
@@ -62,6 +72,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   final _bodyFocus = FocusNode();
 
   NoteDraft? _draft;
+  bool _sharing = false;
 
   @override
   void initState() {
@@ -114,6 +125,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     unawaited(_saver.update(next));
   }
 
+  /// Le titre tel que le PDF et la feuille de partage le montrent.
+  String get _displayTitle {
+    final title = (_draft!.title ?? '').trim();
+    return title.isEmpty ? context.l10n.notesUntitled : title;
+  }
+
   Future<void> _pickCategory() async {
     final choice = await showNoteCategorySheet(
       context,
@@ -124,6 +141,34 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       categoryId: choice.id,
       clearCategory: choice.id == null,
     ));
+  }
+
+  /// Le PDF se rend hors de l'isolate principal (`NotePdfExporter`), puis
+  /// part à la feuille système. Un échec se dit en `SnackBar`, jamais en rouge.
+  Future<void> _share() async {
+    final l = context.l10n;
+    final title = _displayTitle;
+    final contentJson = _draft!.content ?? '';
+    setState(() => _sharing = true);
+    try {
+      final bytes = await const NotePdfExporter().build(
+        title: title,
+        contentJson: contentJson,
+        // Aucune photo n'est chargée pour l'instant : N4 branchera ici la
+        // lecture signée (`GET /notes/media/*key`). D'ici là, toute pièce
+        // jointe sort en ligne « Pièce jointe : nom ».
+        loadImage: (_) async => null,
+      );
+      if (!mounted) return;
+      await shareNoteAsPdf(context, title, bytes);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l.notesShareFailed)));
+      }
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
   }
 
   Future<void> _delete() async {
@@ -163,6 +208,13 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     );
   }
 
+  void _openLink(String url) {
+    unawaited(NoteLinkOpener(
+      router: ref.read(routerProvider),
+      external: ref.read(externalLinkLauncherProvider),
+    ).open(url));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -176,8 +228,15 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     _seed(note.value);
     final draft = _draft!;
     final typing = _titleFocus.hasFocus || _bodyFocus.hasFocus;
+    final color = ref
+        .watch(noteCategoriesProvider)
+        .value
+        ?.where((c) => c.id == draft.categoryId)
+        .firstOrNull
+        ?.color;
 
     return Scaffold(
+      backgroundColor: color == null ? null : NotePalette.of(context, color),
       appBar: BrandAppBar(
         centerTitle: false,
         actions: [
@@ -202,46 +261,56 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             tooltip: draft.pinned ? l.notesUnpin : l.notesPin,
             onPressed: () => _update(draft.copyWith(pinned: !draft.pinned)),
           ),
-          PopupMenuButton<_MenuAction>(
-            key: NoteEditorScreen.menuButtonKey,
-            onSelected: (action) => switch (action) {
-              _MenuAction.category => _pickCategory(),
-              _MenuAction.share => null,
-              _MenuAction.delete => _delete(),
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                key: NoteEditorScreen.menuCategoryKey,
-                value: _MenuAction.category,
-                child: Text(l.notesCategoryTitle),
-              ),
-              // **Désactivé** : le partage en PDF est la tranche N3.
-              PopupMenuItem(
-                key: NoteEditorScreen.menuShareKey,
-                value: _MenuAction.share,
-                enabled: false,
-                child: Text(l.actionShare),
-              ),
-              PopupMenuItem(
-                key: NoteEditorScreen.menuDeleteKey,
-                value: _MenuAction.delete,
-                child: Text(
-                  l.notesDelete,
-                  style: const TextStyle(color: AppColors.danger),
+          if (_sharing)
+            const Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: SizedBox.square(
+                key: NoteEditorScreen.shareProgressKey,
+                dimension: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
                 ),
               ),
-            ],
-          ),
+            )
+          else
+            PopupMenuButton<_MenuAction>(
+              key: NoteEditorScreen.menuButtonKey,
+              onSelected: (action) => switch (action) {
+                _MenuAction.category => _pickCategory(),
+                _MenuAction.share => _share(),
+                _MenuAction.delete => _delete(),
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  key: NoteEditorScreen.menuCategoryKey,
+                  value: _MenuAction.category,
+                  child: Text(l.notesCategoryTitle),
+                ),
+                PopupMenuItem(
+                  key: NoteEditorScreen.menuShareKey,
+                  value: _MenuAction.share,
+                  child: Text(l.actionShare),
+                ),
+                PopupMenuItem(
+                  key: NoteEditorScreen.menuDeleteKey,
+                  value: _MenuAction.delete,
+                  child: Text(
+                    l.notesDelete,
+                    style: const TextStyle(color: AppColors.danger),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: AppSpacing.screenPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: AppSpacing.md),
-              TextField(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: AppSpacing.screenPadding.copyWith(top: AppSpacing.md),
+              child: TextField(
                 key: NoteEditorScreen.titleFieldKey,
                 controller: _titleController,
                 focusNode: _titleFocus,
@@ -260,22 +329,27 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                   counterText: '',
                   contentPadding: EdgeInsets.zero,
                 ),
-                onChanged: (text) => _update(draft.copyWith(title: text)),
+                onChanged: (text) => _update(_draft!.copyWith(title: text)),
                 onSubmitted: (_) => _bodyFocus.requestFocus(),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Expanded(
-                child: NoteBodyPlain(
-                  key: NoteEditorScreen.bodyFieldKey,
-                  initialBody: draft.body,
-                  focusNode: _bodyFocus,
-                  hint: l.notesBodyHint,
-                  onChanged: (body, contentJson) =>
-                      _update(draft.copyWith(body: body, content: contentJson)),
+            ),
+            // L'éditeur prend tout le reste et pose lui-même la pilule
+            // au-dessus du clavier ; sa marge horizontale est celle du titre.
+            Expanded(
+              child: RichNoteEditor(
+                key: NoteEditorScreen.bodyFieldKey,
+                // Une note d'avant le texte riche n'a qu'un `body` : il devient
+                // le Delta le plus simple, pour ne pas s'ouvrir vide.
+                initialContentJson: draft.content ??
+                    (draft.body.isEmpty ? null : plainToDeltaJson(draft.body)),
+                focusNode: _bodyFocus,
+                onChanged: (contentJson, plainText) => _update(
+                  _draft!.copyWith(body: plainText, content: contentJson),
                 ),
+                onLinkTap: _openLink,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

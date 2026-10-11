@@ -97,7 +97,7 @@ abstract class AppLocalizations {
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ee'),
     Locale('en'),
-    Locale('fr')
+    Locale('fr'),
   ];
 
   /// Nom **affiché** de l'application — celui que le fidèle lit sous l'icône, et le seul des trois noms du dépôt qui bouge. Il porte déjà « Nouvelle Vie » dans `android:label` et `CFBundleDisplayName` ; cette clé-ci disait encore « Maison du Miracle », et l'écran de démarrage le montrait. Ni le nom du paquet Dart (`maison_du_miracle`) ni l'identifiant d'application (`com.maisondumiracle.*`) ne sont concernés — voir « L'identité de l'application » dans CLAUDE.md. Le nom de l'**église**, lui, vit dans `aboutChurchName`
@@ -1725,6 +1725,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Supprimer « {name} » ? Ses notes resteront, sans catégorie.'**
   String notesCategoryDeleteConfirm(String name);
+
+  /// Éditeur de note : le PDF n'a pu être produit ou partagé
+  ///
+  /// In fr, this message translates to:
+  /// **'Le partage n\'a pas abouti.'**
+  String get notesShareFailed;
 
   /// No description provided for @profileRole.
   ///
@@ -4540,8 +4546,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

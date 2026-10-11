@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -928,6 +929,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String notesCategoryDeleteConfirm(String name) {
     return 'Delete “$name”? Its notes will stay, without a category.';
   }
+
+  @override
+  String get notesShareFailed => 'Sharing failed.';
 
   @override
   String get profileRole => 'New Life member';

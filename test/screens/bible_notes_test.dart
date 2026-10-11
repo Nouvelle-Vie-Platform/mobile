@@ -8,9 +8,12 @@
 /// montage).
 library;
 
+import 'dart:io';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/gestures.dart' show kLongPressTimeout, kPressTimeout;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +22,8 @@ import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/repositories/notes_repository.dart';
+import 'package:maison_du_miracle/features/notes_editor/format_pill.dart';
+import 'package:maison_du_miracle/features/notes_editor/rich_note_editor.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/models/note_view.dart';
 import 'package:maison_du_miracle/screens/bible_screen.dart';
@@ -29,6 +34,7 @@ import 'package:maison_du_miracle/state/notes_providers.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
+import 'package:maison_du_miracle/theme/note_palette.dart';
 
 import '../helpers/fake_api.dart';
 import '../helpers/guest_app.dart';
@@ -109,6 +115,59 @@ Future<void> _longPress(WidgetTester tester, Finder finder) async {
   await tester.pump();
   await gesture.up();
   await _settle(tester);
+}
+
+/// L'éditeur riche de l'écran, par sa clé.
+RichNoteEditorState _editor(WidgetTester tester) =>
+    tester.state(find.byKey(NoteEditorScreen.bodyFieldKey));
+
+/// Tape [text] au curseur de l'éditeur riche, puis laisse passer son
+/// débordement. flutter_quill n'est pas un `EditableText` : `enterText` ne le
+/// trouve pas, la frappe passe par le contrôleur (comme
+/// `rich_note_editor_test`). Sous `runAsync`, le minuteur de 300 ms de
+/// l'éditeur est **réel** : on l'attend en vrai temps.
+Future<void> _type(WidgetTester tester, String text) async {
+  final c = _editor(tester).controller;
+  final at = c.selection.baseOffset;
+  c.replaceText(at, 0, text, TextSelection.collapsed(offset: at + text.length));
+  await Future<void>.delayed(RichNoteEditor.debounce * 1.2);
+  await tester.pump();
+}
+
+/// **La feuille de partage et le dossier temporaire, doublés au canal** :
+/// `share_plus` écrit le PDF dans le dossier que `path_provider` lui donne,
+/// puis appelle `share` avec le chemin. Sous `flutter test` ni l'un ni l'autre
+/// n'a de greffon ; on répond à leur place. Rend les appels reçus par le
+/// partage ; [shareFails] fait lever la feuille, comme un système qui refuse.
+List<MethodCall> _mockShareSheet(WidgetTester tester,
+    {bool shareFails = false}) {
+  final calls = <MethodCall>[];
+  final messenger = tester.binding.defaultBinaryMessenger;
+  final tmp = Directory.systemTemp.createTempSync('nv-notes-share');
+  addTearDown(() => tmp.deleteSync(recursive: true));
+  messenger.setMockMethodCallHandler(
+    const MethodChannel('plugins.flutter.io/path_provider'),
+    (_) async => tmp.path,
+  );
+  messenger.setMockMethodCallHandler(
+    const MethodChannel('dev.fluttercommunity.plus/share'),
+    (call) async {
+      calls.add(call);
+      if (shareFails) throw PlatformException(code: 'refused');
+      return 'dev.fluttercommunity.plus/share/success';
+    },
+  );
+  return calls;
+}
+
+/// Attend, en vrai temps, que [done] soit vrai — le PDF se rend dans un autre
+/// isolate, que l'horloge factice ne fait pas avancer.
+Future<void> _untilReal(WidgetTester tester, bool Function() done) async {
+  for (var i = 0; i < 100 && !done(); i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await tester.pump();
+  }
+  expect(done(), isTrue, reason: 'le partage n\'a pas abouti à temps');
 }
 
 void main() {
@@ -284,38 +343,44 @@ void main() {
           find.byKey(NoteEditorScreen.titleFieldKey),
           'Objectifs',
         );
-        await tester.enterText(
-          find.descendant(
-            of: find.byKey(NoteEditorScreen.bodyFieldKey),
-            matching: find.byType(TextField),
-          ),
-          'Envoyer la proposition',
-        );
+        await _type(tester, 'Envoyer la proposition');
         await _settle(tester);
 
+        // Le brouillon porte le Delta **et** son texte aplati.
         final row = (await db.notesDao.localNote(id))!;
         expect(row.title, 'Objectifs');
         expect(row.body, 'Envoyer la proposition');
         expect(row.content, '{"ops":[{"insert":"Envoyer la proposition\\n"}]}');
         expect(row.dirty, isTrue);
 
+        // La pilule de format paraît avec le focus du corps, et la coche
+        // ferme le clavier : plus de focus, plus de pilule.
+        _editor(tester).focusNode.requestFocus();
+        await _settle(tester);
+        expect(find.byType(FormatPill), findsOneWidget);
+        expect(find.byKey(NoteEditorScreen.doneButtonKey), findsOneWidget);
+        await tester.tap(find.byKey(NoteEditorScreen.doneButtonKey));
+        await _settle(tester);
+        expect(find.byKey(NoteEditorScreen.doneButtonKey), findsNothing);
+        expect(find.byType(FormatPill), findsNothing);
+
         // L'épingle.
         await tester.tap(find.byKey(NoteEditorScreen.pinButtonKey));
         await _settle(tester);
         expect((await db.notesDao.localNote(id))!.pinned, isTrue);
 
-        // La coche ferme le clavier : elle paraît quand un champ a le focus.
-        expect(find.byKey(NoteEditorScreen.doneButtonKey), findsOneWidget);
-        await tester.tap(find.byKey(NoteEditorScreen.doneButtonKey));
-        await _settle(tester);
-        expect(find.byKey(NoteEditorScreen.doneButtonKey), findsNothing);
-
-        // La sortie envoie, sans attendre les 2 s.
+        // La sortie envoie, sans attendre les 2 s : `content` est le Delta,
+        // `body` son texte aplati.
         router.pop();
         await _settle(tester);
         await Future<void>.delayed(const Duration(milliseconds: 50));
         expect(repo.upserts.map((u) => u.id), contains(id));
         expect(repo.upserts.last.pinned, isTrue);
+        expect(repo.upserts.last.body, 'Envoyer la proposition');
+        expect(
+          repo.upserts.last.content,
+          '{"ops":[{"insert":"Envoyer la proposition\\n"}]}',
+        );
         // La carte vient du brouillon, tant que le delta n'a rien ramené.
         expect(find.byKey(NotesTab.cardKey(id)), findsOneWidget);
         expect(find.text('Objectifs'), findsOneWidget);
@@ -400,21 +465,102 @@ void main() {
         final row = (await db.notesDao.localNote(_plainId))!;
         expect(row.categoryId, repo.categories.single.id);
 
-        // Le partage est **désactivé** dans cette tranche.
-        await tester.tap(find.byKey(NoteEditorScreen.menuButtonKey));
-        await _settle(tester);
-        final share = tester.widget<PopupMenuItem<Object?>>(
-          find.byKey(NoteEditorScreen.menuShareKey),
-        );
-        expect(share.enabled, isFalse);
-
-        // On referme le menu puis l'éditeur : sa minuterie d'envoi ne doit pas
-        // survivre au test.
-        Navigator.of(tester.element(find.byType(NoteEditorScreen))).pop();
-        await _settle(tester);
+        // On referme l'éditeur : sa minuterie d'envoi ne doit pas survivre au
+        // test.
         router.pop();
         await _settle(tester);
         expect(find.byType(NoteEditorScreen), findsNothing);
+      });
+    });
+
+    testWidgets('partager : un PDF part à la feuille système, sous le pastel',
+        (tester) async {
+      await tester.runAsync(() async {
+        final calls = _mockShareSheet(tester);
+        final container = guestContainer(
+          auth: GuestAuthRepository(signedIn: true),
+          vault: StartupVault.memberSession,
+          extra: [
+            _radioOff,
+            notesRepositoryProvider
+                .overrideWithValue(_RecordingNotesRepository()),
+          ],
+        );
+        await _seed(container.read(appDatabaseProvider));
+        final router = await pumpGuestApp(tester, container);
+        await untilSignedIn(tester, container);
+        router.push('/notes/$_pinnedId');
+        await _settle(tester);
+
+        // La note porte la catégorie « Important », rose : l'écran aussi.
+        final scaffold = tester.widget<Scaffold>(find.descendant(
+          of: find.byType(NoteEditorScreen),
+          matching: find.byType(Scaffold),
+        ));
+        final context = tester.element(find.byType(NoteEditorScreen));
+        expect(
+          scaffold.backgroundColor,
+          NotePalette.of(context, NoteColor.pink),
+        );
+
+        await tester.tap(find.byKey(NoteEditorScreen.menuButtonKey));
+        await _settle(tester);
+        await tester.tap(find.byKey(NoteEditorScreen.menuShareKey));
+        await tester.pump();
+        // Le rendu est en cours : l'indicateur remplace le menu.
+        expect(find.byKey(NoteEditorScreen.shareProgressKey), findsOneWidget);
+
+        await _untilReal(tester, () => calls.isNotEmpty);
+        final args = calls.single.arguments as Map;
+        expect(calls.single.method, 'share');
+        expect(args['subject'], 'Sociologie');
+        expect(args['mimeTypes'], ['application/pdf']);
+        final path = (args['paths'] as List).single as String;
+        expect(path, endsWith('/sociologie.pdf'));
+        final bytes = File(path).readAsBytesSync();
+        expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+
+        await _untilReal(
+          tester,
+          () =>
+              find.byKey(NoteEditorScreen.shareProgressKey).evaluate().isEmpty,
+        );
+        expect(find.byKey(NoteEditorScreen.menuButtonKey), findsOneWidget);
+        router.pop();
+        await _settle(tester);
+      });
+    });
+
+    testWidgets('partager : la feuille refuse, l\'écran le dit sans rougir',
+        (tester) async {
+      await tester.runAsync(() async {
+        final calls = _mockShareSheet(tester, shareFails: true);
+        final container = guestContainer(
+          auth: GuestAuthRepository(signedIn: true),
+          vault: StartupVault.memberSession,
+          extra: [
+            _radioOff,
+            notesRepositoryProvider
+                .overrideWithValue(_RecordingNotesRepository()),
+          ],
+        );
+        await _seed(container.read(appDatabaseProvider));
+        final router = await pumpGuestApp(tester, container);
+        await untilSignedIn(tester, container);
+        router.push('/notes/$_plainId');
+        await _settle(tester);
+
+        await tester.tap(find.byKey(NoteEditorScreen.menuButtonKey));
+        await _settle(tester);
+        await tester.tap(find.byKey(NoteEditorScreen.menuShareKey));
+        await _untilReal(tester, () => calls.isNotEmpty);
+        await _untilReal(
+          tester,
+          () => find.text(_fr.notesShareFailed).evaluate().isNotEmpty,
+        );
+        expect(find.byKey(NoteEditorScreen.menuButtonKey), findsOneWidget);
+        router.pop();
+        await _settle(tester);
       });
     });
 
