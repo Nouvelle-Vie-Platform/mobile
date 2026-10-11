@@ -222,10 +222,10 @@ serveur, amorcer la base) : `test/integration/README.md`.
 ## Architecture (à respecter)
 Couches claires, pensées pour brancher un backend sans toucher l'UI :
 
-- `lib/models/` — modèles immuables (`ChurchEvent`, `Teaching`, `PrayerRequest`,
-  `SpiritualNote`) et **modèles de lecture** (`content_view.dart`,
+- `lib/models/` — modèles immuables (`ChurchEvent`, `Teaching`, `PrayerRequest`)
+  et **modèles de lecture** (`content_view.dart`,
   `mediatheque_view.dart`, `gathering_view.dart`, `announcement_view.dart`,
-  `legal_document_view.dart`, `echanges_view.dart`).
+  `legal_document_view.dart`, `echanges_view.dart`, `note_view.dart`).
 
   `CommunityGroup`, `Conversation`, `DiscoverGroup` et `ChatMessage` **ont
   disparu** avec #96 : quatre modèles de maquette, remplacés par les modèles de
@@ -1410,8 +1410,8 @@ resync que le manifeste ne redemanderait jamais.
 Le curseur du manifeste (`current_cursor`) est la **borne haute du périmètre**,
 pas un accusé de réception : il ne devient jamais le curseur local.
 - `lib/state/` — providers Riverpod :
-  - `repository_providers.dart` : `churchRepositoryProvider` + `prayersProvider` et
-    `notesProvider` — **tout ce qui reste de fictif** — et `eventsProvider` (hors
+  - `repository_providers.dart` : `churchRepositoryProvider` + `prayersProvider`
+    — **tout ce qui reste de fictif** (`notesProvider` est parti avec #190) — et `eventsProvider` (hors
     `ChurchRepository`, cf. ci-dessous). `groupsProvider`, `conversationsProvider`,
     `groupsToJoinProvider` et `chatProvider.family` ont quitté ce fichier avec #96.
   - `echanges_providers.dart` : la rubrique « Échanges ». `echangesActorProvider`,
@@ -3715,8 +3715,8 @@ Elles ne peuvent plus arriver ici, mais le même diagnostic sert ailleurs :
 - Le premier build iOS/Android est long ; relances suivantes rapides.
 
 ## Statut
-Maquette UI riche et cohérente. **Il ne reste de fictif que les prières et les
-notes** (`ChurchRepository`, deux méthodes) : la rubrique « Échanges » a été
+Maquette UI riche et cohérente. **Il ne reste de fictif que les prières**
+(`ChurchRepository`, une méthode) : la rubrique « Échanges » a été
 branchée par #96, et `InMemoryChurchRepository` — qui était le **seul** double en
 mémoire câblé en production sans condition — ne sert plus rien qui mente.
 Le **réveil push** est branché depuis #97 — jeton enregistré, réveil reçu,
@@ -3724,5 +3724,26 @@ synchronisation ciblée, notification locale lue du magasin —, et il est **mue
 iPhone** tant qu'il n'y a pas de clé APNs (donc pas de compte Apple Developer
 Program). Prochaines grandes étapes : dons/paiement, UnifiedPush (#99) pour
 l'Android dé-googlé, la voix et l'image dans les échanges (tranche 3), finir
-d'habiller les écrans restants (onboarding, login/register, live, dons, notes,
+d'habiller les écrans restants (onboarding, login/register, live, dons,
 nouvelle requête).
+
+### Notes et Bible (#190) — la page `/bible` à deux onglets
+Plan : `server-portal/docs/notes-bible-plan.md` (fait foi). `/bible?tab=bible|notes`
+porte deux pilules (`SegmentedTabs`), un `PageView`, et garde le dernier onglet
+dans `app_settings` (`SettingsDao.bibleTab`). `/notes` y **redirige** ;
+`/notes/:id` est l'éditeur (`screens/notes/note_editor_screen.dart`, membres
+seulement, `extra` = enseignement d'un brouillon pré-lié). Un invité voit sur
+l'onglet Notes une **porte de session**, sans aucune lecture privée.
+
+Magasin : `tables/note_tables.dart` (v28) — `spiritual_notes` et
+`note_categories` sont des collections **privées** remplies par la synchro
+seule ; `local_notes` est le brouillon (**existe** tant que le delta n'a pas
+ramené la ligne avec `updatedAt ≥ clientUpdatedAt`, `dirty` tant qu'un envoi
+reste à faire) ; `pending_note_media` attend N4. `NotesDao` fusionne les deux
+(`local_notes` l'emporte quand elle existe), filtre, cherche, et **purge**
+(`purgeReconciled`). Écriture : `NoteDraftSaver` (chaque frappe → ligne
+locale ; `POST /notes` 2 s après la dernière et à la sortie ; brouillon vide
+effacé, jamais envoyé) ; `notesOutboxProvider` rejoue ce qui est resté `dirty`
+après chaque cycle réussi, câblé dans `app.dart` à côté de la messagerie. Le
+corps est **`NoteBodyPlain`** (texte brut → Delta minimal `plainToDeltaJson`),
+que N3 remplace par l'éditeur riche sans toucher au reste.

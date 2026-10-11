@@ -869,6 +869,76 @@ class AppLocalizationsEe extends AppLocalizations {
   String get notesSearchHint => 'Rechercher une note...';
 
   @override
+  String get notesTab => 'Notes';
+
+  @override
+  String get notesGuestTitle => 'Vos notes vous attendent';
+
+  @override
+  String get notesGuestMessage =>
+      'Connectez-vous pour écrire vos notes et les retrouver sur tous vos appareils.';
+
+  @override
+  String get notesEmptyTitle => 'Aucune note';
+
+  @override
+  String get notesEmptyMessage => 'Touchez + pour écrire votre première note.';
+
+  @override
+  String get notesFilterAll => 'Toutes';
+
+  @override
+  String get notesUntitled => 'Nouvelle note';
+
+  @override
+  String get notesBodyHint => 'Écrivez ici…';
+
+  @override
+  String get notesDone => 'Terminé';
+
+  @override
+  String get notesPin => 'Épingler';
+
+  @override
+  String get notesUnpin => 'Désépingler';
+
+  @override
+  String get notesDelete => 'Supprimer';
+
+  @override
+  String get notesDeleteConfirmTitle => 'Supprimer cette note ?';
+
+  @override
+  String get notesDeleteConfirmMessage =>
+      'Elle sera retirée de tous vos appareils.';
+
+  @override
+  String get notesCategoryTitle => 'Catégorie';
+
+  @override
+  String get notesCategoryAdd => 'Ajouter une catégorie';
+
+  @override
+  String get notesCategoryNameHint => 'Nom de la catégorie';
+
+  @override
+  String get notesCategoryCreate => 'Ajouter';
+
+  @override
+  String get notesCategoryNone => 'Sans catégorie';
+
+  @override
+  String get notesCategoryEditTitle => 'Modifier la catégorie';
+
+  @override
+  String get notesCategoryDelete => 'Supprimer la catégorie';
+
+  @override
+  String notesCategoryDeleteConfirm(String name) {
+    return 'Supprimer « $name » ? Ses notes resteront, sans catégorie.';
+  }
+
+  @override
   String get profileRole => 'Membre Nouvelle Vie';
 
   @override

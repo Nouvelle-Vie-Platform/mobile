@@ -33,7 +33,7 @@ import '../screens/media_library_screen.dart';
 import '../screens/member_profile_screen.dart';
 import '../screens/new_conversation_screen.dart';
 import '../screens/new_request_screen.dart';
-import '../screens/notes_screen.dart';
+import '../screens/notes/note_editor_screen.dart';
 import '../screens/group_info_screen.dart';
 import '../screens/group_shared_content_screen.dart';
 import '../screens/media_viewer_screen.dart';
@@ -110,7 +110,12 @@ abstract final class AppRoute {
   static const prayers = 'prayers';
   static const newRequest = 'new-request';
   static const donations = 'donations';
-  static const notes = 'notes';
+
+  /// **L'éditeur d'une note** (#190), `/notes/:id`, membres seulement.
+  /// L'identifiant est frappé par l'appelant (UUIDv7) ; `extra` porte, en
+  /// option, l'enseignement auquel lier un brouillon neuf. L'onglet Notes
+  /// lui-même est `/bible?tab=notes`, et `/notes` y redirige.
+  static const noteEditor = 'note-editor';
 
   /// Document légal en **consultation** — `kind ∈ {cgu, privacy}`.
   /// « À propos » a sa propre route : le ranger sous `/legal/` mentirait sur sa
@@ -211,8 +216,10 @@ const memberOnlyRoutes = <String>{
   // L'**écriture** d'une annonce — leur lecture est ouverte.
   '/announcement/compose',
   '/announcement/:id/edit',
-  // Ce qui n'a aucun sens sans compte : des notes, des prières, des demandes.
-  '/notes',
+  // Ce qui n'a aucun sens sans compte : écrire une note, des prières, des
+  // demandes. **`/notes` et l'onglet Notes restent ouverts** (#190) : la page
+  // Bible montre à l'invité une porte de session, pas une redirection.
+  '/notes/:id',
   '/prayers',
   '/new-request',
   '/requests',
@@ -441,7 +448,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: AppRoute.bible,
         path: '/bible',
-        builder: (_, __) => const AppBackground(child: BibleScreen()),
+        builder: (_, state) => AppBackground(
+          child: BibleScreen(
+            // `?tab=bible|notes` (#190) ; sans lui, le dernier onglet ouvert.
+            initialTab:
+                BibleTab.values.asNameMap()[state.uri.queryParameters['tab']],
+          ),
+        ),
       ),
       // Composeur d'annonce — deux chemins, un seul écran. Ils ne se disputent
       // rien : `/announcement/compose` a un segment, `/announcement/:id/edit`
@@ -658,10 +671,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/donations',
         builder: (_, __) => const AppBackground(child: DonationsScreen()),
       ),
+      // L'ancienne route des notes (#190) : elle **redirige** sur l'onglet
+      // Notes de la page Bible. Gardée pour les liens et les intentions
+      // formées avant cette version.
       GoRoute(
-        name: AppRoute.notes,
         path: '/notes',
-        builder: (_, __) => const AppBackground(child: NotesScreen()),
+        redirect: (_, __) => '/bible?tab=notes',
+      ),
+      GoRoute(
+        name: AppRoute.noteEditor,
+        path: '/notes/:id',
+        builder: (_, state) => AppBackground(
+          child: NoteEditorScreen(
+            noteId: state.pathParameters['id']!,
+            teachingId: state.extra as String?,
+          ),
+        ),
       ),
       // Les trois destinations documentaires du menu latéral.
       //

@@ -1594,6 +1594,138 @@ abstract class AppLocalizations {
   /// **'Rechercher une note...'**
   String get notesSearchHint;
 
+  /// Page Bible (#190) : libellé de la pilule de l'onglet Notes, à côté de « Bible »
+  ///
+  /// In fr, this message translates to:
+  /// **'Notes'**
+  String get notesTab;
+
+  /// Onglet Notes, invité : titre de la porte de session
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos notes vous attendent'**
+  String get notesGuestTitle;
+
+  /// Onglet Notes, invité : explication sous le titre, au-dessus du bouton « Se connecter »
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour écrire vos notes et les retrouver sur tous vos appareils.'**
+  String get notesGuestMessage;
+
+  /// Onglet Notes : état vide de la liste
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune note'**
+  String get notesEmptyTitle;
+
+  /// Onglet Notes : explication de l'état vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez + pour écrire votre première note.'**
+  String get notesEmptyMessage;
+
+  /// Onglet Notes : la première puce de filtre, qui ne filtre rien
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes'**
+  String get notesFilterAll;
+
+  /// Titre affiché pour une note sans titre (carte), placeholder du champ titre, et infobulle du bouton « nouvelle note »
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle note'**
+  String get notesUntitled;
+
+  /// Éditeur : placeholder du corps de la note
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez ici…'**
+  String get notesBodyHint;
+
+  /// Éditeur : infobulle de la coche qui ferme le clavier
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminé'**
+  String get notesDone;
+
+  /// Éditeur : infobulle de l'épingle, note non épinglée
+  ///
+  /// In fr, this message translates to:
+  /// **'Épingler'**
+  String get notesPin;
+
+  /// Éditeur : infobulle de l'épingle, note épinglée
+  ///
+  /// In fr, this message translates to:
+  /// **'Désépingler'**
+  String get notesUnpin;
+
+  /// Éditeur et catégories : l'action de suppression, dans le menu et dans la confirmation
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get notesDelete;
+
+  /// Éditeur : titre de la confirmation de suppression
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer cette note ?'**
+  String get notesDeleteConfirmTitle;
+
+  /// Éditeur : corps de la confirmation de suppression
+  ///
+  /// In fr, this message translates to:
+  /// **'Elle sera retirée de tous vos appareils.'**
+  String get notesDeleteConfirmMessage;
+
+  /// Feuille « Category » de la maquette : titre, et entrée du menu de l'éditeur
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégorie'**
+  String get notesCategoryTitle;
+
+  /// Feuille Catégorie : la ligne qui déplie le formulaire de création
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une catégorie'**
+  String get notesCategoryAdd;
+
+  /// Feuille Catégorie : placeholder du champ nom
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de la catégorie'**
+  String get notesCategoryNameHint;
+
+  /// Feuille Catégorie : bouton qui crée la catégorie saisie
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter'**
+  String get notesCategoryCreate;
+
+  /// Feuille Catégorie : l'option qui retire la catégorie de la note
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans catégorie'**
+  String get notesCategoryNone;
+
+  /// Feuille ouverte par un appui long sur une puce : renommer, recolorer, supprimer
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier la catégorie'**
+  String get notesCategoryEditTitle;
+
+  /// Feuille de modification d'une catégorie : bouton de suppression et titre de sa confirmation
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la catégorie'**
+  String get notesCategoryDelete;
+
+  /// Confirmation de suppression d'une catégorie
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer « {name} » ? Ses notes resteront, sans catégorie.'**
+  String notesCategoryDeleteConfirm(String name);
+
   /// No description provided for @profileRole.
   ///
   /// In fr, this message translates to:

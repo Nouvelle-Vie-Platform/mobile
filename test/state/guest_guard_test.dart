@@ -18,7 +18,7 @@ import 'package:maison_du_miracle/models/theme_preferences.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/home_shell.dart';
 import 'package:maison_du_miracle/screens/media_library_screen.dart';
-import 'package:maison_du_miracle/screens/notes_screen.dart';
+import 'package:maison_du_miracle/screens/notes/note_editor_screen.dart';
 import 'package:maison_du_miracle/screens/splash_screen.dart';
 import 'package:maison_du_miracle/state/announcement_providers.dart';
 import 'package:maison_du_miracle/state/auth_channels_providers.dart';
@@ -109,6 +109,7 @@ void main() {
       const surface = <String>[
         '/home', // accueil, annonces en lecture, communauté, profil
         '/bible', // la Bible, poussée depuis l'en-tête de l'accueil
+        '/notes', // redirige sur l'onglet Notes de la Bible, qui porte sa porte
         '/media', // médiathèque
         '/teaching/:id', // fiche d'enseignement
         '/gathering/:id', // fiche de rassemblement
@@ -205,8 +206,8 @@ void main() {
       expect(
         redirectFor(
           status: AuthStatus.authenticated,
-          location: '/notes',
-          pattern: '/notes',
+          location: '/notes/x',
+          pattern: '/notes/:id',
         ),
         isNull,
         reason: 'un écran réservé est le sien',
@@ -214,8 +215,8 @@ void main() {
       expect(
         redirectFor(
           status: AuthStatus.authenticated,
-          location: '/notes',
-          pattern: '/notes',
+          location: '/notes/x',
+          pattern: '/notes/:id',
           legalPending: true,
         ),
         '/legal/accept',
@@ -277,7 +278,7 @@ void main() {
     testWidgets('un écran réservé ramène à l\'accueil', (tester) async {
       final router = await _pumpApp(tester, _container());
 
-      router.go('/notes');
+      router.go('/notes/019f7a00-0000-7000-8000-00000000a001');
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
@@ -285,7 +286,7 @@ void main() {
       // Une redirection vers la connexion transformerait un lien partagé en
       // écran de connexion surprise.
       expect(router.state.matchedLocation, '/home');
-      expect(find.byType(NotesScreen), findsNothing);
+      expect(find.byType(NoteEditorScreen), findsNothing);
     });
 
     testWidgets('la médiathèque s\'ouvre sans session', (tester) async {
@@ -304,14 +305,20 @@ void main() {
         auth: SignedInAuthRepository(),
         vault: StartupVault.memberSession,
       );
-      final router = await _pumpApp(tester, container);
-      await _untilSignedIn(tester, container);
+      // L'éditeur lit le magasin Drift : tout dans un seul `runAsync`.
+      await tester.runAsync(() async {
+        final router = await _pumpApp(tester, container);
+        await _untilSignedIn(tester, container);
 
-      router.go('/notes');
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+        router.go('/notes/019f7a00-0000-7000-8000-00000000a001');
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
 
-      expect(router.state.matchedLocation, '/notes');
+        expect(
+          router.state.matchedLocation,
+          '/notes/019f7a00-0000-7000-8000-00000000a001',
+        );
+      });
     });
   });
 }

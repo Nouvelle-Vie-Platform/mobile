@@ -860,6 +860,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notesSearchHint => 'Search for a note...';
 
   @override
+  String get notesTab => 'Notes';
+
+  @override
+  String get notesGuestTitle => 'Your notes are waiting';
+
+  @override
+  String get notesGuestMessage =>
+      'Sign in to write your notes and find them on all your devices.';
+
+  @override
+  String get notesEmptyTitle => 'No notes';
+
+  @override
+  String get notesEmptyMessage => 'Tap + to write your first note.';
+
+  @override
+  String get notesFilterAll => 'All';
+
+  @override
+  String get notesUntitled => 'New note';
+
+  @override
+  String get notesBodyHint => 'Write here…';
+
+  @override
+  String get notesDone => 'Done';
+
+  @override
+  String get notesPin => 'Pin';
+
+  @override
+  String get notesUnpin => 'Unpin';
+
+  @override
+  String get notesDelete => 'Delete';
+
+  @override
+  String get notesDeleteConfirmTitle => 'Delete this note?';
+
+  @override
+  String get notesDeleteConfirmMessage =>
+      'It will be removed from all your devices.';
+
+  @override
+  String get notesCategoryTitle => 'Category';
+
+  @override
+  String get notesCategoryAdd => 'Add a category';
+
+  @override
+  String get notesCategoryNameHint => 'Category name';
+
+  @override
+  String get notesCategoryCreate => 'Add';
+
+  @override
+  String get notesCategoryNone => 'No category';
+
+  @override
+  String get notesCategoryEditTitle => 'Edit category';
+
+  @override
+  String get notesCategoryDelete => 'Delete category';
+
+  @override
+  String notesCategoryDeleteConfirm(String name) {
+    return 'Delete “$name”? Its notes will stay, without a category.';
+  }
+
+  @override
   String get profileRole => 'New Life member';
 
   @override

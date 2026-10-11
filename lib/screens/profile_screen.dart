@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/models.dart';
 import '../router/app_router.dart';
+import 'bible_screen.dart';
 import '../state/auth_providers.dart';
 import '../state/branch_scope_providers.dart';
 import '../theme/app_colors.dart';
@@ -289,7 +290,10 @@ class _ProfileHeader extends StatelessWidget {
                     icon: Icons.menu_book,
                     label: l.profileStatNotes,
                     color: const Color(0xFF7A5AF8),
-                    onTap: () => context.pushNamed(AppRoute.notes),
+                    onTap: () => context.pushNamed(
+                      AppRoute.bible,
+                      queryParameters: {'tab': BibleTab.notes.name},
+                    ),
                   ),
                 ),
                 Expanded(

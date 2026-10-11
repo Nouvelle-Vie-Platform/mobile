@@ -90,44 +90,55 @@ Future<void> _showAnnouncements(WidgetTester tester) async {
 
 void main() {
   group('Écrire une note, depuis la fiche d\'un enseignement', () {
+    // Le geste cherche dans le magasin Drift une note déjà liée à
+    // l'enseignement : tout dans un seul `runAsync`, sans quoi il se fige.
     testWidgets('un invité : la connexion, puis les notes', (tester) async {
-      final container = guestContainer(extra: _oneTeaching);
-      final router = await pumpGuestApp(tester, container);
+      await tester.runAsync(() async {
+        final container = guestContainer(extra: _oneTeaching);
+        final router = await pumpGuestApp(tester, container);
 
-      // La fiche est **ouverte** à un invité : c'est la décision du client, et
-      // c'est ce qui rend ce bouton-ci dangereux sans garde de geste.
-      router.go('/teaching/$_teachingId');
-      await settle(tester);
-      expect(router.state.matchedLocation, '/teaching/$_teachingId');
+        // La fiche est **ouverte** à un invité : c'est la décision du client,
+        // et c'est ce qui rend ce bouton-ci dangereux sans garde de geste.
+        router.go('/teaching/$_teachingId');
+        await settle(tester);
+        expect(router.state.matchedLocation, '/teaching/$_teachingId');
 
-      await tester.tap(find.byKey(ContentPlayerView.notesButtonKey));
-      await settle(tester);
-      expect(router.state.matchedLocation, '/auth');
+        await tester.tap(find.byKey(ContentPlayerView.notesButtonKey));
+        await settle(tester);
+        expect(router.state.matchedLocation, '/auth');
 
-      await signIn(container);
-      await settle(tester);
+        await signIn(container);
+        await settle(tester);
+        await settle(tester);
 
-      // On revient sur la fiche — l'origine — et les notes s'ouvrent dessus.
-      expect(router.state.matchedLocation, '/notes');
+        // On revient sur la fiche — l'origine — et l'éditeur s'ouvre dessus,
+        // sur un brouillon **pré-lié** à l'enseignement (#190).
+        expect(router.state.matchedLocation, startsWith('/notes/'));
+        expect(router.state.extra, _teachingId);
+      });
     });
 
     testWidgets('un membre : les notes au premier appui', (tester) async {
-      final container = guestContainer(
-        auth: GuestAuthRepository(signedIn: true),
-        vault: StartupVault.memberSession,
-        extra: _oneTeaching,
-      );
-      final router = await pumpGuestApp(tester, container);
-      await untilSignedIn(tester, container);
+      await tester.runAsync(() async {
+        final container = guestContainer(
+          auth: GuestAuthRepository(signedIn: true),
+          vault: StartupVault.memberSession,
+          extra: _oneTeaching,
+        );
+        final router = await pumpGuestApp(tester, container);
+        await untilSignedIn(tester, container);
 
-      router.go('/teaching/$_teachingId');
-      await settle(tester);
+        router.go('/teaching/$_teachingId');
+        await settle(tester);
 
-      await tester.tap(find.byKey(ContentPlayerView.notesButtonKey));
-      await settle(tester);
+        await tester.tap(find.byKey(ContentPlayerView.notesButtonKey));
+        await settle(tester);
+        await settle(tester);
 
-      expect(router.state.matchedLocation, '/notes');
-      expect(find.byType(IdentifierScreen), findsNothing);
+        expect(router.state.matchedLocation, startsWith('/notes/'));
+        expect(router.state.extra, _teachingId);
+        expect(find.byType(IdentifierScreen), findsNothing);
+      });
     });
   });
 
