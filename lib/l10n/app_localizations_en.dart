@@ -2323,4 +2323,72 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get radioOfflineMessage =>
       'The radio starts again on its own as soon as the network is back.';
+
+  @override
+  String get noteEditorPlaceholder => 'Write your note…';
+
+  @override
+  String get noteEditorOpenFormat => 'Formatting';
+
+  @override
+  String get noteEditorFormatTitle => 'Format';
+
+  @override
+  String get noteEditorClose => 'Close';
+
+  @override
+  String get noteEditorStyleTitle => 'Title';
+
+  @override
+  String get noteEditorStyleSubtitle => 'Heading';
+
+  @override
+  String get noteEditorStyleHeading => 'Subheading';
+
+  @override
+  String get noteEditorStyleBody => 'Body';
+
+  @override
+  String get noteEditorBold => 'Bold';
+
+  @override
+  String get noteEditorItalic => 'Italic';
+
+  @override
+  String get noteEditorUnderline => 'Underline';
+
+  @override
+  String get noteEditorStrike => 'Strikethrough';
+
+  @override
+  String get noteEditorHighlight => 'Highlight';
+
+  @override
+  String get noteEditorTextColor => 'Text color';
+
+  @override
+  String get noteEditorBulletList => 'Bulleted list';
+
+  @override
+  String get noteEditorNumberedList => 'Numbered list';
+
+  @override
+  String get noteEditorChecklist => 'Checklist';
+
+  @override
+  String get noteEditorOutdent => 'Decrease indent';
+
+  @override
+  String get noteEditorIndent => 'Increase indent';
+
+  @override
+  String get noteEditorMonostyle => 'Monostyled';
+
+  @override
+  String get noteEditorQuote => 'Block quote';
+
+  @override
+  String noteEditorAttachment(String name) {
+    return 'Attachment: $name';
+  }
 }
