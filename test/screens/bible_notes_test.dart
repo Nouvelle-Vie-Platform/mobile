@@ -8,6 +8,7 @@
 /// montage).
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
@@ -19,23 +20,36 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/core/network/api_client.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/messaging/media/media_outbox.dart';
+import 'package:maison_du_miracle/data/messaging/media/voice_recorder.dart';
+import 'package:maison_du_miracle/data/notes_media/note_media_composer.dart';
+import 'package:maison_du_miracle/data/notes_media/note_media_picker.dart';
+import 'package:maison_du_miracle/data/notes_media/note_media_providers.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/repositories/notes_repository.dart';
+import 'package:maison_du_miracle/features/notes_editor/attachments/note_attachment_button.dart';
+import 'package:maison_du_miracle/features/notes_editor/attachments/note_attachment_embed_builder.dart';
 import 'package:maison_du_miracle/features/notes_editor/format_pill.dart';
+import 'package:maison_du_miracle/features/notes_editor/links/add_link_sheet.dart';
+import 'package:maison_du_miracle/features/notes_editor/links/linked_teaching_chip.dart';
 import 'package:maison_du_miracle/features/notes_editor/rich_note_editor.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
+import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/models/note_view.dart';
 import 'package:maison_du_miracle/screens/bible_screen.dart';
 import 'package:maison_du_miracle/screens/notes/note_category_sheet.dart';
 import 'package:maison_du_miracle/screens/notes/note_editor_screen.dart';
 import 'package:maison_du_miracle/screens/notes/notes_tab.dart';
+import 'package:maison_du_miracle/state/chat_media_providers.dart';
+import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/notes_providers.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/note_palette.dart';
 
+import '../features/notes_editor/attachments/note_media_doubles.dart';
 import '../helpers/fake_api.dart';
 import '../helpers/guest_app.dart';
 
@@ -44,6 +58,8 @@ final _fr = AppLocalizationsFr();
 const _pinnedId = '019f8000-0000-7000-8000-00000000000b';
 const _plainId = '019f8000-0000-7000-8000-00000000000a';
 const _categoryId = '019f8000-0000-7000-8000-0000000000c1';
+const _newId = '019f8000-0000-7000-8000-00000000000e';
+const _teachingId = '019f8000-0000-7000-8000-0000000000aa';
 
 /// Deux notes et une catégorie, posées **par la synchronisation** — jamais par
 /// un insert applicatif dans une collection.
@@ -643,6 +659,181 @@ void main() {
       });
     });
   });
+
+  group('L\'éditeur : pièces jointes et liens (#192, #193)', () {
+    testWidgets(
+        'le trombone ouvre son menu ; la photo paraît, puis part avec sa clé',
+        (tester) async {
+      await tester.runAsync(() async {
+        final repo = _RecordingNotesRepository();
+        final transport = ScriptedNoteTransport();
+        final outboxRoot = Directory.systemTemp.createTempSync('nv-note-out');
+        final sources = Directory.systemTemp.createTempSync('nv-note-src');
+        addTearDown(() {
+          outboxRoot.deleteSync(recursive: true);
+          sources.deleteSync(recursive: true);
+        });
+        final photo = File('${sources.path}/IMG_7.jpg')
+          ..writeAsBytesSync(List<int>.filled(500, 7));
+        final container = guestContainer(
+          auth: GuestAuthRepository(signedIn: true),
+          vault: StartupVault.memberSession,
+          extra: [
+            _radioOff,
+            notesRepositoryProvider.overrideWithValue(repo),
+            noteMediaPickerProvider.overrideWithValue(_OnePhotoPicker(photo)),
+            noteMediaTransportProvider.overrideWithValue(transport),
+            mediaPreparerProvider.overrideWithValue(CopyPreparer()),
+            noteMediaOutboxProvider.overrideWithValue(
+              MediaOutbox(root: () async => outboxRoot),
+            ),
+            noteMediaUrlsProvider.overrideWithValue(FakeNoteMediaUrls()),
+            // Lu au toucher du trombone : le vrai ouvre un canal de greffon.
+            voiceRecorderProvider.overrideWith((ref) => FakeVoiceRecorder()),
+          ],
+        );
+        final router = await pumpGuestApp(tester, container);
+        await untilSignedIn(tester, container);
+        router.push('/notes/$_newId');
+        await _settle(tester);
+
+        _editor(tester).focusNode.requestFocus();
+        await _settle(tester);
+        await tester.tap(find.byKey(NoteAttachmentButton.buttonKey));
+        await _settle(tester);
+        expect(find.byKey(NoteAttachmentButton.takeKey), findsOneWidget);
+        expect(find.byKey(NoteAttachmentButton.chooseKey), findsOneWidget);
+        expect(find.byKey(NoteAttachmentButton.recordKey), findsOneWidget);
+        expect(find.byKey(NoteAttachmentButton.fileKey), findsOneWidget);
+
+        await tester.tap(find.byKey(NoteAttachmentButton.chooseKey));
+        await _settle(tester);
+        // Dans le fil, à la place du curseur — et montée par le faux PUT.
+        expect(find.byKey(NoteAttachmentBlock.imageKey), findsOneWidget);
+        expect(transport.uploads, hasLength(1));
+        await _settle(tester);
+
+        // La sortie envoie : `POST /notes` porte l'embed **avec** sa clé, sans
+        // rien de local.
+        router.pop();
+        await _settle(tester);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        final sent = repo.upserts.where((u) => u.id == _newId).last;
+        final payload = noteUpsertPayload(sent);
+        final ops = (payload['content']! as Map)['ops'] as List;
+        final embeds = [
+          for (final op in ops)
+            if ((op as Map)['insert'] case {'nvAttachment': final Map data})
+              data,
+        ];
+        expect(embeds, hasLength(1));
+        expect(embeds.single['key'], transport.uploads.single);
+        expect(embeds.single.containsKey('localId'), isFalse);
+        expect(jsonEncode(payload), isNot(contains('localId')));
+      });
+    });
+
+    testWidgets('le bouton lien : quatre choix, la Bible grisée',
+        (tester) async {
+      await tester.runAsync(() async {
+        final container = guestContainer(
+          auth: GuestAuthRepository(signedIn: true),
+          vault: StartupVault.memberSession,
+          extra: [
+            _radioOff,
+            notesRepositoryProvider
+                .overrideWithValue(_RecordingNotesRepository()),
+          ],
+        );
+        final router = await pumpGuestApp(tester, container);
+        await untilSignedIn(tester, container);
+        router.push('/notes/$_newId');
+        await _settle(tester);
+
+        _editor(tester).focusNode.requestFocus();
+        await _settle(tester);
+        await tester.tap(find.byKey(NoteLinkButton.buttonKey));
+        await _settle(tester);
+        for (final key in [
+          AddLinkSheet.noteOptionKey,
+          AddLinkSheet.teachingOptionKey,
+          AddLinkSheet.webOptionKey,
+          AddLinkSheet.bibleOptionKey,
+        ]) {
+          expect(find.byKey(key), findsOneWidget);
+        }
+        expect(
+          tester
+              .widget<ListTile>(find.byKey(AddLinkSheet.bibleOptionKey))
+              .enabled,
+          isFalse,
+        );
+        router.pop();
+        await _settle(tester);
+        router.pop();
+        await _settle(tester);
+      });
+    });
+
+    testWidgets('la puce de l\'enseignement lié, sous le titre',
+        (tester) async {
+      await tester.runAsync(() async {
+        final container = guestContainer(
+          auth: GuestAuthRepository(signedIn: true),
+          vault: StartupVault.memberSession,
+          extra: [
+            _radioOff,
+            notesRepositoryProvider
+                .overrideWithValue(_RecordingNotesRepository()),
+            teachingByIdProvider.overrideWith(
+              (ref, id) => Stream.value(
+                id == _teachingId
+                    ? const TeachingView(
+                        id: _teachingId,
+                        title: 'La foi qui déplace',
+                        color: 0xFF336699,
+                      )
+                    : null,
+              ),
+            ),
+          ],
+        );
+        final db = container.read(appDatabaseProvider);
+        await db.syncDao.applyPage(
+          db.syncDao.spiritualNotesCollection,
+          upserts: [
+            SpiritualNotesCompanion.insert(
+              id: _newId,
+              title: const Value('Prédication'),
+              body: const Value('Notes'),
+              teachingId: const Value(_teachingId),
+              updatedAt: Value(DateTime.utc(2026, 10, 3)),
+            ),
+          ],
+          cursor: 'c-linked',
+        );
+        final router = await pumpGuestApp(tester, container);
+        await untilSignedIn(tester, container);
+        router.push('/notes/$_newId');
+        await _settle(tester);
+
+        expect(find.byKey(LinkedTeachingChip.chipKey), findsOneWidget);
+        expect(find.text('La foi qui déplace'), findsOneWidget);
+        router.pop();
+        await _settle(tester);
+      });
+    });
+  });
+}
+
+/// La galerie, doublée : elle rend toujours la même photo.
+class _OnePhotoPicker extends InertNoteMediaPicker {
+  const _OnePhotoPicker(this.photo);
+
+  final File photo;
+
+  @override
+  Future<NoteMediaSource?> chooseMedia() async => mediaSourceOf(photo.path);
 }
 
 class _RecordingNotesRepository implements NotesRepository {

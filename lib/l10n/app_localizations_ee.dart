@@ -2480,11 +2480,6 @@ class AppLocalizationsEe extends AppLocalizations {
   String get noteEditorQuote => 'Citation';
 
   @override
-  String noteEditorAttachment(String name) {
-    return 'Nu si wotsɔ kpe ɖe eŋu: $name';
-  }
-
-  @override
   String get noteLinkAdd => 'Ajouter un lien';
 
   @override

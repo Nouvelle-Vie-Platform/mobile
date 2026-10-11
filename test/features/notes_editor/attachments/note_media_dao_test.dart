@@ -101,7 +101,7 @@ void main() {
         .getSingle();
     expect(local.content, patched);
     expect(local.dirty, isTrue);
-    expect(local.clientUpdatedAt, at);
+    expect(local.clientUpdatedAt.toUtc(), at);
 
     await db.syncDao.applyPage(
       db.syncDao.spiritualNotesCollection,

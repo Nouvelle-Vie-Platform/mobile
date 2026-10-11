@@ -2482,11 +2482,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noteEditorQuote => 'Citation';
 
   @override
-  String noteEditorAttachment(String name) {
-    return 'Pièce jointe : $name';
-  }
-
-  @override
   String get noteLinkAdd => 'Ajouter un lien';
 
   @override

@@ -8,7 +8,7 @@ remonte ce que l'utilisateur tape, et c'est l'écran de N2 qui l'écrit dans
 
 | Fichier | Ce qu'il expose |
 |---|---|
-| `rich_note_editor.dart` | `RichNoteEditor` (l'éditeur plein cadre, pilule comprise), `RichNoteEditorState.controller` / `.focusNode`, `documentFromJson`, `noteEditorStyles`, `NvAttachmentPlaceholderBuilder` |
+| `rich_note_editor.dart` | `RichNoteEditor` (l'éditeur plein cadre, pilule comprise), `RichNoteEditorState.controller` / `.focusNode`, `documentFromJson`, `noteEditorStyles` |
 | `format_pill.dart` | `FormatPill` (la pilule sombre), `PillButton` (le dessin d'un bouton, pour N4 et N5) |
 | `format_sheet.dart` | `showFormatSheet(context, controller)`, `FormatSheet`, `noteColorOf` |
 | `note_formatting.dart` | extension `NoteFormatting` sur `QuillController` : `isActive`, `toggle`, `setHeader`, `toggleList`, `setTextColor`, `toggleHighlight`… |
@@ -44,9 +44,10 @@ avec la coche (`focusNode.unfocus()`) — ou lus sur l'état via une
   (`plainToDeltaJson` garde la même signature).
 - **N4 (pièces jointes)** : un `PillButton` dans `attachmentSlot`, qui insère un
   `BlockEmbed('nvAttachment', jsonEncode({...}))` au curseur ; un
-  `EmbedBuilder` de clé `nvAttachment` dans `embedBuilders` (il remplace la
-  carte d'attente `NvAttachmentPlaceholderBuilder`) ; et le `loadImage` du
-  PDF, branché sur l'URL signée.
+  `EmbedBuilder` de clé `nvAttachment` dans `embedBuilders` (**obligatoire**
+  dès qu'un contenu porte une pièce jointe : la carte d'attente de N3 a été
+  retirée à l'intégration) ; et le `loadImage` du PDF, branché sur l'URL
+  signée.
 - **N5 (liens)** : un `PillButton` dans `linkSlot`, qui pose
   `LinkAttribute(url)` sur la sélection ; `onLinkTap` reçoit l'URL quand
   l'utilisateur choisit « ouvrir » dans le menu d'appui long de flutter_quill

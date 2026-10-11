@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/config/app_env.dart';
 import 'core/network/api_client.dart';
+import 'data/notes_media/note_media_providers.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
@@ -132,6 +133,9 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
           await ref.read(downloadLifecycleProvider).reconcile();
           await ref.read(downloadManagerProvider).reconcile();
           await ref.read(messagingOutboxProvider)();
+          // **Les pièces jointes des notes** (#192) d'abord : une montée qui
+          // aboutit pose sa clé dans le brouillon, que l'envoi suivant porte.
+          await ref.read(noteMediaComposerProvider).resendPending();
           // **Les brouillons de notes** (#190) : même raison, même moment.
           await ref.read(notesOutboxProvider)();
         };

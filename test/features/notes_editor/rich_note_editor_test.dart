@@ -246,27 +246,4 @@ void main() {
     );
     await tearDownTree(tester);
   });
-
-  testWidgets('un embed nvAttachment se rend en carte d\'attente',
-      (tester) async {
-    await pumpEditor(
-      tester,
-      initial: jsonEncode({
-        'ops': [
-          {
-            'insert': {
-              'nvAttachment': {
-                'kind': 'document',
-                'key': 'note-media/o/x.pdf',
-                'name': 'budget.pdf',
-              },
-            },
-          },
-          {'insert': '\n'},
-        ],
-      }),
-    );
-    expect(find.text('Pièce jointe : budget.pdf'), findsOneWidget);
-    await tearDownTree(tester);
-  });
 }

@@ -17,18 +17,25 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart' show QuillController;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/notes_media/note_media_composer.dart';
+import '../../data/notes_media/note_media_providers.dart';
 import '../../data/repositories/note_draft_saver.dart';
 import '../../data/repositories/notes_repository.dart';
+import '../../features/notes_editor/attachments/note_attachment_button.dart';
+import '../../features/notes_editor/attachments/note_attachment_embed_builder.dart';
+import '../../features/notes_editor/links/add_link_sheet.dart';
+import '../../features/notes_editor/links/linked_teaching_chip.dart';
+import '../../features/notes_editor/links/note_link_opener.dart';
 import '../../features/notes_editor/note_content.dart';
 import '../../features/notes_editor/note_pdf_exporter.dart';
 import '../../features/notes_editor/rich_note_editor.dart';
 import '../../l10n/l10n_extension.dart';
 import '../../models/note_view.dart';
 import '../../router/app_router.dart';
-import '../../state/menu_providers.dart';
 import '../../state/notes_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
@@ -37,7 +44,6 @@ import '../../theme/app_typography.dart';
 import '../../theme/note_palette.dart';
 import '../../widgets/brand_app_bar.dart';
 import 'note_category_sheet.dart';
-import 'note_link_opener.dart';
 
 class NoteEditorScreen extends ConsumerStatefulWidget {
   const NoteEditorScreen({super.key, required this.noteId, this.teachingId});
@@ -67,6 +73,12 @@ class NoteEditorScreen extends ConsumerStatefulWidget {
 
 class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   late final NoteDraftSaver _saver;
+  late final NoteMediaComposer _composer;
+
+  /// Le contrôleur du corps, **possédé par l'écran** : le trombone y insère
+  /// ses embeds et le composeur y pose les clés montées pendant que l'écran
+  /// est ouvert. Créé à l'amorçage, quand le contenu est connu.
+  QuillController? _quill;
   final _titleController = TextEditingController();
   final _titleFocus = FocusNode();
   final _bodyFocus = FocusNode();
@@ -81,6 +93,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       dao: ref.read(notesDaoProvider),
       repository: ref.read(notesRepositoryProvider),
     );
+    _composer = ref.read(noteMediaComposerProvider);
     _titleFocus.addListener(_onFocus);
     _bodyFocus.addListener(_onFocus);
   }
@@ -89,6 +102,13 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
   @override
   void dispose() {
+    // Les enfants (l'éditeur) sont démontés avant : le contrôleur n'a plus
+    // d'auditeur quand on le libère.
+    final quill = _quill;
+    if (quill != null) {
+      _composer.detachEditor(widget.noteId, quill);
+      quill.dispose();
+    }
     _titleFocus.dispose();
     _bodyFocus.dispose();
     _titleController.dispose();
@@ -118,6 +138,17 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             clientCreatedAt: note.updatedAt ?? DateTime.now(),
           );
     _titleController.text = _draft!.title ?? '';
+    final draft = _draft!;
+    _quill = QuillController(
+      // Une note d'avant le texte riche n'a qu'un `body` : il devient le
+      // Delta le plus simple, pour ne pas s'ouvrir vide.
+      document: documentFromJson(
+        draft.content ??
+            (draft.body.isEmpty ? null : plainToDeltaJson(draft.body)),
+      ),
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+    _composer.attachEditor(widget.noteId, _quill!);
   }
 
   void _update(NoteDraft next) {
@@ -154,10 +185,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       final bytes = await const NotePdfExporter().build(
         title: title,
         contentJson: contentJson,
-        // Aucune photo n'est chargée pour l'instant : N4 branchera ici la
-        // lecture signée (`GET /notes/media/*key`). D'ici là, toute pièce
-        // jointe sort en ligne « Pièce jointe : nom ».
-        loadImage: (_) async => null,
+        // Fichier local tant qu'il existe, sinon l'URL signée.
+        loadImage: ref.read(noteImageLoaderProvider),
       );
       if (!mounted) return;
       await shareNoteAsPdf(context, title, bytes);
@@ -208,12 +237,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     );
   }
 
-  void _openLink(String url) {
-    unawaited(NoteLinkOpener(
-      router: ref.read(routerProvider),
-      external: ref.read(externalLinkLauncherProvider),
-    ).open(url));
-  }
+  void _openLink(String url) =>
+      unawaited(NoteLinkOpener.open(context, ref, url));
 
   @override
   Widget build(BuildContext context) {
@@ -333,20 +358,34 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 onSubmitted: (_) => _bodyFocus.requestFocus(),
               ),
             ),
+            // L'enseignement lié (décision 12) : rien si la note n'en a pas,
+            // ou s'il n'est plus dans le magasin.
+            Padding(
+              padding: AppSpacing.screenPadding.copyWith(top: 0, bottom: 0),
+              child: LinkedTeachingChip(teachingId: draft.teachingId),
+            ),
             // L'éditeur prend tout le reste et pose lui-même la pilule
             // au-dessus du clavier ; sa marge horizontale est celle du titre.
             Expanded(
               child: RichNoteEditor(
                 key: NoteEditorScreen.bodyFieldKey,
-                // Une note d'avant le texte riche n'a qu'un `body` : il devient
-                // le Delta le plus simple, pour ne pas s'ouvrir vide.
-                initialContentJson: draft.content ??
-                    (draft.body.isEmpty ? null : plainToDeltaJson(draft.body)),
+                controller: _quill,
                 focusNode: _bodyFocus,
                 onChanged: (contentJson, plainText) => _update(
                   _draft!.copyWith(body: plainText, content: contentJson),
                 ),
                 onLinkTap: _openLink,
+                attachmentSlot: NoteAttachmentButton(
+                  noteId: widget.noteId,
+                  controller: _quill!,
+                  focusNode: _bodyFocus,
+                ),
+                linkSlot: NoteLinkButton(
+                  controller: _quill!,
+                  currentNoteId: widget.noteId,
+                  focusNode: _bodyFocus,
+                ),
+                embedBuilders: const [NoteAttachmentEmbedBuilder()],
               ),
             ),
           ],

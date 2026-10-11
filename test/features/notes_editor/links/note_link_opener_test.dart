@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/external_link_launcher.dart';
 import 'package:maison_du_miracle/features/notes_editor/links/note_link_opener.dart';
+import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/state/menu_providers.dart';
 import 'package:maison_du_miracle/state/notes_providers.dart';
 
@@ -34,6 +35,7 @@ void main() {
         (ref, id) => Stream.value(id == _known ? fakeNote(_known) : null),
       ),
       externalLinkLauncherProvider.overrideWithValue(launcher),
+      routerProvider.overrideWithValue(router),
     ]));
     await tester.tap(find.text('ouvrir'));
     await tester.pumpAndSettle();
@@ -71,9 +73,19 @@ void main() {
     expect(find.text('bible bible'), findsOneWidget);
   });
 
-  testWidgets('un lien hors contrat n\'ouvre rien', (tester) async {
-    await openLink(tester, 'javascript:alert(1)');
-    expect(launcher.opened, isEmpty);
-    expect(find.text('Impossible d\'ouvrir ce lien'), findsOneWidget);
-  });
+  for (final url in [
+    'javascript:alert(1)',
+    'nv://autre/x',
+    'nv://note/',
+    'nv://note/a/b',
+    'pas une adresse',
+    '::',
+  ]) {
+    testWidgets('un lien hors contrat n\'ouvre rien : $url', (tester) async {
+      await openLink(tester, url);
+      expect(launcher.opened, isEmpty);
+      expect(find.text('ouvrir'), findsOneWidget);
+      expect(find.text('Impossible d\'ouvrir ce lien'), findsOneWidget);
+    });
+  }
 }

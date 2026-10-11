@@ -1442,8 +1442,6 @@
   "@noteEditorMonostyle": {"description": "Feuille Format : bloc à chasse fixe (code-block)"},
   "noteEditorQuote": "Citation",
   "@noteEditorQuote": {"description": "Feuille Format : bloc citation (blockquote)"},
-  "noteEditorAttachment": "Pièce jointe : {name}",
-  "@noteEditorAttachment": {"description": "Carte d'attente d'un embed nvAttachment tant que N4 n'a pas livré son rendu", "placeholders": {"name": {"type": "String"}}},
   "noteLinkAdd": "Ajouter un lien",
   "@noteLinkAdd": {"description": "Pilule de l'éditeur : bouton lien (N5)"},
   "noteLinkSheetTitle": "Ajouter un lien",

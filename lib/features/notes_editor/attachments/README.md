@@ -52,8 +52,8 @@ RichNoteEditor(
 )
 ```
 
-`NvAttachmentPlaceholderBuilder` (N3) devient inutile : il n'est plus monté
-dès qu'un builder de clé `nvAttachment` est passé, et peut être retiré.
+La carte d'attente de N3 (`NvAttachmentPlaceholderBuilder`) a été retirée à
+l'intégration : ce builder est le seul rendu de `nvAttachment`.
 
 ### 2. L'éditeur ouvert, déclaré au composeur
 
@@ -89,7 +89,7 @@ NotePdfExporter().build(
 
 Fichier local tant qu'il existe, sinon l'URL signée téléchargée juste avant.
 
-### 5. Deux lignes dans le code de N2 — **obligatoires**
+### 5. Deux correctifs dans le code de N2 — **faits à l'intégration**
 
 - **Le contenu envoyé** (`noteUpsertPayload`, `notes_repository.dart`) :
   `'content': serverNoteContent(note.content)` — retire les embeds sans clé et
@@ -97,12 +97,8 @@ Fichier local tant qu'il existe, sinon l'URL signée téléchargée juste avant.
   cours d'envoi reçoit un 422.
 - **La purge des brouillons** (`NotesDao.purgeReconciled`) : ne pas effacer un
   brouillon qui attend encore une montée, sinon la version serveur (envoyée
-  sans l'embed) le remplace et la pièce jointe disparaît :
-
-  ```sql
-  … AND s.updated_at >= local_notes.client_updated_at
-    AND coalesce(local_notes.content, '') NOT LIKE '%"localId"%'
-  ```
+  sans l'embed) le remplace et la pièce jointe disparaît. Fait à l'intégration, par `hasPendingAttachment` sur les candidats (pas
+  de `LIKE '%"localId"%'`, qui retiendrait ce mot tapé dans le texte).
 
   Un bloc en échec définitif garde donc le brouillon local jusqu'à ce que
   l'utilisateur le retire ou le réessaie.

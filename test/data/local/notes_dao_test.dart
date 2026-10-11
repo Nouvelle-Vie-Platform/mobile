@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
@@ -65,6 +66,7 @@ void main() {
     String? categoryId,
     bool pinned = false,
     String? teachingId,
+    String? content,
     required DateTime clientUpdatedAt,
     bool dirty = true,
   }) {
@@ -72,6 +74,7 @@ void main() {
       id: id,
       title: Value(title),
       body: Value(body),
+      content: Value(content),
       categoryId: Value(categoryId),
       pinned: Value(pinned),
       teachingId: Value(teachingId),
@@ -173,6 +176,40 @@ void main() {
 
       expect(await dao.purgeReconciled(), 0);
       expect((await list()).single.body, 'frappe récente');
+    });
+
+    test('elle reste tant qu\'une pièce jointe attend sa montée (#192)',
+        () async {
+      // Le serveur a reçu la note **sans** l'embed en attente : sa version,
+      // pourtant à jour, effacerait la pièce jointe.
+      String content(Map<String, Object> attachment) => jsonEncode({
+            'ops': [
+              {
+                'insert': {'nvAttachment': attachment},
+              },
+              {'insert': 'localId tapé dans le texte\n'},
+            ],
+          });
+      const b = '0192a5b4-0000-7000-8000-00000000000b';
+      await local(
+        id: a,
+        body: 'x',
+        content: content({'kind': 'image', 'name': 'p.jpg', 'localId': 'e-1'}),
+        clientUpdatedAt: DateTime.utc(2026, 10, 2, 10),
+      );
+      // Montée : la clé a remplacé `localId`. Le mot tapé ne retient rien.
+      await local(
+        id: b,
+        body: 'x',
+        content: content({'kind': 'image', 'name': 'p.jpg', 'key': 'k'}),
+        clientUpdatedAt: DateTime.utc(2026, 10, 2, 10),
+      );
+      await synced(id: a, body: 'x', updatedAt: DateTime.utc(2026, 10, 2, 11));
+      await synced(id: b, body: 'x', updatedAt: DateTime.utc(2026, 10, 2, 11));
+
+      expect(await dao.purgeReconciled(), 1);
+      expect(await dao.localNote(a), isNotNull);
+      expect(await dao.localNote(b), isNull);
     });
 
     test('elle reste tant que le serveur ne connaît pas la note', () async {

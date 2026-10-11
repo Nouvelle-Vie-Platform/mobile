@@ -2461,11 +2461,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noteEditorQuote => 'Block quote';
 
   @override
-  String noteEditorAttachment(String name) {
-    return 'Attachment: $name';
-  }
-
-  @override
   String get noteLinkAdd => 'Add a link';
 
   @override

@@ -28,6 +28,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/network/api_client.dart';
 import '../../models/note_view.dart';
+import '../notes_media/note_attachment_content.dart' show serverNoteContent;
 
 /// Un identifiant de note ou de catégorie, frappé par ce client.
 String mintNoteId() => const Uuid().v7();
@@ -128,11 +129,18 @@ class HttpNotesRepository implements NotesRepository {
 
 /// Le corps de `POST /notes`, en `camelCase`. Fonction de bibliothèque pour
 /// rester testable sans réseau.
+///
+/// Le contenu part par [serverNoteContent] (#192) : une pièce jointe encore
+/// en montée n'a ni `key` ni place dans le contrat — elle partirait en 422 et
+/// bloquerait toute la note. Le `body`, lui, est le texte aplati du brouillon :
+/// il ne nomme une pièce jointe que par son nom, jamais par un champ local.
 @visibleForTesting
 Map<String, Object?> noteUpsertPayload(NoteUpsert note) => {
       'id': note.id,
       'title': note.title,
-      'content': note.content == null ? null : jsonDecodeContent(note.content!),
+      'content': note.content == null
+          ? null
+          : jsonDecodeContent(serverNoteContent(note.content)!),
       'body': note.body,
       'categoryId': note.categoryId,
       'pinned': note.pinned,

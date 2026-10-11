@@ -10,9 +10,9 @@
 ///
 /// - [RichNoteEditor.attachmentSlot] et [RichNoteEditor.linkSlot] : les deux
 ///   derniers boutons de la pilule (trombone de N4, lien de N5) ;
-/// - [RichNoteEditor.embedBuilders] : N4 y passe son rendu de `nvAttachment`
-///   (photo pleine largeur, carte vidéo/audio/fichier) et remplace la carte
-///   d'attente [NvAttachmentPlaceholderBuilder] ;
+/// - [RichNoteEditor.embedBuilders] : le rendu de `nvAttachment` (N4,
+///   `NoteAttachmentEmbedBuilder` : photo pleine largeur, carte
+///   vidéo/audio/fichier) ;
 /// - [RichNoteEditor.onLinkTap] : N5 y branche l'ouverture des `nv://` et
 ///   des `https://`. Dans l'éditeur, un lien s'ouvre par **appui long** (menu
 ///   ouvrir / copier / retirer de flutter_quill) — un simple appui y pose le
@@ -88,8 +88,9 @@ class RichNoteEditor extends StatefulWidget {
   final Widget? attachmentSlot;
   final Widget? linkSlot;
 
-  /// Rendus d'embeds supplémentaires. Un builder dont la clé est
-  /// `nvAttachment` remplace la carte d'attente.
+  /// Rendus d'embeds. Un contenu qui porte un `nvAttachment` exige le builder
+  /// de cette clé (`NoteAttachmentEmbedBuilder`) : flutter_quill n'en a pas
+  /// d'autre.
   final List<EmbedBuilder> embedBuilders;
 
   final bool autoFocus;
@@ -149,12 +150,6 @@ class RichNoteEditorState extends State<RichNoteEditor> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final builders = [
-      ...widget.embedBuilders,
-      if (!widget.embedBuilders.any((b) => b.key == noteAttachmentEmbed))
-        const NvAttachmentPlaceholderBuilder(),
-    ];
-
     final editor = QuillEditor(
       controller: controller,
       focusNode: focusNode,
@@ -165,7 +160,7 @@ class RichNoteEditorState extends State<RichNoteEditor> {
         autoFocus: widget.autoFocus,
         expands: true,
         customStyles: noteEditorStyles(context),
-        embedBuilders: builders,
+        embedBuilders: widget.embedBuilders,
         onLaunchUrl: widget.onLinkTap,
         keyboardAppearance: Theme.of(context).brightness,
       ),
@@ -324,56 +319,6 @@ DefaultStyles noteEditorStyles(BuildContext context) {
       ),
     ),
   );
-}
-
-/// La carte d'attente d'une pièce jointe, **tant que N4 n'a pas livré** son
-/// rendu : « Pièce jointe : nom », et rien de plus. N4 la remplace en passant
-/// son propre builder de clé `nvAttachment` à [RichNoteEditor.embedBuilders].
-class NvAttachmentPlaceholderBuilder extends EmbedBuilder {
-  const NvAttachmentPlaceholderBuilder();
-
-  @override
-  String get key => noteAttachmentEmbed;
-
-  @override
-  bool get expanded => true;
-
-  static String _nameOf(Embed node) => switch (node.value.data) {
-        {'name': final String name} => name,
-        _ => '',
-      };
-
-  @override
-  String toPlainText(Embed node) => attachmentLabel(_nameOf(node));
-
-  @override
-  Widget build(BuildContext context, EmbedContext embedContext) {
-    final palette = context.palette;
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: palette.surfaceAlt,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.attach_file, size: 18, color: palette.textSecondary),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              context.l10n.noteEditorAttachment(_nameOf(embedContext.node)),
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.body.copyWith(color: palette.textPrimary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _QuillLocalizations extends StatelessWidget {

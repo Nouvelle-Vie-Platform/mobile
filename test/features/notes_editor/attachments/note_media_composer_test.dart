@@ -290,7 +290,7 @@ void main() {
             ..where((n) => n.id.equals(noteId)))
           .getSingle();
       expect(local.dirty, isTrue);
-      expect(local.clientUpdatedAt, now);
+      expect(local.clientUpdatedAt.toUtc(), now);
       expect(hasPendingAttachment(local.content), isFalse);
       expect(
           contentCites(local.content, key: 'note-media/owner/a.pdf'), isTrue);

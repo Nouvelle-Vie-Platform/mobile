@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../models/note_view.dart';
+import '../notes_media/note_attachment_content.dart' show hasPendingAttachment;
 import 'app_database.dart';
 import 'tables/note_tables.dart';
 
@@ -126,16 +127,30 @@ class NotesDao extends DatabaseAccessor<AppDatabase> with _$NotesDaoMixin {
   /// **La réconciliation** : chaque ligne locale dont la ligne synchronisée est
   /// revenue au moins aussi récente quitte le magasin. Rend le nombre de lignes
   /// purgées.
-  Future<int> purgeReconciled() {
-    return customUpdate(
-      'DELETE FROM local_notes WHERE EXISTS ('
-      'SELECT 1 FROM spiritual_notes s WHERE s.id = local_notes.id '
-      'AND s.updated_at IS NOT NULL '
-      'AND s.updated_at >= local_notes.client_updated_at)',
-      updates: {localNotes},
-      updateKind: UpdateKind.delete,
-    );
-  }
+  ///
+  /// **Sauf un brouillon qui porte encore une pièce jointe en montée** (#192) :
+  /// le serveur a reçu la note **sans** cet embed (`serverNoteContent`), et sa
+  /// version effacerait la pièce jointe de l'écran. Le tri se fait en Dart, par
+  /// [hasPendingAttachment] — le même critère que celui qui retire l'embed à
+  /// l'envoi —, plutôt qu'en SQL : un `LIKE '%"localId"%'` attraperait ce mot
+  /// tapé dans le texte, et `json_each` lèverait sur un contenu illisible.
+  /// La lecture et l'effacement partagent une transaction.
+  Future<int> purgeReconciled() => transaction(() async {
+        final rows = await customSelect(
+          'SELECT l.id, l.content FROM local_notes l '
+          'JOIN spiritual_notes s ON s.id = l.id '
+          'WHERE s.updated_at IS NOT NULL '
+          'AND s.updated_at >= l.client_updated_at',
+          readsFrom: {localNotes, spiritualNotes},
+        ).get();
+        final ids = [
+          for (final row in rows)
+            if (!hasPendingAttachment(row.readNullable<String>('content')))
+              row.read<String>('id'),
+        ];
+        if (ids.isEmpty) return 0;
+        return (delete(localNotes)..where((n) => n.id.isIn(ids))).go();
+      });
 
   /// La fusion des deux tables, en SQL : la ligne locale quand elle existe,
   /// la ligne synchronisée sinon. Les colonnes portent le même nom des deux

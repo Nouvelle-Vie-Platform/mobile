@@ -35,8 +35,9 @@ Expanded(
 ),
 ```
 
-`NoteLinkOpener` remplace l'opener minimal `lib/screens/notes/note_link_opener.dart`
-(même rôle) : supprimer celui-ci à l'assemblage.
+`NoteLinkOpener` a remplacé l'opener minimal de l'intégration N2 + N3. Il
+pousse par la `GoRouter` du conteneur (`routerProvider`), pas par le
+`BuildContext` : règle de `guest_affordances_test`, où il est justifié.
 
 ## Comportement
 

@@ -4510,12 +4510,6 @@ abstract class AppLocalizations {
   /// **'Citation'**
   String get noteEditorQuote;
 
-  /// Carte d'attente d'un embed nvAttachment tant que N4 n'a pas livré son rendu
-  ///
-  /// In fr, this message translates to:
-  /// **'Pièce jointe : {name}'**
-  String noteEditorAttachment(String name);
-
   /// Pilule de l'éditeur : bouton lien (N5)
   ///
   /// In fr, this message translates to:

@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/core/network/api_client.dart';
 import 'package:maison_du_miracle/data/repositories/notes_repository.dart';
+import 'package:maison_du_miracle/features/notes_editor/note_content.dart';
 import 'package:maison_du_miracle/models/note_view.dart';
 
 import '../helpers/fake_api.dart';
@@ -61,6 +64,67 @@ void main() {
           {'insert': 'Envoyer la proposition\n'},
         ],
       });
+    });
+
+    test('une pièce jointe en montée ne part pas, une montée part nue (#192)',
+        () {
+      final content = jsonEncode({
+        'ops': [
+          {'insert': 'Avant\n'},
+          {
+            'insert': {
+              'nvAttachment': {
+                'kind': 'image',
+                'name': 'a.jpg',
+                'mime': 'image/jpeg',
+                'size': 10,
+                'localId': 'e-1',
+              },
+            },
+          },
+          {
+            'insert': {
+              'nvAttachment': {
+                'kind': 'document',
+                'key': 'note-media/o/b.pdf',
+                'name': 'b.pdf',
+                'mime': 'application/pdf',
+                'size': 20,
+              },
+            },
+          },
+          {'insert': '\n'},
+        ],
+      });
+      final payload = noteUpsertPayload(NoteUpsert(
+        id: note.id,
+        title: null,
+        content: content,
+        body: deltaToPlainText(content),
+        categoryId: null,
+        pinned: false,
+        teachingId: null,
+        clientCreatedAt: note.clientCreatedAt,
+        clientUpdatedAt: note.clientUpdatedAt,
+      ));
+      final sent = jsonEncode(payload);
+      expect(sent, isNot(contains('localId')));
+      expect(sent, isNot(contains('e-1')));
+      final ops = (payload['content']! as Map)['ops'] as List;
+      final embeds = [
+        for (final op in ops)
+          if ((op as Map)['insert'] is Map) op['insert']['nvAttachment'],
+      ];
+      expect(embeds, [
+        {
+          'kind': 'document',
+          'key': 'note-media/o/b.pdf',
+          'name': 'b.pdf',
+          'mime': 'application/pdf',
+          'size': 20,
+        },
+      ]);
+      expect(payload['body'], isNot(contains('localId')));
     });
 
     test('un contenu nul voyage nul', () {

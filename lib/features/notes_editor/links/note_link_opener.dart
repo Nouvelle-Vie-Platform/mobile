@@ -15,7 +15,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n_extension.dart';
 import '../../../models/note_view.dart';
@@ -32,8 +31,10 @@ abstract final class NoteLinkOpener {
     WidgetRef ref,
     String url,
   ) async {
-    // Lus avant tout `await` : le contexte peut ne pas survivre.
-    final router = GoRouter.of(context);
+    // Lus avant tout `await` : le contexte peut ne pas survivre. La route est
+    // poussée par la `GoRouter` du conteneur, jamais par le `BuildContext`
+    // (règle des gestes vers une route réservée, `guest_affordances_test`).
+    final router = ref.read(routerProvider);
     final messenger = ScaffoldMessenger.maybeOf(context);
     final l = context.l10n;
     void say(String message) =>
