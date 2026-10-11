@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n_extension.dart';
+import '../../../models/note_view.dart';
 import '../../../router/app_router.dart';
 import '../../../state/menu_providers.dart';
 import '../../../state/notes_providers.dart';
@@ -40,7 +41,15 @@ abstract final class NoteLinkOpener {
 
     switch (NoteLink.parse(url)) {
       case NoteRefLink(:final noteId):
-        final note = await ref.read(noteProvider(noteId).future);
+        // Écouté le temps de la lecture : sous Riverpod 3, un provider sans
+        // auditeur est en pause et son `.future` ne se résout jamais.
+        final sub = ref.listenManual(noteProvider(noteId), (_, __) {});
+        final NoteView? note;
+        try {
+          note = await ref.read(noteProvider(noteId).future);
+        } finally {
+          sub.close();
+        }
         if (note == null) return say(l.noteLinkNoteMissing);
         unawaited(
           router.pushNamed(AppRoute.noteEditor, pathParameters: {'id': noteId}),
