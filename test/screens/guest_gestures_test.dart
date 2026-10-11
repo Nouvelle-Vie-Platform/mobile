@@ -21,6 +21,8 @@ library;
 
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
+import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/models/announcement_draft.dart';
@@ -29,6 +31,7 @@ import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/screens/announcements_screen.dart';
 import 'package:maison_du_miracle/screens/auth/identifier_screen.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
+import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
 import 'package:maison_du_miracle/widgets/content_player_view.dart';
 
@@ -48,9 +51,16 @@ const _teaching = TeachingView(
 /// Un enseignement posé **sans magasin ni réseau** : la fiche est un écran de la
 /// surface invitée, et ce qu'on y teste est son bouton de notes, pas la
 /// médiathèque.
+///
+/// **L'antenne est doublée aussi** : l'accueil la demande au premier frame par
+/// le vrai `Dio`, et sous `runAsync` (les deux tests des notes) l'erreur du
+/// canal natif arriverait **après** la fin du test et le ferait rougir.
 List<Override> get _oneTeaching => [
       teachingByIdProvider.overrideWith(
         (ref, id) => Stream.value(id == _teachingId ? _teaching : null),
+      ),
+      radioRepositoryProvider.overrideWithValue(
+        const FixedRadioRepository(RadioAntenna.unknown),
       ),
     ];
 

@@ -110,6 +110,20 @@ void main() {
     });
   });
 
+  group('La suppression', () {
+    test('`cancel` désarme la minuterie : rien ne part après le DELETE',
+        () async {
+      await saver.update(draft(body: 'à supprimer'));
+      saver.cancel();
+      await wait(debounce * 2);
+      expect(repo.upserts, isEmpty);
+
+      // Et la sortie de l'écran n'envoie plus rien non plus.
+      await saver.close();
+      expect(repo.upserts, isEmpty);
+    });
+  });
+
   group('Le renvoi après un cycle réussi', () {
     test('renvoie ce qui est resté `dirty`, dans l\'ordre des frappes',
         () async {

@@ -9,9 +9,15 @@
 library;
 
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/gestures.dart' show kLongPressTimeout, kPressTimeout;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/core/network/api_client.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
+import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/repositories/notes_repository.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/models/note_view.dart';
@@ -20,9 +26,11 @@ import 'package:maison_du_miracle/screens/notes/note_category_sheet.dart';
 import 'package:maison_du_miracle/screens/notes/note_editor_screen.dart';
 import 'package:maison_du_miracle/screens/notes/notes_tab.dart';
 import 'package:maison_du_miracle/state/notes_providers.dart';
+import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
 
+import '../helpers/fake_api.dart';
 import '../helpers/guest_app.dart';
 
 final _fr = AppLocalizationsFr();
@@ -67,14 +75,61 @@ Future<void> _seed(AppDatabase db) async {
   );
 }
 
+/// **L'antenne, doublée** : `guestContainer` ne la double pas, et l'accueil la
+/// demande au premier frame par le vrai `Dio`. Sous `runAsync` l'erreur du
+/// canal natif (`flutter_secure_storage`, lu par l'en-tête de version) arrive
+/// **après** la fin du test et le fait rougir.
+final Override _radioOff = radioRepositoryProvider.overrideWithValue(
+  const FixedRadioRepository(RadioAntenna.unknown),
+);
+
+/// **Aucune requête ne doit partir** d'ici : l'adaptateur note tout ce qui
+/// atteint le fil, et lève. Posé sur le singleton, il vaut pour tout le
+/// fichier.
+late FakeAdapter _wire;
+
+/// `settle`, avec des tours de **vraie** boucle d'événements entre les images :
+/// sous `runAsync`, Drift ouvre la base et sert ses flux sur la vraie boucle,
+/// que les `pump` à horloge factice ne font pas avancer.
+Future<void> _settle(WidgetTester tester) async {
+  for (var i = 0; i < 4; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+  }
+}
+
+/// Un appui long, sous `runAsync` : le `Timer` de 500 ms du
+/// `LongPressGestureRecognizer` est **réel** (le geste part de la zone du
+/// test), et le `longPress` du testeur ne fait avancer que l'horloge factice
+/// avant de relâcher. On tient donc le doigt le temps réel qu'il faut.
+Future<void> _longPress(WidgetTester tester, Finder finder) async {
+  final gesture = await tester.startGesture(tester.getCenter(finder));
+  await Future<void>.delayed(kLongPressTimeout + kPressTimeout);
+  await tester.pump();
+  await gesture.up();
+  await _settle(tester);
+}
+
 void main() {
+  setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
+    _wire = FakeAdapter(
+      (options) => throw StateError(
+        'requête HTTP interdite : ${options.method} ${options.path}',
+      ),
+    );
+    ApiClient.instance.dio.httpClientAdapter = _wire;
+  });
+
   group('La page Bible', () {
     testWidgets('deux pilules, la Bible d\'abord, et le glissement',
         (tester) async {
       await tester.runAsync(() async {
-        final router = await pumpGuestApp(tester, guestContainer());
+        final router =
+            await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
         router.push('/bible');
-        await settle(tester);
+        await _settle(tester);
 
         expect(find.byType(BibleScreen), findsOneWidget);
         expect(find.byKey(BibleScreen.tabsKey), findsOneWidget);
@@ -82,19 +137,22 @@ void main() {
         expect(find.byType(NotesTab), findsNothing);
 
         await tester.drag(find.byType(PageView), const Offset(-500, 0));
-        await settle(tester);
+        await _settle(tester);
 
         expect(find.byType(NotesTab), findsOneWidget);
         expect(find.text(_fr.pageUnderConstruction), findsNothing);
+        // La page nue, sans session : **rien** n'est parti sur le fil.
+        expect(_wire.requests, isEmpty);
       });
     });
 
     testWidgets('`?tab=notes` ouvre les notes, et `/notes` y redirige',
         (tester) async {
       await tester.runAsync(() async {
-        final router = await pumpGuestApp(tester, guestContainer());
+        final router =
+            await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
         router.push('/notes');
-        await settle(tester);
+        await _settle(tester);
 
         expect(router.state.matchedLocation, '/bible');
         expect(router.state.uri.queryParameters['tab'], 'notes');
@@ -105,13 +163,13 @@ void main() {
     testWidgets('le dernier onglet est mémorisé, et rouvert sans paramètre',
         (tester) async {
       await tester.runAsync(() async {
-        final container = guestContainer();
+        final container = guestContainer(extra: [_radioOff]);
         final router = await pumpGuestApp(tester, container);
         router.push('/bible');
-        await settle(tester);
+        await _settle(tester);
 
         await tester.tap(find.text(_fr.notesTab));
-        await settle(tester);
+        await _settle(tester);
         expect(find.byType(NotesTab), findsOneWidget);
         expect(
           await container.read(appDatabaseProvider).settingsDao.bibleTab(),
@@ -119,9 +177,9 @@ void main() {
         );
 
         router.pop();
-        await settle(tester);
+        await _settle(tester);
         router.push('/bible');
-        await settle(tester);
+        await _settle(tester);
 
         expect(find.byType(NotesTab), findsOneWidget);
         expect(find.text(_fr.pageUnderConstruction), findsNothing);
@@ -132,16 +190,20 @@ void main() {
   group('L\'onglet Notes, pour un invité', () {
     testWidgets('la porte de session, et aucune liste', (tester) async {
       await tester.runAsync(() async {
-        final router = await pumpGuestApp(tester, guestContainer());
+        final router =
+            await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
         router.push('/bible?tab=notes');
-        await settle(tester);
+        await _settle(tester);
 
         expect(find.text(_fr.notesGuestTitle), findsOneWidget);
         expect(find.byKey(NotesTab.signInButtonKey), findsOneWidget);
         expect(find.byKey(NotesTab.addButtonKey), findsNothing);
 
+        // Aucune lecture privée, aucun `GET /notes` : rien sur le fil.
+        expect(_wire.requests, isEmpty);
+
         await tester.tap(find.byKey(NotesTab.signInButtonKey));
-        await settle(tester);
+        await _settle(tester);
         expect(router.state.matchedLocation, '/auth');
       });
     });
@@ -154,12 +216,13 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
+          extra: [_radioOff],
         );
         await _seed(container.read(appDatabaseProvider));
         final router = await pumpGuestApp(tester, container);
         await untilSignedIn(tester, container);
         router.push('/bible?tab=notes');
-        await settle(tester);
+        await _settle(tester);
 
         expect(find.byKey(NotesTab.signInButtonKey), findsNothing);
         expect(find.byKey(NotesTab.addButtonKey), findsOneWidget);
@@ -176,21 +239,21 @@ void main() {
 
         // Le filtre de catégorie.
         await tester.tap(find.byKey(NotesTab.chipKey(_categoryId)));
-        await settle(tester);
+        await _settle(tester);
         expect(find.byKey(NotesTab.cardKey(_pinnedId)), findsOneWidget);
         expect(find.byKey(NotesTab.cardKey(_plainId)), findsNothing);
 
         await tester.tap(find.byKey(NotesTab.allChipKey));
-        await settle(tester);
+        await _settle(tester);
 
         // La recherche, sur le corps, sans la casse.
         await tester.enterText(find.byType(TextField), 'BANANES');
-        await settle(tester);
+        await _settle(tester);
         expect(find.byKey(NotesTab.cardKey(_plainId)), findsOneWidget);
         expect(find.byKey(NotesTab.cardKey(_pinnedId)), findsNothing);
 
         await tester.enterText(find.byType(TextField), 'rien');
-        await settle(tester);
+        await _settle(tester);
         expect(find.text(_fr.notesEmptyTitle), findsOneWidget);
       });
     });
@@ -203,16 +266,16 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [notesRepositoryProvider.overrideWithValue(repo)],
+          extra: [_radioOff, notesRepositoryProvider.overrideWithValue(repo)],
         );
         final db = container.read(appDatabaseProvider);
         final router = await pumpGuestApp(tester, container);
         await untilSignedIn(tester, container);
         router.push('/bible?tab=notes');
-        await settle(tester);
+        await _settle(tester);
 
         await tester.tap(find.byKey(NotesTab.addButtonKey));
-        await settle(tester);
+        await _settle(tester);
         expect(router.state.matchedLocation, startsWith('/notes/'));
         expect(find.byType(NoteEditorScreen), findsOneWidget);
         final id = router.state.pathParameters['id']!;
@@ -228,7 +291,7 @@ void main() {
           ),
           'Envoyer la proposition',
         );
-        await settle(tester);
+        await _settle(tester);
 
         final row = (await db.notesDao.localNote(id))!;
         expect(row.title, 'Objectifs');
@@ -238,18 +301,18 @@ void main() {
 
         // L'épingle.
         await tester.tap(find.byKey(NoteEditorScreen.pinButtonKey));
-        await settle(tester);
+        await _settle(tester);
         expect((await db.notesDao.localNote(id))!.pinned, isTrue);
 
         // La coche ferme le clavier : elle paraît quand un champ a le focus.
         expect(find.byKey(NoteEditorScreen.doneButtonKey), findsOneWidget);
         await tester.tap(find.byKey(NoteEditorScreen.doneButtonKey));
-        await settle(tester);
+        await _settle(tester);
         expect(find.byKey(NoteEditorScreen.doneButtonKey), findsNothing);
 
         // La sortie envoie, sans attendre les 2 s.
         router.pop();
-        await settle(tester);
+        await _settle(tester);
         await Future<void>.delayed(const Duration(milliseconds: 50));
         expect(repo.upserts.map((u) => u.id), contains(id));
         expect(repo.upserts.last.pinned, isTrue);
@@ -266,21 +329,21 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [notesRepositoryProvider.overrideWithValue(repo)],
+          extra: [_radioOff, notesRepositoryProvider.overrideWithValue(repo)],
         );
         final db = container.read(appDatabaseProvider);
         final router = await pumpGuestApp(tester, container);
         await untilSignedIn(tester, container);
         router.push('/bible?tab=notes');
-        await settle(tester);
+        await _settle(tester);
         await tester.tap(find.byKey(NotesTab.addButtonKey));
-        await settle(tester);
+        await _settle(tester);
 
         await tester.enterText(find.byKey(NoteEditorScreen.titleFieldKey), 'x');
         await tester.enterText(find.byKey(NoteEditorScreen.titleFieldKey), '');
-        await settle(tester);
+        await _settle(tester);
         router.pop();
-        await settle(tester);
+        await _settle(tester);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(repo.upserts, isEmpty);
@@ -296,20 +359,20 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [notesRepositoryProvider.overrideWithValue(repo)],
+          extra: [_radioOff, notesRepositoryProvider.overrideWithValue(repo)],
         );
         final db = container.read(appDatabaseProvider);
         await _seed(db);
         final router = await pumpGuestApp(tester, container);
         await untilSignedIn(tester, container);
         router.push('/notes/$_plainId');
-        await settle(tester);
+        await _settle(tester);
         expect(find.text('Courses'), findsOneWidget);
 
         await tester.tap(find.byKey(NoteEditorScreen.menuButtonKey));
-        await settle(tester);
+        await _settle(tester);
         await tester.tap(find.byKey(NoteEditorScreen.menuCategoryKey));
-        await settle(tester);
+        await _settle(tester);
 
         expect(find.text(_fr.notesCategoryTitle), findsOneWidget);
         expect(find.byKey(NoteCategorySheetKeys.option(_categoryId)),
@@ -317,29 +380,29 @@ void main() {
 
         // Créer : nom + couleur, la nouvelle est cochée tout de suite.
         await tester.tap(find.byKey(NoteCategorySheetKeys.addRow));
-        await settle(tester);
+        await _settle(tester);
         await tester.enterText(
           find.byKey(NoteCategorySheetKeys.nameField),
           'Prières',
         );
-        await settle(tester);
+        await _settle(tester);
         await tester
             .tap(find.byKey(NoteCategorySheetKeys.color(NoteColor.green)));
         await tester.tap(find.byKey(NoteCategorySheetKeys.createButton));
-        await settle(tester);
+        await _settle(tester);
         expect(repo.categories.single.name, 'Prières');
         expect(repo.categories.single.color, NoteColor.green);
         expect(find.text('Prières'), findsOneWidget);
 
         await tester.tap(find.byKey(NoteCategorySheetKeys.validateButton));
-        await settle(tester);
+        await _settle(tester);
 
         final row = (await db.notesDao.localNote(_plainId))!;
         expect(row.categoryId, repo.categories.single.id);
 
         // Le partage est **désactivé** dans cette tranche.
         await tester.tap(find.byKey(NoteEditorScreen.menuButtonKey));
-        await settle(tester);
+        await _settle(tester);
         final share = tester.widget<PopupMenuItem<Object?>>(
           find.byKey(NoteEditorScreen.menuShareKey),
         );
@@ -348,9 +411,9 @@ void main() {
         // On referme le menu puis l'éditeur : sa minuterie d'envoi ne doit pas
         // survivre au test.
         Navigator.of(tester.element(find.byType(NoteEditorScreen))).pop();
-        await settle(tester);
+        await _settle(tester);
         router.pop();
-        await settle(tester);
+        await _settle(tester);
         expect(find.byType(NoteEditorScreen), findsNothing);
       });
     });
@@ -362,27 +425,27 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [notesRepositoryProvider.overrideWithValue(repo)],
+          extra: [_radioOff, notesRepositoryProvider.overrideWithValue(repo)],
         );
         final db = container.read(appDatabaseProvider);
         await _seed(db);
         final router = await pumpGuestApp(tester, container);
         await untilSignedIn(tester, container);
         router.push('/bible?tab=notes');
-        await settle(tester);
+        await _settle(tester);
         await tester.tap(find.byKey(NotesTab.cardKey(_plainId)));
-        await settle(tester);
+        await _settle(tester);
         await tester.enterText(find.byKey(NoteEditorScreen.titleFieldKey), 'C');
-        await settle(tester);
+        await _settle(tester);
         expect(await db.notesDao.localNote(_plainId), isNotNull);
 
         await tester.tap(find.byKey(NoteEditorScreen.menuButtonKey));
-        await settle(tester);
+        await _settle(tester);
         await tester.tap(find.byKey(NoteEditorScreen.menuDeleteKey));
-        await settle(tester);
+        await _settle(tester);
         expect(find.text(_fr.notesDeleteConfirmTitle), findsOneWidget);
         await tester.tap(find.text(_fr.notesDelete).last);
-        await settle(tester);
+        await _settle(tester);
 
         expect(repo.deleted, [_plainId]);
         expect(await db.notesDao.localNote(_plainId), isNull);
@@ -401,37 +464,35 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [notesRepositoryProvider.overrideWithValue(repo)],
+          extra: [_radioOff, notesRepositoryProvider.overrideWithValue(repo)],
         );
         await _seed(container.read(appDatabaseProvider));
         final router = await pumpGuestApp(tester, container);
         await untilSignedIn(tester, container);
         router.push('/bible?tab=notes');
-        await settle(tester);
+        await _settle(tester);
 
-        await tester.longPress(find.byKey(NotesTab.chipKey(_categoryId)));
-        await settle(tester);
+        await _longPress(tester, find.byKey(NotesTab.chipKey(_categoryId)));
         expect(find.text(_fr.notesCategoryEditTitle), findsOneWidget);
 
         await tester.enterText(
           find.byKey(NoteCategorySheetKeys.nameField),
           'Essentiel',
         );
-        await settle(tester);
+        await _settle(tester);
         await tester
             .tap(find.byKey(NoteCategorySheetKeys.color(NoteColor.purple)));
         await tester.tap(find.byKey(NoteCategorySheetKeys.validateButton));
-        await settle(tester);
+        await _settle(tester);
         expect(repo.categories.single.id, _categoryId);
         expect(repo.categories.single.name, 'Essentiel');
         expect(repo.categories.single.color, NoteColor.purple);
 
-        await tester.longPress(find.byKey(NotesTab.chipKey(_categoryId)));
-        await settle(tester);
+        await _longPress(tester, find.byKey(NotesTab.chipKey(_categoryId)));
         await tester.tap(find.byKey(NoteCategorySheetKeys.deleteButton));
-        await settle(tester);
+        await _settle(tester);
         await tester.tap(find.text(_fr.notesDelete).last);
-        await settle(tester);
+        await _settle(tester);
         expect(repo.deletedCategories, [_categoryId]);
       });
     });

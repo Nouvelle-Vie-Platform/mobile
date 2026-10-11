@@ -120,6 +120,15 @@ class NoteDraftSaver {
     await _inFlight;
   }
 
+  /// **La note est supprimée** : plus rien à envoyer, jamais. Sans cela, la
+  /// minuterie armée par la dernière frappe partirait **après** le `DELETE`
+  /// et ressusciterait la note sur le serveur.
+  void cancel() {
+    _timer?.cancel();
+    _timer = null;
+    _draft = null;
+  }
+
   /// **Le renvoi après un cycle réussi** : tout ce qui est resté `dirty`, dans
   /// l'ordre des frappes, puis la purge de ce que le delta a ramené. Statique
   /// parce qu'aucun écran n'est ouvert à ce moment-là.

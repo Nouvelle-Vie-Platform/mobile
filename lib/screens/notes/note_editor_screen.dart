@@ -62,7 +62,6 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   final _bodyFocus = FocusNode();
 
   NoteDraft? _draft;
-  bool _deleted = false;
 
   @override
   void initState() {
@@ -82,7 +81,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     _titleFocus.dispose();
     _bodyFocus.dispose();
     _titleController.dispose();
-    if (!_deleted) unawaited(_saver.close());
+    unawaited(_saver.close());
     super.dispose();
   }
 
@@ -148,8 +147,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    _deleted = true;
-    // La ligne locale part tout de suite ; la tombstone revient par le delta.
+    // Plus rien ne doit partir pour cette note — surtout pas la frappe qui
+    // attendait sa minuterie. Puis la ligne locale part tout de suite ; la
+    // tombstone revient par le delta.
+    _saver.cancel();
     await ref.read(notesDaoProvider).deleteLocal(widget.noteId);
     unawaited(ref.read(notesRepositoryProvider).deleteNote(widget.noteId));
     if (mounted) context.pop();
