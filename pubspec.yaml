@@ -324,6 +324,7 @@ flutter:
     - assets/images/live_bg.png
     - assets/images/home_header_church.webp
     - assets/images/bible_home_hero.webp
+    - assets/images/bible_home_hero_night.webp
 
   fonts:
     - family: Atkinson Hyperlegible

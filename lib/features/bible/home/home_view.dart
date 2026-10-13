@@ -47,19 +47,89 @@ final bibleVerseSharerProvider =
 /// téléphone centrée : la maquette est un écran de téléphone.
 const double bibleHomeMaxWidth = 460;
 
-/// Les couleurs relevées sur la maquette.
-abstract final class BibleHomeColors {
-  static const ink = Color(0xFF14213D);
-  static const heroShade = Color(0xFF252A40);
-  static const creamTop = Color(0xFFFAEEE0);
-  static const creamBottom = Color(0xFFFAF5EF);
-  static const card = Color(0xFFFBF3EB);
-  static const search = Color(0xFFEAE9E5);
-  static const searchInk = Color(0xFF5A5A5C);
-  static const daily = Color(0xFFEEEFEA);
+/// Les couleurs de l'accueil : relevées sur la maquette (clair), dérivées
+/// du bas de l'image de nuit (sombre, `bible_home_hero_night.webp`).
+final class BibleHomeColors {
+  const BibleHomeColors._({
+    required this.ink,
+    required this.inkSoft,
+    required this.heroShade,
+    required this.pageTop,
+    required this.pageBottom,
+    required this.card,
+    required this.search,
+    required this.searchInk,
+    required this.daily,
+    required this.chevron,
+    required this.button,
+    required this.navBorder,
+    required this.navIdle,
+    required this.navActive,
+    required this.heroImage,
+    required this.heroWash,
+  });
+
+  final Color ink;
+  final Color inkSoft;
+  final Color heroShade;
+  final Color pageTop;
+  final Color pageBottom;
+  final Color card;
+  final Color search;
+  final Color searchInk;
+  final Color daily;
+  final Color chevron;
+  final Color button;
+  final Color navBorder;
+  final Color navIdle;
+  final Color navActive;
+  final String heroImage;
+
+  /// Le lavis violet de la maquette de jour ; l'image de nuit est déjà froide.
+  final Color heroWash;
+
   static const dailyIcon = Color(0xFFE9BB6D);
-  static const chevron = Color(0xFFA6A6A6);
-  static const button = Color(0xFF143256);
+
+  static const light = BibleHomeColors._(
+    ink: Color(0xFF14213D),
+    inkSoft: Color(0xFF5A5A5C),
+    heroShade: Color(0xFF252A40),
+    pageTop: Color(0xFFFAEEE0),
+    pageBottom: Color(0xFFFAF5EF),
+    card: Color(0xFFFBF3EB),
+    search: Color(0xFFEAE9E5),
+    searchInk: Color(0xFF5A5A5C),
+    daily: Color(0xFFEEEFEA),
+    chevron: Color(0xFFA6A6A6),
+    button: Color(0xFF143256),
+    navBorder: Color(0xFFDBDAD8),
+    navIdle: Color(0xFF8A8A8E),
+    navActive: Color(0xFF143256),
+    heroImage: 'assets/images/bible_home_hero.webp',
+    heroWash: Color(0x1A6545AA),
+  );
+
+  static const dark = BibleHomeColors._(
+    ink: Color(0xFFEDE6DA),
+    inkSoft: Color(0xFFA9ABB8),
+    heroShade: Color(0xFF141826),
+    pageTop: Color(0xFF141826),
+    pageBottom: Color(0xFF0F1220),
+    card: Color(0xFF232838),
+    search: Color(0xFF2A2F42),
+    searchInk: Color(0xFFA9ABB8),
+    daily: Color(0xFF1C2131),
+    chevron: Color(0xFF6F7385),
+    button: Color(0xFF2B4F86),
+    navBorder: Color(0xFF262A38),
+    navIdle: Color(0xFF7D8090),
+    navActive: Color(0xFFEDE6DA),
+    heroImage: 'assets/images/bible_home_hero_night.webp',
+    heroWash: Color(0x00000000),
+  );
+
+  static BibleHomeColors of(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? dark : light;
 }
 
 abstract final class BibleHomeKeys {
@@ -87,11 +157,15 @@ const double _cardsGap = 11.7;
 const double _sideMargin = 18;
 const double _textLeft = 24;
 
-TextStyle _atkinson(double size, {FontWeight weight = FontWeight.w400}) =>
+TextStyle _atkinson(
+  BuildContext context,
+  double size, {
+  FontWeight weight = FontWeight.w400,
+}) =>
     AppTypography.body.copyWith(
       fontSize: size,
       fontWeight: weight,
-      color: BibleHomeColors.ink,
+      color: BibleHomeColors.of(context).ink,
       height: 1.2,
       letterSpacing: 0,
     );
@@ -182,7 +256,7 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
                 top: 192.8,
                 child: Text(
                   context.l10n.bibleHomeHeroTagline,
-                  style: _atkinson(21).copyWith(
+                  style: _atkinson(context, 21).copyWith(
                     color: Colors.white,
                     height: 1.39,
                   ),
@@ -209,7 +283,7 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
           padding: const EdgeInsets.fromLTRB(18.1, 43.8, _sideMargin, 0),
           child: Text(
             context.l10n.bibleHomeDailyTitle,
-            style: _atkinson(22, weight: FontWeight.w700),
+            style: _atkinson(context, 22, weight: FontWeight.w700),
           ),
         ),
         const SizedBox(height: 10),
@@ -254,7 +328,7 @@ class _Hero extends StatelessWidget {
             )
           else
             Image.asset(
-              'assets/images/bible_home_hero.webp',
+              BibleHomeColors.of(context).heroImage,
               fit: BoxFit.cover,
               alignment: const Alignment(0, 0.06),
             ),
@@ -262,8 +336,9 @@ class _Hero extends StatelessWidget {
           // lavis violet qui refroidit l'image, un voile bleu nuit à gauche
           // derrière le texte, et un fondu progressif vers #252A40 (plein au bas
           // de l'image) qui laisse voir collines et lac sous la recherche.
-          const DecoratedBox(
-            decoration: BoxDecoration(color: Color(0x1A6545AA)),
+          DecoratedBox(
+            decoration:
+                BoxDecoration(color: BibleHomeColors.of(context).heroWash),
           ),
           const DecoratedBox(
             decoration: BoxDecoration(
@@ -306,21 +381,24 @@ class _Hero extends StatelessWidget {
               ),
             ),
           ),
-          const DecoratedBox(
+          DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: [0, 0.34, 0.45, 0.6, 0.75, 0.88, 0.95, 1],
+                stops: const [0, 0.34, 0.45, 0.6, 0.75, 0.88, 0.95, 1],
                 colors: [
-                  Color(0x00252A40),
-                  Color(0x00252A40),
-                  Color(0x4D252A40),
-                  Color(0x8C252A40),
-                  Color(0xB3252A40),
-                  Color(0xE6252A40),
-                  BibleHomeColors.heroShade,
-                  BibleHomeColors.heroShade,
+                  for (final a in const <double>[
+                    0,
+                    0,
+                    0.3,
+                    0.55,
+                    0.7,
+                    0.9,
+                    1,
+                    1
+                  ])
+                    BibleHomeColors.of(context).heroShade.withValues(alpha: a),
                 ],
               ),
             ),
@@ -342,7 +420,7 @@ class _SearchBar extends ConsumerWidget {
         .where((s) => s.id == 'search')
         .firstOrNull;
     return Material(
-      color: BibleHomeColors.search,
+      color: BibleHomeColors.of(context).search,
       shape: const StadiumBorder(),
       child: InkWell(
         key: BibleHomeKeys.search,
@@ -352,10 +430,10 @@ class _SearchBar extends ConsumerWidget {
           padding: const EdgeInsets.only(left: 15, right: 16),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.search,
                 size: 24,
-                color: BibleHomeColors.searchInk,
+                color: BibleHomeColors.of(context).searchInk,
               ),
               const SizedBox(width: 13),
               Expanded(
@@ -363,8 +441,8 @@ class _SearchBar extends ConsumerWidget {
                   context.l10n.bibleHomeSearchHint,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: _atkinson(18).copyWith(
-                    color: BibleHomeColors.searchInk,
+                  style: _atkinson(context, 18).copyWith(
+                    color: BibleHomeColors.of(context).searchInk,
                   ),
                 ),
               ),
@@ -477,7 +555,7 @@ class _ShortcutCard extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: BibleHomeColors.card,
+        color: BibleHomeColors.of(context).card,
         borderRadius: radius,
         child: InkWell(
           borderRadius: radius,
@@ -485,18 +563,18 @@ class _ShortcutCard extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 16),
-              Icon(icon, size: 30, color: BibleHomeColors.ink),
+              Icon(icon, size: 30, color: BibleHomeColors.of(context).ink),
               const SizedBox(height: 12),
               Text(
                 count,
                 maxLines: 1,
-                style: _atkinson(18, weight: FontWeight.w700),
+                style: _atkinson(context, 18, weight: FontWeight.w700),
               ),
               Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: _atkinson(16),
+                style: _atkinson(context, 16),
               ),
             ],
           ),
@@ -518,7 +596,7 @@ class _DailyCard extends ConsumerWidget {
     final text = ref.watch(bibleLinkTextProvider(vod.link)).value ?? '';
     const radius = BorderRadius.all(Radius.circular(12));
     return Material(
-      color: BibleHomeColors.daily,
+      color: BibleHomeColors.of(context).daily,
       borderRadius: radius,
       child: InkWell(
         key: BibleHomeKeys.daily,
@@ -554,7 +632,7 @@ class _DailyCard extends ConsumerWidget {
                         child: Text(
                           vod.link.labelFr,
                           maxLines: 1,
-                          style: _atkinson(19),
+                          style: _atkinson(context, 19),
                         ),
                       ),
                       Transform.translate(
@@ -564,19 +642,19 @@ class _DailyCard extends ConsumerWidget {
                           key: BibleHomeKeys.verseText,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: _atkinson(16).copyWith(height: 1.4),
+                          style: _atkinson(context, 16).copyWith(height: 1.4),
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Padding(
-                  padding: EdgeInsets.only(top: 2),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
                   child: Icon(
                     Icons.arrow_forward_ios,
                     size: 14,
-                    color: BibleHomeColors.chevron,
+                    color: BibleHomeColors.of(context).chevron,
                   ),
                 ),
               ],
@@ -606,7 +684,7 @@ class _ContinueButton extends ConsumerWidget {
       child: FilledButton(
         key: BibleHomeKeys.continueReading,
         style: FilledButton.styleFrom(
-          backgroundColor: BibleHomeColors.button,
+          backgroundColor: BibleHomeColors.of(context).button,
           foregroundColor: Colors.white,
           shape: const StadiumBorder(),
           padding: EdgeInsets.zero,
@@ -616,7 +694,7 @@ class _ContinueButton extends ConsumerWidget {
             : () => BibleReaderScreen.push(ref.read(routerProvider), target),
         child: Text(
           context.l10n.bibleHomeContinueTitle,
-          style: _atkinson(22).copyWith(color: Colors.white),
+          style: _atkinson(context, 22).copyWith(color: Colors.white),
         ),
       ),
     );
@@ -650,10 +728,10 @@ class BibleHomeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: _atkinson(22, weight: FontWeight.w700)),
+          Text(title, style: _atkinson(context, 22, weight: FontWeight.w700)),
           const SizedBox(height: 10),
           Material(
-            color: BibleHomeColors.daily,
+            color: BibleHomeColors.of(context).daily,
             borderRadius: radius,
             child: InkWell(
               borderRadius: radius,
@@ -666,8 +744,8 @@ class BibleHomeCard extends StatelessWidget {
                     Container(
                       width: 36,
                       height: 44,
-                      decoration: const BoxDecoration(
-                        color: BibleHomeColors.button,
+                      decoration: BoxDecoration(
+                        color: BibleHomeColors.of(context).button,
                         borderRadius: BorderRadius.all(Radius.circular(6)),
                       ),
                       child: Icon(icon, size: 20, color: Colors.white),
@@ -705,11 +783,12 @@ class BibleSundayPassageSection extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (passage.title case final title?)
-            Text(title, style: _atkinson(19)),
+            Text(title, style: _atkinson(context, 19)),
           if (day != null)
             Text(
               MaterialLocalizations.of(context).formatMediumDate(day),
-              style: _atkinson(14).copyWith(color: BibleHomeColors.searchInk),
+              style: _atkinson(context, 14)
+                  .copyWith(color: BibleHomeColors.of(context).searchInk),
             ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
@@ -767,11 +846,11 @@ class BibleFeaturedQuizSection extends ConsumerWidget {
       onTap: () => QuizListScreen.play(ref, quiz),
       child: Row(
         children: [
-          Expanded(child: Text(quiz.title, style: _atkinson(19))),
-          const Icon(
+          Expanded(child: Text(quiz.title, style: _atkinson(context, 19))),
+          Icon(
             Icons.arrow_forward_ios,
             size: 14,
-            color: BibleHomeColors.chevron,
+            color: BibleHomeColors.of(context).chevron,
           ),
         ],
       ),
@@ -788,11 +867,14 @@ class BibleHomeBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [BibleHomeColors.creamTop, BibleHomeColors.creamBottom],
+          colors: [
+            BibleHomeColors.of(context).pageTop,
+            BibleHomeColors.of(context).pageBottom,
+          ],
           stops: [0.5, 0.9],
         ),
       ),

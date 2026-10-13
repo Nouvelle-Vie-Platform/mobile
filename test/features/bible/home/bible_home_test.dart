@@ -485,6 +485,32 @@ void main() {
     });
   });
 
+  testWidgets('thème sombre : l\'image de nuit et la palette de nuit',
+      (tester) async {
+    late BibleHomeColors light, dark;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.dark,
+        home: Builder(builder: (c) {
+          dark = BibleHomeColors.of(c);
+          return Theme(
+            data: AppTheme.light,
+            child: Builder(builder: (c) {
+              light = BibleHomeColors.of(c);
+              return const SizedBox();
+            }),
+          );
+        }),
+      ),
+    );
+    expect(dark.heroImage, 'assets/images/bible_home_hero_night.webp');
+    expect(light.heroImage, 'assets/images/bible_home_hero.webp');
+    expect(dark.ink.computeLuminance(), greaterThan(0.6));
+    expect(dark.pageBottom.computeLuminance(), lessThan(0.05));
+  });
+
   test('la liste intégrée : 365 références valides et distinctes', () {
     expect(fallbackVerses, hasLength(365));
     expect(fallbackVerses.toSet(), hasLength(365));

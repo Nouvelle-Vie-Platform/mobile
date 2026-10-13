@@ -158,7 +158,7 @@ class _BibleShellState extends ConsumerState<BibleShell> {
             : l.navBible;
     final selection = _selection;
     return Scaffold(
-      backgroundColor: bare ? BibleHomeColors.creamBottom : null,
+      backgroundColor: bare ? BibleHomeColors.of(context).pageBottom : null,
       appBar: bare
           ? null
           : AppBar(
@@ -220,8 +220,10 @@ class _BibleShellState extends ConsumerState<BibleShell> {
           // La barre de la maquette : fond crème, filet en haut, pas de
           // pastille ; l'onglet actif en bleu nuit, icône pleine.
           : DecoratedBox(
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Color(0xFFDBDAD8))),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: BibleHomeColors.of(context).navBorder),
+                ),
               ),
               child: NavigationBarTheme(
                 data: NavigationBarThemeData(
@@ -229,8 +231,8 @@ class _BibleShellState extends ConsumerState<BibleShell> {
                     (states) => AppTypography.caption.copyWith(
                       fontSize: 13,
                       color: states.contains(WidgetState.selected)
-                          ? BibleHomeColors.button
-                          : const Color(0xFF8A8A8E),
+                          ? BibleHomeColors.of(context).navActive
+                          : BibleHomeColors.of(context).navIdle,
                     ),
                   ),
                 ),
@@ -238,7 +240,7 @@ class _BibleShellState extends ConsumerState<BibleShell> {
                   key: BibleShell.navKey,
                   selectedIndex: _tab.index,
                   height: 50,
-                  backgroundColor: BibleHomeColors.creamBottom,
+                  backgroundColor: BibleHomeColors.of(context).pageBottom,
                   surfaceTintColor: Colors.transparent,
                   indicatorColor: Colors.transparent,
                   labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -250,11 +252,11 @@ class _BibleShellState extends ConsumerState<BibleShell> {
                         key: BibleShell.tabKey(tab),
                         icon: Icon(
                           _iconOf(tab),
-                          color: const Color(0xFF8A8A8E),
+                          color: BibleHomeColors.of(context).navIdle,
                         ),
                         selectedIcon: Icon(
                           _selectedIconOf(tab),
-                          color: BibleHomeColors.button,
+                          color: BibleHomeColors.of(context).navActive,
                         ),
                         label: _labelOf(tab),
                       ),
