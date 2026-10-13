@@ -2631,4 +2631,64 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bibleMoreSoon =>
       'Reading plans, quizzes, versions and settings will appear here.';
+
+  @override
+  String get bibleSearchTitle => 'Search';
+
+  @override
+  String get bibleSearchHint => 'A word, or a reference (jn 3 16)';
+
+  @override
+  String bibleSearchGoTo(String reference) {
+    return 'Go to $reference';
+  }
+
+  @override
+  String bibleSearchResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+      zero: 'No results',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleSearchScopeAll => 'All';
+
+  @override
+  String get bibleSearchScopeOld => 'OT';
+
+  @override
+  String get bibleSearchScopeNew => 'NT';
+
+  @override
+  String get bibleSearchScopeBook => 'Book';
+
+  @override
+  String get bibleSearchMore => 'Show more';
+
+  @override
+  String get bibleSearchHistory => 'Recent searches';
+
+  @override
+  String get bibleSearchClearHistory => 'Clear';
+
+  @override
+  String get bibleSearchIndexing => 'Preparing search…';
+
+  @override
+  String get bibleSearchEmpty =>
+      'Search a word in the Bible, or type a reference.';
+
+  @override
+  String get bibleSearchNoResults => 'No verse contains these words.';
+
+  @override
+  String get bibleSearchCompare => 'Compare versions';
+
+  @override
+  String get bibleSearchCompareTitle => 'Compared results';
 }

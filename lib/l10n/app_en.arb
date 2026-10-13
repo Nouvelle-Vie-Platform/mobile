@@ -847,5 +847,21 @@
   "bibleSoonTitle": "Coming soon",
   "bibleHomeSoon": "Verse of the day, Sunday passage, reading plans and quizzes will appear here.",
   "bibleFavoritesSoon": "Your favorite verses, marked chapters and highlights will be listed here.",
-  "bibleMoreSoon": "Reading plans, quizzes, versions and settings will appear here."
+  "bibleMoreSoon": "Reading plans, quizzes, versions and settings will appear here.",
+  "bibleSearchTitle": "Search",
+  "bibleSearchHint": "A word, or a reference (jn 3 16)",
+  "bibleSearchGoTo": "Go to {reference}",
+  "bibleSearchResults": "{count, plural, =0{No results} =1{1 result} other{{count} results}}",
+  "bibleSearchScopeAll": "All",
+  "bibleSearchScopeOld": "OT",
+  "bibleSearchScopeNew": "NT",
+  "bibleSearchScopeBook": "Book",
+  "bibleSearchMore": "Show more",
+  "bibleSearchHistory": "Recent searches",
+  "bibleSearchClearHistory": "Clear",
+  "bibleSearchIndexing": "Preparing search…",
+  "bibleSearchEmpty": "Search a word in the Bible, or type a reference.",
+  "bibleSearchNoResults": "No verse contains these words.",
+  "bibleSearchCompare": "Compare versions",
+  "bibleSearchCompareTitle": "Compared results"
 }

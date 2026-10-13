@@ -4821,6 +4821,102 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Plans de lecture, quiz, versions et paramètres arriveront ici.'**
   String get bibleMoreSoon;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher'**
+  String get bibleSearchTitle;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Un mot, ou une référence (jn 3 16)'**
+  String get bibleSearchHint;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aller à {reference}'**
+  String bibleSearchGoTo(String reference);
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun résultat} =1{1 résultat} other{{count} résultats}}'**
+  String bibleSearchResults(int count);
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout'**
+  String get bibleSearchScopeAll;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'AT'**
+  String get bibleSearchScopeOld;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'NT'**
+  String get bibleSearchScopeNew;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Livre'**
+  String get bibleSearchScopeBook;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir plus'**
+  String get bibleSearchMore;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherches récentes'**
+  String get bibleSearchHistory;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer'**
+  String get bibleSearchClearHistory;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Préparation de la recherche…'**
+  String get bibleSearchIndexing;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Cherchez un mot dans la Bible, ou tapez une référence.'**
+  String get bibleSearchEmpty;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun verset ne contient ces mots.'**
+  String get bibleSearchNoResults;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Comparer les versions'**
+  String get bibleSearchCompare;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Résultats comparatifs'**
+  String get bibleSearchCompareTitle;
 }
 
 class _AppLocalizationsDelegate
