@@ -396,6 +396,47 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) => referenceId(SyncCollectionKey.decor, item),
         rowOf: decorRowOf,
       ),
+      // **Les référentiels du module Bible** (#199) : servis aux invités,
+      // sans dépendance entre eux sauf une — le défi désigne un plan, donc
+      // les plans d'abord. Avant toute collection privée, qui les désigne
+      // (inscriptions à un plan ou un défi, scores d'un quiz).
+      SyncedCollection<BibleVersionRow>(
+        key: SyncCollectionKey.bibleVersions,
+        local: (dao) => dao.bibleVersionsCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.bibleVersions, item),
+        rowOf: bibleVersionRowOf,
+      ),
+      SyncedCollection<BibleVerseOfDayRow>(
+        key: SyncCollectionKey.bibleVerseOfDays,
+        local: (dao) => dao.bibleVerseOfDaysCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.bibleVerseOfDays, item),
+        rowOf: bibleVerseOfDayRowOf,
+      ),
+      SyncedCollection<BibleSundayPassageRow>(
+        key: SyncCollectionKey.bibleSundayPassages,
+        local: (dao) => dao.bibleSundayPassagesCollection,
+        idOf: (item) =>
+            referenceId(SyncCollectionKey.bibleSundayPassages, item),
+        rowOf: bibleSundayPassageRowOf,
+      ),
+      SyncedCollection<BiblePlanRow>(
+        key: SyncCollectionKey.biblePlans,
+        local: (dao) => dao.biblePlansCollection,
+        idOf: (item) => bibleId(SyncCollectionKey.biblePlans, item),
+        rowOf: biblePlanRowOf,
+      ),
+      SyncedCollection<BibleChallengeRow>(
+        key: SyncCollectionKey.bibleChallenges,
+        local: (dao) => dao.bibleChallengesCollection,
+        idOf: (item) => bibleId(SyncCollectionKey.bibleChallenges, item),
+        rowOf: bibleChallengeRowOf,
+      ),
+      SyncedCollection<BibleQuizRow>(
+        key: SyncCollectionKey.bibleQuizzes,
+        local: (dao) => dao.bibleQuizzesCollection,
+        idOf: (item) => referenceId(SyncCollectionKey.bibleQuizzes, item),
+        rowOf: bibleQuizRowOf,
+      ),
       SyncedCollection<ContributorRow>(
         key: SyncCollectionKey.contributors,
         local: (dao) => dao.contributorsCollection,
@@ -464,6 +505,32 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         local: (dao) => dao.spiritualNotesCollection,
         idOf: (item) => contentId(SyncCollectionKey.spiritualNotes, item),
         rowOf: spiritualNoteRowOf,
+      ),
+      // **Mes données Bible** (#199) : privées, jamais servies à un invité,
+      // après les référentiels qu'elles désignent.
+      SyncedCollection<BibleMarkRow>(
+        key: SyncCollectionKey.bibleMarks,
+        local: (dao) => dao.bibleMarksCollection,
+        idOf: (item) => bibleId(SyncCollectionKey.bibleMarks, item),
+        rowOf: bibleMarkRowOf,
+      ),
+      SyncedCollection<BibleReadingStateRow>(
+        key: SyncCollectionKey.bibleReadingStates,
+        local: (dao) => dao.bibleReadingStatesCollection,
+        idOf: (item) => bibleId(SyncCollectionKey.bibleReadingStates, item),
+        rowOf: bibleReadingStateRowOf,
+      ),
+      SyncedCollection<BiblePlanEnrollmentRow>(
+        key: SyncCollectionKey.biblePlanEnrollments,
+        local: (dao) => dao.biblePlanEnrollmentsCollection,
+        idOf: (item) => bibleId(SyncCollectionKey.biblePlanEnrollments, item),
+        rowOf: biblePlanEnrollmentRowOf,
+      ),
+      SyncedCollection<BibleQuizResultRow>(
+        key: SyncCollectionKey.bibleQuizResults,
+        local: (dao) => dao.bibleQuizResultsCollection,
+        idOf: (item) => bibleId(SyncCollectionKey.bibleQuizResults, item),
+        rowOf: bibleQuizResultRowOf,
       ),
       SyncedCollection<ProfileRow>(
         key: SyncCollectionKey.profiles,

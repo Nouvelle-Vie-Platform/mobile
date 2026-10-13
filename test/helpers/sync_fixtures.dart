@@ -270,6 +270,21 @@ const Map<String, String> kSyncCollections = {
   // **Les réactions emoji** (serveur et mobile M2, #141) : cloisonnées par
   // appartenance comme le fil, rangées après lui côté serveur.
   'group_message_reactions': 'branch',
+  // **Le module Bible** (serveur S1–S5, mobile #199) : six référentiels
+  // servis **sans compte** (`servesAnonymous: true`) — verset du jour,
+  // passage du dimanche, plans, défis, quiz, catalogue des versions — et
+  // quatre privées, `owner_id = soi`, jamais servies à un invité. Rangées en
+  // fin de registre côté serveur, les référentiels d'abord.
+  'bible_verse_of_days': 'reference',
+  'bible_sunday_passages': 'reference',
+  'bible_plans': 'reference',
+  'bible_challenges': 'reference',
+  'bible_quizzes': 'reference',
+  'bible_versions': 'reference',
+  'bible_marks': 'private',
+  'bible_reading_states': 'private',
+  'bible_plan_enrollments': 'private',
+  'bible_quiz_results': 'private',
 };
 
 /// Clé de collection **inconnue du registre** : le mobile pourrait la demander

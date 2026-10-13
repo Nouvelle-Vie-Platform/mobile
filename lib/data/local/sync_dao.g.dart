@@ -53,6 +53,21 @@ mixin _$SyncDaoMixin on DatabaseAccessor<AppDatabase> {
       attachedDatabase.groupMessageReactions;
   $GroupMessageHidesTable get groupMessageHides =>
       attachedDatabase.groupMessageHides;
+  $BibleMarksTable get bibleMarks => attachedDatabase.bibleMarks;
+  $BibleReadingStatesTable get bibleReadingStates =>
+      attachedDatabase.bibleReadingStates;
+  $BiblePlanEnrollmentsTable get biblePlanEnrollments =>
+      attachedDatabase.biblePlanEnrollments;
+  $BibleQuizResultsTable get bibleQuizResults =>
+      attachedDatabase.bibleQuizResults;
+  $BibleVerseOfDaysTable get bibleVerseOfDays =>
+      attachedDatabase.bibleVerseOfDays;
+  $BibleSundayPassagesTable get bibleSundayPassages =>
+      attachedDatabase.bibleSundayPassages;
+  $BiblePlansTable get biblePlans => attachedDatabase.biblePlans;
+  $BibleChallengesTable get bibleChallenges => attachedDatabase.bibleChallenges;
+  $BibleQuizzesTable get bibleQuizzes => attachedDatabase.bibleQuizzes;
+  $BibleVersionsTable get bibleVersions => attachedDatabase.bibleVersions;
   SyncDaoManager get managers => SyncDaoManager(this);
 }
 
@@ -157,4 +172,30 @@ class SyncDaoManager {
   $$GroupMessageHidesTableTableManager get groupMessageHides =>
       $$GroupMessageHidesTableTableManager(
           _db.attachedDatabase, _db.groupMessageHides);
+  $$BibleMarksTableTableManager get bibleMarks =>
+      $$BibleMarksTableTableManager(_db.attachedDatabase, _db.bibleMarks);
+  $$BibleReadingStatesTableTableManager get bibleReadingStates =>
+      $$BibleReadingStatesTableTableManager(
+          _db.attachedDatabase, _db.bibleReadingStates);
+  $$BiblePlanEnrollmentsTableTableManager get biblePlanEnrollments =>
+      $$BiblePlanEnrollmentsTableTableManager(
+          _db.attachedDatabase, _db.biblePlanEnrollments);
+  $$BibleQuizResultsTableTableManager get bibleQuizResults =>
+      $$BibleQuizResultsTableTableManager(
+          _db.attachedDatabase, _db.bibleQuizResults);
+  $$BibleVerseOfDaysTableTableManager get bibleVerseOfDays =>
+      $$BibleVerseOfDaysTableTableManager(
+          _db.attachedDatabase, _db.bibleVerseOfDays);
+  $$BibleSundayPassagesTableTableManager get bibleSundayPassages =>
+      $$BibleSundayPassagesTableTableManager(
+          _db.attachedDatabase, _db.bibleSundayPassages);
+  $$BiblePlansTableTableManager get biblePlans =>
+      $$BiblePlansTableTableManager(_db.attachedDatabase, _db.biblePlans);
+  $$BibleChallengesTableTableManager get bibleChallenges =>
+      $$BibleChallengesTableTableManager(
+          _db.attachedDatabase, _db.bibleChallenges);
+  $$BibleQuizzesTableTableManager get bibleQuizzes =>
+      $$BibleQuizzesTableTableManager(_db.attachedDatabase, _db.bibleQuizzes);
+  $$BibleVersionsTableTableManager get bibleVersions =>
+      $$BibleVersionsTableTableManager(_db.attachedDatabase, _db.bibleVersions);
 }

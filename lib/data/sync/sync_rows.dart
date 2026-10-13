@@ -1386,3 +1386,194 @@ Map<String, String> _i18nMap(
       if (entry.value is String) entry.key.toString(): entry.value! as String,
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Le module Bible (#199) — contrats du plan, §3
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **L'identifiant UUID d'une ligne Bible** (privées, plans, défis — plan §6).
+/// Toléré en entier, rendu en chaîne : la rétractation retrouve sa ligne.
+String bibleId(String collection, Map<String, Object?> item) =>
+    _idText(item['id']) ??
+    (throw MalformedSyncRow(collection, 'id', item['id']));
+
+String? _idText(Object? value) => switch (value) {
+      final String s => s,
+      final int n => '$n',
+      _ => null,
+    };
+
+/// Un champ `jsonb` quelconque (objet **ou** liste) ré-encodé en JSON.
+String? _anyJson(Map<String, Object?> item, String field) {
+  final value = item[field];
+  if (value is! Map && value is! List) return null;
+  return jsonEncode(value);
+}
+
+/// `GET /sync/bible_marks` (S1) — `id, ownerId, kind, book, chapter,
+/// verseFrom?, verseTo?, color?, clientCreatedAt, clientUpdatedAt, createdAt,
+/// updatedAt, deletedAt`.
+BibleMarksCompanion bibleMarkRowOf(Map<String, Object?> item) {
+  const c = 'bible_marks';
+  return BibleMarksCompanion.insert(
+    id: bibleId(c, item),
+    ownerId: Value(_optionalText(item, 'ownerId')),
+    kind: _text(c, item, 'kind'),
+    book: _text(c, item, 'book'),
+    chapter: _requiredInt(c, item, 'chapter'),
+    verseFrom: Value(_optionalInt(item, 'verseFrom')),
+    verseTo: Value(_optionalInt(item, 'verseTo')),
+    color: Value(_optionalText(item, 'color')),
+    clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
+    clientUpdatedAt: Value(_instant(item, 'clientUpdatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/bible_reading_states` (S1) — une ligne par utilisateur.
+BibleReadingStatesCompanion bibleReadingStateRowOf(Map<String, Object?> item) {
+  const c = 'bible_reading_states';
+  return BibleReadingStatesCompanion.insert(
+    id: bibleId(c, item),
+    ownerId: Value(_optionalText(item, 'ownerId')),
+    versionCode: Value(_optionalText(item, 'versionCode')),
+    book: Value(_optionalText(item, 'book')),
+    chapter: Value(_optionalInt(item, 'chapter')),
+    verse: Value(_optionalInt(item, 'verse')),
+    readChapters: Value(_anyJson(item, 'readChapters')),
+    streakDays: Value(_optionalInt(item, 'streakDays') ?? 0),
+    lastReadOn: Value(_optionalText(item, 'lastReadOn')),
+    clientUpdatedAt: Value(_instant(item, 'clientUpdatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/bible_plan_enrollments` (S1).
+BiblePlanEnrollmentsCompanion biblePlanEnrollmentRowOf(
+  Map<String, Object?> item,
+) {
+  const c = 'bible_plan_enrollments';
+  return BiblePlanEnrollmentsCompanion.insert(
+    id: bibleId(c, item),
+    ownerId: Value(_optionalText(item, 'ownerId')),
+    source: _text(c, item, 'source'),
+    planCode: Value(_optionalText(item, 'planCode')),
+    planId: Value(_idText(item['planId'])),
+    custom: Value(_anyJson(item, 'custom')),
+    startedOn: Value(_optionalText(item, 'startedOn')),
+    completedDays: Value(_anyJson(item, 'completedDays')),
+    challengeId: Value(_idText(item['challengeId'])),
+    clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
+    clientUpdatedAt: Value(_instant(item, 'clientUpdatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/bible_quiz_results` (S1).
+BibleQuizResultsCompanion bibleQuizResultRowOf(Map<String, Object?> item) {
+  const c = 'bible_quiz_results';
+  return BibleQuizResultsCompanion.insert(
+    id: bibleId(c, item),
+    ownerId: Value(_optionalText(item, 'ownerId')),
+    quizId: _requiredInt(c, item, 'quizId'),
+    score: Value(_optionalInt(item, 'score') ?? 0),
+    total: Value(_optionalInt(item, 'total') ?? 0),
+    durationSeconds: Value(_optionalInt(item, 'durationSeconds')),
+    playedAt: Value(_instant(item, 'playedAt')),
+    clientUpdatedAt: Value(_instant(item, 'clientUpdatedAt')),
+    createdAt: Value(_instant(item, 'createdAt')),
+    updatedAt: Value(_instant(item, 'updatedAt')),
+  );
+}
+
+/// `GET /sync/bible_verse_of_days` (S2).
+BibleVerseOfDaysCompanion bibleVerseOfDayRowOf(Map<String, Object?> item) {
+  const c = 'bible_verse_of_days';
+  return BibleVerseOfDaysCompanion.insert(
+    id: Value(referenceId(c, item)),
+    day: _text(c, item, 'day'),
+    book: _text(c, item, 'book'),
+    chapter: _requiredInt(c, item, 'chapter'),
+    verseFrom: Value(_optionalInt(item, 'verseFrom')),
+    verseTo: Value(_optionalInt(item, 'verseTo')),
+    comment: Value(_optionalText(item, 'comment')),
+    backgroundId: Value(_optionalInt(item, 'backgroundId')),
+    publishedAt: Value(_instant(item, 'publishedAt')),
+  );
+}
+
+/// `GET /sync/bible_sunday_passages` (S2).
+BibleSundayPassagesCompanion bibleSundayPassageRowOf(
+  Map<String, Object?> item,
+) {
+  const c = 'bible_sunday_passages';
+  return BibleSundayPassagesCompanion.insert(
+    id: Value(referenceId(c, item)),
+    day: _text(c, item, 'day'),
+    references: Value(_anyJson(item, 'references')),
+    title: Value(_optionalText(item, 'title')),
+    teachingId: Value(_idText(item['teachingId'])),
+    gatheringId: Value(_idText(item['gatheringId'])),
+  );
+}
+
+/// `GET /sync/bible_plans` (S3).
+BiblePlansCompanion biblePlanRowOf(Map<String, Object?> item) {
+  const c = 'bible_plans';
+  return BiblePlansCompanion.insert(
+    id: bibleId(c, item),
+    title: _text(c, item, 'title'),
+    description: Value(_optionalText(item, 'description')),
+    coverBackgroundId: Value(_optionalInt(item, 'coverBackgroundId')),
+    days: Value(_anyJson(item, 'days')),
+    publishedAt: Value(_instant(item, 'publishedAt')),
+  );
+}
+
+/// `GET /sync/bible_challenges` (S3).
+BibleChallengesCompanion bibleChallengeRowOf(Map<String, Object?> item) {
+  const c = 'bible_challenges';
+  return BibleChallengesCompanion.insert(
+    id: bibleId(c, item),
+    planId: Value(_idText(item['planId'])),
+    title: _text(c, item, 'title'),
+    startsOn: Value(_optionalText(item, 'startsOn')),
+    endsOn: Value(_optionalText(item, 'endsOn')),
+    publishedAt: Value(_instant(item, 'publishedAt')),
+  );
+}
+
+/// `GET /sync/bible_quizzes` (S4).
+BibleQuizzesCompanion bibleQuizRowOf(Map<String, Object?> item) {
+  const c = 'bible_quizzes';
+  return BibleQuizzesCompanion.insert(
+    id: Value(referenceId(c, item)),
+    title: _text(c, item, 'title'),
+    ageBand: Value(_optionalText(item, 'ageBand')),
+    difficulty: Value(_optionalInt(item, 'difficulty')),
+    featuredFrom: Value(_optionalText(item, 'featuredFrom')),
+    featuredUntil: Value(_optionalText(item, 'featuredUntil')),
+    imageUrl: Value(_optionalText(item, 'imageUrl')),
+    questions: Value(_anyJson(item, 'questions')),
+    publishedAt: Value(_instant(item, 'publishedAt')),
+  );
+}
+
+/// `GET /sync/bible_versions` (S5).
+BibleVersionsCompanion bibleVersionRowOf(Map<String, Object?> item) {
+  const c = 'bible_versions';
+  return BibleVersionsCompanion.insert(
+    id: Value(referenceId(c, item)),
+    code: _text(c, item, 'code'),
+    name: _text(c, item, 'name'),
+    language: Value(_optionalText(item, 'language')),
+    license: Value(_optionalText(item, 'license')),
+    sizeBytes: Value(_optionalNumberAsInt(item, 'sizeBytes')),
+    sortOrder: Value(_optionalInt(item, 'sortOrder') ?? 0),
+    archiveUrl: Value(_optionalText(item, 'archiveUrl')),
+    publishedAt: Value(_instant(item, 'publishedAt')),
+  );
+}
