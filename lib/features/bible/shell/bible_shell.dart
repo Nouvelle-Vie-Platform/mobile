@@ -309,7 +309,14 @@ class _HomeTab extends ConsumerWidget {
         removeTop: true,
         child: ListView(
           padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
-          children: [for (final s in sections) s.builder(context)],
+          children: [
+            // Le premier écran couvre toute la largeur (image d'en-tête) ;
+            // les sections suivantes vivent dans la colonne du contenu.
+            for (final s in sections)
+              s.id == 'home_view'
+                  ? s.builder(context)
+                  : BibleHomeColumn(child: s.builder(context)),
+          ],
         ),
       ),
     );

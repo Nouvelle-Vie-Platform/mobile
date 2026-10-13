@@ -472,18 +472,48 @@ void main() {
     });
   });
 
-  testWidgets('iPad : une colonne de téléphone centrée', (tester) async {
+  testWidgets('iPad : image pleine largeur, contenu dans une colonne centrée',
+      (tester) async {
     tester.view.physicalSize = const Size(1024, 1366);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await _run(tester, () async {
-      await _pump(tester);
+      await _pump(tester, seed: _seedVerse);
+      expect(tester.getSize(find.byKey(BibleHomeKeys.header)).width, 1024);
       final search = tester.getRect(find.byKey(BibleHomeKeys.search));
-      expect(search.width, lessThanOrEqualTo(bibleHomeMaxWidth));
+      expect(search.width, lessThanOrEqualTo(bibleHomeMaxColumn));
+      expect(search.width, greaterThan(560));
       expect(search.center.dx, closeTo(512, 1));
+      final daily = tester.getRect(find.byKey(BibleHomeKeys.daily));
+      expect(daily.center.dx, closeTo(512, 1));
       expect(tester.takeException(), isNull);
     });
   });
+
+  for (final (name, size) in [
+    ('petit iPhone (320 × 568)', const Size(320, 568)),
+    ('téléphone en paysage (874 × 402)', const Size(874, 402)),
+    ('grand téléphone (440 × 956)', const Size(440, 956)),
+  ]) {
+    testWidgets('$name : rien ne déborde', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await _run(tester, () async {
+        await _pump(tester, seed: _seedVerse);
+        expect(tester.takeException(), isNull);
+        final cards = [
+          for (final id in ['plans', 'challenges', 'quiz', 'favorites'])
+            tester.getRect(find.byKey(BibleHomeKeys.shortcut(id))),
+        ];
+        // Quatre cartes côte à côte, sans chevauchement, dans l'écran.
+        for (var i = 1; i < cards.length; i++) {
+          expect(cards[i].left, greaterThan(cards[i - 1].right));
+        }
+        expect(cards.last.right, lessThanOrEqualTo(size.width));
+      });
+    });
+  }
 
   testWidgets('thème sombre : l\'image de nuit et la palette de nuit',
       (tester) async {
