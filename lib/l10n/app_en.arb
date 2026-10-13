@@ -847,5 +847,18 @@
   "bibleSoonTitle": "Coming soon",
   "bibleHomeSoon": "Verse of the day, Sunday passage, reading plans and quizzes will appear here.",
   "bibleFavoritesSoon": "Your favorite verses, marked chapters and highlights will be listed here.",
-  "bibleMoreSoon": "Reading plans, quizzes, versions and settings will appear here."
+  "bibleMoreSoon": "Reading plans, quizzes, versions and settings will appear here.",
+  "bibleHomeHeroTitle": "The Word, every day",
+  "bibleHomeVerseOfDay": "Verse of the day",
+  "bibleHomeFavorite": "Add to favorites",
+  "bibleHomeFavorited": "In your favorites",
+  "bibleHomeShare": "Share",
+  "bibleHomeReadChapter": "Read the chapter",
+  "bibleHomeSearchHint": "Search a word, a reference…",
+  "bibleHomeContinueTitle": "Continue reading",
+  "bibleHomeSundayTitle": "Sunday passage",
+  "bibleHomeSundayTeaching": "Listen to the teaching",
+  "bibleHomeSundayGathering": "See the gathering",
+  "bibleHomeQuizTitle": "Quiz of the week",
+  "bibleHomeBookProgress": "{read} of {total} chapters of {book} read"
 }

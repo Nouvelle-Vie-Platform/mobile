@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2631,4 +2632,45 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bibleMoreSoon =>
       'Reading plans, quizzes, versions and settings will appear here.';
+
+  @override
+  String get bibleHomeHeroTitle => 'The Word, every day';
+
+  @override
+  String get bibleHomeVerseOfDay => 'Verse of the day';
+
+  @override
+  String get bibleHomeFavorite => 'Add to favorites';
+
+  @override
+  String get bibleHomeFavorited => 'In your favorites';
+
+  @override
+  String get bibleHomeShare => 'Share';
+
+  @override
+  String get bibleHomeReadChapter => 'Read the chapter';
+
+  @override
+  String get bibleHomeSearchHint => 'Search a word, a reference…';
+
+  @override
+  String get bibleHomeContinueTitle => 'Continue reading';
+
+  @override
+  String get bibleHomeSundayTitle => 'Sunday passage';
+
+  @override
+  String get bibleHomeSundayTeaching => 'Listen to the teaching';
+
+  @override
+  String get bibleHomeSundayGathering => 'See the gathering';
+
+  @override
+  String get bibleHomeQuizTitle => 'Quiz of the week';
+
+  @override
+  String bibleHomeBookProgress(int read, int total, String book) {
+    return '$read of $total chapters of $book read';
+  }
 }
