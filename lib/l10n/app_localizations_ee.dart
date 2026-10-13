@@ -3337,4 +3337,45 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get bibleQuizListen => 'Écouter la question';
+
+  @override
+  String get bibleHomeHeroTitle => 'La Parole au quotidien';
+
+  @override
+  String get bibleHomeVerseOfDay => 'Verset du jour';
+
+  @override
+  String get bibleHomeFavorite => 'Ajouter aux favoris';
+
+  @override
+  String get bibleHomeFavorited => 'Dans vos favoris';
+
+  @override
+  String get bibleHomeShare => 'Partager';
+
+  @override
+  String get bibleHomeReadChapter => 'Lire le chapitre';
+
+  @override
+  String get bibleHomeSearchHint => 'Rechercher un mot, une référence…';
+
+  @override
+  String get bibleHomeContinueTitle => 'Continuer la lecture';
+
+  @override
+  String get bibleHomeSundayTitle => 'Passage du dimanche';
+
+  @override
+  String get bibleHomeSundayTeaching => 'Écouter l\'enseignement';
+
+  @override
+  String get bibleHomeSundayGathering => 'Voir la réunion';
+
+  @override
+  String get bibleHomeQuizTitle => 'Quiz de la semaine';
+
+  @override
+  String bibleHomeBookProgress(int read, int total, String book) {
+    return '$read sur $total chapitres de $book lus';
+  }
 }

@@ -89,7 +89,8 @@ void main() {
 
         await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.home)));
         await _settle(tester);
-        expect(find.text(_fr.bibleHomeSoon), findsOneWidget);
+        // L'accueil (M7) : l'en-tête du verset du jour.
+        expect(find.text(_fr.bibleHomeHeroTitle), findsOneWidget);
 
         await tester
             .tap(find.byKey(BibleShell.tabKey(BibleModuleTab.favorites)));
@@ -107,7 +108,11 @@ void main() {
         expect(find.byType(NotesTab), findsOneWidget);
         expect(find.byKey(NotesTab.signInButtonKey), findsOneWidget);
 
-        expect(_wire.requests, isEmpty);
+        // Seul le geste « ouvert » du verset du jour part (M7).
+        expect(
+          _wire.requests.map((r) => r.path),
+          everyElement(endsWith('/bible/verse-of-day/events')),
+        );
       });
     });
 

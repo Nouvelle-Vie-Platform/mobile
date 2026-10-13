@@ -5931,6 +5931,84 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Écouter la question'**
   String get bibleQuizListen;
+
+  /// Accueil du module Bible : titre de l'en-tête
+  ///
+  /// In fr, this message translates to:
+  /// **'La Parole au quotidien'**
+  String get bibleHomeHeroTitle;
+
+  /// Accueil du module Bible : libellé d'accessibilité de l'en-tête
+  ///
+  /// In fr, this message translates to:
+  /// **'Verset du jour'**
+  String get bibleHomeVerseOfDay;
+
+  /// Accueil du module Bible : mettre le verset du jour en favori
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter aux favoris'**
+  String get bibleHomeFavorite;
+
+  /// Accueil du module Bible : le verset du jour est déjà un favori
+  ///
+  /// In fr, this message translates to:
+  /// **'Dans vos favoris'**
+  String get bibleHomeFavorited;
+
+  /// Accueil du module Bible : partager le verset du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Partager'**
+  String get bibleHomeShare;
+
+  /// Accueil du module Bible : ouvrir le lecteur au verset du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Lire le chapitre'**
+  String get bibleHomeReadChapter;
+
+  /// Accueil du module Bible : barre de recherche
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un mot, une référence…'**
+  String get bibleHomeSearchHint;
+
+  /// Accueil du module Bible : carte de la dernière position
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer la lecture'**
+  String get bibleHomeContinueTitle;
+
+  /// Accueil du module Bible : carte du passage du dimanche
+  ///
+  /// In fr, this message translates to:
+  /// **'Passage du dimanche'**
+  String get bibleHomeSundayTitle;
+
+  /// Accueil du module Bible : ouvrir l'enseignement lié au passage du dimanche
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter l\'enseignement'**
+  String get bibleHomeSundayTeaching;
+
+  /// Accueil du module Bible : ouvrir la réunion liée au passage du dimanche
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la réunion'**
+  String get bibleHomeSundayGathering;
+
+  /// Accueil du module Bible : carte du quiz mis en avant
+  ///
+  /// In fr, this message translates to:
+  /// **'Quiz de la semaine'**
+  String get bibleHomeQuizTitle;
+
+  /// Accueil du module Bible : progression du livre en cours
+  ///
+  /// In fr, this message translates to:
+  /// **'{read} sur {total} chapitres de {book} lus'**
+  String bibleHomeBookProgress(int read, int total, String book);
 }
 
 class _AppLocalizationsDelegate

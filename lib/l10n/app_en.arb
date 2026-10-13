@@ -1032,5 +1032,18 @@
   "bibleQuizFinished": "Quiz complete",
   "bibleQuizReplay": "Play again",
   "bibleQuizDone": "Done",
-  "bibleQuizListen": "Listen to the question"
+  "bibleQuizListen": "Listen to the question",
+  "bibleHomeHeroTitle": "The Word, every day",
+  "bibleHomeVerseOfDay": "Verse of the day",
+  "bibleHomeFavorite": "Add to favorites",
+  "bibleHomeFavorited": "In your favorites",
+  "bibleHomeShare": "Share",
+  "bibleHomeReadChapter": "Read the chapter",
+  "bibleHomeSearchHint": "Search a word, a reference…",
+  "bibleHomeContinueTitle": "Continue reading",
+  "bibleHomeSundayTitle": "Sunday passage",
+  "bibleHomeSundayTeaching": "Listen to the teaching",
+  "bibleHomeSundayGathering": "See the gathering",
+  "bibleHomeQuizTitle": "Quiz of the week",
+  "bibleHomeBookProgress": "{read} of {total} chapters of {book} read"
 }
