@@ -97,6 +97,67 @@ void main() {
     expect(seen.last?.hasRead('John', 4), isTrue);
   });
 
+  group('La série de lecture', () {
+    Future<LocalBibleReadingStateRow> read(
+      String book,
+      int chapter,
+      DateTime now, {
+      bool member = false,
+    }) async {
+      await db.bibleDao.markChapterRead(
+          member: member, book: book, chapter: chapter, now: now);
+      return (await db.select(db.localBibleReadingState).get()).single;
+    }
+
+    test('invité : jour même inchangé, lendemain +1, trou → 1', () async {
+      var row = await read('John', 1, DateTime(2026, 10, 13, 9));
+      expect((row.streakDays, row.lastReadOn), (1, '2026-10-13'));
+      row = await read('John', 2, DateTime(2026, 10, 13, 18));
+      expect(row.streakDays, 1);
+      row = await read('John', 3, DateTime(2026, 10, 14, 7));
+      expect((row.streakDays, row.lastReadOn), (2, '2026-10-14'));
+      // Relire un chapitre déjà lu, un nouveau jour, compte aussi.
+      row = await read('John', 3, DateTime(2026, 10, 15, 7));
+      expect(row.streakDays, 3);
+      row = await read('John', 4, DateTime(2026, 10, 18, 7));
+      expect((row.streakDays, row.lastReadOn), (1, '2026-10-18'));
+    });
+
+    test('minuit : 23 h 59 puis 0 h 01, deux jours d\'affilée', () async {
+      await read('Ps', 1, DateTime(2026, 10, 13, 23, 59));
+      final row = await read('Ps', 2, DateTime(2026, 10, 14, 0, 1));
+      expect(row.streakDays, 2);
+    });
+
+    test('membre : la série du miroir continue', () async {
+      await db.syncDao.applyPage(
+        db.syncDao.bibleReadingStatesCollection,
+        upserts: [
+          BibleReadingStatesCompanion.insert(
+            id: 'srv-1',
+            versionCode: const Value('EXA'),
+            book: const Value('Rom'),
+            chapter: const Value(8),
+            readChapters: const Value('{"Rom":[1]}'),
+            streakDays: const Value(4),
+            lastReadOn: const Value('2026-10-12'),
+          ),
+        ],
+        cursor: 'c1',
+      );
+      final row = await read('Rom', 2, DateTime(2026, 10, 13, 8), member: true);
+      expect((row.id, row.streakDays, row.dirty), ('srv-1', 5, true));
+    });
+
+    test('affichée : rompue si le dernier jour est antérieur à hier', () {
+      final now = DateTime(2026, 10, 13, 12);
+      expect(BibleDao.currentStreak(5, '2026-10-13', now), 5);
+      expect(BibleDao.currentStreak(5, '2026-10-12', now), 5);
+      expect(BibleDao.currentStreak(5, '2026-10-11', now), 0);
+      expect(BibleDao.currentStreak(0, null, now), 0);
+    });
+  });
+
   test('le miroir : lu par le membre, jamais par l\'invité', () async {
     await seedMirror();
     expect(await db.bibleDao.watchReadingState(member: false).first, isNull);

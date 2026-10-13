@@ -133,14 +133,51 @@ class BibleDao extends DatabaseAccessor<AppDatabase> with _$BibleDaoMixin {
   }) =>
       _edit(member, now, (row) {
         final read = _decodeRead(row.readChapters.value);
-        final set = read.putIfAbsent(book, () => <int>{});
-        if (!set.add(chapter)) return null;
-        final day = (now ?? DateTime.now()).toIso8601String().substring(0, 10);
+        final added = read.putIfAbsent(book, () => <int>{}).add(chapter);
+        final at = now ?? DateTime.now();
+        final day = _isoDay(at);
+        final last = row.lastReadOn.value;
+        if (!added && last == day) return null;
         return row.copyWith(
           readChapters: Value(_encodeRead(read)),
           lastReadOn: Value(day),
+          streakDays: Value(
+            nextStreak(row.streakDays.value, last, at),
+          ),
         );
       });
+
+  /// **La série** après un chapitre lu jusqu'au bout le jour de [now] (jour
+  /// local) : même jour que [lastReadOn] → inchangée (au moins 1), lendemain
+  /// → +1, plus tard (ou jamais) → 1.
+  static int nextStreak(int streak, String? lastReadOn, DateTime now) {
+    final gap = _daysSince(lastReadOn, now);
+    if (gap == 0) return streak < 1 ? 1 : streak;
+    if (gap == 1) return streak + 1;
+    return 1;
+  }
+
+  /// **La série affichée** : rompue (0) si le dernier jour de lecture est
+  /// antérieur à hier.
+  static int currentStreak(int streak, String? lastReadOn, DateTime now) {
+    final gap = _daysSince(lastReadOn, now);
+    return gap == null || gap > 1 ? 0 : streak;
+  }
+
+  /// Jours entre [lastReadOn] (`YYYY-MM-DD`) et le jour local de [now] ;
+  /// `null` si jamais lu. Calculé sur des dates UTC : pas de piège d'heure
+  /// d'été.
+  static int? _daysSince(String? lastReadOn, DateTime now) {
+    final last = lastReadOn == null ? null : DateTime.tryParse(lastReadOn);
+    if (last == null) return null;
+    return DateTime.utc(now.year, now.month, now.day)
+        .difference(DateTime.utc(last.year, last.month, last.day))
+        .inDays;
+  }
+
+  static String _isoDay(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
 
   /// Lit la ligne locale (ou l'amorce depuis le miroir pour un membre),
   /// applique [change], et l'écrit `dirty`. [change] rend `null` : rien à

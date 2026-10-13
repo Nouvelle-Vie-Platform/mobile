@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/local/app_database.dart';
+import '../../../data/local/bible_dao.dart';
 import '../../../l10n/l10n_extension.dart';
 import '../../../state/sync_providers.dart';
 import '../../../theme/app_palette.dart';
@@ -47,6 +48,7 @@ final bibleMySpaceStatsProvider =
 Future<BibleMySpaceStats> readBibleMySpaceStats(
   AppDatabase db, {
   required bool member,
+  DateTime? now,
 }) async {
   // La série : la ligne locale d'abord, sinon (membre) le miroir.
   final local =
@@ -85,7 +87,13 @@ Future<BibleMySpaceStats> readBibleMySpaceStats(
   final notes = member ? (await db.notesDao.watchNotes().first).length : 0;
 
   return BibleMySpaceStats(
-    streakDays: local?.streakDays ?? synced?.streakDays ?? 0,
+    // La série de lecture (chapitres lus jusqu'au bout, plan ou non),
+    // rompue si le dernier jour de lecture est antérieur à hier.
+    streakDays: BibleDao.currentStreak(
+      local?.streakDays ?? synced?.streakDays ?? 0,
+      local?.lastReadOn ?? synced?.lastReadOn,
+      now ?? DateTime.now(),
+    ),
     chaptersRead: chapters,
     favorites: favorites.length,
     notes: notes,

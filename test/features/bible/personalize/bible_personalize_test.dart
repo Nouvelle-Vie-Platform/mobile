@@ -475,5 +475,37 @@ void main() {
       final member = await readBibleMySpaceStats(db, member: true);
       expect(member.favorites, 2);
     });
+
+    test('Mon espace : la série de lecture, rompue après un jour sans lire',
+        () async {
+      final db = openTestDatabase();
+      addTearDown(db.close);
+      await db.bibleDao.markChapterRead(
+          member: false, book: 'John', chapter: 1, now: DateTime(2026, 10, 12));
+      await db.bibleDao.markChapterRead(
+          member: false, book: 'John', chapter: 2, now: DateTime(2026, 10, 13));
+      Future<int> streak(DateTime now, {bool member = false}) async =>
+          (await readBibleMySpaceStats(db, member: member, now: now))
+              .streakDays;
+      expect(await streak(DateTime(2026, 10, 13, 20)), 2);
+      expect(await streak(DateTime(2026, 10, 14, 8)), 2);
+      expect(await streak(DateTime(2026, 10, 15, 8)), 0);
+
+      // Membre sans ligne locale : la série du miroir.
+      await db.delete(db.localBibleReadingState).go();
+      await db.syncDao.applyPage(
+        db.syncDao.bibleReadingStatesCollection,
+        upserts: [
+          BibleReadingStatesCompanion.insert(
+            id: 'srv-1',
+            streakDays: const Value(9),
+            lastReadOn: const Value('2026-10-13'),
+          ),
+        ],
+        cursor: 'c1',
+      );
+      expect(await streak(DateTime(2026, 10, 13, 20), member: true), 9);
+      expect(await streak(DateTime(2026, 10, 13, 20)), 0);
+    });
   });
 }
