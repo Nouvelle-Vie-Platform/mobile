@@ -847,5 +847,19 @@
   "bibleSoonTitle": "Coming soon",
   "bibleHomeSoon": "Verse of the day, Sunday passage, reading plans and quizzes will appear here.",
   "bibleFavoritesSoon": "Your favorite verses, marked chapters and highlights will be listed here.",
-  "bibleMoreSoon": "Reading plans, quizzes, versions and settings will appear here."
+  "bibleMoreSoon": "Reading plans, quizzes, versions and settings will appear here.",
+  "bibleM2Copy": "Copy",
+  "bibleM2Copied": "Verses copied",
+  "bibleM2Favorite": "Favorite",
+  "bibleM2Note": "Note",
+  "bibleM2Share": "Share",
+  "bibleM2Highlight": "Highlight",
+  "bibleM2ClearHighlight": "Clear highlight",
+  "bibleM2Bookmark": "Bookmark",
+  "bibleM2FilterAll": "All",
+  "bibleM2FilterVerses": "Verses",
+  "bibleM2FilterChapters": "Chapters",
+  "bibleM2FilterHighlights": "Highlights",
+  "bibleM2EmptyTitle": "Nothing here yet",
+  "bibleM2Empty": "Tap a verse in the reader to favorite or highlight it, or bookmark a chapter."
 }

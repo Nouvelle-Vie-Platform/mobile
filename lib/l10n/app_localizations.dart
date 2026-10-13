@@ -4821,6 +4821,90 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Plans de lecture, quiz, versions et paramètres arriveront ici.'**
   String get bibleMoreSoon;
+
+  /// Menu d'un verset
+  ///
+  /// In fr, this message translates to:
+  /// **'Copier'**
+  String get bibleM2Copy;
+
+  /// Confirmation après Copier
+  ///
+  /// In fr, this message translates to:
+  /// **'Versets copiés'**
+  String get bibleM2Copied;
+
+  /// Menu d'un verset : poser ou retirer le favori
+  ///
+  /// In fr, this message translates to:
+  /// **'Favori'**
+  String get bibleM2Favorite;
+
+  /// Menu d'un verset : note de l'onglet Notes
+  ///
+  /// In fr, this message translates to:
+  /// **'Note'**
+  String get bibleM2Note;
+
+  /// Menu d'un verset
+  ///
+  /// In fr, this message translates to:
+  /// **'Partager'**
+  String get bibleM2Share;
+
+  /// Pastille de la palette de surlignage
+  ///
+  /// In fr, this message translates to:
+  /// **'Surligner'**
+  String get bibleM2Highlight;
+
+  /// Pastille « effacer » de la palette
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer le surlignage'**
+  String get bibleM2ClearHighlight;
+
+  /// En-tête du lecteur : marquer le chapitre
+  ///
+  /// In fr, this message translates to:
+  /// **'Marque-page'**
+  String get bibleM2Bookmark;
+
+  /// Onglet Favori, puce
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous'**
+  String get bibleM2FilterAll;
+
+  /// Onglet Favori, puce
+  ///
+  /// In fr, this message translates to:
+  /// **'Versets'**
+  String get bibleM2FilterVerses;
+
+  /// Onglet Favori, puce
+  ///
+  /// In fr, this message translates to:
+  /// **'Chapitres'**
+  String get bibleM2FilterChapters;
+
+  /// Onglet Favori, puce
+  ///
+  /// In fr, this message translates to:
+  /// **'Surlignés'**
+  String get bibleM2FilterHighlights;
+
+  /// Onglet Favori vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Rien ici pour l\'instant'**
+  String get bibleM2EmptyTitle;
+
+  /// Onglet Favori vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez un verset dans le lecteur pour le mettre en favori ou le surligner, ou marquez un chapitre.'**
+  String get bibleM2Empty;
 }
 
 class _AppLocalizationsDelegate

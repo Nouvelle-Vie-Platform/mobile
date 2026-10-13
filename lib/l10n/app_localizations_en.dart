@@ -2631,4 +2631,47 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bibleMoreSoon =>
       'Reading plans, quizzes, versions and settings will appear here.';
+
+  @override
+  String get bibleM2Copy => 'Copy';
+
+  @override
+  String get bibleM2Copied => 'Verses copied';
+
+  @override
+  String get bibleM2Favorite => 'Favorite';
+
+  @override
+  String get bibleM2Note => 'Note';
+
+  @override
+  String get bibleM2Share => 'Share';
+
+  @override
+  String get bibleM2Highlight => 'Highlight';
+
+  @override
+  String get bibleM2ClearHighlight => 'Clear highlight';
+
+  @override
+  String get bibleM2Bookmark => 'Bookmark';
+
+  @override
+  String get bibleM2FilterAll => 'All';
+
+  @override
+  String get bibleM2FilterVerses => 'Verses';
+
+  @override
+  String get bibleM2FilterChapters => 'Chapters';
+
+  @override
+  String get bibleM2FilterHighlights => 'Highlights';
+
+  @override
+  String get bibleM2EmptyTitle => 'Nothing here yet';
+
+  @override
+  String get bibleM2Empty =>
+      'Tap a verse in the reader to favorite or highlight it, or bookmark a chapter.';
 }
