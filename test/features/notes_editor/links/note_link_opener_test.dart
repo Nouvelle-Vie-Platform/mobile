@@ -68,9 +68,10 @@ void main() {
     expect(find.text('Impossible d\'ouvrir ce lien'), findsOneWidget);
   });
 
-  testWidgets('une référence biblique ouvre l\'onglet Bible', (tester) async {
+  testWidgets('une référence biblique ouvre le lecteur au verset (#199)',
+      (tester) async {
     await openLink(tester, 'nv://bible/John/3/16-18');
-    expect(find.text('bible bible'), findsOneWidget);
+    expect(find.text('reader John 3 16-18'), findsOneWidget);
   });
 
   for (final url in [

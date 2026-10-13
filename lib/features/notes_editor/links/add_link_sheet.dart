@@ -4,8 +4,9 @@
 /// - **Une note** : ses notes (recherche locale, la note courante exclue) ;
 /// - **Un enseignement** : la médiathèque locale (recherche sur le titre) ;
 /// - **Une adresse web** : un champ, `https://` ajouté s'il manque ;
-/// - **La Bible** : grisée « bientôt » (décision 13 — le mode sélection
-///   appartient au chantier Bible ; le format du lien est déjà fixé).
+/// - **La Bible** : pousse le module Bible en **mode sélection**
+///   (`/bible/select`, #199) ; on y choisit livre, chapitre et versets, et le
+///   `BibleLink` revient ici (libellé « Jean 3:16-18 »).
 ///
 /// Le texte sélectionné devient le lien ; sans sélection, le titre choisi (ou
 /// l'URL) est inséré au curseur, déjà lié.
@@ -16,6 +17,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_extension.dart';
+import '../../../router/app_router.dart';
 import '../../../state/mediatheque_providers.dart';
 import '../../../state/notes_providers.dart';
 import '../../../theme/app_palette.dart';
@@ -125,7 +127,7 @@ Future<NoteLinkChoice?> showAddLinkSheet(
 
 enum _Page { menu, note, teaching, web }
 
-class AddLinkSheet extends StatefulWidget {
+class AddLinkSheet extends ConsumerStatefulWidget {
   const AddLinkSheet({super.key, required this.currentNoteId});
 
   final String currentNoteId;
@@ -142,10 +144,10 @@ class AddLinkSheet extends StatefulWidget {
   static Key teachingItemKey(String id) => Key('note_link_teaching_$id');
 
   @override
-  State<AddLinkSheet> createState() => _AddLinkSheetState();
+  ConsumerState<AddLinkSheet> createState() => _AddLinkSheetState();
 }
 
-class _AddLinkSheetState extends State<AddLinkSheet> {
+class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
   _Page _page = _Page.menu;
   String _query = '';
   final _url = TextEditingController();
@@ -164,6 +166,16 @@ class _AddLinkSheetState extends State<AddLinkSheet> {
 
   void _pick(NoteLink link, String label) =>
       Navigator.of(context).pop<NoteLinkChoice>((link: link, label: label));
+
+  /// La Bible : le mode sélection du module, poussé **par-dessus** la feuille
+  /// (par la `GoRouter`, jamais le `BuildContext`) ; la feuille rend ce qu'il
+  /// rapporte.
+  Future<void> _pickBible() async {
+    final link = await ref
+        .read(routerProvider)
+        .pushNamed<BibleLink>(AppRoute.bibleSelect);
+    if (link != null && mounted) _pick(link, link.labelFr);
+  }
 
   void _submitUrl() {
     final link = WebLink.fromInput(_url.text);
@@ -238,7 +250,6 @@ class _AddLinkSheetState extends State<AddLinkSheet> {
 
   Widget _menu(BuildContext context) {
     final l = context.l10n;
-    final palette = context.palette;
     return ListView(
       shrinkWrap: true,
       children: [
@@ -262,13 +273,10 @@ class _AddLinkSheetState extends State<AddLinkSheet> {
         ),
         ListTile(
           key: AddLinkSheet.bibleOptionKey,
-          enabled: false,
           leading: const Icon(Icons.menu_book_outlined),
           title: Text(l.noteLinkToBible),
-          trailing: Text(
-            l.noteLinkSoon,
-            style: TextStyle(color: palette.textSecondary),
-          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _pickBible,
         ),
       ],
     );

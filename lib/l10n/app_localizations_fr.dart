@@ -33,9 +33,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navBible => 'Bible';
 
   @override
-  String get pageUnderConstruction => 'Page en construction';
-
-  @override
   String get navAgenda => 'Agenda';
 
   @override
@@ -2500,9 +2497,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noteLinkToBible => 'La Bible';
 
   @override
-  String get noteLinkSoon => 'bientôt';
-
-  @override
   String get noteLinkSearch => 'Rechercher';
 
   @override
@@ -2571,4 +2565,92 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get noteAttachmentUnavailable => 'Pièce jointe indisponible';
+
+  @override
+  String get bibleTabHome => 'Accueil';
+
+  @override
+  String get bibleTabBible => 'Bible';
+
+  @override
+  String get bibleTabFavorites => 'Favori';
+
+  @override
+  String get bibleTabNotes => 'Notes';
+
+  @override
+  String get bibleTabMore => 'Plus';
+
+  @override
+  String get bibleBackToHome => 'Retour à l\'accueil';
+
+  @override
+  String get bibleOldTestament => 'Ancien Testament';
+
+  @override
+  String get bibleNewTestament => 'Nouveau Testament';
+
+  @override
+  String get bibleBookSearchHint => 'Recherche rapide de livre';
+
+  @override
+  String get bibleNoBookFound => 'Aucun livre ne correspond';
+
+  @override
+  String bibleChapterCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chapitres',
+      one: '1 chapitre',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleChooseChapter => 'Choisir un chapitre';
+
+  @override
+  String get bibleChooseVerse => 'Choisir un verset';
+
+  @override
+  String bibleStartReading(String reference) {
+    return 'Commencer $reference';
+  }
+
+  @override
+  String get bibleSelectTitle => 'Choisir un passage';
+
+  @override
+  String get bibleSelectHint => 'Touchez des versets pour choisir un passage';
+
+  @override
+  String bibleInsertReference(String reference) {
+    return 'Insérer $reference';
+  }
+
+  @override
+  String get bibleChangeChapter => 'Changer de chapitre';
+
+  @override
+  String get bibleVersionTooltip => 'Version de la Bible';
+
+  @override
+  String get bibleChapterUnavailable =>
+      'Ce chapitre n\'est pas disponible dans cette version.';
+
+  @override
+  String get bibleSoonTitle => 'Bientôt ici';
+
+  @override
+  String get bibleHomeSoon =>
+      'Verset du jour, passage du dimanche, plans de lecture et quiz arriveront ici.';
+
+  @override
+  String get bibleFavoritesSoon =>
+      'Vos versets favoris, chapitres marqués et passages surlignés se rangeront ici.';
+
+  @override
+  String get bibleMoreSoon =>
+      'Plans de lecture, quiz, versions et paramètres arriveront ici.';
 }

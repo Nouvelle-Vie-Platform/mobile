@@ -33,9 +33,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navBible => 'Bible';
 
   @override
-  String get pageUnderConstruction => 'Page under construction';
-
-  @override
   String get navAgenda => 'Agenda';
 
   @override
@@ -2479,9 +2476,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noteLinkToBible => 'The Bible';
 
   @override
-  String get noteLinkSoon => 'soon';
-
-  @override
   String get noteLinkSearch => 'Search';
 
   @override
@@ -2549,4 +2543,92 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noteAttachmentUnavailable => 'Attachment unavailable';
+
+  @override
+  String get bibleTabHome => 'Home';
+
+  @override
+  String get bibleTabBible => 'Bible';
+
+  @override
+  String get bibleTabFavorites => 'Favorites';
+
+  @override
+  String get bibleTabNotes => 'Notes';
+
+  @override
+  String get bibleTabMore => 'More';
+
+  @override
+  String get bibleBackToHome => 'Back to home';
+
+  @override
+  String get bibleOldTestament => 'Old Testament';
+
+  @override
+  String get bibleNewTestament => 'New Testament';
+
+  @override
+  String get bibleBookSearchHint => 'Quick book search';
+
+  @override
+  String get bibleNoBookFound => 'No matching book';
+
+  @override
+  String bibleChapterCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chapters',
+      one: '1 chapter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleChooseChapter => 'Choose a chapter';
+
+  @override
+  String get bibleChooseVerse => 'Choose a verse';
+
+  @override
+  String bibleStartReading(String reference) {
+    return 'Start $reference';
+  }
+
+  @override
+  String get bibleSelectTitle => 'Choose a passage';
+
+  @override
+  String get bibleSelectHint => 'Tap verses to choose a passage';
+
+  @override
+  String bibleInsertReference(String reference) {
+    return 'Insert $reference';
+  }
+
+  @override
+  String get bibleChangeChapter => 'Change chapter';
+
+  @override
+  String get bibleVersionTooltip => 'Bible version';
+
+  @override
+  String get bibleChapterUnavailable =>
+      'This chapter is not available in this version.';
+
+  @override
+  String get bibleSoonTitle => 'Coming soon';
+
+  @override
+  String get bibleHomeSoon =>
+      'Verse of the day, Sunday passage, reading plans and quizzes will appear here.';
+
+  @override
+  String get bibleFavoritesSoon =>
+      'Your favorite verses, marked chapters and highlights will be listed here.';
+
+  @override
+  String get bibleMoreSoon =>
+      'Reading plans, quizzes, versions and settings will appear here.';
 }

@@ -1,7 +1,6 @@
-/// **La page Bible à deux onglets, et l'onglet Notes** (#190), à travers le
-/// vrai routeur : les pilules, le glissement, la mémoire de l'onglet, la porte
-/// de session d'un invité, la redirection de `/notes`, la liste d'un membre,
-/// l'éditeur et la feuille Catégorie.
+/// **L'onglet Notes du module Bible** (#190, #199), à travers le vrai
+/// routeur : la porte de session d'un invité, la redirection de `/notes`, la
+/// liste d'un membre, l'éditeur et la feuille Catégorie.
 ///
 /// Tout ce qui touche le magasin Drift vit dans **un seul** `runAsync` par
 /// test (un flux ou un `Future` Drift attendu sous l'horloge factice fige le
@@ -28,6 +27,8 @@ import 'package:maison_du_miracle/data/notes_media/note_media_providers.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/repositories/notes_repository.dart';
+import 'package:maison_du_miracle/features/bible/shell/bible_browser.dart';
+import 'package:maison_du_miracle/features/bible/shell/bible_shell.dart';
 import 'package:maison_du_miracle/features/notes_editor/attachments/note_attachment_button.dart';
 import 'package:maison_du_miracle/features/notes_editor/attachments/note_attachment_embed_builder.dart';
 import 'package:maison_du_miracle/features/notes_editor/format_pill.dart';
@@ -37,7 +38,6 @@ import 'package:maison_du_miracle/features/notes_editor/rich_note_editor.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/models/note_view.dart';
-import 'package:maison_du_miracle/screens/bible_screen.dart';
 import 'package:maison_du_miracle/screens/notes/note_category_sheet.dart';
 import 'package:maison_du_miracle/screens/notes/note_editor_screen.dart';
 import 'package:maison_du_miracle/screens/notes/notes_tab.dart';
@@ -197,31 +197,10 @@ void main() {
     ApiClient.instance.dio.httpClientAdapter = _wire;
   });
 
-  group('La page Bible', () {
-    testWidgets('deux pilules, la Bible d\'abord, et le glissement',
-        (tester) async {
-      await tester.runAsync(() async {
-        final router =
-            await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
-        router.push('/bible');
-        await _settle(tester);
-
-        expect(find.byType(BibleScreen), findsOneWidget);
-        expect(find.byKey(BibleScreen.tabsKey), findsOneWidget);
-        expect(find.text(_fr.pageUnderConstruction), findsOneWidget);
-        expect(find.byType(NotesTab), findsNothing);
-
-        await tester.drag(find.byType(PageView), const Offset(-500, 0));
-        await _settle(tester);
-
-        expect(find.byType(NotesTab), findsOneWidget);
-        expect(find.text(_fr.pageUnderConstruction), findsNothing);
-        // La page nue, sans session : **rien** n'est parti sur le fil.
-        expect(_wire.requests, isEmpty);
-      });
-    });
-
-    testWidgets('`?tab=notes` ouvre les notes, et `/notes` y redirige',
+  // La coquille du module (cinq onglets, mémoire, retour) se teste dans
+  // `test/features/bible/bible_module_test.dart` (#199).
+  group('La route des notes', () {
+    testWidgets('`/notes` redirige sur l\'onglet Notes du module Bible',
         (tester) async {
       await tester.runAsync(() async {
         final router =
@@ -232,32 +211,6 @@ void main() {
         expect(router.state.matchedLocation, '/bible');
         expect(router.state.uri.queryParameters['tab'], 'notes');
         expect(find.byType(NotesTab), findsOneWidget);
-      });
-    });
-
-    testWidgets('le dernier onglet est mémorisé, et rouvert sans paramètre',
-        (tester) async {
-      await tester.runAsync(() async {
-        final container = guestContainer(extra: [_radioOff]);
-        final router = await pumpGuestApp(tester, container);
-        router.push('/bible');
-        await _settle(tester);
-
-        await tester.tap(find.text(_fr.notesTab));
-        await _settle(tester);
-        expect(find.byType(NotesTab), findsOneWidget);
-        expect(
-          await container.read(appDatabaseProvider).settingsDao.bibleTab(),
-          'notes',
-        );
-
-        router.pop();
-        await _settle(tester);
-        router.push('/bible');
-        await _settle(tester);
-
-        expect(find.byType(NotesTab), findsOneWidget);
-        expect(find.text(_fr.pageUnderConstruction), findsNothing);
       });
     });
   });
@@ -733,7 +686,7 @@ void main() {
       });
     });
 
-    testWidgets('le bouton lien : quatre choix, la Bible grisée',
+    testWidgets('le bouton lien : quatre choix, la Bible active',
         (tester) async {
       await tester.runAsync(() async {
         final container = guestContainer(
@@ -766,10 +719,79 @@ void main() {
           tester
               .widget<ListTile>(find.byKey(AddLinkSheet.bibleOptionKey))
               .enabled,
-          isFalse,
+          isTrue,
         );
         router.pop();
         await _settle(tester);
+        router.pop();
+        await _settle(tester);
+      });
+    });
+
+    testWidgets(
+        'la Bible : mode sélection, Jean 3:16-18, et le lien revient dans la '
+        'note (#199)', (tester) async {
+      await tester.runAsync(() async {
+        final container = guestContainer(
+          auth: GuestAuthRepository(signedIn: true),
+          vault: StartupVault.memberSession,
+          extra: [
+            _radioOff,
+            notesRepositoryProvider
+                .overrideWithValue(_RecordingNotesRepository()),
+          ],
+        );
+        final router = await pumpGuestApp(tester, container);
+        await untilSignedIn(tester, container);
+        router.push('/notes/$_newId');
+        await _settle(tester);
+
+        _editor(tester).focusNode.requestFocus();
+        await _settle(tester);
+        await tester.tap(find.byKey(NoteLinkButton.buttonKey));
+        await _settle(tester);
+        await tester.tap(find.byKey(AddLinkSheet.bibleOptionKey));
+        await _settle(tester);
+
+        // Le module, en mode sélection : l'onglet Bible seul, sans barre.
+        expect(router.state.matchedLocation, '/bible/select');
+        expect(find.byType(BibleShell), findsOneWidget);
+        expect(find.byKey(BibleShell.navKey), findsNothing);
+        expect(find.byKey(BibleShell.insertKey), findsNothing);
+
+        await tester.tap(find.text(_fr.bibleNewTestament));
+        await _settle(tester);
+        await tester.tap(find.byKey(BibleBrowser.bookKey('John')));
+        await _settle(tester);
+        await tester.tap(find.byKey(BibleBrowser.chapterKey(3)));
+        await _settle(tester);
+        // Le chapitre seul s'insère déjà.
+        expect(find.text(_fr.bibleInsertReference('Jean 3')), findsOneWidget);
+        for (final v in [16, 17, 18]) {
+          await tester.ensureVisible(find.byKey(BibleBrowser.verseKey(v)));
+          await tester.tap(find.byKey(BibleBrowser.verseKey(v)));
+          await _settle(tester);
+        }
+        expect(
+          find.text(_fr.bibleInsertReference('Jean 3:16-18')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(BibleShell.insertKey));
+        await _settle(tester);
+
+        // De retour dans l'éditeur, la feuille refermée, le lien posé.
+        expect(router.state.matchedLocation, '/notes/$_newId');
+        expect(find.byType(AddLinkSheet), findsNothing);
+        final controller = _editor(tester).controller;
+        expect(controller.document.toPlainText(), contains('Jean 3:16-18'));
+        final ops = controller.document.toDelta().toJson();
+        expect(
+          ops.any((op) =>
+              op['insert'] == 'Jean 3:16-18' &&
+              (op['attributes'] as Map?)?['link'] == 'nv://bible/John/3/16-18'),
+          isTrue,
+        );
         router.pop();
         await _settle(tester);
       });

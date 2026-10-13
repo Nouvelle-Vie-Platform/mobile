@@ -148,12 +148,6 @@ abstract class AppLocalizations {
   /// **'Bible'**
   String get navBible;
 
-  /// Placeholder d'un écran pas encore livré (écran Bible)
-  ///
-  /// In fr, this message translates to:
-  /// **'Page en construction'**
-  String get pageUnderConstruction;
-
   /// No description provided for @navAgenda.
   ///
   /// In fr, this message translates to:
@@ -4546,12 +4540,6 @@ abstract class AppLocalizations {
   /// **'La Bible'**
   String get noteLinkToBible;
 
-  /// Feuille lien : mention à côté d'un choix pas encore disponible
-  ///
-  /// In fr, this message translates to:
-  /// **'bientôt'**
-  String get noteLinkSoon;
-
   /// Feuille lien : champ de recherche des notes ou enseignements
   ///
   /// In fr, this message translates to:
@@ -4689,6 +4677,150 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pièce jointe indisponible'**
   String get noteAttachmentUnavailable;
+
+  /// Module Bible, onglet du bas : l'accueil du module
+  ///
+  /// In fr, this message translates to:
+  /// **'Accueil'**
+  String get bibleTabHome;
+
+  /// Module Bible, onglet du bas : parcourir les livres
+  ///
+  /// In fr, this message translates to:
+  /// **'Bible'**
+  String get bibleTabBible;
+
+  /// Module Bible, onglet du bas : versets favoris, chapitres marqués, surlignages
+  ///
+  /// In fr, this message translates to:
+  /// **'Favori'**
+  String get bibleTabFavorites;
+
+  /// Module Bible, onglet du bas : la liste des notes
+  ///
+  /// In fr, this message translates to:
+  /// **'Notes'**
+  String get bibleTabNotes;
+
+  /// Module Bible, onglet du bas : plans, quiz, versions, paramètres
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus'**
+  String get bibleTabMore;
+
+  /// Module Bible : info-bulle de la flèche de retour vers l'accueil de l'église
+  ///
+  /// In fr, this message translates to:
+  /// **'Retour à l\'accueil'**
+  String get bibleBackToHome;
+
+  /// No description provided for @bibleOldTestament.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ancien Testament'**
+  String get bibleOldTestament;
+
+  /// No description provided for @bibleNewTestament.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau Testament'**
+  String get bibleNewTestament;
+
+  /// Onglet Bible : champ de recherche d'un livre
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche rapide de livre'**
+  String get bibleBookSearchHint;
+
+  /// Onglet Bible : la recherche de livre ne trouve rien
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun livre ne correspond'**
+  String get bibleNoBookFound;
+
+  /// Onglet Bible : nombre de chapitres d'un livre
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 chapitre} other{{count} chapitres}}'**
+  String bibleChapterCount(int count);
+
+  /// No description provided for @bibleChooseChapter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un chapitre'**
+  String get bibleChooseChapter;
+
+  /// No description provided for @bibleChooseVerse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un verset'**
+  String get bibleChooseVerse;
+
+  /// Grille des versets : ouvrir le lecteur au début du chapitre (« Commencer Jean 3 »)
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencer {reference}'**
+  String bibleStartReading(String reference);
+
+  /// Mode sélection (lien d'une note) : titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un passage'**
+  String get bibleSelectTitle;
+
+  /// Mode sélection : sous-titre de la grille des versets
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez des versets pour choisir un passage'**
+  String get bibleSelectHint;
+
+  /// Mode sélection : bouton flottant (« Insérer Jean 3:16-18 »)
+  ///
+  /// In fr, this message translates to:
+  /// **'Insérer {reference}'**
+  String bibleInsertReference(String reference);
+
+  /// Lecteur : info-bulle de l'en-tête « Jean 3 ▾ »
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer de chapitre'**
+  String get bibleChangeChapter;
+
+  /// Lecteur : info-bulle du sélecteur de version
+  ///
+  /// In fr, this message translates to:
+  /// **'Version de la Bible'**
+  String get bibleVersionTooltip;
+
+  /// Lecteur : chapitre sans texte
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce chapitre n\'est pas disponible dans cette version.'**
+  String get bibleChapterUnavailable;
+
+  /// Module Bible : titre d'un onglet pas encore rempli
+  ///
+  /// In fr, this message translates to:
+  /// **'Bientôt ici'**
+  String get bibleSoonTitle;
+
+  /// Onglet Accueil du module, en attendant M7
+  ///
+  /// In fr, this message translates to:
+  /// **'Verset du jour, passage du dimanche, plans de lecture et quiz arriveront ici.'**
+  String get bibleHomeSoon;
+
+  /// Onglet Favori, en attendant M2
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos versets favoris, chapitres marqués et passages surlignés se rangeront ici.'**
+  String get bibleFavoritesSoon;
+
+  /// Onglet Plus, en attendant les tranches suivantes
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans de lecture, quiz, versions et paramètres arriveront ici.'**
+  String get bibleMoreSoon;
 }
 
 class _AppLocalizationsDelegate
