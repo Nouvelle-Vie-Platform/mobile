@@ -15,6 +15,7 @@ import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/sync/sync_rows.dart';
 import 'package:maison_du_miracle/features/bible/quiz/quiz.dart';
+import 'package:maison_du_miracle/features/bible/quiz/quiz_hub_screen.dart';
 import 'package:maison_du_miracle/features/bible/quiz/quiz_providers.dart';
 import 'package:maison_du_miracle/features/bible/quiz/quiz_screens.dart';
 import 'package:maison_du_miracle/features/bible/reader/bible_reader_screen.dart';
@@ -135,12 +136,13 @@ void main() {
       await tester.tap(find.byKey(const Key('bible_more_quiz')));
       await _settle(tester);
 
-      // Le profil, choisi une fois.
-      expect(find.text(_fr.bibleQuizWhoPlays), findsOneWidget);
-      await tester
-          .tap(find.byKey(QuizListScreen.profileKey(QuizAgeBand.adults)));
+      // L'écran de choix du joueur, à chaque ouverture : Adultes.
+      expect(find.byType(QuizHubScreen), findsOneWidget);
+      expect(find.text(_fr.bibleQuizBandTeens), findsOneWidget);
+      await tester.tap(find.byKey(QuizHubScreen.bandKey(QuizAgeBand.adults)));
       await _settle(tester);
       expect(await db.select(db.appSettings).get(), isNotEmpty);
+      expect(find.byType(QuizListScreen), findsOneWidget);
 
       expect(find.text(_fr.bibleQuizNew), findsOneWidget);
       // Une autre tranche : la liste se vide.

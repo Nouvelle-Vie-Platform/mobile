@@ -5761,7 +5761,7 @@ abstract class AppLocalizations {
   /// Quiz bibliques (M6)
   ///
   /// In fr, this message translates to:
-  /// **'Ados'**
+  /// **'Jeunes'**
   String get bibleQuizBandTeens;
 
   /// Quiz bibliques (M6)
@@ -5787,6 +5787,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'18 ans et plus'**
   String get bibleQuizBandAdultsAges;
+
+  /// Quiz : description sous « QUIZ » sur l'écran de choix du joueur
+  ///
+  /// In fr, this message translates to:
+  /// **'Testez vos connaissances de la Bible, seul ou en famille. Qui joue ?'**
+  String get bibleQuizHubIntro;
+
+  /// Quiz : seconde ligne de la tranche Enfants, après la fourchette d'âge
+  ///
+  /// In fr, this message translates to:
+  /// **'histoires et héros de la Bible'**
+  String get bibleQuizBandKidsHint;
+
+  /// Quiz : seconde ligne de la tranche Jeunes, après la fourchette d'âge
+  ///
+  /// In fr, this message translates to:
+  /// **'des défis pour aller plus loin'**
+  String get bibleQuizBandTeensHint;
+
+  /// Quiz : seconde ligne de la tranche Adultes, après la fourchette d'âge
+  ///
+  /// In fr, this message translates to:
+  /// **'pour approfondir sa foi'**
+  String get bibleQuizBandAdultsHint;
 
   /// Quiz bibliques (M6)
   ///

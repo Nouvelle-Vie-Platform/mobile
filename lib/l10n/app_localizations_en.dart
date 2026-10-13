@@ -3211,7 +3211,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bibleQuizBandKids => 'Kids';
 
   @override
-  String get bibleQuizBandTeens => 'Teens';
+  String get bibleQuizBandTeens => 'Youth';
 
   @override
   String get bibleQuizBandAdults => 'Adults';
@@ -3224,6 +3224,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bibleQuizBandAdultsAges => '18 and over';
+
+  @override
+  String get bibleQuizHubIntro =>
+      'Test your knowledge of the Bible, alone or with family. Who is playing?';
+
+  @override
+  String get bibleQuizBandKidsHint => 'Bible stories and heroes';
+
+  @override
+  String get bibleQuizBandTeensHint => 'challenges to go further';
+
+  @override
+  String get bibleQuizBandAdultsHint => 'to deepen your faith';
 
   @override
   String get bibleQuizEmpty => 'No quiz for this profile yet.';

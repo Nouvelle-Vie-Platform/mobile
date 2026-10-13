@@ -20,6 +20,7 @@ import '../../../theme/app_typography.dart';
 import '../reader/bible_reader_screen.dart';
 import '../shell/bible_route.dart';
 import 'quiz.dart';
+import 'quiz_hub_screen.dart';
 import 'quiz_providers.dart';
 
 /// Pousse [screen] sur le `Navigator` du routeur, jamais par le contexte.
@@ -92,7 +93,9 @@ class _Stars extends StatelessWidget {
 class QuizListScreen extends ConsumerWidget {
   const QuizListScreen({super.key});
 
-  static Future<void> open(WidgetRef ref) => _push(ref, const QuizListScreen());
+  /// Toucher « Quiz » ouvre toujours le choix du joueur ; la tranche choisie
+  /// ouvre ensuite cette liste.
+  static Future<void> open(WidgetRef ref) => _push(ref, const QuizHubScreen());
 
   /// Lance [quiz] dans le profil choisi (carte « Quiz de la semaine », M7).
   static Future<void> play(WidgetRef ref, Quiz quiz) => _push(
