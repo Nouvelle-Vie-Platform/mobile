@@ -3727,13 +3727,26 @@ l'Android dé-googlé, la voix et l'image dans les échanges (tranche 3), finir
 d'habiller les écrans restants (onboarding, login/register, live, dons,
 nouvelle requête).
 
-### Notes et Bible (#190) — la page `/bible` à deux onglets
-Plan : `server-portal/docs/notes-bible-plan.md` (fait foi). `/bible?tab=bible|notes`
-porte deux pilules (`SegmentedTabs`), un `PageView`, et garde le dernier onglet
-dans `app_settings` (`SettingsDao.bibleTab`). `/notes` y **redirige** ;
-`/notes/:id` est l'éditeur (`screens/notes/note_editor_screen.dart`, membres
-seulement, `extra` = enseignement d'un brouillon pré-lié). Un invité voit sur
-l'onglet Notes une **porte de session**, sans aucune lecture privée.
+### Notes et Bible (#190) puis le module Bible (#199–#205)
+Plans : `server-portal/docs/notes-bible-plan.md` (les notes) et
+`server-portal/docs/module-bible-plan.md` (le module, fait foi). Le bouton en
+haut à droite de l'accueil ouvre `/bible` : un **module à cinq onglets**
+(Accueil, Bible, Favori, Notes, Plus — `features/bible/shell/bible_shell.dart`),
+barre de l'appli masquée, flèche retour vers l'accueil de l'église, loupe sur
+Accueil et Bible, dernier onglet gardé dans `app_settings`
+(`SettingsDao.bibleTab`, `?tab=home|bible|favorites|notes|more`). Les pilules
+ont disparu. L'onglet Notes est la liste des notes (`NotesTab`) ; `/notes` y
+**redirige** ; `/notes/:id` est l'éditeur (`screens/notes/note_editor_screen.dart`,
+membres seulement, `extra` = enseignement d'un brouillon pré-lié). Un invité
+voit sur l'onglet Notes une **porte de session**, sans aucune lecture privée.
+Tout le module vit sous `lib/features/bible/` (un dossier par tranche, branché
+par des **emplacements** `BibleSlots`) — son `README.md` est la carte :
+Bible factice derrière `BibleSource`/`BibleCatalog`, Drift v29, marques et
+fusion à la connexion, recherche FTS, thèmes / voix du système (`stts` ;
+**pas de Piper** : sherpa-onnx embarque espeak-ng, GPL 3.0) / studio de
+partage / rappels, plans et défis, quiz, accueil. Après chaque cycle réussi,
+`app.dart` enchaîne **un seul bloc ordonné** : fusion d'invité et marques
+(M2), puis plans et scores (sauf au cycle d'une fusion), puis rappels.
 
 Magasin : `tables/note_tables.dart` (v28) — `spiritual_notes` et
 `note_categories` sont des collections **privées** remplies par la synchro
