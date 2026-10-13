@@ -2631,4 +2631,270 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bibleMoreSoon =>
       'Reading plans, quizzes, versions and settings will appear here.';
+
+  @override
+  String get biblePlansTitle => 'Reading plans';
+
+  @override
+  String get biblePlansShortcut => 'Plans';
+
+  @override
+  String get biblePlansChallengesTitle => 'Challenges';
+
+  @override
+  String get biblePlansMine => 'My plans';
+
+  @override
+  String get biblePlansEmpty => 'No plan in progress: pick one below.';
+
+  @override
+  String get biblePlansChurch => 'Church plans';
+
+  @override
+  String get biblePlansBuiltin => 'Suggested plans';
+
+  @override
+  String get biblePlansCreate => 'Create a plan or challenge';
+
+  @override
+  String get biblePlansBible1y => 'The Bible in a year';
+
+  @override
+  String get biblePlansNt90 => 'The New Testament in 90 days';
+
+  @override
+  String get biblePlansPs30 => 'The Psalms in 30 days';
+
+  @override
+  String get biblePlansGospels40 => 'The Gospels in 40 days';
+
+  @override
+  String biblePlansDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '$count day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get biblePlansStart => 'Start';
+
+  @override
+  String biblePlansDayOf(int day, int total) {
+    return 'Day $day of $total';
+  }
+
+  @override
+  String get biblePlansChallengeBar => 'Challenge bar';
+
+  @override
+  String get biblePlansGoals => 'Goals';
+
+  @override
+  String get biblePlansGoalToday => 'Today\'s reading';
+
+  @override
+  String get biblePlansGoalWeek => '7 days in a row';
+
+  @override
+  String get biblePlansGoalHalf => 'Halfway';
+
+  @override
+  String get biblePlansGoalDone => 'Plan complete';
+
+  @override
+  String get biblePlansBadges => 'Badges';
+
+  @override
+  String get biblePlansBadgeFirstDay => 'First day';
+
+  @override
+  String get biblePlansBadgeWeek => '7-day streak';
+
+  @override
+  String get biblePlansBadgeMonth => '30-day streak';
+
+  @override
+  String get biblePlansBadgePlanDone => 'Plan complete';
+
+  @override
+  String get biblePlansBadgeBookDone => 'Book complete';
+
+  @override
+  String get biblePlansBadgeHundred => '100 chapters';
+
+  @override
+  String get biblePlansBadgeChallenge => 'Challenge joined';
+
+  @override
+  String get biblePlansToday => 'Today\'s reading';
+
+  @override
+  String get biblePlansMarkDone => 'Mark as read';
+
+  @override
+  String get biblePlansRead => 'Read';
+
+  @override
+  String biblePlansCatchUp(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count readings behind',
+      one: '$count reading behind',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get biblePlansCatchUpAction => 'Catch up';
+
+  @override
+  String biblePlansStreak(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Streak: $count days',
+      one: 'Streak: $count day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get biblePlansAllDays => 'All days';
+
+  @override
+  String get biblePlansFinished => 'Plan complete, well done!';
+
+  @override
+  String biblePlansNotStarted(String date) {
+    return 'Starts on $date';
+  }
+
+  @override
+  String get biblePlansUnavailable => 'This plan is no longer available.';
+
+  @override
+  String get biblePlansLeave => 'Leave the plan';
+
+  @override
+  String get biblePlansLeaveConfirm =>
+      'Leave this plan? Your progress will be erased.';
+
+  @override
+  String get biblePlansEdit => 'Edit';
+
+  @override
+  String get biblePlansCancel => 'Cancel';
+
+  @override
+  String get biblePlansEditorTitle => 'My plan';
+
+  @override
+  String get biblePlansEditorName => 'Title';
+
+  @override
+  String get biblePlansEditorBooks => 'Books';
+
+  @override
+  String get biblePlansEditorOld => 'Old Testament';
+
+  @override
+  String get biblePlansEditorNew => 'New Testament';
+
+  @override
+  String get biblePlansEditorClear => 'None';
+
+  @override
+  String get biblePlansEditorDuration => 'Duration (days)';
+
+  @override
+  String biblePlansEditorSummary(int chapters, String perDay) {
+    return '$chapters chapters, about $perDay a day';
+  }
+
+  @override
+  String get biblePlansEditorSave => 'Save';
+
+  @override
+  String get biblePlansChallengesEmpty => 'No challenge in progress.';
+
+  @override
+  String get biblePlansGuestTitle => 'Sign in to join';
+
+  @override
+  String get biblePlansGuestBody =>
+      'Challenges are taken together, under a biblical name.';
+
+  @override
+  String get biblePlansSignIn => 'Sign in';
+
+  @override
+  String get biblePlansJoin => 'Join';
+
+  @override
+  String get biblePlansJoined => 'You are taking part';
+
+  @override
+  String get biblePlansLeaderboard => 'Leaderboard';
+
+  @override
+  String get biblePlansOpenPlan => 'Open the plan';
+
+  @override
+  String get biblePlansPickName => 'Choose your name';
+
+  @override
+  String get biblePlansPickNameBody =>
+      'Other participants will only see this name.';
+
+  @override
+  String get biblePlansPickNameSearch => 'Search a name';
+
+  @override
+  String get biblePlansNameTaken =>
+      'This name was just taken: pick another one.';
+
+  @override
+  String get biblePlansAlreadyJoined =>
+      'You have already joined this challenge.';
+
+  @override
+  String get biblePlansRetry => 'Retry';
+
+  @override
+  String biblePlansParticipants(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count participants',
+      one: '$count participant',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String biblePlansOnTime(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count readings on time',
+      one: '$count reading on time',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get biblePlansYou => 'you';
+
+  @override
+  String biblePlansChallengeDates(String start, String end) {
+    return 'From $start to $end';
+  }
+
+  @override
+  String get biblePlansHomeTitle => 'My current plan';
 }
