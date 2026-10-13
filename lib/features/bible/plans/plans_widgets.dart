@@ -16,6 +16,7 @@ import '../../../theme/app_typography.dart';
 import '../../../widgets/app_card.dart';
 import '../data/bible_providers.dart';
 import '../reader/bible_reader_screen.dart';
+import '../shell/bible_route.dart';
 import 'plan_logic.dart';
 import 'plans_providers.dart';
 import 'plans_store.dart';
@@ -27,7 +28,7 @@ Future<T?> pushBiblePlansPage<T>(WidgetRef ref, Widget page) => ref
     .routerDelegate
     .navigatorKey
     .currentState!
-    .push<T>(MaterialPageRoute<T>(builder: (_) => page));
+    .push<T>(bibleRoute<T>(page));
 
 /// Ouvre le lecteur sur la première lecture de [day] que je n'ai pas lue
 /// (la première, si toutes le sont).

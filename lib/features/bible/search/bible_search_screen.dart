@@ -26,7 +26,6 @@ import '../../../router/app_router.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
-import '../../../widgets/app_background.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/app_empty_state.dart';
 import '../../../widgets/brand_app_bar.dart';
@@ -34,6 +33,7 @@ import '../data/bible_providers.dart';
 import '../data/bible_source.dart';
 import '../data/canon.dart';
 import '../reader/bible_reader_screen.dart';
+import '../shell/bible_route.dart';
 import 'bible_compare_screen.dart';
 import 'bible_reference_parser.dart';
 import 'bible_search_history.dart';
@@ -61,9 +61,7 @@ class BibleSearchScreen extends ConsumerStatefulWidget {
   /// l'assemblage sans rien changer aux appelants.
   static Future<void> open(GoRouter router) async {
     await router.routerDelegate.navigatorKey.currentState?.push(
-      MaterialPageRoute<void>(
-        builder: (_) => const AppBackground(child: BibleSearchScreen()),
-      ),
+      bibleRoute<void>(const BibleSearchScreen()),
     );
   }
 

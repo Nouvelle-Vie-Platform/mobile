@@ -7,7 +7,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/features/bible/shell/bible_route.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_slots.dart';
+import 'package:maison_du_miracle/widgets/app_background.dart';
 
 const _tranches = {
   'marks': 'marksSlots',
@@ -49,6 +51,38 @@ void main() {
           f.path,
     ];
     expect(offenders, isEmpty);
+  });
+
+  // Le thème rend le fond des Scaffold transparent : un écran poussé sans le
+  // dégradé de l'appli s'affichait sur du noir, texte illisible (quiz, plans).
+  test(
+      'tout écran poussé par le module passe par bibleRoute (fond de l\'appli)',
+      () {
+    final offenders = [
+      for (final f in Directory('lib/features/bible').listSync(recursive: true))
+        if (f is File &&
+            f.path.endsWith('.dart') &&
+            !f.path.endsWith('shell/bible_route.dart') &&
+            RegExp(r'(MaterialPageRoute|CupertinoPageRoute|PageRouteBuilder)\b')
+                .hasMatch(f.readAsStringSync()))
+          f.path,
+    ];
+    expect(offenders, isEmpty);
+  });
+
+  testWidgets('bibleRoute pose le fond de l\'appli derrière l\'écran',
+      (tester) async {
+    final key = GlobalKey<NavigatorState>();
+    await tester
+        .pumpWidget(MaterialApp(navigatorKey: key, home: const SizedBox()));
+    key.currentState!
+        .push(bibleRoute<void>(const Scaffold(body: Text('écran'))));
+    await tester.pumpAndSettle();
+    expect(
+      find.ancestor(
+          of: find.text('écran'), matching: find.byType(AppBackground)),
+      findsOneWidget,
+    );
   });
 
   test('le module ne navigue jamais par le BuildContext', () {

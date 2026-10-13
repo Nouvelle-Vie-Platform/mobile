@@ -17,6 +17,7 @@ import '../../../theme/app_typography.dart';
 import '../../../widgets/app_card.dart';
 import '../data/bible_providers.dart';
 import '../data/canon.dart';
+import '../shell/bible_route.dart';
 import 'challenges_screen.dart';
 import 'plan_logic.dart';
 import 'plans_providers.dart';
@@ -690,9 +691,7 @@ class _BibleCustomPlanEditorState extends ConsumerState<BibleCustomPlanEditor> {
       startedOn: ref.read(bibleTodayProvider),
     );
     await navigator.pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => BiblePlanDetailScreen(enrollmentId: e.id),
-      ),
+      bibleRoute<void>(BiblePlanDetailScreen(enrollmentId: e.id)),
     );
   }
 }

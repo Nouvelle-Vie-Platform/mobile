@@ -18,6 +18,7 @@ import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../reader/bible_reader_screen.dart';
+import '../shell/bible_route.dart';
 import 'quiz.dart';
 import 'quiz_providers.dart';
 
@@ -28,7 +29,7 @@ Future<void> _push(WidgetRef ref, Widget screen) async {
       .routerDelegate
       .navigatorKey
       .currentState
-      ?.push(MaterialPageRoute<void>(builder: (_) => screen));
+      ?.push(bibleRoute<void>(screen));
 }
 
 String _bandLabel(AppLocalizations l, QuizAgeBand b) => switch (b) {
