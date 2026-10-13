@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
@@ -54,11 +55,53 @@ class BibleDao extends DatabaseAccessor<AppDatabase> with _$BibleDaoMixin {
           ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])
           ..limit(1))
         .watchSingleOrNull();
-    return local.watchSingleOrNull().asyncExpand(
-          (l) => l != null
-              ? Stream.value(_ofLocal(l))
-              : synced.map((s) => s == null ? null : _ofSynced(s)),
-        );
+    // Les deux flux **ensemble** (dernière valeur de chacun) : la ligne locale
+    // l'emporte dès qu'elle existe, même apparue après coup — un
+    // `asyncExpand` restait collé au miroir, dont le flux ne finit jamais.
+    LocalBibleReadingStateRow? l;
+    BibleReadingStateRow? s;
+    var hasLocal = false;
+    var hasSynced = false;
+    final subs = <StreamSubscription<Object?>>[];
+    late final StreamController<BibleReadingSnapshot?> out;
+    void emit() {
+      if (!hasLocal) return;
+      final row = l;
+      if (row != null) {
+        out.add(_ofLocal(row));
+      } else if (hasSynced) {
+        final m = s;
+        out.add(m == null ? null : _ofSynced(m));
+      }
+    }
+
+    out = StreamController<BibleReadingSnapshot?>(
+      onListen: () {
+        subs
+          ..add(local.watchSingleOrNull().listen((v) {
+            l = v;
+            hasLocal = true;
+            emit();
+          }, onError: out.addError))
+          ..add(synced.listen((v) {
+            s = v;
+            hasSynced = true;
+            emit();
+          }, onError: out.addError));
+      },
+      onPause: () {
+        for (final x in subs) {
+          x.pause();
+        }
+      },
+      onResume: () {
+        for (final x in subs) {
+          x.resume();
+        }
+      },
+      onCancel: () => Future.wait([for (final x in subs) x.cancel()]),
+    );
+    return out.stream;
   }
 
   /// Retient la version et la position.

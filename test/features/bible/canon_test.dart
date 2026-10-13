@@ -100,6 +100,28 @@ void main() {
       expect(first.map((v) => v.text).toSet().length, greaterThan(10));
     });
 
+    test('chaque sujet de chaque version paraît (pas un sur deux)', () {
+      const subjects = {
+        'EXA': [
+          "L'Éternel ", 'Le Seigneur ', 'Celui qui croit ', 'Le peuple ', //
+          'Mon âme ', 'Le berger ', 'La parole de vérité ', 'Le juste ',
+        ],
+        'EXB': [
+          'Dieu ', 'Le Maître ', 'Quiconque écoute ', "L'assemblée ", //
+          'Mon cœur ', 'Le serviteur fidèle ', 'La sagesse ', "L'homme droit ",
+        ],
+      };
+      for (final source in [a, b]) {
+        final texts = [
+          for (final v in source.chapterSync('Ps', 119))
+            v.text.replaceFirst('$kPlaceholderMark — ', ''),
+        ];
+        for (final s in subjects[source.versionCode]!) {
+          expect(texts.any((t) => t.startsWith(s)), isTrue, reason: s);
+        }
+      }
+    });
+
     test('deux versions, deux textes', () {
       expect(a.verseText('John', 3, 16), isNot(b.verseText('John', 3, 16)));
     });

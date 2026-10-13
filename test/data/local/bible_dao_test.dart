@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/local/bible_dao.dart';
 
 import 'local_database_fixtures.dart';
 
@@ -77,6 +78,23 @@ void main() {
     final s = (await db.bibleDao.watchReadingState(member: false).first)!;
     expect(s.hasRead('John', 3), isTrue);
     expect(s.hasRead('John', 2), isFalse);
+  });
+
+  test('membre sans position : le flux suit la ligne locale créée ensuite',
+      () async {
+    final seen = <BibleReadingSnapshot?>[];
+    final sub = db.bibleDao.watchReadingState(member: true).listen(seen.add);
+    addTearDown(sub.cancel);
+    await pumpEventQueue();
+    expect(seen, [isNull]);
+
+    await db.bibleDao.markChapterRead(member: true, book: 'John', chapter: 3);
+    await pumpEventQueue();
+    expect(seen.last?.hasRead('John', 3), isTrue);
+
+    await db.bibleDao.markChapterRead(member: true, book: 'John', chapter: 4);
+    await pumpEventQueue();
+    expect(seen.last?.hasRead('John', 4), isTrue);
   });
 
   test('le miroir : lu par le membre, jamais par l\'invité', () async {

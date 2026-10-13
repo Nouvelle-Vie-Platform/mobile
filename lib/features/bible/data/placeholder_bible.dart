@@ -78,8 +78,11 @@ final class PlaceholderBibleSource implements BibleSource {
     // Un mélange simple et stable : pas d'aléa, pas de `hashCode` (qui
     // change d'une exécution à l'autre pour les chaînes).
     final seed = b * 7919 + chapter * 104729 + verse * 1299709;
+    // `seed * (salt + 1)` : avec `seed * salt`, le sel 1 donnait `2 × seed`,
+    // toujours pair — la moitié des sujets n'apparaissait jamais. Ce mélange
+    // garde aussi toutes les paires sujet × complément.
     String pick(List<String> list, int salt) =>
-        list[(seed ~/ salt + seed * salt) % list.length];
+        list[(seed ~/ salt + seed * (salt + 1)) % list.length];
     final sentence = '${pick(parts[0], 1)} ${pick(parts[1], 3)} '
         '${pick(parts[2], 7)} ${pick(parts[3], 11)}';
     return verse == 1 ? '$kPlaceholderMark — $sentence' : sentence;
