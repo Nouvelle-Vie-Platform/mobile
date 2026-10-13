@@ -3322,7 +3322,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bibleQuizListen => 'Écouter la question';
 
   @override
-  String get bibleHomeHeroTitle => 'La Parole au quotidien';
+  String get bibleHomeHeroTitle => 'La Parole\nau quotidien';
 
   @override
   String get bibleHomeVerseOfDay => 'Verset du jour';
@@ -3361,6 +3361,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String bibleHomeBookProgress(int read, int total, String book) {
     return '$read sur $total chapitres de $book lus';
   }
+
+  @override
+  String get bibleHomeHeroTagline =>
+      'Chaque jour, laissez-vous inspirer par les Saintes Écritures.';
+
+  @override
+  String get bibleHomeDailyTitle => 'Lecture du jour';
+
+  @override
+  String get bibleHomeCardPlans => 'Plans';
+
+  @override
+  String get bibleHomeCardChallenges => 'Défis';
+
+  @override
+  String get bibleHomeCardQuizzes => 'Quiz';
+
+  @override
+  String get bibleHomeCardFavorites => 'Favoris';
 
   @override
   String get bibleQuizBadgeFirst => 'Premier quiz';

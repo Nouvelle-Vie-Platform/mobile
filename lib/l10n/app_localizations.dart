@@ -5905,7 +5905,7 @@ abstract class AppLocalizations {
   /// Accueil du module Bible : titre de l'en-tête
   ///
   /// In fr, this message translates to:
-  /// **'La Parole au quotidien'**
+  /// **'La Parole\nau quotidien'**
   String get bibleHomeHeroTitle;
 
   /// Accueil du module Bible : libellé d'accessibilité de l'en-tête
@@ -5979,6 +5979,42 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{read} sur {total} chapitres de {book} lus'**
   String bibleHomeBookProgress(int read, int total, String book);
+
+  /// Accueil du module Bible : accroche fixe de l'en-tête
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaque jour, laissez-vous inspirer par les Saintes Écritures.'**
+  String get bibleHomeHeroTagline;
+
+  /// Accueil du module Bible : titre de la carte du verset du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture du jour'**
+  String get bibleHomeDailyTitle;
+
+  /// Accueil du module Bible : libellé de la carte des plans (le nombre est affiché au-dessus)
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans'**
+  String get bibleHomeCardPlans;
+
+  /// Accueil du module Bible : libellé de la carte des défis
+  ///
+  /// In fr, this message translates to:
+  /// **'Défis'**
+  String get bibleHomeCardChallenges;
+
+  /// Accueil du module Bible : libellé de la carte des quiz
+  ///
+  /// In fr, this message translates to:
+  /// **'Quiz'**
+  String get bibleHomeCardQuizzes;
+
+  /// Accueil du module Bible : libellé de la carte des favoris
+  ///
+  /// In fr, this message translates to:
+  /// **'Favoris'**
+  String get bibleHomeCardFavorites;
 
   /// Mon espace du module Bible : badge de quiz
   ///

@@ -191,3 +191,19 @@ final bibleSlotsProvider = Provider<BibleSlots>(
     homeSlots,
   ]),
 );
+
+/// **Demander un onglet du module** (`home|bible|favorites|notes|more`) depuis
+/// un onglet — la carte « Favoris » de l'accueil ouvre l'onglet Favori. La
+/// coquille écoute et bascule.
+final bibleTabRequestProvider =
+    NotifierProvider<BibleTabRequest, String?>(BibleTabRequest.new);
+
+class BibleTabRequest extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void open(String tab) {
+    state = null;
+    state = tab;
+  }
+}

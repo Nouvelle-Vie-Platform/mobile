@@ -23,6 +23,7 @@ import 'package:maison_du_miracle/features/bible/data/placeholder_bible.dart';
 import 'package:maison_du_miracle/features/bible/reader/bible_reader_screen.dart';
 import 'package:maison_du_miracle/features/bible/search/bible_search_screen.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_browser.dart';
+import 'package:maison_du_miracle/features/bible/home/home_view.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_shell.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_slots.dart';
 import 'package:maison_du_miracle/features/notes_editor/links/note_link_opener.dart';
@@ -92,11 +93,14 @@ void main() {
         // Les pilules Bible / Notes ont disparu.
         expect(find.byKey(const Key('bible_tabs')), findsNothing);
 
-        // Accueil (M7) : l'en-tête du verset du jour, et la loupe.
+        // Accueil (M7) : la maquette, sans barre bleue — sa propre flèche et
+        // sa barre de recherche, pas la loupe de la coquille.
         await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.home)));
         await _settle(tester);
         expect(find.text(_fr.bibleHomeHeroTitle), findsOneWidget);
-        expect(find.byKey(BibleShell.searchKey), findsOneWidget);
+        expect(find.byKey(BibleHomeKeys.back), findsOneWidget);
+        expect(find.byKey(BibleHomeKeys.search), findsOneWidget);
+        expect(find.byKey(BibleShell.searchKey), findsNothing);
 
         // Favori (M2) : l'état vide de la liste, sans loupe.
         await tester

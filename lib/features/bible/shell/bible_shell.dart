@@ -22,11 +22,11 @@ import '../../../router/app_router.dart';
 import '../../../screens/notes/notes_tab.dart';
 import '../../../state/theme_provider.dart';
 import '../../../theme/app_colors.dart';
-import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/app_empty_state.dart';
 import '../data/canon.dart';
+import '../home/home_view.dart';
 import '../reader/bible_reader_screen.dart';
 import '../search/bible_search_screen.dart';
 import 'bible_browser.dart';
@@ -122,6 +122,14 @@ class _BibleShellState extends ConsumerState<BibleShell> {
         BibleModuleTab.more => Icons.more_horiz,
       };
 
+  IconData _selectedIconOf(BibleModuleTab tab) => switch (tab) {
+        BibleModuleTab.home => Icons.home,
+        BibleModuleTab.bible => Icons.menu_book,
+        BibleModuleTab.favorites => Icons.star,
+        BibleModuleTab.notes => Icons.sticky_note_2,
+        BibleModuleTab.more => Icons.more_horiz,
+      };
+
   Widget _screenFor(BibleModuleTab tab) => switch (tab) {
         BibleModuleTab.home => const _HomeTab(),
         BibleModuleTab.bible => BibleBrowser(
@@ -135,8 +143,14 @@ class _BibleShellState extends ConsumerState<BibleShell> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(bibleTabRequestProvider, (_, next) {
+      final tab = BibleModuleTab.values.asNameMap()[next];
+      if (tab != null) _select(tab);
+    });
     final l = context.l10n;
-    final palette = context.palette;
+    // L'accueil (maquette « Splash & Accueil ») porte sa propre flèche sur
+    // l'image, sous la barre d'état : pas de barre bleue.
+    final bare = !widget.selectMode && _tab == BibleModuleTab.home;
     final title = widget.selectMode
         ? l.bibleSelectTitle
         : _tab == BibleModuleTab.notes
@@ -144,38 +158,41 @@ class _BibleShellState extends ConsumerState<BibleShell> {
             : l.navBible;
     final selection = _selection;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        flexibleSpace: const DecoratedBox(
-          decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
-        ),
-        leading: IconButton(
-          key: BibleShell.backKey,
-          icon: Icon(widget.selectMode ? Icons.close : Icons.arrow_back),
-          tooltip: widget.selectMode
-              ? MaterialLocalizations.of(context).closeButtonTooltip
-              : l.bibleBackToHome,
-          onPressed: _leave,
-        ),
-        title: Text(
-          title,
-          style: AppTypography.h5.copyWith(color: Colors.white),
-        ),
-        actions: [
-          // La loupe (M3) sur les onglets Accueil et Bible.
-          if (!widget.selectMode &&
-              (_tab == BibleModuleTab.home || _tab == BibleModuleTab.bible))
-            IconButton(
-              key: BibleShell.searchKey,
-              icon: const Icon(Icons.search),
-              tooltip: l.bibleSearchTitle,
-              onPressed: () => BibleSearchScreen.open(ref.read(routerProvider)),
+      backgroundColor: bare ? BibleHomeColors.creamBottom : null,
+      appBar: bare
+          ? null
+          : AppBar(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              iconTheme: const IconThemeData(color: Colors.white),
+              centerTitle: true,
+              flexibleSpace: const DecoratedBox(
+                decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
+              ),
+              leading: IconButton(
+                key: BibleShell.backKey,
+                icon: Icon(widget.selectMode ? Icons.close : Icons.arrow_back),
+                tooltip: widget.selectMode
+                    ? MaterialLocalizations.of(context).closeButtonTooltip
+                    : l.bibleBackToHome,
+                onPressed: _leave,
+              ),
+              title: Text(
+                title,
+                style: AppTypography.h5.copyWith(color: Colors.white),
+              ),
+              actions: [
+                // La loupe (M3) sur l'onglet Bible (l'accueil a sa barre).
+                if (!widget.selectMode && _tab == BibleModuleTab.bible)
+                  IconButton(
+                    key: BibleShell.searchKey,
+                    icon: const Icon(Icons.search),
+                    tooltip: l.bibleSearchTitle,
+                    onPressed: () =>
+                        BibleSearchScreen.open(ref.read(routerProvider)),
+                  ),
+              ],
             ),
-        ],
-      ),
       body: widget.selectMode
           ? BibleBrowser(
               mode: BibleBrowserMode.select,
@@ -200,22 +217,50 @@ class _BibleShellState extends ConsumerState<BibleShell> {
           : null,
       bottomNavigationBar: widget.selectMode
           ? null
-          : NavigationBar(
-              key: BibleShell.navKey,
-              selectedIndex: _tab.index,
-              backgroundColor: palette.surface,
-              indicatorColor: palette.primary.withValues(alpha: 0.14),
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              onDestinationSelected: (i) => _select(BibleModuleTab.values[i]),
-              destinations: [
-                for (final tab in BibleModuleTab.values)
-                  NavigationDestination(
-                    key: BibleShell.tabKey(tab),
-                    icon: Icon(_iconOf(tab)),
-                    selectedIcon: Icon(_iconOf(tab), color: palette.primary),
-                    label: _labelOf(tab),
+          // La barre de la maquette : fond crème, filet en haut, pas de
+          // pastille ; l'onglet actif en bleu nuit, icône pleine.
+          : DecoratedBox(
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: Color(0xFFDBDAD8))),
+              ),
+              child: NavigationBarTheme(
+                data: NavigationBarThemeData(
+                  labelTextStyle: WidgetStateProperty.resolveWith(
+                    (states) => AppTypography.caption.copyWith(
+                      fontSize: 13,
+                      color: states.contains(WidgetState.selected)
+                          ? BibleHomeColors.button
+                          : const Color(0xFF8A8A8E),
+                    ),
                   ),
-              ],
+                ),
+                child: NavigationBar(
+                  key: BibleShell.navKey,
+                  selectedIndex: _tab.index,
+                  height: 50,
+                  backgroundColor: BibleHomeColors.creamBottom,
+                  surfaceTintColor: Colors.transparent,
+                  indicatorColor: Colors.transparent,
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                  onDestinationSelected: (i) =>
+                      _select(BibleModuleTab.values[i]),
+                  destinations: [
+                    for (final tab in BibleModuleTab.values)
+                      NavigationDestination(
+                        key: BibleShell.tabKey(tab),
+                        icon: Icon(
+                          _iconOf(tab),
+                          color: const Color(0xFF8A8A8E),
+                        ),
+                        selectedIcon: Icon(
+                          _selectedIconOf(tab),
+                          color: BibleHomeColors.button,
+                        ),
+                        label: _labelOf(tab),
+                      ),
+                  ],
+                ),
+              ),
             ),
     );
   }
@@ -256,9 +301,15 @@ class _HomeTab extends ConsumerWidget {
         icon: Icons.wb_sunny_outlined,
       );
     }
-    return ListView(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
-      children: [for (final s in sections) s.builder(context)],
+    return BibleHomeBackground(
+      child: MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+          children: [for (final s in sections) s.builder(context)],
+        ),
+      ),
     );
   }
 }

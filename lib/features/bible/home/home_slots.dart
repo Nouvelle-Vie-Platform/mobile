@@ -1,9 +1,9 @@
-/// **Les emplacements de la tranche M7 — l'accueil du module (sections, raccourcis).**
+/// **Les emplacements de la tranche M7 — l'accueil du module.**
 ///
-/// Deux sections : l'en-tête du verset du jour (pleine largeur), puis le corps
-/// (recherche, raccourcis des autres tranches, « Continuer la lecture »,
-/// passage du dimanche, quiz de la semaine — deux colonnes sur tablette). Une
-/// tranche qui ajoute sa propre carte prend un `order` au-delà de 10.
+/// Le premier écran (maquette « Splash & Accueil ») est une seule section ;
+/// le passage du dimanche et le quiz de la semaine suivent, sous « Mon plan
+/// en cours » (M5, ordre 40). Une tranche qui ajoute une carte prend un
+/// `order` au-delà de 0.
 library;
 
 import '../shell/bible_slots.dart';
@@ -12,14 +12,19 @@ import 'home_view.dart';
 final BibleSlots homeSlots = BibleSlots(
   homeSections: [
     BibleHomeSection(
-      id: 'verse_of_day',
+      id: 'home_view',
       order: 0,
-      builder: (_) => const BibleHomeHeader(),
+      builder: (_) => const BibleHomeView(),
     ),
     BibleHomeSection(
-      id: 'home_body',
-      order: 10,
-      builder: (_) => const BibleHomeBody(),
+      id: 'sunday_passage',
+      order: 50,
+      builder: (_) => const BibleSundayPassageSection(),
+    ),
+    BibleHomeSection(
+      id: 'featured_quiz',
+      order: 60,
+      builder: (_) => const BibleFeaturedQuizSection(),
     ),
   ],
 );

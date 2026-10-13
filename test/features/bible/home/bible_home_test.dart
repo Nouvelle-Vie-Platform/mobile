@@ -85,12 +85,14 @@ Future<(AppDatabase, GoRouter)> _pump(
       GoRoute(
         path: '/',
         builder: (context, _) => Scaffold(
-          body: Consumer(
-            builder: (context, ref, _) => ListView(
-              children: [
-                for (final s in ref.watch(bibleSlotsProvider).homeSections)
-                  s.builder(context),
-              ],
+          body: BibleHomeBackground(
+            child: Consumer(
+              builder: (context, ref, _) => ListView(
+                children: [
+                  for (final s in ref.watch(bibleSlotsProvider).homeSections)
+                    s.builder(context),
+                ],
+              ),
             ),
           ),
         ),
@@ -188,13 +190,16 @@ void main() {
           },
         );
         expect(find.text(_fr.bibleHomeHeroTitle), findsOneWidget);
+        expect(find.text(_fr.bibleHomeHeroTagline), findsOneWidget);
+        expect(find.text(_fr.bibleHomeDailyTitle), findsOneWidget);
         expect(find.text('Romains 8:28'), findsOneWidget);
-        expect(find.text('Tout concourt au bien.'), findsOneWidget);
         final text = tester.widget<Text>(find.byKey(BibleHomeKeys.verseText));
-        expect(text.data, startsWith('« '));
+        expect(text.data, isNotEmpty);
         expect(find.byType(Image), findsNothing, reason: 'fond servi');
 
-        await tester.tap(find.byKey(BibleHomeKeys.read));
+        // La carte « Lecture du jour » ouvre le lecteur au verset.
+        await tester.ensureVisible(find.byKey(BibleHomeKeys.daily));
+        await tester.tap(find.byKey(BibleHomeKeys.daily));
         await _settle(tester);
         expect(find.text('lecteur Rom 8 28'), findsOneWidget);
       });
@@ -212,41 +217,17 @@ void main() {
   });
 
   group('Les gestes', () {
-    testWidgets('ouvert, partagé, favori : une fois par jour et par type',
+    testWidgets('ouvert : une fois par jour, toucher la carte ne compte rien',
         (tester) async {
       _phone(tester);
       await _run(tester, () async {
-        final (db, _) = await _pump(tester, seed: _seedVerse);
+        await _pump(tester, seed: _seedVerse);
         expect(_events(), hasLength(1));
         final body = (_events().single.data as Map).cast<String, dynamic>();
         expect(body['day'], _day);
         expect(body['kind'], 'opened');
         expect(body['deviceId'], isA<String>());
-
-        await tester.tap(find.byKey(BibleHomeKeys.share));
-        await _settle(tester);
-        await tester.tap(find.byKey(BibleHomeKeys.share));
-        await _settle(tester);
-        expect(_shared, hasLength(2));
-        // Le studio de partage (M4) reçoit la référence du jour.
-        expect(_shared.first, 'Romains 8:28');
-
-        await tester.tap(find.byKey(BibleHomeKeys.favorite));
-        await _settle(tester);
-        final marks = await db.select(db.localBibleMarks).get();
-        expect(marks, hasLength(1));
-        expect(marks.single.kind, 'favorite');
-        expect(
-          (marks.single.book, marks.single.chapter, marks.single.verseFrom),
-          ('Rom', 8, 28),
-        );
-        expect(marks.single.dirty, isTrue);
-        expect(find.byIcon(Icons.favorite), findsOneWidget);
-
-        expect(
-          [for (final r in _events()) (r.data as Map)['kind']],
-          ['opened', 'shared', 'favorited'],
-        );
+        expect(_shared, isEmpty);
       });
     });
 
@@ -302,9 +283,7 @@ void main() {
         },
       );
       expect(find.byKey(BibleHomeKeys.continueReading), findsOneWidget);
-      expect(find.text('Jean 3'), findsOneWidget);
-      expect(
-          find.text(_fr.bibleHomeBookProgress(2, 21, 'Jean')), findsOneWidget);
+      expect(find.text(_fr.bibleHomeContinueTitle), findsOneWidget);
       await tester.ensureVisible(find.byKey(BibleHomeKeys.continueReading));
       await tester.tap(find.byKey(BibleHomeKeys.continueReading));
       await _settle(tester);
@@ -312,11 +291,15 @@ void main() {
     });
   });
 
-  testWidgets('sans position : pas de carte « Continuer »', (tester) async {
+  testWidgets('sans position : « Continuer » ouvre le verset du jour',
+      (tester) async {
     _phone(tester);
     await _run(tester, () async {
-      await _pump(tester);
-      expect(find.byKey(BibleHomeKeys.continueReading), findsNothing);
+      await _pump(tester, seed: _seedVerse);
+      await tester.ensureVisible(find.byKey(BibleHomeKeys.continueReading));
+      await tester.tap(find.byKey(BibleHomeKeys.continueReading));
+      await _settle(tester);
+      expect(find.text('lecteur Rom 8 28'), findsOneWidget);
     });
   });
 
@@ -385,8 +368,8 @@ void main() {
   });
 
   testWidgets(
-      'les raccourcis des autres tranches, disposés dans l\'ordre ; '
-      'la recherche ouvre celui de M3', (tester) async {
+      'les quatre cartes de la maquette : Plans, Défis, Quiz, Favoris ; '
+      'la recherche ouvre celle de M3', (tester) async {
     _phone(tester);
     await _run(tester, () async {
       await _pump(
@@ -394,27 +377,41 @@ void main() {
         shortcuts: [
           _shortcut('offline', 40),
           _shortcut('plans', 10),
+          _shortcut('challenges', 20),
           _shortcut('search', 50),
           _shortcut('quiz', 30),
         ],
       );
       final xs = [
-        for (final id in ['plans', 'quiz', 'offline', 'search'])
+        for (final id in ['plans', 'challenges', 'quiz', 'favorites'])
           tester.getTopLeft(find.byKey(BibleHomeKeys.shortcut(id))).dx,
       ];
       expect(xs, orderedEquals([...xs]..sort()));
+      expect(find.byKey(BibleHomeKeys.shortcut('offline')), findsNothing);
+      // Quatre plans intégrés, aucun publié.
+      expect(find.text('4'), findsOneWidget);
       await tester.tap(find.byKey(BibleHomeKeys.search));
       await tester.tap(find.byKey(BibleHomeKeys.shortcut('plans')));
-      expect(_tapped, ['search', 'plans']);
+      await tester.tap(find.byKey(BibleHomeKeys.shortcut('quiz')));
+      expect(_tapped, ['search', 'plans', 'quiz']);
+
+      // La carte Favoris demande l'onglet Favori à la coquille.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byKey(BibleHomeKeys.search)),
+      );
+      await tester.tap(find.byKey(BibleHomeKeys.shortcut('favorites')));
+      expect(container.read(bibleTabRequestProvider), 'favorites');
     });
   });
 
-  testWidgets('sans raccourci « search », pas de barre de recherche',
+  testWidgets('sans raccourci « search », la barre reste et ne fait rien',
       (tester) async {
     _phone(tester);
     await _run(tester, () async {
       await _pump(tester);
-      expect(find.byKey(BibleHomeKeys.search), findsNothing);
+      expect(find.byKey(BibleHomeKeys.search), findsOneWidget);
+      await tester.tap(find.byKey(BibleHomeKeys.search));
+      expect(_tapped, isEmpty);
     });
   });
 
@@ -475,37 +472,16 @@ void main() {
     });
   });
 
-  testWidgets('iPad : deux colonnes au-delà de 700 px', (tester) async {
+  testWidgets('iPad : une colonne de téléphone centrée', (tester) async {
     tester.view.physicalSize = const Size(1024, 1366);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await _run(tester, () async {
-      await _pump(
-        tester,
-        shortcuts: [_shortcut('plans', 10)],
-        seed: (db) => db.into(db.bibleSundayPassages).insert(
-              BibleSundayPassagesCompanion.insert(
-                id: const Value(1),
-                day: '2026-10-11',
-                title: const Value('La foi'),
-                references: const Value('[{"book":"John","chapter":1}]'),
-              ),
-            ),
-      );
-      expect(find.byKey(BibleHomeKeys.twoColumns), findsOneWidget);
-      final plans =
-          tester.getTopLeft(find.byKey(BibleHomeKeys.shortcut('plans')));
-      final sunday = tester.getTopLeft(find.byKey(BibleHomeKeys.sunday));
-      expect(sunday.dx, greaterThan(plans.dx + 300));
-      expect(tester.takeException(), isNull);
-    });
-  });
-
-  testWidgets('téléphone : une seule colonne', (tester) async {
-    _phone(tester);
-    await _run(tester, () async {
       await _pump(tester);
-      expect(find.byKey(BibleHomeKeys.twoColumns), findsNothing);
+      final search = tester.getRect(find.byKey(BibleHomeKeys.search));
+      expect(search.width, lessThanOrEqualTo(bibleHomeMaxWidth));
+      expect(search.center.dx, closeTo(512, 1));
+      expect(tester.takeException(), isNull);
     });
   });
 

@@ -323,6 +323,7 @@ flutter:
     - assets/images/rameau_or.webp
     - assets/images/live_bg.png
     - assets/images/home_header_church.webp
+    - assets/images/bible_home_hero.webp
 
   fonts:
     - family: Atkinson Hyperlegible
@@ -337,6 +338,13 @@ flutter:
         - asset: assets/fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-BoldItalic.ttf
           weight: 700
           style: italic
+    # Le titre de l'accueil du module Bible (« La Parole au quotidien »),
+    # mesuré sur la maquette : Playfair Display Medium. SIL OFL 1.1
+    # (`assets/fonts/Playfair_Display/OFL.txt`).
+    - family: Playfair Display
+      fonts:
+        - asset: assets/fonts/Playfair_Display/PlayfairDisplay-Medium.ttf
+          weight: 500
     # La serif de lecture du lecteur de la Bible (M4, mobile#202), SIL OFL 1.1
     # (`assets/fonts/Literata/OFL.txt`). Régulier seul : le texte des versets
     # n'a pas de gras.
