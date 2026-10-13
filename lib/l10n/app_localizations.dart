@@ -4821,6 +4821,342 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Plans de lecture, quiz, versions et paramètres arriveront ici.'**
   String get bibleMoreSoon;
+
+  /// Module Bible : écran des thèmes et polices du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Thèmes & polices'**
+  String get bibleM4AppearanceTitle;
+
+  /// Thèmes : texte de l'aperçu
+  ///
+  /// In fr, this message translates to:
+  /// **'Texte d\'exemple — Le Seigneur garde ceux qui le cherchent, au matin comme au soir.'**
+  String get bibleM4AppearanceSample;
+
+  /// Thèmes : titre du choix du thème
+  ///
+  /// In fr, this message translates to:
+  /// **'Thème'**
+  String get bibleM4Theme;
+
+  /// Thème clair du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Clair'**
+  String get bibleM4ThemeLight;
+
+  /// Thème sombre du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Sombre'**
+  String get bibleM4ThemeDark;
+
+  /// Thème sépia du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Sépia'**
+  String get bibleM4ThemeSepia;
+
+  /// Choix de la police
+  ///
+  /// In fr, this message translates to:
+  /// **'Police'**
+  String get bibleM4Font;
+
+  /// Police du système
+  ///
+  /// In fr, this message translates to:
+  /// **'Système'**
+  String get bibleM4FontSystem;
+
+  /// Réglage de la taille du texte
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille du texte'**
+  String get bibleM4FontSize;
+
+  /// Réglage de l'interligne
+  ///
+  /// In fr, this message translates to:
+  /// **'Interligne'**
+  String get bibleM4LineHeight;
+
+  /// Barre audio : chapitre précédent
+  ///
+  /// In fr, this message translates to:
+  /// **'Chapitre précédent'**
+  String get bibleM4AudioPrevious;
+
+  /// Barre audio : chapitre suivant
+  ///
+  /// In fr, this message translates to:
+  /// **'Chapitre suivant'**
+  String get bibleM4AudioNext;
+
+  /// Barre audio : lecture
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture'**
+  String get bibleM4AudioPlay;
+
+  /// Barre audio : pause
+  ///
+  /// In fr, this message translates to:
+  /// **'Pause'**
+  String get bibleM4AudioPause;
+
+  /// Barre audio : arrêter
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter la lecture'**
+  String get bibleM4AudioClose;
+
+  /// Studio de partage : titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Studio de partage'**
+  String get bibleM4StudioTitle;
+
+  /// Studio : choix du fond
+  ///
+  /// In fr, this message translates to:
+  /// **'Fond'**
+  String get bibleM4StudioBackground;
+
+  /// Studio : couleur du texte
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleur du texte'**
+  String get bibleM4StudioInk;
+
+  /// Studio : interrupteur de la référence
+  ///
+  /// In fr, this message translates to:
+  /// **'Afficher la référence'**
+  String get bibleM4StudioShowReference;
+
+  /// Studio : enregistrer dans la galerie
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get bibleM4StudioSave;
+
+  /// Studio : partager l'image
+  ///
+  /// In fr, this message translates to:
+  /// **'Partager'**
+  String get bibleM4StudioShare;
+
+  /// Studio : enregistrement réussi
+  ///
+  /// In fr, this message translates to:
+  /// **'Image enregistrée dans la galerie'**
+  String get bibleM4StudioSaved;
+
+  /// Studio : enregistrement refusé
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer l\'image'**
+  String get bibleM4StudioSaveFailed;
+
+  /// Écran des versions
+  ///
+  /// In fr, this message translates to:
+  /// **'Versions et hors ligne'**
+  String get bibleM4VersionsTitle;
+
+  /// Versions : explication
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargez une version pour la lire sans réseau, et choisissez la version active.'**
+  String get bibleM4VersionsHint;
+
+  /// Taille en mégaoctets
+  ///
+  /// In fr, this message translates to:
+  /// **'{size} Mo'**
+  String bibleM4SizeMb(String size);
+
+  /// Version factice installée d'office
+  ///
+  /// In fr, this message translates to:
+  /// **'intégrée'**
+  String get bibleM4VersionBuiltIn;
+
+  /// Bouton télécharger
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger'**
+  String get bibleM4Download;
+
+  /// Version pas encore téléchargeable
+  ///
+  /// In fr, this message translates to:
+  /// **'Bientôt'**
+  String get bibleM4VersionSoon;
+
+  /// Bouton supprimer
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get bibleM4Remove;
+
+  /// Choisir la version active
+  ///
+  /// In fr, this message translates to:
+  /// **'Version active'**
+  String get bibleM4ActiveVersion;
+
+  /// Mon espace : titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon espace'**
+  String get bibleM4MySpaceTitle;
+
+  /// Mon espace : série
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune série en cours} =1{1 jour de lecture de suite} other{{count} jours de lecture de suite}}'**
+  String bibleM4Streak(int count);
+
+  /// Mon espace : badges
+  ///
+  /// In fr, this message translates to:
+  /// **'Badges'**
+  String get bibleM4Badges;
+
+  /// Mon espace : aucun badge
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos badges de plans et de défis paraîtront ici.'**
+  String get bibleM4NoBadges;
+
+  /// Mon espace : chapitres lus
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} chapitres lus sur {total}'**
+  String bibleM4ChaptersRead(int count, int total);
+
+  /// Mon espace : favoris
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun favori} =1{1 favori} other{{count} favoris}}'**
+  String bibleM4Favorites(int count);
+
+  /// Mon espace : notes
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune note} =1{1 note} other{{count} notes}}'**
+  String bibleM4Notes(int count);
+
+  /// Mon espace : quiz
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun quiz joué} =1{1 quiz joué} other{{count} quiz joués}}'**
+  String bibleM4Quizzes(int count);
+
+  /// Paramètres du module
+  ///
+  /// In fr, this message translates to:
+  /// **'Paramètres'**
+  String get bibleM4SettingsTitle;
+
+  /// Paramètres : voix
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix de lecture'**
+  String get bibleM4Voice;
+
+  /// Voix du système
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix du système'**
+  String get bibleM4VoiceSystem;
+
+  /// Voix Piper
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix naturelle (« siwis »)'**
+  String get bibleM4VoicePiper;
+
+  /// Voix Piper absente
+  ///
+  /// In fr, this message translates to:
+  /// **'À télécharger ({size} Mo), lue sans réseau'**
+  String bibleM4VoicePiperSize(String size);
+
+  /// Voix Piper installée
+  ///
+  /// In fr, this message translates to:
+  /// **'Installée — lue sans réseau'**
+  String get bibleM4VoicePiperReady;
+
+  /// Voix Piper : échec
+  ///
+  /// In fr, this message translates to:
+  /// **'Le téléchargement a échoué. Réessayez.'**
+  String get bibleM4VoicePiperFailed;
+
+  /// Paramètres : rappels
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappels'**
+  String get bibleM4Reminders;
+
+  /// Rappel : verset du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Verset du jour'**
+  String get bibleM4VerseOfDayTitle;
+
+  /// Rappel : lecture du plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture du plan'**
+  String get bibleM4PlanReminderTitle;
+
+  /// Rappel : texte de la lecture du plan
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est l\'heure de votre lecture du jour.'**
+  String get bibleM4PlanReminderBody;
+
+  /// Rappel : changer l'heure
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer l\'heure'**
+  String get bibleM4ChangeTime;
+
+  /// Paramètres : à propos
+  ///
+  /// In fr, this message translates to:
+  /// **'À propos'**
+  String get bibleM4About;
+
+  /// Paramètres : licences
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix « siwis » : modèle Piper fr_FR-siwis-medium, entraîné sur le corpus SIWIS (Université d\'Édimbourg), licence CC BY 4.0 ; lue par sherpa-onnx (Apache 2.0) et espeak-ng (GPL 3.0). Polices : Atkinson Hyperlegible (Braille Institute) et Literata (The Literata Project Authors), SIL Open Font License 1.1.'**
+  String get bibleM4Licenses;
+
+  /// Raccourci de l'accueil du module
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors ligne'**
+  String get bibleM4OfflineShortcut;
+
+  /// Action de verset : studio
+  ///
+  /// In fr, this message translates to:
+  /// **'Partager en image'**
+  String get bibleM4ShareAsImage;
+
+  /// Action de verset : lecture audio
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter à partir d\'ici'**
+  String get bibleM4ListenFromHere;
 }
 
 class _AppLocalizationsDelegate

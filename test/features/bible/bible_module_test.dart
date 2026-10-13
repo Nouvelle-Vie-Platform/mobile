@@ -93,7 +93,8 @@ void main() {
 
         await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.more)));
         await _settle(tester);
-        expect(find.text(_fr.bibleMoreSoon), findsOneWidget);
+        // M4 remplit l'onglet Plus (Mon espace, Paramètres…).
+        expect(find.byKey(const Key('bible_more_settings')), findsOneWidget);
 
         // Notes : la liste existante — pour un invité, sa porte de session.
         await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.notes)));
@@ -124,7 +125,8 @@ void main() {
         await _settle(tester);
         router.push('/bible');
         await _settle(tester);
-        expect(find.text(_fr.bibleMoreSoon), findsOneWidget);
+        // M4 remplit l'onglet Plus (Mon espace, Paramètres…).
+        expect(find.byKey(const Key('bible_more_settings')), findsOneWidget);
 
         router.pop();
         await _settle(tester);

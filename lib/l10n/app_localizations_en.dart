@@ -2631,4 +2631,218 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bibleMoreSoon =>
       'Reading plans, quizzes, versions and settings will appear here.';
+
+  @override
+  String get bibleM4AppearanceTitle => 'Themes & fonts';
+
+  @override
+  String get bibleM4AppearanceSample =>
+      'Sample text — The Lord keeps those who seek him, morning and evening.';
+
+  @override
+  String get bibleM4Theme => 'Theme';
+
+  @override
+  String get bibleM4ThemeLight => 'Light';
+
+  @override
+  String get bibleM4ThemeDark => 'Dark';
+
+  @override
+  String get bibleM4ThemeSepia => 'Sepia';
+
+  @override
+  String get bibleM4Font => 'Font';
+
+  @override
+  String get bibleM4FontSystem => 'System';
+
+  @override
+  String get bibleM4FontSize => 'Text size';
+
+  @override
+  String get bibleM4LineHeight => 'Line spacing';
+
+  @override
+  String get bibleM4AudioPrevious => 'Previous chapter';
+
+  @override
+  String get bibleM4AudioNext => 'Next chapter';
+
+  @override
+  String get bibleM4AudioPlay => 'Play';
+
+  @override
+  String get bibleM4AudioPause => 'Pause';
+
+  @override
+  String get bibleM4AudioClose => 'Stop reading';
+
+  @override
+  String get bibleM4StudioTitle => 'Share studio';
+
+  @override
+  String get bibleM4StudioBackground => 'Background';
+
+  @override
+  String get bibleM4StudioInk => 'Text colour';
+
+  @override
+  String get bibleM4StudioShowReference => 'Show the reference';
+
+  @override
+  String get bibleM4StudioSave => 'Save';
+
+  @override
+  String get bibleM4StudioShare => 'Share';
+
+  @override
+  String get bibleM4StudioSaved => 'Image saved to the gallery';
+
+  @override
+  String get bibleM4StudioSaveFailed => 'Could not save the image';
+
+  @override
+  String get bibleM4VersionsTitle => 'Versions & offline';
+
+  @override
+  String get bibleM4VersionsHint =>
+      'Download a version to read it offline, and choose the active version.';
+
+  @override
+  String bibleM4SizeMb(String size) {
+    return '$size MB';
+  }
+
+  @override
+  String get bibleM4VersionBuiltIn => 'built in';
+
+  @override
+  String get bibleM4Download => 'Download';
+
+  @override
+  String get bibleM4VersionSoon => 'Soon';
+
+  @override
+  String get bibleM4Remove => 'Remove';
+
+  @override
+  String get bibleM4ActiveVersion => 'Active version';
+
+  @override
+  String get bibleM4MySpaceTitle => 'My space';
+
+  @override
+  String bibleM4Streak(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days of reading in a row',
+      one: '1 day of reading in a row',
+      zero: 'No streak yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleM4Badges => 'Badges';
+
+  @override
+  String get bibleM4NoBadges =>
+      'Your plan and challenge badges will appear here.';
+
+  @override
+  String bibleM4ChaptersRead(int count, int total) {
+    return '$count of $total chapters read';
+  }
+
+  @override
+  String bibleM4Favorites(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count favourites',
+      one: '1 favourite',
+      zero: 'No favourites',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bibleM4Notes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notes',
+      one: '1 note',
+      zero: 'No notes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bibleM4Quizzes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count quizzes played',
+      one: '1 quiz played',
+      zero: 'No quiz played',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleM4SettingsTitle => 'Settings';
+
+  @override
+  String get bibleM4Voice => 'Reading voice';
+
+  @override
+  String get bibleM4VoiceSystem => 'System voice';
+
+  @override
+  String get bibleM4VoicePiper => 'Natural voice (“siwis”)';
+
+  @override
+  String bibleM4VoicePiperSize(String size) {
+    return 'To download ($size MB), works offline';
+  }
+
+  @override
+  String get bibleM4VoicePiperReady => 'Installed — works offline';
+
+  @override
+  String get bibleM4VoicePiperFailed => 'The download failed. Try again.';
+
+  @override
+  String get bibleM4Reminders => 'Reminders';
+
+  @override
+  String get bibleM4VerseOfDayTitle => 'Verse of the day';
+
+  @override
+  String get bibleM4PlanReminderTitle => 'Plan reading';
+
+  @override
+  String get bibleM4PlanReminderBody => 'It\'s time for today\'s reading.';
+
+  @override
+  String get bibleM4ChangeTime => 'Change the time';
+
+  @override
+  String get bibleM4About => 'About';
+
+  @override
+  String get bibleM4Licenses =>
+      '“siwis” voice: Piper model fr_FR-siwis-medium, trained on the SIWIS corpus (University of Edinburgh), CC BY 4.0 licence; read by sherpa-onnx (Apache 2.0) and espeak-ng (GPL 3.0). Fonts: Atkinson Hyperlegible (Braille Institute) and Literata (The Literata Project Authors), SIL Open Font License 1.1.';
+
+  @override
+  String get bibleM4OfflineShortcut => 'Offline';
+
+  @override
+  String get bibleM4ShareAsImage => 'Share as image';
+
+  @override
+  String get bibleM4ListenFromHere => 'Listen from here';
 }

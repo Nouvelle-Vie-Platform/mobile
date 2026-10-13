@@ -32,6 +32,7 @@ import '../screens/media_library_screen.dart';
 import '../screens/member_profile_screen.dart';
 import '../screens/new_conversation_screen.dart';
 import '../screens/new_request_screen.dart';
+import '../features/bible/personalize/personalize_routes.dart';
 import '../features/bible/reader/bible_reader_screen.dart';
 import '../features/bible/shell/bible_shell.dart';
 import '../screens/notes/note_editor_screen.dart';
@@ -90,6 +91,10 @@ abstract final class AppRoute {
   /// **Le mode sélection** (#199), `/bible/select` : la feuille « Ajouter un
   /// lien » des notes la pousse et attend un `BibleLink` en retour.
   static const bibleSelect = 'bible-select';
+
+  /// **Les écrans de M4** (#202), `/bible/personalize/:page` : Mon espace,
+  /// Paramètres, versions et hors ligne, thèmes, studio de partage.
+  static const biblePersonalize = 'bible-personalize';
   static const media = 'media';
 
   /// **New Life Radio** (#104). La route s'appelait `live` et servait un écran qui
@@ -474,6 +479,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/bible/select',
         builder: (_, __) =>
             const AppBackground(child: BibleShell(selectMode: true)),
+      ),
+      GoRoute(
+        name: AppRoute.biblePersonalize,
+        path: '/bible/personalize/:page',
+        builder: (_, state) =>
+            AppBackground(child: biblePersonalizeScreen(state)),
       ),
       GoRoute(
         name: AppRoute.bibleReader,
