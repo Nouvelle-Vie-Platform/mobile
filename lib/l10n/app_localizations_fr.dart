@@ -2653,4 +2653,47 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get bibleMoreSoon =>
       'Plans de lecture, quiz, versions et paramètres arriveront ici.';
+
+  @override
+  String get bibleM2Copy => 'Copier';
+
+  @override
+  String get bibleM2Copied => 'Versets copiés';
+
+  @override
+  String get bibleM2Favorite => 'Favori';
+
+  @override
+  String get bibleM2Note => 'Note';
+
+  @override
+  String get bibleM2Share => 'Partager';
+
+  @override
+  String get bibleM2Highlight => 'Surligner';
+
+  @override
+  String get bibleM2ClearHighlight => 'Effacer le surlignage';
+
+  @override
+  String get bibleM2Bookmark => 'Marque-page';
+
+  @override
+  String get bibleM2FilterAll => 'Tous';
+
+  @override
+  String get bibleM2FilterVerses => 'Versets';
+
+  @override
+  String get bibleM2FilterChapters => 'Chapitres';
+
+  @override
+  String get bibleM2FilterHighlights => 'Surlignés';
+
+  @override
+  String get bibleM2EmptyTitle => 'Rien ici pour l\'instant';
+
+  @override
+  String get bibleM2Empty =>
+      'Touchez un verset dans le lecteur pour le mettre en favori ou le surligner, ou marquez un chapitre.';
 }

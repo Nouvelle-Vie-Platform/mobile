@@ -89,7 +89,7 @@ void main() {
         await tester
             .tap(find.byKey(BibleShell.tabKey(BibleModuleTab.favorites)));
         await _settle(tester);
-        expect(find.text(_fr.bibleFavoritesSoon), findsOneWidget);
+        expect(find.text(_fr.bibleM2Empty), findsOneWidget);
 
         await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.more)));
         await _settle(tester);
@@ -130,7 +130,7 @@ void main() {
         await _settle(tester);
         router.push('/bible?tab=favorites');
         await _settle(tester);
-        expect(find.text(_fr.bibleFavoritesSoon), findsOneWidget);
+        expect(find.text(_fr.bibleM2Empty), findsOneWidget);
       });
     });
 

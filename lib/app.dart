@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/app_env.dart';
 import 'core/network/api_client.dart';
 import 'data/notes_media/note_media_providers.dart';
+import 'features/bible/marks/bible_marks_outbox.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
@@ -38,6 +39,7 @@ class MaisonDuMiracleApp extends ConsumerStatefulWidget {
 class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   /// L'abonnement qui tient le porte-intention vivant — voir [initState].
   ProviderSubscription<SessionIntent?>? _intents;
+  ProviderSubscription<Object?>? _bibleMarks;
 
   /// L'abonnement aux réveils reçus **application ouverte** — voir [_handleWake].
   StreamSubscription<Map<String, Object?>>? _wakes;
@@ -74,6 +76,8 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
     // jamais repris — sans erreur, sans trace : la personne se connecte, revient,
     // et son geste a disparu. Même motif que le routeur, que `build` observe.
     _intents = ref.listenManual(sessionGateProvider, (_, __) {});
+    // La file du module Bible observe la session (fusion à la connexion).
+    _bibleMarks = ref.listenManual(bibleMarksOutboxProvider, (_, __) {});
 
     // **Le déclencheur « ouverture »** (ADR-0017). Sans lui, le magasin ne se
     // remplit jamais et la médiathèque reste muette : les écrans lisent le
@@ -138,6 +142,8 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
           await ref.read(noteMediaComposerProvider).resendPending();
           // **Les brouillons de notes** (#190) : même raison, même moment.
           await ref.read(notesOutboxProvider)();
+          // **Les marques du module Bible** (M2, #200) : même raison.
+          await ref.read(bibleMarksOutboxProvider).run();
         };
         // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
         // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.
@@ -225,6 +231,7 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   @override
   void dispose() {
     _intents?.close();
+    _bibleMarks?.close();
     _messaging?.close();
     _notifications?.close();
     unawaited(_wakes?.cancel());

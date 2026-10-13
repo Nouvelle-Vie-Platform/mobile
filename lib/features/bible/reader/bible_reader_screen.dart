@@ -11,7 +11,10 @@
 ///   il défile jusqu'au premier et les **surligne un instant**.
 /// - Les emplacements : l'habillage des versets (`chapterDecorators`) et le
 ///   menu d'action (`verseActions`) — s'il y a des actions, toucher un verset
-///   le sélectionne (plage contiguë) et la barre d'actions paraît.
+///   le sélectionne, toucher un autre étend la plage contiguë (un appui long
+///   puis glisser aussi), et le **menu flottant** de M2 paraît sous la
+///   sélection, palette de surlignage comprise.
+/// - Le **marque-page** du chapitre, dans l'en-tête (M2).
 ///
 /// Route `/bible/read/:book/:chapter?v=…`, ouverte à tous.
 library;
@@ -19,6 +22,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -31,6 +35,8 @@ import '../../../theme/app_typography.dart';
 import '../data/bible_providers.dart';
 import '../data/bible_source.dart';
 import '../data/canon.dart';
+import '../marks/bible_marks_store.dart';
+import '../marks/bible_verse_menu.dart';
 import '../shell/bible_browser.dart';
 import '../shell/bible_slots.dart';
 
@@ -56,7 +62,8 @@ class BibleReaderScreen extends ConsumerStatefulWidget {
   static const Key headerKey = Key('bible_reader_header');
   static const Key versionKey = Key('bible_reader_version');
   static const Key pagesKey = Key('bible_reader_pages');
-  static const Key actionsKey = Key('bible_reader_actions');
+  static const Key actionsKey = BibleVerseMenu.menuKey;
+  static const Key bookmarkKey = Key('bible_reader_bookmark');
   static Key pageKey(String book, int chapter) =>
       Key('bible_reader_page_${book}_$chapter');
   static Key verseKey(int verse) => Key('bible_reader_verse_$verse');
@@ -97,6 +104,29 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   /// La plage choisie pour le menu d'action, sur la page courante.
   int? _from;
   int? _to;
+
+  /// Le menu flottant se pose **au-dessus** du premier verset choisi — les
+  /// versets suivants restent à portée du doigt pour étendre la plage —, et
+  /// **sous** le dernier quand la place manque en haut de l'écran.
+  final _aboveLink = LayerLink();
+  final _belowLink = LayerLink();
+  final _firstKey = GlobalKey();
+  final _stackKey = GlobalKey();
+  bool _menuBelow = false;
+
+  /// La hauteur à réserver au-dessus du premier verset pour le menu.
+  static const double _menuRoom = 140;
+
+  void _placeMenu() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final verse = _firstKey.currentContext?.findRenderObject() as RenderBox?;
+      final stack = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+      if (!mounted || verse == null || stack == null) return;
+      final top = verse.localToGlobal(Offset.zero, ancestor: stack).dy;
+      final below = top < _menuRoom;
+      if (below != _menuBelow) setState(() => _menuBelow = below);
+    });
+  }
 
   @override
   void initState() {
@@ -160,22 +190,36 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     if (i >= 0) _pages.jumpToPage(i);
   }
 
+  /// Toucher : un verset hors de la plage l'étend jusqu'à lui ; une borne la
+  /// raccourcit ; le seul verset choisi la lève ; un verset intérieur repart
+  /// de lui seul.
   void _tapVerse(int verse) {
     setState(() {
       final (from, to) = (_from, _to);
       if (from == null || to == null) {
         _from = _to = verse;
-      } else if (verse == to + 1) {
-        _to = verse;
-      } else if (verse == from - 1) {
-        _from = verse;
-      } else if (from == to && verse == from) {
+      } else if (verse < from || verse > to) {
+        _from = verse < from ? verse : from;
+        _to = verse > to ? verse : to;
+      } else if (from == to) {
         _from = _to = null;
+      } else if (verse == from) {
+        _from = from + 1;
+      } else if (verse == to) {
+        _to = to - 1;
       } else {
         _from = _to = verse;
       }
     });
+    _placeMenu();
   }
+
+  /// Appui long puis glisser : la plage d'[anchor] à [verse].
+  void _dragVerses(int anchor, int verse) => setState(() {
+        _from = anchor < verse ? anchor : verse;
+        _to = anchor < verse ? verse : anchor;
+        _placeMenu();
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -185,6 +229,18 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     final versions = ref.watch(bibleVersionsProvider).value ?? const [];
     final actions = ref.watch(bibleSlotsProvider).verseActions;
     final from = _from;
+    final member = ref.watch(bibleIsMemberProvider);
+    final bookmarked = (ref
+                .watch(
+                  bibleChapterMarksProvider((
+                    book: c.book,
+                    chapter: c.chapter,
+                  )),
+                )
+                .value ??
+            const <BibleMark>[])
+        .where((m) => m.kind == BibleMarkKind.bookmark)
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.primary,
@@ -219,6 +275,21 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            key: BibleReaderScreen.bookmarkKey,
+            tooltip: l.bibleM2Bookmark,
+            icon: Icon(
+              bookmarked.isEmpty ? Icons.bookmark_border : Icons.bookmark,
+              color: Colors.white,
+            ),
+            onPressed: () => unawaited(
+              ref.read(bibleMarksStoreProvider).toggleBookmark(
+                    member: member,
+                    book: c.book,
+                    chapter: c.chapter,
+                  ),
+            ),
+          ),
           PopupMenuButton<String>(
             key: BibleReaderScreen.versionKey,
             tooltip: l.bibleVersionTooltip,
@@ -242,8 +313,9 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                 children: [
                   Text(
                     version,
-                    style:
-                        AppTypography.bodyStrong.copyWith(color: Colors.white),
+                    style: AppTypography.bodyStrong.copyWith(
+                      color: Colors.white,
+                    ),
                   ),
                   const Icon(Icons.arrow_drop_down, color: Colors.white),
                 ],
@@ -252,73 +324,84 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           ),
         ],
       ),
-      body: PageView.builder(
-        key: BibleReaderScreen.pagesKey,
-        controller: _pages,
-        itemCount: bibleChapters.length,
-        onPageChanged: (i) {
-          setState(() {
-            _index = i;
-            _from = _to = null;
-          });
-          _savePosition();
-        },
-        itemBuilder: (context, i) {
-          final page = bibleChapters[i];
-          final arrival = page.book == widget.book &&
-              page.chapter == widget.chapter &&
-              widget.from != null;
-          return _ChapterPage(
-            key: BibleReaderScreen.pageKey(page.book, page.chapter),
-            chapterKey: (
-              version: version,
-              book: page.book,
-              chapter: page.chapter,
-            ),
-            flashFrom: arrival ? widget.from : null,
-            flashTo: arrival ? (widget.to ?? widget.from) : null,
-            selectedFrom: i == _index ? _from : null,
-            selectedTo: i == _index ? _to : null,
-            onVerseTap: actions.isEmpty ? null : _tapVerse,
-            onReadToEnd: () {
-              if (i == _index) _markRead(page.book, page.chapter);
+      body: Stack(
+        key: _stackKey,
+        children: [
+          PageView.builder(
+            key: BibleReaderScreen.pagesKey,
+            controller: _pages,
+            itemCount: bibleChapters.length,
+            onPageChanged: (i) {
+              setState(() {
+                _index = i;
+                _from = _to = null;
+              });
+              _savePosition();
             },
-          );
-        },
-      ),
-      bottomNavigationBar: from == null || actions.isEmpty
-          ? null
-          : SafeArea(
-              child: Material(
-                key: BibleReaderScreen.actionsKey,
-                color: context.palette.surface,
-                elevation: 8,
-                child: SizedBox(
-                  height: 64,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      for (final a in actions)
-                        TextButton.icon(
-                          key: Key('bible_action_${a.id}'),
-                          icon: Icon(a.icon),
-                          label: Text(a.label(context)),
-                          onPressed: () {
-                            final selection = BibleLink(
-                              c.book,
-                              c.chapter,
-                              from: from,
-                              to: _to == from ? null : _to,
-                            );
-                            setState(() => _from = _to = null);
-                            a.run(context, ref, selection, version);
-                          },
-                        ),
-                    ],
+            itemBuilder: (context, i) {
+              final page = bibleChapters[i];
+              final arrival = page.book == widget.book &&
+                  page.chapter == widget.chapter &&
+                  widget.from != null;
+              return _ChapterPage(
+                key: BibleReaderScreen.pageKey(page.book, page.chapter),
+                chapterKey: (
+                  version: version,
+                  book: page.book,
+                  chapter: page.chapter,
+                ),
+                flashFrom: arrival ? widget.from : null,
+                flashTo: arrival ? (widget.to ?? widget.from) : null,
+                selectedFrom: i == _index ? _from : null,
+                selectedTo: i == _index ? _to : null,
+                onVerseTap: actions.isEmpty ? null : _tapVerse,
+                onVerseDrag: actions.isEmpty ? null : _dragVerses,
+                menu: i == _index
+                    ? (
+                        above: _aboveLink,
+                        below: _belowLink,
+                        firstKey: _firstKey
+                      )
+                    : null,
+                onReadToEnd: () {
+                  if (i == _index) _markRead(page.book, page.chapter);
+                },
+              );
+            },
+          ),
+          if (from != null && actions.isNotEmpty)
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              child: CompositedTransformFollower(
+                link: _menuBelow ? _belowLink : _aboveLink,
+                showWhenUnlinked: false,
+                targetAnchor:
+                    _menuBelow ? Alignment.bottomCenter : Alignment.topCenter,
+                followerAnchor:
+                    _menuBelow ? Alignment.topCenter : Alignment.bottomCenter,
+                offset: Offset(0, _menuBelow ? AppSpacing.xs : -AppSpacing.xs),
+                child: Center(
+                  child: Padding(
+                    padding: AppSpacing.screenPadding,
+                    child: BibleVerseMenu(
+                      selection: BibleLink(
+                        c.book,
+                        c.chapter,
+                        from: from,
+                        to: _to == from ? null : _to,
+                      ),
+                      versionCode: version,
+                      actions: actions,
+                      onDone: () => setState(() => _from = _to = null),
+                    ),
                   ),
                 ),
               ),
             ),
+        ],
+      ),
     );
   }
 }
@@ -334,6 +417,8 @@ class _ChapterPage extends ConsumerStatefulWidget {
     this.selectedFrom,
     this.selectedTo,
     this.onVerseTap,
+    this.onVerseDrag,
+    this.menu,
   });
 
   final BibleChapterKey chapterKey;
@@ -342,6 +427,14 @@ class _ChapterPage extends ConsumerStatefulWidget {
   final int? selectedFrom;
   final int? selectedTo;
   final ValueChanged<int>? onVerseTap;
+
+  /// Appui long sur un verset puis glisser : (verset de départ, verset sous
+  /// le doigt).
+  final void Function(int anchor, int verse)? onVerseDrag;
+
+  /// Posé sur la page courante : les cibles du menu flottant (au-dessus du
+  /// premier verset choisi, sous le dernier) et la clé du premier.
+  final ({LayerLink above, LayerLink below, GlobalKey firstKey})? menu;
   final VoidCallback onReadToEnd;
 
   @override
@@ -355,6 +448,31 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
   bool _scrolledToTarget = false;
   bool _reported = false;
   Timer? _flashTimer;
+  int? _dragAnchor;
+
+  /// Le verset sous [global] : chaque ligne porte son numéro en `MetaData`.
+  int? _verseAt(Offset global) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return null;
+    final result = BoxHitTestResult();
+    box.hitTest(result, position: box.globalToLocal(global));
+    for (final entry in result.path) {
+      final target = entry.target;
+      if (target is RenderMetaData && target.metaData is int) {
+        return target.metaData as int;
+      }
+    }
+    return null;
+  }
+
+  void _drag(Offset global, {bool start = false}) {
+    final drag = widget.onVerseDrag;
+    final verse = _verseAt(global);
+    if (drag == null || verse == null) return;
+    if (start) _dragAnchor = verse;
+    final anchor = _dragAnchor;
+    if (anchor != null) drag(anchor, verse);
+  }
 
   @override
   void initState() {
@@ -429,36 +547,70 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
             AppSpacing.lg,
             AppSpacing.lg,
             AppSpacing.lg,
-            AppSpacing.xxxl,
+            // De quoi loger le menu flottant sous le dernier verset.
+            240,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                BibleLink(key.book, key.chapter).labelFr,
-                style: AppTypography.h3,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              for (final v in list)
-                _VerseLine(
-                  key: v.number == widget.flashFrom ? _target : null,
-                  verse: v,
-                  decoration: decorations[v.number],
-                  flashed: _flashing &&
-                      v.number >= widget.flashFrom! &&
-                      v.number <= widget.flashTo!,
-                  selected: widget.selectedFrom != null &&
-                      v.number >= widget.selectedFrom! &&
-                      v.number <= widget.selectedTo!,
-                  palette: palette,
-                  onTap: widget.onVerseTap == null
-                      ? null
-                      : () => widget.onVerseTap!(v.number),
+          child: GestureDetector(
+            onLongPressStart: widget.onVerseDrag == null
+                ? null
+                : (d) => _drag(d.globalPosition, start: true),
+            onLongPressMoveUpdate: widget.onVerseDrag == null
+                ? null
+                : (d) => _drag(d.globalPosition),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  BibleLink(key.book, key.chapter).labelFr,
+                  style: AppTypography.h3,
                 ),
-            ],
+                const SizedBox(height: AppSpacing.md),
+                for (final v in list)
+                  _wrap(
+                    v.number,
+                    _VerseLine(
+                      key: v.number == widget.flashFrom ? _target : null,
+                      verse: v,
+                      decoration: decorations[v.number],
+                      flashed: _flashing &&
+                          v.number >= widget.flashFrom! &&
+                          v.number <= widget.flashTo!,
+                      selected: widget.selectedFrom != null &&
+                          v.number >= widget.selectedFrom! &&
+                          v.number <= widget.selectedTo!,
+                      palette: palette,
+                      onTap: widget.onVerseTap == null
+                          ? null
+                          : () => widget.onVerseTap!(v.number),
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+}
+
+extension on _ChapterPageState {
+  /// Le numéro pour le glisser ; les cibles du menu sur les bornes choisies.
+  Widget _wrap(int verse, Widget line) {
+    final menu = widget.menu;
+    var anchored = line;
+    if (menu != null && verse == widget.selectedTo) {
+      anchored = CompositedTransformTarget(link: menu.below, child: anchored);
+    }
+    if (menu != null && verse == widget.selectedFrom) {
+      anchored = KeyedSubtree(
+        key: menu.firstKey,
+        child: CompositedTransformTarget(link: menu.above, child: anchored),
+      );
+    }
+    return MetaData(
+      metaData: verse,
+      behavior: HitTestBehavior.translucent,
+      child: anchored,
     );
   }
 }
