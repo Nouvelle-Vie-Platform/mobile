@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/app_env.dart';
 import 'core/network/api_client.dart';
 import 'data/notes_media/note_media_providers.dart';
+import 'features/bible/quiz/quiz_providers.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
@@ -138,6 +139,8 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
           await ref.read(noteMediaComposerProvider).resendPending();
           // **Les brouillons de notes** (#190) : même raison, même moment.
           await ref.read(notesOutboxProvider)();
+          // **Les scores de quiz** du membre (mobile#204).
+          await ref.read(quizOutboxProvider)();
         };
         // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
         // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.

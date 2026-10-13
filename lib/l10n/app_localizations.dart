@@ -64,7 +64,7 @@ import 'app_localizations_fr.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -87,17 +87,17 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ee'),
     Locale('en'),
-    Locale('fr')
+    Locale('fr'),
   ];
 
   /// Nom **affiché** de l'application — celui que le fidèle lit sous l'icône, et le seul des trois noms du dépôt qui bouge. Il porte déjà « Nouvelle Vie » dans `android:label` et `CFBundleDisplayName` ; cette clé-ci disait encore « Maison du Miracle », et l'écran de démarrage le montrait. Ni le nom du paquet Dart (`maison_du_miracle`) ni l'identifiant d'application (`com.maisondumiracle.*`) ne sont concernés — voir « L'identité de l'application » dans CLAUDE.md. Le nom de l'**église**, lui, vit dans `aboutChurchName`
@@ -4821,6 +4821,174 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Plans de lecture, quiz, versions et paramètres arriveront ici.'**
   String get bibleMoreSoon;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Quiz'**
+  String get bibleQuizTitle;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Qui joue ?'**
+  String get bibleQuizWhoPlays;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez un profil : il règle les quiz proposés. Vous pourrez le changer à tout moment.'**
+  String get bibleQuizWhoPlaysHint;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Enfants'**
+  String get bibleQuizBandKids;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ados'**
+  String get bibleQuizBandTeens;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Adultes'**
+  String get bibleQuizBandAdults;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'6 à 11 ans'**
+  String get bibleQuizBandKidsAges;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'12 à 17 ans'**
+  String get bibleQuizBandTeensAges;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'18 ans et plus'**
+  String get bibleQuizBandAdultsAges;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun quiz pour ce profil pour l\'instant.'**
+  String get bibleQuizEmpty;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau'**
+  String get bibleQuizNew;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Meilleur : {score}/{total}'**
+  String bibleQuizBest(int score, int total);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 question} other{{count} questions}}'**
+  String bibleQuizQuestionCount(int count);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Facile'**
+  String get bibleQuizDifficulty1;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Moyen'**
+  String get bibleQuizDifficulty2;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Difficile'**
+  String get bibleQuizDifficulty3;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Question {index} sur {total}'**
+  String bibleQuizProgress(int index, int total);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonne réponse !'**
+  String get bibleQuizRight;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce n\'est pas ça.'**
+  String get bibleQuizWrong;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps écoulé.'**
+  String get bibleQuizTimeUp;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'La réponse : {answer}'**
+  String bibleQuizAnswerWas(String answer);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivant'**
+  String get bibleQuizNext;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir mon score'**
+  String get bibleQuizSeeScore;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'{score} / {total}'**
+  String bibleQuizScore(int score, int total);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Quiz terminé'**
+  String get bibleQuizFinished;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejouer'**
+  String get bibleQuizReplay;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminer'**
+  String get bibleQuizDone;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter la question'**
+  String get bibleQuizListen;
 }
 
 class _AppLocalizationsDelegate
@@ -4852,8 +5020,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

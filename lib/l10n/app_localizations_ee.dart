@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2651,4 +2652,105 @@ class AppLocalizationsEe extends AppLocalizations {
   @override
   String get bibleMoreSoon =>
       'Plans de lecture, quiz, versions et paramètres arriveront ici.';
+
+  @override
+  String get bibleQuizTitle => 'Quiz';
+
+  @override
+  String get bibleQuizWhoPlays => 'Qui joue ?';
+
+  @override
+  String get bibleQuizWhoPlaysHint =>
+      'Choisissez un profil : il règle les quiz proposés. Vous pourrez le changer à tout moment.';
+
+  @override
+  String get bibleQuizBandKids => 'Enfants';
+
+  @override
+  String get bibleQuizBandTeens => 'Ados';
+
+  @override
+  String get bibleQuizBandAdults => 'Adultes';
+
+  @override
+  String get bibleQuizBandKidsAges => '6 à 11 ans';
+
+  @override
+  String get bibleQuizBandTeensAges => '12 à 17 ans';
+
+  @override
+  String get bibleQuizBandAdultsAges => '18 ans et plus';
+
+  @override
+  String get bibleQuizEmpty => 'Aucun quiz pour ce profil pour l\'instant.';
+
+  @override
+  String get bibleQuizNew => 'Nouveau';
+
+  @override
+  String bibleQuizBest(int score, int total) {
+    return 'Meilleur : $score/$total';
+  }
+
+  @override
+  String bibleQuizQuestionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '1 question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleQuizDifficulty1 => 'Facile';
+
+  @override
+  String get bibleQuizDifficulty2 => 'Moyen';
+
+  @override
+  String get bibleQuizDifficulty3 => 'Difficile';
+
+  @override
+  String bibleQuizProgress(int index, int total) {
+    return 'Question $index sur $total';
+  }
+
+  @override
+  String get bibleQuizRight => 'Bonne réponse !';
+
+  @override
+  String get bibleQuizWrong => 'Ce n\'est pas ça.';
+
+  @override
+  String get bibleQuizTimeUp => 'Temps écoulé.';
+
+  @override
+  String bibleQuizAnswerWas(String answer) {
+    return 'La réponse : $answer';
+  }
+
+  @override
+  String get bibleQuizNext => 'Suivant';
+
+  @override
+  String get bibleQuizSeeScore => 'Voir mon score';
+
+  @override
+  String bibleQuizScore(int score, int total) {
+    return '$score / $total';
+  }
+
+  @override
+  String get bibleQuizFinished => 'Quiz terminé';
+
+  @override
+  String get bibleQuizReplay => 'Rejouer';
+
+  @override
+  String get bibleQuizDone => 'Terminer';
+
+  @override
+  String get bibleQuizListen => 'Écouter la question';
 }
