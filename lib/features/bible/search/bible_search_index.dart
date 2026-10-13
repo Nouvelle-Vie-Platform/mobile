@@ -108,9 +108,9 @@ class BibleSearchIndex {
   /// simultanés partagent la même construction. Sans effet pour une version
   /// non installée.
   Future<void> ensureIndexed(String versionCode) => _building[versionCode] ??=
-      // Corps en bloc, exprès : `=> _building.remove(…)` rendrait ce futur
-      // lui-même, que `whenComplete` attendrait — il ne finirait jamais.
-      _ensure(versionCode).whenComplete(() {
+          // Corps en bloc, exprès : `=> _building.remove(…)` rendrait ce futur
+          // lui-même, que `whenComplete` attendrait — il ne finirait jamais.
+          _ensure(versionCode).whenComplete(() {
         _building.remove(versionCode);
       });
 

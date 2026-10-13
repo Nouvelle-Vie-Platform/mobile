@@ -136,8 +136,8 @@ void main() {
 
     test('pagination : pages disjointes qui se suivent', () async {
       final p1 = await index.search('croit', versions: ['EXA'], limit: 5);
-      final p2 = await index.search('croit',
-          versions: ['EXA'], offset: 5, limit: 5);
+      final p2 =
+          await index.search('croit', versions: ['EXA'], offset: 5, limit: 5);
       expect(p1.total, p2.total);
       expect(p2.hits, hasLength(5));
       expect(

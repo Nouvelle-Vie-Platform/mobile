@@ -91,18 +91,19 @@ Future<void> _type(WidgetTester tester, String text) async {
 
 /// Les textes des résultats, marques de surlignage comprises (`RichText`).
 Iterable<InlineSpan> _boldSpans(WidgetTester tester) => tester
-    .widgetList<RichText>(find.descendant(
+        .widgetList<RichText>(find.descendant(
       of: find.byType(BibleSearchScreen),
       matching: find.byType(RichText),
     ))
-    .expand((r) {
-  final spans = <InlineSpan>[];
-  r.text.visitChildren((s) {
-    if (s is TextSpan && s.style?.fontWeight == FontWeight.w700) spans.add(s);
-    return true;
-  });
-  return spans;
-});
+        .expand((r) {
+      final spans = <InlineSpan>[];
+      r.text.visitChildren((s) {
+        if (s is TextSpan && s.style?.fontWeight == FontWeight.w700)
+          spans.add(s);
+        return true;
+      });
+      return spans;
+    });
 
 void main() {
   setUp(() {
@@ -141,7 +142,8 @@ void main() {
       await tester.tap(find.byKey(BibleSearchScreen.scopeKey('new')));
       await _settle(tester);
       final labels = tester
-          .widgetList<Text>(find.textContaining(RegExp(r'^(Jean|Apocalypse|Genèse|Psaumes) \d')))
+          .widgetList<Text>(find
+              .textContaining(RegExp(r'^(Jean|Apocalypse|Genèse|Psaumes) \d')))
           .map((t) => t.data!)
           .toList();
       expect(labels, isNotEmpty);
@@ -176,9 +178,8 @@ void main() {
     await tester.runAsync(() async {
       await _openSearch(tester);
       await _type(tester, 'jour');
-      final single = tester
-          .widget<Text>(find.byKey(BibleSearchScreen.countKey))
-          .data;
+      final single =
+          tester.widget<Text>(find.byKey(BibleSearchScreen.countKey)).data;
 
       await tester.tap(find.byKey(BibleSearchScreen.versionKey('EXB')));
       await _settle(tester);
@@ -202,8 +203,9 @@ void main() {
       await tester.tap(find.byIcon(Icons.compare_arrows).first);
       await _settle(tester);
       expect(find.byType(BibleCompareScreen), findsOneWidget);
-      final link =
-          tester.widget<BibleCompareScreen>(find.byType(BibleCompareScreen)).link;
+      final link = tester
+          .widget<BibleCompareScreen>(find.byType(BibleCompareScreen))
+          .link;
       for (final (code, variant) in [('EXA', 0), ('EXB', 1)]) {
         final card = find.byKey(BibleCompareScreen.versionKey(code));
         expect(card, findsOneWidget);
