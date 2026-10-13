@@ -260,10 +260,10 @@ class _Hero extends StatelessWidget {
             ),
           // Trois voiles relevés sur la maquette (profils de couleur) : un
           // lavis violet qui refroidit l'image, un voile bleu nuit à gauche
-          // derrière le texte, et le fondu vers #252A40 — plein vers 300 pt au
-          // centre — sur lequel se posent recherche et cartes.
+          // derrière le texte, et un fondu progressif vers #252A40 (plein au bas
+          // de l'image) qui laisse voir collines et lac sous la recherche.
           const DecoratedBox(
-            decoration: BoxDecoration(color: Color(0x406545AA)),
+            decoration: BoxDecoration(color: Color(0x1A6545AA)),
           ),
           const DecoratedBox(
             decoration: BoxDecoration(
@@ -311,15 +311,14 @@ class _Hero extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: [0, 0.34, 0.40, 0.47, 0.52, 0.58, 0.66, 0.70, 1],
+                stops: [0, 0.34, 0.45, 0.6, 0.75, 0.88, 0.95, 1],
                 colors: [
                   Color(0x00252A40),
                   Color(0x00252A40),
-                  Color(0x26252A40),
-                  Color(0x59252A40),
+                  Color(0x4D252A40),
                   Color(0x8C252A40),
-                  Color(0xBF252A40),
-                  Color(0xF2252A40),
+                  Color(0xB3252A40),
+                  Color(0xE6252A40),
                   BibleHomeColors.heroShade,
                   BibleHomeColors.heroShade,
                 ],
@@ -491,7 +490,7 @@ class _ShortcutCard extends StatelessWidget {
               Text(
                 count,
                 maxLines: 1,
-                style: _atkinson(17),
+                style: _atkinson(18, weight: FontWeight.w700),
               ),
               Text(
                 label,
