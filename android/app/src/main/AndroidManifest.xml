@@ -29,6 +29,8 @@
          que leur affichage ; le réveil silencieux de FCM, lui, arrive sans aucune
          permission. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Rappels de la Bible (#202) : reprogrammés après un redémarrage. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- Enregistrer un média partagé dans la galerie (gal). Nécessaire seulement
          jusqu'à Android 9 (API 28) : dès API 29 le MediaStore n'exige plus
          d'autorisation d'écriture. -->
@@ -116,6 +118,23 @@
         <receiver
             android:exported="false"
             android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
+
+        <!-- Les rappels du module Bible (#202), programmés à l'heure choisie
+             (`zonedSchedule`) : sans ces récepteurs, rien ne sonne, sans
+             erreur ; le second les reprogramme après un redémarrage. -->
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
