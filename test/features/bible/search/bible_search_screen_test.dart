@@ -98,8 +98,9 @@ Iterable<InlineSpan> _boldSpans(WidgetTester tester) => tester
         .expand((r) {
       final spans = <InlineSpan>[];
       r.text.visitChildren((s) {
-        if (s is TextSpan && s.style?.fontWeight == FontWeight.w700)
+        if (s is TextSpan && s.style?.fontWeight == FontWeight.w700) {
           spans.add(s);
+        }
         return true;
       });
       return spans;
