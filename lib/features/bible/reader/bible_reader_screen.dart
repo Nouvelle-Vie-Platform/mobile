@@ -41,6 +41,12 @@ import '../personalize/reader_appearance.dart';
 import '../shell/bible_browser.dart';
 import '../shell/bible_slots.dart';
 
+/// La durée du surlignage d'arrivée. Surchargée en test : sous `runAsync`
+/// sa minuterie est réelle, et une machine chargée l'éteignait avant que le
+/// test ne la voie.
+final bibleFlashDurationProvider =
+    Provider<Duration>((_) => const Duration(milliseconds: 2400));
+
 class BibleReaderScreen extends ConsumerStatefulWidget {
   const BibleReaderScreen({
     super.key,
@@ -56,9 +62,6 @@ class BibleReaderScreen extends ConsumerStatefulWidget {
   /// Les versets à montrer en arrivant (surlignés un instant).
   final int? from;
   final int? to;
-
-  /// La durée du surlignage d'arrivée.
-  static const Duration flashDuration = Duration(milliseconds: 2400);
 
   static const Key headerKey = Key('bible_reader_header');
   static const Key versionKey = Key('bible_reader_version');
@@ -483,7 +486,7 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
     super.initState();
     _flashing = widget.flashFrom != null;
     if (_flashing) {
-      _flashTimer = Timer(BibleReaderScreen.flashDuration, () {
+      _flashTimer = Timer(ref.read(bibleFlashDurationProvider), () {
         if (mounted) setState(() => _flashing = false);
       });
     }

@@ -19,6 +19,12 @@ final notesDaoProvider = Provider<NotesDao>(
 
 /// **Le seul provider de ce domaine qui parle au réseau.** Inerte sans
 /// backend ; les tests le surchargent par un double.
+/// Le délai du brouillon d'une note avant son envoi (`NoteDraftSaver`).
+/// Surchargé par les tests d'écran, pour que la charge de la machine ne
+/// déclenche pas un envoi au milieu d'un parcours.
+final noteDraftDebounceProvider =
+    Provider<Duration>((_) => const Duration(seconds: 2));
+
 final notesRepositoryProvider = Provider<NotesRepository>(
   (ref) =>
       AppEnv.useBackend ? HttpNotesRepository() : const InertNotesRepository(),

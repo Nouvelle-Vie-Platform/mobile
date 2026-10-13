@@ -105,6 +105,16 @@ final Override _radioOff = radioRepositoryProvider.overrideWithValue(
   const FixedRadioRepository(RadioAntenna.unknown),
 );
 
+/// **Les doublures de tout le fichier** : l'antenne, et le délai du brouillon
+/// de note poussé à une heure — sous `runAsync` sa minuterie de 2 s est
+/// réelle, et une machine chargée la laissait partir au milieu d'un parcours
+/// (« supprimer » voyait alors un envoi de trop). Les envois testés ici sont
+/// ceux de la sortie, immédiats.
+final List<Override> _quiet = [
+  _radioOff,
+  noteDraftDebounceProvider.overrideWithValue(const Duration(hours: 1)),
+];
+
 /// **Aucune requête ne doit partir** d'ici : l'adaptateur note tout ce qui
 /// atteint le fil, et lève. Posé sur le singleton, il vaut pour tout le
 /// fichier.
@@ -204,7 +214,7 @@ void main() {
         (tester) async {
       await tester.runAsync(() async {
         final router =
-            await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
+            await pumpGuestApp(tester, guestContainer(extra: [..._quiet]));
         router.push('/notes');
         await _settle(tester);
 
@@ -219,7 +229,7 @@ void main() {
     testWidgets('la porte de session, et aucune liste', (tester) async {
       await tester.runAsync(() async {
         final router =
-            await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
+            await pumpGuestApp(tester, guestContainer(extra: [..._quiet]));
         router.push('/bible?tab=notes');
         await _settle(tester);
 
@@ -244,7 +254,7 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [_radioOff],
+          extra: [..._quiet],
         );
         await _seed(container.read(appDatabaseProvider));
         final router = await pumpGuestApp(tester, container);
@@ -294,7 +304,7 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [_radioOff, notesRepositoryProvider.overrideWithValue(repo)],
+          extra: [..._quiet, notesRepositoryProvider.overrideWithValue(repo)],
         );
         final db = container.read(appDatabaseProvider);
         final router = await pumpGuestApp(tester, container);
@@ -363,7 +373,7 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [_radioOff, notesRepositoryProvider.overrideWithValue(repo)],
+          extra: [..._quiet, notesRepositoryProvider.overrideWithValue(repo)],
         );
         final db = container.read(appDatabaseProvider);
         final router = await pumpGuestApp(tester, container);
@@ -393,7 +403,7 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [_radioOff, notesRepositoryProvider.overrideWithValue(repo)],
+          extra: [..._quiet, notesRepositoryProvider.overrideWithValue(repo)],
         );
         final db = container.read(appDatabaseProvider);
         await _seed(db);
@@ -450,7 +460,7 @@ void main() {
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
           extra: [
-            _radioOff,
+            ..._quiet,
             notesRepositoryProvider
                 .overrideWithValue(_RecordingNotesRepository()),
           ],
@@ -508,7 +518,7 @@ void main() {
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
           extra: [
-            _radioOff,
+            ..._quiet,
             notesRepositoryProvider
                 .overrideWithValue(_RecordingNotesRepository()),
           ],
@@ -540,7 +550,7 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [_radioOff, notesRepositoryProvider.overrideWithValue(repo)],
+          extra: [..._quiet, notesRepositoryProvider.overrideWithValue(repo)],
         );
         final db = container.read(appDatabaseProvider);
         await _seed(db);
@@ -579,7 +589,7 @@ void main() {
         final container = guestContainer(
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
-          extra: [_radioOff, notesRepositoryProvider.overrideWithValue(repo)],
+          extra: [..._quiet, notesRepositoryProvider.overrideWithValue(repo)],
         );
         await _seed(container.read(appDatabaseProvider));
         final router = await pumpGuestApp(tester, container);
@@ -632,7 +642,7 @@ void main() {
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
           extra: [
-            _radioOff,
+            ..._quiet,
             notesRepositoryProvider.overrideWithValue(repo),
             noteMediaPickerProvider.overrideWithValue(_OnePhotoPicker(photo)),
             noteMediaTransportProvider.overrideWithValue(transport),
@@ -693,7 +703,7 @@ void main() {
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
           extra: [
-            _radioOff,
+            ..._quiet,
             notesRepositoryProvider
                 .overrideWithValue(_RecordingNotesRepository()),
           ],
@@ -736,7 +746,7 @@ void main() {
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
           extra: [
-            _radioOff,
+            ..._quiet,
             notesRepositoryProvider
                 .overrideWithValue(_RecordingNotesRepository()),
           ],
@@ -804,7 +814,7 @@ void main() {
           auth: GuestAuthRepository(signedIn: true),
           vault: StartupVault.memberSession,
           extra: [
-            _radioOff,
+            ..._quiet,
             notesRepositoryProvider
                 .overrideWithValue(_RecordingNotesRepository()),
             teachingByIdProvider.overrideWith(
