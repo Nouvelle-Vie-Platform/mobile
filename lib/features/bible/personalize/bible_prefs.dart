@@ -26,9 +26,6 @@ enum BibleReaderTheme { light, dark, sepia }
 /// OFL), et la police du système.
 enum BibleReaderFont { atkinson, literata, system }
 
-/// La voix de lecture : celle du système, ou Piper « siwis » téléchargée.
-enum BibleVoice { system, piper }
-
 /// Les vitesses proposées, dans l'ordre du bouton.
 const List<double> kBibleSpeechRates = [0.75, 1.0, 1.25, 1.5];
 
@@ -38,7 +35,6 @@ final class BiblePrefs {
     this.font = BibleReaderFont.atkinson,
     this.fontSize = 18,
     this.lineHeight = 1.6,
-    this.voice = BibleVoice.system,
     this.speechRate = 1.0,
     this.verseReminder = false,
     this.verseReminderMinutes = 7 * 60,
@@ -55,7 +51,6 @@ final class BiblePrefs {
   final BibleReaderFont font;
   final double fontSize;
   final double lineHeight;
-  final BibleVoice voice;
   final double speechRate;
 
   /// Rappels locaux, **désactivés par défaut** ; l'heure en minutes depuis
@@ -70,7 +65,6 @@ final class BiblePrefs {
     BibleReaderFont? font,
     double? fontSize,
     double? lineHeight,
-    BibleVoice? voice,
     double? speechRate,
     bool? verseReminder,
     int? verseReminderMinutes,
@@ -82,7 +76,6 @@ final class BiblePrefs {
         font: font ?? this.font,
         fontSize: fontSize ?? this.fontSize,
         lineHeight: lineHeight ?? this.lineHeight,
-        voice: voice ?? this.voice,
         speechRate: speechRate ?? this.speechRate,
         verseReminder: verseReminder ?? this.verseReminder,
         verseReminderMinutes: verseReminderMinutes ?? this.verseReminderMinutes,
@@ -95,7 +88,6 @@ final class BiblePrefs {
         'font': font.name,
         'fontSize': fontSize,
         'lineHeight': lineHeight,
-        'voice': voice.name,
         'speechRate': speechRate,
         'verseReminder': verseReminder,
         'verseReminderMinutes': verseReminderMinutes,
@@ -127,7 +119,6 @@ final class BiblePrefs {
       lineHeight:
           clamp(pick<num>('lineHeight'), minLineHeight, maxLineHeight) ??
               d.lineHeight,
-      voice: named(BibleVoice.values, 'voice') ?? d.voice,
       speechRate: clamp(pick<num>('speechRate'), 0.5, 2) ?? d.speechRate,
       verseReminder: pick<bool>('verseReminder') ?? d.verseReminder,
       verseReminderMinutes:

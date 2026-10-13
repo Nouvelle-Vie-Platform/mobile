@@ -5110,12 +5110,6 @@ abstract class AppLocalizations {
   /// **'Badges'**
   String get bibleM4Badges;
 
-  /// Mon espace : aucun badge
-  ///
-  /// In fr, this message translates to:
-  /// **'Vos badges de plans et de défis paraîtront ici.'**
-  String get bibleM4NoBadges;
-
   /// Mon espace : chapitres lus
   ///
   /// In fr, this message translates to:
@@ -5158,30 +5152,6 @@ abstract class AppLocalizations {
   /// **'Voix du système'**
   String get bibleM4VoiceSystem;
 
-  /// Voix Piper
-  ///
-  /// In fr, this message translates to:
-  /// **'Voix naturelle (« siwis »)'**
-  String get bibleM4VoicePiper;
-
-  /// Voix Piper absente
-  ///
-  /// In fr, this message translates to:
-  /// **'À télécharger ({size} Mo), lue sans réseau'**
-  String bibleM4VoicePiperSize(String size);
-
-  /// Voix Piper installée
-  ///
-  /// In fr, this message translates to:
-  /// **'Installée — lue sans réseau'**
-  String get bibleM4VoicePiperReady;
-
-  /// Voix Piper : échec
-  ///
-  /// In fr, this message translates to:
-  /// **'Le téléchargement a échoué. Réessayez.'**
-  String get bibleM4VoicePiperFailed;
-
   /// Paramètres : rappels
   ///
   /// In fr, this message translates to:
@@ -5221,7 +5191,7 @@ abstract class AppLocalizations {
   /// Paramètres : licences
   ///
   /// In fr, this message translates to:
-  /// **'Voix « siwis » : modèle Piper fr_FR-siwis-medium, entraîné sur le corpus SIWIS (Université d\'Édimbourg), licence CC BY 4.0 ; lue par sherpa-onnx (Apache 2.0) et espeak-ng (GPL 3.0). Polices : Atkinson Hyperlegible (Braille Institute) et Literata (The Literata Project Authors), SIL Open Font License 1.1.'**
+  /// **'Polices : Atkinson Hyperlegible (Braille Institute) et Literata (The Literata Project Authors), SIL Open Font License 1.1.'**
   String get bibleM4Licenses;
 
   /// Raccourci de l'accueil du module
@@ -6009,6 +5979,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{read} sur {total} chapitres de {book} lus'**
   String bibleHomeBookProgress(int read, int total, String book);
+
+  /// Mon espace du module Bible : badge de quiz
+  ///
+  /// In fr, this message translates to:
+  /// **'Premier quiz'**
+  String get bibleQuizBadgeFirst;
+
+  /// Mon espace du module Bible : badge de quiz
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans faute'**
+  String get bibleQuizBadgePerfect;
+
+  /// Mon espace du module Bible : badge de quiz
+  ///
+  /// In fr, this message translates to:
+  /// **'10 quiz différents'**
+  String get bibleQuizBadgeTen;
 }
 
 class _AppLocalizationsDelegate

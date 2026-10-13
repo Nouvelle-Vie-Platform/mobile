@@ -136,16 +136,29 @@ void main() {
     final sent = await db.select(db.localBiblePlanEnrollments).getSingle();
     expect(sent.dirty, isFalse);
 
-    // Pas encore revenue : la ligne reste, rien ne repart.
-    await store.resendDirty(api);
-    expect(wire.requests, hasLength(1));
-    expect(await db.select(db.localBiblePlanEnrollments).get(), hasLength(1));
-
-    // Le delta la ramène à jour : purgée.
+    // Le cycle suivant : le delta l'a ramenée ; purgée, rien ne repart.
     await mirror(e.id, updatedAt: DateTime.utc(2026, 10, 13, 9, 0, 1));
     await store.resendDirty(api);
+    expect(wire.requests, hasLength(1));
     expect(await db.select(db.localBiblePlanEnrollments).get(), isEmpty);
     expect((await store.enrollments(member: true)).single.id, e.id);
+  });
+
+  test('une ligne envoyée que le miroir ne ramène pas est purgée quand même',
+      () async {
+    final (:api, :wire) = _api((_) => jsonReply(200, {}));
+    await store.enroll(
+      source: PlanSource.builtin,
+      planCode: BuiltinPlanCode.nt90,
+      startedOn: DateTime(2026, 10, 13),
+    );
+    await store.resendDirty(api);
+    expect((await db.select(db.localBiblePlanEnrollments).getSingle()).dirty,
+        isFalse);
+    // Fondue ou refusée côté serveur : son id ne reviendra jamais.
+    await store.resendDirty(api);
+    expect(await db.select(db.localBiblePlanEnrollments).get(), isEmpty);
+    expect(wire.requests, hasLength(1));
   });
 
   test('un plan quitté part en DELETE, et reste masqué jusqu\'au delta',

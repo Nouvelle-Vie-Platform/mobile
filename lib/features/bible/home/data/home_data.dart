@@ -14,7 +14,6 @@ import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../data/local/app_database.dart';
@@ -192,58 +191,6 @@ List<BibleLink> decodeBibleReferences(String? json) {
   } on FormatException {
     return const [];
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Favori du verset du jour
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// `true` si [link] est déjà un favori : brouillon local vivant, ou (membre)
-/// marque synchronisée que la file locale ne retire pas.
-final bibleIsFavoriteProvider = StreamProvider.family<bool, BibleLink>((
-  ref,
-  link,
-) {
-  final db = ref.watch(appDatabaseProvider);
-  final member = ref.watch(bibleIsMemberProvider);
-  const same = "kind = 'favorite' AND book = ?1 AND chapter = ?2 "
-      'AND verse_from IS ?3 AND verse_to IS ?4';
-  return db
-      .customSelect(
-        'SELECT EXISTS(SELECT 1 FROM local_bible_marks WHERE $same '
-        'AND deleted_at IS NULL) '
-        'OR (?5 AND EXISTS(SELECT 1 FROM bible_marks WHERE $same AND id NOT IN '
-        '(SELECT id FROM local_bible_marks WHERE deleted_at IS NOT NULL))) '
-        'AS fav',
-        variables: [
-          Variable.withString(link.book),
-          Variable.withInt(link.chapter),
-          Variable(link.from),
-          Variable(link.to),
-          Variable.withBool(member),
-        ],
-        readsFrom: {db.localBibleMarks, db.bibleMarks},
-      )
-      .watchSingle()
-      .map((r) => r.read<bool>('fav'));
-});
-
-/// Crée le favori de [link] dans `local_bible_marks` (`dirty`) : brouillon de
-/// l'invité, ou file d'envoi du membre — l'envoi est à M2.
-Future<void> addBibleFavorite(AppDatabase db, BibleLink link, {DateTime? now}) {
-  final at = (now ?? DateTime.now()).toUtc();
-  return db.into(db.localBibleMarks).insert(
-        LocalBibleMarksCompanion.insert(
-          id: const Uuid().v7(),
-          kind: 'favorite',
-          book: link.book,
-          chapter: link.chapter,
-          verseFrom: Value(link.from),
-          verseTo: Value(link.to),
-          clientCreatedAt: at,
-          clientUpdatedAt: at,
-        ),
-      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

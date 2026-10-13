@@ -29,6 +29,7 @@ import '../../../state/sync_providers.dart';
 import '../data/bible_providers.dart';
 import '../data/bible_source.dart';
 import '../data/canon.dart';
+import '../plans/plans_providers.dart';
 import 'bible_prefs.dart';
 
 /// Ce que l'appli demande au système.
@@ -133,6 +134,8 @@ Future<void> syncBibleReminders({
   required Future<BibleLink> Function(DateTime day) verseFor,
   required Future<String> Function(BibleLink link) textFor,
   required DateTime now,
+  bool hasPlan = true,
+  bool planDoneToday = false,
 }) async {
   for (var d = 0; d < kReminderDays; d++) {
     await scheduler.cancel(kVerseReminderBaseId + d);
@@ -154,7 +157,9 @@ Future<void> syncBibleReminders({
         );
       }
     }
-    if (prefs.planReminder) {
+    // « Lecture du plan » (M5) : seulement avec un plan en cours, et pas
+    // aujourd'hui si la lecture du jour est faite.
+    if (prefs.planReminder && hasPlan && !(d == 0 && planDoneToday)) {
       final at = day.add(Duration(minutes: prefs.planReminderMinutes));
       if (at.isAfter(now)) {
         await scheduler.schedule(
@@ -181,7 +186,8 @@ Future<String> verseTextIn(BibleSource? source, BibleLink link) async {
 }
 
 /// **Reprogramme les rappels** depuis le magasin : appelé après chaque
-/// synchronisation réussie et à chaque réglage. Ne lève jamais.
+/// synchronisation réussie, à chaque réglage et quand la lecture du plan du
+/// jour change (`app.dart`). Ne lève jamais.
 final bibleRemindersRefreshProvider = Provider<Future<void> Function()>(
   (ref) => () async {
     try {
@@ -198,6 +204,8 @@ final bibleRemindersRefreshProvider = Provider<Future<void> Function()>(
         verseFor: (day) => verseOfDayFor(db, day),
         textFor: (link) => verseTextIn(source, link),
         now: DateTime.now(),
+        hasPlan: ref.read(bibleCurrentPlanProvider) != null,
+        planDoneToday: ref.read(biblePlanReadingDoneTodayProvider) ?? false,
       );
     } on Object {
       // Greffon absent (web, test), refus : pas de rappel, rien d'autre.

@@ -43,6 +43,7 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   /// L'abonnement qui tient le porte-intention vivant — voir [initState].
   ProviderSubscription<SessionIntent?>? _intents;
   ProviderSubscription<Object?>? _bibleMarks;
+  ProviderSubscription<Object?>? _biblePlanDone;
 
   /// L'abonnement aux réveils reçus **application ouverte** — voir [_handleWake].
   StreamSubscription<Map<String, Object?>>? _wakes;
@@ -145,18 +146,38 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
           await ref.read(noteMediaComposerProvider).resendPending();
           // **Les brouillons de notes** (#190) : même raison, même moment.
           await ref.read(notesOutboxProvider)();
-          // **Les marques du module Bible** (M2, #200) : même raison.
-          await ref.read(bibleMarksOutboxProvider).run();
-          // **Les rappels de la Bible** (#202) : le verset du jour a pu changer.
+          // **Le module Bible**, dans cet ordre :
+          // 1. la file des marques (M2, #200) — d'abord la fusion d'un invité
+          //    qui vient de se connecter (`POST /bible/import`), puis ses
+          //    marques et sa position ;
+          // 2. les plans (M5, #203) et les scores de quiz (M6, #204) — pas au
+          //    cycle d'une fusion : elle vient de marquer leurs lignes
+          //    envoyées, et leur file les purgerait avant que le delta ne les
+          //    ramène ; ils attendent le cycle suivant ;
+          // 3. les rappels (M4, #202) : le verset du jour a pu changer.
+          final bibleMarks = ref.read(bibleMarksOutboxProvider);
+          final importing = bibleMarks.importPending;
+          await bibleMarks.run();
+          if (!importing && !bibleMarks.importPending) {
+            await ref.read(biblePlansOutboxProvider)();
+            await ref.read(quizOutboxProvider)();
+          }
           await ref.read(bibleRemindersRefreshProvider)();
-          // **Les plans de lecture** (#203) : jours cochés, plans suivis.
-          await ref.read(biblePlansOutboxProvider)();
-          // **Les scores de quiz** du membre (mobile#204).
-          await ref.read(quizOutboxProvider)();
         };
         // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
         // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.
         unawaited(scheduler.start());
+
+        // Le rappel « Lecture du plan » (M4) suit la lecture du jour (M5) :
+        // faite, celui d'aujourd'hui s'annule.
+        _biblePlanDone = ref.listenManual(biblePlanReadingDoneTodayProvider, (
+          previous,
+          next,
+        ) {
+          if (previous != null && next != null && previous != next) {
+            unawaited(ref.read(bibleRemindersRefreshProvider)());
+          }
+        });
 
         // **Le canal temps réel de la messagerie** (#140), ouvert après le
         // premier cycle demandé et sous la même attente de porteur : un
@@ -241,6 +262,7 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
   void dispose() {
     _intents?.close();
     _bibleMarks?.close();
+    _biblePlanDone?.close();
     _messaging?.close();
     _notifications?.close();
     unawaited(_wakes?.cancel());

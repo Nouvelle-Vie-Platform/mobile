@@ -92,9 +92,19 @@ void main() {
       await _settle(tester);
       await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.home)));
       await _settle(tester);
+      // Sous le corps de l'accueil (M7) : on descend jusqu'à elle.
+      await tester.scrollUntilVisible(
+        find.byKey(BiblePlanHomeCard.cardKey),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.byKey(BiblePlanHomeCard.cardKey), findsOneWidget);
 
-      expect(wire.requests, isEmpty);
+      // Seul le geste « ouvert » du verset du jour (M7) est parti.
+      expect(
+        wire.requests.map((r) => r.path),
+        everyElement(endsWith('/bible/verse-of-day/events')),
+      );
     });
   });
 }

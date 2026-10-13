@@ -2811,10 +2811,6 @@ class AppLocalizationsEe extends AppLocalizations {
   String get bibleM4Badges => 'Badges';
 
   @override
-  String get bibleM4NoBadges =>
-      'Vos badges de plans et de défis paraîtront ici.';
-
-  @override
   String bibleM4ChaptersRead(int count, int total) {
     return '$count chapitres lus sur $total';
   }
@@ -2865,21 +2861,6 @@ class AppLocalizationsEe extends AppLocalizations {
   String get bibleM4VoiceSystem => 'Voix du système';
 
   @override
-  String get bibleM4VoicePiper => 'Voix naturelle (« siwis »)';
-
-  @override
-  String bibleM4VoicePiperSize(String size) {
-    return 'À télécharger ($size Mo), lue sans réseau';
-  }
-
-  @override
-  String get bibleM4VoicePiperReady => 'Installée — lue sans réseau';
-
-  @override
-  String get bibleM4VoicePiperFailed =>
-      'Le téléchargement a échoué. Réessayez.';
-
-  @override
   String get bibleM4Reminders => 'Rappels';
 
   @override
@@ -2900,7 +2881,7 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String get bibleM4Licenses =>
-      'Voix « siwis » : modèle Piper fr_FR-siwis-medium, entraîné sur le corpus SIWIS (Université d\'Édimbourg), licence CC BY 4.0 ; lue par sherpa-onnx (Apache 2.0) et espeak-ng (GPL 3.0). Polices : Atkinson Hyperlegible (Braille Institute) et Literata (The Literata Project Authors), SIL Open Font License 1.1.';
+      'Polices : Atkinson Hyperlegible (Braille Institute) et Literata (The Literata Project Authors), SIL Open Font License 1.1.';
 
   @override
   String get bibleM4OfflineShortcut => 'Hors ligne';
@@ -3378,4 +3359,13 @@ class AppLocalizationsEe extends AppLocalizations {
   String bibleHomeBookProgress(int read, int total, String book) {
     return '$read sur $total chapitres de $book lus';
   }
+
+  @override
+  String get bibleQuizBadgeFirst => 'Premier quiz';
+
+  @override
+  String get bibleQuizBadgePerfect => 'Sans faute';
+
+  @override
+  String get bibleQuizBadgeTen => '10 quiz différents';
 }

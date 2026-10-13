@@ -9,11 +9,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../l10n/l10n_extension.dart';
 import '../../../router/app_router.dart';
-import '../../../state/sync_providers.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
@@ -21,14 +19,40 @@ import '../../../theme/app_typography.dart';
 import '../../../widgets/status/status_background.dart';
 import '../data/bible_providers.dart';
 import '../data/canon.dart';
+import '../marks/bible_marks_store.dart';
+import '../personalize/personalize_routes.dart';
+import '../quiz/quiz_providers.dart';
+import '../quiz/quiz_screens.dart';
 import '../reader/bible_reader_screen.dart';
 import '../shell/bible_slots.dart';
-import 'data/featured_quiz.dart';
 import 'data/home_data.dart';
 
-/// Le partage du texte d'un verset (feuille du système). Surchargé en test.
-final bibleVerseSharerProvider = Provider<Future<void> Function(String text)>(
-  (ref) => (text) => SharePlus.instance.share(ShareParams(text: text)),
+/// Le partage du verset du jour : le studio de partage de M4, dans la
+/// version active. Surchargé en test.
+final bibleVerseSharerProvider =
+    Provider<void Function(WidgetRef ref, BibleLink link)>(
+  (_) => (ref, link) =>
+      openBibleStudio(ref, link, ref.read(activeBibleVersionProvider)),
+);
+
+/// [link] est-il déjà un favori ? Lu dans les marques de M2 (un favori
+/// d'un seul verset y est rangé `verseFrom == verseTo`).
+final _isFavoriteProvider = StreamProvider.autoDispose.family<bool, BibleLink>(
+  (ref, link) => ref
+      .watch(bibleMarksStoreProvider)
+      .watch(
+        member: ref.watch(bibleIsMemberProvider),
+        book: link.book,
+        chapter: link.chapter,
+      )
+      .map(
+        (marks) => marks.any(
+          (m) =>
+              m.kind == BibleMarkKind.favorite &&
+              m.verseFrom == link.from &&
+              (m.verseTo ?? m.verseFrom) == (link.to ?? link.from),
+        ),
+      ),
 );
 
 /// Largeur à partir de laquelle le corps passe sur deux colonnes.
@@ -78,8 +102,7 @@ class _BibleHomeHeaderState extends ConsumerState<BibleHomeHeader> {
     }
     final l = context.l10n;
     final text = ref.watch(bibleLinkTextProvider(vod.link)).value ?? '';
-    final favorite =
-        ref.watch(bibleIsFavoriteProvider(vod.link)).value ?? false;
+    final favorite = ref.watch(_isFavoriteProvider(vod.link)).value ?? false;
     final backdrop = vod.backdrop;
     final ink = backdrop == null
         ? AppColors.textOnPrimary
@@ -138,10 +161,14 @@ class _BibleHomeHeaderState extends ConsumerState<BibleHomeHeader> {
                   onPressed: favorite
                       ? null
                       : () async {
-                          await addBibleFavorite(
-                            ref.read(appDatabaseProvider),
-                            vod.link,
-                          );
+                          // Le magasin des marques (M2) : brouillon de
+                          // l'invité, file d'envoi du membre.
+                          await ref
+                              .read(bibleMarksStoreProvider)
+                              .toggleFavorite(
+                                member: ref.read(bibleIsMemberProvider),
+                                link: vod.link,
+                              );
                           _count(vod.day, VerseOfDayEventKind.favorited);
                         },
                   disabledColor: ink,
@@ -154,9 +181,7 @@ class _BibleHomeHeaderState extends ConsumerState<BibleHomeHeader> {
                       ? null
                       : () {
                           _count(vod.day, VerseOfDayEventKind.shared);
-                          ref.read(bibleVerseSharerProvider)(
-                            '« $text »\n— ${vod.link.labelFr}',
-                          );
+                          ref.read(bibleVerseSharerProvider)(ref, vod.link);
                         },
                 ),
                 Expanded(
@@ -540,15 +565,16 @@ class _FeaturedQuizCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final quiz = ref.watch(featuredQuizProvider).value;
+    // Le quiz de la semaine de M6 (filtré par le profil d'âge) ; le toucher
+    // ouvre directement le jeu.
+    final quiz = ref.watch(featuredQuizProvider);
     if (quiz == null) return const SizedBox.shrink();
     final palette = context.palette;
-    final open = quiz.onOpen;
     return _HomeCard(
       key: BibleHomeKeys.quiz,
       icon: Icons.quiz_outlined,
       title: context.l10n.bibleHomeQuizTitle,
-      onTap: open == null ? null : () => open(context, ref),
+      onTap: () => QuizListScreen.play(ref, quiz),
       child: Row(
         children: [
           Expanded(
@@ -557,7 +583,7 @@ class _FeaturedQuizCard extends ConsumerWidget {
               style: AppTypography.h4.copyWith(color: palette.textPrimary),
             ),
           ),
-          if (open != null) Icon(Icons.chevron_right, color: palette.primary),
+          Icon(Icons.chevron_right, color: palette.primary),
         ],
       ),
     );

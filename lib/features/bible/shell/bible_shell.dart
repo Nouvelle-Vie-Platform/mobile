@@ -28,6 +28,7 @@ import '../../../theme/app_typography.dart';
 import '../../../widgets/app_empty_state.dart';
 import '../data/canon.dart';
 import '../reader/bible_reader_screen.dart';
+import '../search/bible_search_screen.dart';
 import 'bible_browser.dart';
 import 'bible_slots.dart';
 
@@ -46,6 +47,7 @@ class BibleShell extends ConsumerStatefulWidget {
 
   static const Key navKey = Key('bible_nav');
   static const Key backKey = Key('bible_back');
+  static const Key searchKey = Key('bible_search');
   static const Key insertKey = Key('bible_insert');
   static Key tabKey(BibleModuleTab tab) => Key('bible_tab_${tab.name}');
 
@@ -162,6 +164,17 @@ class _BibleShellState extends ConsumerState<BibleShell> {
           title,
           style: AppTypography.h5.copyWith(color: Colors.white),
         ),
+        actions: [
+          // La loupe (M3) sur les onglets Accueil et Bible.
+          if (!widget.selectMode &&
+              (_tab == BibleModuleTab.home || _tab == BibleModuleTab.bible))
+            IconButton(
+              key: BibleShell.searchKey,
+              icon: const Icon(Icons.search),
+              tooltip: l.bibleSearchTitle,
+              onPressed: () => BibleSearchScreen.open(ref.read(routerProvider)),
+            ),
+        ],
       ),
       body: widget.selectMode
           ? BibleBrowser(

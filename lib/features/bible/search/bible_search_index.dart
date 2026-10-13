@@ -102,16 +102,20 @@ class BibleSearchIndex {
 
   final AppDatabase _db;
   final BibleCatalog _catalog;
-  final Map<String, Future<void>> _building = {};
+
+  /// Les constructions en cours, par base et par version : partagées entre
+  /// instances (la recherche et l'installation de M4 en créent chacune une).
+  static final Map<(AppDatabase, String), Future<void>> _building = {};
 
   /// Construit l'index de [versionCode] s'il n'est pas complet. Deux appels
   /// simultanés partagent la même construction. Sans effet pour une version
   /// non installée.
-  Future<void> ensureIndexed(String versionCode) => _building[versionCode] ??=
+  Future<void> ensureIndexed(String versionCode) =>
+      _building[(_db, versionCode)] ??=
           // Corps en bloc, exprès : `=> _building.remove(…)` rendrait ce futur
           // lui-même, que `whenComplete` attendrait — il ne finirait jamais.
           _ensure(versionCode).whenComplete(() {
-        _building.remove(versionCode);
+        _building.remove((_db, versionCode));
       });
 
   Future<void> _ensure(String code) async {

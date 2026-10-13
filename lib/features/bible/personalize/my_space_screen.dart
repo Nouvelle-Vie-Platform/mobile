@@ -16,25 +16,8 @@ import '../../../widgets/app_card.dart';
 import '../../../widgets/brand_app_bar.dart';
 import '../data/bible_providers.dart';
 import '../data/canon.dart';
-
-/// **Un badge** (M5 les décerne : plans, défis, séries).
-final class BibleBadge {
-  const BibleBadge({
-    required this.id,
-    required this.icon,
-    required this.label,
-    this.earned = true,
-  });
-
-  final String id;
-  final IconData icon;
-  final String Function(BuildContext context) label;
-  final bool earned;
-}
-
-/// **Les badges**, remplis par M5. Vide jusque-là ; à l'assemblage, ce
-/// provider rend la liste de M5.
-final bibleBadgesProvider = Provider<List<BibleBadge>>((ref) => const []);
+import '../plans/plans_widgets.dart';
+import '../quiz/quiz_providers.dart';
 
 /// Les chiffres de Mon espace.
 final class BibleMySpaceStats {
@@ -114,13 +97,14 @@ class BibleMySpaceScreen extends ConsumerWidget {
   const BibleMySpaceScreen({super.key});
 
   static Key statKey(String id) => Key('bible_my_space_$id');
+  static Key quizBadgeKey(QuizBadge b) => Key('bible_quiz_badge_${b.name}');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final stats =
         ref.watch(bibleMySpaceStatsProvider).value ?? const BibleMySpaceStats();
-    final badges = ref.watch(bibleBadgesProvider);
+    final quizBadges = ref.watch(quizBadgesProvider);
     final total = bibleChapters.length;
     return Scaffold(
       appBar: BrandAppBar(title: l.bibleM4MySpaceTitle),
@@ -149,20 +133,34 @@ class BibleMySpaceScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.md),
           Text(l.bibleM4Badges, style: AppTypography.h5),
           const SizedBox(height: AppSpacing.sm),
-          if (badges.isEmpty)
-            Text(l.bibleM4NoBadges)
-          else
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                for (final b in badges)
-                  Chip(
-                    avatar: Icon(b.icon, size: 18),
-                    label: Text(b.label(context)),
+          // Les badges de plans et de défis (M5), puis ceux des quiz (M6).
+          const BibleBadgeGrid(),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.md,
+            children: [
+              for (final b in QuizBadge.values)
+                SizedBox(
+                  width: 76,
+                  child: BibleMedal(
+                    key: quizBadgeKey(b),
+                    icon: switch (b) {
+                      QuizBadge.firstQuiz => Icons.quiz_outlined,
+                      QuizBadge.perfect => Icons.verified_outlined,
+                      QuizBadge.tenQuizzes => Icons.military_tech_outlined,
+                    },
+                    label: switch (b) {
+                      QuizBadge.firstQuiz => l.bibleQuizBadgeFirst,
+                      QuizBadge.perfect => l.bibleQuizBadgePerfect,
+                      QuizBadge.tenQuizzes => l.bibleQuizBadgeTen,
+                    },
+                    earned: quizBadges.contains(b),
+                    hexagon: true,
                   ),
-              ],
-            ),
+                ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.md),
           _Stat(
             id: 'chapters',

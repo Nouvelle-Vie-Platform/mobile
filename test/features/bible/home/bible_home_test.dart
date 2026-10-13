@@ -20,6 +20,7 @@ import 'package:maison_du_miracle/features/bible/home/data/fallback_verses.dart'
 import 'package:maison_du_miracle/features/bible/home/data/home_data.dart';
 import 'package:maison_du_miracle/features/bible/home/home_slots.dart';
 import 'package:maison_du_miracle/features/bible/home/home_view.dart';
+import 'package:maison_du_miracle/features/bible/quiz/quiz_screens.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_slots.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
@@ -117,7 +118,8 @@ Future<(AppDatabase, GoRouter)> _pump(
         nowProvider.overrideWithValue(() => _today),
         bibleIsMemberProvider.overrideWithValue(false),
         routerProvider.overrideWithValue(router),
-        bibleVerseSharerProvider.overrideWithValue((t) async => _shared.add(t)),
+        bibleVerseSharerProvider
+            .overrideWithValue((_, link) => _shared.add(link.labelFr)),
         bibleSlotsProvider.overrideWithValue(
           BibleSlots.merge([BibleSlots(homeShortcuts: shortcuts), homeSlots]),
         ),
@@ -226,7 +228,8 @@ void main() {
         await tester.tap(find.byKey(BibleHomeKeys.share));
         await _settle(tester);
         expect(_shared, hasLength(2));
-        expect(_shared.first, endsWith('— Romains 8:28'));
+        // Le studio de partage (M4) reçoit la référence du jour.
+        expect(_shared.first, 'Romains 8:28');
 
         await tester.tap(find.byKey(BibleHomeKeys.favorite));
         await _settle(tester);
@@ -426,6 +429,11 @@ void main() {
             BibleQuizzesCompanion.insert(
               id: const Value(7),
               title: 'Les patriarches',
+              ageBand: const Value('adults'),
+              questions: const Value(
+                '[{"kind":"truefalse","prompt":"Abraham ?",'
+                '"choices":["Vrai","Faux"],"answer":0}]',
+              ),
               featuredFrom: const Value('2026-10-12'),
               featuredUntil: const Value('2026-10-18'),
               publishedAt: Value(DateTime.utc(2026, 10, 1)),
@@ -436,7 +444,10 @@ void main() {
       expect(find.text('Les patriarches'), findsOneWidget);
       await tester.ensureVisible(find.byKey(BibleHomeKeys.quiz));
       await tester.tap(find.byKey(BibleHomeKeys.quiz));
-      expect(_tapped, ['quiz']);
+      await _settle(tester);
+      // Le quiz de M6 s'ouvre directement sur le jeu.
+      expect(find.byType(QuizPlayScreen), findsOneWidget);
+      expect(_tapped, isEmpty);
     });
   });
 
@@ -449,6 +460,11 @@ void main() {
               BibleQuizzesCompanion.insert(
                 id: const Value(7),
                 title: 'Passé',
+                ageBand: const Value('adults'),
+                questions: const Value(
+                  '[{"kind":"truefalse","prompt":"?",'
+                  '"choices":["Vrai","Faux"],"answer":0}]',
+                ),
                 featuredFrom: const Value('2026-10-01'),
                 featuredUntil: const Value('2026-10-07'),
                 publishedAt: Value(DateTime.utc(2026, 10, 1)),

@@ -221,11 +221,8 @@ void main() {
         'durationSeconds': 95,
         'playedAt': '2026-10-13T10:00:00.000Z',
       });
-      // Envoyée, gardée jusqu'au retour du miroir (le score reste affiché).
+      // Envoyée : gardée jusqu'au passage suivant (le score reste affiché).
       expect((await local()).single.dirty, isFalse);
-
-      await store.sendPending(dio);
-      expect(wire.requests, hasLength(1), reason: 'pas de double envoi');
 
       await db.syncDao.applyLiveRows(
         db.syncDao.bibleQuizResultsCollection,
@@ -241,11 +238,25 @@ void main() {
           }),
         ],
       );
+      // Le cycle suivant : purgée, et pas renvoyée.
       await store.sendPending(dio);
       expect(await local(), isEmpty);
+      expect(wire.requests, hasLength(1), reason: 'pas de double envoi');
       await _eventually(
         () => expect(container.read(quizBestScoresProvider)[4]?.score, 8),
       );
+    });
+
+    test('envoyée mais jamais ramenée par le miroir : purgée quand même',
+        () async {
+      container = make(member: true);
+      final store = container.read(quizStoreProvider);
+      await store.record(quizId: 4, score: 1, total: 2, durationSeconds: 5);
+      await store.sendPending(dio);
+      expect((await local()).single.dirty, isFalse);
+      await store.sendPending(dio);
+      expect(await local(), isEmpty);
+      expect(wire.requests, hasLength(1));
     });
 
     test('panne réseau : rejoué ; refus 4xx : abandonné', () async {
@@ -261,8 +272,10 @@ void main() {
       status = 422;
       await store.sendPending(dio);
       expect((await local()).single.dirty, isFalse);
+      // Abandonnée : purgée au passage suivant, jamais renvoyée.
       await store.sendPending(dio);
       expect(wire.requests, hasLength(2));
+      expect(await local(), isEmpty);
     });
 
     test('un invité n\'envoie rien', () async {

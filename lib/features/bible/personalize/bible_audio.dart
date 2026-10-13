@@ -2,24 +2,17 @@
 /// par verset, le verset en cours surligné dans le lecteur (par
 /// `chapterDecorators`), lecture/pause, chapitre précédent/suivant, vitesse.
 ///
-/// Deux voix derrière [BibleSpeech] : celle du **système** (`stts` :
-/// AVSpeechSynthesizer, TextToSpeech) et **Piper « siwis »** une fois
-/// téléchargée (`sherpa_onnx`, hors ligne). La barre de lecture se pose
-/// par-dessus le lecteur (sous son en-tête) et s'efface dès qu'on le quitte.
+/// La voix du **système** (`stts` : AVSpeechSynthesizer, TextToSpeech)
+/// derrière [BibleSpeech]. La barre de lecture se pose par-dessus le lecteur
+/// (sous son en-tête) et s'efface dès qu'on le quitte.
 library;
 
 import 'dart:async';
-import 'dart:io';
-import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 import 'package:stts/stts.dart';
 
-import '../../../data/players/chat_audio_player.dart';
-import '../../../data/players/just_audio_chat_engine.dart';
 import '../../../l10n/l10n_extension.dart';
 import '../../../router/app_router.dart';
 import '../../../theme/app_palette.dart';
@@ -30,16 +23,12 @@ import '../data/bible_source.dart';
 import '../data/canon.dart';
 import '../shell/bible_slots.dart';
 import 'bible_prefs.dart';
-import 'piper_voice.dart';
 
 /// **Une voix** : dit un texte et ne rend la main qu'à la fin — ou à
 /// [stop].
 abstract class BibleSpeech {
   Future<void> speak(String text, double rate);
   Future<void> stop();
-
-  /// Prépare [text] pendant que le précédent se dit (Piper : la synthèse).
-  Future<void> prepare(String text) async {}
   Future<void> dispose() async {}
 }
 
@@ -89,112 +78,9 @@ class SystemBibleSpeech extends BibleSpeech {
   Future<void> dispose() => stop();
 }
 
-/// **Piper « siwis »** : la synthèse dans un isolate, le son par le moteur
-/// des vocaux (`ChatAudioEngine`, un lecteur à part de la médiathèque).
-class PiperBibleSpeech extends BibleSpeech {
-  PiperBibleSpeech(this.model, {ChatAudioEngine? engine})
-      : _engine = engine ?? JustAudioChatEngine();
-
-  final PiperModel model;
-  final ChatAudioEngine _engine;
-  final Map<String, Future<String?>> _wavs = {};
-  Completer<void>? _current;
-  int _n = 0;
-
-  Future<String?> _synth(String text) => _wavs.putIfAbsent(text, () async {
-        final dir = await getTemporaryDirectory();
-        final path = '${dir.path}/bible_tts_${_n++}.wav';
-        return _synthesize(model, text, path);
-      });
-
-  @override
-  Future<void> prepare(String text) async {
-    try {
-      await _synth(text);
-    } on Object {
-      _wavs.remove(text);
-    }
-  }
-
-  @override
-  Future<void> speak(String text, double rate) async {
-    final done = _current = Completer<void>();
-    StreamSubscription<void>? sub;
-    try {
-      final path = await _synth(text);
-      _wavs.remove(text);
-      if (path == null || done.isCompleted) return;
-      sub = _engine.completions().listen((_) {
-        if (!done.isCompleted) done.complete();
-      });
-      await _engine.load(path);
-      await _engine.setSpeed(rate);
-      await _engine.play();
-      await done.future;
-      unawaited(File(path).delete().then((_) {}, onError: (_) {}));
-    } on Object {
-      // Synthèse ou lecture impossible : on passe au verset suivant.
-    } finally {
-      await sub?.cancel();
-    }
-  }
-
-  @override
-  Future<void> stop() async {
-    final c = _current;
-    if (c != null && !c.isCompleted) c.complete();
-    await _engine.stop();
-  }
-
-  @override
-  Future<void> dispose() async {
-    await stop();
-    await _engine.dispose();
-  }
-}
-
-/// La synthèse d'un texte en WAV, dans un isolate qui n'emporte que le
-/// modèle, le texte et le chemin.
-// ponytail: le modèle se recharge à chaque verset (isolate jetable), masqué
-// par la préparation du suivant ; un isolate durable si c'est trop lent sur
-// les petits téléphones.
-Future<String?> _synthesize(PiperModel m, String text, String path) =>
-    Isolate.run(() {
-      sherpa.initBindings();
-      final tts = sherpa.OfflineTts(
-        sherpa.OfflineTtsConfig(
-          model: sherpa.OfflineTtsModelConfig(
-            vits: sherpa.OfflineTtsVitsModelConfig(
-              model: m.model,
-              tokens: m.tokens,
-              dataDir: m.dataDir,
-            ),
-            numThreads: 2,
-            debug: false,
-          ),
-        ),
-      );
-      try {
-        final audio = tts.generate(text: text);
-        final ok = sherpa.writeWave(
-          filename: path,
-          samples: audio.samples,
-          sampleRate: audio.sampleRate,
-        );
-        return ok ? path : null;
-      } finally {
-        tts.free();
-      }
-    });
-
-/// La voix choisie : Piper si elle est choisie **et** installée, sinon le
-/// système.
+/// La voix de lecture : celle du système.
 final bibleSpeechProvider = Provider<BibleSpeech>((ref) {
-  final voice = ref.watch(biblePrefsProvider.select((p) => p.voice));
-  final model = ref.watch(piperVoiceProvider).value;
-  final speech = voice == BibleVoice.piper && model != null
-      ? PiperBibleSpeech(model)
-      : SystemBibleSpeech();
+  final speech = SystemBibleSpeech();
   ref.onDispose(speech.dispose);
   return speech;
 });
@@ -271,7 +157,6 @@ class BibleAudioController extends Notifier<BibleAudioState?> {
       if (v.number < verse) continue;
       if (run != _run || !ref.mounted) return;
       state = state?.copyWith(verse: v.number);
-      if (i + 1 < verses.length) unawaited(_speech.prepare(verses[i + 1].text));
       await _speech.speak(v.text, ref.read(biblePrefsProvider).speechRate);
     }
     if (run == _run && ref.mounted) {

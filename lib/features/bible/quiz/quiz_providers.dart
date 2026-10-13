@@ -17,33 +17,41 @@ import 'package:uuid/uuid.dart';
 import '../../../core/network/api_client.dart';
 import '../../../data/local/app_database.dart';
 import '../../../state/sync_providers.dart';
+import '../../../state/theme_provider.dart';
 import '../data/bible_providers.dart';
+import '../personalize/bible_audio.dart';
 import 'quiz.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // La voix
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// **La lecture à voix haute** du profil enfant. Muette tant que la synthèse
-/// vocale (M4, `flutter_tts`) n'est pas branchée : M4 surcharge
-/// [quizSpeakerProvider] par son implémentation.
+/// **La lecture à voix haute** du profil enfant : la voix du système du
+/// lecteur (M4, [bibleSpeechProvider]), à vitesse normale.
 abstract interface class QuizSpeaker {
   Future<void> speak(String text);
   Future<void> stop();
 }
 
-final class SilentQuizSpeaker implements QuizSpeaker {
-  const SilentQuizSpeaker();
+final class BibleQuizSpeaker implements QuizSpeaker {
+  const BibleQuizSpeaker(this._speech);
+
+  final BibleSpeech _speech;
+
+  /// Coupe la question précédente avant de dire la suivante.
+  @override
+  Future<void> speak(String text) async {
+    await _speech.stop();
+    await _speech.speak(text, 1);
+  }
 
   @override
-  Future<void> speak(String text) async {}
-
-  @override
-  Future<void> stop() async {}
+  Future<void> stop() => _speech.stop();
 }
 
-final quizSpeakerProvider =
-    Provider<QuizSpeaker>((ref) => const SilentQuizSpeaker());
+final quizSpeakerProvider = Provider<QuizSpeaker>(
+  (ref) => BibleQuizSpeaker(ref.watch(bibleSpeechProvider)),
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Le magasin
@@ -128,18 +136,16 @@ class QuizStore {
         );
   }
 
-  /// **La file d'envoi du membre** : purge ce que le miroir a ramené, puis
-  /// envoie le reste. Un refus du serveur (4xx) n'est pas rejoué ; une panne
+  /// **La file d'envoi du membre** : purge ce qui est parti au passage
+  /// précédent, puis envoie le reste. Un refus du serveur (4xx) n'est pas rejoué ; une panne
   /// réseau l'est au cycle suivant (l'envoi est idempotent par `id`).
   Future<void> sendPending(Dio dio) async {
-    await db.customStatement(
-      'DELETE FROM local_bible_quiz_results '
-      'WHERE id IN (SELECT id FROM bible_quiz_results)',
-    );
-    // `customStatement` ne prévient pas les flux.
-    db.notifyUpdates({
-      TableUpdate.onTable(db.localBibleQuizResults, kind: UpdateKind.delete),
-    });
+    // Les lignes envoyées lors d'une exécution précédente : le cycle réussi
+    // qui a suivi les a ramenées dans le miroir, ou le serveur ne les rendra
+    // jamais (refus) — même règle que les marques (M2).
+    await (db.delete(db.localBibleQuizResults)
+          ..where((t) => t.dirty.equals(false)))
+        .go();
     final pending = await (db.select(db.localBibleQuizResults)
           ..where((t) => t.dirty.equals(true)))
         .get();
@@ -221,7 +227,7 @@ final quizBadgesProvider = Provider<Set<QuizBadge>>((ref) {
 /// récente.
 final featuredQuizProvider = Provider<Quiz?>((ref) {
   final band = ref.watch(quizAgeProfileProvider).value;
-  final today = quizDay(DateTime.now());
+  final today = quizDay(ref.watch(nowProvider)());
   final candidates = [
     for (final q in ref.watch(quizzesProvider).value ?? const <Quiz>[])
       if (q.featuredOn(today) && (band == null || q.ageBand == band)) q,

@@ -1,16 +1,12 @@
 /// **M4 (#202), la logique** : réglages, thèmes, catalogue fusionné et
-/// téléchargement simulé, empreinte de la voix Piper, rappels programmés,
+/// téléchargement simulé, rappels programmés,
 /// lecture audio verset par verset.
 library;
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:archive/archive_io.dart';
-import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' show Value;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
@@ -23,7 +19,6 @@ import 'package:maison_du_miracle/features/bible/personalize/bible_prefs.dart';
 import 'package:maison_du_miracle/features/bible/personalize/bible_reminders.dart';
 import 'package:maison_du_miracle/features/bible/personalize/my_space_screen.dart';
 import 'package:maison_du_miracle/features/bible/personalize/personalize_slots.dart';
-import 'package:maison_du_miracle/features/bible/personalize/piper_voice.dart';
 import 'package:maison_du_miracle/features/bible/personalize/reader_appearance.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
@@ -94,7 +89,6 @@ void main() {
       expect(p.font, BibleReaderFont.atkinson);
       expect(p.verseReminder, isFalse);
       expect(p.planReminder, isFalse);
-      expect(p.voice, BibleVoice.system);
     });
 
     test('aller-retour JSON, et une valeur illisible garde son défaut', () {
@@ -232,6 +226,39 @@ void main() {
       expect(await db.select(db.bibleInstalledVersions).get(), isEmpty);
     });
 
+    test('après installation, la version servie est indexée (M3)', () async {
+      final db = openTestDatabase();
+      addTearDown(db.close);
+      await db.into(db.bibleVersions).insert(
+            BibleVersionsCompanion.insert(
+              id: const Value(7),
+              code: 'EWE',
+              name: 'Biblia',
+              publishedAt: Value(DateTime.utc(2026)),
+            ),
+          );
+      final container = ProviderContainer(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(container.dispose);
+      final entry =
+          MergedBibleCatalog(remote: [_served(7, 'EWE')]).entries.last;
+      await installBibleVersion(
+        db,
+        entry,
+        ensureIndexed: container.read(bibleEnsureIndexedProvider),
+        step: Duration.zero,
+      ).drain<void>();
+      final n = await db
+          .customSelect(
+            "SELECT count(*) AS n FROM bible_fts WHERE version_code = 'EWE'",
+          )
+          .getSingle();
+      expect(n.read<int>('n'), greaterThan(30000));
+      final row = (await db.select(db.bibleInstalledVersions).get()).single;
+      expect(row.indexed, isTrue);
+    });
+
     test('bibleCatalogProvider rend le catalogue fusionné du magasin',
         () async {
       final db = openTestDatabase();
@@ -270,97 +297,15 @@ void main() {
     });
   });
 
-  group('Voix Piper', () {
-    late Directory tmp;
-    setUp(() => tmp = Directory.systemTemp.createTempSync('piper_test'));
-    tearDown(() => tmp.deleteSync(recursive: true));
-
-    test('l\'empreinte et la taille figées sont celles de l\'archive', () {
-      expect(kPiperBytes, 67207459);
-      expect(kPiperSha256, hasLength(64));
-      expect(kPiperUrl, endsWith('vits-piper-fr_FR-siwis-medium.tar.bz2'));
-    });
-
-    test('vérification : taille et empreinte, sur un fichier factice',
-        () async {
-      final f = File('${tmp.path}/a.bin')..writeAsBytesSync(utf8.encode('abc'));
-      final good = sha256.convert(utf8.encode('abc')).toString();
-      expect(await verifyPiperArchive(f, size: 3, sha256Hex: good), isNull);
-      expect(
-        await verifyPiperArchive(f, size: 4, sha256Hex: good),
-        contains('taille'),
-      );
-      expect(
-        await verifyPiperArchive(f, size: 3, sha256Hex: '0' * 64),
-        contains('empreinte'),
-      );
-    });
-
-    /// Une archive `.tar.bz2` qui a la forme du vrai modèle.
-    List<int> fakeModelArchive() {
-      final archive = Archive()
-        ..add(ArchiveFile.bytes(
-          'vits-piper-fr_FR-siwis-medium/fr_FR-siwis-medium.onnx',
-          utf8.encode('onnx'),
-        ))
-        ..add(ArchiveFile.bytes(
-          'vits-piper-fr_FR-siwis-medium/tokens.txt',
-          utf8.encode('a 1'),
-        ))
-        ..add(ArchiveFile.bytes(
-          'vits-piper-fr_FR-siwis-medium/espeak-ng-data/fr_dict',
-          utf8.encode('dict'),
-        ));
-      return BZip2Encoder().encodeBytes(TarEncoder().encodeBytes(archive));
-    }
-
-    test('installer : télécharge, vérifie, décompresse ; supprimer efface',
-        () async {
-      final bytes = fakeModelArchive();
-      final store = PiperVoiceStore(
-        root: () async => Directory('${tmp.path}/voice'),
-        size: bytes.length,
-        sha256Hex: sha256.convert(bytes).toString(),
-        download: (url, path, onProgress) async {
-          expect(url, kPiperUrl);
-          onProgress(bytes.length ~/ 2, bytes.length);
-          File(path).writeAsBytesSync(bytes);
-          onProgress(bytes.length, bytes.length);
-        },
-      );
-      expect(await store.installed(), isNull);
-      final progress = await store.install().toList();
-      expect(progress.last, 1.0);
-      final model = await store.installed();
-      expect(model, isNotNull);
-      expect(File(model!.model).readAsStringSync(), 'onnx');
-      // L'archive ne reste pas sur le téléphone.
-      expect(File('${tmp.path}/voice/voice.tar.bz2').existsSync(), isFalse);
-
-      await store.remove();
-      expect(await store.installed(), isNull);
-    });
-
-    test('une archive fausse est refusée, effacée, et rien n\'est installé',
-        () async {
-      final store = PiperVoiceStore(
-        root: () async => Directory('${tmp.path}/voice'),
-        download: (url, path, onProgress) async =>
-            File(path).writeAsStringSync('pirate'),
-      );
-      await expectLater(
-        store.install(),
-        emitsError(isA<PiperVerificationError>()),
-      );
-      expect(File('${tmp.path}/voice/voice.tar.bz2').existsSync(), isFalse);
-      expect(await store.installed(), isNull);
-    });
-  });
-
   group('Rappels', () {
     final l10n = AppLocalizationsFr();
 
-    Future<_FakeScheduler> run(BiblePrefs prefs, DateTime now) async {
+    Future<_FakeScheduler> run(
+      BiblePrefs prefs,
+      DateTime now, {
+      bool hasPlan = true,
+      bool planDoneToday = false,
+    }) async {
       final scheduler = _FakeScheduler();
       await syncBibleReminders(
         prefs: prefs,
@@ -369,6 +314,8 @@ void main() {
         verseFor: (day) async => const BibleLink('John', 3, from: 16),
         textFor: (link) async => 'Texte $link',
         now: now,
+        hasPlan: hasPlan,
+        planDoneToday: planDoneToday,
       );
       return scheduler;
     }
@@ -395,6 +342,16 @@ void main() {
       expect(verses.first.$4, contains('Jean 3:16'));
       expect(plans.first.$2, DateTime(2026, 10, 13, 20));
       expect(plans.first.$4, l10n.bibleM4PlanReminderBody);
+    });
+
+    test('lecture du plan (M5) : rien sans plan, pas aujourd\'hui si faite',
+        () async {
+      const prefs = BiblePrefs(planReminder: true);
+      final at = DateTime(2026, 10, 13, 8);
+      expect((await run(prefs, at, hasPlan: false)).scheduled, isEmpty);
+      final done = await run(prefs, at, planDoneToday: true);
+      expect(done.scheduled, hasLength(kReminderDays - 1));
+      expect(done.scheduled.first.$2, DateTime(2026, 10, 14, 20));
     });
 
     test('le verset du jour vient du magasin, sinon de la liste intégrée',
@@ -517,10 +474,6 @@ void main() {
       expect(guest.notes, 0);
       final member = await readBibleMySpaceStats(db, member: true);
       expect(member.favorites, 2);
-      expect(const BibleBadge(id: 'x', icon: Icons.star, label: _label).earned,
-          isTrue);
     });
   });
 }
-
-String _label(BuildContext _) => 'x';

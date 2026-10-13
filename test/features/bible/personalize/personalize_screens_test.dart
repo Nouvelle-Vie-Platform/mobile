@@ -17,8 +17,12 @@ import 'package:maison_du_miracle/features/bible/personalize/bible_prefs.dart';
 import 'package:maison_du_miracle/features/bible/personalize/bible_reminders.dart';
 import 'package:maison_du_miracle/features/bible/personalize/bible_settings_screen.dart';
 import 'package:maison_du_miracle/features/bible/personalize/bible_versions_screen.dart';
-import 'package:maison_du_miracle/features/bible/personalize/piper_voice.dart';
+import 'package:maison_du_miracle/features/bible/personalize/my_space_screen.dart';
 import 'package:maison_du_miracle/features/bible/personalize/reader_appearance.dart';
+import 'package:maison_du_miracle/features/bible/plans/plan_logic.dart';
+import 'package:maison_du_miracle/features/bible/plans/plans_providers.dart';
+import 'package:maison_du_miracle/features/bible/plans/plans_widgets.dart';
+import 'package:maison_du_miracle/features/bible/quiz/quiz_providers.dart';
 import 'package:maison_du_miracle/features/bible/personalize/share_studio.dart';
 import 'package:maison_du_miracle/data/pickers/status_image_picker.dart';
 import 'package:maison_du_miracle/models/announcement_view.dart';
@@ -201,14 +205,14 @@ void main() {
       const BibleSettingsScreen(),
       overrides: [
         _prefs,
-        piperVoiceProvider.overrideWith((ref) async => null),
         bibleRemindersRefreshProvider
             .overrideWithValue(() async => refreshed++),
         bibleVerseOfDaySubscriptionProvider
             .overrideWithValue((on) async => subscriptions.add(on)),
       ],
     );
-    expect(find.byKey(BibleSettingsScreen.piperDownloadKey), findsOneWidget);
+    // La voix du système seulement (Piper retirée).
+    expect(find.byKey(BibleSettingsScreen.voiceKey), findsOneWidget);
     await tester.tap(find.byKey(BibleSettingsScreen.verseReminderKey));
     await tester.pump();
     final ctx = tester.element(find.byType(BibleSettingsScreen));
@@ -221,8 +225,36 @@ void main() {
       find.byKey(BibleSettingsScreen.aboutKey),
       200,
     );
-    expect(find.textContaining('CC BY 4.0'), findsOneWidget);
+    expect(find.textContaining('SIL Open Font License'), findsOneWidget);
+    expect(find.textContaining('espeak'), findsNothing);
     // La revalidation de session de `pumpScreen` (300 ms).
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('Mon espace : badges des plans (M5) puis des quiz (M6)',
+      (tester) async {
+    await pumpScreen(
+      tester,
+      const BibleMySpaceScreen(),
+      overrides: [
+        bibleMySpaceStatsProvider
+            .overrideWith((ref) async => const BibleMySpaceStats()),
+        bibleBadgesProvider.overrideWithValue({BibleBadge.firstDay}),
+        quizBadgesProvider.overrideWithValue({QuizBadge.perfect}),
+      ],
+    );
+    expect(find.byType(BibleBadgeGrid), findsOneWidget);
+    BibleMedal medal(Key key) => tester.widget<BibleMedal>(find.byKey(key));
+    expect(medal(BibleBadgeGrid.badgeKey(BibleBadge.firstDay)).earned, isTrue);
+    expect(medal(BibleBadgeGrid.badgeKey(BibleBadge.week)).earned, isFalse);
+    expect(
+      medal(BibleMySpaceScreen.quizBadgeKey(QuizBadge.perfect)).earned,
+      isTrue,
+    );
+    expect(
+      medal(BibleMySpaceScreen.quizBadgeKey(QuizBadge.firstQuiz)).earned,
+      isFalse,
+    );
     await tester.pump(const Duration(seconds: 1));
   });
 }

@@ -17,6 +17,7 @@ import '../../../data/local/app_database.dart';
 import '../../../state/sync_providers.dart';
 import '../data/bible_source.dart';
 import '../data/placeholder_bible.dart';
+import '../search/bible_search_index.dart';
 
 /// Une version telle que le catalogue fusionné la décrit.
 final class BibleCatalogEntry {
@@ -143,12 +144,22 @@ final mergedBibleCatalogProvider = Provider<MergedBibleCatalog>(
 );
 
 /// **L'indexation d'une version installée** (M3 : `BibleSearchIndex
-/// .ensureIndexed(code)`). M3 vit dans une autre branche : à l'assemblage,
-/// ce provider rend `ref.watch(<le provider de M3>).ensureIndexed`. D'ici
-/// là, rien n'est indexé.
-final bibleEnsureIndexedProvider = Provider<Future<void> Function(String code)>(
-  (ref) => (_) async {},
-);
+/// .ensureIndexed`). Le catalogue est relu dans le magasin au moment de
+/// l'appel : celui du provider ne sait pas encore que la version vient
+/// d'être installée.
+final bibleEnsureIndexedProvider =
+    Provider<Future<void> Function(String code)>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return (code) async {
+    final catalog = MergedBibleCatalog(
+      remote: await (db.select(db.bibleVersions)
+            ..where((t) => t.publishedAt.isNotNull()))
+          .get(),
+      installed: await db.select(db.bibleInstalledVersions).get(),
+    );
+    await BibleSearchIndex(db, catalog).ensureIndexed(code);
+  };
+});
 
 /// La durée d'un téléchargement simulé, en [kSimulatedSteps] pas.
 const int kSimulatedSteps = 20;
@@ -176,6 +187,8 @@ Stream<double> installBibleVersion(
           language: Value(v.language),
           sizeBytes: Value(entry.sizeBytes),
           installedAt: DateTime.now().toUtc(),
+          // Réinstallée : l'index est à refaire (M3).
+          indexed: const Value(false),
         ),
       );
   await ensureIndexed(v.code);

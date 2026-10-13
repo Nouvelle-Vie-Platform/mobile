@@ -204,15 +204,17 @@ class PlanGoals extends StatelessWidget {
       children: [
         for (final (icon, label, done) in goals)
           Expanded(
-            child: _Medal(icon: icon, label: label, earned: done),
+            child: BibleMedal(icon: icon, label: label, earned: done),
           ),
       ],
     );
   }
 }
 
-class _Medal extends StatelessWidget {
-  const _Medal({
+/// Une médaille : gagnée en couleur, cadenas sinon (badges de plans, de
+/// quiz dans Mon espace, objectifs).
+class BibleMedal extends StatelessWidget {
+  const BibleMedal({
     super.key,
     required this.icon,
     required this.label,
@@ -302,7 +304,7 @@ class BibleBadgeGrid extends ConsumerWidget {
         for (final b in BibleBadge.values)
           SizedBox(
             width: 76,
-            child: _Medal(
+            child: BibleMedal(
               key: badgeKey(b),
               icon: _badgeIcon(b),
               label: badgeLabel(l, b),

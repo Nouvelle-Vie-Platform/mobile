@@ -1,10 +1,9 @@
 /// **Paramètres du module Bible** (M4, mobile#202) : thème du lecteur, voix,
-/// versions, rappels, À propos (licences de la voix et des polices).
+/// versions, rappels, À propos (licences des polices).
 library;
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,16 +15,13 @@ import '../data/bible_providers.dart';
 import 'bible_prefs.dart';
 import 'bible_reminders.dart';
 import 'personalize_routes.dart';
-import 'piper_voice.dart';
 
 class BibleSettingsScreen extends ConsumerStatefulWidget {
   const BibleSettingsScreen({super.key});
 
   static const Key appearanceKey = Key('bible_settings_appearance');
   static const Key versionsKey = Key('bible_settings_versions');
-  static Key voiceKey(BibleVoice v) => Key('bible_settings_voice_${v.name}');
-  static const Key piperDownloadKey = Key('bible_settings_piper_download');
-  static const Key piperRemoveKey = Key('bible_settings_piper_remove');
+  static const Key voiceKey = Key('bible_settings_voice');
   static const Key verseReminderKey = Key('bible_settings_verse_reminder');
   static const Key planReminderKey = Key('bible_settings_plan_reminder');
   static const Key aboutKey = Key('bible_settings_about');
@@ -36,9 +32,6 @@ class BibleSettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _BibleSettingsScreenState extends ConsumerState<BibleSettingsScreen> {
-  double? _piperProgress;
-  bool _piperFailed = false;
-
   Future<void> _update(BiblePrefs Function(BiblePrefs) change) async {
     await ref.read(biblePrefsProvider.notifier).update(change);
     await ref.read(bibleRemindersRefreshProvider)();
@@ -63,31 +56,6 @@ class _BibleSettingsScreenState extends ConsumerState<BibleSettingsScreen> {
     await _update((p) => apply(p, picked.hour * 60 + picked.minute));
   }
 
-  Future<void> _downloadPiper() async {
-    setState(() {
-      _piperProgress = 0;
-      _piperFailed = false;
-    });
-    try {
-      await for (final p in ref.read(piperVoiceStoreProvider).install()) {
-        if (mounted) setState(() => _piperProgress = p);
-      }
-      ref.invalidate(piperVoiceProvider);
-    } on Object {
-      if (mounted) setState(() => _piperFailed = true);
-    } finally {
-      if (mounted) setState(() => _piperProgress = null);
-    }
-  }
-
-  Future<void> _removePiper() async {
-    await ref.read(piperVoiceStoreProvider).remove();
-    ref.invalidate(piperVoiceProvider);
-    if (ref.read(biblePrefsProvider).voice == BibleVoice.piper) {
-      await _update((p) => p.copyWith(voice: BibleVoice.system));
-    }
-  }
-
   String _time(int minutes) => TimeOfDay(
         hour: minutes ~/ 60,
         minute: minutes % 60,
@@ -97,8 +65,6 @@ class _BibleSettingsScreenState extends ConsumerState<BibleSettingsScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final prefs = ref.watch(biblePrefsProvider);
-    final piper = ref.watch(piperVoiceProvider).value;
-    final progress = _piperProgress;
     return Scaffold(
       appBar: BrandAppBar(title: l.bibleM4SettingsTitle),
       body: ListView(
@@ -122,57 +88,13 @@ class _BibleSettingsScreenState extends ConsumerState<BibleSettingsScreen> {
           ),
           const Divider(),
           _Header(l.bibleM4Voice),
+          // La voix du système seulement : la voix naturelle Piper est
+          // retirée (espeak-ng, GPL 3.0, incompatible avec les magasins).
           ListTile(
-            key: BibleSettingsScreen.voiceKey(BibleVoice.system),
-            leading: Icon(
-              prefs.voice == BibleVoice.system
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
-            ),
+            key: BibleSettingsScreen.voiceKey,
+            leading: const Icon(Icons.record_voice_over_outlined),
             title: Text(l.bibleM4VoiceSystem),
-            onTap: () => _update((p) => p.copyWith(voice: BibleVoice.system)),
           ),
-          if (!kIsWeb)
-            ListTile(
-              key: BibleSettingsScreen.voiceKey(BibleVoice.piper),
-              leading: Icon(
-                prefs.voice == BibleVoice.piper && piper != null
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-              ),
-              title: Text(l.bibleM4VoicePiper),
-              subtitle: Text(
-                _piperFailed
-                    ? l.bibleM4VoicePiperFailed
-                    : piper == null
-                        ? l.bibleM4VoicePiperSize(
-                            (kPiperBytes / 1e6).toStringAsFixed(0),
-                          )
-                        : l.bibleM4VoicePiperReady,
-              ),
-              onTap: piper == null
-                  ? null
-                  : () => _update((p) => p.copyWith(voice: BibleVoice.piper)),
-              trailing: progress != null
-                  ? SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: CircularProgressIndicator(value: progress),
-                    )
-                  : piper == null
-                      ? IconButton(
-                          key: BibleSettingsScreen.piperDownloadKey,
-                          tooltip: l.bibleM4Download,
-                          icon: const Icon(Icons.download),
-                          onPressed: _downloadPiper,
-                        )
-                      : IconButton(
-                          key: BibleSettingsScreen.piperRemoveKey,
-                          tooltip: l.bibleM4Remove,
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: _removePiper,
-                        ),
-            ),
           const Divider(),
           _Header(l.bibleM4Reminders),
           SwitchListTile(

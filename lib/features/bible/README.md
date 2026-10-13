@@ -1,8 +1,9 @@
-# `bible` — le module Bible (M1, mobile#199)
+# `bible` — le module Bible (M1 à M7, mobile#199–#205)
 
 Plan qui fait foi : `server-portal/docs/module-bible-plan.md` (contrats §3,
-arbitrages §6). M1 pose le socle ; M2 à M7 s'y branchent **sans toucher à la
-coquille, au lecteur ni au schéma**.
+arbitrages §6). M1 pose le socle ; M2 à M7 s'y branchent par les
+emplacements, **sans changer le schéma**. L'assemblage a fait les
+branchements entre tranches (voir « Branchements » en fin de page).
 
 ## Arborescence
 
@@ -98,4 +99,30 @@ flottant : c'est la seule retouche du lecteur prévue hors emplacements.
 
 `flutter test test/features/bible/ test/data/local/bible_dao_test.dart
 test/data/local/migration_bible_test.dart test/sync/bible_collections_test.dart`
+(un sous-dossier de tests par tranche, et `bible_module_test.dart` pour le
+module entier)
 — plus le mode sélection de bout en bout dans `test/screens/bible_notes_test.dart`.
+
+## Branchements entre tranches (assemblage)
+
+| Quoi | Où | Comment |
+|---|---|---|
+| Loupe des en-têtes | `shell/bible_shell.dart` | onglets Accueil et Bible → `BibleSearchScreen.open` (M3), clé `BibleShell.searchKey` |
+| Quiz de la semaine | `home/home_view.dart` | **un seul** `featuredQuizProvider` (M6, `quiz/quiz_providers.dart`, filtré par le profil d'âge) ; la carte ouvre le jeu (`QuizListScreen.play`) |
+| Favori du verset du jour | `home/home_view.dart` | `BibleMarksStore.toggleFavorite` (M2) ; l'état « favori » se lit dans les marques de M2 |
+| Partage du verset du jour | `home/home_view.dart` | `bibleVerseSharerProvider` → studio de partage (M4, `openBibleStudio`) |
+| Badges de Mon espace | `personalize/my_space_screen.dart` | **un seul** `bibleBadgesProvider` (M5) peint par `BibleBadgeGrid`, puis les badges de quiz (`quizBadgesProvider`, M6) en `BibleMedal` |
+| Indexation après installation | `personalize/bible_catalog.dart` | `bibleEnsureIndexedProvider` relit le catalogue dans le magasin puis `BibleSearchIndex.ensureIndexed` (M3) ; une installation remet `indexed` à `false` |
+| Voix du quiz enfant | `quiz/quiz_providers.dart` | `quizSpeakerProvider` → `BibleQuizSpeaker` sur `bibleSpeechProvider` (M4, voix du système `stts`) |
+| Rappel « Lecture du plan » | `personalize/bible_reminders.dart` | rien sans plan en cours (`bibleCurrentPlanProvider`), pas aujourd'hui si `biblePlanReadingDoneTodayProvider` (M5) ; `app.dart` reprogramme quand la lecture du jour change |
+| Après chaque cycle réussi | `lib/app.dart` | **un bloc ordonné** : file des marques (fusion d'invité d'abord, M2), puis plans (M5) et scores (M6) — sautés au cycle d'une fusion —, puis rappels (M4) |
+| Purge des files | M2, M5, M6 | une ligne envoyée est purgée au passage suivant, **même si son `id` ne revient pas** (fusion ou refus côté serveur) |
+
+**Pas de voix naturelle.** Piper (`sherpa_onnx`) est retiré : sherpa-onnx
+embarque espeak-ng, sous GPL 3.0, incompatible avec les magasins. Seule la
+voix du système (`stts`) lit les chapitres et les questions des quiz.
+
+**Durées réglables en test** : `bibleFlashDurationProvider` (surlignage
+d'arrivée du lecteur) et `noteDraftDebounceProvider` (`state/notes_providers.dart`,
+délai du brouillon de note) — sous `runAsync` leurs minuteries sont réelles.
+

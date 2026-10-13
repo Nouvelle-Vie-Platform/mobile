@@ -2791,10 +2791,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bibleM4Badges => 'Badges';
 
   @override
-  String get bibleM4NoBadges =>
-      'Your plan and challenge badges will appear here.';
-
-  @override
   String bibleM4ChaptersRead(int count, int total) {
     return '$count of $total chapters read';
   }
@@ -2845,20 +2841,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bibleM4VoiceSystem => 'System voice';
 
   @override
-  String get bibleM4VoicePiper => 'Natural voice (“siwis”)';
-
-  @override
-  String bibleM4VoicePiperSize(String size) {
-    return 'To download ($size MB), works offline';
-  }
-
-  @override
-  String get bibleM4VoicePiperReady => 'Installed — works offline';
-
-  @override
-  String get bibleM4VoicePiperFailed => 'The download failed. Try again.';
-
-  @override
   String get bibleM4Reminders => 'Reminders';
 
   @override
@@ -2878,7 +2860,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bibleM4Licenses =>
-      '“siwis” voice: Piper model fr_FR-siwis-medium, trained on the SIWIS corpus (University of Edinburgh), CC BY 4.0 licence; read by sherpa-onnx (Apache 2.0) and espeak-ng (GPL 3.0). Fonts: Atkinson Hyperlegible (Braille Institute) and Literata (The Literata Project Authors), SIL Open Font License 1.1.';
+      'Fonts: Atkinson Hyperlegible (Braille Institute) and Literata (The Literata Project Authors), SIL Open Font License 1.1.';
 
   @override
   String get bibleM4OfflineShortcut => 'Offline';
@@ -3356,4 +3338,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String bibleHomeBookProgress(int read, int total, String book) {
     return '$read of $total chapters of $book read';
   }
+
+  @override
+  String get bibleQuizBadgeFirst => 'First quiz';
+
+  @override
+  String get bibleQuizBadgePerfect => 'Perfect score';
+
+  @override
+  String get bibleQuizBadgeTen => '10 different quizzes';
 }

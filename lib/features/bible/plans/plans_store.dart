@@ -212,16 +212,14 @@ class BiblePlansStore {
     await save(e, now: at, deletedAt: at);
   }
 
-  /// Efface les lignes locales que le delta a rattrapées : la sienne revenue
-  /// à jour, ou — pour un plan quitté, envoyé — disparue du miroir.
-  Future<void> purgeReconciled() => _db.customStatement(
-        'DELETE FROM local_bible_plan_enrollments WHERE dirty = 0 AND ('
-        '(deleted_at IS NULL AND EXISTS (SELECT 1 FROM bible_plan_enrollments m '
-        'WHERE m.id = local_bible_plan_enrollments.id AND m.updated_at IS NOT NULL '
-        'AND m.updated_at >= local_bible_plan_enrollments.client_updated_at)) OR '
-        '(deleted_at IS NOT NULL AND NOT EXISTS (SELECT 1 FROM '
-        'bible_plan_enrollments m WHERE m.id = local_bible_plan_enrollments.id)))',
-      );
+  /// Efface les lignes **envoyées** lors d'une exécution précédente : le
+  /// cycle réussi qui a suivi les a ramenées dans le miroir — ou le serveur
+  /// ne les rendra jamais sous cet `id` (fusion, refus) : les garder serait
+  /// une fuite éternelle. Même règle que les marques (M2).
+  Future<void> purgeReconciled() => (_db.delete(
+        _db.localBiblePlanEnrollments,
+      )..where((t) => t.dirty.equals(false)))
+          .go();
 
   /// **La file d'envoi du membre**, après chaque synchronisation réussie :
   /// purge, puis un `POST` (ou un `DELETE`) par ligne en attente. Un échec
