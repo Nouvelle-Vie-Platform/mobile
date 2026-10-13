@@ -8,6 +8,7 @@ import 'core/network/api_client.dart';
 import 'data/notes_media/note_media_providers.dart';
 import 'features/bible/marks/bible_marks_outbox.dart';
 import 'features/bible/personalize/bible_reminders.dart';
+import 'features/bible/plans/plans_providers.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
@@ -147,6 +148,8 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
           await ref.read(bibleMarksOutboxProvider).run();
           // **Les rappels de la Bible** (#202) : le verset du jour a pu changer.
           await ref.read(bibleRemindersRefreshProvider)();
+          // **Les plans de lecture** (#203) : jours cochés, plans suivis.
+          await ref.read(biblePlansOutboxProvider)();
         };
         // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
         // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.

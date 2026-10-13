@@ -5337,6 +5337,432 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Résultats comparatifs'**
   String get bibleSearchCompareTitle;
+
+  /// M5 : entrée Plus, raccourci, titre de l'écran des plans
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans de lecture'**
+  String get biblePlansTitle;
+
+  /// M5 : raccourci de l'accueil du module
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans'**
+  String get biblePlansShortcut;
+
+  /// M5 : entrée Plus, raccourci, titre de l'écran des défis
+  ///
+  /// In fr, this message translates to:
+  /// **'Défis'**
+  String get biblePlansChallengesTitle;
+
+  /// M5 : section des plans suivis
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes plans'**
+  String get biblePlansMine;
+
+  /// M5 : aucun plan suivi
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun plan en cours : choisissez-en un ci-dessous.'**
+  String get biblePlansEmpty;
+
+  /// M5 : section des plans publiés
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans de l\'église'**
+  String get biblePlansChurch;
+
+  /// M5 : section des plans intégrés
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans proposés'**
+  String get biblePlansBuiltin;
+
+  /// M5 : bouton de création d'un plan perso
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer un plan ou un défi'**
+  String get biblePlansCreate;
+
+  /// M5 : plan intégré bible-1y
+  ///
+  /// In fr, this message translates to:
+  /// **'La Bible en 1 an'**
+  String get biblePlansBible1y;
+
+  /// M5 : plan intégré nt-90
+  ///
+  /// In fr, this message translates to:
+  /// **'Le Nouveau Testament en 90 jours'**
+  String get biblePlansNt90;
+
+  /// M5 : plan intégré ps-30
+  ///
+  /// In fr, this message translates to:
+  /// **'Les Psaumes en 30 jours'**
+  String get biblePlansPs30;
+
+  /// M5 : plan intégré gospels-40
+  ///
+  /// In fr, this message translates to:
+  /// **'Les Évangiles en 40 jours'**
+  String get biblePlansGospels40;
+
+  /// M5 : durée d'un plan
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} jour} other{{count} jours}}'**
+  String biblePlansDays(int count);
+
+  /// M5 : commencer un plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencer'**
+  String get biblePlansStart;
+
+  /// M5 : position dans le plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Jour {day} sur {total}'**
+  String biblePlansDayOf(int day, int total);
+
+  /// M5 : titre de la barre de progression
+  ///
+  /// In fr, this message translates to:
+  /// **'Barre de défi'**
+  String get biblePlansChallengeBar;
+
+  /// M5 : titre de la rangée d'objectifs
+  ///
+  /// In fr, this message translates to:
+  /// **'Objectifs'**
+  String get biblePlansGoals;
+
+  /// M5 : objectif
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture du jour'**
+  String get biblePlansGoalToday;
+
+  /// M5 : objectif
+  ///
+  /// In fr, this message translates to:
+  /// **'7 jours de suite'**
+  String get biblePlansGoalWeek;
+
+  /// M5 : objectif
+  ///
+  /// In fr, this message translates to:
+  /// **'Moitié du plan'**
+  String get biblePlansGoalHalf;
+
+  /// M5 : objectif
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan terminé'**
+  String get biblePlansGoalDone;
+
+  /// M5 : titre de la grille de badges
+  ///
+  /// In fr, this message translates to:
+  /// **'Badges'**
+  String get biblePlansBadges;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'Premier jour'**
+  String get biblePlansBadgeFirstDay;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'7 jours d\'affilée'**
+  String get biblePlansBadgeWeek;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'30 jours d\'affilée'**
+  String get biblePlansBadgeMonth;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan terminé'**
+  String get biblePlansBadgePlanDone;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'Livre terminé'**
+  String get biblePlansBadgeBookDone;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'100 chapitres'**
+  String get biblePlansBadgeHundred;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'Défi rejoint'**
+  String get biblePlansBadgeChallenge;
+
+  /// M5 : carte de la lecture du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture du jour'**
+  String get biblePlansToday;
+
+  /// M5 : cocher un jour à la main
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme lu'**
+  String get biblePlansMarkDone;
+
+  /// M5 : ouvrir le lecteur sur la lecture du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Lire'**
+  String get biblePlansRead;
+
+  /// M5 : rattrapage
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} lecture en retard} other{{count} lectures en retard}}'**
+  String biblePlansCatchUp(int count);
+
+  /// M5 : ouvrir le premier jour en retard
+  ///
+  /// In fr, this message translates to:
+  /// **'Rattraper'**
+  String get biblePlansCatchUpAction;
+
+  /// M5 : série de jours
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{Série : {count} jour} other{Série : {count} jours}}'**
+  String biblePlansStreak(int count);
+
+  /// M5 : liste des jours du plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les jours'**
+  String get biblePlansAllDays;
+
+  /// M5 : plan fini
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan terminé, bravo !'**
+  String get biblePlansFinished;
+
+  /// M5 : plan pas commencé (défi à venir)
+  ///
+  /// In fr, this message translates to:
+  /// **'Commence le {date}'**
+  String biblePlansNotStarted(String date);
+
+  /// M5 : plan publié retiré
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce plan n\'est plus disponible.'**
+  String get biblePlansUnavailable;
+
+  /// M5 : menu du plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter le plan'**
+  String get biblePlansLeave;
+
+  /// M5 : confirmation
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter ce plan ? Votre progression sera effacée.'**
+  String get biblePlansLeaveConfirm;
+
+  /// M5 : modifier un plan perso
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get biblePlansEdit;
+
+  /// M5 : annuler
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get biblePlansCancel;
+
+  /// M5 : titre de l'éditeur de plan perso
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon plan'**
+  String get biblePlansEditorTitle;
+
+  /// M5 : champ titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get biblePlansEditorName;
+
+  /// M5 : choix des livres
+  ///
+  /// In fr, this message translates to:
+  /// **'Livres'**
+  String get biblePlansEditorBooks;
+
+  /// M5 : sélection rapide
+  ///
+  /// In fr, this message translates to:
+  /// **'Ancien Testament'**
+  String get biblePlansEditorOld;
+
+  /// M5 : sélection rapide
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau Testament'**
+  String get biblePlansEditorNew;
+
+  /// M5 : tout désélectionner
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun'**
+  String get biblePlansEditorClear;
+
+  /// M5 : champ durée
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée (jours)'**
+  String get biblePlansEditorDuration;
+
+  /// M5 : résumé de la répartition
+  ///
+  /// In fr, this message translates to:
+  /// **'{chapters} chapitres, environ {perDay} par jour'**
+  String biblePlansEditorSummary(int chapters, String perDay);
+
+  /// M5 : enregistrer le plan perso
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get biblePlansEditorSave;
+
+  /// M5 : liste des défis vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun défi en cours.'**
+  String get biblePlansChallengesEmpty;
+
+  /// M5 : carte de l'invité sur les défis
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour rejoindre'**
+  String get biblePlansGuestTitle;
+
+  /// M5 : carte de l'invité sur les défis
+  ///
+  /// In fr, this message translates to:
+  /// **'Les défis se relèvent à plusieurs, sous un nom biblique.'**
+  String get biblePlansGuestBody;
+
+  /// M5 : bouton de connexion
+  ///
+  /// In fr, this message translates to:
+  /// **'Se connecter'**
+  String get biblePlansSignIn;
+
+  /// M5 : rejoindre un défi
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoindre'**
+  String get biblePlansJoin;
+
+  /// M5 : défi rejoint
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous participez'**
+  String get biblePlansJoined;
+
+  /// M5 : classement d'un défi
+  ///
+  /// In fr, this message translates to:
+  /// **'Classement'**
+  String get biblePlansLeaderboard;
+
+  /// M5 : ouvrir le plan d'un défi
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir le plan'**
+  String get biblePlansOpenPlan;
+
+  /// M5 : choix du pseudonyme
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez votre nom'**
+  String get biblePlansPickName;
+
+  /// M5 : choix du pseudonyme
+  ///
+  /// In fr, this message translates to:
+  /// **'Les autres participants ne verront que ce nom.'**
+  String get biblePlansPickNameBody;
+
+  /// M5 : recherche dans les pseudonymes
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un nom'**
+  String get biblePlansPickNameSearch;
+
+  /// M5 : 409 pseudonyme pris
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce nom vient d\'être pris : choisissez-en un autre.'**
+  String get biblePlansNameTaken;
+
+  /// M5 : 409 déjà inscrit
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez déjà rejoint ce défi.'**
+  String get biblePlansAlreadyJoined;
+
+  /// M5 : réessayer
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get biblePlansRetry;
+
+  /// M5 : nombre de participants
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} participant} other{{count} participants}}'**
+  String biblePlansParticipants(int count);
+
+  /// M5 : classement
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} lecture à temps} other{{count} lectures à temps}}'**
+  String biblePlansOnTime(int count);
+
+  /// M5 : ma ligne du classement
+  ///
+  /// In fr, this message translates to:
+  /// **'vous'**
+  String get biblePlansYou;
+
+  /// M5 : dates d'un défi
+  ///
+  /// In fr, this message translates to:
+  /// **'Du {start} au {end}'**
+  String biblePlansChallengeDates(String start, String end);
+
+  /// M5 : section de l'accueil du module
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon plan en cours'**
+  String get biblePlansHomeTitle;
 }
 
 class _AppLocalizationsDelegate

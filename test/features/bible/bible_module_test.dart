@@ -38,6 +38,11 @@ final Override _radioOff = radioRepositoryProvider.overrideWithValue(
   const FixedRadioRepository(RadioAntenna.unknown),
 );
 
+/// Les écrans d'attente de la coquille : sans aucun emplacement rempli (les
+/// tranches M2–M7 remplissent « Plus » et « Accueil »).
+final Override _noSlots =
+    bibleSlotsProvider.overrideWithValue(const BibleSlots());
+
 late FakeAdapter _wire;
 
 /// `settle`, avec des tours de **vraie** boucle d'événements entre les images.
@@ -69,8 +74,8 @@ void main() {
     testWidgets('cinq onglets, la Bible d\'abord, et rien sur le fil',
         (tester) async {
       await tester.runAsync(() async {
-        final router =
-            await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
+        final router = await pumpGuestApp(
+            tester, guestContainer(extra: [_radioOff, _noSlots]));
         router.push('/bible');
         await _settle(tester);
 
@@ -109,7 +114,7 @@ void main() {
     testWidgets('le dernier onglet est mémorisé ; `?tab=` l\'emporte',
         (tester) async {
       await tester.runAsync(() async {
-        final container = guestContainer(extra: [_radioOff]);
+        final container = guestContainer(extra: [_radioOff, _noSlots]);
         final router = await pumpGuestApp(tester, container);
         router.push('/bible');
         await _settle(tester);
