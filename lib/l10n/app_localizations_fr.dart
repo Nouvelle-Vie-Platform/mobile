@@ -2912,4 +2912,64 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get bibleM4ListenFromHere => 'Écouter à partir d\'ici';
+
+  @override
+  String get bibleSearchTitle => 'Rechercher';
+
+  @override
+  String get bibleSearchHint => 'Un mot, ou une référence (jn 3 16)';
+
+  @override
+  String bibleSearchGoTo(String reference) {
+    return 'Aller à $reference';
+  }
+
+  @override
+  String bibleSearchResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count résultats',
+      one: '1 résultat',
+      zero: 'Aucun résultat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleSearchScopeAll => 'Tout';
+
+  @override
+  String get bibleSearchScopeOld => 'AT';
+
+  @override
+  String get bibleSearchScopeNew => 'NT';
+
+  @override
+  String get bibleSearchScopeBook => 'Livre';
+
+  @override
+  String get bibleSearchMore => 'Voir plus';
+
+  @override
+  String get bibleSearchHistory => 'Recherches récentes';
+
+  @override
+  String get bibleSearchClearHistory => 'Effacer';
+
+  @override
+  String get bibleSearchIndexing => 'Préparation de la recherche…';
+
+  @override
+  String get bibleSearchEmpty =>
+      'Cherchez un mot dans la Bible, ou tapez une référence.';
+
+  @override
+  String get bibleSearchNoResults => 'Aucun verset ne contient ces mots.';
+
+  @override
+  String get bibleSearchCompare => 'Comparer les versions';
+
+  @override
+  String get bibleSearchCompareTitle => 'Résultats comparatifs';
 }
