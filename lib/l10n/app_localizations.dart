@@ -5203,13 +5203,13 @@ abstract class AppLocalizations {
   /// Action de verset : studio
   ///
   /// In fr, this message translates to:
-  /// **'Partager en image'**
+  /// **'Image'**
   String get bibleM4ShareAsImage;
 
   /// Action de verset : lecture audio
   ///
   /// In fr, this message translates to:
-  /// **'Écouter à partir d\'ici'**
+  /// **'Écouter'**
   String get bibleM4ListenFromHere;
 
   /// Recherche Bible (M3)

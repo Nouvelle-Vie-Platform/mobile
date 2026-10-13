@@ -109,7 +109,7 @@ class BibleMySpaceScreen extends ConsumerWidget {
     return Scaffold(
       appBar: BrandAppBar(title: l.bibleM4MySpaceTitle),
       body: ListView(
-        padding: AppSpacing.screenPadding,
+        padding: AppSpacing.screenPadding.copyWith(top: AppSpacing.md),
         children: [
           AppCard(
             child: Row(
@@ -211,7 +211,10 @@ class _Stat extends StatelessWidget {
       title: Text(label, key: BibleMySpaceScreen.statKey(id)),
       subtitle: progress == null
           ? null
-          : LinearProgressIndicator(value: progress.clamp(0.0, 1.0)),
+          : LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              backgroundColor: context.palette.divider,
+            ),
     );
   }
 }

@@ -2866,10 +2866,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bibleM4OfflineShortcut => 'Offline';
 
   @override
-  String get bibleM4ShareAsImage => 'Share as image';
+  String get bibleM4ShareAsImage => 'Image';
 
   @override
-  String get bibleM4ListenFromHere => 'Listen from here';
+  String get bibleM4ListenFromHere => 'Listen';
 
   @override
   String get bibleSearchTitle => 'Search';

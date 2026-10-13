@@ -210,7 +210,7 @@ class _StudioState extends ConsumerState<BibleShareStudioScreen> {
     return Scaffold(
       appBar: BrandAppBar(title: l.bibleM4StudioTitle),
       body: ListView(
-        padding: AppSpacing.screenPadding,
+        padding: AppSpacing.screenPadding.copyWith(top: AppSpacing.md),
         children: [
           AspectRatio(
             aspectRatio: 1,
@@ -266,7 +266,7 @@ class _StudioState extends ConsumerState<BibleShareStudioScreen> {
               for (final f in BibleReaderFont.values)
                 ChoiceChip(
                   label: Text(
-                    f == BibleReaderFont.system ? l.bibleM4FontSystem : f.name,
+                    bibleFontLabel(context, f),
                     style: TextStyle(fontFamily: bibleFontFamily(f)),
                   ),
                   selected: _font == f,

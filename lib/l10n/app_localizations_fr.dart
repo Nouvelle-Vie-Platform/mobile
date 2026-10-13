@@ -2889,10 +2889,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bibleM4OfflineShortcut => 'Hors ligne';
 
   @override
-  String get bibleM4ShareAsImage => 'Partager en image';
+  String get bibleM4ShareAsImage => 'Image';
 
   @override
-  String get bibleM4ListenFromHere => 'Écouter à partir d\'ici';
+  String get bibleM4ListenFromHere => 'Écouter';
 
   @override
   String get bibleSearchTitle => 'Rechercher';

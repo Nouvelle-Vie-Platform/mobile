@@ -177,7 +177,7 @@ class BibleAppearanceScreen extends ConsumerWidget {
                 ChoiceChip(
                   key: fontKey(f),
                   label: Text(
-                    _fontLabel(context, f),
+                    bibleFontLabel(context, f),
                     style: TextStyle(fontFamily: bibleFontFamily(f)),
                   ),
                   selected: prefs.font == f,
@@ -223,7 +223,8 @@ String _themeLabel(BuildContext context, BibleReaderTheme t) {
   };
 }
 
-String _fontLabel(BuildContext context, BibleReaderFont f) {
+/// Le nom affiché d'une police du lecteur.
+String bibleFontLabel(BuildContext context, BibleReaderFont f) {
   final l = context.l10n;
   return switch (f) {
     BibleReaderFont.atkinson => 'Atkinson',

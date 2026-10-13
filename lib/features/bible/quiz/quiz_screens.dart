@@ -16,6 +16,7 @@ import '../../../l10n/l10n_extension.dart';
 import '../../../router/app_router.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
+import '../../../theme/app_typography.dart';
 import '../reader/bible_reader_screen.dart';
 import 'quiz.dart';
 import 'quiz_providers.dart';
@@ -56,7 +57,10 @@ PreferredSizeWidget _appBar(String title, {List<Widget>? actions}) => AppBar(
       flexibleSpace: const DecoratedBox(
         decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
       ),
-      title: Text(title),
+      title: Text(
+        title,
+        style: AppTypography.h5.copyWith(color: Colors.white),
+      ),
       actions: actions,
     );
 
