@@ -35,7 +35,9 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Enregistrez des messages vocaux pour vos échanges.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choisissez une image pour une annonce de votre compte officiel, ou une photo ou une vidéo à envoyer dans vos échanges.</string>
+	<string>Choisissez une image pour une annonce de votre compte officiel, ou une photo de fond pour partager un verset, ou une photo ou une vidéo à envoyer dans vos échanges.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>La lecture à voix haute de la Bible utilise les services vocaux de l'appareil.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

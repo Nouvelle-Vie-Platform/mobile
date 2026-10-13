@@ -8,14 +8,14 @@ import '../../../data/local/bible_dao.dart';
 import '../../../state/auth_providers.dart';
 import '../../../state/sync_providers.dart';
 import 'bible_source.dart';
-import 'placeholder_bible.dart';
+import '../personalize/bible_catalog.dart';
 
 export '../../../data/local/bible_dao.dart' show BibleReadingSnapshot;
 
-/// Le catalogue des versions. Factice tant que S5 et le chantier du contenu ne
-/// servent rien ; surcharger ici, et nulle part ailleurs.
+/// Le catalogue des versions : les deux factices fusionnées avec S5 (M4,
+/// `personalize/bible_catalog.dart`) ; surcharger ici, et nulle part ailleurs.
 final bibleCatalogProvider = Provider<BibleCatalog>(
-  (ref) => const PlaceholderBibleCatalog(),
+  (ref) => ref.watch(mergedBibleCatalogProvider),
 );
 
 /// Toutes les versions connues du catalogue.

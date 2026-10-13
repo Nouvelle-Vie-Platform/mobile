@@ -62,8 +62,14 @@ void main() {
   test('le greffon de notification locale ne vit qu\'au bout de la sienne', () {
     expect(
       importers('flutter_local_notifications'),
-      ['lib/data/push/wake_notifier.dart'],
-      reason: 'tout le reste du dépôt ne connaît que WakeNotifier et WakeTaps',
+      [
+        'lib/data/push/wake_notifier.dart',
+        // Les rappels locaux du module Bible (#202), derrière leur propre
+        // couture `BibleReminderScheduler`.
+        'lib/features/bible/personalize/bible_reminders.dart',
+      ],
+      reason: 'tout le reste du dépôt ne connaît que WakeNotifier, WakeTaps '
+          'et BibleReminderScheduler',
     );
   });
 

@@ -37,6 +37,7 @@ import '../data/bible_source.dart';
 import '../data/canon.dart';
 import '../marks/bible_marks_store.dart';
 import '../marks/bible_verse_menu.dart';
+import '../personalize/reader_appearance.dart';
 import '../shell/bible_browser.dart';
 import '../shell/bible_slots.dart';
 
@@ -327,47 +328,50 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       body: Stack(
         key: _stackKey,
         children: [
-          PageView.builder(
-            key: BibleReaderScreen.pagesKey,
-            controller: _pages,
-            itemCount: bibleChapters.length,
-            onPageChanged: (i) {
-              setState(() {
-                _index = i;
-                _from = _to = null;
-              });
-              _savePosition();
-            },
-            itemBuilder: (context, i) {
-              final page = bibleChapters[i];
-              final arrival = page.book == widget.book &&
-                  page.chapter == widget.chapter &&
-                  widget.from != null;
-              return _ChapterPage(
-                key: BibleReaderScreen.pageKey(page.book, page.chapter),
-                chapterKey: (
-                  version: version,
-                  book: page.book,
-                  chapter: page.chapter,
-                ),
-                flashFrom: arrival ? widget.from : null,
-                flashTo: arrival ? (widget.to ?? widget.from) : null,
-                selectedFrom: i == _index ? _from : null,
-                selectedTo: i == _index ? _to : null,
-                onVerseTap: actions.isEmpty ? null : _tapVerse,
-                onVerseDrag: actions.isEmpty ? null : _dragVerses,
-                menu: i == _index
-                    ? (
-                        above: _aboveLink,
-                        below: _belowLink,
-                        firstKey: _firstKey
-                      )
-                    : null,
-                onReadToEnd: () {
-                  if (i == _index) _markRead(page.book, page.chapter);
-                },
-              );
-            },
+          // Le thème et la police du lecteur (M4).
+          BibleReaderAppearance(
+            child: PageView.builder(
+              key: BibleReaderScreen.pagesKey,
+              controller: _pages,
+              itemCount: bibleChapters.length,
+              onPageChanged: (i) {
+                setState(() {
+                  _index = i;
+                  _from = _to = null;
+                });
+                _savePosition();
+              },
+              itemBuilder: (context, i) {
+                final page = bibleChapters[i];
+                final arrival = page.book == widget.book &&
+                    page.chapter == widget.chapter &&
+                    widget.from != null;
+                return _ChapterPage(
+                  key: BibleReaderScreen.pageKey(page.book, page.chapter),
+                  chapterKey: (
+                    version: version,
+                    book: page.book,
+                    chapter: page.chapter,
+                  ),
+                  flashFrom: arrival ? widget.from : null,
+                  flashTo: arrival ? (widget.to ?? widget.from) : null,
+                  selectedFrom: i == _index ? _from : null,
+                  selectedTo: i == _index ? _to : null,
+                  onVerseTap: actions.isEmpty ? null : _tapVerse,
+                  onVerseDrag: actions.isEmpty ? null : _dragVerses,
+                  menu: i == _index
+                      ? (
+                          above: _aboveLink,
+                          below: _belowLink,
+                          firstKey: _firstKey,
+                        )
+                      : null,
+                  onReadToEnd: () {
+                    if (i == _index) _markRead(page.book, page.chapter);
+                  },
+                );
+              },
+            ),
           ),
           if (from != null && actions.isNotEmpty)
             Positioned(
@@ -638,11 +642,7 @@ class _VerseLine extends StatelessWidget {
     final background = flashed
         ? palette.primary.withValues(alpha: 0.18)
         : decoration?.background;
-    final body = AppTypography.body.copyWith(
-      fontSize: 18,
-      height: 1.6,
-      color: palette.textPrimary,
-    );
+    final body = BibleReaderAppearance.verseStyle(context);
     final icons = decoration?.marginIcons ?? const <IconData>[];
     return InkWell(
       key: BibleReaderScreen.verseKey(verse.number),

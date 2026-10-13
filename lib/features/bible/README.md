@@ -25,6 +25,7 @@ coquille, au lecteur ni au schéma**.
 | `/bible?tab=home\|bible\|favorites\|notes\|more` | `BibleShell` ; sans `tab`, le dernier onglet (`SettingsDao.bibleTab`) |
 | `/bible/read/:book/:chapter?v=16-18` | `BibleReaderScreen` — `BibleReaderScreen.push(router, BibleLink(...))` |
 | `/bible/select` | `BibleShell(selectMode: true)` — dépile avec un `BibleLink` |
+| `/bible/personalize/:page` | M4 : `appearance`, `offline`, `my-space`, `settings`, `studio?ref=John/3/16&v=EXA` — `openBiblePersonalize(ref, …)` |
 
 Un lien de note `nv://bible/John/3/16-18` ouvre le lecteur au verset 16, 16–18
 surlignés un instant (`NoteLinkOpener`). Toujours naviguer par
