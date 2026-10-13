@@ -5763,6 +5763,174 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Mon plan en cours'**
   String get biblePlansHomeTitle;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Quiz'**
+  String get bibleQuizTitle;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Qui joue ?'**
+  String get bibleQuizWhoPlays;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez un profil : il règle les quiz proposés. Vous pourrez le changer à tout moment.'**
+  String get bibleQuizWhoPlaysHint;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Enfants'**
+  String get bibleQuizBandKids;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ados'**
+  String get bibleQuizBandTeens;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Adultes'**
+  String get bibleQuizBandAdults;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'6 à 11 ans'**
+  String get bibleQuizBandKidsAges;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'12 à 17 ans'**
+  String get bibleQuizBandTeensAges;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'18 ans et plus'**
+  String get bibleQuizBandAdultsAges;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun quiz pour ce profil pour l\'instant.'**
+  String get bibleQuizEmpty;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau'**
+  String get bibleQuizNew;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Meilleur : {score}/{total}'**
+  String bibleQuizBest(int score, int total);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 question} other{{count} questions}}'**
+  String bibleQuizQuestionCount(int count);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Facile'**
+  String get bibleQuizDifficulty1;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Moyen'**
+  String get bibleQuizDifficulty2;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Difficile'**
+  String get bibleQuizDifficulty3;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Question {index} sur {total}'**
+  String bibleQuizProgress(int index, int total);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonne réponse !'**
+  String get bibleQuizRight;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce n\'est pas ça.'**
+  String get bibleQuizWrong;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps écoulé.'**
+  String get bibleQuizTimeUp;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'La réponse : {answer}'**
+  String bibleQuizAnswerWas(String answer);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivant'**
+  String get bibleQuizNext;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir mon score'**
+  String get bibleQuizSeeScore;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'{score} / {total}'**
+  String bibleQuizScore(int score, int total);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Quiz terminé'**
+  String get bibleQuizFinished;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejouer'**
+  String get bibleQuizReplay;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminer'**
+  String get bibleQuizDone;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter la question'**
+  String get bibleQuizListen;
 }
 
 class _AppLocalizationsDelegate
