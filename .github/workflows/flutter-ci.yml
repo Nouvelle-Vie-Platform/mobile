@@ -11,7 +11,12 @@ on:
 jobs:
   build:
     name: Analyze & Test
-    runs-on: ubuntu-24.04
+    # **La machine qui exécute est une variable, pas une constante** — le quota Actions du plan
+    # Free est épuisé jusqu'au 31/10/2026, et un runner auto-hébergé tourne sur le VPS
+    # (`context#7`, `context/docs/CI-DE-SECOURS.md`). Supprimer la variable d'organisation
+    # `CI_RUNNER` ramène tout sur les machines de GitHub, sans commit. Le repli garde
+    # l'épinglage voulu : le passage à Ubuntu 26.04 du 19 octobre doit rester un choix.
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
