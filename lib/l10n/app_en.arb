@@ -1013,6 +1013,8 @@
   "bibleQuizBandKidsHint": "Bible stories and heroes",
   "bibleQuizBandTeensHint": "challenges to go further",
   "bibleQuizBandAdultsHint": "to deepen your faith",
+  "bibleQuizStepLocked": "Pass step {number} first to open this one.",
+  "bibleQuizPathProgress": "Steps passed: {done} / {total}",
   "bibleQuizEmpty": "No quiz for this profile yet.",
   "bibleQuizNew": "New",
   "bibleQuizBest": "Best: {score}/{total}",

@@ -108,7 +108,7 @@ module entier)
 | Quoi | Où | Comment |
 |---|---|---|
 | Loupe des en-têtes | `shell/bible_shell.dart` | onglets Accueil et Bible → `BibleSearchScreen.open` (M3), clé `BibleShell.searchKey` |
-| Quiz de la semaine | `home/home_view.dart` | **un seul** `featuredQuizProvider` (M6, `quiz/quiz_providers.dart`, filtré par le profil d'âge) ; la carte ouvre le jeu (`QuizListScreen.play`) |
+| Quiz de la semaine | `home/home_view.dart` | **un seul** `featuredQuizProvider` (M6, `quiz/quiz_providers.dart`, filtré par le profil d'âge) ; la carte ouvre le jeu (`QuizEntry.play`) |
 | Favori du verset du jour | `home/home_view.dart` | `BibleMarksStore.toggleFavorite` (M2) ; l'état « favori » se lit dans les marques de M2 |
 | Partage du verset du jour | `home/home_view.dart` | `bibleVerseSharerProvider` → studio de partage (M4, `openBibleStudio`) |
 | Badges de Mon espace | `personalize/my_space_screen.dart` | **un seul** `bibleBadgesProvider` (M5) peint par `BibleBadgeGrid`, puis les badges de quiz (`quizBadgesProvider`, M6) en `BibleMedal` |

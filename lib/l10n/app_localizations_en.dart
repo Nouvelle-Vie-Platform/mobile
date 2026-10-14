@@ -3239,6 +3239,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bibleQuizBandAdultsHint => 'to deepen your faith';
 
   @override
+  String bibleQuizStepLocked(int number) {
+    return 'Pass step $number first to open this one.';
+  }
+
+  @override
+  String bibleQuizPathProgress(int done, int total) {
+    return 'Steps passed: $done / $total';
+  }
+
+  @override
   String get bibleQuizEmpty => 'No quiz for this profile yet.';
 
   @override

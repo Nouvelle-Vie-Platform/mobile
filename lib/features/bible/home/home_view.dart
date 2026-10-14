@@ -927,7 +927,7 @@ class BibleFeaturedQuizSection extends ConsumerWidget {
       key: BibleHomeKeys.quiz,
       icon: Icons.quiz_outlined,
       title: context.l10n.bibleHomeQuizTitle,
-      onTap: () => QuizListScreen.play(ref, quiz),
+      onTap: () => QuizEntry.play(ref, quiz),
       child: Row(
         children: [
           Expanded(child: Text(quiz.title, style: _atkinson(context, 19))),

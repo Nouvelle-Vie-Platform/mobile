@@ -2,7 +2,7 @@
 ///
 /// Une entrée dans « Plus » et un raccourci de l'accueil (disposé par M7).
 /// La carte « Quiz de la semaine » de l'accueil lit `featuredQuizProvider`
-/// (`quiz_providers.dart`) et ouvre `QuizListScreen.play` ; voir
+/// (`quiz_providers.dart`) et ouvre `QuizEntry.play` ; voir
 /// `../README.md`.
 library;
 
@@ -19,7 +19,7 @@ final BibleSlots quizSlots = BibleSlots(
       order: 20,
       icon: Icons.quiz_outlined,
       label: (context) => context.l10n.bibleQuizTitle,
-      onTap: (_, ref) => QuizListScreen.open(ref),
+      onTap: (_, ref) => QuizEntry.open(ref),
     ),
   ],
   homeShortcuts: [
@@ -28,7 +28,7 @@ final BibleSlots quizSlots = BibleSlots(
       order: 30,
       icon: Icons.quiz_outlined,
       label: (context) => context.l10n.bibleQuizTitle,
-      onTap: (_, ref) => QuizListScreen.open(ref),
+      onTap: (_, ref) => QuizEntry.open(ref),
     ),
   ],
 );

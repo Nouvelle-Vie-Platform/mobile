@@ -24,7 +24,7 @@ import '../home/home_view.dart';
 import '../shell/bible_route.dart';
 import 'quiz.dart';
 import 'quiz_providers.dart';
-import 'quiz_screens.dart';
+import 'quiz_path_screen.dart';
 
 class QuizHubScreen extends ConsumerWidget {
   const QuizHubScreen({super.key});
@@ -48,7 +48,7 @@ class QuizHubScreen extends ConsumerWidget {
           .routerDelegate
           .navigatorKey
           .currentState
-          ?.push(bibleRoute<void>(const QuizListScreen()));
+          ?.push(bibleRoute<void>(QuizPathScreen(band: b)));
     }
 
     final bands = [

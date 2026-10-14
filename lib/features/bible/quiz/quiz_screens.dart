@@ -1,5 +1,5 @@
-/// **Les écrans des quiz** (M6, mobile#204) : la liste par tranche d'âge et
-/// la partie, hors ligne.
+/// **Les écrans des quiz** (M6, mobile#204) : les points d'entrée et la
+/// partie, hors ligne.
 ///
 /// Poussés sur le `Navigator` racine du routeur (aucune route nommée : le
 /// routeur n'appartient pas à cette tranche). Le lien d'une explication ouvre
@@ -11,7 +11,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_extension.dart';
 import '../../../router/app_router.dart';
 import '../../../theme/app_colors.dart';
@@ -32,24 +31,6 @@ Future<void> _push(WidgetRef ref, Widget screen) async {
       .currentState
       ?.push(bibleRoute<void>(screen));
 }
-
-String _bandLabel(AppLocalizations l, QuizAgeBand b) => switch (b) {
-      QuizAgeBand.kids => l.bibleQuizBandKids,
-      QuizAgeBand.teens => l.bibleQuizBandTeens,
-      QuizAgeBand.adults => l.bibleQuizBandAdults,
-    };
-
-String _bandAges(AppLocalizations l, QuizAgeBand b) => switch (b) {
-      QuizAgeBand.kids => l.bibleQuizBandKidsAges,
-      QuizAgeBand.teens => l.bibleQuizBandTeensAges,
-      QuizAgeBand.adults => l.bibleQuizBandAdultsAges,
-    };
-
-String _difficulty(AppLocalizations l, int d) => switch (d) {
-      1 => l.bibleQuizDifficulty1,
-      2 => l.bibleQuizDifficulty2,
-      _ => l.bibleQuizDifficulty3,
-    };
 
 PreferredSizeWidget _appBar(String title, {List<Widget>? actions}) => AppBar(
       backgroundColor: AppColors.primary,
@@ -87,14 +68,14 @@ class _Stars extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// La liste
+// Les points d'entrée
 // ─────────────────────────────────────────────────────────────────────────────
 
-class QuizListScreen extends ConsumerWidget {
-  const QuizListScreen({super.key});
-
-  /// Toucher « Quiz » ouvre toujours le choix du joueur ; la tranche choisie
-  /// ouvre ensuite cette liste.
+/// **Ouvrir les quiz** : toucher « Quiz » mène toujours au choix du joueur
+/// (`quiz_hub_screen.dart`), puis au parcours de la tranche
+/// (`quiz_path_screen.dart`) ; la carte « Quiz de la semaine » lance
+/// directement la partie.
+abstract final class QuizEntry {
   static Future<void> open(WidgetRef ref) => _push(ref, const QuizHubScreen());
 
   /// Lance [quiz] dans le profil choisi (carte « Quiz de la semaine », M7).
@@ -105,189 +86,6 @@ class QuizListScreen extends ConsumerWidget {
           kids: ref.read(quizAgeProfileProvider).value == QuizAgeBand.kids,
         ),
       );
-
-  static Key bandKey(QuizAgeBand b) => Key('quiz_band_${b.name}');
-  static Key profileKey(QuizAgeBand b) => Key('quiz_profile_${b.name}');
-  static Key quizKey(int id) => Key('quiz_item_$id');
-
-  /// Un quiz publié depuis moins de ce délai, jamais joué, est « nouveau ».
-  static const newFor = Duration(days: 14);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
-    final profile = ref.watch(quizAgeProfileProvider);
-    final band = profile.value;
-    return Scaffold(
-      appBar: _appBar(l.bibleQuizTitle),
-      body: switch (profile) {
-        AsyncData(value: null) => _ProfilePicker(
-            onPick: (b) => ref.read(quizStoreProvider).setAgeBand(b),
-          ),
-        AsyncData() => _QuizList(band: band!),
-        _ => const Center(child: CircularProgressIndicator()),
-      },
-    );
-  }
-}
-
-/// Le choix du profil, la première fois.
-class _ProfilePicker extends StatelessWidget {
-  const _ProfilePicker({required this.onPick});
-
-  final void Function(QuizAgeBand) onPick;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final theme = Theme.of(context);
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      children: [
-        Text(l.bibleQuizWhoPlays, style: theme.textTheme.headlineSmall),
-        const SizedBox(height: AppSpacing.sm),
-        Text(l.bibleQuizWhoPlaysHint, style: theme.textTheme.bodyMedium),
-        const SizedBox(height: AppSpacing.xl),
-        for (final b in QuizAgeBand.values)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: OutlinedButton(
-              key: QuizListScreen.profileKey(b),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(72),
-              ),
-              onPressed: () => onPick(b),
-              child: Column(
-                children: [
-                  Text(_bandLabel(l, b), style: theme.textTheme.titleMedium),
-                  Text(_bandAges(l, b), style: theme.textTheme.bodySmall),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _QuizList extends ConsumerWidget {
-  const _QuizList({required this.band});
-
-  final QuizAgeBand band;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
-    final quizzes = [
-      for (final q in ref.watch(quizzesProvider).value ?? const <Quiz>[])
-        if (q.ageBand == band) q,
-    ];
-    final best = ref.watch(quizBestScoresProvider);
-    final now = DateTime.now();
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            children: [
-              for (final b in QuizAgeBand.values)
-                ChoiceChip(
-                  key: QuizListScreen.bandKey(b),
-                  label: Text(_bandLabel(l, b)),
-                  selected: b == band,
-                  onSelected: (_) => ref.read(quizStoreProvider).setAgeBand(b),
-                ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: quizzes.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xl),
-                    child: Text(l.bibleQuizEmpty, textAlign: TextAlign.center),
-                  ),
-                )
-              : ListView(
-                  children: [
-                    for (final q in quizzes)
-                      _QuizTile(
-                        quiz: q,
-                        best: best[q.id],
-                        isNew: best[q.id] == null &&
-                            q.publishedAt != null &&
-                            now.difference(q.publishedAt!) <
-                                QuizListScreen.newFor,
-                        onTap: () => QuizListScreen.play(ref, q),
-                      ),
-                  ],
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-class _QuizTile extends StatelessWidget {
-  const _QuizTile({
-    required this.quiz,
-    required this.best,
-    required this.isNew,
-    required this.onTap,
-  });
-
-  final Quiz quiz;
-  final QuizScore? best;
-  final bool isNew;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final b = best;
-    final image = quiz.imageUrl;
-    const fallback = Icon(Icons.quiz_outlined, size: 32);
-    return ListTile(
-      key: QuizListScreen.quizKey(quiz.id),
-      leading: SizedBox.square(
-        dimension: 48,
-        child: image == null
-            ? fallback
-            : ClipRRect(
-                borderRadius: AppRadius.card,
-                child: Image.network(
-                  image,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => fallback,
-                ),
-              ),
-      ),
-      title: Text(quiz.title),
-      subtitle: Text(
-        '${_difficulty(l, quiz.difficulty)} · '
-        '${l.bibleQuizQuestionCount(quiz.questions.length)}',
-      ),
-      trailing: b != null
-          ? Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(l.bibleQuizBest(b.score, b.total)),
-                _Stars(quizStars(b.score, b.total), size: 14),
-              ],
-            )
-          : isNew
-              ? Chip(
-                  label: Text(l.bibleQuizNew),
-                  backgroundColor: AppColors.chipNewBg,
-                  side: BorderSide.none,
-                  visualDensity: VisualDensity.compact,
-                )
-              : null,
-      onTap: onTap,
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

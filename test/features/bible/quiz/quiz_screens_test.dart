@@ -16,6 +16,7 @@ import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/sync/sync_rows.dart';
 import 'package:maison_du_miracle/features/bible/quiz/quiz.dart';
 import 'package:maison_du_miracle/features/bible/quiz/quiz_hub_screen.dart';
+import 'package:maison_du_miracle/features/bible/quiz/quiz_path_screen.dart';
 import 'package:maison_du_miracle/features/bible/quiz/quiz_providers.dart';
 import 'package:maison_du_miracle/features/bible/quiz/quiz_screens.dart';
 import 'package:maison_du_miracle/features/bible/reader/bible_reader_screen.dart';
@@ -142,17 +143,10 @@ void main() {
       await tester.tap(find.byKey(QuizHubScreen.bandKey(QuizAgeBand.adults)));
       await _settle(tester);
       expect(await db.select(db.appSettings).get(), isNotEmpty);
-      expect(find.byType(QuizListScreen), findsOneWidget);
-
-      expect(find.text(_fr.bibleQuizNew), findsOneWidget);
-      // Une autre tranche : la liste se vide.
-      await tester.tap(find.byKey(QuizListScreen.bandKey(QuizAgeBand.kids)));
-      await _settle(tester);
-      expect(find.text(_fr.bibleQuizEmpty), findsOneWidget);
-      await tester.tap(find.byKey(QuizListScreen.bandKey(QuizAgeBand.adults)));
-      await _settle(tester);
-
-      await tester.tap(find.byKey(QuizListScreen.quizKey(4)));
+      // Le parcours de la tranche : l'étape 1, ouverte, lance la partie.
+      expect(find.byType(QuizPathScreen), findsOneWidget);
+      expect(find.text(_fr.bibleQuizPathProgress(0, 1)), findsOneWidget);
+      await tester.tap(find.byKey(QuizPathScreen.stepKey(1)));
       await _settle(tester);
       expect(find.text(_fr.bibleQuizProgress(1, 2)), findsOneWidget);
 
@@ -193,11 +187,13 @@ void main() {
       await _settle(tester);
       expect(find.text(_fr.bibleQuizProgress(1, 2)), findsOneWidget);
 
-      // Retour à la liste : le meilleur score paraît.
+      // Retour au parcours : 1/2, une étoile — pas assez pour réussir
+      // l'étape (2 étoiles), qui reste à jouer.
       router.routerDelegate.navigatorKey.currentState!.pop();
       await _settle(tester);
-      expect(find.text(_fr.bibleQuizBest(1, 2)), findsOneWidget);
-      expect(find.text(_fr.bibleQuizNew), findsNothing);
+      expect(find.byType(QuizPathScreen), findsOneWidget);
+      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.text(_fr.bibleQuizPathProgress(0, 1)), findsOneWidget);
     });
   });
 

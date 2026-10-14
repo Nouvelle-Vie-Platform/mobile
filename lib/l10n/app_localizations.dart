@@ -5812,6 +5812,18 @@ abstract class AppLocalizations {
   /// **'pour approfondir sa foi'**
   String get bibleQuizBandAdultsHint;
 
+  /// Parcours des quiz : toucher une étape verrouillée
+  ///
+  /// In fr, this message translates to:
+  /// **'Réussissez d\'abord l\'étape {number} pour ouvrir celle-ci.'**
+  String bibleQuizStepLocked(int number);
+
+  /// Parcours des quiz : avancement sous le nom de la tranche
+  ///
+  /// In fr, this message translates to:
+  /// **'Étapes réussies : {done} / {total}'**
+  String bibleQuizPathProgress(int done, int total);
+
   /// Quiz bibliques (M6)
   ///
   /// In fr, this message translates to:
