@@ -13,6 +13,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/messaging/media/chat_media_picker.dart';
 import 'package:maison_du_miracle/data/messaging/media/group_media_urls.dart';
 import 'package:maison_du_miracle/data/messaging/media/media_upload_progress.dart';
+import 'package:maison_du_miracle/data/messaging/media/message_media_queue.dart';
+import 'package:maison_du_miracle/data/network/network_transport.dart';
+import 'package:maison_du_miracle/models/media_preferences.dart';
 import 'package:maison_du_miracle/data/players/chat_audio_player.dart';
 import 'package:maison_du_miracle/l10n/app_localizations.dart';
 import 'package:maison_du_miracle/models/echanges_view.dart';
@@ -112,13 +115,19 @@ void main() {
   late _FakeUrls urls;
   late _RecordingOpener opener;
   late MediaUploadProgress progress;
+  late FixedNetworkTransport network;
+  late ChatMediaDescent descent;
 
   setUp(() {
     engine = FakeChatAudioEngine();
     urls = _FakeUrls();
     opener = _RecordingOpener();
     progress = MediaUploadProgress();
+    network = FixedNetworkTransport();
+    descent = ChatMediaDescent.wifi;
   });
+
+  tearDown(() => network.dispose());
 
   Future<void> pump(
       WidgetTester tester, List<GroupMessageView> messages) async {
@@ -126,6 +135,19 @@ void main() {
       ProviderScope(
         overrides: [
           groupMediaUrlsProvider.overrideWithValue(urls),
+          // **La file de la descente** (T3, #225), montée sans magasin : son
+          // `arrived` est un rappel, pas un DAO, et il rend une liste vide —
+          // aucun flux Drift n'est ouvert sous l'horloge factice. Ce qu'on
+          // vérifie ici est le seul déclencheur que la vue porte :
+          // « un média affiché est gardé ».
+          messageMediaQueueProvider.overrideWith(
+            (ref) => MessageMediaQueue(
+              arrived: () async => const [],
+              urls: urls,
+              network: network,
+              descent: () async => descent,
+            ),
+          ),
           mediaOpenerProvider.overrideWithValue(opener),
           mediaUploadProgressProvider.overrideWithValue(progress),
           chatAudioControllerProvider.overrideWith((ref) {
@@ -266,6 +288,33 @@ void main() {
       expect(find.byKey(const Key('m4_image_tile')), findsOneWidget);
       expect(find.text(_fr.chatMediaUnsupported), findsNothing);
       expect(find.text(''), findsNothing);
+    });
+
+    /// **L'historique se remplit au fil de la navigation** (T3, #225) : une
+    /// image peinte depuis le réseau est **gardée**, même si son message est
+    /// antérieur au chantier — c'est le seul endroit où la vue le décide.
+    testWidgets('une image peinte depuis le réseau est gardée', (tester) async {
+      urls.give = false;
+      await pump(tester, [_message('m-1', media: image)]);
+
+      expect(urls.resolved, ['m-1']);
+      expect(
+        urls.downloaded,
+        ['m-1'],
+        reason: 'un média affiché est gardé',
+      );
+    });
+
+    testWidgets('en données mobiles, l\'image s\'affiche mais ne descend pas',
+        (tester) async {
+      urls.give = false;
+      network.emit(true);
+      await pump(tester, [_message('m-1', media: image)]);
+
+      // La bulle est peinte (l'URL a été demandée), mais rien n'est écrit sur
+      // le disque : l'écrire coûterait une **seconde** fois les octets.
+      expect(urls.resolved, ['m-1']);
+      expect(urls.downloaded, isEmpty);
     });
   });
 
@@ -465,6 +514,8 @@ void main() {
       expect(find.byKey(const Key('m4_image_tile')), findsOneWidget);
       expect(urls.resolved, isEmpty,
           reason: 'le fichier est là : rien à demander au serveur');
+      expect(urls.downloaded, isEmpty,
+          reason: 'ni remis en file : il est déjà gardé (T3, #225)');
       expect(find.byType(Image), findsOneWidget);
       expect(
         (tester.widget<Image>(find.byType(Image)).image as ResizeImage)

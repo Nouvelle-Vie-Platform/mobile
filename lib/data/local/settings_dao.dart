@@ -43,6 +43,10 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
       // cellulaire : toute autre valeur (base bricolée) retombe côté prudent.
       downloadOnCellular: byKey[_downloadOnCellularKey] == 'true',
       radio: RadioQuality.parse(byKey[MediaUsage.radio.key]),
+      // Absent = wifi (T3, #225) : la descente automatique est en marche dès
+      // l'installation — c'est ce qui rend le fil consultable hors ligne sans
+      // un geste —, mais elle n'attend que le wifi.
+      chatMedia: ChatMediaDescent.parse(byKey[_chatMediaDescentKey]),
     );
   }
 
@@ -53,6 +57,38 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   Future<bool> downloadOnCellular() async {
     return _mediaPreferencesFrom(await select(appSettings).get())
         .downloadOnCellular;
+  }
+
+  /// **Quand les médias des conversations descendent** (T3, #225), en une
+  /// lecture **ponctuelle** — même raison que [downloadOnCellular] : la file
+  /// consulte l'état courant au moment de descendre, elle ne s'y abonne pas, et
+  /// un flux Drift jamais refermé n'a pas sa place dans ce chemin.
+  Future<ChatMediaDescent> chatMediaDescent() async {
+    return _mediaPreferencesFrom(await select(appSettings).get()).chatMedia;
+  }
+
+  /// **La frontière entre « arrivé » et « historique »** (T3, #225).
+  ///
+  /// La descente automatique ne vaut que pour les messages **reçus depuis que
+  /// la fonction existe** : l'historique, lui, se garde au fil de la navigation
+  /// (un média affiché est gardé). Il faut donc un instant qui sépare les deux,
+  /// et il doit survivre au redémarrage — sinon chaque lancement reprendrait
+  /// l'ensemble du fil pour de l'« arrivé », et un appareil de 16 Go se
+  /// remplirait d'un coup sur le premier wifi.
+  ///
+  /// Posé à **maintenant** au premier appel, et jamais déplacé ensuite. Il se
+  /// compare au `created_at` **serveur** du message, pas à l'instant où le
+  /// magasin l'a rangé : la première synchronisation d'une installation neuve
+  /// écrit des messages anciens, qui restent donc de l'historique.
+  Future<DateTime> chatMediaDescentSince() async {
+    final row = await (select(appSettings)
+          ..where((s) => s.key.equals(_chatMediaSinceKey)))
+        .getSingleOrNull();
+    final stored = DateTime.tryParse(row?.value ?? '');
+    if (stored != null) return stored;
+    final now = DateTime.now().toUtc();
+    await _put(_chatMediaSinceKey, now.toIso8601String());
+    return now;
   }
 
   /// Les réglages d'**apparence**, recomposés à chaque changement.
@@ -115,6 +151,12 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   /// La clé de l'onglet de la page Bible (#190).
   static const String _bibleTabKey = 'bible_tab';
 
+  /// Les deux clés de la descente des médias de la messagerie (T3, #225).
+  /// **Aucun palier Drift n'a été nécessaire** : `app_settings` est clé/valeur,
+  /// c'est précisément ce pour quoi elle l'est.
+  static const String _chatMediaDescentKey = 'chat_media_descent';
+  static const String _chatMediaSinceKey = 'chat_media_descent_since';
+
   /// Pose la qualité d'un usage. Écrase la valeur précédente s'il y en avait
   /// une — le réglage n'a pas d'historique.
   Future<void> setMediaQuality(MediaUsage usage, MediaQuality quality) =>
@@ -127,6 +169,10 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   /// Autorise (ou non) les téléchargements en données mobiles (F8).
   Future<void> setDownloadOnCellular(bool allowed) =>
       _put(_downloadOnCellularKey, allowed ? 'true' : 'false');
+
+  /// Pose le moment où les médias d'une conversation descendent (T3, #225).
+  Future<void> setChatMediaDescent(ChatMediaDescent descent) =>
+      _put(_chatMediaDescentKey, descent.key);
 
   // ───────────────────────────────────────────────────────────────────────────
   // La préférence de branche

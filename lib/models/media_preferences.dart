@@ -140,6 +140,7 @@ class MediaPreferences {
     this.download = MediaQuality.auto,
     this.downloadOnCellular = false,
     this.radio = RadioQuality.auto,
+    this.chatMedia = ChatMediaDescent.wifi,
   });
 
   final MediaQuality streaming;
@@ -154,6 +155,12 @@ class MediaPreferences {
 
   /// Le choix de la radio — voir [RadioQuality].
   final RadioQuality radio;
+
+  /// **Quand les médias des conversations descendent** (T3, #225) — voir
+  /// [ChatMediaDescent]. Rangé ici et non dans un réglage à part parce que
+  /// l'écran observe déjà ce flux-là : une seconde source pour un seul
+  /// booléen de plus aurait doublé le câblage sans rien ajouter.
+  final ChatMediaDescent chatMedia;
 
   /// Le palier d'un usage **de l'échelle des enseignements**. La radio n'y est
   /// pas : elle se lit par [radio], et la demander ici est une erreur d'appel.
@@ -170,11 +177,12 @@ class MediaPreferences {
       other.streaming == streaming &&
       other.download == download &&
       other.downloadOnCellular == downloadOnCellular &&
-      other.radio == radio;
+      other.radio == radio &&
+      other.chatMedia == chatMedia;
 
   @override
   int get hashCode =>
-      Object.hash(streaming, download, downloadOnCellular, radio);
+      Object.hash(streaming, download, downloadOnCellular, radio, chatMedia);
 }
 
 /// Le plafond **effectif**, une fois le transport connu.
@@ -187,4 +195,47 @@ class MediaPreferences {
 int? effectiveBitrateCap(MediaQuality quality, {required bool onCellular}) {
   if (quality != MediaQuality.auto) return quality.bitsPerSecond;
   return onCellular ? MediaQuality.low.bitsPerSecond : null;
+}
+
+/// **Quand les médias d'une conversation descendent sur l'appareil** (T3, #225).
+///
+/// Un type à part, et **surtout pas le booléen « données mobiles » du
+/// téléchargement** : autoriser le forfait pour un enseignement d'une heure
+/// qu'on a demandé n'est pas autoriser toutes les vidéos qu'un groupe de
+/// quarante personnes publiera demain. Les deux gestes n'ont ni la même taille
+/// ni le même consentement — d'où un onglet et une clé à eux.
+///
+/// L'ordre des valeurs est celui de l'arc, du plus économe au plus dépensier.
+enum ChatMediaDescent {
+  /// **Rien ne descend tout seul.** Un média reste consultable en ligne, et
+  /// n'est gardé que si on l'ouvre.
+  never('never'),
+
+  /// **Le défaut** (décision 2 du cadrage) : à la réception, **en wifi
+  /// seulement**. Le fil se consulte hors ligne sans un geste, et les données
+  /// mobiles ne partent jamais sans accord — au Togo c'est un vrai coût.
+  wifi('wifi'),
+
+  /// En wifi **et** en données mobiles, pour qui le choisit en connaissance.
+  always('always');
+
+  const ChatMediaDescent(this.key);
+
+  /// Clé de rangement dans `app_settings`. Stable, pour la raison de
+  /// [MediaUsage.key] : la renommer basculerait tous les appareils installés
+  /// sur le défaut, sans rien dire.
+  final String key;
+
+  /// Les données mobiles sont-elles autorisées pour cette descente ?
+  bool get allowsCellular => this == ChatMediaDescent.always;
+
+  /// Relit une valeur stockée. **Tolérante**, comme [MediaQuality.parse] : une
+  /// clé inconnue retombe sur le défaut plutôt que de faire échouer la lecture
+  /// de tout l'écran.
+  static ChatMediaDescent parse(String? raw) {
+    for (final value in ChatMediaDescent.values) {
+      if (value.key == raw) return value;
+    }
+    return ChatMediaDescent.wifi;
+  }
 }

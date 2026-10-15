@@ -159,6 +159,25 @@ Future<String?> _mediaSourceOf(
   // feint ne fait jamais avancer une entrée-sortie réelle.
   if (local != null && File(local).existsSync()) return local;
   if (!message.isConfirmed) return null;
+  // **L'historique se remplit au fil de la navigation** (T3, #225) : on arrive
+  // ici précisément quand le fichier n'est pas sur l'appareil, et on va le
+  // peindre depuis le réseau. C'est donc le seul endroit où dire « garde-le »,
+  // et il couvre l'image, la vidéo, sa vignette et le vocal d'un seul point —
+  // le document, lui, passe déjà par `download`, qui garde de lui-même.
+  //
+  // La file décide, pas cet appel : elle attend le wifi comme pour un message
+  // qui vient d'arriver. Peindre coûte déjà ses octets, l'écrire en coûterait
+  // une seconde fois.
+  final key = message.media?.key;
+  if (key != null) {
+    ref.read(messageMediaQueueProvider).keep(
+          groupId: message.groupId,
+          messageId: message.id,
+          mediaKey: key,
+          thumbnailKey: message.media?.thumbnailKey,
+          sizeBytes: message.media?.sizeBytes,
+        );
+  }
   return ref.read(groupMediaUrlsProvider).resolve(
         groupId: message.groupId,
         messageId: message.id,

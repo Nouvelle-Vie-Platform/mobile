@@ -292,9 +292,48 @@ le document hors ligne.
 c'est le seul moyen de savoir si l'OS touche à ce dossier, et le chantier n'a
 aucune autre source que cette observation.
 
-⚠️ Non couvert ici, parce que la descente automatique n'existe pas encore
-(#225) : une image ou un vocal **reçu** n'est pas encore écrit au magasin. Seul
-un document ouvert au moins une fois y descend.
+---
+
+## 8 bis. La descente automatique en wifi (#225)
+
+Ce que la VM Dart ne peut pas dire : elle sait prouver la **règle** — en données
+mobiles, zéro téléchargement —, pas que l'OS annonce le bon tuyau au bon moment.
+C'est toute la question, et elle n'a pas de double.
+
+8bis.1 — [ ] Réglage **Qualité & données → MESSAGERIE** sur « En wifi ».
+Couper le wifi (données mobiles seules), se faire envoyer **une photo et une
+vidéo** dans un groupe, les laisser arriver, puis passer en **mode avion** et
+remonter le fil.
+→ **Attendu** : les bulles ne peignent pas les images (elles sont au serveur, pas
+ici). L'onglet MESSAGERIE annonce alors **un poids en attente** — noter le
+chiffre, il doit être celui des deux fichiers.
+
+8bis.2 — [ ] **Rebrancher le wifi** sans rien toucher à l'application, attendre,
+puis repasser en mode avion et remonter le fil.
+→ **Attendu** : les deux médias s'affichent hors ligne, et le poids en attente
+de l'onglet MESSAGERIE est retombé à « Tout est déjà sur l'appareil ». **Noter
+combien de temps** s'est écoulé entre le retour du wifi et l'affichage : la file
+part après un **cycle de synchronisation**, pas sur un signal de réseau à elle,
+et c'est le seul endroit où ce délai se mesure. S'il dépasse la minute, dire
+lequel des cinq déclencheurs a fini par l'ouvrir (le fil rouvert, le retour au
+premier plan, un tirer-pour-rafraîchir).
+
+8bis.3 — [ ] Réglage sur « Jamais », se faire envoyer une photo, rester en wifi.
+→ **Attendu** : rien ne descend. Puis **ouvrir** la photo : elle est gardée, et
+se revoit en mode avion. « Jamais » ne parle que du tout seul.
+
+8bis.4 — [ ] Réglage sur « Toujours », wifi coupé, se faire envoyer une photo.
+→ **Attendu** : elle descend sur les données mobiles. C'est le seul choix qui
+consomme le forfait, et il faut le voir consommer.
+
+8bis.5 — [ ] **Remplir le stockage** jusqu'à l'avertissement du système, puis se
+faire envoyer une vidéo en wifi.
+→ **Attendu** : rien ne plante, et le fil reste utilisable. ⚠️ Le pré-check
+d'espace **avant** le premier octet est aujourd'hui inerte sur ce socle :
+`BestEffortDiskSpace.freeBytes()` rend « inconnu » faute d'API Dart
+multiplateforme, et l'inconnu laisse passer. Le seul filet réel est celui du
+système au moment d'écrire. **Noter ce que l'appareil fait** — c'est la seule
+source dont on dispose pour décider s'il faut un canal natif.
 
 ---
 

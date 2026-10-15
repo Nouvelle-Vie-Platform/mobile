@@ -7,6 +7,8 @@ import '../data/local/settings_dao.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/media_preferences.dart';
+import '../models/message_media.dart' show formatByteSize;
+import '../state/chat_media_providers.dart';
 import '../state/media_settings_providers.dart';
 import '../state/theme_provider.dart';
 import '../theme/app_colors.dart';
@@ -17,9 +19,10 @@ import '../widgets/app_card.dart';
 import '../widgets/brand_app_bar.dart';
 import '../widgets/quality_arc.dart';
 
-/// **Qualité** (`/settings/media`) — trois onglets, un cadran chacun (#184).
+/// **Qualité** (`/settings/media`) — quatre onglets, un cadran chacun (#184,
+/// puis T3 #225).
 ///
-/// RADIO · ÉCOUTE · TÉLÉCHARGEMENT. Chaque onglet pose une question en grand,
+/// RADIO · ÉCOUTE · TÉLÉCHARGEMENT · MESSAGERIE. Chaque onglet pose une question en grand,
 /// une ligne d'explication, puis le cadran ([QualityArc]) et la consommation
 /// du choix. Le choix s'enregistre au toucher, sans bouton « valider ».
 ///
@@ -33,7 +36,14 @@ import '../widgets/quality_arc.dart';
 ///   (`BitrateCapController`), sur Android par l'URL du rendu ;
 /// - **le téléchargement** se range sans piloter de débit
 ///   (`docs/mediatheque-en-ligne.md` §2) ; son interrupteur de réseau, lui,
-///   alimente `DownloadManager.mobileDataAllowed`.
+///   alimente `DownloadManager.mobileDataAllowed` ;
+/// - **la messagerie** (T3, #225) ne règle pas une qualité mais un **moment** :
+///   quand les médias reçus descendent sur l'appareil. Elle alimente
+///   `MessageMediaQueue`. Son réglage est **à elle** et ne réutilise pas
+///   l'interrupteur du téléchargement : autoriser le forfait pour un
+///   enseignement d'une heure qu'on a demandé n'est pas autoriser toutes les
+///   vidéos qu'un groupe publiera demain. Et son cadran n'a que trois crans,
+///   parce qu'il n'y a que trois moments.
 ///
 /// **Le direct n'est plus réglable** : aucun lecteur ne lisait son palier.
 /// **Mon assemblée** a quitté cette page pour la sienne (`BranchScopeScreen`).
@@ -47,7 +57,9 @@ import '../widgets/quality_arc.dart';
 /// l'horizontale, et un `TabBarView` glissant lui disputerait le geste.
 ///
 /// **Les chiffres ne s'inventent pas.** Les Mo par heure viennent des débits
-/// de `MediaQuality` et `RadioQuality`, jamais d'une traduction.
+/// de `MediaQuality` et `RadioQuality`, jamais d'une traduction — et le poids
+/// de l'onglet MESSAGERIE est la **somme réelle** des `media_size` que le
+/// serveur a mesurés, lue au magasin (`GroupDao.watchMediaToDescend`).
 class MediaSettingsScreen extends ConsumerWidget {
   const MediaSettingsScreen({super.key});
 
@@ -64,6 +76,13 @@ class MediaSettingsScreen extends ConsumerWidget {
 
   /// Le toggle « Télécharger en données mobiles » (F8).
   static const Key downloadOnCellularKey = Key('media_download_on_cellular');
+
+  /// Clé de test d'une pastille de l'onglet MESSAGERIE (T3, #225).
+  static Key chatMediaOptionKey(ChatMediaDescent descent) =>
+      Key('media_chat_${descent.key}');
+
+  /// Clé de test du curseur en arc de l'onglet MESSAGERIE.
+  static const Key chatMediaSliderKey = Key('media_chat_slider');
 
   /// L'ordre de l'arc pour l'écoute et le téléchargement, du plus économe au
   /// plus riche — Automatique avant Haute, comme pour la radio. L'ordre de
@@ -84,7 +103,7 @@ class MediaSettingsScreen extends ConsumerWidget {
     final dao = ref.read(settingsDaoProvider);
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: BrandAppBar(title: l.mediaSettingsTitle),
@@ -93,7 +112,7 @@ class MediaSettingsScreen extends ConsumerWidget {
             TabBar(
               labelColor: palette.textPrimary,
               unselectedLabelColor: palette.textSecondary,
-              // Trois mots en capitales espacées sur la largeur d'un
+              // Quatre mots en capitales espacées sur la largeur d'un
               // téléphone étroit : marges serrées, et chaque libellé se
               // réduit plutôt que de se couper.
               labelPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -113,6 +132,7 @@ class MediaSettingsScreen extends ConsumerWidget {
                 _tab(l.mediaSettingsRadio),
                 _tab(l.mediaSettingsListening),
                 _tab(l.mediaSettingsDownload),
+                _tab(l.mediaSettingsMessaging),
               ],
             ),
             Expanded(
@@ -140,6 +160,12 @@ class MediaSettingsScreen extends ConsumerWidget {
                       value: preferences.downloadOnCellular,
                       onChanged: dao.setDownloadOnCellular,
                     ),
+                  ),
+                  _chatMediaPage(
+                    l,
+                    preferences.chatMedia,
+                    ref.watch(chatMediaWaitingProvider).value,
+                    dao,
                   ),
                 ],
               ),
@@ -178,6 +204,74 @@ class MediaSettingsScreen extends ConsumerWidget {
             _mediaFacts(l, q, download: usage == MediaUsage.download),
         onSelected: (q) => dao.setMediaQuality(usage, q),
         footer: footer,
+      );
+
+  /// **L'onglet MESSAGERIE** (T3, #225) : le même cadran, trois crans, et une
+  /// carte dont le gros chiffre est **mesuré**.
+  ///
+  /// [waiting] est `null` tant que le magasin n'a pas répondu — la carte dit
+  /// alors « tout est déjà sur l'appareil » plutôt qu'un chiffre deviné.
+  Widget _chatMediaPage(
+    AppLocalizations l,
+    ChatMediaDescent selected,
+    ({int count, int bytes})? waiting,
+    SettingsDao dao,
+  ) =>
+      _QualityPage<ChatMediaDescent>(
+        question: l.qualityQuestionMessaging,
+        lead: l.qualityLeadMessaging,
+        values: ChatMediaDescent.values,
+        selected: selected,
+        labelOf: (d) => _chatMediaLabel(l, d),
+        iconOf: _chatMediaIcon,
+        keyOf: chatMediaOptionKey,
+        sliderKey: chatMediaSliderKey,
+        factsOf: (d) => _chatMediaFacts(l, d, waiting),
+        onSelected: dao.setChatMediaDescent,
+      );
+
+  /// **Le poids qui attend**, et rien d'inventé : la somme des `media_size`
+  /// que le serveur a mesurés, pour les médias reçus qui ne sont pas encore
+  /// sur l'appareil. Zéro média s'affiche comme une absence, jamais « 0 Mo ».
+  ///
+  /// Pas de ligne « son » ici : ce réglage ne touche à aucun débit.
+  static _Facts _chatMediaFacts(
+    AppLocalizations l,
+    ChatMediaDescent descent,
+    ({int count, int bytes})? waiting,
+  ) {
+    final count = waiting?.count ?? 0;
+    return _Facts(
+      headline: count == 0
+          ? l.chatMediaNothingWaiting
+          : l.chatMediaWaiting(formatByteSize(waiting!.bytes, l.localeName)),
+      plan: count == 0 ? null : l.chatMediaWaitingCount(count),
+      network: switch (descent) {
+        ChatMediaDescent.never => l.chatMediaDescentNeverFact,
+        ChatMediaDescent.wifi => l.chatMediaDescentWifiFact,
+        ChatMediaDescent.always => l.chatMediaDescentAlwaysFact,
+      },
+      sound: null,
+    );
+  }
+
+  static String _chatMediaLabel(AppLocalizations l, ChatMediaDescent d) =>
+      switch (d) {
+        ChatMediaDescent.never => l.chatMediaDescentNever,
+        ChatMediaDescent.wifi => l.chatMediaDescentWifi,
+        ChatMediaDescent.always => l.chatMediaDescentAlways,
+      };
+
+  /// Pas de barres de signal ici : les trois crans ne disent pas une
+  /// *quantité* mais un *réseau*, et le pictogramme doit le dire aussi.
+  static Widget _chatMediaIcon(ChatMediaDescent d, double size) => Icon(
+        switch (d) {
+          ChatMediaDescent.never => Icons.block,
+          ChatMediaDescent.wifi => Icons.wifi,
+          ChatMediaDescent.always => Icons.signal_cellular_alt,
+        },
+        color: Colors.white,
+        size: size,
       );
 
   /// **Ce que coûte et ce que donne un choix**, dans les mots de l'auditeur :
@@ -291,7 +385,8 @@ class MediaSettingsScreen extends ConsumerWidget {
 /// Un onglet : la question, l'explication, le cadran, la consommation, et le
 /// halo qui monte du bas de l'écran.
 /// Ce qu'une carte dit d'un choix. [network] est nul quand le réseau n'a pas
-/// d'importance (le téléchargement).
+/// d'importance (le téléchargement), [sound] quand le choix ne touche pas au
+/// son — l'onglet MESSAGERIE règle un moment, pas un débit.
 class _Facts {
   const _Facts({
     required this.headline,
@@ -301,9 +396,12 @@ class _Facts {
   });
 
   final String headline;
-  final String plan;
+
+  /// La ligne « forfait ». Nulle quand il n'y a rien à compter (l'onglet
+  /// MESSAGERIE quand tout est déjà sur l'appareil).
+  final String? plan;
   final String? network;
-  final String sound;
+  final String? sound;
 }
 
 class _QualityPage<T> extends ConsumerWidget {
@@ -317,6 +415,7 @@ class _QualityPage<T> extends ConsumerWidget {
     required this.sliderKey,
     required this.factsOf,
     required this.onSelected,
+    this.lead,
     this.footer,
   });
 
@@ -329,6 +428,11 @@ class _QualityPage<T> extends ConsumerWidget {
   final Key sliderKey;
   final _Facts Function(T value) factsOf;
   final ValueChanged<T> onSelected;
+
+  /// L'explication sous la question. Nulle = celle des trois onglets de
+  /// qualité ([AppLocalizations.qualityLead]) ; l'onglet MESSAGERIE ne règle
+  /// pas un débit et a donc la sienne.
+  final String? lead;
   final Widget? footer;
 
   @override
@@ -399,7 +503,7 @@ class _QualityPage<T> extends ConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 40),
                           child: Text(
-                            l.qualityLead,
+                            lead ?? l.qualityLead,
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -518,6 +622,8 @@ class _FactsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final network = facts.network;
+    final plan = facts.plan;
+    final sound = facts.sound;
     final current = now;
 
     Widget row(IconData icon, String text) => Padding(
@@ -555,9 +661,9 @@ class _FactsCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          row(Icons.data_usage, facts.plan),
+          if (plan != null) row(Icons.data_usage, plan),
           if (network != null) row(Icons.cell_tower, network),
-          row(Icons.graphic_eq, facts.sound),
+          if (sound != null) row(Icons.graphic_eq, sound),
           if (current != null) ...[
             const SizedBox(height: AppSpacing.md),
             Divider(height: 1, color: palette.border),

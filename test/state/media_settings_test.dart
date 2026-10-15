@@ -38,6 +38,52 @@ void main() {
     });
   });
 
+  /// **La descente des médias de la messagerie** (T3, #225) : un réglage à
+  /// elle, et la frontière qui sépare l'arrivé de l'historique.
+  group('La descente des médias de la messagerie', () {
+    test('le défaut est le wifi, et l\'inconnu y retombe', () {
+      expect(const MediaPreferences().chatMedia, ChatMediaDescent.wifi);
+      expect(ChatMediaDescent.parse(null), ChatMediaDescent.wifi);
+      expect(ChatMediaDescent.parse('cellulaire'), ChatMediaDescent.wifi);
+      expect(ChatMediaDescent.parse('never'), ChatMediaDescent.never);
+      expect(ChatMediaDescent.parse('always'), ChatMediaDescent.always);
+    });
+
+    test('seul « Toujours » autorise les données mobiles', () {
+      expect(ChatMediaDescent.never.allowsCellular, isFalse);
+      expect(ChatMediaDescent.wifi.allowsCellular, isFalse);
+      expect(ChatMediaDescent.always.allowsCellular, isTrue);
+    });
+
+    test('elle ne partage pas la clé du téléchargement', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      await db.settingsDao.setDownloadOnCellular(true);
+
+      // Autoriser le forfait pour un enseignement d'une heure qu'on a demandé
+      // n'autorise **pas** toutes les vidéos des groupes.
+      expect(await db.settingsDao.chatMediaDescent(), ChatMediaDescent.wifi);
+
+      await db.settingsDao.setChatMediaDescent(ChatMediaDescent.always);
+      expect(await db.settingsDao.downloadOnCellular(), isTrue);
+      expect(await db.settingsDao.chatMediaDescent(), ChatMediaDescent.always);
+    });
+
+    test('la frontière est posée une fois et ne se déplace plus', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      final first = await db.settingsDao.chatMediaDescentSince();
+      final second = await db.settingsDao.chatMediaDescentSince();
+
+      // Si elle bougeait, chaque lancement reprendrait tout le fil pour de
+      // l'« arrivé » et remplirait l'appareil d'un coup sur le premier wifi.
+      expect(second, first);
+      expect(first.isUtc, isTrue);
+    });
+  });
+
   group('Le mode automatique', () {
     test('bride en données mobiles, laisse libre en wifi', () {
       expect(

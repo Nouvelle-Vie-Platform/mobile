@@ -14,6 +14,7 @@ import 'l10n/app_localizations.dart';
 import 'l10n/l10n_setup.dart';
 import 'router/app_router.dart';
 import 'state/auth_providers.dart';
+import 'state/chat_media_providers.dart';
 import 'state/downloads_providers.dart';
 import 'state/echanges_providers.dart';
 import 'state/notes_providers.dart';
@@ -141,6 +142,13 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
           await ref.read(downloadLifecycleProvider).reconcile();
           await ref.read(downloadManagerProvider).reconcile();
           await ref.read(messagingOutboxProvider)();
+          // **La descente des médias reçus** (T3, #225) : un cycle réussi est
+          // le moment où les messages arrivés sont en magasin — donc « à la
+          // réception ». Le canal temps réel déclenche un cycle quand un
+          // message entre, et sa reconnexion en déclenche un au retour du
+          // réseau : la file n'a donc ni minuterie ni abonnement à elle. Elle
+          // ne descend qu'en wifi, sauf accord explicite (onglet MESSAGERIE).
+          await ref.read(messageMediaQueueProvider).pump();
           // **Les pièces jointes des notes** (#192) d'abord : une montée qui
           // aboutit pose sa clé dans le brouillon, que l'envoi suivant porte.
           await ref.read(noteMediaComposerProvider).resendPending();

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/models/media_preferences.dart';
 import 'package:maison_du_miracle/screens/media_settings_screen.dart';
+import 'package:maison_du_miracle/state/chat_media_providers.dart';
 import 'package:maison_du_miracle/state/media_settings_providers.dart';
 
 import '../helpers/pump_screen.dart';
@@ -26,6 +27,7 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     MediaPreferences preferences = const MediaPreferences(),
+    ({int count, int bytes}) waiting = (count: 0, bytes: 0),
   }) async {
     // Un téléphone ordinaire en largeur (390 px logiques), très haut pour que
     // l'interrupteur du téléchargement soit construit sans défiler.
@@ -42,6 +44,10 @@ void main() {
       overrides: [
         mediaPreferencesProvider
             .overrideWith((ref) => Stream.value(preferences)),
+        // Même raison que la ligne du dessus : ce provider ouvre un **flux
+        // Drift** (`GroupDao.watchMediaToDescend`), que l'horloge factice de
+        // `testWidgets` ne fait jamais avancer.
+        chatMediaWaitingProvider.overrideWith((ref) => Stream.value(waiting)),
       ],
     );
   }
@@ -68,12 +74,13 @@ void main() {
       find.byKey(MediaSettingsScreen.radioOptionKey(quality));
 
   group('La page Qualité', () {
-    testWidgets('trois onglets, la radio d\'abord', (tester) async {
+    testWidgets('quatre onglets, la radio d\'abord', (tester) async {
       await pump(tester);
 
       expect(find.text('RADIO'), findsOneWidget);
       expect(find.text('ÉCOUTE'), findsOneWidget);
       expect(find.text('TÉLÉCHARGEMENT'), findsOneWidget);
+      expect(find.text('MESSAGERIE'), findsOneWidget);
       expect(find.text('Quelle qualité pour la radio\u00a0?'), findsOneWidget);
     });
 
@@ -82,7 +89,12 @@ void main() {
 
       expect(find.text('Mon assemblée'), findsNothing);
       expect(find.byKey(const Key('branch_scope_all')), findsNothing);
-      for (final tab in ['RADIO', 'ÉCOUTE', 'TÉLÉCHARGEMENT']) {
+      for (final tab in [
+        'RADIO',
+        'ÉCOUTE',
+        'TÉLÉCHARGEMENT',
+        'MESSAGERIE',
+      ]) {
         await openTab(tester, tab);
         expect(find.textContaining('Direct'), findsNothing, reason: tab);
       }
@@ -331,6 +343,88 @@ void main() {
         () => database.settingsDao.downloadOnCellular(),
       );
       expect(value, isTrue);
+    });
+  });
+
+  /// **L'onglet MESSAGERIE** (T3, #225). Le test qui porte la tranche est le
+  /// premier : l'interrupteur du téléchargement **n'est pas** ici, parce que
+  /// autoriser le forfait pour un enseignement d'une heure qu'on a demandé
+  /// n'est pas autoriser toutes les vidéos qu'un groupe publiera demain.
+  group('L\'onglet Messagerie', () {
+    testWidgets('n\'emprunte pas l\'interrupteur du téléchargement',
+        (tester) async {
+      await pump(tester);
+      await openTab(tester, 'MESSAGERIE');
+
+      expect(
+        find.byKey(MediaSettingsScreen.downloadOnCellularKey),
+        findsNothing,
+      );
+      // Il a son propre cadran, à trois crans.
+      for (final descent in ChatMediaDescent.values) {
+        expect(
+          find.byKey(MediaSettingsScreen.chatMediaOptionKey(descent)),
+          findsOneWidget,
+          reason: descent.key,
+        );
+      }
+    });
+
+    testWidgets('sa question, son explication, et le wifi par défaut',
+        (tester) async {
+      await pump(tester);
+      await openTab(tester, 'MESSAGERIE');
+
+      expect(
+        find.text('Garder les médias des conversations\u00a0?'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('se revoit hors ligne'),
+        findsOneWidget,
+      );
+      // Le défaut est « En wifi » : seule la pastille choisie porte son nom.
+      expect(find.text('En wifi'), findsOneWidget);
+      expect(
+        find.textContaining('attend le wifi'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('toucher un cran écrit le réglage', (tester) async {
+      await pump(tester);
+      await openTab(tester, 'MESSAGERIE');
+
+      for (final descent in ChatMediaDescent.values) {
+        await tester
+            .tap(find.byKey(MediaSettingsScreen.chatMediaOptionKey(descent)));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        final value = await tester.runAsync(
+          () => database.settingsDao.chatMediaDescent(),
+        );
+        expect(value, descent, reason: descent.key);
+      }
+    });
+
+    testWidgets('le poids annoncé est celui du magasin, pas une estimation',
+        (tester) async {
+      await pump(tester, waiting: (count: 3, bytes: 2400000));
+      await openTab(tester, 'MESSAGERIE');
+
+      // 2 400 000 octets = « 2,4 Mo », par `formatByteSize` — le même
+      // formatage que la taille d'un document dans une bulle.
+      expect(find.text('2,4 Mo en attente'), findsOneWidget);
+      expect(find.text('3 médias reçus'), findsOneWidget);
+    });
+
+    testWidgets('rien en attente s\'affiche comme une absence', (tester) async {
+      await pump(tester);
+      await openTab(tester, 'MESSAGERIE');
+
+      expect(find.text('Tout est déjà sur l\'appareil'), findsOneWidget);
+      expect(find.textContaining('en attente'), findsNothing);
+      expect(find.textContaining('médias reçus'), findsNothing);
     });
   });
 }
