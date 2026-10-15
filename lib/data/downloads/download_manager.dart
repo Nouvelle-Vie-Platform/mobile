@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/media_preferences.dart';
