@@ -6,6 +6,7 @@ import 'package:maison_du_miracle/data/messaging/media/group_media_transport.dar
 import 'package:maison_du_miracle/data/messaging/media/group_media_urls.dart';
 import 'package:maison_du_miracle/data/messaging/media/media_outbox.dart';
 import 'package:maison_du_miracle/data/messaging/media/media_preparer.dart';
+import 'package:maison_du_miracle/data/messaging/media/message_media_store.dart';
 import 'package:maison_du_miracle/data/messaging/media/voice_recorder.dart';
 import 'package:maison_du_miracle/data/players/chat_audio_player.dart';
 import 'package:maison_du_miracle/data/players/chat_video_surface.dart';
@@ -36,12 +37,22 @@ List<Override> chatMediaTestOverrides(AppDatabase db) => [
       mediaOutboxProvider.overrideWithValue(
         MediaOutbox(root: () async => throw UnsupportedError('pas de disque')),
       ),
+      // Même raison que l'outbox : `getApplicationSupportDirectory` est un
+      // canal de greffon. Le transport inerte ne rend aucune identité serveur,
+      // donc rien n'entre au magasin dans un test d'écran — mais la racine
+      // doit lever plutôt que de répondre un dossier qui n'existe pas.
+      messageMediaStoreProvider.overrideWithValue(
+        MessageMediaStore(
+          root: () async => throw UnsupportedError('pas de disque'),
+        ),
+      ),
       groupMediaComposerProvider.overrideWith(
         (ref) => GroupMediaComposer(
           dao: db.groupDao,
           transport: const InertGroupMediaTransport(),
           preparer: const UnusedMediaPreparer(),
           outbox: ref.watch(mediaOutboxProvider),
+          store: ref.watch(messageMediaStoreProvider),
           progress: ref.watch(mediaUploadProgressProvider),
           resynchronize: () async {},
         ),

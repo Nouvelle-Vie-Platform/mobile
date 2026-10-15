@@ -12,6 +12,7 @@ import 'package:maison_du_miracle/data/messaging/media/group_media_transport.dar
 import 'package:maison_du_miracle/data/messaging/media/media_outbox.dart';
 import 'package:maison_du_miracle/data/messaging/media/media_preparer.dart';
 import 'package:maison_du_miracle/data/messaging/media/media_upload_progress.dart';
+import 'package:maison_du_miracle/data/messaging/media/message_media_store.dart';
 import 'package:maison_du_miracle/data/repositories/group_message_composer.dart';
 import 'package:maison_du_miracle/data/repositories/group_message_sender.dart';
 import 'package:maison_du_miracle/data/repositories/store_echanges_repository.dart';
@@ -30,6 +31,11 @@ class _ScriptedTransport implements GroupMediaTransport {
 
   /// Le prochain `sendMessage` lève ce code (un refus du serveur).
   String? rejectSendWith;
+
+  /// La réponse du `201` porte-t-elle l'identité du message ? Faux : une
+  /// réponse d'une autre forme — le message est parti, mais rien ne dit où le
+  /// ranger.
+  bool answersId = true;
 
   final List<Map<String, Object?>> tickets = [];
   final List<String> uploads = [];
@@ -76,7 +82,7 @@ class _ScriptedTransport implements GroupMediaTransport {
   }
 
   @override
-  Future<void> sendMessage({
+  Future<String?> sendMessage({
     required String groupId,
     required String clientMessageId,
     required DateTime clientCreatedAt,
@@ -101,6 +107,10 @@ class _ScriptedTransport implements GroupMediaTransport {
       'mediaMeta': mediaMeta,
       'mediaThumbnailKey': mediaThumbnailKey,
     });
+    // Le `201` rend le message autoritaire. **Dérivée de la clé
+    // d'idempotence**, comme le fait le serveur : un renvoi sous la même clé
+    // reconnaît le message existant et rend donc la même identité.
+    return answersId ? 'srv-$clientMessageId' : null;
   }
 }
 
@@ -132,6 +142,39 @@ class _CopyPreparer implements MediaPreparer {
       throw const MediaPreparationException('pas appelé');
 }
 
+/// Une « compression » qui rend deux fichiers **réels** : la vidéo et sa
+/// vignette. `_CopyPreparer.prepareVideo` lève, et deux tests comptent sur ce
+/// refus — d'où une classe à part plutôt qu'une méthode de plus.
+class _VideoPreparer extends _CopyPreparer {
+  _VideoPreparer(this.out);
+
+  /// Où le compresseur écrit : **hors de l'outbox**, comme le vrai
+  /// (`MediaOutbox.adopt` rend une source déjà dans l'outbox telle quelle —
+  /// la vidéo compressée n'y serait jamais renommée).
+  final Directory out;
+
+  @override
+  Future<PreparedVideo> prepareVideo(
+    String sourcePath, {
+    void Function(double progress)? onProgress,
+  }) async {
+    prepared++;
+    onProgress?.call(1);
+    final video = File('${out.path}/compresse.mp4')
+      ..writeAsBytesSync(List<int>.filled(900, 3));
+    final thumb = File('${out.path}/compresse.jpg')
+      ..writeAsBytesSync(List<int>.filled(80, 4));
+    return PreparedVideo(
+      path: video.path,
+      sizeBytes: 900,
+      durationSeconds: 12,
+      thumbPath: thumb.path,
+      width: 720,
+      height: 1280,
+    );
+  }
+}
+
 void main() {
   late AppDatabase db;
   late _ScriptedTransport transport;
@@ -139,11 +182,25 @@ void main() {
   late MediaUploadProgress progress;
   late GroupMediaComposer composer;
   late Directory dir;
+  late Directory storeDir;
+  late Directory prepDir;
   late List<double> seenProgress;
   var minted = 0;
 
   const groupId = 'g-1';
   const me = 'u-me';
+
+  GroupMediaComposer composerWith(MediaPreparer preparer) => GroupMediaComposer(
+        dao: db.groupDao,
+        transport: transport,
+        preparer: preparer,
+        outbox: MediaOutbox(root: () async => dir),
+        store: MessageMediaStore(root: () async => storeDir),
+        progress: progress,
+        resynchronize: () async {},
+        now: () => DateTime.utc(2026, 10, 6, 10),
+        mintId: () => 'c-${minted++}',
+      );
 
   setUp(() {
     db = openTestDatabase();
@@ -156,22 +213,17 @@ void main() {
       if (value.isNotEmpty) seenProgress.add(value.first);
     });
     dir = Directory.systemTemp.createTempSync('m4_outbox');
-    composer = GroupMediaComposer(
-      dao: db.groupDao,
-      transport: transport,
-      preparer: preparer,
-      outbox: MediaOutbox(root: () async => dir),
-      progress: progress,
-      resynchronize: () async {},
-      now: () => DateTime.utc(2026, 10, 6, 10),
-      mintId: () => 'c-${minted++}',
-    );
+    storeDir = Directory.systemTemp.createTempSync('m4_store');
+    prepDir = Directory.systemTemp.createTempSync('m4_prep');
+    composer = composerWith(preparer);
   });
 
   tearDown(() async {
     await db.close();
     progress.dispose();
     if (dir.existsSync()) dir.deleteSync(recursive: true);
+    if (storeDir.existsSync()) storeDir.deleteSync(recursive: true);
+    if (prepDir.existsSync()) prepDir.deleteSync(recursive: true);
   });
 
   String sourceFile(String name, int bytes) {
@@ -438,6 +490,156 @@ void main() {
       'kind': 'audio',
       'contentType': 'audio/mpeg',
       'voice': false,
+    });
+  });
+
+  group('Mes envois ne quittent plus le téléphone (T2, #224)', () {
+    String outboxPath(String name) => '${dir.path}/message_outbox/$name';
+    String storePath(String messageId, String fileName,
+            {bool thumbnail = false}) =>
+        '${storeDir.path}/message_media/$messageId/'
+        '${thumbnail ? 'thumb_' : ''}$fileName';
+
+    List<String> outboxFiles() =>
+        Directory('${dir.path}/message_outbox').existsSync()
+            ? [
+                for (final e
+                    in Directory('${dir.path}/message_outbox').listSync())
+                  if (e is File) e.path,
+              ]
+            : [];
+
+    test('le fichier envoyé passe au magasin — un déplacement, pas une copie',
+        () async {
+      final id = await composer.send(
+        groupId: groupId,
+        media: OutgoingMedia.voice(
+          path: sourceFile('voice.m4a', 2000),
+          durationSeconds: 8,
+        ),
+      );
+
+      // La clé du magasin est l'identité **serveur**, rendue par l'envoi —
+      // jamais la clé d'idempotence de l'écho.
+      final kept = await db.select(db.localMessageMedia).getSingle();
+      expect(kept.messageId, 'srv-$id');
+      expect(kept.path, storePath('srv-$id', '$id-src.m4a'));
+      expect(File(kept.path!).lengthSync(), 2000,
+          reason: 'les octets sont arrivés entiers');
+      // Que ce soit bien un **déplacement** et non une copie, c'est le test
+      // d'`adopt` qui le prouve (`message_media_store_test.dart`) : ici, le
+      // balayage emporterait de toute façon une copie restée derrière.
+      expect(outboxFiles(), isEmpty, reason: 'l\'outbox n\'en garde rien');
+      // Et la bulle sert le fichier **là où il vit** sans rien demander.
+      expect((await thread()).single.media!.localPath, kept.path);
+    });
+
+    test('le document entre au magasin sous son nom déclaré', () async {
+      final id = await composer.send(
+        groupId: groupId,
+        media: OutgoingMedia.document(
+          path: sourceFile('x.pdf', 500),
+          name: 'budget 2026.pdf',
+          mime: 'application/pdf',
+        ),
+      );
+
+      final kept = await db.select(db.localMessageMedia).getSingle();
+      expect(kept.path, storePath('srv-$id', 'budget 2026.pdf'),
+          reason: 'c\'est le nom que l\'ouvreur du système montrera');
+      expect(File(kept.path!).existsSync(), isTrue);
+    });
+
+    test('la vignette locale suit le même chemin', () async {
+      composer = composerWith(_VideoPreparer(prepDir));
+
+      final id = await composer.send(
+        groupId: groupId,
+        media: OutgoingMedia.video(path: sourceFile('film.mp4', 3000)),
+      );
+
+      final kept = await db.select(db.localMessageMedia).getSingle();
+      expect(kept.path, storePath('srv-$id', '$id.mp4'));
+      expect(
+        kept.thumbPath,
+        storePath('srv-$id', '$id-thumb.jpg', thumbnail: true),
+      );
+      expect(File(kept.thumbPath!).lengthSync(), 80);
+      expect(outboxFiles(), isEmpty);
+    });
+
+    test('un envoi qui n\'est pas parti ne touche pas au magasin', () async {
+      transport.rejectSendWith = 'E_SOMETHING_TRANSIENT';
+
+      final id = await composer.send(
+        groupId: groupId,
+        media: OutgoingMedia.voice(
+          path: sourceFile('v.m4a', 1000),
+          durationSeconds: 2,
+        ),
+      );
+
+      expect(await db.select(db.localMessageMedia).get(), isEmpty);
+      expect(outboxFiles(), [outboxPath('$id-src.m4a')],
+          reason: 'le fichier reste là, prêt pour le renvoi');
+    });
+
+    test('une réponse sans identité laisse le fichier dans l\'outbox',
+        () async {
+      transport.answersId = false;
+
+      final id = await composer.send(
+        groupId: groupId,
+        media: OutgoingMedia.voice(
+          path: sourceFile('v.m4a', 1000),
+          durationSeconds: 2,
+        ),
+      );
+
+      expect(transport.messages, hasLength(1), reason: 'le message est parti');
+      expect(await db.select(db.localMessageMedia).get(), isEmpty);
+      expect(outboxFiles(), [outboxPath('$id-src.m4a')]);
+    });
+
+    test('l\'écho abandonné : le balayage emporte toujours son fichier',
+        () async {
+      transport.rejectSendWith = 'E_SOMETHING_TRANSIENT';
+      final id = await composer.send(
+        groupId: groupId,
+        media: OutgoingMedia.voice(
+          path: sourceFile('v.m4a', 1000),
+          durationSeconds: 2,
+        ),
+      );
+      expect(outboxFiles(), hasLength(1));
+
+      // Abandonné : plus aucun écho ne cite le fichier, et aucun message
+      // n'existe pour le réclamer.
+      await db.groupDao.forgetPending(id);
+      await MediaOutbox(root: () async => dir)
+          .sweep(await db.groupDao.pendingMediaFiles());
+
+      expect(outboxFiles(), isEmpty,
+          reason: 'sinon on remplace une perte par une fuite de vidéos');
+      expect(Directory('${storeDir.path}/message_media').existsSync(), isFalse);
+    });
+
+    test('un renvoi sous la même clé ne déplace pas deux fois', () async {
+      final id = await composer.send(
+        groupId: groupId,
+        media: OutgoingMedia.voice(
+          path: sourceFile('v.m4a', 2000),
+          durationSeconds: 2,
+        ),
+      );
+      final kept = await db.select(db.localMessageMedia).getSingle();
+
+      expect(await composer.deliver(id, manual: true), isTrue);
+
+      expect(
+          (await db.select(db.localMessageMedia).getSingle()).path, kept.path);
+      expect(File(kept.path!).lengthSync(), 2000,
+          reason: 'se déplacer sur soi-même ne vide pas le fichier');
     });
   });
 

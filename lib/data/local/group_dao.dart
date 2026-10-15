@@ -972,6 +972,14 @@ ORDER BY m.created_at DESC, m.id DESC
 
   /// **Les fichiers locaux encore cités par un écho** (M4) — tout le reste du
   /// dossier de l'outbox peut partir.
+  ///
+  /// Et c'est toujours vrai depuis T2 (#224) : un envoi **réussi** sort son
+  /// fichier de l'outbox (`GroupMediaComposer._keep` le déplace au magasin) et
+  /// redirige l'écho vers sa nouvelle place, donc ce qui reste dans le dossier
+  /// sans écho pour le citer est bien un **abandon** — envoi définitivement
+  /// échoué dont on a retiré l'écho, message abandonné avant d'être parti. Le
+  /// balayage doit l'emporter : remplacer la perte d'un envoi par une fuite de
+  /// vidéos ne serait pas un progrès.
   Future<Set<String>> pendingMediaFiles() async {
     final rows = await select(pendingGroupMessages).get();
     return {

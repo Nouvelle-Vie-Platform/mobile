@@ -70,6 +70,7 @@ final groupMediaComposerProvider = Provider<GroupMediaComposer>(
     transport: ref.watch(groupMediaTransportProvider),
     preparer: ref.watch(mediaPreparerProvider),
     outbox: ref.watch(mediaOutboxProvider),
+    store: ref.watch(messageMediaStoreProvider),
     progress: ref.watch(mediaUploadProgressProvider),
     resynchronize: ref.watch(pullToRefreshProvider),
   ),

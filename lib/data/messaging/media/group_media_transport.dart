@@ -94,7 +94,15 @@ abstract interface class GroupMediaTransport {
 
   /// Temps 3 : le message, qui cite la clé (ou porte la méta d'une position,
   /// d'un contact).
-  Future<void> sendMessage({
+  ///
+  /// Rend l'**identité serveur** du message créé, ou `null` si la réponse ne la
+  /// portait pas. C'est le seul instant où un écho l'apprend : la clé
+  /// d'idempotence est frappée par le téléphone, l'identifiant du message par
+  /// le serveur. Le `201` rend le message autoritaire — et le rend aussi sur un
+  /// renvoi sous la même clé, où il reconnaît le message existant (ADR-0018) :
+  /// un envoi repris après une coupure apprend donc la même identité.
+  /// C'est elle qui indexe le magasin des médias locaux (T2, #224).
+  Future<String?> sendMessage({
     required String groupId,
     required String clientMessageId,
     required DateTime clientCreatedAt,
@@ -186,7 +194,7 @@ class HttpGroupMediaTransport implements GroupMediaTransport {
   }
 
   @override
-  Future<void> sendMessage({
+  Future<String?> sendMessage({
     required String groupId,
     required String clientMessageId,
     required DateTime clientCreatedAt,
@@ -199,7 +207,7 @@ class HttpGroupMediaTransport implements GroupMediaTransport {
   }) async {
     final caption = body?.trim();
     try {
-      await _api.post<Object?>(
+      final response = await _api.post<Object?>(
         '/groups/$groupId/messages',
         data: {
           if (caption != null && caption.isNotEmpty) 'body': caption,
@@ -212,6 +220,13 @@ class HttpGroupMediaTransport implements GroupMediaTransport {
           'clientCreatedAt': clientCreatedAt.toUtc().toIso8601String(),
         },
       );
+      // L'enveloppe `data` est déjà déballée (`unwrapEnvelopeInterceptor`) :
+      // le corps est la vue du message. Une réponse d'une autre forme n'est
+      // pas une erreur d'envoi — le message est parti ; on rend `null`, et le
+      // fichier restera dans l'outbox jusqu'au renvoi suivant.
+      final data = response.data;
+      final id = data is Map ? data['id'] : null;
+      return id is String && id.isNotEmpty ? id : null;
     } on DioException catch (error) {
       throw _translate(error);
     }
@@ -257,7 +272,7 @@ class InertGroupMediaTransport implements GroupMediaTransport {
       onProgress?.call(1);
 
   @override
-  Future<void> sendMessage({
+  Future<String?> sendMessage({
     required String groupId,
     required String clientMessageId,
     required DateTime clientCreatedAt,
@@ -267,5 +282,6 @@ class InertGroupMediaTransport implements GroupMediaTransport {
     int? mediaDuration,
     Map<String, Object?>? mediaMeta,
     String? mediaThumbnailKey,
-  }) async {}
+  }) async =>
+      null;
 }
