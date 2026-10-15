@@ -81,6 +81,17 @@ durée). La règle de trois octets ↔ temps, elle, reste bonne : sur le fichier
 entier l'erreur moyenne est de **9 à 16 ms** et le pire point à **71 ms** — un
 seek estimé depuis un octet tombe à moins d'un dixième de seconde.
 
+**Tranché et appliqué (#222).** La durée du contrat gagne **dès qu'on joue une
+copie locale**, complète ou partielle ; en HLS le lecteur garde la main, où sa
+mesure est juste. `DownloadResolver` la porte sur la résolution locale
+(`PlaybackResolution.contractDuration`), elle voyage dans la `ContentRequest`, et
+les trois lecteurs de cette valeur la préfèrent : le compteur et la barre de
+l'écran de lecture, la barre du mini-lecteur, l'enregistreur de progression. Sur
+un **partiel**, c'est la durée de l'enseignement **entier** qui s'affiche, pas
+celle des octets reçus : celle-là serait l'estimation qu'on vient de supprimer,
+elle ferait passer deux heures pour trente minutes, et elle ferait enregistrer
+« terminé » au bout du tronçon.
+
 ## Ce qui n'est pas mesuré ici
 
 - **Le son lui-même.** Aucune de ces mesures n'écoute : elles lisent des états et
