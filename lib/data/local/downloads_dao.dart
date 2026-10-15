@@ -98,7 +98,9 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
     bool clearFailureReason = false,
     String? taskId,
     String? localPath,
+    bool clearLocalPath = false,
     int? bytesReceived,
+    String? versionId,
   }) {
     return (update(downloads)..where((t) => t.contentId.equals(contentId)))
         .write(
@@ -110,9 +112,17 @@ class DownloadsDao extends DatabaseAccessor<AppDatabase>
                 ? const Value.absent()
                 : Value(failureReason)),
         taskId: taskId == null ? const Value.absent() : Value(taskId),
-        localPath: localPath == null ? const Value.absent() : Value(localPath),
+        // `clearLocalPath` sert le **départ de zéro** : le partiel effacé, la
+        // ligne ne doit plus désigner un fichier qui n'existe pas — sinon la
+        // lecture offline-first (#191) le proposerait encore.
+        localPath: clearLocalPath
+            ? const Value(null)
+            : (localPath == null ? const Value.absent() : Value(localPath)),
         bytesReceived:
             bytesReceived == null ? const Value.absent() : Value(bytesReceived),
+        // La version **de la copie** : elle ne bouge qu'au départ de zéro, qui
+        // est précisément le moment où la copie change d'identité.
+        versionId: versionId == null ? const Value.absent() : Value(versionId),
       ),
     );
   }

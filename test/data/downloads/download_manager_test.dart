@@ -254,20 +254,74 @@ void main() {
       expect(row.bytesReceived, 200);
     });
 
-    test('échec : état failed, partiel conservé', () async {
+    test('échec réseau : état failed, partiel conservé', () async {
       await enqueued();
       await backend.emit(
         const DownloadProgressEvent('task-1', bytesReceived: 90),
       );
       await backend.emit(
         const DownloadStatusEvent('task-1',
-            status: DownloadBackendStatus.failed, reason: 'boom'),
+            status: DownloadBackendStatus.failed,
+            failure: DownloadBackendFailure.other),
       );
 
       final row = await db.downloadsDao.forContent('t-1');
       expect(row!.state, DownloadState.failed);
-      expect(row.failureReason, 'boom');
+      expect(row.failureReason, kDownloadFailureNetwork,
+          reason: 'une clé stable, jamais la phrase anglaise du moteur natif');
       expect(row.bytesReceived, 90, reason: 'le partiel reste (F9)');
+    });
+
+    test('disque plein en cours : espace insuffisant, partiel conservé (F9)',
+        () async {
+      await enqueued();
+      await backend.emit(
+        const DownloadProgressEvent('task-1', bytesReceived: 90),
+      );
+      await backend.emit(
+        const DownloadStatusEvent('task-1',
+            status: DownloadBackendStatus.failed,
+            failure: DownloadBackendFailure.insufficientSpace),
+      );
+
+      final row = await db.downloadsDao.forContent('t-1');
+      expect(row!.state, DownloadState.failed);
+      expect(row.failureReason, kDownloadFailureInsufficientSpace);
+      expect(row.bytesReceived, 90, reason: 'le partiel reste (F9)');
+    });
+
+    // L'écart mesuré en production le 2026-10-15 (PRD §6, spike 3) : l'origine
+    // **ignore** `If-Range` et répond `206` sur un validateur périmé. La garde
+    // est la comparaison d'`ETag`, que le moteur natif fait et rapporte en
+    // refus de reprise. Ce que le manager en fait est **tout** ce qui restait
+    // à écrire — et sans lui la ligne mourait en `failed` : `reconcile()`
+    // saute les échecs, personne ne la reprendrait jamais.
+    test('reprise refusée (ETag changé) : on repart de zéro', () async {
+      await enqueued();
+      await backend.emit(
+        const DownloadProgressEvent('task-1', bytesReceived: 90),
+      );
+      await db.downloadsDao.setState(
+        contentId: 't-1',
+        state: DownloadState.running,
+        localPath: '/data/t-1.mid.aac',
+      );
+      backend.enqueued.clear();
+
+      await backend.emit(
+        const DownloadStatusEvent('task-1',
+            status: DownloadBackendStatus.failed,
+            failure: DownloadBackendFailure.resume),
+      );
+
+      final row = await db.downloadsDao.forContent('t-1');
+      expect(row!.state, DownloadState.queued,
+          reason: 'repartie, pas figée en échec');
+      expect(row.bytesReceived, 0, reason: 'les octets d\'un autre corps');
+      expect(row.localPath, isNull, reason: 'le partiel ne désigne plus rien');
+      expect(backend.enqueued, hasLength(1));
+      expect(backend.enqueued.single.taskId, isNot('task-1'),
+          reason: 'un identifiant neuf : ce n\'est pas une reprise');
     });
 
     test('waitingToRetry ⇒ en attente de wifi', () async {
@@ -411,6 +465,75 @@ void main() {
       final row = await db.downloadsDao.forContent('t-1');
       expect(row!.state, DownloadState.failed);
       expect(row.failureReason, kDownloadFailureSourceGone);
+    });
+
+    // La garde que l'application tient **hors ligne**, sans rien demander au
+    // réseau : l'URL porte le `transcodeId`, donc une version neuve est un
+    // autre fichier. Recoller son corps sur l'ancien partiel donnerait un
+    // `.aac` qui n'est ni l'un ni l'autre — et aucun `If-Range` ne l'arrêterait,
+    // cette origine l'ignorant (mesuré le 2026-10-15, PRD §6 spike 3).
+    test('version du contrat changée ⇒ départ de zéro, pas une reprise',
+        () async {
+      final manager = build(
+        metadata: {
+          't-1': _download(
+            version: 'v2',
+            renditions: const {
+              'mid': DownloadRendition(url: 'https://x/v2/mid.aac', bytes: 555),
+            },
+          ),
+        },
+      );
+      await db.downloadsDao.upsert(
+        DownloadsCompanion.insert(
+          contentType: 'teaching',
+          contentId: 't-1',
+          quality: 'mid',
+          state: const Value(DownloadState.running),
+          bytesReceived: const Value(90),
+          bytesTotal: const Value(200),
+          localPath: const Value('/data/t-1.mid.aac'),
+          taskId: const Value('task-old'),
+          versionId: const Value('v1'),
+          createdAt: DateTime.utc(2026, 1, 1),
+        ),
+      );
+
+      await manager.reconcile();
+
+      final row = await db.downloadsDao.forContent('t-1');
+      expect(row!.bytesReceived, 0);
+      expect(row.bytesTotal, 555, reason: 'la taille du nouveau corps');
+      expect(row.versionId, 'v2');
+      expect(row.localPath, isNull);
+      expect(backend.enqueued.single.url, 'https://x/v2/mid.aac');
+      expect(backend.enqueued.single.taskId, isNot('task-old'),
+          reason: 'identifiant neuf : le moteur natif ne doit pas reprendre');
+    });
+
+    test('version inchangée ⇒ on reprend sur le partiel', () async {
+      final manager = build();
+      await db.downloadsDao.upsert(
+        DownloadsCompanion.insert(
+          contentType: 'teaching',
+          contentId: 't-1',
+          quality: 'mid',
+          state: const Value(DownloadState.running),
+          bytesReceived: const Value(90),
+          bytesTotal: const Value(200),
+          localPath: const Value('/data/t-1.mid.aac'),
+          taskId: const Value('task-old'),
+          versionId: const Value('v1'),
+          createdAt: DateTime.utc(2026, 1, 1),
+        ),
+      );
+
+      await manager.reconcile();
+
+      final row = await db.downloadsDao.forContent('t-1');
+      expect(row!.bytesReceived, 90, reason: 'le partiel vaut encore');
+      expect(row.localPath, '/data/t-1.mid.aac');
+      expect(backend.enqueued.single.taskId, 'task-old');
     });
   });
 }

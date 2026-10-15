@@ -17,6 +17,23 @@ import 'download_backend.dart';
 ///
 /// **Ne s'instancie jamais sous `flutter test`** : ses canaux natifs lèvent. Le
 /// harnais pose un `FakeDownloadBackend`.
+///
+/// ## Deux en-têtes qu'on n'écrira jamais ici (mesuré, PRD §6 spike 3)
+///
+/// 1. **Pas d'`If-Range`.** L'origine (RustFS derrière Caddy) l'ignore : elle
+///    répond `206` même sur un validateur périmé, là où la RFC demande `200`.
+///    Elle honore pourtant `If-None-Match` (`304`) et `If-Match` (`412`) — ce
+///    n'est donc pas une absence de conditionnels, c'est cet en-tête-là. Le
+///    plugin ne l'arme pas et compare lui-même l'`ETag` du `206` à celui gardé
+///    au premier tir (`DownloadTaskRunner.kt`) ; l'ajouter « pour bien faire »
+///    ne protégerait de rien et masquerait la vraie garde.
+/// 2. **Jamais un `HEAD` pour sonder la reprenabilité.** La même origine répond
+///    `200` à un `HEAD` porteur de `Range`, sans `Content-Range` : on
+///    conclurait à une panne inexistante. La seule sonde légitime est un `GET`
+///    avec plage — et on n'en émet aucune, le transfert lui-même étant la
+///    sonde. D'où aussi l'interdit sur `ParallelDownloadTask`, seule classe du
+///    plugin qui ouvre par un `HEAD` (`ParallelDownloadTaskRunner.kt`,
+///    `BDPlugin.swift`). `download_range_seam_test.dart` tient les deux.
 class BackgroundDownloaderBackend implements DownloadBackend {
   BackgroundDownloaderBackend({FileDownloader? downloader})
       : _downloader = downloader ?? FileDownloader() {
@@ -41,9 +58,27 @@ class BackgroundDownloaderBackend implements DownloadBackend {
   /// fois au démarrage, avant [DownloadBackend.activeTaskIds] et la
   /// réconciliation. Best-effort : un échec de configuration ne doit pas
   /// empêcher l'application de s'ouvrir.
+  /// La marge, **en mégaoctets**, que le moteur natif refuse d'entamer (F9).
+  ///
+  /// Le pré-check du `DownloadManager` travaille sur la taille annoncée par le
+  /// contrat et sur `DiskSpace`, qui ne sait aujourd'hui rien mesurer : ce
+  /// réglage-ci est le filet qui, lui, **mesure vraiment** — `StatFs` sur
+  /// Android, `volumeAvailableCapacityForImportantUsage` sur iOS. Le moteur
+  /// refuse la tâche si, une fois le fichier écrit, il resterait moins que ça.
+  ///
+  /// Un bouton à tourner, pas une constante de physique : 100 Mo laisse de quoi
+  /// vivre à un téléphone d'entrée de gamme sans refuser un enseignement de
+  /// 192 kbps (≈ 90 Mo l'heure).
+  static const int _spaceHeadroomMb = 100;
+
   Future<void> initialize() async {
     try {
       await _downloader.trackTasks();
+      // F9, second filet : le pré-check de taille du manager est aveugle tant
+      // que `DiskSpace` rend `null`. Celui-ci mesure pour de bon, côté natif.
+      await _downloader.configure(
+        globalConfig: (Config.checkAvailableSpace, _spaceHeadroomMb),
+      );
       _downloader.configureNotification(
         running: const TaskNotification(
           'Téléchargement',
@@ -137,11 +172,28 @@ class BackgroundDownloaderBackend implements DownloadBackend {
             task.taskId,
             status: _mapStatus(status),
             filePath: filePath,
-            reason: exception?.description,
+            failure: exception == null ? null : _mapFailure(exception),
           ),
         );
     }
   }
+
+  /// L'exception du plugin → le vocabulaire de l'interface. **Classer ici et
+  /// pas plus haut** : la description est une phrase anglaise du plugin, elle
+  /// n'a à traverser ni le manager ni la table.
+  ///
+  /// `TaskResumeException` est le cas qui compte : c'est l'`ETag` du `206` qui
+  /// ne correspond plus à celui du premier tir (ou le temporaire disparu). Le
+  /// manager en fait un **départ de zéro**, pas un échec qui dort.
+  DownloadBackendFailure _mapFailure(TaskException exception) =>
+      switch (exception) {
+        TaskResumeException() => DownloadBackendFailure.resume,
+        TaskFileSystemException() =>
+          exception.description.toLowerCase().contains('space')
+              ? DownloadBackendFailure.insufficientSpace
+              : DownloadBackendFailure.other,
+        _ => DownloadBackendFailure.other,
+      };
 
   DownloadBackendStatus _mapStatus(TaskStatus status) => switch (status) {
         TaskStatus.enqueued => DownloadBackendStatus.enqueued,

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/downloads/download_backend.dart';
 
 /// **Le double de test de `background_downloader`.**
@@ -58,11 +59,18 @@ class FakeDownloadBackend implements DownloadBackend {
 
   /// Émet un rappel comme le ferait le moteur natif, et laisse le manager le
   /// traiter (le `DownloadManager` écoute par un abonnement asynchrone).
+  ///
+  /// **Vide la file d'événements au lieu de compter les tours de boucle.** Deux
+  /// `Future.delayed(Duration.zero)` suffisaient aux chemins courts et pas au
+  /// plus long — le départ de zéro, qui enchaîne plusieurs écritures Drift. Le
+  /// test lisait alors la ligne avant que le manager ait fini : il voyait
+  /// `running` au lieu de `queued`, et le `_reEnqueue` resté en vol écrivait
+  /// dans une base déjà fermée (« Can't re-open a database after closing it »).
+  /// Vert sur le Flutter de la machine, rouge en CI — un nombre de tours ne
+  /// décrit pas une attente, il la devine.
   Future<void> emit(DownloadBackendEvent event) async {
     _events.add(event);
-    // Laisse le manager consommer l'événement avant que le test n'observe Drift.
-    await Future<void>.delayed(Duration.zero);
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
   }
 
   Future<void> dispose() => _events.close();

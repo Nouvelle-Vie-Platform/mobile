@@ -283,8 +283,8 @@ class DownloadManager {
           bytesTotal:
               (bytesTotal != null && bytesTotal > 0) ? bytesTotal : null,
         );
-      case DownloadStatusEvent(:final status, :final filePath, :final reason):
-        await _applyStatus(row, status, filePath: filePath, reason: reason);
+      case DownloadStatusEvent(:final status, :final filePath, :final failure):
+        await _applyStatus(row, status, filePath: filePath, failure: failure);
     }
   }
 
@@ -292,7 +292,7 @@ class DownloadManager {
     DownloadRow row,
     DownloadBackendStatus status, {
     String? filePath,
-    String? reason,
+    DownloadBackendFailure? failure,
   }) async {
     switch (status) {
       case DownloadBackendStatus.enqueued:
@@ -323,13 +323,31 @@ class DownloadManager {
           clearFailureReason: true,
         );
       case DownloadBackendStatus.failed:
-        // Le partiel est **conservé** (F9) : `setState` ne touche pas au
-        // `localPath` ni aux octets reçus.
-        await _dao.setState(
-          contentId: row.contentId,
-          state: DownloadState.failed,
-          failureReason: reason ?? kDownloadFailureNetwork,
-        );
+        switch (failure) {
+          // **La reprise a été refusée** : le moteur a comparé l'`ETag` du
+          // `206` à celui du premier tir et il a changé (ou le temporaire a
+          // disparu). Les octets déjà là appartiennent à un autre fichier —
+          // les garder, c'est recoller deux corps différents. On **repart de
+          // zéro**, tout de suite : laisser la ligne en `failed` la figerait,
+          // `reconcile()` sautant les échecs.
+          case DownloadBackendFailure.resume:
+            await _reEnqueue(row, fromZero: true);
+          // Disque plein constaté en écrivant (F9) : le partiel est
+          // **conservé**, `setState` ne touche ni au chemin ni aux octets.
+          case DownloadBackendFailure.insufficientSpace:
+            await _dao.setState(
+              contentId: row.contentId,
+              state: DownloadState.failed,
+              failureReason: kDownloadFailureInsufficientSpace,
+            );
+          case DownloadBackendFailure.other:
+          case null:
+            await _dao.setState(
+              contentId: row.contentId,
+              state: DownloadState.failed,
+              failureReason: kDownloadFailureNetwork,
+            );
+        }
       case DownloadBackendStatus.canceled:
       case DownloadBackendStatus.notFound:
         // Rien : une annulation a déjà retiré la ligne, et une tâche inconnue
@@ -342,7 +360,36 @@ class DownloadManager {
   // Rouages
   // ───────────────────────────────────────────────────────────────────────────
 
-  Future<void> _reEnqueue(DownloadRow row) async {
+  /// Remet une ligne inachevée dans la file du moteur natif.
+  ///
+  /// **Reprendre ou repartir de zéro, c'est la même fonction** : la seule
+  /// différence est de savoir si les octets déjà sur le disque appartiennent
+  /// encore au fichier qu'on va demander. Deux faits, et deux seulement, disent
+  /// que non :
+  ///
+  /// - [fromZero] — le moteur natif a refusé la reprise parce que l'`ETag`
+  ///   porté par le `206` n'est plus celui du premier tir (spike 3, ADR-0012).
+  ///   C'est **la** garde de cette origine : `If-Range` n'en est pas une, elle
+  ///   l'ignore et renvoie `206` sur un validateur périmé.
+  /// - La **version du contrat a changé** depuis que la copie a commencé
+  ///   (`download.version`, ADR-0038/0039). L'URL porte le `transcodeId` : une
+  ///   révision change l'adresse, et recoller le nouveau corps sur l'ancien
+  ///   partiel produirait un fichier qui n'est aucun des deux. C'est la garde
+  ///   que l'application tient **hors ligne**, sans rien demander au réseau.
+  ///
+  /// Repartir de zéro, c'est : effacer le partiel, remettre les octets à zéro,
+  /// adopter la taille et la version neuves, et frapper un **nouvel**
+  /// identifiant de tâche — réutiliser l'ancien laisserait le moteur natif
+  /// croire à une reprise.
+  ///
+  /// ponytail: la garde d'`ETag` elle-même vit dans le plugin (vérifiée sur la
+  /// source Android, `DownloadTaskRunner.kt`) ; sur iOS la reprise passe par
+  /// l'`URLSession`, qui arme `If-Range` — ignoré par cette origine. Le filet
+  /// qui reste est alors la version du contrat. Pour s'en passer il faudrait
+  /// notre propre sonde `GET` avec plage (**jamais** un `HEAD` : cette origine
+  /// y répond `200` sans `Content-Range`) — à écrire le jour où une URL cesse
+  /// de porter son `transcodeId`.
+  Future<void> _reEnqueue(DownloadRow row, {bool fromZero = false}) async {
     final metadata = await _metadataFor(row.contentId);
     final quality = MediaQuality.parse(row.quality);
     final rendition = metadata?.renditionFor(quality);
@@ -355,15 +402,29 @@ class DownloadManager {
       return;
     }
 
+    final versionChanged =
+        row.versionId != null && row.versionId != metadata.version;
+    final restart = fromZero || versionChanged;
+    if (restart) {
+      await _deleteFileIfAny(row.localPath);
+      await _dao.updateProgress(
+        contentId: row.contentId,
+        bytesReceived: 0,
+        bytesTotal: rendition.bytes,
+      );
+    }
+
     final requiresWifi = !await _mobileDataAllowed();
     final held = requiresWifi && await _network.isOnCellular();
-    final taskId = row.taskId ?? _newTaskId();
+    final taskId = restart ? _newTaskId() : (row.taskId ?? _newTaskId());
 
     await _dao.setState(
       contentId: row.contentId,
       state: held ? DownloadState.waitingWifi : DownloadState.queued,
       taskId: taskId,
       clearFailureReason: true,
+      clearLocalPath: restart,
+      versionId: restart ? metadata.version : null,
     );
 
     final ok = await _backend.enqueue(
