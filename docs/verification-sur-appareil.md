@@ -337,7 +337,54 @@ source dont on dispose pour décider s'il faut un canal natif.
 
 ---
 
-## 9. Le compte rendu
+## 9. La place libre est-elle vraiment mesurée ? (#236)
+
+`freeBytes()` rend désormais un nombre, par canal natif (`StatFs` sur Android,
+`volumeAvailableCapacityForImportantUsage` sur iOS). Les tests Dart prouvent le
+décodage et la règle « échec ⇒ `null`, jamais `0` ». **Ce qu'aucun test ne peut
+prouver, c'est que le nombre soit le bon**, et c'est précisément ce qui décide
+si le pré-check bloque à tort.
+
+Il faut donc **remplir l'appareil**. Une grosse vidéo copiée, ou l'appareil
+photo laissé tourner, jusqu'à descendre sous ~200 Mo libres.
+
+9.1 — [ ] Appareil **presque plein**, lancer le téléchargement d'un
+enseignement **plus gros que la place restante**.
+→ **Attendu** : il échoue **immédiatement**, avec « espace insuffisant », sans
+qu'un seul octet parte. **Noter le nombre d'octets libres annoncé par les
+réglages du système** et la taille annoncée de l'enseignement : c'est le seul
+moyen de voir si la mesure est juste ou décalée.
+
+9.2 — [ ] Même appareil plein, lancer un enseignement **plus petit** que la
+place restante.
+→ **Attendu** : il part normalement. Si **celui-là** est refusé, la mesure est
+trop basse et le pré-check bloque à tort — c'est le pire cas, pire que pas de
+pré-check du tout. **Le signaler avec les deux chiffres.**
+
+9.3 — [ ] **iOS seulement**, et c'est le point qui a décidé l'API retenue :
+comparer le refus à ce que l'application *Réglages* annonce comme espace libre.
+→ **Attendu** : le refus se prononce bien avant que *Réglages* affiche 0. iOS
+compte du « purgeable » que l'application n'obtiendra pas ; si le
+téléchargement part alors que le disque est plein et échoue en cours, c'est que
+la mesure compte le purgeable — vérifier qu'on n'est pas revenu à
+`systemFreeSize`.
+
+9.4 — [ ] Android **avec une carte SD** si on en a un.
+→ **Attendu** : le refus suit l'espace de la **mémoire interne**, pas celui de
+la carte. L'application n'écrit que dans son bac à sable interne.
+
+9.5 — [ ] Un appareil **non rempli**, téléchargement normal.
+→ **Attendu** : rien ne change. Une régression ici voudrait dire que la mesure
+rend `0` au lieu de `null` quelque part, et elle bloquerait **tout** le monde.
+C'est la case à cocher en premier.
+
+⚠️ **Non couvert ici** : les médias **reçus** de la messagerie. La descente
+automatique (#225) n'existe pas encore, et rien n'appelle `freeBytes()` sur ce
+chemin-là — le pré-check de la messagerie reste à écrire avec la file.
+
+---
+
+## 10. Le compte rendu
 
 Reprendre la liste ci-dessus en gardant **toutes** les cases, cochées ou non, et
 ajouter en tête :
@@ -347,7 +394,7 @@ ajouter en tête :
 - pour chaque case **non cochée** : ce qui s'est passé à la place, en une phrase
   observable (« le son s'est arrêté sans message pendant 40 s »), une capture
   d'écran si c'est visuel, et la trace si l'app a planté ;
-- pour les points qui demandent un chiffre (4.3, 4.4, 6.1.b, 6.1.d) : **le
-  chiffre**, pas « ça marche ».
+- pour les points qui demandent un chiffre (4.3, 4.4, 6.1.b, 6.1.d, 9.1, 9.2) :
+  **le chiffre**, pas « ça marche ».
 
 Une case cochée sans chiffre là où un chiffre est demandé ne vaut rien.
