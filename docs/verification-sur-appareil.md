@@ -269,7 +269,36 @@ chemin, et c'est un défaut en soi.
 
 ---
 
-## 8. Le compte rendu
+## 8. Le magasin des médias de la messagerie survit-il ? (#223)
+
+Ce que les tests ne peuvent pas prouver : un dossier **durable** l'est par
+promesse du système, pas par mesure locale. Trois gestes, et aucun ne demande le
+réseau une seconde fois.
+
+8.1 — [ ] Ouvrir un **document** reçu dans une conversation, puis passer en
+**mode avion** et le rouvrir.
+→ **Attendu** : il s'ouvre, sans message d'indisponibilité. S'il échoue, le
+magasin n'est pas celui qu'on croit (vérifier qu'il est bien sous
+`getApplicationSupportDirectory`, et non dans le cache).
+
+8.2 — [ ] Tuer l'application, la relancer, rouvrir le même document hors ligne.
+→ **Attendu** : identique. Le chemin est noté en base (`local_message_media`),
+il ne vit pas en mémoire.
+
+8.3 — [ ] Laisser l'appareil **une nuit** (ou forcer la pression sur le
+stockage : remplir la mémoire jusqu'à l'avertissement du système), puis rouvrir
+le document hors ligne.
+→ **Attendu** : il est toujours là. **Noter ce qui se passe s'il a disparu** —
+c'est le seul moyen de savoir si l'OS touche à ce dossier, et le chantier n'a
+aucune autre source que cette observation.
+
+⚠️ Non couvert ici, parce que la descente automatique n'existe pas encore
+(#225) : une image ou un vocal **reçu** n'est pas encore écrit au magasin. Seul
+un document ouvert au moins une fois y descend.
+
+---
+
+## 9. Le compte rendu
 
 Reprendre la liste ci-dessus en gardant **toutes** les cases, cochées ou non, et
 ajouter en tête :

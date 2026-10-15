@@ -18831,6 +18831,247 @@ class PendingGroupMessagesCompanion
   }
 }
 
+class $LocalMessageMediaTable extends LocalMessageMedia
+    with TableInfo<$LocalMessageMediaTable, LocalMessageMediaRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalMessageMediaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _messageIdMeta =
+      const VerificationMeta('messageId');
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+      'message_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _pathMeta = const VerificationMeta('path');
+  @override
+  late final GeneratedColumn<String> path = GeneratedColumn<String>(
+      'path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _thumbPathMeta =
+      const VerificationMeta('thumbPath');
+  @override
+  late final GeneratedColumn<String> thumbPath = GeneratedColumn<String>(
+      'thumb_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [messageId, path, thumbPath];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_message_media';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalMessageMediaRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('message_id')) {
+      context.handle(_messageIdMeta,
+          messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta));
+    } else if (isInserting) {
+      context.missing(_messageIdMeta);
+    }
+    if (data.containsKey('path')) {
+      context.handle(
+          _pathMeta, path.isAcceptableOrUnknown(data['path']!, _pathMeta));
+    }
+    if (data.containsKey('thumb_path')) {
+      context.handle(_thumbPathMeta,
+          thumbPath.isAcceptableOrUnknown(data['thumb_path']!, _thumbPathMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {messageId};
+  @override
+  LocalMessageMediaRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalMessageMediaRow(
+      messageId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}message_id'])!,
+      path: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}path']),
+      thumbPath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}thumb_path']),
+    );
+  }
+
+  @override
+  $LocalMessageMediaTable createAlias(String alias) {
+    return $LocalMessageMediaTable(attachedDatabase, alias);
+  }
+}
+
+class LocalMessageMediaRow extends DataClass
+    implements Insertable<LocalMessageMediaRow> {
+  /// L'identité **serveur** du message — jamais un `clientMessageId` : l'écho
+  /// d'un envoi garde son fichier dans l'outbox jusqu'à T2 (#224).
+  final String messageId;
+
+  /// Le fichier du média dans le magasin durable (`MessageMediaStore`).
+  final String? path;
+
+  /// La vignette d'une vidéo, dans le même dossier.
+  final String? thumbPath;
+  const LocalMessageMediaRow(
+      {required this.messageId, this.path, this.thumbPath});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['message_id'] = Variable<String>(messageId);
+    if (!nullToAbsent || path != null) {
+      map['path'] = Variable<String>(path);
+    }
+    if (!nullToAbsent || thumbPath != null) {
+      map['thumb_path'] = Variable<String>(thumbPath);
+    }
+    return map;
+  }
+
+  LocalMessageMediaCompanion toCompanion(bool nullToAbsent) {
+    return LocalMessageMediaCompanion(
+      messageId: Value(messageId),
+      path: path == null && nullToAbsent ? const Value.absent() : Value(path),
+      thumbPath: thumbPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbPath),
+    );
+  }
+
+  factory LocalMessageMediaRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalMessageMediaRow(
+      messageId: serializer.fromJson<String>(json['messageId']),
+      path: serializer.fromJson<String?>(json['path']),
+      thumbPath: serializer.fromJson<String?>(json['thumbPath']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'messageId': serializer.toJson<String>(messageId),
+      'path': serializer.toJson<String?>(path),
+      'thumbPath': serializer.toJson<String?>(thumbPath),
+    };
+  }
+
+  LocalMessageMediaRow copyWith(
+          {String? messageId,
+          Value<String?> path = const Value.absent(),
+          Value<String?> thumbPath = const Value.absent()}) =>
+      LocalMessageMediaRow(
+        messageId: messageId ?? this.messageId,
+        path: path.present ? path.value : this.path,
+        thumbPath: thumbPath.present ? thumbPath.value : this.thumbPath,
+      );
+  LocalMessageMediaRow copyWithCompanion(LocalMessageMediaCompanion data) {
+    return LocalMessageMediaRow(
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      path: data.path.present ? data.path.value : this.path,
+      thumbPath: data.thumbPath.present ? data.thumbPath.value : this.thumbPath,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalMessageMediaRow(')
+          ..write('messageId: $messageId, ')
+          ..write('path: $path, ')
+          ..write('thumbPath: $thumbPath')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(messageId, path, thumbPath);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalMessageMediaRow &&
+          other.messageId == this.messageId &&
+          other.path == this.path &&
+          other.thumbPath == this.thumbPath);
+}
+
+class LocalMessageMediaCompanion extends UpdateCompanion<LocalMessageMediaRow> {
+  final Value<String> messageId;
+  final Value<String?> path;
+  final Value<String?> thumbPath;
+  final Value<int> rowid;
+  const LocalMessageMediaCompanion({
+    this.messageId = const Value.absent(),
+    this.path = const Value.absent(),
+    this.thumbPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalMessageMediaCompanion.insert({
+    required String messageId,
+    this.path = const Value.absent(),
+    this.thumbPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : messageId = Value(messageId);
+  static Insertable<LocalMessageMediaRow> custom({
+    Expression<String>? messageId,
+    Expression<String>? path,
+    Expression<String>? thumbPath,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (messageId != null) 'message_id': messageId,
+      if (path != null) 'path': path,
+      if (thumbPath != null) 'thumb_path': thumbPath,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalMessageMediaCompanion copyWith(
+      {Value<String>? messageId,
+      Value<String?>? path,
+      Value<String?>? thumbPath,
+      Value<int>? rowid}) {
+    return LocalMessageMediaCompanion(
+      messageId: messageId ?? this.messageId,
+      path: path ?? this.path,
+      thumbPath: thumbPath ?? this.thumbPath,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (thumbPath.present) {
+      map['thumb_path'] = Variable<String>(thumbPath.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalMessageMediaCompanion(')
+          ..write('messageId: $messageId, ')
+          ..write('path: $path, ')
+          ..write('thumbPath: $thumbPath, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $GroupReadsTable extends GroupReads
     with TableInfo<$GroupReadsTable, GroupReadRow> {
   @override
@@ -33861,6 +34102,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GroupMessagesTable groupMessages = $GroupMessagesTable(this);
   late final $PendingGroupMessagesTable pendingGroupMessages =
       $PendingGroupMessagesTable(this);
+  late final $LocalMessageMediaTable localMessageMedia =
+      $LocalMessageMediaTable(this);
   late final $GroupReadsTable groupReads = $GroupReadsTable(this);
   late final $PendingGroupReadsTable pendingGroupReads =
       $PendingGroupReadsTable(this);
@@ -33979,6 +34222,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         groupJoinRequests,
         groupMessages,
         pendingGroupMessages,
+        localMessageMedia,
         groupReads,
         pendingGroupReads,
         myInteractions,
@@ -42528,6 +42772,153 @@ typedef $$PendingGroupMessagesTableProcessedTableManager
         ),
         PendingGroupMessageRow,
         PrefetchHooks Function()>;
+typedef $$LocalMessageMediaTableCreateCompanionBuilder
+    = LocalMessageMediaCompanion Function({
+  required String messageId,
+  Value<String?> path,
+  Value<String?> thumbPath,
+  Value<int> rowid,
+});
+typedef $$LocalMessageMediaTableUpdateCompanionBuilder
+    = LocalMessageMediaCompanion Function({
+  Value<String> messageId,
+  Value<String?> path,
+  Value<String?> thumbPath,
+  Value<int> rowid,
+});
+
+class $$LocalMessageMediaTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalMessageMediaTable> {
+  $$LocalMessageMediaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get messageId => $composableBuilder(
+      column: $table.messageId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get path => $composableBuilder(
+      column: $table.path, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get thumbPath => $composableBuilder(
+      column: $table.thumbPath, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalMessageMediaTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalMessageMediaTable> {
+  $$LocalMessageMediaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get messageId => $composableBuilder(
+      column: $table.messageId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get path => $composableBuilder(
+      column: $table.path, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get thumbPath => $composableBuilder(
+      column: $table.thumbPath, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalMessageMediaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalMessageMediaTable> {
+  $$LocalMessageMediaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<String> get path =>
+      $composableBuilder(column: $table.path, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbPath =>
+      $composableBuilder(column: $table.thumbPath, builder: (column) => column);
+}
+
+class $$LocalMessageMediaTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $LocalMessageMediaTable,
+    LocalMessageMediaRow,
+    $$LocalMessageMediaTableFilterComposer,
+    $$LocalMessageMediaTableOrderingComposer,
+    $$LocalMessageMediaTableAnnotationComposer,
+    $$LocalMessageMediaTableCreateCompanionBuilder,
+    $$LocalMessageMediaTableUpdateCompanionBuilder,
+    (
+      LocalMessageMediaRow,
+      BaseReferences<_$AppDatabase, $LocalMessageMediaTable,
+          LocalMessageMediaRow>
+    ),
+    LocalMessageMediaRow,
+    PrefetchHooks Function()> {
+  $$LocalMessageMediaTableTableManager(
+      _$AppDatabase db, $LocalMessageMediaTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalMessageMediaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalMessageMediaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalMessageMediaTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> messageId = const Value.absent(),
+            Value<String?> path = const Value.absent(),
+            Value<String?> thumbPath = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalMessageMediaCompanion(
+            messageId: messageId,
+            path: path,
+            thumbPath: thumbPath,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String messageId,
+            Value<String?> path = const Value.absent(),
+            Value<String?> thumbPath = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalMessageMediaCompanion.insert(
+            messageId: messageId,
+            path: path,
+            thumbPath: thumbPath,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalMessageMediaTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $LocalMessageMediaTable,
+    LocalMessageMediaRow,
+    $$LocalMessageMediaTableFilterComposer,
+    $$LocalMessageMediaTableOrderingComposer,
+    $$LocalMessageMediaTableAnnotationComposer,
+    $$LocalMessageMediaTableCreateCompanionBuilder,
+    $$LocalMessageMediaTableUpdateCompanionBuilder,
+    (
+      LocalMessageMediaRow,
+      BaseReferences<_$AppDatabase, $LocalMessageMediaTable,
+          LocalMessageMediaRow>
+    ),
+    LocalMessageMediaRow,
+    PrefetchHooks Function()>;
 typedef $$GroupReadsTableCreateCompanionBuilder = GroupReadsCompanion Function({
   Value<int> syncStamp,
   required String groupId,
@@ -49984,6 +50375,8 @@ class $AppDatabaseManager {
       $$GroupMessagesTableTableManager(_db, _db.groupMessages);
   $$PendingGroupMessagesTableTableManager get pendingGroupMessages =>
       $$PendingGroupMessagesTableTableManager(_db, _db.pendingGroupMessages);
+  $$LocalMessageMediaTableTableManager get localMessageMedia =>
+      $$LocalMessageMediaTableTableManager(_db, _db.localMessageMedia);
   $$GroupReadsTableTableManager get groupReads =>
       $$GroupReadsTableTableManager(_db, _db.groupReads);
   $$PendingGroupReadsTableTableManager get pendingGroupReads =>

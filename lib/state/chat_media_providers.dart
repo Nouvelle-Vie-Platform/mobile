@@ -17,6 +17,7 @@ import '../data/messaging/media/group_media_transport.dart';
 import '../data/messaging/media/group_media_urls.dart';
 import '../data/messaging/media/media_outbox.dart';
 import '../data/messaging/media/media_preparer.dart';
+import '../data/messaging/media/message_media_store.dart';
 import '../data/messaging/media/media_upload_progress.dart';
 import '../data/messaging/media/record_voice_recorder.dart';
 import '../data/messaging/media/v_video_compressor_engine.dart';
@@ -33,10 +34,19 @@ final groupMediaTransportProvider = Provider<GroupMediaTransport>(
       : const InertGroupMediaTransport(),
 );
 
-/// Les URL de lecture (clé → URL présignée nue).
+/// Le magasin durable des médias reçus (T1, #223).
+final messageMediaStoreProvider =
+    Provider<MessageMediaStore>((ref) => MessageMediaStore());
+
+/// Les URL de lecture (clé → URL présignée nue), et le **fichier local**
+/// quand il est déjà là : le disque avant le réseau (#223).
 final groupMediaUrlsProvider = Provider<GroupMediaUrls>(
-  (ref) =>
-      AppEnv.useBackend ? HttpGroupMediaUrls() : const InertGroupMediaUrls(),
+  (ref) => AppEnv.useBackend
+      ? HttpGroupMediaUrls(
+          store: ref.watch(messageMediaStoreProvider),
+          dao: ref.watch(groupDaoProvider),
+        )
+      : const InertGroupMediaUrls(),
 );
 
 /// La progression des montées, par écho.

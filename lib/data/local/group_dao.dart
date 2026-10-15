@@ -49,6 +49,8 @@ part 'group_dao.g.dart';
     PendingGroupArrangements,
     GroupMessageReactions,
     GroupMessageHides,
+    // T1 des médias locaux (#223) : le magasin durable, joint à la lecture.
+    LocalMessageMedia,
   ],
 )
 class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
@@ -411,14 +413,17 @@ SELECT
   m.media_meta          AS media_meta,
   m.media_size          AS media_size,
   m.media_mime          AS media_mime,
-  NULL                  AS media_path,
-  NULL                  AS media_thumb_path,
+  -- Le magasin durable (T1, #223) : le fichier déjà sur l'appareil, s'il y est.
+  -- Une jointure, pas un `File.exists()` par bulle.
+  lm.path               AS media_path,
+  lm.thumb_path         AS media_thumb_path,
   NULL                  AS media_error
 FROM group_messages AS m
 JOIN (SELECT ?1 AS id) AS g
 $_readJoins
 LEFT JOIN profiles AS author ON author.id = m.author_id
 LEFT JOIN profiles AS quoted ON quoted.id = m.reply_to_author_id
+LEFT JOIN local_message_media AS lm ON lm.message_id = m.id
 WHERE m.group_id = ?1
   AND ${_notHidden('m')}
 UNION ALL
@@ -481,6 +486,7 @@ ORDER BY created_at ASC, entry_id ASC
         pendingGroupReads,
         groupMessageReactions,
         groupMessageHides,
+        localMessageMedia,
       },
     ).map(_threadEntryOf);
   }
@@ -943,18 +949,24 @@ SELECT
   m.media_meta          AS media_meta,
   m.media_size          AS media_size,
   m.media_mime          AS media_mime,
-  NULL                  AS media_path,
-  NULL                  AS media_thumb_path,
+  lm.path               AS media_path,
+  lm.thumb_path         AS media_thumb_path,
   NULL                  AS media_error
 FROM group_messages AS m
 LEFT JOIN profiles AS author ON author.id = m.author_id
+LEFT JOIN local_message_media AS lm ON lm.message_id = m.id
 WHERE m.group_id = ?1 AND $filter
   AND m.deleted_at IS NULL
   AND ${_notHidden('m')}
 ORDER BY m.created_at DESC, m.id DESC
 ''',
       variables: [Variable<String>(groupId)],
-      readsFrom: {groupMessages, profiles, groupMessageHides},
+      readsFrom: {
+        groupMessages,
+        profiles,
+        groupMessageHides,
+        localMessageMedia,
+      },
     ).map(_threadEntryOf);
   }
 
@@ -968,6 +980,27 @@ ORDER BY m.created_at DESC, m.id DESC
         if (row.mediaThumbPath != null) row.mediaThumbPath!,
       ],
     };
+  }
+
+  /// **Note le fichier qu'un message reçu a désormais sur l'appareil** (T1,
+  /// #223) — le fichier, sa vignette, ou les deux.
+  ///
+  /// Seul le paramètre **donné** est écrit : noter la vignette d'une vidéo ne
+  /// doit pas oublier son fichier, et l'inverse non plus. D'où l'`upsert` sur
+  /// la clé primaire plutôt qu'un `insertOrReplace`, qui remettrait l'autre
+  /// colonne à `NULL`.
+  Future<void> rememberLocalMedia(
+    String messageId, {
+    String? path,
+    String? thumbPath,
+  }) {
+    return into(localMessageMedia).insertOnConflictUpdate(
+      LocalMessageMediaCompanion(
+        messageId: Value(messageId),
+        path: path == null ? const Value.absent() : Value(path),
+        thumbPath: thumbPath == null ? const Value.absent() : Value(thumbPath),
+      ),
+    );
   }
 
   /// Un écho **par sa clé**, ou `null`. Sert au « réessayer » : il renvoie sous la

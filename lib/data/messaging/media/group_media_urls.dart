@@ -1,9 +1,10 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../local/group_dao.dart';
+import 'message_media_store.dart';
 
 /// **Échanger la clé d'un média contre une URL de lecture** (M4, #143).
 ///
@@ -17,6 +18,10 @@ import '../../../core/network/api_client.dart';
 /// L'URL est gardée en mémoire **50 minutes** (elle en vaut 60) : une image
 /// revue en remontant le fil ne se retélécharge pas sous une URL neuve, et
 /// aucune URL signée n'est jamais écrite sur le disque.
+///
+/// Ce cache-là ne garde que l'**URL**, en mémoire. Les **octets** vivent dans
+/// `MessageMediaStore` (T1, #223), qui survit au système — et [download] les y
+/// cherche **avant** d'appeler [GroupMediaUrls.resolve].
 abstract interface class GroupMediaUrls {
   /// L'URL de lecture du média de [messageId] — ou de sa vignette —, ou
   /// `null` si elle ne peut pas être obtenue (hors ligne, média retiré).
@@ -26,28 +31,43 @@ abstract interface class GroupMediaUrls {
     bool thumbnail = false,
   });
 
-  /// **Télécharge** le média dans un fichier temporaire nommé [fileName] —
-  /// pour l'ouvrir par l'application du système (un document). `null` en
-  /// cas d'échec.
+  /// **Le fichier local du média** de [messageId] — ou de sa vignette —, sous
+  /// le nom [fileName], téléchargé seulement **s'il n'est pas déjà là**.
+  /// `null` en cas d'échec.
+  ///
+  /// C'est ici que vit la règle « le disque avant le réseau » (T1, #223) : le
+  /// chemin au magasin est déductible de l'identité du message, on le **teste
+  /// avant** de demander une URL présignée. Hors ligne, un média déjà descendu
+  /// s'ouvre donc ; en ligne, le rouvrir ne coûte plus une requête.
   Future<String?> download({
     required String groupId,
     required String messageId,
     required String fileName,
+    bool thumbnail = false,
   });
 }
 
 class HttpGroupMediaUrls implements GroupMediaUrls {
   HttpGroupMediaUrls({
-    ApiClient? client,
+    Dio? api,
     Dio? storeClient,
     DateTime Function()? now,
-  })  : _api = (client ?? ApiClient.instance).dio,
-        _store = storeClient ?? Dio(),
-        _now = now ?? DateTime.now;
+    MessageMediaStore? store,
+    this.dao,
+  })  : _api = api ?? ApiClient.instance.dio,
+        _http = storeClient ?? Dio(),
+        _now = now ?? DateTime.now,
+        _store = store ?? MessageMediaStore();
 
   final Dio _api;
-  final Dio _store;
+  final Dio _http;
   final DateTime Function() _now;
+  final MessageMediaStore _store;
+
+  /// Où **noter** qu'un média est désormais sur l'appareil, pour que la bulle
+  /// le serve sans rien demander (`local_message_media`). `null` : on
+  /// télécharge quand même, on ne note rien — le chemin reste déductible.
+  final GroupDao? dao;
 
   static const Duration _ttl = Duration(minutes: 50);
   final Map<String, ({String url, DateTime at})> _cache = {};
@@ -86,18 +106,42 @@ class HttpGroupMediaUrls implements GroupMediaUrls {
     required String groupId,
     required String messageId,
     required String fileName,
+    bool thumbnail = false,
   }) async {
-    final url = await resolve(groupId: groupId, messageId: messageId);
-    if (url == null) return null;
     try {
-      final dir = await getTemporaryDirectory();
-      // Un dossier par message : deux documents de même nom ne s'écrasent pas.
-      final folder = Directory('${dir.path}/message_media/$messageId');
-      if (!await folder.exists()) await folder.create(recursive: true);
-      final safeName = fileName.replaceAll(RegExp(r'[/\\:]'), '_');
-      final target = '${folder.path}/$safeName';
+      final target = await _store.pathFor(
+        messageId: messageId,
+        fileName: fileName,
+        thumbnail: thumbnail,
+      );
+      // **Le disque avant le réseau** (#223). Le chemin ne dépend que de
+      // l'identité du message, et un média de message est immuable : si le
+      // fichier est là, il est bon, et il n'y a rien à revalider — ce qui
+      // tombe bien, `If-Range` étant ignoré par cette origine (ADR-0012 de
+      // `streaming-service`).
       if (await File(target).exists()) return target;
-      await _store.download(url, target);
+
+      final url = await resolve(
+        groupId: groupId,
+        messageId: messageId,
+        thumbnail: thumbnail,
+      );
+      if (url == null) return null;
+
+      // On écrit **à côté**, puis on renomme : un téléchargement coupé (réseau
+      // togolais, application tuée) laisserait sinon un fichier tronqué que le
+      // test ci-dessus prendrait pour complet, et le média serait abîmé pour
+      // toujours. `rename` est atomique dans un même dossier.
+      await _store.prepare(target);
+      final partial = '$target.part';
+      await _http.download(url, partial);
+      await File(partial).rename(target);
+
+      await dao?.rememberLocalMedia(
+        messageId,
+        path: thumbnail ? null : target,
+        thumbPath: thumbnail ? target : null,
+      );
       return target;
     } on Object {
       return null;
@@ -123,6 +167,7 @@ class InertGroupMediaUrls implements GroupMediaUrls {
     required String groupId,
     required String messageId,
     required String fileName,
+    bool thumbnail = false,
   }) async =>
       null;
 }

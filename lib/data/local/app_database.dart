@@ -122,6 +122,8 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     GroupJoinRequests,
     GroupMessages,
     PendingGroupMessages,
+    // T1 des médias locaux (#223) : le magasin durable d'un média reçu.
+    LocalMessageMedia,
     GroupReads,
     PendingGroupReads,
     MyInteractions,
@@ -321,8 +323,14 @@ class AppDatabase extends _$AppDatabase {
   /// `local_bible_*`, `bible_installed_versions` et l'index FTS5
   /// `bible_fts`. Seize créations, et rien d'autre. Voir
   /// [kBibleSchemaVersion].
+  ///
+  /// **v30** (#223) — **le magasin durable des médias de la messagerie** :
+  /// `local_message_media`, **une** création de table locale seule, et rien
+  /// d'autre. Aucune colonne de `group_messages` ne bouge, et c'est délibéré —
+  /// voir l'en-tête de [LocalMessageMedia]. Voir
+  /// [kMessageMediaSchemaVersion].
   @override
-  int get schemaVersion => kBibleSchemaVersion;
+  int get schemaVersion => kMessageMediaSchemaVersion;
 
   /// **Le palier de la tranche M2** (#141) : v25, après M8 (v22), M3 (v23) et
   /// M5 (v24).
@@ -344,6 +352,11 @@ class AppDatabase extends _$AppDatabase {
   /// **Le palier du module Bible** (#199) : v29, après les notes (v28). Le
   /// seul palier du chantier — M2 à M7 n'ajoutent ni table ni colonne.
   static const int kBibleSchemaVersion = 29;
+
+  /// **Le palier du magasin des médias de la messagerie** (#223) : v30, après
+  /// le module Bible (v29). Le seul palier du chantier — T2, T3 et T4
+  /// n'ajoutent ni table ni colonne.
+  static const int kMessageMediaSchemaVersion = 30;
 
   /// Les sept colonnes du média d'un message (M4), ajoutées ensemble au palier
   /// v26 — et retirées ensemble d'une table créée pour une version antérieure
@@ -1010,6 +1023,16 @@ class AppDatabase extends _$AppDatabase {
               await m.createTable(table);
             }
             await m.create(bibleFts);
+          }
+          // v29 → v30 — le magasin durable des médias de la messagerie
+          // (#223). **Une** création de table locale seule, et rien d'autre.
+          // Elle naît vide, et vide veut dire « rien n'est encore descendu » :
+          // chaque bulle résout son URL comme avant, et le magasin se remplit
+          // au premier média ouvert. Aucun curseur à effacer — la table n'est
+          // dans aucun registre de synchronisation. Pas de garde `to >= 30` :
+          // le vérificateur ignore une table surnuméraire.
+          if (from < kMessageMediaSchemaVersion) {
+            await m.createTable(localMessageMedia);
           }
         },
         beforeOpen: (details) async {

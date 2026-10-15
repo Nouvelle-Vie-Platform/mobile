@@ -137,36 +137,87 @@ class _UploadOverlay extends ConsumerWidget {
   }
 }
 
-/// **Résout une URL de lecture une fois** — une `Future` gardée par l'état,
-/// pour qu'une reconstruction de la bulle ne relance pas la requête.
-class _ResolvedUrl extends ConsumerStatefulWidget {
-  const _ResolvedUrl({
+/// **Le disque avant le réseau** (T1, #223) — la règle, en un seul endroit.
+///
+/// Rend le **fichier local** quand il est là, et [GroupMediaUrls.resolve]
+/// n'est alors **pas appelé** : un média déjà sur l'appareil se peint hors
+/// ligne, et le revoir en remontant le fil ne coûte plus une requête d'URL
+/// présignée. L'existence est **vérifiée** : un fichier que le système ou la
+/// purge de #226 a emporté retombe sur le réseau au lieu d'un cadre cassé.
+///
+/// Un écho (pas encore confirmé) n'a pas d'identité serveur : rien à résoudre.
+Future<String?> _mediaSourceOf(
+  WidgetRef ref,
+  GroupMessageView message, {
+  String? local,
+  bool thumbnail = false,
+}) async {
+  // `existsSync` et non `exists` : un `stat` sur un chemin local coûte
+  // quelques microsecondes — bien moins qu'une requête réseau, et bien moins
+  // qu'une image qui clignote le temps d'une passe d'événements. Et c'est la
+  // seule forme qui aboutisse sous `flutter test`, dont la zone d'`async`
+  // feint ne fait jamais avancer une entrée-sortie réelle.
+  if (local != null && File(local).existsSync()) return local;
+  if (!message.isConfirmed) return null;
+  return ref.read(groupMediaUrlsProvider).resolve(
+        groupId: message.groupId,
+        messageId: message.id,
+        thumbnail: thumbnail,
+      );
+}
+
+/// `Image.file` ou `Image.network` selon la source — même convention que le
+/// moteur audio et la surface vidéo : un chemin absolu est un fichier de
+/// l'appareil, tout le reste est une URL.
+Widget _mediaImage(
+  String source, {
+  BoxFit fit = BoxFit.cover,
+  int? cacheWidth,
+  required Widget Function() onError,
+}) {
+  Widget fallback(BuildContext _, Object __, StackTrace? ___) => onError();
+  return source.startsWith('/')
+      ? Image.file(File(source),
+          fit: fit, cacheWidth: cacheWidth, errorBuilder: fallback)
+      : Image.network(source,
+          fit: fit, cacheWidth: cacheWidth, errorBuilder: fallback);
+}
+
+/// **Résout la source une fois** — une `Future` gardée par l'état, pour qu'une
+/// reconstruction de la bulle ne relance ni le test du disque ni la requête.
+class _MediaSource extends ConsumerStatefulWidget {
+  const _MediaSource({
     required this.message,
     required this.builder,
+    this.local,
     this.thumbnail = false,
   });
 
   final GroupMessageView message;
+
+  /// Le chemin noté pour ce message — l'outbox d'un écho, ou le magasin
+  /// durable d'un reçu (`local_message_media`).
+  final String? local;
   final bool thumbnail;
-  final Widget Function(BuildContext context, String? url, bool done) builder;
+  final Widget Function(BuildContext context, String? source, bool done)
+      builder;
 
   @override
-  ConsumerState<_ResolvedUrl> createState() => _ResolvedUrlState();
+  ConsumerState<_MediaSource> createState() => _MediaSourceState();
 }
 
-class _ResolvedUrlState extends ConsumerState<_ResolvedUrl> {
-  late final Future<String?> _url = widget.message.isConfirmed
-      ? ref.read(groupMediaUrlsProvider).resolve(
-            groupId: widget.message.groupId,
-            messageId: widget.message.id,
-            thumbnail: widget.thumbnail,
-          )
-      : Future<String?>.value();
+class _MediaSourceState extends ConsumerState<_MediaSource> {
+  late final Future<String?> _source = _mediaSourceOf(
+    ref,
+    widget.message,
+    local: widget.local,
+    thumbnail: widget.thumbnail,
+  );
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String?>(
-      future: _url,
+      future: _source,
       builder: (context, snapshot) => widget.builder(
         context,
         snapshot.data,
@@ -206,7 +257,6 @@ class ImageMediaTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final width = extent ?? _kVisualWidth;
     final height = extent ?? _visualHeight(media);
-    final local = media.localPath;
 
     Widget frame(Widget child, {VoidCallback? onTap}) => GestureDetector(
           key: const Key('m4_image_tile'),
@@ -217,20 +267,11 @@ class ImageMediaTile extends ConsumerWidget {
           ),
         );
 
-    if (local != null && message.delivery != MessageDelivery.sent) {
-      return frame(
-        Image.file(
-          File(local),
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const _VisualPlaceholder(),
-        ),
-      );
-    }
-
-    return _ResolvedUrl(
+    return _MediaSource(
       message: message,
-      builder: (context, url, done) {
-        if (url == null) {
+      local: media.localPath,
+      builder: (context, source, done) {
+        if (source == null) {
           return frame(
             _VisualPlaceholder(
               unavailable: done,
@@ -239,20 +280,48 @@ class ImageMediaTile extends ConsumerWidget {
           );
         }
         return frame(
-          Image.network(
-            url,
-            fit: BoxFit.cover,
+          _mediaImage(
+            source,
             // Le fil peint des vignettes : décoder 1600 px pour 220 serait
             // gaspiller la mémoire de petits téléphones.
             cacheWidth: (width * 2).round(),
-            errorBuilder: (_, __, ___) => const _VisualPlaceholder(),
+            onError: () => const _VisualPlaceholder(),
           ),
-          onTap: () => context.pushNamed(
-            AppRoute.mediaViewer,
-            extra: MediaViewerArgs(urls: [url], index: 0),
-          ),
+          // Un écho n'a pas d'identité serveur, donc pas de plein écran.
+          onTap: message.isConfirmed
+              ? () => _openViewer(context, ref, source)
+              : null,
         );
       },
+    );
+  }
+
+  /// La visionneuse plein écran lit par le **réseau** (`Image.network`) : le
+  /// fichier local sert la vignette du fil, et l'URL n'est demandée qu'au
+  /// toucher — une requête de moins par image **affichée**. L'étendre au
+  /// fichier local toucherait aussi l'enregistrement en galerie
+  /// (`MediaSaver.saveImageFromUrl`) : hors de cette tranche.
+  Future<void> _openViewer(
+    BuildContext context,
+    WidgetRef ref,
+    String source,
+  ) async {
+    final router = GoRouter.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final unavailable = context.l10n.m4MediaUnavailable;
+    final url = source.startsWith('/')
+        ? await ref.read(groupMediaUrlsProvider).resolve(
+              groupId: message.groupId,
+              messageId: message.id,
+            )
+        : source;
+    if (url == null) {
+      messenger.showSnackBar(SnackBar(content: Text(unavailable)));
+      return;
+    }
+    router.pushNamed(
+      AppRoute.mediaViewer,
+      extra: MediaViewerArgs(urls: [url], index: 0),
     );
   }
 }
@@ -353,27 +422,20 @@ class VideoMediaTile extends ConsumerWidget {
           MaterialPageRoute<void>(builder: (_) => ChatVideoScreen(url: url)),
         );
 
-    if (message.delivery != MessageDelivery.sent) {
-      final thumb = media.localThumbPath;
-      return frame(
-        thumb == null
-            ? const _VisualPlaceholder(icon: Icons.movie_outlined)
-            : Image.file(File(thumb), fit: BoxFit.cover),
-        onTap: media.localPath == null ? null : () => play(media.localPath!),
-      );
-    }
-
-    final thumbnail = media.thumbnailKey == null
+    // La vignette : le fichier local d'abord. Sans vignette locale **et** sans
+    // clé servie, rien à résoudre — le gabarit, et pas une requête perdue.
+    final Widget thumbnail = media.localThumbPath == null &&
+            media.thumbnailKey == null
         ? const _VisualPlaceholder(icon: Icons.movie_outlined)
-        : _ResolvedUrl(
+        : _MediaSource(
             message: message,
+            local: media.localThumbPath,
             thumbnail: true,
-            builder: (context, url, _) => url == null
+            builder: (context, source, _) => source == null
                 ? const _VisualPlaceholder(icon: Icons.movie_outlined)
-                : Image.network(
-                    url,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
+                : _mediaImage(
+                    source,
+                    onError: () =>
                         const _VisualPlaceholder(icon: Icons.movie_outlined),
                   ),
           );
@@ -383,15 +445,18 @@ class VideoMediaTile extends ConsumerWidget {
       onTap: () async {
         final messenger = ScaffoldMessenger.of(context);
         final unavailable = context.l10n.m4MediaUnavailable;
-        final url = await ref.read(groupMediaUrlsProvider).resolve(
-              groupId: message.groupId,
-              messageId: message.id,
-            );
-        if (url == null) {
+        // Le fichier local joue sans réseau — `VideoPlayerController.file`
+        // pour un chemin absolu, `networkUrl` sinon (voir la surface).
+        final source = await _mediaSourceOf(
+          ref,
+          message,
+          local: media.localPath,
+        );
+        if (source == null) {
           messenger.showSnackBar(SnackBar(content: Text(unavailable)));
           return;
         }
-        if (context.mounted) play(url);
+        if (context.mounted) play(source);
       },
     );
   }
@@ -422,16 +487,10 @@ class AudioMediaTile extends ConsumerWidget {
     final l = context.l10n;
     final voice = media.kind == MessageMediaKind.voice;
 
-    Future<String?> resolve() async {
-      final local = media.localPath;
-      if (local != null && message.delivery != MessageDelivery.sent) {
-        return local;
-      }
-      return ref.read(groupMediaUrlsProvider).resolve(
-            groupId: message.groupId,
-            messageId: message.id,
-          );
-    }
+    // Le fichier local d'abord — le moteur lit un chemin absolu par
+    // `Uri.file` (voir `JustAudioChatEngine.load`).
+    Future<String?> resolve() =>
+        _mediaSourceOf(ref, message, local: media.localPath);
 
     return ValueListenableBuilder<ChatAudioState>(
       valueListenable: controller,
@@ -621,13 +680,18 @@ class DocumentMediaTile extends ConsumerWidget {
       final messenger = ScaffoldMessenger.of(context);
       final failure = l.m4DocumentOpenFailed;
       final opener = ref.read(mediaOpenerProvider);
-      var path =
-          message.delivery != MessageDelivery.sent ? media.localPath : null;
-      path ??= await ref.read(groupMediaUrlsProvider).download(
-            groupId: message.groupId,
-            messageId: message.id,
-            fileName: name,
-          );
+      // Le fichier noté, s'il est encore là ; sinon [GroupMediaUrls.download],
+      // qui teste lui aussi le disque **avant** le réseau (#223) — un document
+      // déjà descendu s'ouvre hors ligne.
+      var path = media.localPath;
+      if (path != null && !File(path).existsSync()) path = null;
+      if (path == null && message.isConfirmed) {
+        path = await ref.read(groupMediaUrlsProvider).download(
+              groupId: message.groupId,
+              messageId: message.id,
+              fileName: name,
+            );
+      }
       final opened =
           path != null && await opener.openFile(path, mime: media.mime);
       if (!opened) {
