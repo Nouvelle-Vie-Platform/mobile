@@ -25,6 +25,7 @@ import '../screens/home_shell.dart';
 import '../screens/legal_acceptance_screen.dart';
 import '../screens/legal_document_screen.dart';
 import '../screens/media_settings_screen.dart';
+import '../screens/media_storage_screen.dart';
 import '../screens/privacy_settings_screen.dart';
 import '../screens/radio_screen.dart';
 import '../screens/profile_screen.dart';
@@ -76,6 +77,7 @@ abstract final class AppRoute {
   /// **Confidentialité de la messagerie** (#142) — accusés de lecture, vu à /
   /// en ligne. Poussée depuis le Profil ; réservée aux membres.
   static const privacySettings = 'privacy-settings';
+  static const mediaStorage = 'media-storage';
   static const downloads = 'downloads';
   static const home = 'home';
   static const profile = 'profile';
@@ -226,6 +228,11 @@ const memberOnlyRoutes = <String>{
   // Les réglages de confidentialité de la messagerie (#142) : ils vivent sur
   // le compte, sans compte il n'y a rien à régler.
   '/profile/privacy',
+  // L'écran « Stockage » (#226) : il pèse et vide les médias de **mes**
+  // conversations. Sans compte il n'y a pas de messagerie, donc rien à peser —
+  // contrairement à `/settings/media` et `/downloads`, qui règlent et montrent
+  // cet appareil-ci et restent ouverts.
+  '/settings/media/storage',
   // L'**écriture** d'une annonce — leur lecture est ouverte.
   '/announcement/compose',
   '/announcement/:id/edit',
@@ -414,6 +421,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.mediaSettings,
         path: '/settings/media',
         builder: (_, __) => const AppBackground(child: MediaSettingsScreen()),
+      ),
+      // L'écran « Stockage » des médias de la messagerie (#226) — poussé
+      // depuis le Profil. Sous `/settings/media` parce que c'est la même
+      // famille que les réglages de consommation de données, mais une route à
+      // part : `/settings/media` est un jeu d'interrupteurs, celui-ci montre et
+      // vide. Déclaré après `/settings/media` par lisibilité : les deux
+      // chemins ne se recouvrent pas, go_router n'y voit pas un préfixe.
+      GoRoute(
+        name: AppRoute.mediaStorage,
+        path: '/settings/media/storage',
+        builder: (_, __) => const AppBackground(child: MediaStorageScreen()),
       ),
       // Mon assemblée (#184) — poussée depuis le Profil. **Hors
       // `memberOnlyRoutes`** : la préférence de branche sert aussi le porteur

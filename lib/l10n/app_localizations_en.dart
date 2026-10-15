@@ -3389,4 +3389,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bibleQuizBadgeTen => '10 different quizzes';
+
+  @override
+  String get mediaStorageMenu => 'Media storage';
+
+  @override
+  String get mediaStorageMenuSubtitle =>
+      'What your conversations take up on this device';
+
+  @override
+  String get mediaStorageTitle => 'Storage';
+
+  @override
+  String mediaStorageTotal(String size) {
+    return '$size on this device';
+  }
+
+  @override
+  String get mediaStorageNotice =>
+      'Nothing is deleted on its own. Whatever you clear here will download again on demand.';
+
+  @override
+  String get mediaStorageByKind => 'By type';
+
+  @override
+  String get mediaStorageByConversation => 'By conversation';
+
+  @override
+  String mediaStorageFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mediaStorageEmpty =>
+      'No messaging media is stored on this device.';
+
+  @override
+  String get mediaStoragePurgeTitle => 'Clear?';
+
+  @override
+  String mediaStoragePurgeMessage(String label) {
+    return 'The media from « $label » will leave this device. They will stay available to download on demand.';
+  }
+
+  @override
+  String get mediaStoragePurgeAction => 'Clear';
+
+  @override
+  String get mediaStorageUnknownConversation => 'Conversation you left';
 }

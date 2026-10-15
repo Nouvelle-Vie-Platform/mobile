@@ -3412,4 +3412,58 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get bibleQuizBadgeTen => '10 quiz différents';
+
+  @override
+  String get mediaStorageMenu => 'Stockage des médias';
+
+  @override
+  String get mediaStorageMenuSubtitle =>
+      'Ce que les conversations occupent sur cet appareil';
+
+  @override
+  String get mediaStorageTitle => 'Stockage';
+
+  @override
+  String mediaStorageTotal(String size) {
+    return '$size sur cet appareil';
+  }
+
+  @override
+  String get mediaStorageNotice =>
+      'Rien ne s\'efface tout seul. Ce que vous videz ici se retéléchargera à la demande.';
+
+  @override
+  String get mediaStorageByKind => 'Par type';
+
+  @override
+  String get mediaStorageByConversation => 'Par conversation';
+
+  @override
+  String mediaStorageFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fichiers',
+      one: '1 fichier',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mediaStorageEmpty =>
+      'Aucun média de la messagerie n\'est enregistré sur cet appareil.';
+
+  @override
+  String get mediaStoragePurgeTitle => 'Vider ?';
+
+  @override
+  String mediaStoragePurgeMessage(String label) {
+    return 'Les médias de « $label » quittent cet appareil. Ils resteront téléchargeables à la demande.';
+  }
+
+  @override
+  String get mediaStoragePurgeAction => 'Vider';
+
+  @override
+  String get mediaStorageUnknownConversation => 'Conversation quittée';
 }

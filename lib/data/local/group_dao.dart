@@ -1011,6 +1011,59 @@ ORDER BY m.created_at DESC, m.id DESC
     );
   }
 
+  /// **Les médias déjà sur l'appareil, avec de quoi les ranger et les nommer**
+  /// (T4, #226) — l'écran « Stockage » les pèse, puis en purge une partie.
+  ///
+  /// La forme (`media_kind`) et son `media_meta` viennent du **message** et non
+  /// du magasin : c'est `MessageMedia.fromColumns` qui les lit, et lui seul sait
+  /// qu'un `audio` est un vocal sauf si `meta.voice` dit le contraire.
+  ///
+  /// `JOIN` et non `LEFT JOIN` : une ligne du magasin dont le message a quitté
+  /// `group_messages` n'a plus ni conversation ni forme à montrer. Son fichier
+  /// occupe pourtant encore la place — ponytail: ce reliquat n'entre dans aucun
+  /// total. Le jour où il pèse, c'est un balayage du dossier du magasin qu'il
+  /// faut, pas une colonne de plus.
+  Future<List<LocalMediaFileRow>> localMediaFiles({String? groupId}) {
+    return customSelect(
+      '''
+SELECT lm.message_id AS message_id, m.group_id AS group_id,
+       g.name AS group_name, m.media_kind AS media_kind,
+       m.media_meta AS media_meta, lm.path AS path,
+       lm.thumb_path AS thumb_path
+FROM local_message_media AS lm
+JOIN group_messages AS m ON m.id = lm.message_id
+JOIN "groups" AS g ON g.id = m.group_id
+WHERE (?1 IS NULL OR m.group_id = ?1)
+  AND (lm.path IS NOT NULL OR lm.thumb_path IS NOT NULL)
+''',
+      variables: [Variable<String>(groupId)],
+      readsFrom: {localMessageMedia, groupMessages, groups},
+    )
+        .map(
+          (row) => (
+            messageId: row.read<String>('message_id'),
+            groupId: row.read<String>('group_id'),
+            groupName: row.read<String>('group_name'),
+            mediaKind: row.read<String?>('media_kind'),
+            mediaMeta: row.read<String?>('media_meta'),
+            path: row.read<String?>('path'),
+            thumbPath: row.read<String?>('thumb_path'),
+          ),
+        )
+        .get();
+  }
+
+  /// **Le magasin oublie ces messages** (T4, #226) — appelé **après**
+  /// l'effacement des fichiers. La jointure de [threadOf] ne trouve alors plus
+  /// rien, la bulle repasse par le réseau, et la purge redevient un
+  /// téléchargement à la demande comme le cadrage le promet.
+  Future<void> forgetLocalMedia(Iterable<String> messageIds) {
+    final ids = messageIds.toList();
+    if (ids.isEmpty) return Future.value();
+    return (delete(localMessageMedia)..where((t) => t.messageId.isIn(ids)))
+        .go();
+  }
+
   /// Un écho **par sa clé**, ou `null`. Sert au « réessayer » : il renvoie sous la
   /// **même** clé, et a donc besoin du corps et de l'instant d'origine.
   Future<PendingGroupMessageRow?> pendingById(String clientMessageId) {
@@ -1630,3 +1683,17 @@ class DigestMessage {
   final String? authorName;
   final DateTime? createdAt;
 }
+
+/// Une ligne du magasin durable des médias (T4, #226), jointe à son message.
+/// [groupName] est le nom **du groupe** : pour un tête-à-tête il n'a pas été
+/// écrit pour être lu, et l'écran lui préfère le titre de la liste des
+/// conversations quand il l'a.
+typedef LocalMediaFileRow = ({
+  String messageId,
+  String groupId,
+  String groupName,
+  String? mediaKind,
+  String? mediaMeta,
+  String? path,
+  String? thumbPath,
+});
