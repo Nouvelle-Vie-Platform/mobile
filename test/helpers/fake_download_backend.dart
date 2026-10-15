@@ -70,8 +70,14 @@ class FakeDownloadBackend implements DownloadBackend {
   /// décrit pas une attente, il la devine.
   Future<void> emit(DownloadBackendEvent event) async {
     _events.add(event);
+    // Laisse l'abonnement recevoir, puis attend que le manager ait **fini**.
     await pumpEventQueue();
+    await settle?.call();
   }
+
+  /// Branché par le test sur `DownloadManager.settled` : la seule attente qui
+  /// ne devine rien. Nul quand aucun manager n'écoute.
+  Future<void> Function()? settle;
 
   Future<void> dispose() => _events.close();
 }

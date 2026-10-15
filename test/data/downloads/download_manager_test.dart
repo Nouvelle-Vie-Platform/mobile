@@ -61,6 +61,9 @@ void main() {
       now: () => DateTime.utc(2026, 8, 15),
     );
     manager.start();
+    // Le faux transport attend le manager lui-même, au lieu de compter des
+    // tours de boucle : c'est ce qui rend ces tests déterministes.
+    backend.settle = () => manager.settled;
     return manager;
   }
 
