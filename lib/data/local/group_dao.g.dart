@@ -27,6 +27,8 @@ mixin _$GroupDaoMixin on DatabaseAccessor<AppDatabase> {
       attachedDatabase.groupMessageReactions;
   $GroupMessageHidesTable get groupMessageHides =>
       attachedDatabase.groupMessageHides;
+  $LocalMessageMediaTable get localMessageMedia =>
+      attachedDatabase.localMessageMedia;
   GroupDaoManager get managers => GroupDaoManager(this);
 }
 
@@ -71,4 +73,7 @@ class GroupDaoManager {
   $$GroupMessageHidesTableTableManager get groupMessageHides =>
       $$GroupMessageHidesTableTableManager(
           _db.attachedDatabase, _db.groupMessageHides);
+  $$LocalMessageMediaTableTableManager get localMessageMedia =>
+      $$LocalMessageMediaTableTableManager(
+          _db.attachedDatabase, _db.localMessageMedia);
 }

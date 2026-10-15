@@ -460,6 +460,53 @@ class PendingGroupMessages extends Table {
   Set<Column<Object>> get primaryKey => {clientMessageId};
 }
 
+/// **Table locale seule** — le fichier du magasin durable d'un message
+/// **reçu** (T1, #223).
+///
+/// ## Pourquoi une table, et non deux colonnes sur `group_messages`
+///
+/// Parce qu'un chemin local posé sur `group_messages` serait **effacé au
+/// prochain tirage**. `sync_dao.applyPage` écrit cette collection en
+/// `InsertMode.insertOrReplace` — SQLite supprime la ligne et la réinsère —, et
+/// `groupMessageRowOf` ne cite pas la colonne : elle reprendrait son défaut,
+/// `NULL`. L'en-tête de `groupMessageRowOf` interdit par ailleurs d'y déroger
+/// pour cette collection (c'est le nul explicite d'`authorId` qui rend le
+/// détachement d'auteur vrai, ADR-0032). Le palier M4 **efface** de plus le
+/// curseur de `group_messages` : chaque ligne est réécrite au moins une fois.
+///
+/// Le patron est donc celui de `local_playback_positions` et de `local_notes` :
+/// une table **hors de tout registre de synchronisation**, sans `sync_stamp`,
+/// qu'aucun cycle ne touche. Le fil la joint à la lecture
+/// (`GroupDao.threadOf`), et `MessageMedia.localPath` la reçoit.
+///
+/// ## Pourquoi une ligne par message, et deux colonnes
+///
+/// La clé est l'identité du message — un média de message est immuable, il n'y
+/// a rien à valider. Les deux variantes (le fichier, la vignette d'une vidéo)
+/// vivent sur la **même** ligne : le fil les lit d'une seule jointure, là où
+/// une ligne par variante en demanderait deux.
+///
+/// Rien n'y est jamais effacé par l'application : c'est l'écran « Stockage »
+/// (#226) qui purgera, et c'est le fidèle qui décide (décision 1 du cadrage).
+@DataClassName('LocalMessageMediaRow')
+class LocalMessageMedia extends Table {
+  @override
+  String get tableName => 'local_message_media';
+
+  /// L'identité **serveur** du message — jamais un `clientMessageId` : l'écho
+  /// d'un envoi garde son fichier dans l'outbox jusqu'à T2 (#224).
+  TextColumn get messageId => text()();
+
+  /// Le fichier du média dans le magasin durable (`MessageMediaStore`).
+  TextColumn get path => text().nullable()();
+
+  /// La vignette d'une vidéo, dans le même dossier.
+  TextColumn get thumbPath => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {messageId};
+}
+
 /// Collection `group_reads` (partition `private`, #140) — **ma** position de
 /// lecture dans chacun de mes groupes, et rien de celle des autres.
 ///

@@ -19,9 +19,12 @@ void main() {
 
   const v = AppDatabase.kBibleSchemaVersion;
 
-  test('v29 est la version courante', () {
+  // « v29 est la version courante » a déménagé dans
+  // `migration_message_media_test.dart` avec le palier v30 : l'assertion
+  // appartient au **dernier** palier, qui est le seul à savoir qu'il l'est.
+  test('v29 reste un palier de la liste', () {
     expect(v, 29);
-    expect(GeneratedHelper.versions.last, v);
+    expect(GeneratedHelper.versions, contains(v));
   });
 
   test('v28 → v29 : les seize objets du module', () async {
