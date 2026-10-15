@@ -16,7 +16,10 @@ void main() {
   late NoteDraftSaver saver;
 
   const id = '019f8000-0000-7000-8000-000000000001';
-  const debounce = Duration(milliseconds: 40);
+  // Une seconde, et des frappes à 100 ms : sous une machine chargée, une
+  // minuterie de 40 ms partait entre deux frappes et le test mentait.
+  const debounce = Duration(seconds: 1);
+  const keystroke = Duration(milliseconds: 100);
 
   NoteDraft draft({String? title, String body = ''}) => NoteDraft(
         id: id,
@@ -57,9 +60,9 @@ void main() {
 
     test('l\'envoi part après la dernière frappe, une seule fois', () async {
       await saver.update(draft(body: 'D'));
-      await wait(debounce ~/ 2);
+      await wait(keystroke);
       await saver.update(draft(body: 'Di'));
-      await wait(debounce ~/ 2);
+      await wait(keystroke);
       await saver.update(draft(body: 'Dieu'));
       expect(repo.upserts, isEmpty,
           reason: 'la minuterie repart à chaque frappe');

@@ -3,6 +3,329 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+class BibleFts extends Table
+    with TableInfo<BibleFts, BibleFt>, VirtualTableInfo<BibleFts, BibleFt> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  BibleFts(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _versionCodeMeta =
+      const VerificationMeta('versionCode');
+  late final GeneratedColumn<String> versionCode = GeneratedColumn<String>(
+      'version_code', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: '');
+  static const VerificationMeta _bookMeta = const VerificationMeta('book');
+  late final GeneratedColumn<String> book = GeneratedColumn<String>(
+      'book', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: '');
+  static const VerificationMeta _chapterMeta =
+      const VerificationMeta('chapter');
+  late final GeneratedColumn<String> chapter = GeneratedColumn<String>(
+      'chapter', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: '');
+  static const VerificationMeta _verseMeta = const VerificationMeta('verse');
+  late final GeneratedColumn<String> verse = GeneratedColumn<String>(
+      'verse', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: '');
+  static const VerificationMeta _verseTextMeta =
+      const VerificationMeta('verseText');
+  late final GeneratedColumn<String> verseText = GeneratedColumn<String>(
+      'verse_text', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: '');
+  @override
+  List<GeneratedColumn> get $columns =>
+      [versionCode, book, chapter, verse, verseText];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_fts';
+  @override
+  VerificationContext validateIntegrity(Insertable<BibleFt> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('version_code')) {
+      context.handle(
+          _versionCodeMeta,
+          versionCode.isAcceptableOrUnknown(
+              data['version_code']!, _versionCodeMeta));
+    } else if (isInserting) {
+      context.missing(_versionCodeMeta);
+    }
+    if (data.containsKey('book')) {
+      context.handle(
+          _bookMeta, book.isAcceptableOrUnknown(data['book']!, _bookMeta));
+    } else if (isInserting) {
+      context.missing(_bookMeta);
+    }
+    if (data.containsKey('chapter')) {
+      context.handle(_chapterMeta,
+          chapter.isAcceptableOrUnknown(data['chapter']!, _chapterMeta));
+    } else if (isInserting) {
+      context.missing(_chapterMeta);
+    }
+    if (data.containsKey('verse')) {
+      context.handle(
+          _verseMeta, verse.isAcceptableOrUnknown(data['verse']!, _verseMeta));
+    } else if (isInserting) {
+      context.missing(_verseMeta);
+    }
+    if (data.containsKey('verse_text')) {
+      context.handle(_verseTextMeta,
+          verseText.isAcceptableOrUnknown(data['verse_text']!, _verseTextMeta));
+    } else if (isInserting) {
+      context.missing(_verseTextMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => const {};
+  @override
+  BibleFt map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BibleFt(
+      versionCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}version_code'])!,
+      book: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}book'])!,
+      chapter: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}chapter'])!,
+      verse: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}verse'])!,
+      verseText: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}verse_text'])!,
+    );
+  }
+
+  @override
+  BibleFts createAlias(String alias) {
+    return BibleFts(attachedDatabase, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
+  @override
+  String get moduleAndArgs =>
+      'fts5(version_code UNINDEXED, book UNINDEXED, chapter UNINDEXED, verse UNINDEXED, verse_text, tokenize = \'unicode61 remove_diacritics 2\')';
+}
+
+class BibleFt extends DataClass implements Insertable<BibleFt> {
+  final String versionCode;
+  final String book;
+  final String chapter;
+  final String verse;
+  final String verseText;
+  const BibleFt(
+      {required this.versionCode,
+      required this.book,
+      required this.chapter,
+      required this.verse,
+      required this.verseText});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['version_code'] = Variable<String>(versionCode);
+    map['book'] = Variable<String>(book);
+    map['chapter'] = Variable<String>(chapter);
+    map['verse'] = Variable<String>(verse);
+    map['verse_text'] = Variable<String>(verseText);
+    return map;
+  }
+
+  BibleFtsCompanion toCompanion(bool nullToAbsent) {
+    return BibleFtsCompanion(
+      versionCode: Value(versionCode),
+      book: Value(book),
+      chapter: Value(chapter),
+      verse: Value(verse),
+      verseText: Value(verseText),
+    );
+  }
+
+  factory BibleFt.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BibleFt(
+      versionCode: serializer.fromJson<String>(json['version_code']),
+      book: serializer.fromJson<String>(json['book']),
+      chapter: serializer.fromJson<String>(json['chapter']),
+      verse: serializer.fromJson<String>(json['verse']),
+      verseText: serializer.fromJson<String>(json['verse_text']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'version_code': serializer.toJson<String>(versionCode),
+      'book': serializer.toJson<String>(book),
+      'chapter': serializer.toJson<String>(chapter),
+      'verse': serializer.toJson<String>(verse),
+      'verse_text': serializer.toJson<String>(verseText),
+    };
+  }
+
+  BibleFt copyWith(
+          {String? versionCode,
+          String? book,
+          String? chapter,
+          String? verse,
+          String? verseText}) =>
+      BibleFt(
+        versionCode: versionCode ?? this.versionCode,
+        book: book ?? this.book,
+        chapter: chapter ?? this.chapter,
+        verse: verse ?? this.verse,
+        verseText: verseText ?? this.verseText,
+      );
+  BibleFt copyWithCompanion(BibleFtsCompanion data) {
+    return BibleFt(
+      versionCode:
+          data.versionCode.present ? data.versionCode.value : this.versionCode,
+      book: data.book.present ? data.book.value : this.book,
+      chapter: data.chapter.present ? data.chapter.value : this.chapter,
+      verse: data.verse.present ? data.verse.value : this.verse,
+      verseText: data.verseText.present ? data.verseText.value : this.verseText,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleFt(')
+          ..write('versionCode: $versionCode, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verse: $verse, ')
+          ..write('verseText: $verseText')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(versionCode, book, chapter, verse, verseText);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BibleFt &&
+          other.versionCode == this.versionCode &&
+          other.book == this.book &&
+          other.chapter == this.chapter &&
+          other.verse == this.verse &&
+          other.verseText == this.verseText);
+}
+
+class BibleFtsCompanion extends UpdateCompanion<BibleFt> {
+  final Value<String> versionCode;
+  final Value<String> book;
+  final Value<String> chapter;
+  final Value<String> verse;
+  final Value<String> verseText;
+  final Value<int> rowid;
+  const BibleFtsCompanion({
+    this.versionCode = const Value.absent(),
+    this.book = const Value.absent(),
+    this.chapter = const Value.absent(),
+    this.verse = const Value.absent(),
+    this.verseText = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BibleFtsCompanion.insert({
+    required String versionCode,
+    required String book,
+    required String chapter,
+    required String verse,
+    required String verseText,
+    this.rowid = const Value.absent(),
+  })  : versionCode = Value(versionCode),
+        book = Value(book),
+        chapter = Value(chapter),
+        verse = Value(verse),
+        verseText = Value(verseText);
+  static Insertable<BibleFt> custom({
+    Expression<String>? versionCode,
+    Expression<String>? book,
+    Expression<String>? chapter,
+    Expression<String>? verse,
+    Expression<String>? verseText,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (versionCode != null) 'version_code': versionCode,
+      if (book != null) 'book': book,
+      if (chapter != null) 'chapter': chapter,
+      if (verse != null) 'verse': verse,
+      if (verseText != null) 'verse_text': verseText,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BibleFtsCompanion copyWith(
+      {Value<String>? versionCode,
+      Value<String>? book,
+      Value<String>? chapter,
+      Value<String>? verse,
+      Value<String>? verseText,
+      Value<int>? rowid}) {
+    return BibleFtsCompanion(
+      versionCode: versionCode ?? this.versionCode,
+      book: book ?? this.book,
+      chapter: chapter ?? this.chapter,
+      verse: verse ?? this.verse,
+      verseText: verseText ?? this.verseText,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (versionCode.present) {
+      map['version_code'] = Variable<String>(versionCode.value);
+    }
+    if (book.present) {
+      map['book'] = Variable<String>(book.value);
+    }
+    if (chapter.present) {
+      map['chapter'] = Variable<String>(chapter.value);
+    }
+    if (verse.present) {
+      map['verse'] = Variable<String>(verse.value);
+    }
+    if (verseText.present) {
+      map['verse_text'] = Variable<String>(verseText.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleFtsCompanion(')
+          ..write('versionCode: $versionCode, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verse: $verse, ')
+          ..write('verseText: $verseText, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SyncCursorsTable extends SyncCursors
     with TableInfo<$SyncCursorsTable, SyncCursorRow> {
   @override
@@ -25453,9 +25776,8050 @@ class DownloadNotificationsCompanion
   }
 }
 
+class $BibleMarksTable extends BibleMarks
+    with TableInfo<$BibleMarksTable, BibleMarkRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BibleMarksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ownerIdMeta =
+      const VerificationMeta('ownerId');
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+      'owner_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+      'kind', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _bookMeta = const VerificationMeta('book');
+  @override
+  late final GeneratedColumn<String> book = GeneratedColumn<String>(
+      'book', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _chapterMeta =
+      const VerificationMeta('chapter');
+  @override
+  late final GeneratedColumn<int> chapter = GeneratedColumn<int>(
+      'chapter', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _verseFromMeta =
+      const VerificationMeta('verseFrom');
+  @override
+  late final GeneratedColumn<int> verseFrom = GeneratedColumn<int>(
+      'verse_from', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _verseToMeta =
+      const VerificationMeta('verseTo');
+  @override
+  late final GeneratedColumn<int> verseTo = GeneratedColumn<int>(
+      'verse_to', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<String> color = GeneratedColumn<String>(
+      'color', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _clientCreatedAtMeta =
+      const VerificationMeta('clientCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientCreatedAt =
+      GeneratedColumn<DateTime>('client_created_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _clientUpdatedAtMeta =
+      const VerificationMeta('clientUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientUpdatedAt =
+      GeneratedColumn<DateTime>('client_updated_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        ownerId,
+        kind,
+        book,
+        chapter,
+        verseFrom,
+        verseTo,
+        color,
+        clientCreatedAt,
+        clientUpdatedAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_marks';
+  @override
+  VerificationContext validateIntegrity(Insertable<BibleMarkRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(_ownerIdMeta,
+          ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta));
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+          _kindMeta, kind.isAcceptableOrUnknown(data['kind']!, _kindMeta));
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('book')) {
+      context.handle(
+          _bookMeta, book.isAcceptableOrUnknown(data['book']!, _bookMeta));
+    } else if (isInserting) {
+      context.missing(_bookMeta);
+    }
+    if (data.containsKey('chapter')) {
+      context.handle(_chapterMeta,
+          chapter.isAcceptableOrUnknown(data['chapter']!, _chapterMeta));
+    } else if (isInserting) {
+      context.missing(_chapterMeta);
+    }
+    if (data.containsKey('verse_from')) {
+      context.handle(_verseFromMeta,
+          verseFrom.isAcceptableOrUnknown(data['verse_from']!, _verseFromMeta));
+    }
+    if (data.containsKey('verse_to')) {
+      context.handle(_verseToMeta,
+          verseTo.isAcceptableOrUnknown(data['verse_to']!, _verseToMeta));
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+          _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
+    }
+    if (data.containsKey('client_created_at')) {
+      context.handle(
+          _clientCreatedAtMeta,
+          clientCreatedAt.isAcceptableOrUnknown(
+              data['client_created_at']!, _clientCreatedAtMeta));
+    }
+    if (data.containsKey('client_updated_at')) {
+      context.handle(
+          _clientUpdatedAtMeta,
+          clientUpdatedAt.isAcceptableOrUnknown(
+              data['client_updated_at']!, _clientUpdatedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BibleMarkRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BibleMarkRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      ownerId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_id']),
+      kind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
+      book: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}book'])!,
+      chapter: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}chapter'])!,
+      verseFrom: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}verse_from']),
+      verseTo: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}verse_to']),
+      color: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}color']),
+      clientCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_created_at']),
+      clientUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_updated_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $BibleMarksTable createAlias(String alias) {
+    return $BibleMarksTable(attachedDatabase, alias);
+  }
+}
+
+class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String id;
+  final String? ownerId;
+
+  /// `favorite | highlight | bookmark`.
+  final String kind;
+  final String book;
+  final int chapter;
+  final int? verseFrom;
+  final int? verseTo;
+
+  /// Surlignage : `yellow | green | blue | pink | purple`, brut.
+  final String? color;
+  final DateTime? clientCreatedAt;
+  final DateTime? clientUpdatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const BibleMarkRow(
+      {required this.syncStamp,
+      required this.id,
+      this.ownerId,
+      required this.kind,
+      required this.book,
+      required this.chapter,
+      this.verseFrom,
+      this.verseTo,
+      this.color,
+      this.clientCreatedAt,
+      this.clientUpdatedAt,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || ownerId != null) {
+      map['owner_id'] = Variable<String>(ownerId);
+    }
+    map['kind'] = Variable<String>(kind);
+    map['book'] = Variable<String>(book);
+    map['chapter'] = Variable<int>(chapter);
+    if (!nullToAbsent || verseFrom != null) {
+      map['verse_from'] = Variable<int>(verseFrom);
+    }
+    if (!nullToAbsent || verseTo != null) {
+      map['verse_to'] = Variable<int>(verseTo);
+    }
+    if (!nullToAbsent || color != null) {
+      map['color'] = Variable<String>(color);
+    }
+    if (!nullToAbsent || clientCreatedAt != null) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
+    }
+    if (!nullToAbsent || clientUpdatedAt != null) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  BibleMarksCompanion toCompanion(bool nullToAbsent) {
+    return BibleMarksCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      ownerId: ownerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerId),
+      kind: Value(kind),
+      book: Value(book),
+      chapter: Value(chapter),
+      verseFrom: verseFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verseFrom),
+      verseTo: verseTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verseTo),
+      color:
+          color == null && nullToAbsent ? const Value.absent() : Value(color),
+      clientCreatedAt: clientCreatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientCreatedAt),
+      clientUpdatedAt: clientUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientUpdatedAt),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory BibleMarkRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BibleMarkRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      ownerId: serializer.fromJson<String?>(json['ownerId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      book: serializer.fromJson<String>(json['book']),
+      chapter: serializer.fromJson<int>(json['chapter']),
+      verseFrom: serializer.fromJson<int?>(json['verseFrom']),
+      verseTo: serializer.fromJson<int?>(json['verseTo']),
+      color: serializer.fromJson<String?>(json['color']),
+      clientCreatedAt: serializer.fromJson<DateTime?>(json['clientCreatedAt']),
+      clientUpdatedAt: serializer.fromJson<DateTime?>(json['clientUpdatedAt']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'ownerId': serializer.toJson<String?>(ownerId),
+      'kind': serializer.toJson<String>(kind),
+      'book': serializer.toJson<String>(book),
+      'chapter': serializer.toJson<int>(chapter),
+      'verseFrom': serializer.toJson<int?>(verseFrom),
+      'verseTo': serializer.toJson<int?>(verseTo),
+      'color': serializer.toJson<String?>(color),
+      'clientCreatedAt': serializer.toJson<DateTime?>(clientCreatedAt),
+      'clientUpdatedAt': serializer.toJson<DateTime?>(clientUpdatedAt),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  BibleMarkRow copyWith(
+          {int? syncStamp,
+          String? id,
+          Value<String?> ownerId = const Value.absent(),
+          String? kind,
+          String? book,
+          int? chapter,
+          Value<int?> verseFrom = const Value.absent(),
+          Value<int?> verseTo = const Value.absent(),
+          Value<String?> color = const Value.absent(),
+          Value<DateTime?> clientCreatedAt = const Value.absent(),
+          Value<DateTime?> clientUpdatedAt = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      BibleMarkRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        ownerId: ownerId.present ? ownerId.value : this.ownerId,
+        kind: kind ?? this.kind,
+        book: book ?? this.book,
+        chapter: chapter ?? this.chapter,
+        verseFrom: verseFrom.present ? verseFrom.value : this.verseFrom,
+        verseTo: verseTo.present ? verseTo.value : this.verseTo,
+        color: color.present ? color.value : this.color,
+        clientCreatedAt: clientCreatedAt.present
+            ? clientCreatedAt.value
+            : this.clientCreatedAt,
+        clientUpdatedAt: clientUpdatedAt.present
+            ? clientUpdatedAt.value
+            : this.clientUpdatedAt,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  BibleMarkRow copyWithCompanion(BibleMarksCompanion data) {
+    return BibleMarkRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      book: data.book.present ? data.book.value : this.book,
+      chapter: data.chapter.present ? data.chapter.value : this.chapter,
+      verseFrom: data.verseFrom.present ? data.verseFrom.value : this.verseFrom,
+      verseTo: data.verseTo.present ? data.verseTo.value : this.verseTo,
+      color: data.color.present ? data.color.value : this.color,
+      clientCreatedAt: data.clientCreatedAt.present
+          ? data.clientCreatedAt.value
+          : this.clientCreatedAt,
+      clientUpdatedAt: data.clientUpdatedAt.present
+          ? data.clientUpdatedAt.value
+          : this.clientUpdatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleMarkRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('kind: $kind, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verseFrom: $verseFrom, ')
+          ..write('verseTo: $verseTo, ')
+          ..write('color: $color, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp,
+      id,
+      ownerId,
+      kind,
+      book,
+      chapter,
+      verseFrom,
+      verseTo,
+      color,
+      clientCreatedAt,
+      clientUpdatedAt,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BibleMarkRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.ownerId == this.ownerId &&
+          other.kind == this.kind &&
+          other.book == this.book &&
+          other.chapter == this.chapter &&
+          other.verseFrom == this.verseFrom &&
+          other.verseTo == this.verseTo &&
+          other.color == this.color &&
+          other.clientCreatedAt == this.clientCreatedAt &&
+          other.clientUpdatedAt == this.clientUpdatedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BibleMarksCompanion extends UpdateCompanion<BibleMarkRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String?> ownerId;
+  final Value<String> kind;
+  final Value<String> book;
+  final Value<int> chapter;
+  final Value<int?> verseFrom;
+  final Value<int?> verseTo;
+  final Value<String?> color;
+  final Value<DateTime?> clientCreatedAt;
+  final Value<DateTime?> clientUpdatedAt;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const BibleMarksCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.book = const Value.absent(),
+    this.chapter = const Value.absent(),
+    this.verseFrom = const Value.absent(),
+    this.verseTo = const Value.absent(),
+    this.color = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.clientUpdatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BibleMarksCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    this.ownerId = const Value.absent(),
+    required String kind,
+    required String book,
+    required int chapter,
+    this.verseFrom = const Value.absent(),
+    this.verseTo = const Value.absent(),
+    this.color = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.clientUpdatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        kind = Value(kind),
+        book = Value(book),
+        chapter = Value(chapter);
+  static Insertable<BibleMarkRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? ownerId,
+    Expression<String>? kind,
+    Expression<String>? book,
+    Expression<int>? chapter,
+    Expression<int>? verseFrom,
+    Expression<int>? verseTo,
+    Expression<String>? color,
+    Expression<DateTime>? clientCreatedAt,
+    Expression<DateTime>? clientUpdatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (kind != null) 'kind': kind,
+      if (book != null) 'book': book,
+      if (chapter != null) 'chapter': chapter,
+      if (verseFrom != null) 'verse_from': verseFrom,
+      if (verseTo != null) 'verse_to': verseTo,
+      if (color != null) 'color': color,
+      if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
+      if (clientUpdatedAt != null) 'client_updated_at': clientUpdatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BibleMarksCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String?>? ownerId,
+      Value<String>? kind,
+      Value<String>? book,
+      Value<int>? chapter,
+      Value<int?>? verseFrom,
+      Value<int?>? verseTo,
+      Value<String?>? color,
+      Value<DateTime?>? clientCreatedAt,
+      Value<DateTime?>? clientUpdatedAt,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return BibleMarksCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      ownerId: ownerId ?? this.ownerId,
+      kind: kind ?? this.kind,
+      book: book ?? this.book,
+      chapter: chapter ?? this.chapter,
+      verseFrom: verseFrom ?? this.verseFrom,
+      verseTo: verseTo ?? this.verseTo,
+      color: color ?? this.color,
+      clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+      clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (book.present) {
+      map['book'] = Variable<String>(book.value);
+    }
+    if (chapter.present) {
+      map['chapter'] = Variable<int>(chapter.value);
+    }
+    if (verseFrom.present) {
+      map['verse_from'] = Variable<int>(verseFrom.value);
+    }
+    if (verseTo.present) {
+      map['verse_to'] = Variable<int>(verseTo.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<String>(color.value);
+    }
+    if (clientCreatedAt.present) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
+    }
+    if (clientUpdatedAt.present) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleMarksCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('kind: $kind, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verseFrom: $verseFrom, ')
+          ..write('verseTo: $verseTo, ')
+          ..write('color: $color, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BibleReadingStatesTable extends BibleReadingStates
+    with TableInfo<$BibleReadingStatesTable, BibleReadingStateRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BibleReadingStatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ownerIdMeta =
+      const VerificationMeta('ownerId');
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+      'owner_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _versionCodeMeta =
+      const VerificationMeta('versionCode');
+  @override
+  late final GeneratedColumn<String> versionCode = GeneratedColumn<String>(
+      'version_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _bookMeta = const VerificationMeta('book');
+  @override
+  late final GeneratedColumn<String> book = GeneratedColumn<String>(
+      'book', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _chapterMeta =
+      const VerificationMeta('chapter');
+  @override
+  late final GeneratedColumn<int> chapter = GeneratedColumn<int>(
+      'chapter', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _verseMeta = const VerificationMeta('verse');
+  @override
+  late final GeneratedColumn<int> verse = GeneratedColumn<int>(
+      'verse', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _readChaptersMeta =
+      const VerificationMeta('readChapters');
+  @override
+  late final GeneratedColumn<String> readChapters = GeneratedColumn<String>(
+      'read_chapters', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _streakDaysMeta =
+      const VerificationMeta('streakDays');
+  @override
+  late final GeneratedColumn<int> streakDays = GeneratedColumn<int>(
+      'streak_days', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _lastReadOnMeta =
+      const VerificationMeta('lastReadOn');
+  @override
+  late final GeneratedColumn<String> lastReadOn = GeneratedColumn<String>(
+      'last_read_on', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _clientUpdatedAtMeta =
+      const VerificationMeta('clientUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientUpdatedAt =
+      GeneratedColumn<DateTime>('client_updated_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        ownerId,
+        versionCode,
+        book,
+        chapter,
+        verse,
+        readChapters,
+        streakDays,
+        lastReadOn,
+        clientUpdatedAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_reading_states';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<BibleReadingStateRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(_ownerIdMeta,
+          ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta));
+    }
+    if (data.containsKey('version_code')) {
+      context.handle(
+          _versionCodeMeta,
+          versionCode.isAcceptableOrUnknown(
+              data['version_code']!, _versionCodeMeta));
+    }
+    if (data.containsKey('book')) {
+      context.handle(
+          _bookMeta, book.isAcceptableOrUnknown(data['book']!, _bookMeta));
+    }
+    if (data.containsKey('chapter')) {
+      context.handle(_chapterMeta,
+          chapter.isAcceptableOrUnknown(data['chapter']!, _chapterMeta));
+    }
+    if (data.containsKey('verse')) {
+      context.handle(
+          _verseMeta, verse.isAcceptableOrUnknown(data['verse']!, _verseMeta));
+    }
+    if (data.containsKey('read_chapters')) {
+      context.handle(
+          _readChaptersMeta,
+          readChapters.isAcceptableOrUnknown(
+              data['read_chapters']!, _readChaptersMeta));
+    }
+    if (data.containsKey('streak_days')) {
+      context.handle(
+          _streakDaysMeta,
+          streakDays.isAcceptableOrUnknown(
+              data['streak_days']!, _streakDaysMeta));
+    }
+    if (data.containsKey('last_read_on')) {
+      context.handle(
+          _lastReadOnMeta,
+          lastReadOn.isAcceptableOrUnknown(
+              data['last_read_on']!, _lastReadOnMeta));
+    }
+    if (data.containsKey('client_updated_at')) {
+      context.handle(
+          _clientUpdatedAtMeta,
+          clientUpdatedAt.isAcceptableOrUnknown(
+              data['client_updated_at']!, _clientUpdatedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BibleReadingStateRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BibleReadingStateRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      ownerId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_id']),
+      versionCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}version_code']),
+      book: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}book']),
+      chapter: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}chapter']),
+      verse: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}verse']),
+      readChapters: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}read_chapters']),
+      streakDays: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}streak_days'])!,
+      lastReadOn: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_read_on']),
+      clientUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_updated_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $BibleReadingStatesTable createAlias(String alias) {
+    return $BibleReadingStatesTable(attachedDatabase, alias);
+  }
+}
+
+class BibleReadingStateRow extends DataClass
+    implements Insertable<BibleReadingStateRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String id;
+  final String? ownerId;
+  final String? versionCode;
+  final String? book;
+  final int? chapter;
+  final int? verse;
+
+  /// `{ "<OSIS>": [chapitres] }`, en JSON.
+  final String? readChapters;
+  final int streakDays;
+
+  /// `YYYY-MM-DD`.
+  final String? lastReadOn;
+  final DateTime? clientUpdatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const BibleReadingStateRow(
+      {required this.syncStamp,
+      required this.id,
+      this.ownerId,
+      this.versionCode,
+      this.book,
+      this.chapter,
+      this.verse,
+      this.readChapters,
+      required this.streakDays,
+      this.lastReadOn,
+      this.clientUpdatedAt,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || ownerId != null) {
+      map['owner_id'] = Variable<String>(ownerId);
+    }
+    if (!nullToAbsent || versionCode != null) {
+      map['version_code'] = Variable<String>(versionCode);
+    }
+    if (!nullToAbsent || book != null) {
+      map['book'] = Variable<String>(book);
+    }
+    if (!nullToAbsent || chapter != null) {
+      map['chapter'] = Variable<int>(chapter);
+    }
+    if (!nullToAbsent || verse != null) {
+      map['verse'] = Variable<int>(verse);
+    }
+    if (!nullToAbsent || readChapters != null) {
+      map['read_chapters'] = Variable<String>(readChapters);
+    }
+    map['streak_days'] = Variable<int>(streakDays);
+    if (!nullToAbsent || lastReadOn != null) {
+      map['last_read_on'] = Variable<String>(lastReadOn);
+    }
+    if (!nullToAbsent || clientUpdatedAt != null) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  BibleReadingStatesCompanion toCompanion(bool nullToAbsent) {
+    return BibleReadingStatesCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      ownerId: ownerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerId),
+      versionCode: versionCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(versionCode),
+      book: book == null && nullToAbsent ? const Value.absent() : Value(book),
+      chapter: chapter == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chapter),
+      verse:
+          verse == null && nullToAbsent ? const Value.absent() : Value(verse),
+      readChapters: readChapters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(readChapters),
+      streakDays: Value(streakDays),
+      lastReadOn: lastReadOn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastReadOn),
+      clientUpdatedAt: clientUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientUpdatedAt),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory BibleReadingStateRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BibleReadingStateRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      ownerId: serializer.fromJson<String?>(json['ownerId']),
+      versionCode: serializer.fromJson<String?>(json['versionCode']),
+      book: serializer.fromJson<String?>(json['book']),
+      chapter: serializer.fromJson<int?>(json['chapter']),
+      verse: serializer.fromJson<int?>(json['verse']),
+      readChapters: serializer.fromJson<String?>(json['readChapters']),
+      streakDays: serializer.fromJson<int>(json['streakDays']),
+      lastReadOn: serializer.fromJson<String?>(json['lastReadOn']),
+      clientUpdatedAt: serializer.fromJson<DateTime?>(json['clientUpdatedAt']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'ownerId': serializer.toJson<String?>(ownerId),
+      'versionCode': serializer.toJson<String?>(versionCode),
+      'book': serializer.toJson<String?>(book),
+      'chapter': serializer.toJson<int?>(chapter),
+      'verse': serializer.toJson<int?>(verse),
+      'readChapters': serializer.toJson<String?>(readChapters),
+      'streakDays': serializer.toJson<int>(streakDays),
+      'lastReadOn': serializer.toJson<String?>(lastReadOn),
+      'clientUpdatedAt': serializer.toJson<DateTime?>(clientUpdatedAt),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  BibleReadingStateRow copyWith(
+          {int? syncStamp,
+          String? id,
+          Value<String?> ownerId = const Value.absent(),
+          Value<String?> versionCode = const Value.absent(),
+          Value<String?> book = const Value.absent(),
+          Value<int?> chapter = const Value.absent(),
+          Value<int?> verse = const Value.absent(),
+          Value<String?> readChapters = const Value.absent(),
+          int? streakDays,
+          Value<String?> lastReadOn = const Value.absent(),
+          Value<DateTime?> clientUpdatedAt = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      BibleReadingStateRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        ownerId: ownerId.present ? ownerId.value : this.ownerId,
+        versionCode: versionCode.present ? versionCode.value : this.versionCode,
+        book: book.present ? book.value : this.book,
+        chapter: chapter.present ? chapter.value : this.chapter,
+        verse: verse.present ? verse.value : this.verse,
+        readChapters:
+            readChapters.present ? readChapters.value : this.readChapters,
+        streakDays: streakDays ?? this.streakDays,
+        lastReadOn: lastReadOn.present ? lastReadOn.value : this.lastReadOn,
+        clientUpdatedAt: clientUpdatedAt.present
+            ? clientUpdatedAt.value
+            : this.clientUpdatedAt,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  BibleReadingStateRow copyWithCompanion(BibleReadingStatesCompanion data) {
+    return BibleReadingStateRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      versionCode:
+          data.versionCode.present ? data.versionCode.value : this.versionCode,
+      book: data.book.present ? data.book.value : this.book,
+      chapter: data.chapter.present ? data.chapter.value : this.chapter,
+      verse: data.verse.present ? data.verse.value : this.verse,
+      readChapters: data.readChapters.present
+          ? data.readChapters.value
+          : this.readChapters,
+      streakDays:
+          data.streakDays.present ? data.streakDays.value : this.streakDays,
+      lastReadOn:
+          data.lastReadOn.present ? data.lastReadOn.value : this.lastReadOn,
+      clientUpdatedAt: data.clientUpdatedAt.present
+          ? data.clientUpdatedAt.value
+          : this.clientUpdatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleReadingStateRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('versionCode: $versionCode, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verse: $verse, ')
+          ..write('readChapters: $readChapters, ')
+          ..write('streakDays: $streakDays, ')
+          ..write('lastReadOn: $lastReadOn, ')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp,
+      id,
+      ownerId,
+      versionCode,
+      book,
+      chapter,
+      verse,
+      readChapters,
+      streakDays,
+      lastReadOn,
+      clientUpdatedAt,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BibleReadingStateRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.ownerId == this.ownerId &&
+          other.versionCode == this.versionCode &&
+          other.book == this.book &&
+          other.chapter == this.chapter &&
+          other.verse == this.verse &&
+          other.readChapters == this.readChapters &&
+          other.streakDays == this.streakDays &&
+          other.lastReadOn == this.lastReadOn &&
+          other.clientUpdatedAt == this.clientUpdatedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BibleReadingStatesCompanion
+    extends UpdateCompanion<BibleReadingStateRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String?> ownerId;
+  final Value<String?> versionCode;
+  final Value<String?> book;
+  final Value<int?> chapter;
+  final Value<int?> verse;
+  final Value<String?> readChapters;
+  final Value<int> streakDays;
+  final Value<String?> lastReadOn;
+  final Value<DateTime?> clientUpdatedAt;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const BibleReadingStatesCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.versionCode = const Value.absent(),
+    this.book = const Value.absent(),
+    this.chapter = const Value.absent(),
+    this.verse = const Value.absent(),
+    this.readChapters = const Value.absent(),
+    this.streakDays = const Value.absent(),
+    this.lastReadOn = const Value.absent(),
+    this.clientUpdatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BibleReadingStatesCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    this.ownerId = const Value.absent(),
+    this.versionCode = const Value.absent(),
+    this.book = const Value.absent(),
+    this.chapter = const Value.absent(),
+    this.verse = const Value.absent(),
+    this.readChapters = const Value.absent(),
+    this.streakDays = const Value.absent(),
+    this.lastReadOn = const Value.absent(),
+    this.clientUpdatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id);
+  static Insertable<BibleReadingStateRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? ownerId,
+    Expression<String>? versionCode,
+    Expression<String>? book,
+    Expression<int>? chapter,
+    Expression<int>? verse,
+    Expression<String>? readChapters,
+    Expression<int>? streakDays,
+    Expression<String>? lastReadOn,
+    Expression<DateTime>? clientUpdatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (versionCode != null) 'version_code': versionCode,
+      if (book != null) 'book': book,
+      if (chapter != null) 'chapter': chapter,
+      if (verse != null) 'verse': verse,
+      if (readChapters != null) 'read_chapters': readChapters,
+      if (streakDays != null) 'streak_days': streakDays,
+      if (lastReadOn != null) 'last_read_on': lastReadOn,
+      if (clientUpdatedAt != null) 'client_updated_at': clientUpdatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BibleReadingStatesCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String?>? ownerId,
+      Value<String?>? versionCode,
+      Value<String?>? book,
+      Value<int?>? chapter,
+      Value<int?>? verse,
+      Value<String?>? readChapters,
+      Value<int>? streakDays,
+      Value<String?>? lastReadOn,
+      Value<DateTime?>? clientUpdatedAt,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return BibleReadingStatesCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      ownerId: ownerId ?? this.ownerId,
+      versionCode: versionCode ?? this.versionCode,
+      book: book ?? this.book,
+      chapter: chapter ?? this.chapter,
+      verse: verse ?? this.verse,
+      readChapters: readChapters ?? this.readChapters,
+      streakDays: streakDays ?? this.streakDays,
+      lastReadOn: lastReadOn ?? this.lastReadOn,
+      clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (versionCode.present) {
+      map['version_code'] = Variable<String>(versionCode.value);
+    }
+    if (book.present) {
+      map['book'] = Variable<String>(book.value);
+    }
+    if (chapter.present) {
+      map['chapter'] = Variable<int>(chapter.value);
+    }
+    if (verse.present) {
+      map['verse'] = Variable<int>(verse.value);
+    }
+    if (readChapters.present) {
+      map['read_chapters'] = Variable<String>(readChapters.value);
+    }
+    if (streakDays.present) {
+      map['streak_days'] = Variable<int>(streakDays.value);
+    }
+    if (lastReadOn.present) {
+      map['last_read_on'] = Variable<String>(lastReadOn.value);
+    }
+    if (clientUpdatedAt.present) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleReadingStatesCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('versionCode: $versionCode, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verse: $verse, ')
+          ..write('readChapters: $readChapters, ')
+          ..write('streakDays: $streakDays, ')
+          ..write('lastReadOn: $lastReadOn, ')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BiblePlanEnrollmentsTable extends BiblePlanEnrollments
+    with TableInfo<$BiblePlanEnrollmentsTable, BiblePlanEnrollmentRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BiblePlanEnrollmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ownerIdMeta =
+      const VerificationMeta('ownerId');
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+      'owner_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _planCodeMeta =
+      const VerificationMeta('planCode');
+  @override
+  late final GeneratedColumn<String> planCode = GeneratedColumn<String>(
+      'plan_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _planIdMeta = const VerificationMeta('planId');
+  @override
+  late final GeneratedColumn<String> planId = GeneratedColumn<String>(
+      'plan_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _customMeta = const VerificationMeta('custom');
+  @override
+  late final GeneratedColumn<String> custom = GeneratedColumn<String>(
+      'custom', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _startedOnMeta =
+      const VerificationMeta('startedOn');
+  @override
+  late final GeneratedColumn<String> startedOn = GeneratedColumn<String>(
+      'started_on', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _completedDaysMeta =
+      const VerificationMeta('completedDays');
+  @override
+  late final GeneratedColumn<String> completedDays = GeneratedColumn<String>(
+      'completed_days', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _challengeIdMeta =
+      const VerificationMeta('challengeId');
+  @override
+  late final GeneratedColumn<String> challengeId = GeneratedColumn<String>(
+      'challenge_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _clientCreatedAtMeta =
+      const VerificationMeta('clientCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientCreatedAt =
+      GeneratedColumn<DateTime>('client_created_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _clientUpdatedAtMeta =
+      const VerificationMeta('clientUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientUpdatedAt =
+      GeneratedColumn<DateTime>('client_updated_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        ownerId,
+        source,
+        planCode,
+        planId,
+        custom,
+        startedOn,
+        completedDays,
+        challengeId,
+        clientCreatedAt,
+        clientUpdatedAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_plan_enrollments';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<BiblePlanEnrollmentRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(_ownerIdMeta,
+          ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta));
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('plan_code')) {
+      context.handle(_planCodeMeta,
+          planCode.isAcceptableOrUnknown(data['plan_code']!, _planCodeMeta));
+    }
+    if (data.containsKey('plan_id')) {
+      context.handle(_planIdMeta,
+          planId.isAcceptableOrUnknown(data['plan_id']!, _planIdMeta));
+    }
+    if (data.containsKey('custom')) {
+      context.handle(_customMeta,
+          custom.isAcceptableOrUnknown(data['custom']!, _customMeta));
+    }
+    if (data.containsKey('started_on')) {
+      context.handle(_startedOnMeta,
+          startedOn.isAcceptableOrUnknown(data['started_on']!, _startedOnMeta));
+    }
+    if (data.containsKey('completed_days')) {
+      context.handle(
+          _completedDaysMeta,
+          completedDays.isAcceptableOrUnknown(
+              data['completed_days']!, _completedDaysMeta));
+    }
+    if (data.containsKey('challenge_id')) {
+      context.handle(
+          _challengeIdMeta,
+          challengeId.isAcceptableOrUnknown(
+              data['challenge_id']!, _challengeIdMeta));
+    }
+    if (data.containsKey('client_created_at')) {
+      context.handle(
+          _clientCreatedAtMeta,
+          clientCreatedAt.isAcceptableOrUnknown(
+              data['client_created_at']!, _clientCreatedAtMeta));
+    }
+    if (data.containsKey('client_updated_at')) {
+      context.handle(
+          _clientUpdatedAtMeta,
+          clientUpdatedAt.isAcceptableOrUnknown(
+              data['client_updated_at']!, _clientUpdatedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BiblePlanEnrollmentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BiblePlanEnrollmentRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      ownerId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_id']),
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+      planCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plan_code']),
+      planId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plan_id']),
+      custom: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}custom']),
+      startedOn: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}started_on']),
+      completedDays: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}completed_days']),
+      challengeId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}challenge_id']),
+      clientCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_created_at']),
+      clientUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_updated_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $BiblePlanEnrollmentsTable createAlias(String alias) {
+    return $BiblePlanEnrollmentsTable(attachedDatabase, alias);
+  }
+}
+
+class BiblePlanEnrollmentRow extends DataClass
+    implements Insertable<BiblePlanEnrollmentRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String id;
+  final String? ownerId;
+
+  /// `builtin | published | custom`.
+  final String source;
+  final String? planCode;
+  final String? planId;
+
+  /// `{ title, books: [OSIS], days }`, en JSON.
+  final String? custom;
+
+  /// `YYYY-MM-DD`.
+  final String? startedOn;
+
+  /// `[int]`, en JSON.
+  final String? completedDays;
+  final String? challengeId;
+  final DateTime? clientCreatedAt;
+  final DateTime? clientUpdatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const BiblePlanEnrollmentRow(
+      {required this.syncStamp,
+      required this.id,
+      this.ownerId,
+      required this.source,
+      this.planCode,
+      this.planId,
+      this.custom,
+      this.startedOn,
+      this.completedDays,
+      this.challengeId,
+      this.clientCreatedAt,
+      this.clientUpdatedAt,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || ownerId != null) {
+      map['owner_id'] = Variable<String>(ownerId);
+    }
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || planCode != null) {
+      map['plan_code'] = Variable<String>(planCode);
+    }
+    if (!nullToAbsent || planId != null) {
+      map['plan_id'] = Variable<String>(planId);
+    }
+    if (!nullToAbsent || custom != null) {
+      map['custom'] = Variable<String>(custom);
+    }
+    if (!nullToAbsent || startedOn != null) {
+      map['started_on'] = Variable<String>(startedOn);
+    }
+    if (!nullToAbsent || completedDays != null) {
+      map['completed_days'] = Variable<String>(completedDays);
+    }
+    if (!nullToAbsent || challengeId != null) {
+      map['challenge_id'] = Variable<String>(challengeId);
+    }
+    if (!nullToAbsent || clientCreatedAt != null) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
+    }
+    if (!nullToAbsent || clientUpdatedAt != null) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  BiblePlanEnrollmentsCompanion toCompanion(bool nullToAbsent) {
+    return BiblePlanEnrollmentsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      ownerId: ownerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerId),
+      source: Value(source),
+      planCode: planCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(planCode),
+      planId:
+          planId == null && nullToAbsent ? const Value.absent() : Value(planId),
+      custom:
+          custom == null && nullToAbsent ? const Value.absent() : Value(custom),
+      startedOn: startedOn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startedOn),
+      completedDays: completedDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedDays),
+      challengeId: challengeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(challengeId),
+      clientCreatedAt: clientCreatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientCreatedAt),
+      clientUpdatedAt: clientUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientUpdatedAt),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory BiblePlanEnrollmentRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BiblePlanEnrollmentRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      ownerId: serializer.fromJson<String?>(json['ownerId']),
+      source: serializer.fromJson<String>(json['source']),
+      planCode: serializer.fromJson<String?>(json['planCode']),
+      planId: serializer.fromJson<String?>(json['planId']),
+      custom: serializer.fromJson<String?>(json['custom']),
+      startedOn: serializer.fromJson<String?>(json['startedOn']),
+      completedDays: serializer.fromJson<String?>(json['completedDays']),
+      challengeId: serializer.fromJson<String?>(json['challengeId']),
+      clientCreatedAt: serializer.fromJson<DateTime?>(json['clientCreatedAt']),
+      clientUpdatedAt: serializer.fromJson<DateTime?>(json['clientUpdatedAt']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'ownerId': serializer.toJson<String?>(ownerId),
+      'source': serializer.toJson<String>(source),
+      'planCode': serializer.toJson<String?>(planCode),
+      'planId': serializer.toJson<String?>(planId),
+      'custom': serializer.toJson<String?>(custom),
+      'startedOn': serializer.toJson<String?>(startedOn),
+      'completedDays': serializer.toJson<String?>(completedDays),
+      'challengeId': serializer.toJson<String?>(challengeId),
+      'clientCreatedAt': serializer.toJson<DateTime?>(clientCreatedAt),
+      'clientUpdatedAt': serializer.toJson<DateTime?>(clientUpdatedAt),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  BiblePlanEnrollmentRow copyWith(
+          {int? syncStamp,
+          String? id,
+          Value<String?> ownerId = const Value.absent(),
+          String? source,
+          Value<String?> planCode = const Value.absent(),
+          Value<String?> planId = const Value.absent(),
+          Value<String?> custom = const Value.absent(),
+          Value<String?> startedOn = const Value.absent(),
+          Value<String?> completedDays = const Value.absent(),
+          Value<String?> challengeId = const Value.absent(),
+          Value<DateTime?> clientCreatedAt = const Value.absent(),
+          Value<DateTime?> clientUpdatedAt = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      BiblePlanEnrollmentRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        ownerId: ownerId.present ? ownerId.value : this.ownerId,
+        source: source ?? this.source,
+        planCode: planCode.present ? planCode.value : this.planCode,
+        planId: planId.present ? planId.value : this.planId,
+        custom: custom.present ? custom.value : this.custom,
+        startedOn: startedOn.present ? startedOn.value : this.startedOn,
+        completedDays:
+            completedDays.present ? completedDays.value : this.completedDays,
+        challengeId: challengeId.present ? challengeId.value : this.challengeId,
+        clientCreatedAt: clientCreatedAt.present
+            ? clientCreatedAt.value
+            : this.clientCreatedAt,
+        clientUpdatedAt: clientUpdatedAt.present
+            ? clientUpdatedAt.value
+            : this.clientUpdatedAt,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  BiblePlanEnrollmentRow copyWithCompanion(BiblePlanEnrollmentsCompanion data) {
+    return BiblePlanEnrollmentRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      source: data.source.present ? data.source.value : this.source,
+      planCode: data.planCode.present ? data.planCode.value : this.planCode,
+      planId: data.planId.present ? data.planId.value : this.planId,
+      custom: data.custom.present ? data.custom.value : this.custom,
+      startedOn: data.startedOn.present ? data.startedOn.value : this.startedOn,
+      completedDays: data.completedDays.present
+          ? data.completedDays.value
+          : this.completedDays,
+      challengeId:
+          data.challengeId.present ? data.challengeId.value : this.challengeId,
+      clientCreatedAt: data.clientCreatedAt.present
+          ? data.clientCreatedAt.value
+          : this.clientCreatedAt,
+      clientUpdatedAt: data.clientUpdatedAt.present
+          ? data.clientUpdatedAt.value
+          : this.clientUpdatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BiblePlanEnrollmentRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('source: $source, ')
+          ..write('planCode: $planCode, ')
+          ..write('planId: $planId, ')
+          ..write('custom: $custom, ')
+          ..write('startedOn: $startedOn, ')
+          ..write('completedDays: $completedDays, ')
+          ..write('challengeId: $challengeId, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp,
+      id,
+      ownerId,
+      source,
+      planCode,
+      planId,
+      custom,
+      startedOn,
+      completedDays,
+      challengeId,
+      clientCreatedAt,
+      clientUpdatedAt,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BiblePlanEnrollmentRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.ownerId == this.ownerId &&
+          other.source == this.source &&
+          other.planCode == this.planCode &&
+          other.planId == this.planId &&
+          other.custom == this.custom &&
+          other.startedOn == this.startedOn &&
+          other.completedDays == this.completedDays &&
+          other.challengeId == this.challengeId &&
+          other.clientCreatedAt == this.clientCreatedAt &&
+          other.clientUpdatedAt == this.clientUpdatedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BiblePlanEnrollmentsCompanion
+    extends UpdateCompanion<BiblePlanEnrollmentRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String?> ownerId;
+  final Value<String> source;
+  final Value<String?> planCode;
+  final Value<String?> planId;
+  final Value<String?> custom;
+  final Value<String?> startedOn;
+  final Value<String?> completedDays;
+  final Value<String?> challengeId;
+  final Value<DateTime?> clientCreatedAt;
+  final Value<DateTime?> clientUpdatedAt;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const BiblePlanEnrollmentsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.source = const Value.absent(),
+    this.planCode = const Value.absent(),
+    this.planId = const Value.absent(),
+    this.custom = const Value.absent(),
+    this.startedOn = const Value.absent(),
+    this.completedDays = const Value.absent(),
+    this.challengeId = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.clientUpdatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BiblePlanEnrollmentsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    this.ownerId = const Value.absent(),
+    required String source,
+    this.planCode = const Value.absent(),
+    this.planId = const Value.absent(),
+    this.custom = const Value.absent(),
+    this.startedOn = const Value.absent(),
+    this.completedDays = const Value.absent(),
+    this.challengeId = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.clientUpdatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        source = Value(source);
+  static Insertable<BiblePlanEnrollmentRow> createCustom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? ownerId,
+    Expression<String>? source,
+    Expression<String>? planCode,
+    Expression<String>? planId,
+    Expression<String>? custom,
+    Expression<String>? startedOn,
+    Expression<String>? completedDays,
+    Expression<String>? challengeId,
+    Expression<DateTime>? clientCreatedAt,
+    Expression<DateTime>? clientUpdatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (source != null) 'source': source,
+      if (planCode != null) 'plan_code': planCode,
+      if (planId != null) 'plan_id': planId,
+      if (custom != null) 'custom': custom,
+      if (startedOn != null) 'started_on': startedOn,
+      if (completedDays != null) 'completed_days': completedDays,
+      if (challengeId != null) 'challenge_id': challengeId,
+      if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
+      if (clientUpdatedAt != null) 'client_updated_at': clientUpdatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BiblePlanEnrollmentsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String?>? ownerId,
+      Value<String>? source,
+      Value<String?>? planCode,
+      Value<String?>? planId,
+      Value<String?>? custom,
+      Value<String?>? startedOn,
+      Value<String?>? completedDays,
+      Value<String?>? challengeId,
+      Value<DateTime?>? clientCreatedAt,
+      Value<DateTime?>? clientUpdatedAt,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return BiblePlanEnrollmentsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      ownerId: ownerId ?? this.ownerId,
+      source: source ?? this.source,
+      planCode: planCode ?? this.planCode,
+      planId: planId ?? this.planId,
+      custom: custom ?? this.custom,
+      startedOn: startedOn ?? this.startedOn,
+      completedDays: completedDays ?? this.completedDays,
+      challengeId: challengeId ?? this.challengeId,
+      clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+      clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (planCode.present) {
+      map['plan_code'] = Variable<String>(planCode.value);
+    }
+    if (planId.present) {
+      map['plan_id'] = Variable<String>(planId.value);
+    }
+    if (custom.present) {
+      map['custom'] = Variable<String>(custom.value);
+    }
+    if (startedOn.present) {
+      map['started_on'] = Variable<String>(startedOn.value);
+    }
+    if (completedDays.present) {
+      map['completed_days'] = Variable<String>(completedDays.value);
+    }
+    if (challengeId.present) {
+      map['challenge_id'] = Variable<String>(challengeId.value);
+    }
+    if (clientCreatedAt.present) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
+    }
+    if (clientUpdatedAt.present) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BiblePlanEnrollmentsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('source: $source, ')
+          ..write('planCode: $planCode, ')
+          ..write('planId: $planId, ')
+          ..write('custom: $custom, ')
+          ..write('startedOn: $startedOn, ')
+          ..write('completedDays: $completedDays, ')
+          ..write('challengeId: $challengeId, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BibleQuizResultsTable extends BibleQuizResults
+    with TableInfo<$BibleQuizResultsTable, BibleQuizResultRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BibleQuizResultsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ownerIdMeta =
+      const VerificationMeta('ownerId');
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+      'owner_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _quizIdMeta = const VerificationMeta('quizId');
+  @override
+  late final GeneratedColumn<int> quizId = GeneratedColumn<int>(
+      'quiz_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _scoreMeta = const VerificationMeta('score');
+  @override
+  late final GeneratedColumn<int> score = GeneratedColumn<int>(
+      'score', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _totalMeta = const VerificationMeta('total');
+  @override
+  late final GeneratedColumn<int> total = GeneratedColumn<int>(
+      'total', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _durationSecondsMeta =
+      const VerificationMeta('durationSeconds');
+  @override
+  late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
+      'duration_seconds', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _playedAtMeta =
+      const VerificationMeta('playedAt');
+  @override
+  late final GeneratedColumn<DateTime> playedAt = GeneratedColumn<DateTime>(
+      'played_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _clientUpdatedAtMeta =
+      const VerificationMeta('clientUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientUpdatedAt =
+      GeneratedColumn<DateTime>('client_updated_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        ownerId,
+        quizId,
+        score,
+        total,
+        durationSeconds,
+        playedAt,
+        clientUpdatedAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_quiz_results';
+  @override
+  VerificationContext validateIntegrity(Insertable<BibleQuizResultRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(_ownerIdMeta,
+          ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta));
+    }
+    if (data.containsKey('quiz_id')) {
+      context.handle(_quizIdMeta,
+          quizId.isAcceptableOrUnknown(data['quiz_id']!, _quizIdMeta));
+    } else if (isInserting) {
+      context.missing(_quizIdMeta);
+    }
+    if (data.containsKey('score')) {
+      context.handle(
+          _scoreMeta, score.isAcceptableOrUnknown(data['score']!, _scoreMeta));
+    }
+    if (data.containsKey('total')) {
+      context.handle(
+          _totalMeta, total.isAcceptableOrUnknown(data['total']!, _totalMeta));
+    }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+          _durationSecondsMeta,
+          durationSeconds.isAcceptableOrUnknown(
+              data['duration_seconds']!, _durationSecondsMeta));
+    }
+    if (data.containsKey('played_at')) {
+      context.handle(_playedAtMeta,
+          playedAt.isAcceptableOrUnknown(data['played_at']!, _playedAtMeta));
+    }
+    if (data.containsKey('client_updated_at')) {
+      context.handle(
+          _clientUpdatedAtMeta,
+          clientUpdatedAt.isAcceptableOrUnknown(
+              data['client_updated_at']!, _clientUpdatedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BibleQuizResultRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BibleQuizResultRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      ownerId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_id']),
+      quizId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}quiz_id'])!,
+      score: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}score'])!,
+      total: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}total'])!,
+      durationSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration_seconds']),
+      playedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}played_at']),
+      clientUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_updated_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $BibleQuizResultsTable createAlias(String alias) {
+    return $BibleQuizResultsTable(attachedDatabase, alias);
+  }
+}
+
+class BibleQuizResultRow extends DataClass
+    implements Insertable<BibleQuizResultRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String id;
+  final String? ownerId;
+  final int quizId;
+  final int score;
+  final int total;
+  final int? durationSeconds;
+  final DateTime? playedAt;
+  final DateTime? clientUpdatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const BibleQuizResultRow(
+      {required this.syncStamp,
+      required this.id,
+      this.ownerId,
+      required this.quizId,
+      required this.score,
+      required this.total,
+      this.durationSeconds,
+      this.playedAt,
+      this.clientUpdatedAt,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || ownerId != null) {
+      map['owner_id'] = Variable<String>(ownerId);
+    }
+    map['quiz_id'] = Variable<int>(quizId);
+    map['score'] = Variable<int>(score);
+    map['total'] = Variable<int>(total);
+    if (!nullToAbsent || durationSeconds != null) {
+      map['duration_seconds'] = Variable<int>(durationSeconds);
+    }
+    if (!nullToAbsent || playedAt != null) {
+      map['played_at'] = Variable<DateTime>(playedAt);
+    }
+    if (!nullToAbsent || clientUpdatedAt != null) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  BibleQuizResultsCompanion toCompanion(bool nullToAbsent) {
+    return BibleQuizResultsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      ownerId: ownerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerId),
+      quizId: Value(quizId),
+      score: Value(score),
+      total: Value(total),
+      durationSeconds: durationSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationSeconds),
+      playedAt: playedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(playedAt),
+      clientUpdatedAt: clientUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientUpdatedAt),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory BibleQuizResultRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BibleQuizResultRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      ownerId: serializer.fromJson<String?>(json['ownerId']),
+      quizId: serializer.fromJson<int>(json['quizId']),
+      score: serializer.fromJson<int>(json['score']),
+      total: serializer.fromJson<int>(json['total']),
+      durationSeconds: serializer.fromJson<int?>(json['durationSeconds']),
+      playedAt: serializer.fromJson<DateTime?>(json['playedAt']),
+      clientUpdatedAt: serializer.fromJson<DateTime?>(json['clientUpdatedAt']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'ownerId': serializer.toJson<String?>(ownerId),
+      'quizId': serializer.toJson<int>(quizId),
+      'score': serializer.toJson<int>(score),
+      'total': serializer.toJson<int>(total),
+      'durationSeconds': serializer.toJson<int?>(durationSeconds),
+      'playedAt': serializer.toJson<DateTime?>(playedAt),
+      'clientUpdatedAt': serializer.toJson<DateTime?>(clientUpdatedAt),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  BibleQuizResultRow copyWith(
+          {int? syncStamp,
+          String? id,
+          Value<String?> ownerId = const Value.absent(),
+          int? quizId,
+          int? score,
+          int? total,
+          Value<int?> durationSeconds = const Value.absent(),
+          Value<DateTime?> playedAt = const Value.absent(),
+          Value<DateTime?> clientUpdatedAt = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      BibleQuizResultRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        ownerId: ownerId.present ? ownerId.value : this.ownerId,
+        quizId: quizId ?? this.quizId,
+        score: score ?? this.score,
+        total: total ?? this.total,
+        durationSeconds: durationSeconds.present
+            ? durationSeconds.value
+            : this.durationSeconds,
+        playedAt: playedAt.present ? playedAt.value : this.playedAt,
+        clientUpdatedAt: clientUpdatedAt.present
+            ? clientUpdatedAt.value
+            : this.clientUpdatedAt,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  BibleQuizResultRow copyWithCompanion(BibleQuizResultsCompanion data) {
+    return BibleQuizResultRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      quizId: data.quizId.present ? data.quizId.value : this.quizId,
+      score: data.score.present ? data.score.value : this.score,
+      total: data.total.present ? data.total.value : this.total,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
+      playedAt: data.playedAt.present ? data.playedAt.value : this.playedAt,
+      clientUpdatedAt: data.clientUpdatedAt.present
+          ? data.clientUpdatedAt.value
+          : this.clientUpdatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleQuizResultRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('quizId: $quizId, ')
+          ..write('score: $score, ')
+          ..write('total: $total, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('playedAt: $playedAt, ')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, ownerId, quizId, score, total,
+      durationSeconds, playedAt, clientUpdatedAt, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BibleQuizResultRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.ownerId == this.ownerId &&
+          other.quizId == this.quizId &&
+          other.score == this.score &&
+          other.total == this.total &&
+          other.durationSeconds == this.durationSeconds &&
+          other.playedAt == this.playedAt &&
+          other.clientUpdatedAt == this.clientUpdatedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BibleQuizResultsCompanion extends UpdateCompanion<BibleQuizResultRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String?> ownerId;
+  final Value<int> quizId;
+  final Value<int> score;
+  final Value<int> total;
+  final Value<int?> durationSeconds;
+  final Value<DateTime?> playedAt;
+  final Value<DateTime?> clientUpdatedAt;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const BibleQuizResultsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.quizId = const Value.absent(),
+    this.score = const Value.absent(),
+    this.total = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.playedAt = const Value.absent(),
+    this.clientUpdatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BibleQuizResultsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    this.ownerId = const Value.absent(),
+    required int quizId,
+    this.score = const Value.absent(),
+    this.total = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.playedAt = const Value.absent(),
+    this.clientUpdatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        quizId = Value(quizId);
+  static Insertable<BibleQuizResultRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? ownerId,
+    Expression<int>? quizId,
+    Expression<int>? score,
+    Expression<int>? total,
+    Expression<int>? durationSeconds,
+    Expression<DateTime>? playedAt,
+    Expression<DateTime>? clientUpdatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (quizId != null) 'quiz_id': quizId,
+      if (score != null) 'score': score,
+      if (total != null) 'total': total,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (playedAt != null) 'played_at': playedAt,
+      if (clientUpdatedAt != null) 'client_updated_at': clientUpdatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BibleQuizResultsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String?>? ownerId,
+      Value<int>? quizId,
+      Value<int>? score,
+      Value<int>? total,
+      Value<int?>? durationSeconds,
+      Value<DateTime?>? playedAt,
+      Value<DateTime?>? clientUpdatedAt,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return BibleQuizResultsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      ownerId: ownerId ?? this.ownerId,
+      quizId: quizId ?? this.quizId,
+      score: score ?? this.score,
+      total: total ?? this.total,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      playedAt: playedAt ?? this.playedAt,
+      clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (quizId.present) {
+      map['quiz_id'] = Variable<int>(quizId.value);
+    }
+    if (score.present) {
+      map['score'] = Variable<int>(score.value);
+    }
+    if (total.present) {
+      map['total'] = Variable<int>(total.value);
+    }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<int>(durationSeconds.value);
+    }
+    if (playedAt.present) {
+      map['played_at'] = Variable<DateTime>(playedAt.value);
+    }
+    if (clientUpdatedAt.present) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleQuizResultsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('quizId: $quizId, ')
+          ..write('score: $score, ')
+          ..write('total: $total, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('playedAt: $playedAt, ')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BibleVerseOfDaysTable extends BibleVerseOfDays
+    with TableInfo<$BibleVerseOfDaysTable, BibleVerseOfDayRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BibleVerseOfDaysTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<String> day = GeneratedColumn<String>(
+      'day', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _bookMeta = const VerificationMeta('book');
+  @override
+  late final GeneratedColumn<String> book = GeneratedColumn<String>(
+      'book', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _chapterMeta =
+      const VerificationMeta('chapter');
+  @override
+  late final GeneratedColumn<int> chapter = GeneratedColumn<int>(
+      'chapter', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _verseFromMeta =
+      const VerificationMeta('verseFrom');
+  @override
+  late final GeneratedColumn<int> verseFrom = GeneratedColumn<int>(
+      'verse_from', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _verseToMeta =
+      const VerificationMeta('verseTo');
+  @override
+  late final GeneratedColumn<int> verseTo = GeneratedColumn<int>(
+      'verse_to', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _commentMeta =
+      const VerificationMeta('comment');
+  @override
+  late final GeneratedColumn<String> comment = GeneratedColumn<String>(
+      'comment', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _backgroundIdMeta =
+      const VerificationMeta('backgroundId');
+  @override
+  late final GeneratedColumn<int> backgroundId = GeneratedColumn<int>(
+      'background_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _publishedAtMeta =
+      const VerificationMeta('publishedAt');
+  @override
+  late final GeneratedColumn<DateTime> publishedAt = GeneratedColumn<DateTime>(
+      'published_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        day,
+        book,
+        chapter,
+        verseFrom,
+        verseTo,
+        comment,
+        backgroundId,
+        publishedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_verse_of_days';
+  @override
+  VerificationContext validateIntegrity(Insertable<BibleVerseOfDayRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('day')) {
+      context.handle(
+          _dayMeta, day.isAcceptableOrUnknown(data['day']!, _dayMeta));
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('book')) {
+      context.handle(
+          _bookMeta, book.isAcceptableOrUnknown(data['book']!, _bookMeta));
+    } else if (isInserting) {
+      context.missing(_bookMeta);
+    }
+    if (data.containsKey('chapter')) {
+      context.handle(_chapterMeta,
+          chapter.isAcceptableOrUnknown(data['chapter']!, _chapterMeta));
+    } else if (isInserting) {
+      context.missing(_chapterMeta);
+    }
+    if (data.containsKey('verse_from')) {
+      context.handle(_verseFromMeta,
+          verseFrom.isAcceptableOrUnknown(data['verse_from']!, _verseFromMeta));
+    }
+    if (data.containsKey('verse_to')) {
+      context.handle(_verseToMeta,
+          verseTo.isAcceptableOrUnknown(data['verse_to']!, _verseToMeta));
+    }
+    if (data.containsKey('comment')) {
+      context.handle(_commentMeta,
+          comment.isAcceptableOrUnknown(data['comment']!, _commentMeta));
+    }
+    if (data.containsKey('background_id')) {
+      context.handle(
+          _backgroundIdMeta,
+          backgroundId.isAcceptableOrUnknown(
+              data['background_id']!, _backgroundIdMeta));
+    }
+    if (data.containsKey('published_at')) {
+      context.handle(
+          _publishedAtMeta,
+          publishedAt.isAcceptableOrUnknown(
+              data['published_at']!, _publishedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BibleVerseOfDayRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BibleVerseOfDayRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      day: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}day'])!,
+      book: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}book'])!,
+      chapter: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}chapter'])!,
+      verseFrom: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}verse_from']),
+      verseTo: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}verse_to']),
+      comment: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}comment']),
+      backgroundId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}background_id']),
+      publishedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}published_at']),
+    );
+  }
+
+  @override
+  $BibleVerseOfDaysTable createAlias(String alias) {
+    return $BibleVerseOfDaysTable(attachedDatabase, alias);
+  }
+}
+
+class BibleVerseOfDayRow extends DataClass
+    implements Insertable<BibleVerseOfDayRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final int id;
+
+  /// `YYYY-MM-DD`.
+  final String day;
+  final String book;
+  final int chapter;
+  final int? verseFrom;
+  final int? verseTo;
+  final String? comment;
+
+  /// `status_backgrounds.id`, entier nu.
+  final int? backgroundId;
+  final DateTime? publishedAt;
+  const BibleVerseOfDayRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.day,
+      required this.book,
+      required this.chapter,
+      this.verseFrom,
+      this.verseTo,
+      this.comment,
+      this.backgroundId,
+      this.publishedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['day'] = Variable<String>(day);
+    map['book'] = Variable<String>(book);
+    map['chapter'] = Variable<int>(chapter);
+    if (!nullToAbsent || verseFrom != null) {
+      map['verse_from'] = Variable<int>(verseFrom);
+    }
+    if (!nullToAbsent || verseTo != null) {
+      map['verse_to'] = Variable<int>(verseTo);
+    }
+    if (!nullToAbsent || comment != null) {
+      map['comment'] = Variable<String>(comment);
+    }
+    if (!nullToAbsent || backgroundId != null) {
+      map['background_id'] = Variable<int>(backgroundId);
+    }
+    if (!nullToAbsent || publishedAt != null) {
+      map['published_at'] = Variable<DateTime>(publishedAt);
+    }
+    return map;
+  }
+
+  BibleVerseOfDaysCompanion toCompanion(bool nullToAbsent) {
+    return BibleVerseOfDaysCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      day: Value(day),
+      book: Value(book),
+      chapter: Value(chapter),
+      verseFrom: verseFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verseFrom),
+      verseTo: verseTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verseTo),
+      comment: comment == null && nullToAbsent
+          ? const Value.absent()
+          : Value(comment),
+      backgroundId: backgroundId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(backgroundId),
+      publishedAt: publishedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publishedAt),
+    );
+  }
+
+  factory BibleVerseOfDayRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BibleVerseOfDayRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      day: serializer.fromJson<String>(json['day']),
+      book: serializer.fromJson<String>(json['book']),
+      chapter: serializer.fromJson<int>(json['chapter']),
+      verseFrom: serializer.fromJson<int?>(json['verseFrom']),
+      verseTo: serializer.fromJson<int?>(json['verseTo']),
+      comment: serializer.fromJson<String?>(json['comment']),
+      backgroundId: serializer.fromJson<int?>(json['backgroundId']),
+      publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'day': serializer.toJson<String>(day),
+      'book': serializer.toJson<String>(book),
+      'chapter': serializer.toJson<int>(chapter),
+      'verseFrom': serializer.toJson<int?>(verseFrom),
+      'verseTo': serializer.toJson<int?>(verseTo),
+      'comment': serializer.toJson<String?>(comment),
+      'backgroundId': serializer.toJson<int?>(backgroundId),
+      'publishedAt': serializer.toJson<DateTime?>(publishedAt),
+    };
+  }
+
+  BibleVerseOfDayRow copyWith(
+          {int? syncStamp,
+          int? id,
+          String? day,
+          String? book,
+          int? chapter,
+          Value<int?> verseFrom = const Value.absent(),
+          Value<int?> verseTo = const Value.absent(),
+          Value<String?> comment = const Value.absent(),
+          Value<int?> backgroundId = const Value.absent(),
+          Value<DateTime?> publishedAt = const Value.absent()}) =>
+      BibleVerseOfDayRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        day: day ?? this.day,
+        book: book ?? this.book,
+        chapter: chapter ?? this.chapter,
+        verseFrom: verseFrom.present ? verseFrom.value : this.verseFrom,
+        verseTo: verseTo.present ? verseTo.value : this.verseTo,
+        comment: comment.present ? comment.value : this.comment,
+        backgroundId:
+            backgroundId.present ? backgroundId.value : this.backgroundId,
+        publishedAt: publishedAt.present ? publishedAt.value : this.publishedAt,
+      );
+  BibleVerseOfDayRow copyWithCompanion(BibleVerseOfDaysCompanion data) {
+    return BibleVerseOfDayRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      day: data.day.present ? data.day.value : this.day,
+      book: data.book.present ? data.book.value : this.book,
+      chapter: data.chapter.present ? data.chapter.value : this.chapter,
+      verseFrom: data.verseFrom.present ? data.verseFrom.value : this.verseFrom,
+      verseTo: data.verseTo.present ? data.verseTo.value : this.verseTo,
+      comment: data.comment.present ? data.comment.value : this.comment,
+      backgroundId: data.backgroundId.present
+          ? data.backgroundId.value
+          : this.backgroundId,
+      publishedAt:
+          data.publishedAt.present ? data.publishedAt.value : this.publishedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleVerseOfDayRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('day: $day, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verseFrom: $verseFrom, ')
+          ..write('verseTo: $verseTo, ')
+          ..write('comment: $comment, ')
+          ..write('backgroundId: $backgroundId, ')
+          ..write('publishedAt: $publishedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, day, book, chapter, verseFrom,
+      verseTo, comment, backgroundId, publishedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BibleVerseOfDayRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.day == this.day &&
+          other.book == this.book &&
+          other.chapter == this.chapter &&
+          other.verseFrom == this.verseFrom &&
+          other.verseTo == this.verseTo &&
+          other.comment == this.comment &&
+          other.backgroundId == this.backgroundId &&
+          other.publishedAt == this.publishedAt);
+}
+
+class BibleVerseOfDaysCompanion extends UpdateCompanion<BibleVerseOfDayRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String> day;
+  final Value<String> book;
+  final Value<int> chapter;
+  final Value<int?> verseFrom;
+  final Value<int?> verseTo;
+  final Value<String?> comment;
+  final Value<int?> backgroundId;
+  final Value<DateTime?> publishedAt;
+  const BibleVerseOfDaysCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.day = const Value.absent(),
+    this.book = const Value.absent(),
+    this.chapter = const Value.absent(),
+    this.verseFrom = const Value.absent(),
+    this.verseTo = const Value.absent(),
+    this.comment = const Value.absent(),
+    this.backgroundId = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+  });
+  BibleVerseOfDaysCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required String day,
+    required String book,
+    required int chapter,
+    this.verseFrom = const Value.absent(),
+    this.verseTo = const Value.absent(),
+    this.comment = const Value.absent(),
+    this.backgroundId = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+  })  : day = Value(day),
+        book = Value(book),
+        chapter = Value(chapter);
+  static Insertable<BibleVerseOfDayRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? day,
+    Expression<String>? book,
+    Expression<int>? chapter,
+    Expression<int>? verseFrom,
+    Expression<int>? verseTo,
+    Expression<String>? comment,
+    Expression<int>? backgroundId,
+    Expression<DateTime>? publishedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (day != null) 'day': day,
+      if (book != null) 'book': book,
+      if (chapter != null) 'chapter': chapter,
+      if (verseFrom != null) 'verse_from': verseFrom,
+      if (verseTo != null) 'verse_to': verseTo,
+      if (comment != null) 'comment': comment,
+      if (backgroundId != null) 'background_id': backgroundId,
+      if (publishedAt != null) 'published_at': publishedAt,
+    });
+  }
+
+  BibleVerseOfDaysCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String>? day,
+      Value<String>? book,
+      Value<int>? chapter,
+      Value<int?>? verseFrom,
+      Value<int?>? verseTo,
+      Value<String?>? comment,
+      Value<int?>? backgroundId,
+      Value<DateTime?>? publishedAt}) {
+    return BibleVerseOfDaysCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      day: day ?? this.day,
+      book: book ?? this.book,
+      chapter: chapter ?? this.chapter,
+      verseFrom: verseFrom ?? this.verseFrom,
+      verseTo: verseTo ?? this.verseTo,
+      comment: comment ?? this.comment,
+      backgroundId: backgroundId ?? this.backgroundId,
+      publishedAt: publishedAt ?? this.publishedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (day.present) {
+      map['day'] = Variable<String>(day.value);
+    }
+    if (book.present) {
+      map['book'] = Variable<String>(book.value);
+    }
+    if (chapter.present) {
+      map['chapter'] = Variable<int>(chapter.value);
+    }
+    if (verseFrom.present) {
+      map['verse_from'] = Variable<int>(verseFrom.value);
+    }
+    if (verseTo.present) {
+      map['verse_to'] = Variable<int>(verseTo.value);
+    }
+    if (comment.present) {
+      map['comment'] = Variable<String>(comment.value);
+    }
+    if (backgroundId.present) {
+      map['background_id'] = Variable<int>(backgroundId.value);
+    }
+    if (publishedAt.present) {
+      map['published_at'] = Variable<DateTime>(publishedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleVerseOfDaysCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('day: $day, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verseFrom: $verseFrom, ')
+          ..write('verseTo: $verseTo, ')
+          ..write('comment: $comment, ')
+          ..write('backgroundId: $backgroundId, ')
+          ..write('publishedAt: $publishedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BibleSundayPassagesTable extends BibleSundayPassages
+    with TableInfo<$BibleSundayPassagesTable, BibleSundayPassageRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BibleSundayPassagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<String> day = GeneratedColumn<String>(
+      'day', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _referencesMeta =
+      const VerificationMeta('references');
+  @override
+  late final GeneratedColumn<String> references = GeneratedColumn<String>(
+      'references', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _teachingIdMeta =
+      const VerificationMeta('teachingId');
+  @override
+  late final GeneratedColumn<String> teachingId = GeneratedColumn<String>(
+      'teaching_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _gatheringIdMeta =
+      const VerificationMeta('gatheringId');
+  @override
+  late final GeneratedColumn<String> gatheringId = GeneratedColumn<String>(
+      'gathering_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, id, day, references, title, teachingId, gatheringId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_sunday_passages';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<BibleSundayPassageRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('day')) {
+      context.handle(
+          _dayMeta, day.isAcceptableOrUnknown(data['day']!, _dayMeta));
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('references')) {
+      context.handle(
+          _referencesMeta,
+          references.isAcceptableOrUnknown(
+              data['references']!, _referencesMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    }
+    if (data.containsKey('teaching_id')) {
+      context.handle(
+          _teachingIdMeta,
+          teachingId.isAcceptableOrUnknown(
+              data['teaching_id']!, _teachingIdMeta));
+    }
+    if (data.containsKey('gathering_id')) {
+      context.handle(
+          _gatheringIdMeta,
+          gatheringId.isAcceptableOrUnknown(
+              data['gathering_id']!, _gatheringIdMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BibleSundayPassageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BibleSundayPassageRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      day: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}day'])!,
+      references: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}references']),
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title']),
+      teachingId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}teaching_id']),
+      gatheringId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}gathering_id']),
+    );
+  }
+
+  @override
+  $BibleSundayPassagesTable createAlias(String alias) {
+    return $BibleSundayPassagesTable(attachedDatabase, alias);
+  }
+}
+
+class BibleSundayPassageRow extends DataClass
+    implements Insertable<BibleSundayPassageRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final int id;
+  final String day;
+
+  /// `[référence]`, en JSON.
+  final String? references;
+  final String? title;
+  final String? teachingId;
+  final String? gatheringId;
+  const BibleSundayPassageRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.day,
+      this.references,
+      this.title,
+      this.teachingId,
+      this.gatheringId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['day'] = Variable<String>(day);
+    if (!nullToAbsent || references != null) {
+      map['references'] = Variable<String>(references);
+    }
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(title);
+    }
+    if (!nullToAbsent || teachingId != null) {
+      map['teaching_id'] = Variable<String>(teachingId);
+    }
+    if (!nullToAbsent || gatheringId != null) {
+      map['gathering_id'] = Variable<String>(gatheringId);
+    }
+    return map;
+  }
+
+  BibleSundayPassagesCompanion toCompanion(bool nullToAbsent) {
+    return BibleSundayPassagesCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      day: Value(day),
+      references: references == null && nullToAbsent
+          ? const Value.absent()
+          : Value(references),
+      title:
+          title == null && nullToAbsent ? const Value.absent() : Value(title),
+      teachingId: teachingId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(teachingId),
+      gatheringId: gatheringId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gatheringId),
+    );
+  }
+
+  factory BibleSundayPassageRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BibleSundayPassageRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      day: serializer.fromJson<String>(json['day']),
+      references: serializer.fromJson<String?>(json['references']),
+      title: serializer.fromJson<String?>(json['title']),
+      teachingId: serializer.fromJson<String?>(json['teachingId']),
+      gatheringId: serializer.fromJson<String?>(json['gatheringId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'day': serializer.toJson<String>(day),
+      'references': serializer.toJson<String?>(references),
+      'title': serializer.toJson<String?>(title),
+      'teachingId': serializer.toJson<String?>(teachingId),
+      'gatheringId': serializer.toJson<String?>(gatheringId),
+    };
+  }
+
+  BibleSundayPassageRow copyWith(
+          {int? syncStamp,
+          int? id,
+          String? day,
+          Value<String?> references = const Value.absent(),
+          Value<String?> title = const Value.absent(),
+          Value<String?> teachingId = const Value.absent(),
+          Value<String?> gatheringId = const Value.absent()}) =>
+      BibleSundayPassageRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        day: day ?? this.day,
+        references: references.present ? references.value : this.references,
+        title: title.present ? title.value : this.title,
+        teachingId: teachingId.present ? teachingId.value : this.teachingId,
+        gatheringId: gatheringId.present ? gatheringId.value : this.gatheringId,
+      );
+  BibleSundayPassageRow copyWithCompanion(BibleSundayPassagesCompanion data) {
+    return BibleSundayPassageRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      day: data.day.present ? data.day.value : this.day,
+      references:
+          data.references.present ? data.references.value : this.references,
+      title: data.title.present ? data.title.value : this.title,
+      teachingId:
+          data.teachingId.present ? data.teachingId.value : this.teachingId,
+      gatheringId:
+          data.gatheringId.present ? data.gatheringId.value : this.gatheringId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleSundayPassageRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('day: $day, ')
+          ..write('references: $references, ')
+          ..write('title: $title, ')
+          ..write('teachingId: $teachingId, ')
+          ..write('gatheringId: $gatheringId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp, id, day, references, title, teachingId, gatheringId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BibleSundayPassageRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.day == this.day &&
+          other.references == this.references &&
+          other.title == this.title &&
+          other.teachingId == this.teachingId &&
+          other.gatheringId == this.gatheringId);
+}
+
+class BibleSundayPassagesCompanion
+    extends UpdateCompanion<BibleSundayPassageRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String> day;
+  final Value<String?> references;
+  final Value<String?> title;
+  final Value<String?> teachingId;
+  final Value<String?> gatheringId;
+  const BibleSundayPassagesCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.day = const Value.absent(),
+    this.references = const Value.absent(),
+    this.title = const Value.absent(),
+    this.teachingId = const Value.absent(),
+    this.gatheringId = const Value.absent(),
+  });
+  BibleSundayPassagesCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required String day,
+    this.references = const Value.absent(),
+    this.title = const Value.absent(),
+    this.teachingId = const Value.absent(),
+    this.gatheringId = const Value.absent(),
+  }) : day = Value(day);
+  static Insertable<BibleSundayPassageRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? day,
+    Expression<String>? references,
+    Expression<String>? title,
+    Expression<String>? teachingId,
+    Expression<String>? gatheringId,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (day != null) 'day': day,
+      if (references != null) 'references': references,
+      if (title != null) 'title': title,
+      if (teachingId != null) 'teaching_id': teachingId,
+      if (gatheringId != null) 'gathering_id': gatheringId,
+    });
+  }
+
+  BibleSundayPassagesCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String>? day,
+      Value<String?>? references,
+      Value<String?>? title,
+      Value<String?>? teachingId,
+      Value<String?>? gatheringId}) {
+    return BibleSundayPassagesCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      day: day ?? this.day,
+      references: references ?? this.references,
+      title: title ?? this.title,
+      teachingId: teachingId ?? this.teachingId,
+      gatheringId: gatheringId ?? this.gatheringId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (day.present) {
+      map['day'] = Variable<String>(day.value);
+    }
+    if (references.present) {
+      map['references'] = Variable<String>(references.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (teachingId.present) {
+      map['teaching_id'] = Variable<String>(teachingId.value);
+    }
+    if (gatheringId.present) {
+      map['gathering_id'] = Variable<String>(gatheringId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleSundayPassagesCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('day: $day, ')
+          ..write('references: $references, ')
+          ..write('title: $title, ')
+          ..write('teachingId: $teachingId, ')
+          ..write('gatheringId: $gatheringId')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BiblePlansTable extends BiblePlans
+    with TableInfo<$BiblePlansTable, BiblePlanRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BiblePlansTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _coverBackgroundIdMeta =
+      const VerificationMeta('coverBackgroundId');
+  @override
+  late final GeneratedColumn<int> coverBackgroundId = GeneratedColumn<int>(
+      'cover_background_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _daysMeta = const VerificationMeta('days');
+  @override
+  late final GeneratedColumn<String> days = GeneratedColumn<String>(
+      'days', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _publishedAtMeta =
+      const VerificationMeta('publishedAt');
+  @override
+  late final GeneratedColumn<DateTime> publishedAt = GeneratedColumn<DateTime>(
+      'published_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, id, title, description, coverBackgroundId, days, publishedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_plans';
+  @override
+  VerificationContext validateIntegrity(Insertable<BiblePlanRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    }
+    if (data.containsKey('cover_background_id')) {
+      context.handle(
+          _coverBackgroundIdMeta,
+          coverBackgroundId.isAcceptableOrUnknown(
+              data['cover_background_id']!, _coverBackgroundIdMeta));
+    }
+    if (data.containsKey('days')) {
+      context.handle(
+          _daysMeta, days.isAcceptableOrUnknown(data['days']!, _daysMeta));
+    }
+    if (data.containsKey('published_at')) {
+      context.handle(
+          _publishedAtMeta,
+          publishedAt.isAcceptableOrUnknown(
+              data['published_at']!, _publishedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BiblePlanRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BiblePlanRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      coverBackgroundId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}cover_background_id']),
+      days: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}days']),
+      publishedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}published_at']),
+    );
+  }
+
+  @override
+  $BiblePlansTable createAlias(String alias) {
+    return $BiblePlansTable(attachedDatabase, alias);
+  }
+}
+
+class BiblePlanRow extends DataClass implements Insertable<BiblePlanRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String id;
+  final String title;
+  final String? description;
+  final int? coverBackgroundId;
+
+  /// `[[référence]]`, en JSON.
+  final String? days;
+  final DateTime? publishedAt;
+  const BiblePlanRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.title,
+      this.description,
+      this.coverBackgroundId,
+      this.days,
+      this.publishedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || coverBackgroundId != null) {
+      map['cover_background_id'] = Variable<int>(coverBackgroundId);
+    }
+    if (!nullToAbsent || days != null) {
+      map['days'] = Variable<String>(days);
+    }
+    if (!nullToAbsent || publishedAt != null) {
+      map['published_at'] = Variable<DateTime>(publishedAt);
+    }
+    return map;
+  }
+
+  BiblePlansCompanion toCompanion(bool nullToAbsent) {
+    return BiblePlansCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      title: Value(title),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      coverBackgroundId: coverBackgroundId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverBackgroundId),
+      days: days == null && nullToAbsent ? const Value.absent() : Value(days),
+      publishedAt: publishedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publishedAt),
+    );
+  }
+
+  factory BiblePlanRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BiblePlanRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String?>(json['description']),
+      coverBackgroundId: serializer.fromJson<int?>(json['coverBackgroundId']),
+      days: serializer.fromJson<String?>(json['days']),
+      publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String?>(description),
+      'coverBackgroundId': serializer.toJson<int?>(coverBackgroundId),
+      'days': serializer.toJson<String?>(days),
+      'publishedAt': serializer.toJson<DateTime?>(publishedAt),
+    };
+  }
+
+  BiblePlanRow copyWith(
+          {int? syncStamp,
+          String? id,
+          String? title,
+          Value<String?> description = const Value.absent(),
+          Value<int?> coverBackgroundId = const Value.absent(),
+          Value<String?> days = const Value.absent(),
+          Value<DateTime?> publishedAt = const Value.absent()}) =>
+      BiblePlanRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        title: title ?? this.title,
+        description: description.present ? description.value : this.description,
+        coverBackgroundId: coverBackgroundId.present
+            ? coverBackgroundId.value
+            : this.coverBackgroundId,
+        days: days.present ? days.value : this.days,
+        publishedAt: publishedAt.present ? publishedAt.value : this.publishedAt,
+      );
+  BiblePlanRow copyWithCompanion(BiblePlansCompanion data) {
+    return BiblePlanRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      description:
+          data.description.present ? data.description.value : this.description,
+      coverBackgroundId: data.coverBackgroundId.present
+          ? data.coverBackgroundId.value
+          : this.coverBackgroundId,
+      days: data.days.present ? data.days.value : this.days,
+      publishedAt:
+          data.publishedAt.present ? data.publishedAt.value : this.publishedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BiblePlanRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('coverBackgroundId: $coverBackgroundId, ')
+          ..write('days: $days, ')
+          ..write('publishedAt: $publishedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      syncStamp, id, title, description, coverBackgroundId, days, publishedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BiblePlanRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.coverBackgroundId == this.coverBackgroundId &&
+          other.days == this.days &&
+          other.publishedAt == this.publishedAt);
+}
+
+class BiblePlansCompanion extends UpdateCompanion<BiblePlanRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String?> description;
+  final Value<int?> coverBackgroundId;
+  final Value<String?> days;
+  final Value<DateTime?> publishedAt;
+  final Value<int> rowid;
+  const BiblePlansCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.coverBackgroundId = const Value.absent(),
+    this.days = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BiblePlansCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    required String title,
+    this.description = const Value.absent(),
+    this.coverBackgroundId = const Value.absent(),
+    this.days = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        title = Value(title);
+  static Insertable<BiblePlanRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<int>? coverBackgroundId,
+    Expression<String>? days,
+    Expression<DateTime>? publishedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (coverBackgroundId != null) 'cover_background_id': coverBackgroundId,
+      if (days != null) 'days': days,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BiblePlansCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String>? title,
+      Value<String?>? description,
+      Value<int?>? coverBackgroundId,
+      Value<String?>? days,
+      Value<DateTime?>? publishedAt,
+      Value<int>? rowid}) {
+    return BiblePlansCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      coverBackgroundId: coverBackgroundId ?? this.coverBackgroundId,
+      days: days ?? this.days,
+      publishedAt: publishedAt ?? this.publishedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (coverBackgroundId.present) {
+      map['cover_background_id'] = Variable<int>(coverBackgroundId.value);
+    }
+    if (days.present) {
+      map['days'] = Variable<String>(days.value);
+    }
+    if (publishedAt.present) {
+      map['published_at'] = Variable<DateTime>(publishedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BiblePlansCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('coverBackgroundId: $coverBackgroundId, ')
+          ..write('days: $days, ')
+          ..write('publishedAt: $publishedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BibleChallengesTable extends BibleChallenges
+    with TableInfo<$BibleChallengesTable, BibleChallengeRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BibleChallengesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _planIdMeta = const VerificationMeta('planId');
+  @override
+  late final GeneratedColumn<String> planId = GeneratedColumn<String>(
+      'plan_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _startsOnMeta =
+      const VerificationMeta('startsOn');
+  @override
+  late final GeneratedColumn<String> startsOn = GeneratedColumn<String>(
+      'starts_on', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _endsOnMeta = const VerificationMeta('endsOn');
+  @override
+  late final GeneratedColumn<String> endsOn = GeneratedColumn<String>(
+      'ends_on', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _publishedAtMeta =
+      const VerificationMeta('publishedAt');
+  @override
+  late final GeneratedColumn<DateTime> publishedAt = GeneratedColumn<DateTime>(
+      'published_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [syncStamp, id, planId, title, startsOn, endsOn, publishedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_challenges';
+  @override
+  VerificationContext validateIntegrity(Insertable<BibleChallengeRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('plan_id')) {
+      context.handle(_planIdMeta,
+          planId.isAcceptableOrUnknown(data['plan_id']!, _planIdMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('starts_on')) {
+      context.handle(_startsOnMeta,
+          startsOn.isAcceptableOrUnknown(data['starts_on']!, _startsOnMeta));
+    }
+    if (data.containsKey('ends_on')) {
+      context.handle(_endsOnMeta,
+          endsOn.isAcceptableOrUnknown(data['ends_on']!, _endsOnMeta));
+    }
+    if (data.containsKey('published_at')) {
+      context.handle(
+          _publishedAtMeta,
+          publishedAt.isAcceptableOrUnknown(
+              data['published_at']!, _publishedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BibleChallengeRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BibleChallengeRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      planId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plan_id']),
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      startsOn: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}starts_on']),
+      endsOn: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}ends_on']),
+      publishedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}published_at']),
+    );
+  }
+
+  @override
+  $BibleChallengesTable createAlias(String alias) {
+    return $BibleChallengesTable(attachedDatabase, alias);
+  }
+}
+
+class BibleChallengeRow extends DataClass
+    implements Insertable<BibleChallengeRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String id;
+  final String? planId;
+  final String title;
+  final String? startsOn;
+  final String? endsOn;
+  final DateTime? publishedAt;
+  const BibleChallengeRow(
+      {required this.syncStamp,
+      required this.id,
+      this.planId,
+      required this.title,
+      this.startsOn,
+      this.endsOn,
+      this.publishedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || planId != null) {
+      map['plan_id'] = Variable<String>(planId);
+    }
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || startsOn != null) {
+      map['starts_on'] = Variable<String>(startsOn);
+    }
+    if (!nullToAbsent || endsOn != null) {
+      map['ends_on'] = Variable<String>(endsOn);
+    }
+    if (!nullToAbsent || publishedAt != null) {
+      map['published_at'] = Variable<DateTime>(publishedAt);
+    }
+    return map;
+  }
+
+  BibleChallengesCompanion toCompanion(bool nullToAbsent) {
+    return BibleChallengesCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      planId:
+          planId == null && nullToAbsent ? const Value.absent() : Value(planId),
+      title: Value(title),
+      startsOn: startsOn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startsOn),
+      endsOn:
+          endsOn == null && nullToAbsent ? const Value.absent() : Value(endsOn),
+      publishedAt: publishedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publishedAt),
+    );
+  }
+
+  factory BibleChallengeRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BibleChallengeRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      planId: serializer.fromJson<String?>(json['planId']),
+      title: serializer.fromJson<String>(json['title']),
+      startsOn: serializer.fromJson<String?>(json['startsOn']),
+      endsOn: serializer.fromJson<String?>(json['endsOn']),
+      publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'planId': serializer.toJson<String?>(planId),
+      'title': serializer.toJson<String>(title),
+      'startsOn': serializer.toJson<String?>(startsOn),
+      'endsOn': serializer.toJson<String?>(endsOn),
+      'publishedAt': serializer.toJson<DateTime?>(publishedAt),
+    };
+  }
+
+  BibleChallengeRow copyWith(
+          {int? syncStamp,
+          String? id,
+          Value<String?> planId = const Value.absent(),
+          String? title,
+          Value<String?> startsOn = const Value.absent(),
+          Value<String?> endsOn = const Value.absent(),
+          Value<DateTime?> publishedAt = const Value.absent()}) =>
+      BibleChallengeRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        planId: planId.present ? planId.value : this.planId,
+        title: title ?? this.title,
+        startsOn: startsOn.present ? startsOn.value : this.startsOn,
+        endsOn: endsOn.present ? endsOn.value : this.endsOn,
+        publishedAt: publishedAt.present ? publishedAt.value : this.publishedAt,
+      );
+  BibleChallengeRow copyWithCompanion(BibleChallengesCompanion data) {
+    return BibleChallengeRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      planId: data.planId.present ? data.planId.value : this.planId,
+      title: data.title.present ? data.title.value : this.title,
+      startsOn: data.startsOn.present ? data.startsOn.value : this.startsOn,
+      endsOn: data.endsOn.present ? data.endsOn.value : this.endsOn,
+      publishedAt:
+          data.publishedAt.present ? data.publishedAt.value : this.publishedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleChallengeRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('planId: $planId, ')
+          ..write('title: $title, ')
+          ..write('startsOn: $startsOn, ')
+          ..write('endsOn: $endsOn, ')
+          ..write('publishedAt: $publishedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(syncStamp, id, planId, title, startsOn, endsOn, publishedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BibleChallengeRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.planId == this.planId &&
+          other.title == this.title &&
+          other.startsOn == this.startsOn &&
+          other.endsOn == this.endsOn &&
+          other.publishedAt == this.publishedAt);
+}
+
+class BibleChallengesCompanion extends UpdateCompanion<BibleChallengeRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String?> planId;
+  final Value<String> title;
+  final Value<String?> startsOn;
+  final Value<String?> endsOn;
+  final Value<DateTime?> publishedAt;
+  final Value<int> rowid;
+  const BibleChallengesCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.planId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.startsOn = const Value.absent(),
+    this.endsOn = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BibleChallengesCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    this.planId = const Value.absent(),
+    required String title,
+    this.startsOn = const Value.absent(),
+    this.endsOn = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        title = Value(title);
+  static Insertable<BibleChallengeRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? planId,
+    Expression<String>? title,
+    Expression<String>? startsOn,
+    Expression<String>? endsOn,
+    Expression<DateTime>? publishedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (planId != null) 'plan_id': planId,
+      if (title != null) 'title': title,
+      if (startsOn != null) 'starts_on': startsOn,
+      if (endsOn != null) 'ends_on': endsOn,
+      if (publishedAt != null) 'published_at': publishedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BibleChallengesCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String?>? planId,
+      Value<String>? title,
+      Value<String?>? startsOn,
+      Value<String?>? endsOn,
+      Value<DateTime?>? publishedAt,
+      Value<int>? rowid}) {
+    return BibleChallengesCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      planId: planId ?? this.planId,
+      title: title ?? this.title,
+      startsOn: startsOn ?? this.startsOn,
+      endsOn: endsOn ?? this.endsOn,
+      publishedAt: publishedAt ?? this.publishedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (planId.present) {
+      map['plan_id'] = Variable<String>(planId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (startsOn.present) {
+      map['starts_on'] = Variable<String>(startsOn.value);
+    }
+    if (endsOn.present) {
+      map['ends_on'] = Variable<String>(endsOn.value);
+    }
+    if (publishedAt.present) {
+      map['published_at'] = Variable<DateTime>(publishedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleChallengesCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('planId: $planId, ')
+          ..write('title: $title, ')
+          ..write('startsOn: $startsOn, ')
+          ..write('endsOn: $endsOn, ')
+          ..write('publishedAt: $publishedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BibleQuizzesTable extends BibleQuizzes
+    with TableInfo<$BibleQuizzesTable, BibleQuizRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BibleQuizzesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ageBandMeta =
+      const VerificationMeta('ageBand');
+  @override
+  late final GeneratedColumn<String> ageBand = GeneratedColumn<String>(
+      'age_band', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _difficultyMeta =
+      const VerificationMeta('difficulty');
+  @override
+  late final GeneratedColumn<int> difficulty = GeneratedColumn<int>(
+      'difficulty', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _featuredFromMeta =
+      const VerificationMeta('featuredFrom');
+  @override
+  late final GeneratedColumn<String> featuredFrom = GeneratedColumn<String>(
+      'featured_from', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _featuredUntilMeta =
+      const VerificationMeta('featuredUntil');
+  @override
+  late final GeneratedColumn<String> featuredUntil = GeneratedColumn<String>(
+      'featured_until', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _imageUrlMeta =
+      const VerificationMeta('imageUrl');
+  @override
+  late final GeneratedColumn<String> imageUrl = GeneratedColumn<String>(
+      'image_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _questionsMeta =
+      const VerificationMeta('questions');
+  @override
+  late final GeneratedColumn<String> questions = GeneratedColumn<String>(
+      'questions', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _publishedAtMeta =
+      const VerificationMeta('publishedAt');
+  @override
+  late final GeneratedColumn<DateTime> publishedAt = GeneratedColumn<DateTime>(
+      'published_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        title,
+        ageBand,
+        difficulty,
+        featuredFrom,
+        featuredUntil,
+        imageUrl,
+        questions,
+        publishedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_quizzes';
+  @override
+  VerificationContext validateIntegrity(Insertable<BibleQuizRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('age_band')) {
+      context.handle(_ageBandMeta,
+          ageBand.isAcceptableOrUnknown(data['age_band']!, _ageBandMeta));
+    }
+    if (data.containsKey('difficulty')) {
+      context.handle(
+          _difficultyMeta,
+          difficulty.isAcceptableOrUnknown(
+              data['difficulty']!, _difficultyMeta));
+    }
+    if (data.containsKey('featured_from')) {
+      context.handle(
+          _featuredFromMeta,
+          featuredFrom.isAcceptableOrUnknown(
+              data['featured_from']!, _featuredFromMeta));
+    }
+    if (data.containsKey('featured_until')) {
+      context.handle(
+          _featuredUntilMeta,
+          featuredUntil.isAcceptableOrUnknown(
+              data['featured_until']!, _featuredUntilMeta));
+    }
+    if (data.containsKey('image_url')) {
+      context.handle(_imageUrlMeta,
+          imageUrl.isAcceptableOrUnknown(data['image_url']!, _imageUrlMeta));
+    }
+    if (data.containsKey('questions')) {
+      context.handle(_questionsMeta,
+          questions.isAcceptableOrUnknown(data['questions']!, _questionsMeta));
+    }
+    if (data.containsKey('published_at')) {
+      context.handle(
+          _publishedAtMeta,
+          publishedAt.isAcceptableOrUnknown(
+              data['published_at']!, _publishedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BibleQuizRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BibleQuizRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      ageBand: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}age_band']),
+      difficulty: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}difficulty']),
+      featuredFrom: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}featured_from']),
+      featuredUntil: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}featured_until']),
+      imageUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}image_url']),
+      questions: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}questions']),
+      publishedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}published_at']),
+    );
+  }
+
+  @override
+  $BibleQuizzesTable createAlias(String alias) {
+    return $BibleQuizzesTable(attachedDatabase, alias);
+  }
+}
+
+class BibleQuizRow extends DataClass implements Insertable<BibleQuizRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final int id;
+  final String title;
+
+  /// `kids | teens | adults`.
+  final String? ageBand;
+  final int? difficulty;
+  final String? featuredFrom;
+  final String? featuredUntil;
+  final String? imageUrl;
+
+  /// `[{ kind, prompt, choices, answer, explanation?, reference? }]`, en JSON.
+  final String? questions;
+  final DateTime? publishedAt;
+  const BibleQuizRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.title,
+      this.ageBand,
+      this.difficulty,
+      this.featuredFrom,
+      this.featuredUntil,
+      this.imageUrl,
+      this.questions,
+      this.publishedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || ageBand != null) {
+      map['age_band'] = Variable<String>(ageBand);
+    }
+    if (!nullToAbsent || difficulty != null) {
+      map['difficulty'] = Variable<int>(difficulty);
+    }
+    if (!nullToAbsent || featuredFrom != null) {
+      map['featured_from'] = Variable<String>(featuredFrom);
+    }
+    if (!nullToAbsent || featuredUntil != null) {
+      map['featured_until'] = Variable<String>(featuredUntil);
+    }
+    if (!nullToAbsent || imageUrl != null) {
+      map['image_url'] = Variable<String>(imageUrl);
+    }
+    if (!nullToAbsent || questions != null) {
+      map['questions'] = Variable<String>(questions);
+    }
+    if (!nullToAbsent || publishedAt != null) {
+      map['published_at'] = Variable<DateTime>(publishedAt);
+    }
+    return map;
+  }
+
+  BibleQuizzesCompanion toCompanion(bool nullToAbsent) {
+    return BibleQuizzesCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      title: Value(title),
+      ageBand: ageBand == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ageBand),
+      difficulty: difficulty == null && nullToAbsent
+          ? const Value.absent()
+          : Value(difficulty),
+      featuredFrom: featuredFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(featuredFrom),
+      featuredUntil: featuredUntil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(featuredUntil),
+      imageUrl: imageUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageUrl),
+      questions: questions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(questions),
+      publishedAt: publishedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publishedAt),
+    );
+  }
+
+  factory BibleQuizRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BibleQuizRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      ageBand: serializer.fromJson<String?>(json['ageBand']),
+      difficulty: serializer.fromJson<int?>(json['difficulty']),
+      featuredFrom: serializer.fromJson<String?>(json['featuredFrom']),
+      featuredUntil: serializer.fromJson<String?>(json['featuredUntil']),
+      imageUrl: serializer.fromJson<String?>(json['imageUrl']),
+      questions: serializer.fromJson<String?>(json['questions']),
+      publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'ageBand': serializer.toJson<String?>(ageBand),
+      'difficulty': serializer.toJson<int?>(difficulty),
+      'featuredFrom': serializer.toJson<String?>(featuredFrom),
+      'featuredUntil': serializer.toJson<String?>(featuredUntil),
+      'imageUrl': serializer.toJson<String?>(imageUrl),
+      'questions': serializer.toJson<String?>(questions),
+      'publishedAt': serializer.toJson<DateTime?>(publishedAt),
+    };
+  }
+
+  BibleQuizRow copyWith(
+          {int? syncStamp,
+          int? id,
+          String? title,
+          Value<String?> ageBand = const Value.absent(),
+          Value<int?> difficulty = const Value.absent(),
+          Value<String?> featuredFrom = const Value.absent(),
+          Value<String?> featuredUntil = const Value.absent(),
+          Value<String?> imageUrl = const Value.absent(),
+          Value<String?> questions = const Value.absent(),
+          Value<DateTime?> publishedAt = const Value.absent()}) =>
+      BibleQuizRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        title: title ?? this.title,
+        ageBand: ageBand.present ? ageBand.value : this.ageBand,
+        difficulty: difficulty.present ? difficulty.value : this.difficulty,
+        featuredFrom:
+            featuredFrom.present ? featuredFrom.value : this.featuredFrom,
+        featuredUntil:
+            featuredUntil.present ? featuredUntil.value : this.featuredUntil,
+        imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
+        questions: questions.present ? questions.value : this.questions,
+        publishedAt: publishedAt.present ? publishedAt.value : this.publishedAt,
+      );
+  BibleQuizRow copyWithCompanion(BibleQuizzesCompanion data) {
+    return BibleQuizRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      ageBand: data.ageBand.present ? data.ageBand.value : this.ageBand,
+      difficulty:
+          data.difficulty.present ? data.difficulty.value : this.difficulty,
+      featuredFrom: data.featuredFrom.present
+          ? data.featuredFrom.value
+          : this.featuredFrom,
+      featuredUntil: data.featuredUntil.present
+          ? data.featuredUntil.value
+          : this.featuredUntil,
+      imageUrl: data.imageUrl.present ? data.imageUrl.value : this.imageUrl,
+      questions: data.questions.present ? data.questions.value : this.questions,
+      publishedAt:
+          data.publishedAt.present ? data.publishedAt.value : this.publishedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleQuizRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('ageBand: $ageBand, ')
+          ..write('difficulty: $difficulty, ')
+          ..write('featuredFrom: $featuredFrom, ')
+          ..write('featuredUntil: $featuredUntil, ')
+          ..write('imageUrl: $imageUrl, ')
+          ..write('questions: $questions, ')
+          ..write('publishedAt: $publishedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, title, ageBand, difficulty,
+      featuredFrom, featuredUntil, imageUrl, questions, publishedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BibleQuizRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.ageBand == this.ageBand &&
+          other.difficulty == this.difficulty &&
+          other.featuredFrom == this.featuredFrom &&
+          other.featuredUntil == this.featuredUntil &&
+          other.imageUrl == this.imageUrl &&
+          other.questions == this.questions &&
+          other.publishedAt == this.publishedAt);
+}
+
+class BibleQuizzesCompanion extends UpdateCompanion<BibleQuizRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String> title;
+  final Value<String?> ageBand;
+  final Value<int?> difficulty;
+  final Value<String?> featuredFrom;
+  final Value<String?> featuredUntil;
+  final Value<String?> imageUrl;
+  final Value<String?> questions;
+  final Value<DateTime?> publishedAt;
+  const BibleQuizzesCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.ageBand = const Value.absent(),
+    this.difficulty = const Value.absent(),
+    this.featuredFrom = const Value.absent(),
+    this.featuredUntil = const Value.absent(),
+    this.imageUrl = const Value.absent(),
+    this.questions = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+  });
+  BibleQuizzesCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required String title,
+    this.ageBand = const Value.absent(),
+    this.difficulty = const Value.absent(),
+    this.featuredFrom = const Value.absent(),
+    this.featuredUntil = const Value.absent(),
+    this.imageUrl = const Value.absent(),
+    this.questions = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+  }) : title = Value(title);
+  static Insertable<BibleQuizRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<String>? ageBand,
+    Expression<int>? difficulty,
+    Expression<String>? featuredFrom,
+    Expression<String>? featuredUntil,
+    Expression<String>? imageUrl,
+    Expression<String>? questions,
+    Expression<DateTime>? publishedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (ageBand != null) 'age_band': ageBand,
+      if (difficulty != null) 'difficulty': difficulty,
+      if (featuredFrom != null) 'featured_from': featuredFrom,
+      if (featuredUntil != null) 'featured_until': featuredUntil,
+      if (imageUrl != null) 'image_url': imageUrl,
+      if (questions != null) 'questions': questions,
+      if (publishedAt != null) 'published_at': publishedAt,
+    });
+  }
+
+  BibleQuizzesCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String>? title,
+      Value<String?>? ageBand,
+      Value<int?>? difficulty,
+      Value<String?>? featuredFrom,
+      Value<String?>? featuredUntil,
+      Value<String?>? imageUrl,
+      Value<String?>? questions,
+      Value<DateTime?>? publishedAt}) {
+    return BibleQuizzesCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      title: title ?? this.title,
+      ageBand: ageBand ?? this.ageBand,
+      difficulty: difficulty ?? this.difficulty,
+      featuredFrom: featuredFrom ?? this.featuredFrom,
+      featuredUntil: featuredUntil ?? this.featuredUntil,
+      imageUrl: imageUrl ?? this.imageUrl,
+      questions: questions ?? this.questions,
+      publishedAt: publishedAt ?? this.publishedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (ageBand.present) {
+      map['age_band'] = Variable<String>(ageBand.value);
+    }
+    if (difficulty.present) {
+      map['difficulty'] = Variable<int>(difficulty.value);
+    }
+    if (featuredFrom.present) {
+      map['featured_from'] = Variable<String>(featuredFrom.value);
+    }
+    if (featuredUntil.present) {
+      map['featured_until'] = Variable<String>(featuredUntil.value);
+    }
+    if (imageUrl.present) {
+      map['image_url'] = Variable<String>(imageUrl.value);
+    }
+    if (questions.present) {
+      map['questions'] = Variable<String>(questions.value);
+    }
+    if (publishedAt.present) {
+      map['published_at'] = Variable<DateTime>(publishedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleQuizzesCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('ageBand: $ageBand, ')
+          ..write('difficulty: $difficulty, ')
+          ..write('featuredFrom: $featuredFrom, ')
+          ..write('featuredUntil: $featuredUntil, ')
+          ..write('imageUrl: $imageUrl, ')
+          ..write('questions: $questions, ')
+          ..write('publishedAt: $publishedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BibleVersionsTable extends BibleVersions
+    with TableInfo<$BibleVersionsTable, BibleVersionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BibleVersionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+      'code', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _languageMeta =
+      const VerificationMeta('language');
+  @override
+  late final GeneratedColumn<String> language = GeneratedColumn<String>(
+      'language', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _licenseMeta =
+      const VerificationMeta('license');
+  @override
+  late final GeneratedColumn<String> license = GeneratedColumn<String>(
+      'license', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sizeBytesMeta =
+      const VerificationMeta('sizeBytes');
+  @override
+  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
+      'size_bytes', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _sortOrderMeta =
+      const VerificationMeta('sortOrder');
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+      'sort_order', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _archiveUrlMeta =
+      const VerificationMeta('archiveUrl');
+  @override
+  late final GeneratedColumn<String> archiveUrl = GeneratedColumn<String>(
+      'archive_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _publishedAtMeta =
+      const VerificationMeta('publishedAt');
+  @override
+  late final GeneratedColumn<DateTime> publishedAt = GeneratedColumn<DateTime>(
+      'published_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        code,
+        name,
+        language,
+        license,
+        sizeBytes,
+        sortOrder,
+        archiveUrl,
+        publishedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_versions';
+  @override
+  VerificationContext validateIntegrity(Insertable<BibleVersionRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+          _codeMeta, code.isAcceptableOrUnknown(data['code']!, _codeMeta));
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('language')) {
+      context.handle(_languageMeta,
+          language.isAcceptableOrUnknown(data['language']!, _languageMeta));
+    }
+    if (data.containsKey('license')) {
+      context.handle(_licenseMeta,
+          license.isAcceptableOrUnknown(data['license']!, _licenseMeta));
+    }
+    if (data.containsKey('size_bytes')) {
+      context.handle(_sizeBytesMeta,
+          sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta));
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(_sortOrderMeta,
+          sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta));
+    }
+    if (data.containsKey('archive_url')) {
+      context.handle(
+          _archiveUrlMeta,
+          archiveUrl.isAcceptableOrUnknown(
+              data['archive_url']!, _archiveUrlMeta));
+    }
+    if (data.containsKey('published_at')) {
+      context.handle(
+          _publishedAtMeta,
+          publishedAt.isAcceptableOrUnknown(
+              data['published_at']!, _publishedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BibleVersionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BibleVersionRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      code: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}code'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      language: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}language']),
+      license: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}license']),
+      sizeBytes: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}size_bytes']),
+      sortOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
+      archiveUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}archive_url']),
+      publishedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}published_at']),
+    );
+  }
+
+  @override
+  $BibleVersionsTable createAlias(String alias) {
+    return $BibleVersionsTable(attachedDatabase, alias);
+  }
+}
+
+class BibleVersionRow extends DataClass implements Insertable<BibleVersionRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final int id;
+  final String code;
+  final String name;
+  final String? language;
+  final String? license;
+  final int? sizeBytes;
+  final int sortOrder;
+
+  /// Nul tant que le chantier du contenu n'existe pas.
+  final String? archiveUrl;
+  final DateTime? publishedAt;
+  const BibleVersionRow(
+      {required this.syncStamp,
+      required this.id,
+      required this.code,
+      required this.name,
+      this.language,
+      this.license,
+      this.sizeBytes,
+      required this.sortOrder,
+      this.archiveUrl,
+      this.publishedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<int>(id);
+    map['code'] = Variable<String>(code);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || language != null) {
+      map['language'] = Variable<String>(language);
+    }
+    if (!nullToAbsent || license != null) {
+      map['license'] = Variable<String>(license);
+    }
+    if (!nullToAbsent || sizeBytes != null) {
+      map['size_bytes'] = Variable<int>(sizeBytes);
+    }
+    map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || archiveUrl != null) {
+      map['archive_url'] = Variable<String>(archiveUrl);
+    }
+    if (!nullToAbsent || publishedAt != null) {
+      map['published_at'] = Variable<DateTime>(publishedAt);
+    }
+    return map;
+  }
+
+  BibleVersionsCompanion toCompanion(bool nullToAbsent) {
+    return BibleVersionsCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      code: Value(code),
+      name: Value(name),
+      language: language == null && nullToAbsent
+          ? const Value.absent()
+          : Value(language),
+      license: license == null && nullToAbsent
+          ? const Value.absent()
+          : Value(license),
+      sizeBytes: sizeBytes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sizeBytes),
+      sortOrder: Value(sortOrder),
+      archiveUrl: archiveUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(archiveUrl),
+      publishedAt: publishedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publishedAt),
+    );
+  }
+
+  factory BibleVersionRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BibleVersionRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<int>(json['id']),
+      code: serializer.fromJson<String>(json['code']),
+      name: serializer.fromJson<String>(json['name']),
+      language: serializer.fromJson<String?>(json['language']),
+      license: serializer.fromJson<String?>(json['license']),
+      sizeBytes: serializer.fromJson<int?>(json['sizeBytes']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      archiveUrl: serializer.fromJson<String?>(json['archiveUrl']),
+      publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<int>(id),
+      'code': serializer.toJson<String>(code),
+      'name': serializer.toJson<String>(name),
+      'language': serializer.toJson<String?>(language),
+      'license': serializer.toJson<String?>(license),
+      'sizeBytes': serializer.toJson<int?>(sizeBytes),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'archiveUrl': serializer.toJson<String?>(archiveUrl),
+      'publishedAt': serializer.toJson<DateTime?>(publishedAt),
+    };
+  }
+
+  BibleVersionRow copyWith(
+          {int? syncStamp,
+          int? id,
+          String? code,
+          String? name,
+          Value<String?> language = const Value.absent(),
+          Value<String?> license = const Value.absent(),
+          Value<int?> sizeBytes = const Value.absent(),
+          int? sortOrder,
+          Value<String?> archiveUrl = const Value.absent(),
+          Value<DateTime?> publishedAt = const Value.absent()}) =>
+      BibleVersionRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        code: code ?? this.code,
+        name: name ?? this.name,
+        language: language.present ? language.value : this.language,
+        license: license.present ? license.value : this.license,
+        sizeBytes: sizeBytes.present ? sizeBytes.value : this.sizeBytes,
+        sortOrder: sortOrder ?? this.sortOrder,
+        archiveUrl: archiveUrl.present ? archiveUrl.value : this.archiveUrl,
+        publishedAt: publishedAt.present ? publishedAt.value : this.publishedAt,
+      );
+  BibleVersionRow copyWithCompanion(BibleVersionsCompanion data) {
+    return BibleVersionRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      code: data.code.present ? data.code.value : this.code,
+      name: data.name.present ? data.name.value : this.name,
+      language: data.language.present ? data.language.value : this.language,
+      license: data.license.present ? data.license.value : this.license,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      archiveUrl:
+          data.archiveUrl.present ? data.archiveUrl.value : this.archiveUrl,
+      publishedAt:
+          data.publishedAt.present ? data.publishedAt.value : this.publishedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleVersionRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('code: $code, ')
+          ..write('name: $name, ')
+          ..write('language: $language, ')
+          ..write('license: $license, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('archiveUrl: $archiveUrl, ')
+          ..write('publishedAt: $publishedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, code, name, language, license,
+      sizeBytes, sortOrder, archiveUrl, publishedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BibleVersionRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.code == this.code &&
+          other.name == this.name &&
+          other.language == this.language &&
+          other.license == this.license &&
+          other.sizeBytes == this.sizeBytes &&
+          other.sortOrder == this.sortOrder &&
+          other.archiveUrl == this.archiveUrl &&
+          other.publishedAt == this.publishedAt);
+}
+
+class BibleVersionsCompanion extends UpdateCompanion<BibleVersionRow> {
+  final Value<int> syncStamp;
+  final Value<int> id;
+  final Value<String> code;
+  final Value<String> name;
+  final Value<String?> language;
+  final Value<String?> license;
+  final Value<int?> sizeBytes;
+  final Value<int> sortOrder;
+  final Value<String?> archiveUrl;
+  final Value<DateTime?> publishedAt;
+  const BibleVersionsCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.code = const Value.absent(),
+    this.name = const Value.absent(),
+    this.language = const Value.absent(),
+    this.license = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.archiveUrl = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+  });
+  BibleVersionsCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    required String code,
+    required String name,
+    this.language = const Value.absent(),
+    this.license = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.archiveUrl = const Value.absent(),
+    this.publishedAt = const Value.absent(),
+  })  : code = Value(code),
+        name = Value(name);
+  static Insertable<BibleVersionRow> custom({
+    Expression<int>? syncStamp,
+    Expression<int>? id,
+    Expression<String>? code,
+    Expression<String>? name,
+    Expression<String>? language,
+    Expression<String>? license,
+    Expression<int>? sizeBytes,
+    Expression<int>? sortOrder,
+    Expression<String>? archiveUrl,
+    Expression<DateTime>? publishedAt,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (code != null) 'code': code,
+      if (name != null) 'name': name,
+      if (language != null) 'language': language,
+      if (license != null) 'license': license,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (archiveUrl != null) 'archive_url': archiveUrl,
+      if (publishedAt != null) 'published_at': publishedAt,
+    });
+  }
+
+  BibleVersionsCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<int>? id,
+      Value<String>? code,
+      Value<String>? name,
+      Value<String?>? language,
+      Value<String?>? license,
+      Value<int?>? sizeBytes,
+      Value<int>? sortOrder,
+      Value<String?>? archiveUrl,
+      Value<DateTime?>? publishedAt}) {
+    return BibleVersionsCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      code: code ?? this.code,
+      name: name ?? this.name,
+      language: language ?? this.language,
+      license: license ?? this.license,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      sortOrder: sortOrder ?? this.sortOrder,
+      archiveUrl: archiveUrl ?? this.archiveUrl,
+      publishedAt: publishedAt ?? this.publishedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (language.present) {
+      map['language'] = Variable<String>(language.value);
+    }
+    if (license.present) {
+      map['license'] = Variable<String>(license.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (archiveUrl.present) {
+      map['archive_url'] = Variable<String>(archiveUrl.value);
+    }
+    if (publishedAt.present) {
+      map['published_at'] = Variable<DateTime>(publishedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleVersionsCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('code: $code, ')
+          ..write('name: $name, ')
+          ..write('language: $language, ')
+          ..write('license: $license, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('archiveUrl: $archiveUrl, ')
+          ..write('publishedAt: $publishedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalBibleMarksTable extends LocalBibleMarks
+    with TableInfo<$LocalBibleMarksTable, LocalBibleMarkRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalBibleMarksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _clientUpdatedAtMeta =
+      const VerificationMeta('clientUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientUpdatedAt =
+      GeneratedColumn<DateTime>('client_updated_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+      'dirty', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("dirty" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _lastErrorMeta =
+      const VerificationMeta('lastError');
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+      'last_error', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+      'kind', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _bookMeta = const VerificationMeta('book');
+  @override
+  late final GeneratedColumn<String> book = GeneratedColumn<String>(
+      'book', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _chapterMeta =
+      const VerificationMeta('chapter');
+  @override
+  late final GeneratedColumn<int> chapter = GeneratedColumn<int>(
+      'chapter', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _verseFromMeta =
+      const VerificationMeta('verseFrom');
+  @override
+  late final GeneratedColumn<int> verseFrom = GeneratedColumn<int>(
+      'verse_from', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _verseToMeta =
+      const VerificationMeta('verseTo');
+  @override
+  late final GeneratedColumn<int> verseTo = GeneratedColumn<int>(
+      'verse_to', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<String> color = GeneratedColumn<String>(
+      'color', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _clientCreatedAtMeta =
+      const VerificationMeta('clientCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientCreatedAt =
+      GeneratedColumn<DateTime>('client_created_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        clientUpdatedAt,
+        dirty,
+        lastError,
+        id,
+        kind,
+        book,
+        chapter,
+        verseFrom,
+        verseTo,
+        color,
+        clientCreatedAt,
+        deletedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_bible_marks';
+  @override
+  VerificationContext validateIntegrity(Insertable<LocalBibleMarkRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('client_updated_at')) {
+      context.handle(
+          _clientUpdatedAtMeta,
+          clientUpdatedAt.isAcceptableOrUnknown(
+              data['client_updated_at']!, _clientUpdatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_clientUpdatedAtMeta);
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+          _dirtyMeta, dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta));
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(_lastErrorMeta,
+          lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+          _kindMeta, kind.isAcceptableOrUnknown(data['kind']!, _kindMeta));
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('book')) {
+      context.handle(
+          _bookMeta, book.isAcceptableOrUnknown(data['book']!, _bookMeta));
+    } else if (isInserting) {
+      context.missing(_bookMeta);
+    }
+    if (data.containsKey('chapter')) {
+      context.handle(_chapterMeta,
+          chapter.isAcceptableOrUnknown(data['chapter']!, _chapterMeta));
+    } else if (isInserting) {
+      context.missing(_chapterMeta);
+    }
+    if (data.containsKey('verse_from')) {
+      context.handle(_verseFromMeta,
+          verseFrom.isAcceptableOrUnknown(data['verse_from']!, _verseFromMeta));
+    }
+    if (data.containsKey('verse_to')) {
+      context.handle(_verseToMeta,
+          verseTo.isAcceptableOrUnknown(data['verse_to']!, _verseToMeta));
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+          _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
+    }
+    if (data.containsKey('client_created_at')) {
+      context.handle(
+          _clientCreatedAtMeta,
+          clientCreatedAt.isAcceptableOrUnknown(
+              data['client_created_at']!, _clientCreatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_clientCreatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalBibleMarkRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalBibleMarkRow(
+      clientUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_updated_at'])!,
+      dirty: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}dirty'])!,
+      lastError: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_error']),
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      kind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
+      book: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}book'])!,
+      chapter: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}chapter'])!,
+      verseFrom: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}verse_from']),
+      verseTo: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}verse_to']),
+      color: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}color']),
+      clientCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_created_at'])!,
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+    );
+  }
+
+  @override
+  $LocalBibleMarksTable createAlias(String alias) {
+    return $LocalBibleMarksTable(attachedDatabase, alias);
+  }
+}
+
+class LocalBibleMarkRow extends DataClass
+    implements Insertable<LocalBibleMarkRow> {
+  /// L'horloge de l'appareil au dernier geste ; envoyée au serveur.
+  final DateTime clientUpdatedAt;
+
+  /// Reste-t-il un envoi à faire ?
+  final bool dirty;
+
+  /// Le dernier échec d'envoi, pour le diagnostic.
+  final String? lastError;
+  final String id;
+  final String kind;
+  final String book;
+  final int chapter;
+  final int? verseFrom;
+  final int? verseTo;
+  final String? color;
+  final DateTime clientCreatedAt;
+
+  /// Posé quand la marque est retirée et que le `DELETE` reste à partir.
+  final DateTime? deletedAt;
+  const LocalBibleMarkRow(
+      {required this.clientUpdatedAt,
+      required this.dirty,
+      this.lastError,
+      required this.id,
+      required this.kind,
+      required this.book,
+      required this.chapter,
+      this.verseFrom,
+      this.verseTo,
+      this.color,
+      required this.clientCreatedAt,
+      this.deletedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt);
+    map['dirty'] = Variable<bool>(dirty);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['id'] = Variable<String>(id);
+    map['kind'] = Variable<String>(kind);
+    map['book'] = Variable<String>(book);
+    map['chapter'] = Variable<int>(chapter);
+    if (!nullToAbsent || verseFrom != null) {
+      map['verse_from'] = Variable<int>(verseFrom);
+    }
+    if (!nullToAbsent || verseTo != null) {
+      map['verse_to'] = Variable<int>(verseTo);
+    }
+    if (!nullToAbsent || color != null) {
+      map['color'] = Variable<String>(color);
+    }
+    map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  LocalBibleMarksCompanion toCompanion(bool nullToAbsent) {
+    return LocalBibleMarksCompanion(
+      clientUpdatedAt: Value(clientUpdatedAt),
+      dirty: Value(dirty),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      id: Value(id),
+      kind: Value(kind),
+      book: Value(book),
+      chapter: Value(chapter),
+      verseFrom: verseFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verseFrom),
+      verseTo: verseTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verseTo),
+      color:
+          color == null && nullToAbsent ? const Value.absent() : Value(color),
+      clientCreatedAt: Value(clientCreatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory LocalBibleMarkRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalBibleMarkRow(
+      clientUpdatedAt: serializer.fromJson<DateTime>(json['clientUpdatedAt']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      id: serializer.fromJson<String>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      book: serializer.fromJson<String>(json['book']),
+      chapter: serializer.fromJson<int>(json['chapter']),
+      verseFrom: serializer.fromJson<int?>(json['verseFrom']),
+      verseTo: serializer.fromJson<int?>(json['verseTo']),
+      color: serializer.fromJson<String?>(json['color']),
+      clientCreatedAt: serializer.fromJson<DateTime>(json['clientCreatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'clientUpdatedAt': serializer.toJson<DateTime>(clientUpdatedAt),
+      'dirty': serializer.toJson<bool>(dirty),
+      'lastError': serializer.toJson<String?>(lastError),
+      'id': serializer.toJson<String>(id),
+      'kind': serializer.toJson<String>(kind),
+      'book': serializer.toJson<String>(book),
+      'chapter': serializer.toJson<int>(chapter),
+      'verseFrom': serializer.toJson<int?>(verseFrom),
+      'verseTo': serializer.toJson<int?>(verseTo),
+      'color': serializer.toJson<String?>(color),
+      'clientCreatedAt': serializer.toJson<DateTime>(clientCreatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  LocalBibleMarkRow copyWith(
+          {DateTime? clientUpdatedAt,
+          bool? dirty,
+          Value<String?> lastError = const Value.absent(),
+          String? id,
+          String? kind,
+          String? book,
+          int? chapter,
+          Value<int?> verseFrom = const Value.absent(),
+          Value<int?> verseTo = const Value.absent(),
+          Value<String?> color = const Value.absent(),
+          DateTime? clientCreatedAt,
+          Value<DateTime?> deletedAt = const Value.absent()}) =>
+      LocalBibleMarkRow(
+        clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+        dirty: dirty ?? this.dirty,
+        lastError: lastError.present ? lastError.value : this.lastError,
+        id: id ?? this.id,
+        kind: kind ?? this.kind,
+        book: book ?? this.book,
+        chapter: chapter ?? this.chapter,
+        verseFrom: verseFrom.present ? verseFrom.value : this.verseFrom,
+        verseTo: verseTo.present ? verseTo.value : this.verseTo,
+        color: color.present ? color.value : this.color,
+        clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+      );
+  LocalBibleMarkRow copyWithCompanion(LocalBibleMarksCompanion data) {
+    return LocalBibleMarkRow(
+      clientUpdatedAt: data.clientUpdatedAt.present
+          ? data.clientUpdatedAt.value
+          : this.clientUpdatedAt,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      book: data.book.present ? data.book.value : this.book,
+      chapter: data.chapter.present ? data.chapter.value : this.chapter,
+      verseFrom: data.verseFrom.present ? data.verseFrom.value : this.verseFrom,
+      verseTo: data.verseTo.present ? data.verseTo.value : this.verseTo,
+      color: data.color.present ? data.color.value : this.color,
+      clientCreatedAt: data.clientCreatedAt.present
+          ? data.clientCreatedAt.value
+          : this.clientCreatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBibleMarkRow(')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('lastError: $lastError, ')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verseFrom: $verseFrom, ')
+          ..write('verseTo: $verseTo, ')
+          ..write('color: $color, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(clientUpdatedAt, dirty, lastError, id, kind,
+      book, chapter, verseFrom, verseTo, color, clientCreatedAt, deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalBibleMarkRow &&
+          other.clientUpdatedAt == this.clientUpdatedAt &&
+          other.dirty == this.dirty &&
+          other.lastError == this.lastError &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.book == this.book &&
+          other.chapter == this.chapter &&
+          other.verseFrom == this.verseFrom &&
+          other.verseTo == this.verseTo &&
+          other.color == this.color &&
+          other.clientCreatedAt == this.clientCreatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class LocalBibleMarksCompanion extends UpdateCompanion<LocalBibleMarkRow> {
+  final Value<DateTime> clientUpdatedAt;
+  final Value<bool> dirty;
+  final Value<String?> lastError;
+  final Value<String> id;
+  final Value<String> kind;
+  final Value<String> book;
+  final Value<int> chapter;
+  final Value<int?> verseFrom;
+  final Value<int?> verseTo;
+  final Value<String?> color;
+  final Value<DateTime> clientCreatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<int> rowid;
+  const LocalBibleMarksCompanion({
+    this.clientUpdatedAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.book = const Value.absent(),
+    this.chapter = const Value.absent(),
+    this.verseFrom = const Value.absent(),
+    this.verseTo = const Value.absent(),
+    this.color = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalBibleMarksCompanion.insert({
+    required DateTime clientUpdatedAt,
+    this.dirty = const Value.absent(),
+    this.lastError = const Value.absent(),
+    required String id,
+    required String kind,
+    required String book,
+    required int chapter,
+    this.verseFrom = const Value.absent(),
+    this.verseTo = const Value.absent(),
+    this.color = const Value.absent(),
+    required DateTime clientCreatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : clientUpdatedAt = Value(clientUpdatedAt),
+        id = Value(id),
+        kind = Value(kind),
+        book = Value(book),
+        chapter = Value(chapter),
+        clientCreatedAt = Value(clientCreatedAt);
+  static Insertable<LocalBibleMarkRow> custom({
+    Expression<DateTime>? clientUpdatedAt,
+    Expression<bool>? dirty,
+    Expression<String>? lastError,
+    Expression<String>? id,
+    Expression<String>? kind,
+    Expression<String>? book,
+    Expression<int>? chapter,
+    Expression<int>? verseFrom,
+    Expression<int>? verseTo,
+    Expression<String>? color,
+    Expression<DateTime>? clientCreatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (clientUpdatedAt != null) 'client_updated_at': clientUpdatedAt,
+      if (dirty != null) 'dirty': dirty,
+      if (lastError != null) 'last_error': lastError,
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (book != null) 'book': book,
+      if (chapter != null) 'chapter': chapter,
+      if (verseFrom != null) 'verse_from': verseFrom,
+      if (verseTo != null) 'verse_to': verseTo,
+      if (color != null) 'color': color,
+      if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalBibleMarksCompanion copyWith(
+      {Value<DateTime>? clientUpdatedAt,
+      Value<bool>? dirty,
+      Value<String?>? lastError,
+      Value<String>? id,
+      Value<String>? kind,
+      Value<String>? book,
+      Value<int>? chapter,
+      Value<int?>? verseFrom,
+      Value<int?>? verseTo,
+      Value<String?>? color,
+      Value<DateTime>? clientCreatedAt,
+      Value<DateTime?>? deletedAt,
+      Value<int>? rowid}) {
+    return LocalBibleMarksCompanion(
+      clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+      dirty: dirty ?? this.dirty,
+      lastError: lastError ?? this.lastError,
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      book: book ?? this.book,
+      chapter: chapter ?? this.chapter,
+      verseFrom: verseFrom ?? this.verseFrom,
+      verseTo: verseTo ?? this.verseTo,
+      color: color ?? this.color,
+      clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (clientUpdatedAt.present) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (book.present) {
+      map['book'] = Variable<String>(book.value);
+    }
+    if (chapter.present) {
+      map['chapter'] = Variable<int>(chapter.value);
+    }
+    if (verseFrom.present) {
+      map['verse_from'] = Variable<int>(verseFrom.value);
+    }
+    if (verseTo.present) {
+      map['verse_to'] = Variable<int>(verseTo.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<String>(color.value);
+    }
+    if (clientCreatedAt.present) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBibleMarksCompanion(')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('lastError: $lastError, ')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verseFrom: $verseFrom, ')
+          ..write('verseTo: $verseTo, ')
+          ..write('color: $color, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalBibleReadingStateTable extends LocalBibleReadingState
+    with TableInfo<$LocalBibleReadingStateTable, LocalBibleReadingStateRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalBibleReadingStateTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _clientUpdatedAtMeta =
+      const VerificationMeta('clientUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientUpdatedAt =
+      GeneratedColumn<DateTime>('client_updated_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+      'dirty', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("dirty" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _lastErrorMeta =
+      const VerificationMeta('lastError');
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+      'last_error', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _versionCodeMeta =
+      const VerificationMeta('versionCode');
+  @override
+  late final GeneratedColumn<String> versionCode = GeneratedColumn<String>(
+      'version_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _bookMeta = const VerificationMeta('book');
+  @override
+  late final GeneratedColumn<String> book = GeneratedColumn<String>(
+      'book', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _chapterMeta =
+      const VerificationMeta('chapter');
+  @override
+  late final GeneratedColumn<int> chapter = GeneratedColumn<int>(
+      'chapter', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _verseMeta = const VerificationMeta('verse');
+  @override
+  late final GeneratedColumn<int> verse = GeneratedColumn<int>(
+      'verse', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _readChaptersMeta =
+      const VerificationMeta('readChapters');
+  @override
+  late final GeneratedColumn<String> readChapters = GeneratedColumn<String>(
+      'read_chapters', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _streakDaysMeta =
+      const VerificationMeta('streakDays');
+  @override
+  late final GeneratedColumn<int> streakDays = GeneratedColumn<int>(
+      'streak_days', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _lastReadOnMeta =
+      const VerificationMeta('lastReadOn');
+  @override
+  late final GeneratedColumn<String> lastReadOn = GeneratedColumn<String>(
+      'last_read_on', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        clientUpdatedAt,
+        dirty,
+        lastError,
+        id,
+        versionCode,
+        book,
+        chapter,
+        verse,
+        readChapters,
+        streakDays,
+        lastReadOn
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_bible_reading_state';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalBibleReadingStateRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('client_updated_at')) {
+      context.handle(
+          _clientUpdatedAtMeta,
+          clientUpdatedAt.isAcceptableOrUnknown(
+              data['client_updated_at']!, _clientUpdatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_clientUpdatedAtMeta);
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+          _dirtyMeta, dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta));
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(_lastErrorMeta,
+          lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('version_code')) {
+      context.handle(
+          _versionCodeMeta,
+          versionCode.isAcceptableOrUnknown(
+              data['version_code']!, _versionCodeMeta));
+    }
+    if (data.containsKey('book')) {
+      context.handle(
+          _bookMeta, book.isAcceptableOrUnknown(data['book']!, _bookMeta));
+    }
+    if (data.containsKey('chapter')) {
+      context.handle(_chapterMeta,
+          chapter.isAcceptableOrUnknown(data['chapter']!, _chapterMeta));
+    }
+    if (data.containsKey('verse')) {
+      context.handle(
+          _verseMeta, verse.isAcceptableOrUnknown(data['verse']!, _verseMeta));
+    }
+    if (data.containsKey('read_chapters')) {
+      context.handle(
+          _readChaptersMeta,
+          readChapters.isAcceptableOrUnknown(
+              data['read_chapters']!, _readChaptersMeta));
+    }
+    if (data.containsKey('streak_days')) {
+      context.handle(
+          _streakDaysMeta,
+          streakDays.isAcceptableOrUnknown(
+              data['streak_days']!, _streakDaysMeta));
+    }
+    if (data.containsKey('last_read_on')) {
+      context.handle(
+          _lastReadOnMeta,
+          lastReadOn.isAcceptableOrUnknown(
+              data['last_read_on']!, _lastReadOnMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalBibleReadingStateRow map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalBibleReadingStateRow(
+      clientUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_updated_at'])!,
+      dirty: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}dirty'])!,
+      lastError: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_error']),
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      versionCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}version_code']),
+      book: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}book']),
+      chapter: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}chapter']),
+      verse: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}verse']),
+      readChapters: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}read_chapters']),
+      streakDays: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}streak_days'])!,
+      lastReadOn: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_read_on']),
+    );
+  }
+
+  @override
+  $LocalBibleReadingStateTable createAlias(String alias) {
+    return $LocalBibleReadingStateTable(attachedDatabase, alias);
+  }
+}
+
+class LocalBibleReadingStateRow extends DataClass
+    implements Insertable<LocalBibleReadingStateRow> {
+  /// L'horloge de l'appareil au dernier geste ; envoyée au serveur.
+  final DateTime clientUpdatedAt;
+
+  /// Reste-t-il un envoi à faire ?
+  final bool dirty;
+
+  /// Le dernier échec d'envoi, pour le diagnostic.
+  final String? lastError;
+  final String id;
+  final String? versionCode;
+  final String? book;
+  final int? chapter;
+  final int? verse;
+  final String? readChapters;
+  final int streakDays;
+  final String? lastReadOn;
+  const LocalBibleReadingStateRow(
+      {required this.clientUpdatedAt,
+      required this.dirty,
+      this.lastError,
+      required this.id,
+      this.versionCode,
+      this.book,
+      this.chapter,
+      this.verse,
+      this.readChapters,
+      required this.streakDays,
+      this.lastReadOn});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt);
+    map['dirty'] = Variable<bool>(dirty);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || versionCode != null) {
+      map['version_code'] = Variable<String>(versionCode);
+    }
+    if (!nullToAbsent || book != null) {
+      map['book'] = Variable<String>(book);
+    }
+    if (!nullToAbsent || chapter != null) {
+      map['chapter'] = Variable<int>(chapter);
+    }
+    if (!nullToAbsent || verse != null) {
+      map['verse'] = Variable<int>(verse);
+    }
+    if (!nullToAbsent || readChapters != null) {
+      map['read_chapters'] = Variable<String>(readChapters);
+    }
+    map['streak_days'] = Variable<int>(streakDays);
+    if (!nullToAbsent || lastReadOn != null) {
+      map['last_read_on'] = Variable<String>(lastReadOn);
+    }
+    return map;
+  }
+
+  LocalBibleReadingStateCompanion toCompanion(bool nullToAbsent) {
+    return LocalBibleReadingStateCompanion(
+      clientUpdatedAt: Value(clientUpdatedAt),
+      dirty: Value(dirty),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      id: Value(id),
+      versionCode: versionCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(versionCode),
+      book: book == null && nullToAbsent ? const Value.absent() : Value(book),
+      chapter: chapter == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chapter),
+      verse:
+          verse == null && nullToAbsent ? const Value.absent() : Value(verse),
+      readChapters: readChapters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(readChapters),
+      streakDays: Value(streakDays),
+      lastReadOn: lastReadOn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastReadOn),
+    );
+  }
+
+  factory LocalBibleReadingStateRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalBibleReadingStateRow(
+      clientUpdatedAt: serializer.fromJson<DateTime>(json['clientUpdatedAt']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      id: serializer.fromJson<String>(json['id']),
+      versionCode: serializer.fromJson<String?>(json['versionCode']),
+      book: serializer.fromJson<String?>(json['book']),
+      chapter: serializer.fromJson<int?>(json['chapter']),
+      verse: serializer.fromJson<int?>(json['verse']),
+      readChapters: serializer.fromJson<String?>(json['readChapters']),
+      streakDays: serializer.fromJson<int>(json['streakDays']),
+      lastReadOn: serializer.fromJson<String?>(json['lastReadOn']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'clientUpdatedAt': serializer.toJson<DateTime>(clientUpdatedAt),
+      'dirty': serializer.toJson<bool>(dirty),
+      'lastError': serializer.toJson<String?>(lastError),
+      'id': serializer.toJson<String>(id),
+      'versionCode': serializer.toJson<String?>(versionCode),
+      'book': serializer.toJson<String?>(book),
+      'chapter': serializer.toJson<int?>(chapter),
+      'verse': serializer.toJson<int?>(verse),
+      'readChapters': serializer.toJson<String?>(readChapters),
+      'streakDays': serializer.toJson<int>(streakDays),
+      'lastReadOn': serializer.toJson<String?>(lastReadOn),
+    };
+  }
+
+  LocalBibleReadingStateRow copyWith(
+          {DateTime? clientUpdatedAt,
+          bool? dirty,
+          Value<String?> lastError = const Value.absent(),
+          String? id,
+          Value<String?> versionCode = const Value.absent(),
+          Value<String?> book = const Value.absent(),
+          Value<int?> chapter = const Value.absent(),
+          Value<int?> verse = const Value.absent(),
+          Value<String?> readChapters = const Value.absent(),
+          int? streakDays,
+          Value<String?> lastReadOn = const Value.absent()}) =>
+      LocalBibleReadingStateRow(
+        clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+        dirty: dirty ?? this.dirty,
+        lastError: lastError.present ? lastError.value : this.lastError,
+        id: id ?? this.id,
+        versionCode: versionCode.present ? versionCode.value : this.versionCode,
+        book: book.present ? book.value : this.book,
+        chapter: chapter.present ? chapter.value : this.chapter,
+        verse: verse.present ? verse.value : this.verse,
+        readChapters:
+            readChapters.present ? readChapters.value : this.readChapters,
+        streakDays: streakDays ?? this.streakDays,
+        lastReadOn: lastReadOn.present ? lastReadOn.value : this.lastReadOn,
+      );
+  LocalBibleReadingStateRow copyWithCompanion(
+      LocalBibleReadingStateCompanion data) {
+    return LocalBibleReadingStateRow(
+      clientUpdatedAt: data.clientUpdatedAt.present
+          ? data.clientUpdatedAt.value
+          : this.clientUpdatedAt,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      id: data.id.present ? data.id.value : this.id,
+      versionCode:
+          data.versionCode.present ? data.versionCode.value : this.versionCode,
+      book: data.book.present ? data.book.value : this.book,
+      chapter: data.chapter.present ? data.chapter.value : this.chapter,
+      verse: data.verse.present ? data.verse.value : this.verse,
+      readChapters: data.readChapters.present
+          ? data.readChapters.value
+          : this.readChapters,
+      streakDays:
+          data.streakDays.present ? data.streakDays.value : this.streakDays,
+      lastReadOn:
+          data.lastReadOn.present ? data.lastReadOn.value : this.lastReadOn,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBibleReadingStateRow(')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('lastError: $lastError, ')
+          ..write('id: $id, ')
+          ..write('versionCode: $versionCode, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verse: $verse, ')
+          ..write('readChapters: $readChapters, ')
+          ..write('streakDays: $streakDays, ')
+          ..write('lastReadOn: $lastReadOn')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(clientUpdatedAt, dirty, lastError, id,
+      versionCode, book, chapter, verse, readChapters, streakDays, lastReadOn);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalBibleReadingStateRow &&
+          other.clientUpdatedAt == this.clientUpdatedAt &&
+          other.dirty == this.dirty &&
+          other.lastError == this.lastError &&
+          other.id == this.id &&
+          other.versionCode == this.versionCode &&
+          other.book == this.book &&
+          other.chapter == this.chapter &&
+          other.verse == this.verse &&
+          other.readChapters == this.readChapters &&
+          other.streakDays == this.streakDays &&
+          other.lastReadOn == this.lastReadOn);
+}
+
+class LocalBibleReadingStateCompanion
+    extends UpdateCompanion<LocalBibleReadingStateRow> {
+  final Value<DateTime> clientUpdatedAt;
+  final Value<bool> dirty;
+  final Value<String?> lastError;
+  final Value<String> id;
+  final Value<String?> versionCode;
+  final Value<String?> book;
+  final Value<int?> chapter;
+  final Value<int?> verse;
+  final Value<String?> readChapters;
+  final Value<int> streakDays;
+  final Value<String?> lastReadOn;
+  final Value<int> rowid;
+  const LocalBibleReadingStateCompanion({
+    this.clientUpdatedAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.id = const Value.absent(),
+    this.versionCode = const Value.absent(),
+    this.book = const Value.absent(),
+    this.chapter = const Value.absent(),
+    this.verse = const Value.absent(),
+    this.readChapters = const Value.absent(),
+    this.streakDays = const Value.absent(),
+    this.lastReadOn = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalBibleReadingStateCompanion.insert({
+    required DateTime clientUpdatedAt,
+    this.dirty = const Value.absent(),
+    this.lastError = const Value.absent(),
+    required String id,
+    this.versionCode = const Value.absent(),
+    this.book = const Value.absent(),
+    this.chapter = const Value.absent(),
+    this.verse = const Value.absent(),
+    this.readChapters = const Value.absent(),
+    this.streakDays = const Value.absent(),
+    this.lastReadOn = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : clientUpdatedAt = Value(clientUpdatedAt),
+        id = Value(id);
+  static Insertable<LocalBibleReadingStateRow> custom({
+    Expression<DateTime>? clientUpdatedAt,
+    Expression<bool>? dirty,
+    Expression<String>? lastError,
+    Expression<String>? id,
+    Expression<String>? versionCode,
+    Expression<String>? book,
+    Expression<int>? chapter,
+    Expression<int>? verse,
+    Expression<String>? readChapters,
+    Expression<int>? streakDays,
+    Expression<String>? lastReadOn,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (clientUpdatedAt != null) 'client_updated_at': clientUpdatedAt,
+      if (dirty != null) 'dirty': dirty,
+      if (lastError != null) 'last_error': lastError,
+      if (id != null) 'id': id,
+      if (versionCode != null) 'version_code': versionCode,
+      if (book != null) 'book': book,
+      if (chapter != null) 'chapter': chapter,
+      if (verse != null) 'verse': verse,
+      if (readChapters != null) 'read_chapters': readChapters,
+      if (streakDays != null) 'streak_days': streakDays,
+      if (lastReadOn != null) 'last_read_on': lastReadOn,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalBibleReadingStateCompanion copyWith(
+      {Value<DateTime>? clientUpdatedAt,
+      Value<bool>? dirty,
+      Value<String?>? lastError,
+      Value<String>? id,
+      Value<String?>? versionCode,
+      Value<String?>? book,
+      Value<int?>? chapter,
+      Value<int?>? verse,
+      Value<String?>? readChapters,
+      Value<int>? streakDays,
+      Value<String?>? lastReadOn,
+      Value<int>? rowid}) {
+    return LocalBibleReadingStateCompanion(
+      clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+      dirty: dirty ?? this.dirty,
+      lastError: lastError ?? this.lastError,
+      id: id ?? this.id,
+      versionCode: versionCode ?? this.versionCode,
+      book: book ?? this.book,
+      chapter: chapter ?? this.chapter,
+      verse: verse ?? this.verse,
+      readChapters: readChapters ?? this.readChapters,
+      streakDays: streakDays ?? this.streakDays,
+      lastReadOn: lastReadOn ?? this.lastReadOn,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (clientUpdatedAt.present) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (versionCode.present) {
+      map['version_code'] = Variable<String>(versionCode.value);
+    }
+    if (book.present) {
+      map['book'] = Variable<String>(book.value);
+    }
+    if (chapter.present) {
+      map['chapter'] = Variable<int>(chapter.value);
+    }
+    if (verse.present) {
+      map['verse'] = Variable<int>(verse.value);
+    }
+    if (readChapters.present) {
+      map['read_chapters'] = Variable<String>(readChapters.value);
+    }
+    if (streakDays.present) {
+      map['streak_days'] = Variable<int>(streakDays.value);
+    }
+    if (lastReadOn.present) {
+      map['last_read_on'] = Variable<String>(lastReadOn.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBibleReadingStateCompanion(')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('lastError: $lastError, ')
+          ..write('id: $id, ')
+          ..write('versionCode: $versionCode, ')
+          ..write('book: $book, ')
+          ..write('chapter: $chapter, ')
+          ..write('verse: $verse, ')
+          ..write('readChapters: $readChapters, ')
+          ..write('streakDays: $streakDays, ')
+          ..write('lastReadOn: $lastReadOn, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalBiblePlanEnrollmentsTable extends LocalBiblePlanEnrollments
+    with
+        TableInfo<$LocalBiblePlanEnrollmentsTable,
+            LocalBiblePlanEnrollmentRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalBiblePlanEnrollmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _clientUpdatedAtMeta =
+      const VerificationMeta('clientUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientUpdatedAt =
+      GeneratedColumn<DateTime>('client_updated_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+      'dirty', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("dirty" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _lastErrorMeta =
+      const VerificationMeta('lastError');
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+      'last_error', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _planCodeMeta =
+      const VerificationMeta('planCode');
+  @override
+  late final GeneratedColumn<String> planCode = GeneratedColumn<String>(
+      'plan_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _planIdMeta = const VerificationMeta('planId');
+  @override
+  late final GeneratedColumn<String> planId = GeneratedColumn<String>(
+      'plan_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _customMeta = const VerificationMeta('custom');
+  @override
+  late final GeneratedColumn<String> custom = GeneratedColumn<String>(
+      'custom', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _startedOnMeta =
+      const VerificationMeta('startedOn');
+  @override
+  late final GeneratedColumn<String> startedOn = GeneratedColumn<String>(
+      'started_on', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _completedDaysMeta =
+      const VerificationMeta('completedDays');
+  @override
+  late final GeneratedColumn<String> completedDays = GeneratedColumn<String>(
+      'completed_days', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _challengeIdMeta =
+      const VerificationMeta('challengeId');
+  @override
+  late final GeneratedColumn<String> challengeId = GeneratedColumn<String>(
+      'challenge_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _clientCreatedAtMeta =
+      const VerificationMeta('clientCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientCreatedAt =
+      GeneratedColumn<DateTime>('client_created_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _deletedAtMeta =
+      const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+      'deleted_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        clientUpdatedAt,
+        dirty,
+        lastError,
+        id,
+        source,
+        planCode,
+        planId,
+        custom,
+        startedOn,
+        completedDays,
+        challengeId,
+        clientCreatedAt,
+        deletedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_bible_plan_enrollments';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalBiblePlanEnrollmentRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('client_updated_at')) {
+      context.handle(
+          _clientUpdatedAtMeta,
+          clientUpdatedAt.isAcceptableOrUnknown(
+              data['client_updated_at']!, _clientUpdatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_clientUpdatedAtMeta);
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+          _dirtyMeta, dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta));
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(_lastErrorMeta,
+          lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('plan_code')) {
+      context.handle(_planCodeMeta,
+          planCode.isAcceptableOrUnknown(data['plan_code']!, _planCodeMeta));
+    }
+    if (data.containsKey('plan_id')) {
+      context.handle(_planIdMeta,
+          planId.isAcceptableOrUnknown(data['plan_id']!, _planIdMeta));
+    }
+    if (data.containsKey('custom')) {
+      context.handle(_customMeta,
+          custom.isAcceptableOrUnknown(data['custom']!, _customMeta));
+    }
+    if (data.containsKey('started_on')) {
+      context.handle(_startedOnMeta,
+          startedOn.isAcceptableOrUnknown(data['started_on']!, _startedOnMeta));
+    }
+    if (data.containsKey('completed_days')) {
+      context.handle(
+          _completedDaysMeta,
+          completedDays.isAcceptableOrUnknown(
+              data['completed_days']!, _completedDaysMeta));
+    }
+    if (data.containsKey('challenge_id')) {
+      context.handle(
+          _challengeIdMeta,
+          challengeId.isAcceptableOrUnknown(
+              data['challenge_id']!, _challengeIdMeta));
+    }
+    if (data.containsKey('client_created_at')) {
+      context.handle(
+          _clientCreatedAtMeta,
+          clientCreatedAt.isAcceptableOrUnknown(
+              data['client_created_at']!, _clientCreatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_clientCreatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta,
+          deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalBiblePlanEnrollmentRow map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalBiblePlanEnrollmentRow(
+      clientUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_updated_at'])!,
+      dirty: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}dirty'])!,
+      lastError: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_error']),
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+      planCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plan_code']),
+      planId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plan_id']),
+      custom: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}custom']),
+      startedOn: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}started_on']),
+      completedDays: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}completed_days']),
+      challengeId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}challenge_id']),
+      clientCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_created_at'])!,
+      deletedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}deleted_at']),
+    );
+  }
+
+  @override
+  $LocalBiblePlanEnrollmentsTable createAlias(String alias) {
+    return $LocalBiblePlanEnrollmentsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalBiblePlanEnrollmentRow extends DataClass
+    implements Insertable<LocalBiblePlanEnrollmentRow> {
+  /// L'horloge de l'appareil au dernier geste ; envoyée au serveur.
+  final DateTime clientUpdatedAt;
+
+  /// Reste-t-il un envoi à faire ?
+  final bool dirty;
+
+  /// Le dernier échec d'envoi, pour le diagnostic.
+  final String? lastError;
+  final String id;
+  final String source;
+  final String? planCode;
+  final String? planId;
+  final String? custom;
+  final String? startedOn;
+  final String? completedDays;
+  final String? challengeId;
+  final DateTime clientCreatedAt;
+
+  /// Posé quand le plan est quitté et que le `DELETE` reste à partir.
+  final DateTime? deletedAt;
+  const LocalBiblePlanEnrollmentRow(
+      {required this.clientUpdatedAt,
+      required this.dirty,
+      this.lastError,
+      required this.id,
+      required this.source,
+      this.planCode,
+      this.planId,
+      this.custom,
+      this.startedOn,
+      this.completedDays,
+      this.challengeId,
+      required this.clientCreatedAt,
+      this.deletedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt);
+    map['dirty'] = Variable<bool>(dirty);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['id'] = Variable<String>(id);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || planCode != null) {
+      map['plan_code'] = Variable<String>(planCode);
+    }
+    if (!nullToAbsent || planId != null) {
+      map['plan_id'] = Variable<String>(planId);
+    }
+    if (!nullToAbsent || custom != null) {
+      map['custom'] = Variable<String>(custom);
+    }
+    if (!nullToAbsent || startedOn != null) {
+      map['started_on'] = Variable<String>(startedOn);
+    }
+    if (!nullToAbsent || completedDays != null) {
+      map['completed_days'] = Variable<String>(completedDays);
+    }
+    if (!nullToAbsent || challengeId != null) {
+      map['challenge_id'] = Variable<String>(challengeId);
+    }
+    map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  LocalBiblePlanEnrollmentsCompanion toCompanion(bool nullToAbsent) {
+    return LocalBiblePlanEnrollmentsCompanion(
+      clientUpdatedAt: Value(clientUpdatedAt),
+      dirty: Value(dirty),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      id: Value(id),
+      source: Value(source),
+      planCode: planCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(planCode),
+      planId:
+          planId == null && nullToAbsent ? const Value.absent() : Value(planId),
+      custom:
+          custom == null && nullToAbsent ? const Value.absent() : Value(custom),
+      startedOn: startedOn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startedOn),
+      completedDays: completedDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedDays),
+      challengeId: challengeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(challengeId),
+      clientCreatedAt: Value(clientCreatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory LocalBiblePlanEnrollmentRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalBiblePlanEnrollmentRow(
+      clientUpdatedAt: serializer.fromJson<DateTime>(json['clientUpdatedAt']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      id: serializer.fromJson<String>(json['id']),
+      source: serializer.fromJson<String>(json['source']),
+      planCode: serializer.fromJson<String?>(json['planCode']),
+      planId: serializer.fromJson<String?>(json['planId']),
+      custom: serializer.fromJson<String?>(json['custom']),
+      startedOn: serializer.fromJson<String?>(json['startedOn']),
+      completedDays: serializer.fromJson<String?>(json['completedDays']),
+      challengeId: serializer.fromJson<String?>(json['challengeId']),
+      clientCreatedAt: serializer.fromJson<DateTime>(json['clientCreatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'clientUpdatedAt': serializer.toJson<DateTime>(clientUpdatedAt),
+      'dirty': serializer.toJson<bool>(dirty),
+      'lastError': serializer.toJson<String?>(lastError),
+      'id': serializer.toJson<String>(id),
+      'source': serializer.toJson<String>(source),
+      'planCode': serializer.toJson<String?>(planCode),
+      'planId': serializer.toJson<String?>(planId),
+      'custom': serializer.toJson<String?>(custom),
+      'startedOn': serializer.toJson<String?>(startedOn),
+      'completedDays': serializer.toJson<String?>(completedDays),
+      'challengeId': serializer.toJson<String?>(challengeId),
+      'clientCreatedAt': serializer.toJson<DateTime>(clientCreatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  LocalBiblePlanEnrollmentRow copyWith(
+          {DateTime? clientUpdatedAt,
+          bool? dirty,
+          Value<String?> lastError = const Value.absent(),
+          String? id,
+          String? source,
+          Value<String?> planCode = const Value.absent(),
+          Value<String?> planId = const Value.absent(),
+          Value<String?> custom = const Value.absent(),
+          Value<String?> startedOn = const Value.absent(),
+          Value<String?> completedDays = const Value.absent(),
+          Value<String?> challengeId = const Value.absent(),
+          DateTime? clientCreatedAt,
+          Value<DateTime?> deletedAt = const Value.absent()}) =>
+      LocalBiblePlanEnrollmentRow(
+        clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+        dirty: dirty ?? this.dirty,
+        lastError: lastError.present ? lastError.value : this.lastError,
+        id: id ?? this.id,
+        source: source ?? this.source,
+        planCode: planCode.present ? planCode.value : this.planCode,
+        planId: planId.present ? planId.value : this.planId,
+        custom: custom.present ? custom.value : this.custom,
+        startedOn: startedOn.present ? startedOn.value : this.startedOn,
+        completedDays:
+            completedDays.present ? completedDays.value : this.completedDays,
+        challengeId: challengeId.present ? challengeId.value : this.challengeId,
+        clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+        deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+      );
+  LocalBiblePlanEnrollmentRow copyWithCompanion(
+      LocalBiblePlanEnrollmentsCompanion data) {
+    return LocalBiblePlanEnrollmentRow(
+      clientUpdatedAt: data.clientUpdatedAt.present
+          ? data.clientUpdatedAt.value
+          : this.clientUpdatedAt,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      id: data.id.present ? data.id.value : this.id,
+      source: data.source.present ? data.source.value : this.source,
+      planCode: data.planCode.present ? data.planCode.value : this.planCode,
+      planId: data.planId.present ? data.planId.value : this.planId,
+      custom: data.custom.present ? data.custom.value : this.custom,
+      startedOn: data.startedOn.present ? data.startedOn.value : this.startedOn,
+      completedDays: data.completedDays.present
+          ? data.completedDays.value
+          : this.completedDays,
+      challengeId:
+          data.challengeId.present ? data.challengeId.value : this.challengeId,
+      clientCreatedAt: data.clientCreatedAt.present
+          ? data.clientCreatedAt.value
+          : this.clientCreatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBiblePlanEnrollmentRow(')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('lastError: $lastError, ')
+          ..write('id: $id, ')
+          ..write('source: $source, ')
+          ..write('planCode: $planCode, ')
+          ..write('planId: $planId, ')
+          ..write('custom: $custom, ')
+          ..write('startedOn: $startedOn, ')
+          ..write('completedDays: $completedDays, ')
+          ..write('challengeId: $challengeId, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      clientUpdatedAt,
+      dirty,
+      lastError,
+      id,
+      source,
+      planCode,
+      planId,
+      custom,
+      startedOn,
+      completedDays,
+      challengeId,
+      clientCreatedAt,
+      deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalBiblePlanEnrollmentRow &&
+          other.clientUpdatedAt == this.clientUpdatedAt &&
+          other.dirty == this.dirty &&
+          other.lastError == this.lastError &&
+          other.id == this.id &&
+          other.source == this.source &&
+          other.planCode == this.planCode &&
+          other.planId == this.planId &&
+          other.custom == this.custom &&
+          other.startedOn == this.startedOn &&
+          other.completedDays == this.completedDays &&
+          other.challengeId == this.challengeId &&
+          other.clientCreatedAt == this.clientCreatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class LocalBiblePlanEnrollmentsCompanion
+    extends UpdateCompanion<LocalBiblePlanEnrollmentRow> {
+  final Value<DateTime> clientUpdatedAt;
+  final Value<bool> dirty;
+  final Value<String?> lastError;
+  final Value<String> id;
+  final Value<String> source;
+  final Value<String?> planCode;
+  final Value<String?> planId;
+  final Value<String?> custom;
+  final Value<String?> startedOn;
+  final Value<String?> completedDays;
+  final Value<String?> challengeId;
+  final Value<DateTime> clientCreatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<int> rowid;
+  const LocalBiblePlanEnrollmentsCompanion({
+    this.clientUpdatedAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.id = const Value.absent(),
+    this.source = const Value.absent(),
+    this.planCode = const Value.absent(),
+    this.planId = const Value.absent(),
+    this.custom = const Value.absent(),
+    this.startedOn = const Value.absent(),
+    this.completedDays = const Value.absent(),
+    this.challengeId = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalBiblePlanEnrollmentsCompanion.insert({
+    required DateTime clientUpdatedAt,
+    this.dirty = const Value.absent(),
+    this.lastError = const Value.absent(),
+    required String id,
+    required String source,
+    this.planCode = const Value.absent(),
+    this.planId = const Value.absent(),
+    this.custom = const Value.absent(),
+    this.startedOn = const Value.absent(),
+    this.completedDays = const Value.absent(),
+    this.challengeId = const Value.absent(),
+    required DateTime clientCreatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : clientUpdatedAt = Value(clientUpdatedAt),
+        id = Value(id),
+        source = Value(source),
+        clientCreatedAt = Value(clientCreatedAt);
+  static Insertable<LocalBiblePlanEnrollmentRow> createCustom({
+    Expression<DateTime>? clientUpdatedAt,
+    Expression<bool>? dirty,
+    Expression<String>? lastError,
+    Expression<String>? id,
+    Expression<String>? source,
+    Expression<String>? planCode,
+    Expression<String>? planId,
+    Expression<String>? custom,
+    Expression<String>? startedOn,
+    Expression<String>? completedDays,
+    Expression<String>? challengeId,
+    Expression<DateTime>? clientCreatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (clientUpdatedAt != null) 'client_updated_at': clientUpdatedAt,
+      if (dirty != null) 'dirty': dirty,
+      if (lastError != null) 'last_error': lastError,
+      if (id != null) 'id': id,
+      if (source != null) 'source': source,
+      if (planCode != null) 'plan_code': planCode,
+      if (planId != null) 'plan_id': planId,
+      if (custom != null) 'custom': custom,
+      if (startedOn != null) 'started_on': startedOn,
+      if (completedDays != null) 'completed_days': completedDays,
+      if (challengeId != null) 'challenge_id': challengeId,
+      if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalBiblePlanEnrollmentsCompanion copyWith(
+      {Value<DateTime>? clientUpdatedAt,
+      Value<bool>? dirty,
+      Value<String?>? lastError,
+      Value<String>? id,
+      Value<String>? source,
+      Value<String?>? planCode,
+      Value<String?>? planId,
+      Value<String?>? custom,
+      Value<String?>? startedOn,
+      Value<String?>? completedDays,
+      Value<String?>? challengeId,
+      Value<DateTime>? clientCreatedAt,
+      Value<DateTime?>? deletedAt,
+      Value<int>? rowid}) {
+    return LocalBiblePlanEnrollmentsCompanion(
+      clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+      dirty: dirty ?? this.dirty,
+      lastError: lastError ?? this.lastError,
+      id: id ?? this.id,
+      source: source ?? this.source,
+      planCode: planCode ?? this.planCode,
+      planId: planId ?? this.planId,
+      custom: custom ?? this.custom,
+      startedOn: startedOn ?? this.startedOn,
+      completedDays: completedDays ?? this.completedDays,
+      challengeId: challengeId ?? this.challengeId,
+      clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (clientUpdatedAt.present) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (planCode.present) {
+      map['plan_code'] = Variable<String>(planCode.value);
+    }
+    if (planId.present) {
+      map['plan_id'] = Variable<String>(planId.value);
+    }
+    if (custom.present) {
+      map['custom'] = Variable<String>(custom.value);
+    }
+    if (startedOn.present) {
+      map['started_on'] = Variable<String>(startedOn.value);
+    }
+    if (completedDays.present) {
+      map['completed_days'] = Variable<String>(completedDays.value);
+    }
+    if (challengeId.present) {
+      map['challenge_id'] = Variable<String>(challengeId.value);
+    }
+    if (clientCreatedAt.present) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBiblePlanEnrollmentsCompanion(')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('lastError: $lastError, ')
+          ..write('id: $id, ')
+          ..write('source: $source, ')
+          ..write('planCode: $planCode, ')
+          ..write('planId: $planId, ')
+          ..write('custom: $custom, ')
+          ..write('startedOn: $startedOn, ')
+          ..write('completedDays: $completedDays, ')
+          ..write('challengeId: $challengeId, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalBibleQuizResultsTable extends LocalBibleQuizResults
+    with TableInfo<$LocalBibleQuizResultsTable, LocalBibleQuizResultRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalBibleQuizResultsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _clientUpdatedAtMeta =
+      const VerificationMeta('clientUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientUpdatedAt =
+      GeneratedColumn<DateTime>('client_updated_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+      'dirty', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("dirty" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _lastErrorMeta =
+      const VerificationMeta('lastError');
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+      'last_error', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _quizIdMeta = const VerificationMeta('quizId');
+  @override
+  late final GeneratedColumn<int> quizId = GeneratedColumn<int>(
+      'quiz_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _scoreMeta = const VerificationMeta('score');
+  @override
+  late final GeneratedColumn<int> score = GeneratedColumn<int>(
+      'score', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _totalMeta = const VerificationMeta('total');
+  @override
+  late final GeneratedColumn<int> total = GeneratedColumn<int>(
+      'total', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _durationSecondsMeta =
+      const VerificationMeta('durationSeconds');
+  @override
+  late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
+      'duration_seconds', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _playedAtMeta =
+      const VerificationMeta('playedAt');
+  @override
+  late final GeneratedColumn<DateTime> playedAt = GeneratedColumn<DateTime>(
+      'played_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        clientUpdatedAt,
+        dirty,
+        lastError,
+        id,
+        quizId,
+        score,
+        total,
+        durationSeconds,
+        playedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_bible_quiz_results';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalBibleQuizResultRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('client_updated_at')) {
+      context.handle(
+          _clientUpdatedAtMeta,
+          clientUpdatedAt.isAcceptableOrUnknown(
+              data['client_updated_at']!, _clientUpdatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_clientUpdatedAtMeta);
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+          _dirtyMeta, dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta));
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(_lastErrorMeta,
+          lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('quiz_id')) {
+      context.handle(_quizIdMeta,
+          quizId.isAcceptableOrUnknown(data['quiz_id']!, _quizIdMeta));
+    } else if (isInserting) {
+      context.missing(_quizIdMeta);
+    }
+    if (data.containsKey('score')) {
+      context.handle(
+          _scoreMeta, score.isAcceptableOrUnknown(data['score']!, _scoreMeta));
+    }
+    if (data.containsKey('total')) {
+      context.handle(
+          _totalMeta, total.isAcceptableOrUnknown(data['total']!, _totalMeta));
+    }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+          _durationSecondsMeta,
+          durationSeconds.isAcceptableOrUnknown(
+              data['duration_seconds']!, _durationSecondsMeta));
+    }
+    if (data.containsKey('played_at')) {
+      context.handle(_playedAtMeta,
+          playedAt.isAcceptableOrUnknown(data['played_at']!, _playedAtMeta));
+    } else if (isInserting) {
+      context.missing(_playedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalBibleQuizResultRow map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalBibleQuizResultRow(
+      clientUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_updated_at'])!,
+      dirty: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}dirty'])!,
+      lastError: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_error']),
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      quizId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}quiz_id'])!,
+      score: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}score'])!,
+      total: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}total'])!,
+      durationSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration_seconds']),
+      playedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}played_at'])!,
+    );
+  }
+
+  @override
+  $LocalBibleQuizResultsTable createAlias(String alias) {
+    return $LocalBibleQuizResultsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalBibleQuizResultRow extends DataClass
+    implements Insertable<LocalBibleQuizResultRow> {
+  /// L'horloge de l'appareil au dernier geste ; envoyée au serveur.
+  final DateTime clientUpdatedAt;
+
+  /// Reste-t-il un envoi à faire ?
+  final bool dirty;
+
+  /// Le dernier échec d'envoi, pour le diagnostic.
+  final String? lastError;
+  final String id;
+  final int quizId;
+  final int score;
+  final int total;
+  final int? durationSeconds;
+  final DateTime playedAt;
+  const LocalBibleQuizResultRow(
+      {required this.clientUpdatedAt,
+      required this.dirty,
+      this.lastError,
+      required this.id,
+      required this.quizId,
+      required this.score,
+      required this.total,
+      this.durationSeconds,
+      required this.playedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt);
+    map['dirty'] = Variable<bool>(dirty);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['id'] = Variable<String>(id);
+    map['quiz_id'] = Variable<int>(quizId);
+    map['score'] = Variable<int>(score);
+    map['total'] = Variable<int>(total);
+    if (!nullToAbsent || durationSeconds != null) {
+      map['duration_seconds'] = Variable<int>(durationSeconds);
+    }
+    map['played_at'] = Variable<DateTime>(playedAt);
+    return map;
+  }
+
+  LocalBibleQuizResultsCompanion toCompanion(bool nullToAbsent) {
+    return LocalBibleQuizResultsCompanion(
+      clientUpdatedAt: Value(clientUpdatedAt),
+      dirty: Value(dirty),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      id: Value(id),
+      quizId: Value(quizId),
+      score: Value(score),
+      total: Value(total),
+      durationSeconds: durationSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationSeconds),
+      playedAt: Value(playedAt),
+    );
+  }
+
+  factory LocalBibleQuizResultRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalBibleQuizResultRow(
+      clientUpdatedAt: serializer.fromJson<DateTime>(json['clientUpdatedAt']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      id: serializer.fromJson<String>(json['id']),
+      quizId: serializer.fromJson<int>(json['quizId']),
+      score: serializer.fromJson<int>(json['score']),
+      total: serializer.fromJson<int>(json['total']),
+      durationSeconds: serializer.fromJson<int?>(json['durationSeconds']),
+      playedAt: serializer.fromJson<DateTime>(json['playedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'clientUpdatedAt': serializer.toJson<DateTime>(clientUpdatedAt),
+      'dirty': serializer.toJson<bool>(dirty),
+      'lastError': serializer.toJson<String?>(lastError),
+      'id': serializer.toJson<String>(id),
+      'quizId': serializer.toJson<int>(quizId),
+      'score': serializer.toJson<int>(score),
+      'total': serializer.toJson<int>(total),
+      'durationSeconds': serializer.toJson<int?>(durationSeconds),
+      'playedAt': serializer.toJson<DateTime>(playedAt),
+    };
+  }
+
+  LocalBibleQuizResultRow copyWith(
+          {DateTime? clientUpdatedAt,
+          bool? dirty,
+          Value<String?> lastError = const Value.absent(),
+          String? id,
+          int? quizId,
+          int? score,
+          int? total,
+          Value<int?> durationSeconds = const Value.absent(),
+          DateTime? playedAt}) =>
+      LocalBibleQuizResultRow(
+        clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+        dirty: dirty ?? this.dirty,
+        lastError: lastError.present ? lastError.value : this.lastError,
+        id: id ?? this.id,
+        quizId: quizId ?? this.quizId,
+        score: score ?? this.score,
+        total: total ?? this.total,
+        durationSeconds: durationSeconds.present
+            ? durationSeconds.value
+            : this.durationSeconds,
+        playedAt: playedAt ?? this.playedAt,
+      );
+  LocalBibleQuizResultRow copyWithCompanion(
+      LocalBibleQuizResultsCompanion data) {
+    return LocalBibleQuizResultRow(
+      clientUpdatedAt: data.clientUpdatedAt.present
+          ? data.clientUpdatedAt.value
+          : this.clientUpdatedAt,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      id: data.id.present ? data.id.value : this.id,
+      quizId: data.quizId.present ? data.quizId.value : this.quizId,
+      score: data.score.present ? data.score.value : this.score,
+      total: data.total.present ? data.total.value : this.total,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
+      playedAt: data.playedAt.present ? data.playedAt.value : this.playedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBibleQuizResultRow(')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('lastError: $lastError, ')
+          ..write('id: $id, ')
+          ..write('quizId: $quizId, ')
+          ..write('score: $score, ')
+          ..write('total: $total, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('playedAt: $playedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(clientUpdatedAt, dirty, lastError, id, quizId,
+      score, total, durationSeconds, playedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalBibleQuizResultRow &&
+          other.clientUpdatedAt == this.clientUpdatedAt &&
+          other.dirty == this.dirty &&
+          other.lastError == this.lastError &&
+          other.id == this.id &&
+          other.quizId == this.quizId &&
+          other.score == this.score &&
+          other.total == this.total &&
+          other.durationSeconds == this.durationSeconds &&
+          other.playedAt == this.playedAt);
+}
+
+class LocalBibleQuizResultsCompanion
+    extends UpdateCompanion<LocalBibleQuizResultRow> {
+  final Value<DateTime> clientUpdatedAt;
+  final Value<bool> dirty;
+  final Value<String?> lastError;
+  final Value<String> id;
+  final Value<int> quizId;
+  final Value<int> score;
+  final Value<int> total;
+  final Value<int?> durationSeconds;
+  final Value<DateTime> playedAt;
+  final Value<int> rowid;
+  const LocalBibleQuizResultsCompanion({
+    this.clientUpdatedAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.id = const Value.absent(),
+    this.quizId = const Value.absent(),
+    this.score = const Value.absent(),
+    this.total = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.playedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalBibleQuizResultsCompanion.insert({
+    required DateTime clientUpdatedAt,
+    this.dirty = const Value.absent(),
+    this.lastError = const Value.absent(),
+    required String id,
+    required int quizId,
+    this.score = const Value.absent(),
+    this.total = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    required DateTime playedAt,
+    this.rowid = const Value.absent(),
+  })  : clientUpdatedAt = Value(clientUpdatedAt),
+        id = Value(id),
+        quizId = Value(quizId),
+        playedAt = Value(playedAt);
+  static Insertable<LocalBibleQuizResultRow> custom({
+    Expression<DateTime>? clientUpdatedAt,
+    Expression<bool>? dirty,
+    Expression<String>? lastError,
+    Expression<String>? id,
+    Expression<int>? quizId,
+    Expression<int>? score,
+    Expression<int>? total,
+    Expression<int>? durationSeconds,
+    Expression<DateTime>? playedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (clientUpdatedAt != null) 'client_updated_at': clientUpdatedAt,
+      if (dirty != null) 'dirty': dirty,
+      if (lastError != null) 'last_error': lastError,
+      if (id != null) 'id': id,
+      if (quizId != null) 'quiz_id': quizId,
+      if (score != null) 'score': score,
+      if (total != null) 'total': total,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (playedAt != null) 'played_at': playedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalBibleQuizResultsCompanion copyWith(
+      {Value<DateTime>? clientUpdatedAt,
+      Value<bool>? dirty,
+      Value<String?>? lastError,
+      Value<String>? id,
+      Value<int>? quizId,
+      Value<int>? score,
+      Value<int>? total,
+      Value<int?>? durationSeconds,
+      Value<DateTime>? playedAt,
+      Value<int>? rowid}) {
+    return LocalBibleQuizResultsCompanion(
+      clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+      dirty: dirty ?? this.dirty,
+      lastError: lastError ?? this.lastError,
+      id: id ?? this.id,
+      quizId: quizId ?? this.quizId,
+      score: score ?? this.score,
+      total: total ?? this.total,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      playedAt: playedAt ?? this.playedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (clientUpdatedAt.present) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (quizId.present) {
+      map['quiz_id'] = Variable<int>(quizId.value);
+    }
+    if (score.present) {
+      map['score'] = Variable<int>(score.value);
+    }
+    if (total.present) {
+      map['total'] = Variable<int>(total.value);
+    }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<int>(durationSeconds.value);
+    }
+    if (playedAt.present) {
+      map['played_at'] = Variable<DateTime>(playedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBibleQuizResultsCompanion(')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('lastError: $lastError, ')
+          ..write('id: $id, ')
+          ..write('quizId: $quizId, ')
+          ..write('score: $score, ')
+          ..write('total: $total, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('playedAt: $playedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BibleInstalledVersionsTable extends BibleInstalledVersions
+    with TableInfo<$BibleInstalledVersionsTable, BibleInstalledVersionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BibleInstalledVersionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+      'code', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _languageMeta =
+      const VerificationMeta('language');
+  @override
+  late final GeneratedColumn<String> language = GeneratedColumn<String>(
+      'language', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sizeBytesMeta =
+      const VerificationMeta('sizeBytes');
+  @override
+  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
+      'size_bytes', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _localPathMeta =
+      const VerificationMeta('localPath');
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+      'local_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _installedAtMeta =
+      const VerificationMeta('installedAt');
+  @override
+  late final GeneratedColumn<DateTime> installedAt = GeneratedColumn<DateTime>(
+      'installed_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _indexedMeta =
+      const VerificationMeta('indexed');
+  @override
+  late final GeneratedColumn<bool> indexed = GeneratedColumn<bool>(
+      'indexed', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("indexed" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [code, name, language, sizeBytes, localPath, installedAt, indexed];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bible_installed_versions';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<BibleInstalledVersionRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('code')) {
+      context.handle(
+          _codeMeta, code.isAcceptableOrUnknown(data['code']!, _codeMeta));
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('language')) {
+      context.handle(_languageMeta,
+          language.isAcceptableOrUnknown(data['language']!, _languageMeta));
+    }
+    if (data.containsKey('size_bytes')) {
+      context.handle(_sizeBytesMeta,
+          sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta));
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(_localPathMeta,
+          localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta));
+    }
+    if (data.containsKey('installed_at')) {
+      context.handle(
+          _installedAtMeta,
+          installedAt.isAcceptableOrUnknown(
+              data['installed_at']!, _installedAtMeta));
+    } else if (isInserting) {
+      context.missing(_installedAtMeta);
+    }
+    if (data.containsKey('indexed')) {
+      context.handle(_indexedMeta,
+          indexed.isAcceptableOrUnknown(data['indexed']!, _indexedMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {code};
+  @override
+  BibleInstalledVersionRow map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BibleInstalledVersionRow(
+      code: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}code'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      language: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}language']),
+      sizeBytes: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}size_bytes']),
+      localPath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}local_path']),
+      installedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}installed_at'])!,
+      indexed: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}indexed'])!,
+    );
+  }
+
+  @override
+  $BibleInstalledVersionsTable createAlias(String alias) {
+    return $BibleInstalledVersionsTable(attachedDatabase, alias);
+  }
+}
+
+class BibleInstalledVersionRow extends DataClass
+    implements Insertable<BibleInstalledVersionRow> {
+  final String code;
+  final String name;
+  final String? language;
+  final int? sizeBytes;
+
+  /// Le dossier des fichiers de la version, s'il y en a.
+  final String? localPath;
+  final DateTime installedAt;
+
+  /// L'index `bible_fts` de cette version est-il complet ? (M3)
+  final bool indexed;
+  const BibleInstalledVersionRow(
+      {required this.code,
+      required this.name,
+      this.language,
+      this.sizeBytes,
+      this.localPath,
+      required this.installedAt,
+      required this.indexed});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['code'] = Variable<String>(code);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || language != null) {
+      map['language'] = Variable<String>(language);
+    }
+    if (!nullToAbsent || sizeBytes != null) {
+      map['size_bytes'] = Variable<int>(sizeBytes);
+    }
+    if (!nullToAbsent || localPath != null) {
+      map['local_path'] = Variable<String>(localPath);
+    }
+    map['installed_at'] = Variable<DateTime>(installedAt);
+    map['indexed'] = Variable<bool>(indexed);
+    return map;
+  }
+
+  BibleInstalledVersionsCompanion toCompanion(bool nullToAbsent) {
+    return BibleInstalledVersionsCompanion(
+      code: Value(code),
+      name: Value(name),
+      language: language == null && nullToAbsent
+          ? const Value.absent()
+          : Value(language),
+      sizeBytes: sizeBytes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sizeBytes),
+      localPath: localPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localPath),
+      installedAt: Value(installedAt),
+      indexed: Value(indexed),
+    );
+  }
+
+  factory BibleInstalledVersionRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BibleInstalledVersionRow(
+      code: serializer.fromJson<String>(json['code']),
+      name: serializer.fromJson<String>(json['name']),
+      language: serializer.fromJson<String?>(json['language']),
+      sizeBytes: serializer.fromJson<int?>(json['sizeBytes']),
+      localPath: serializer.fromJson<String?>(json['localPath']),
+      installedAt: serializer.fromJson<DateTime>(json['installedAt']),
+      indexed: serializer.fromJson<bool>(json['indexed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'code': serializer.toJson<String>(code),
+      'name': serializer.toJson<String>(name),
+      'language': serializer.toJson<String?>(language),
+      'sizeBytes': serializer.toJson<int?>(sizeBytes),
+      'localPath': serializer.toJson<String?>(localPath),
+      'installedAt': serializer.toJson<DateTime>(installedAt),
+      'indexed': serializer.toJson<bool>(indexed),
+    };
+  }
+
+  BibleInstalledVersionRow copyWith(
+          {String? code,
+          String? name,
+          Value<String?> language = const Value.absent(),
+          Value<int?> sizeBytes = const Value.absent(),
+          Value<String?> localPath = const Value.absent(),
+          DateTime? installedAt,
+          bool? indexed}) =>
+      BibleInstalledVersionRow(
+        code: code ?? this.code,
+        name: name ?? this.name,
+        language: language.present ? language.value : this.language,
+        sizeBytes: sizeBytes.present ? sizeBytes.value : this.sizeBytes,
+        localPath: localPath.present ? localPath.value : this.localPath,
+        installedAt: installedAt ?? this.installedAt,
+        indexed: indexed ?? this.indexed,
+      );
+  BibleInstalledVersionRow copyWithCompanion(
+      BibleInstalledVersionsCompanion data) {
+    return BibleInstalledVersionRow(
+      code: data.code.present ? data.code.value : this.code,
+      name: data.name.present ? data.name.value : this.name,
+      language: data.language.present ? data.language.value : this.language,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      localPath: data.localPath.present ? data.localPath.value : this.localPath,
+      installedAt:
+          data.installedAt.present ? data.installedAt.value : this.installedAt,
+      indexed: data.indexed.present ? data.indexed.value : this.indexed,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleInstalledVersionRow(')
+          ..write('code: $code, ')
+          ..write('name: $name, ')
+          ..write('language: $language, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('localPath: $localPath, ')
+          ..write('installedAt: $installedAt, ')
+          ..write('indexed: $indexed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      code, name, language, sizeBytes, localPath, installedAt, indexed);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BibleInstalledVersionRow &&
+          other.code == this.code &&
+          other.name == this.name &&
+          other.language == this.language &&
+          other.sizeBytes == this.sizeBytes &&
+          other.localPath == this.localPath &&
+          other.installedAt == this.installedAt &&
+          other.indexed == this.indexed);
+}
+
+class BibleInstalledVersionsCompanion
+    extends UpdateCompanion<BibleInstalledVersionRow> {
+  final Value<String> code;
+  final Value<String> name;
+  final Value<String?> language;
+  final Value<int?> sizeBytes;
+  final Value<String?> localPath;
+  final Value<DateTime> installedAt;
+  final Value<bool> indexed;
+  final Value<int> rowid;
+  const BibleInstalledVersionsCompanion({
+    this.code = const Value.absent(),
+    this.name = const Value.absent(),
+    this.language = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.installedAt = const Value.absent(),
+    this.indexed = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BibleInstalledVersionsCompanion.insert({
+    required String code,
+    required String name,
+    this.language = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.localPath = const Value.absent(),
+    required DateTime installedAt,
+    this.indexed = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : code = Value(code),
+        name = Value(name),
+        installedAt = Value(installedAt);
+  static Insertable<BibleInstalledVersionRow> custom({
+    Expression<String>? code,
+    Expression<String>? name,
+    Expression<String>? language,
+    Expression<int>? sizeBytes,
+    Expression<String>? localPath,
+    Expression<DateTime>? installedAt,
+    Expression<bool>? indexed,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (code != null) 'code': code,
+      if (name != null) 'name': name,
+      if (language != null) 'language': language,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (localPath != null) 'local_path': localPath,
+      if (installedAt != null) 'installed_at': installedAt,
+      if (indexed != null) 'indexed': indexed,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BibleInstalledVersionsCompanion copyWith(
+      {Value<String>? code,
+      Value<String>? name,
+      Value<String?>? language,
+      Value<int?>? sizeBytes,
+      Value<String?>? localPath,
+      Value<DateTime>? installedAt,
+      Value<bool>? indexed,
+      Value<int>? rowid}) {
+    return BibleInstalledVersionsCompanion(
+      code: code ?? this.code,
+      name: name ?? this.name,
+      language: language ?? this.language,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      localPath: localPath ?? this.localPath,
+      installedAt: installedAt ?? this.installedAt,
+      indexed: indexed ?? this.indexed,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (language.present) {
+      map['language'] = Variable<String>(language.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (installedAt.present) {
+      map['installed_at'] = Variable<DateTime>(installedAt.value);
+    }
+    if (indexed.present) {
+      map['indexed'] = Variable<bool>(indexed.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BibleInstalledVersionsCompanion(')
+          ..write('code: $code, ')
+          ..write('name: $name, ')
+          ..write('language: $language, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('localPath: $localPath, ')
+          ..write('installedAt: $installedAt, ')
+          ..write('indexed: $indexed, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final BibleFts bibleFts = BibleFts(this);
   late final $SyncCursorsTable syncCursors = $SyncCursorsTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
   late final $ResyncTokensTable resyncTokens = $ResyncTokensTable(this);
@@ -25523,6 +33887,32 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DownloadTitlesTable downloadTitles = $DownloadTitlesTable(this);
   late final $DownloadNotificationsTable downloadNotifications =
       $DownloadNotificationsTable(this);
+  late final $BibleMarksTable bibleMarks = $BibleMarksTable(this);
+  late final $BibleReadingStatesTable bibleReadingStates =
+      $BibleReadingStatesTable(this);
+  late final $BiblePlanEnrollmentsTable biblePlanEnrollments =
+      $BiblePlanEnrollmentsTable(this);
+  late final $BibleQuizResultsTable bibleQuizResults =
+      $BibleQuizResultsTable(this);
+  late final $BibleVerseOfDaysTable bibleVerseOfDays =
+      $BibleVerseOfDaysTable(this);
+  late final $BibleSundayPassagesTable bibleSundayPassages =
+      $BibleSundayPassagesTable(this);
+  late final $BiblePlansTable biblePlans = $BiblePlansTable(this);
+  late final $BibleChallengesTable bibleChallenges =
+      $BibleChallengesTable(this);
+  late final $BibleQuizzesTable bibleQuizzes = $BibleQuizzesTable(this);
+  late final $BibleVersionsTable bibleVersions = $BibleVersionsTable(this);
+  late final $LocalBibleMarksTable localBibleMarks =
+      $LocalBibleMarksTable(this);
+  late final $LocalBibleReadingStateTable localBibleReadingState =
+      $LocalBibleReadingStateTable(this);
+  late final $LocalBiblePlanEnrollmentsTable localBiblePlanEnrollments =
+      $LocalBiblePlanEnrollmentsTable(this);
+  late final $LocalBibleQuizResultsTable localBibleQuizResults =
+      $LocalBibleQuizResultsTable(this);
+  late final $BibleInstalledVersionsTable bibleInstalledVersions =
+      $BibleInstalledVersionsTable(this);
   late final SyncDao syncDao = SyncDao(this as AppDatabase);
   late final MediathequeDao mediathequeDao =
       MediathequeDao(this as AppDatabase);
@@ -25550,11 +33940,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final DownloadsDao downloadsDao = DownloadsDao(this as AppDatabase);
   late final DownloadNotificationsDao downloadNotificationsDao =
       DownloadNotificationsDao(this as AppDatabase);
+  late final BibleDao bibleDao = BibleDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+        bibleFts,
         syncCursors,
         syncState,
         resyncTokens,
@@ -25604,10 +33996,187 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         appSettings,
         downloads,
         downloadTitles,
-        downloadNotifications
+        downloadNotifications,
+        bibleMarks,
+        bibleReadingStates,
+        biblePlanEnrollments,
+        bibleQuizResults,
+        bibleVerseOfDays,
+        bibleSundayPassages,
+        biblePlans,
+        bibleChallenges,
+        bibleQuizzes,
+        bibleVersions,
+        localBibleMarks,
+        localBibleReadingState,
+        localBiblePlanEnrollments,
+        localBibleQuizResults,
+        bibleInstalledVersions
       ];
 }
 
+typedef $BibleFtsCreateCompanionBuilder = BibleFtsCompanion Function({
+  required String versionCode,
+  required String book,
+  required String chapter,
+  required String verse,
+  required String verseText,
+  Value<int> rowid,
+});
+typedef $BibleFtsUpdateCompanionBuilder = BibleFtsCompanion Function({
+  Value<String> versionCode,
+  Value<String> book,
+  Value<String> chapter,
+  Value<String> verse,
+  Value<String> verseText,
+  Value<int> rowid,
+});
+
+class $BibleFtsFilterComposer extends Composer<_$AppDatabase, BibleFts> {
+  $BibleFtsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get verse => $composableBuilder(
+      column: $table.verse, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get verseText => $composableBuilder(
+      column: $table.verseText, builder: (column) => ColumnFilters(column));
+}
+
+class $BibleFtsOrderingComposer extends Composer<_$AppDatabase, BibleFts> {
+  $BibleFtsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get verse => $composableBuilder(
+      column: $table.verse, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get verseText => $composableBuilder(
+      column: $table.verseText, builder: (column) => ColumnOrderings(column));
+}
+
+class $BibleFtsAnnotationComposer extends Composer<_$AppDatabase, BibleFts> {
+  $BibleFtsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => column);
+
+  GeneratedColumn<String> get book =>
+      $composableBuilder(column: $table.book, builder: (column) => column);
+
+  GeneratedColumn<String> get chapter =>
+      $composableBuilder(column: $table.chapter, builder: (column) => column);
+
+  GeneratedColumn<String> get verse =>
+      $composableBuilder(column: $table.verse, builder: (column) => column);
+
+  GeneratedColumn<String> get verseText =>
+      $composableBuilder(column: $table.verseText, builder: (column) => column);
+}
+
+class $BibleFtsTableManager extends RootTableManager<
+    _$AppDatabase,
+    BibleFts,
+    BibleFt,
+    $BibleFtsFilterComposer,
+    $BibleFtsOrderingComposer,
+    $BibleFtsAnnotationComposer,
+    $BibleFtsCreateCompanionBuilder,
+    $BibleFtsUpdateCompanionBuilder,
+    (BibleFt, BaseReferences<_$AppDatabase, BibleFts, BibleFt>),
+    BibleFt,
+    PrefetchHooks Function()> {
+  $BibleFtsTableManager(_$AppDatabase db, BibleFts table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $BibleFtsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $BibleFtsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $BibleFtsAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> versionCode = const Value.absent(),
+            Value<String> book = const Value.absent(),
+            Value<String> chapter = const Value.absent(),
+            Value<String> verse = const Value.absent(),
+            Value<String> verseText = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleFtsCompanion(
+            versionCode: versionCode,
+            book: book,
+            chapter: chapter,
+            verse: verse,
+            verseText: verseText,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String versionCode,
+            required String book,
+            required String chapter,
+            required String verse,
+            required String verseText,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleFtsCompanion.insert(
+            versionCode: versionCode,
+            book: book,
+            chapter: chapter,
+            verse: verse,
+            verseText: verseText,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $BibleFtsProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    BibleFts,
+    BibleFt,
+    $BibleFtsFilterComposer,
+    $BibleFtsOrderingComposer,
+    $BibleFtsAnnotationComposer,
+    $BibleFtsCreateCompanionBuilder,
+    $BibleFtsUpdateCompanionBuilder,
+    (BibleFt, BaseReferences<_$AppDatabase, BibleFts, BibleFt>),
+    BibleFt,
+    PrefetchHooks Function()>;
 typedef $$SyncCursorsTableCreateCompanionBuilder = SyncCursorsCompanion
     Function({
   required String collection,
@@ -37505,10 +46074,3848 @@ typedef $$DownloadNotificationsTableProcessedTableManager
         ),
         DownloadNotificationRow,
         PrefetchHooks Function()>;
+typedef $$BibleMarksTableCreateCompanionBuilder = BibleMarksCompanion Function({
+  Value<int> syncStamp,
+  required String id,
+  Value<String?> ownerId,
+  required String kind,
+  required String book,
+  required int chapter,
+  Value<int?> verseFrom,
+  Value<int?> verseTo,
+  Value<String?> color,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> clientUpdatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$BibleMarksTableUpdateCompanionBuilder = BibleMarksCompanion Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String?> ownerId,
+  Value<String> kind,
+  Value<String> book,
+  Value<int> chapter,
+  Value<int?> verseFrom,
+  Value<int?> verseTo,
+  Value<String?> color,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> clientUpdatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$BibleMarksTableFilterComposer
+    extends Composer<_$AppDatabase, $BibleMarksTable> {
+  $$BibleMarksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get verseFrom => $composableBuilder(
+      column: $table.verseFrom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get verseTo => $composableBuilder(
+      column: $table.verseTo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$BibleMarksTableOrderingComposer
+    extends Composer<_$AppDatabase, $BibleMarksTable> {
+  $$BibleMarksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get verseFrom => $composableBuilder(
+      column: $table.verseFrom, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get verseTo => $composableBuilder(
+      column: $table.verseTo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BibleMarksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BibleMarksTable> {
+  $$BibleMarksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get book =>
+      $composableBuilder(column: $table.book, builder: (column) => column);
+
+  GeneratedColumn<int> get chapter =>
+      $composableBuilder(column: $table.chapter, builder: (column) => column);
+
+  GeneratedColumn<int> get verseFrom =>
+      $composableBuilder(column: $table.verseFrom, builder: (column) => column);
+
+  GeneratedColumn<int> get verseTo =>
+      $composableBuilder(column: $table.verseTo, builder: (column) => column);
+
+  GeneratedColumn<String> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$BibleMarksTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BibleMarksTable,
+    BibleMarkRow,
+    $$BibleMarksTableFilterComposer,
+    $$BibleMarksTableOrderingComposer,
+    $$BibleMarksTableAnnotationComposer,
+    $$BibleMarksTableCreateCompanionBuilder,
+    $$BibleMarksTableUpdateCompanionBuilder,
+    (
+      BibleMarkRow,
+      BaseReferences<_$AppDatabase, $BibleMarksTable, BibleMarkRow>
+    ),
+    BibleMarkRow,
+    PrefetchHooks Function()> {
+  $$BibleMarksTableTableManager(_$AppDatabase db, $BibleMarksTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BibleMarksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BibleMarksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BibleMarksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String?> ownerId = const Value.absent(),
+            Value<String> kind = const Value.absent(),
+            Value<String> book = const Value.absent(),
+            Value<int> chapter = const Value.absent(),
+            Value<int?> verseFrom = const Value.absent(),
+            Value<int?> verseTo = const Value.absent(),
+            Value<String?> color = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> clientUpdatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleMarksCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            kind: kind,
+            book: book,
+            chapter: chapter,
+            verseFrom: verseFrom,
+            verseTo: verseTo,
+            color: color,
+            clientCreatedAt: clientCreatedAt,
+            clientUpdatedAt: clientUpdatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            Value<String?> ownerId = const Value.absent(),
+            required String kind,
+            required String book,
+            required int chapter,
+            Value<int?> verseFrom = const Value.absent(),
+            Value<int?> verseTo = const Value.absent(),
+            Value<String?> color = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> clientUpdatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleMarksCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            kind: kind,
+            book: book,
+            chapter: chapter,
+            verseFrom: verseFrom,
+            verseTo: verseTo,
+            color: color,
+            clientCreatedAt: clientCreatedAt,
+            clientUpdatedAt: clientUpdatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BibleMarksTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BibleMarksTable,
+    BibleMarkRow,
+    $$BibleMarksTableFilterComposer,
+    $$BibleMarksTableOrderingComposer,
+    $$BibleMarksTableAnnotationComposer,
+    $$BibleMarksTableCreateCompanionBuilder,
+    $$BibleMarksTableUpdateCompanionBuilder,
+    (
+      BibleMarkRow,
+      BaseReferences<_$AppDatabase, $BibleMarksTable, BibleMarkRow>
+    ),
+    BibleMarkRow,
+    PrefetchHooks Function()>;
+typedef $$BibleReadingStatesTableCreateCompanionBuilder
+    = BibleReadingStatesCompanion Function({
+  Value<int> syncStamp,
+  required String id,
+  Value<String?> ownerId,
+  Value<String?> versionCode,
+  Value<String?> book,
+  Value<int?> chapter,
+  Value<int?> verse,
+  Value<String?> readChapters,
+  Value<int> streakDays,
+  Value<String?> lastReadOn,
+  Value<DateTime?> clientUpdatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$BibleReadingStatesTableUpdateCompanionBuilder
+    = BibleReadingStatesCompanion Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String?> ownerId,
+  Value<String?> versionCode,
+  Value<String?> book,
+  Value<int?> chapter,
+  Value<int?> verse,
+  Value<String?> readChapters,
+  Value<int> streakDays,
+  Value<String?> lastReadOn,
+  Value<DateTime?> clientUpdatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$BibleReadingStatesTableFilterComposer
+    extends Composer<_$AppDatabase, $BibleReadingStatesTable> {
+  $$BibleReadingStatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get verse => $composableBuilder(
+      column: $table.verse, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get readChapters => $composableBuilder(
+      column: $table.readChapters, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get streakDays => $composableBuilder(
+      column: $table.streakDays, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastReadOn => $composableBuilder(
+      column: $table.lastReadOn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$BibleReadingStatesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BibleReadingStatesTable> {
+  $$BibleReadingStatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get verse => $composableBuilder(
+      column: $table.verse, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get readChapters => $composableBuilder(
+      column: $table.readChapters,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get streakDays => $composableBuilder(
+      column: $table.streakDays, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastReadOn => $composableBuilder(
+      column: $table.lastReadOn, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BibleReadingStatesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BibleReadingStatesTable> {
+  $$BibleReadingStatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => column);
+
+  GeneratedColumn<String> get book =>
+      $composableBuilder(column: $table.book, builder: (column) => column);
+
+  GeneratedColumn<int> get chapter =>
+      $composableBuilder(column: $table.chapter, builder: (column) => column);
+
+  GeneratedColumn<int> get verse =>
+      $composableBuilder(column: $table.verse, builder: (column) => column);
+
+  GeneratedColumn<String> get readChapters => $composableBuilder(
+      column: $table.readChapters, builder: (column) => column);
+
+  GeneratedColumn<int> get streakDays => $composableBuilder(
+      column: $table.streakDays, builder: (column) => column);
+
+  GeneratedColumn<String> get lastReadOn => $composableBuilder(
+      column: $table.lastReadOn, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$BibleReadingStatesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BibleReadingStatesTable,
+    BibleReadingStateRow,
+    $$BibleReadingStatesTableFilterComposer,
+    $$BibleReadingStatesTableOrderingComposer,
+    $$BibleReadingStatesTableAnnotationComposer,
+    $$BibleReadingStatesTableCreateCompanionBuilder,
+    $$BibleReadingStatesTableUpdateCompanionBuilder,
+    (
+      BibleReadingStateRow,
+      BaseReferences<_$AppDatabase, $BibleReadingStatesTable,
+          BibleReadingStateRow>
+    ),
+    BibleReadingStateRow,
+    PrefetchHooks Function()> {
+  $$BibleReadingStatesTableTableManager(
+      _$AppDatabase db, $BibleReadingStatesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BibleReadingStatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BibleReadingStatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BibleReadingStatesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String?> ownerId = const Value.absent(),
+            Value<String?> versionCode = const Value.absent(),
+            Value<String?> book = const Value.absent(),
+            Value<int?> chapter = const Value.absent(),
+            Value<int?> verse = const Value.absent(),
+            Value<String?> readChapters = const Value.absent(),
+            Value<int> streakDays = const Value.absent(),
+            Value<String?> lastReadOn = const Value.absent(),
+            Value<DateTime?> clientUpdatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleReadingStatesCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            versionCode: versionCode,
+            book: book,
+            chapter: chapter,
+            verse: verse,
+            readChapters: readChapters,
+            streakDays: streakDays,
+            lastReadOn: lastReadOn,
+            clientUpdatedAt: clientUpdatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            Value<String?> ownerId = const Value.absent(),
+            Value<String?> versionCode = const Value.absent(),
+            Value<String?> book = const Value.absent(),
+            Value<int?> chapter = const Value.absent(),
+            Value<int?> verse = const Value.absent(),
+            Value<String?> readChapters = const Value.absent(),
+            Value<int> streakDays = const Value.absent(),
+            Value<String?> lastReadOn = const Value.absent(),
+            Value<DateTime?> clientUpdatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleReadingStatesCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            versionCode: versionCode,
+            book: book,
+            chapter: chapter,
+            verse: verse,
+            readChapters: readChapters,
+            streakDays: streakDays,
+            lastReadOn: lastReadOn,
+            clientUpdatedAt: clientUpdatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BibleReadingStatesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BibleReadingStatesTable,
+    BibleReadingStateRow,
+    $$BibleReadingStatesTableFilterComposer,
+    $$BibleReadingStatesTableOrderingComposer,
+    $$BibleReadingStatesTableAnnotationComposer,
+    $$BibleReadingStatesTableCreateCompanionBuilder,
+    $$BibleReadingStatesTableUpdateCompanionBuilder,
+    (
+      BibleReadingStateRow,
+      BaseReferences<_$AppDatabase, $BibleReadingStatesTable,
+          BibleReadingStateRow>
+    ),
+    BibleReadingStateRow,
+    PrefetchHooks Function()>;
+typedef $$BiblePlanEnrollmentsTableCreateCompanionBuilder
+    = BiblePlanEnrollmentsCompanion Function({
+  Value<int> syncStamp,
+  required String id,
+  Value<String?> ownerId,
+  required String source,
+  Value<String?> planCode,
+  Value<String?> planId,
+  Value<String?> custom,
+  Value<String?> startedOn,
+  Value<String?> completedDays,
+  Value<String?> challengeId,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> clientUpdatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$BiblePlanEnrollmentsTableUpdateCompanionBuilder
+    = BiblePlanEnrollmentsCompanion Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String?> ownerId,
+  Value<String> source,
+  Value<String?> planCode,
+  Value<String?> planId,
+  Value<String?> custom,
+  Value<String?> startedOn,
+  Value<String?> completedDays,
+  Value<String?> challengeId,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> clientUpdatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$BiblePlanEnrollmentsTableFilterComposer
+    extends Composer<_$AppDatabase, $BiblePlanEnrollmentsTable> {
+  $$BiblePlanEnrollmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get planCode => $composableBuilder(
+      column: $table.planCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get planId => $composableBuilder(
+      column: $table.planId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get custom => $composableBuilder(
+      column: $table.custom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get startedOn => $composableBuilder(
+      column: $table.startedOn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get completedDays => $composableBuilder(
+      column: $table.completedDays, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get challengeId => $composableBuilder(
+      column: $table.challengeId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$BiblePlanEnrollmentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BiblePlanEnrollmentsTable> {
+  $$BiblePlanEnrollmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get planCode => $composableBuilder(
+      column: $table.planCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get planId => $composableBuilder(
+      column: $table.planId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get custom => $composableBuilder(
+      column: $table.custom, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get startedOn => $composableBuilder(
+      column: $table.startedOn, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get completedDays => $composableBuilder(
+      column: $table.completedDays,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get challengeId => $composableBuilder(
+      column: $table.challengeId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BiblePlanEnrollmentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BiblePlanEnrollmentsTable> {
+  $$BiblePlanEnrollmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get planCode =>
+      $composableBuilder(column: $table.planCode, builder: (column) => column);
+
+  GeneratedColumn<String> get planId =>
+      $composableBuilder(column: $table.planId, builder: (column) => column);
+
+  GeneratedColumn<String> get custom =>
+      $composableBuilder(column: $table.custom, builder: (column) => column);
+
+  GeneratedColumn<String> get startedOn =>
+      $composableBuilder(column: $table.startedOn, builder: (column) => column);
+
+  GeneratedColumn<String> get completedDays => $composableBuilder(
+      column: $table.completedDays, builder: (column) => column);
+
+  GeneratedColumn<String> get challengeId => $composableBuilder(
+      column: $table.challengeId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$BiblePlanEnrollmentsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BiblePlanEnrollmentsTable,
+    BiblePlanEnrollmentRow,
+    $$BiblePlanEnrollmentsTableFilterComposer,
+    $$BiblePlanEnrollmentsTableOrderingComposer,
+    $$BiblePlanEnrollmentsTableAnnotationComposer,
+    $$BiblePlanEnrollmentsTableCreateCompanionBuilder,
+    $$BiblePlanEnrollmentsTableUpdateCompanionBuilder,
+    (
+      BiblePlanEnrollmentRow,
+      BaseReferences<_$AppDatabase, $BiblePlanEnrollmentsTable,
+          BiblePlanEnrollmentRow>
+    ),
+    BiblePlanEnrollmentRow,
+    PrefetchHooks Function()> {
+  $$BiblePlanEnrollmentsTableTableManager(
+      _$AppDatabase db, $BiblePlanEnrollmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BiblePlanEnrollmentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BiblePlanEnrollmentsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BiblePlanEnrollmentsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String?> ownerId = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<String?> planCode = const Value.absent(),
+            Value<String?> planId = const Value.absent(),
+            Value<String?> custom = const Value.absent(),
+            Value<String?> startedOn = const Value.absent(),
+            Value<String?> completedDays = const Value.absent(),
+            Value<String?> challengeId = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> clientUpdatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BiblePlanEnrollmentsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            source: source,
+            planCode: planCode,
+            planId: planId,
+            custom: custom,
+            startedOn: startedOn,
+            completedDays: completedDays,
+            challengeId: challengeId,
+            clientCreatedAt: clientCreatedAt,
+            clientUpdatedAt: clientUpdatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            Value<String?> ownerId = const Value.absent(),
+            required String source,
+            Value<String?> planCode = const Value.absent(),
+            Value<String?> planId = const Value.absent(),
+            Value<String?> custom = const Value.absent(),
+            Value<String?> startedOn = const Value.absent(),
+            Value<String?> completedDays = const Value.absent(),
+            Value<String?> challengeId = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> clientUpdatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BiblePlanEnrollmentsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            source: source,
+            planCode: planCode,
+            planId: planId,
+            custom: custom,
+            startedOn: startedOn,
+            completedDays: completedDays,
+            challengeId: challengeId,
+            clientCreatedAt: clientCreatedAt,
+            clientUpdatedAt: clientUpdatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BiblePlanEnrollmentsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $BiblePlanEnrollmentsTable,
+        BiblePlanEnrollmentRow,
+        $$BiblePlanEnrollmentsTableFilterComposer,
+        $$BiblePlanEnrollmentsTableOrderingComposer,
+        $$BiblePlanEnrollmentsTableAnnotationComposer,
+        $$BiblePlanEnrollmentsTableCreateCompanionBuilder,
+        $$BiblePlanEnrollmentsTableUpdateCompanionBuilder,
+        (
+          BiblePlanEnrollmentRow,
+          BaseReferences<_$AppDatabase, $BiblePlanEnrollmentsTable,
+              BiblePlanEnrollmentRow>
+        ),
+        BiblePlanEnrollmentRow,
+        PrefetchHooks Function()>;
+typedef $$BibleQuizResultsTableCreateCompanionBuilder
+    = BibleQuizResultsCompanion Function({
+  Value<int> syncStamp,
+  required String id,
+  Value<String?> ownerId,
+  required int quizId,
+  Value<int> score,
+  Value<int> total,
+  Value<int?> durationSeconds,
+  Value<DateTime?> playedAt,
+  Value<DateTime?> clientUpdatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$BibleQuizResultsTableUpdateCompanionBuilder
+    = BibleQuizResultsCompanion Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String?> ownerId,
+  Value<int> quizId,
+  Value<int> score,
+  Value<int> total,
+  Value<int?> durationSeconds,
+  Value<DateTime?> playedAt,
+  Value<DateTime?> clientUpdatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$BibleQuizResultsTableFilterComposer
+    extends Composer<_$AppDatabase, $BibleQuizResultsTable> {
+  $$BibleQuizResultsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get quizId => $composableBuilder(
+      column: $table.quizId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get score => $composableBuilder(
+      column: $table.score, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get total => $composableBuilder(
+      column: $table.total, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get playedAt => $composableBuilder(
+      column: $table.playedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$BibleQuizResultsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BibleQuizResultsTable> {
+  $$BibleQuizResultsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get quizId => $composableBuilder(
+      column: $table.quizId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get score => $composableBuilder(
+      column: $table.score, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get total => $composableBuilder(
+      column: $table.total, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get playedAt => $composableBuilder(
+      column: $table.playedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BibleQuizResultsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BibleQuizResultsTable> {
+  $$BibleQuizResultsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<int> get quizId =>
+      $composableBuilder(column: $table.quizId, builder: (column) => column);
+
+  GeneratedColumn<int> get score =>
+      $composableBuilder(column: $table.score, builder: (column) => column);
+
+  GeneratedColumn<int> get total =>
+      $composableBuilder(column: $table.total, builder: (column) => column);
+
+  GeneratedColumn<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get playedAt =>
+      $composableBuilder(column: $table.playedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$BibleQuizResultsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BibleQuizResultsTable,
+    BibleQuizResultRow,
+    $$BibleQuizResultsTableFilterComposer,
+    $$BibleQuizResultsTableOrderingComposer,
+    $$BibleQuizResultsTableAnnotationComposer,
+    $$BibleQuizResultsTableCreateCompanionBuilder,
+    $$BibleQuizResultsTableUpdateCompanionBuilder,
+    (
+      BibleQuizResultRow,
+      BaseReferences<_$AppDatabase, $BibleQuizResultsTable, BibleQuizResultRow>
+    ),
+    BibleQuizResultRow,
+    PrefetchHooks Function()> {
+  $$BibleQuizResultsTableTableManager(
+      _$AppDatabase db, $BibleQuizResultsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BibleQuizResultsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BibleQuizResultsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BibleQuizResultsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String?> ownerId = const Value.absent(),
+            Value<int> quizId = const Value.absent(),
+            Value<int> score = const Value.absent(),
+            Value<int> total = const Value.absent(),
+            Value<int?> durationSeconds = const Value.absent(),
+            Value<DateTime?> playedAt = const Value.absent(),
+            Value<DateTime?> clientUpdatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleQuizResultsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            quizId: quizId,
+            score: score,
+            total: total,
+            durationSeconds: durationSeconds,
+            playedAt: playedAt,
+            clientUpdatedAt: clientUpdatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            Value<String?> ownerId = const Value.absent(),
+            required int quizId,
+            Value<int> score = const Value.absent(),
+            Value<int> total = const Value.absent(),
+            Value<int?> durationSeconds = const Value.absent(),
+            Value<DateTime?> playedAt = const Value.absent(),
+            Value<DateTime?> clientUpdatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleQuizResultsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            quizId: quizId,
+            score: score,
+            total: total,
+            durationSeconds: durationSeconds,
+            playedAt: playedAt,
+            clientUpdatedAt: clientUpdatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BibleQuizResultsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BibleQuizResultsTable,
+    BibleQuizResultRow,
+    $$BibleQuizResultsTableFilterComposer,
+    $$BibleQuizResultsTableOrderingComposer,
+    $$BibleQuizResultsTableAnnotationComposer,
+    $$BibleQuizResultsTableCreateCompanionBuilder,
+    $$BibleQuizResultsTableUpdateCompanionBuilder,
+    (
+      BibleQuizResultRow,
+      BaseReferences<_$AppDatabase, $BibleQuizResultsTable, BibleQuizResultRow>
+    ),
+    BibleQuizResultRow,
+    PrefetchHooks Function()>;
+typedef $$BibleVerseOfDaysTableCreateCompanionBuilder
+    = BibleVerseOfDaysCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required String day,
+  required String book,
+  required int chapter,
+  Value<int?> verseFrom,
+  Value<int?> verseTo,
+  Value<String?> comment,
+  Value<int?> backgroundId,
+  Value<DateTime?> publishedAt,
+});
+typedef $$BibleVerseOfDaysTableUpdateCompanionBuilder
+    = BibleVerseOfDaysCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String> day,
+  Value<String> book,
+  Value<int> chapter,
+  Value<int?> verseFrom,
+  Value<int?> verseTo,
+  Value<String?> comment,
+  Value<int?> backgroundId,
+  Value<DateTime?> publishedAt,
+});
+
+class $$BibleVerseOfDaysTableFilterComposer
+    extends Composer<_$AppDatabase, $BibleVerseOfDaysTable> {
+  $$BibleVerseOfDaysTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get day => $composableBuilder(
+      column: $table.day, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get verseFrom => $composableBuilder(
+      column: $table.verseFrom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get verseTo => $composableBuilder(
+      column: $table.verseTo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get comment => $composableBuilder(
+      column: $table.comment, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get backgroundId => $composableBuilder(
+      column: $table.backgroundId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$BibleVerseOfDaysTableOrderingComposer
+    extends Composer<_$AppDatabase, $BibleVerseOfDaysTable> {
+  $$BibleVerseOfDaysTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get day => $composableBuilder(
+      column: $table.day, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get verseFrom => $composableBuilder(
+      column: $table.verseFrom, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get verseTo => $composableBuilder(
+      column: $table.verseTo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get comment => $composableBuilder(
+      column: $table.comment, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get backgroundId => $composableBuilder(
+      column: $table.backgroundId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BibleVerseOfDaysTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BibleVerseOfDaysTable> {
+  $$BibleVerseOfDaysTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<String> get book =>
+      $composableBuilder(column: $table.book, builder: (column) => column);
+
+  GeneratedColumn<int> get chapter =>
+      $composableBuilder(column: $table.chapter, builder: (column) => column);
+
+  GeneratedColumn<int> get verseFrom =>
+      $composableBuilder(column: $table.verseFrom, builder: (column) => column);
+
+  GeneratedColumn<int> get verseTo =>
+      $composableBuilder(column: $table.verseTo, builder: (column) => column);
+
+  GeneratedColumn<String> get comment =>
+      $composableBuilder(column: $table.comment, builder: (column) => column);
+
+  GeneratedColumn<int> get backgroundId => $composableBuilder(
+      column: $table.backgroundId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => column);
+}
+
+class $$BibleVerseOfDaysTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BibleVerseOfDaysTable,
+    BibleVerseOfDayRow,
+    $$BibleVerseOfDaysTableFilterComposer,
+    $$BibleVerseOfDaysTableOrderingComposer,
+    $$BibleVerseOfDaysTableAnnotationComposer,
+    $$BibleVerseOfDaysTableCreateCompanionBuilder,
+    $$BibleVerseOfDaysTableUpdateCompanionBuilder,
+    (
+      BibleVerseOfDayRow,
+      BaseReferences<_$AppDatabase, $BibleVerseOfDaysTable, BibleVerseOfDayRow>
+    ),
+    BibleVerseOfDayRow,
+    PrefetchHooks Function()> {
+  $$BibleVerseOfDaysTableTableManager(
+      _$AppDatabase db, $BibleVerseOfDaysTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BibleVerseOfDaysTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BibleVerseOfDaysTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BibleVerseOfDaysTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String> day = const Value.absent(),
+            Value<String> book = const Value.absent(),
+            Value<int> chapter = const Value.absent(),
+            Value<int?> verseFrom = const Value.absent(),
+            Value<int?> verseTo = const Value.absent(),
+            Value<String?> comment = const Value.absent(),
+            Value<int?> backgroundId = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+          }) =>
+              BibleVerseOfDaysCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            day: day,
+            book: book,
+            chapter: chapter,
+            verseFrom: verseFrom,
+            verseTo: verseTo,
+            comment: comment,
+            backgroundId: backgroundId,
+            publishedAt: publishedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required String day,
+            required String book,
+            required int chapter,
+            Value<int?> verseFrom = const Value.absent(),
+            Value<int?> verseTo = const Value.absent(),
+            Value<String?> comment = const Value.absent(),
+            Value<int?> backgroundId = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+          }) =>
+              BibleVerseOfDaysCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            day: day,
+            book: book,
+            chapter: chapter,
+            verseFrom: verseFrom,
+            verseTo: verseTo,
+            comment: comment,
+            backgroundId: backgroundId,
+            publishedAt: publishedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BibleVerseOfDaysTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BibleVerseOfDaysTable,
+    BibleVerseOfDayRow,
+    $$BibleVerseOfDaysTableFilterComposer,
+    $$BibleVerseOfDaysTableOrderingComposer,
+    $$BibleVerseOfDaysTableAnnotationComposer,
+    $$BibleVerseOfDaysTableCreateCompanionBuilder,
+    $$BibleVerseOfDaysTableUpdateCompanionBuilder,
+    (
+      BibleVerseOfDayRow,
+      BaseReferences<_$AppDatabase, $BibleVerseOfDaysTable, BibleVerseOfDayRow>
+    ),
+    BibleVerseOfDayRow,
+    PrefetchHooks Function()>;
+typedef $$BibleSundayPassagesTableCreateCompanionBuilder
+    = BibleSundayPassagesCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required String day,
+  Value<String?> references,
+  Value<String?> title,
+  Value<String?> teachingId,
+  Value<String?> gatheringId,
+});
+typedef $$BibleSundayPassagesTableUpdateCompanionBuilder
+    = BibleSundayPassagesCompanion Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String> day,
+  Value<String?> references,
+  Value<String?> title,
+  Value<String?> teachingId,
+  Value<String?> gatheringId,
+});
+
+class $$BibleSundayPassagesTableFilterComposer
+    extends Composer<_$AppDatabase, $BibleSundayPassagesTable> {
+  $$BibleSundayPassagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get day => $composableBuilder(
+      column: $table.day, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get references => $composableBuilder(
+      column: $table.references, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get gatheringId => $composableBuilder(
+      column: $table.gatheringId, builder: (column) => ColumnFilters(column));
+}
+
+class $$BibleSundayPassagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BibleSundayPassagesTable> {
+  $$BibleSundayPassagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get day => $composableBuilder(
+      column: $table.day, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get references => $composableBuilder(
+      column: $table.references, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get gatheringId => $composableBuilder(
+      column: $table.gatheringId, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BibleSundayPassagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BibleSundayPassagesTable> {
+  $$BibleSundayPassagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<String> get references => $composableBuilder(
+      column: $table.references, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => column);
+
+  GeneratedColumn<String> get gatheringId => $composableBuilder(
+      column: $table.gatheringId, builder: (column) => column);
+}
+
+class $$BibleSundayPassagesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BibleSundayPassagesTable,
+    BibleSundayPassageRow,
+    $$BibleSundayPassagesTableFilterComposer,
+    $$BibleSundayPassagesTableOrderingComposer,
+    $$BibleSundayPassagesTableAnnotationComposer,
+    $$BibleSundayPassagesTableCreateCompanionBuilder,
+    $$BibleSundayPassagesTableUpdateCompanionBuilder,
+    (
+      BibleSundayPassageRow,
+      BaseReferences<_$AppDatabase, $BibleSundayPassagesTable,
+          BibleSundayPassageRow>
+    ),
+    BibleSundayPassageRow,
+    PrefetchHooks Function()> {
+  $$BibleSundayPassagesTableTableManager(
+      _$AppDatabase db, $BibleSundayPassagesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BibleSundayPassagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BibleSundayPassagesTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BibleSundayPassagesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String> day = const Value.absent(),
+            Value<String?> references = const Value.absent(),
+            Value<String?> title = const Value.absent(),
+            Value<String?> teachingId = const Value.absent(),
+            Value<String?> gatheringId = const Value.absent(),
+          }) =>
+              BibleSundayPassagesCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            day: day,
+            references: references,
+            title: title,
+            teachingId: teachingId,
+            gatheringId: gatheringId,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required String day,
+            Value<String?> references = const Value.absent(),
+            Value<String?> title = const Value.absent(),
+            Value<String?> teachingId = const Value.absent(),
+            Value<String?> gatheringId = const Value.absent(),
+          }) =>
+              BibleSundayPassagesCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            day: day,
+            references: references,
+            title: title,
+            teachingId: teachingId,
+            gatheringId: gatheringId,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BibleSundayPassagesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BibleSundayPassagesTable,
+    BibleSundayPassageRow,
+    $$BibleSundayPassagesTableFilterComposer,
+    $$BibleSundayPassagesTableOrderingComposer,
+    $$BibleSundayPassagesTableAnnotationComposer,
+    $$BibleSundayPassagesTableCreateCompanionBuilder,
+    $$BibleSundayPassagesTableUpdateCompanionBuilder,
+    (
+      BibleSundayPassageRow,
+      BaseReferences<_$AppDatabase, $BibleSundayPassagesTable,
+          BibleSundayPassageRow>
+    ),
+    BibleSundayPassageRow,
+    PrefetchHooks Function()>;
+typedef $$BiblePlansTableCreateCompanionBuilder = BiblePlansCompanion Function({
+  Value<int> syncStamp,
+  required String id,
+  required String title,
+  Value<String?> description,
+  Value<int?> coverBackgroundId,
+  Value<String?> days,
+  Value<DateTime?> publishedAt,
+  Value<int> rowid,
+});
+typedef $$BiblePlansTableUpdateCompanionBuilder = BiblePlansCompanion Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String> title,
+  Value<String?> description,
+  Value<int?> coverBackgroundId,
+  Value<String?> days,
+  Value<DateTime?> publishedAt,
+  Value<int> rowid,
+});
+
+class $$BiblePlansTableFilterComposer
+    extends Composer<_$AppDatabase, $BiblePlansTable> {
+  $$BiblePlansTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get coverBackgroundId => $composableBuilder(
+      column: $table.coverBackgroundId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get days => $composableBuilder(
+      column: $table.days, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$BiblePlansTableOrderingComposer
+    extends Composer<_$AppDatabase, $BiblePlansTable> {
+  $$BiblePlansTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get coverBackgroundId => $composableBuilder(
+      column: $table.coverBackgroundId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get days => $composableBuilder(
+      column: $table.days, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BiblePlansTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BiblePlansTable> {
+  $$BiblePlansTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<int> get coverBackgroundId => $composableBuilder(
+      column: $table.coverBackgroundId, builder: (column) => column);
+
+  GeneratedColumn<String> get days =>
+      $composableBuilder(column: $table.days, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => column);
+}
+
+class $$BiblePlansTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BiblePlansTable,
+    BiblePlanRow,
+    $$BiblePlansTableFilterComposer,
+    $$BiblePlansTableOrderingComposer,
+    $$BiblePlansTableAnnotationComposer,
+    $$BiblePlansTableCreateCompanionBuilder,
+    $$BiblePlansTableUpdateCompanionBuilder,
+    (
+      BiblePlanRow,
+      BaseReferences<_$AppDatabase, $BiblePlansTable, BiblePlanRow>
+    ),
+    BiblePlanRow,
+    PrefetchHooks Function()> {
+  $$BiblePlansTableTableManager(_$AppDatabase db, $BiblePlansTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BiblePlansTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BiblePlansTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BiblePlansTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> title = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            Value<int?> coverBackgroundId = const Value.absent(),
+            Value<String?> days = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BiblePlansCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            title: title,
+            description: description,
+            coverBackgroundId: coverBackgroundId,
+            days: days,
+            publishedAt: publishedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            required String title,
+            Value<String?> description = const Value.absent(),
+            Value<int?> coverBackgroundId = const Value.absent(),
+            Value<String?> days = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BiblePlansCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            title: title,
+            description: description,
+            coverBackgroundId: coverBackgroundId,
+            days: days,
+            publishedAt: publishedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BiblePlansTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BiblePlansTable,
+    BiblePlanRow,
+    $$BiblePlansTableFilterComposer,
+    $$BiblePlansTableOrderingComposer,
+    $$BiblePlansTableAnnotationComposer,
+    $$BiblePlansTableCreateCompanionBuilder,
+    $$BiblePlansTableUpdateCompanionBuilder,
+    (
+      BiblePlanRow,
+      BaseReferences<_$AppDatabase, $BiblePlansTable, BiblePlanRow>
+    ),
+    BiblePlanRow,
+    PrefetchHooks Function()>;
+typedef $$BibleChallengesTableCreateCompanionBuilder = BibleChallengesCompanion
+    Function({
+  Value<int> syncStamp,
+  required String id,
+  Value<String?> planId,
+  required String title,
+  Value<String?> startsOn,
+  Value<String?> endsOn,
+  Value<DateTime?> publishedAt,
+  Value<int> rowid,
+});
+typedef $$BibleChallengesTableUpdateCompanionBuilder = BibleChallengesCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String?> planId,
+  Value<String> title,
+  Value<String?> startsOn,
+  Value<String?> endsOn,
+  Value<DateTime?> publishedAt,
+  Value<int> rowid,
+});
+
+class $$BibleChallengesTableFilterComposer
+    extends Composer<_$AppDatabase, $BibleChallengesTable> {
+  $$BibleChallengesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get planId => $composableBuilder(
+      column: $table.planId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get startsOn => $composableBuilder(
+      column: $table.startsOn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get endsOn => $composableBuilder(
+      column: $table.endsOn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$BibleChallengesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BibleChallengesTable> {
+  $$BibleChallengesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get planId => $composableBuilder(
+      column: $table.planId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get startsOn => $composableBuilder(
+      column: $table.startsOn, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get endsOn => $composableBuilder(
+      column: $table.endsOn, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BibleChallengesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BibleChallengesTable> {
+  $$BibleChallengesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get planId =>
+      $composableBuilder(column: $table.planId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get startsOn =>
+      $composableBuilder(column: $table.startsOn, builder: (column) => column);
+
+  GeneratedColumn<String> get endsOn =>
+      $composableBuilder(column: $table.endsOn, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => column);
+}
+
+class $$BibleChallengesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BibleChallengesTable,
+    BibleChallengeRow,
+    $$BibleChallengesTableFilterComposer,
+    $$BibleChallengesTableOrderingComposer,
+    $$BibleChallengesTableAnnotationComposer,
+    $$BibleChallengesTableCreateCompanionBuilder,
+    $$BibleChallengesTableUpdateCompanionBuilder,
+    (
+      BibleChallengeRow,
+      BaseReferences<_$AppDatabase, $BibleChallengesTable, BibleChallengeRow>
+    ),
+    BibleChallengeRow,
+    PrefetchHooks Function()> {
+  $$BibleChallengesTableTableManager(
+      _$AppDatabase db, $BibleChallengesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BibleChallengesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BibleChallengesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BibleChallengesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String?> planId = const Value.absent(),
+            Value<String> title = const Value.absent(),
+            Value<String?> startsOn = const Value.absent(),
+            Value<String?> endsOn = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleChallengesCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            planId: planId,
+            title: title,
+            startsOn: startsOn,
+            endsOn: endsOn,
+            publishedAt: publishedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            Value<String?> planId = const Value.absent(),
+            required String title,
+            Value<String?> startsOn = const Value.absent(),
+            Value<String?> endsOn = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleChallengesCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            planId: planId,
+            title: title,
+            startsOn: startsOn,
+            endsOn: endsOn,
+            publishedAt: publishedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BibleChallengesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BibleChallengesTable,
+    BibleChallengeRow,
+    $$BibleChallengesTableFilterComposer,
+    $$BibleChallengesTableOrderingComposer,
+    $$BibleChallengesTableAnnotationComposer,
+    $$BibleChallengesTableCreateCompanionBuilder,
+    $$BibleChallengesTableUpdateCompanionBuilder,
+    (
+      BibleChallengeRow,
+      BaseReferences<_$AppDatabase, $BibleChallengesTable, BibleChallengeRow>
+    ),
+    BibleChallengeRow,
+    PrefetchHooks Function()>;
+typedef $$BibleQuizzesTableCreateCompanionBuilder = BibleQuizzesCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required String title,
+  Value<String?> ageBand,
+  Value<int?> difficulty,
+  Value<String?> featuredFrom,
+  Value<String?> featuredUntil,
+  Value<String?> imageUrl,
+  Value<String?> questions,
+  Value<DateTime?> publishedAt,
+});
+typedef $$BibleQuizzesTableUpdateCompanionBuilder = BibleQuizzesCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String> title,
+  Value<String?> ageBand,
+  Value<int?> difficulty,
+  Value<String?> featuredFrom,
+  Value<String?> featuredUntil,
+  Value<String?> imageUrl,
+  Value<String?> questions,
+  Value<DateTime?> publishedAt,
+});
+
+class $$BibleQuizzesTableFilterComposer
+    extends Composer<_$AppDatabase, $BibleQuizzesTable> {
+  $$BibleQuizzesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ageBand => $composableBuilder(
+      column: $table.ageBand, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get difficulty => $composableBuilder(
+      column: $table.difficulty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get featuredFrom => $composableBuilder(
+      column: $table.featuredFrom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get featuredUntil => $composableBuilder(
+      column: $table.featuredUntil, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get imageUrl => $composableBuilder(
+      column: $table.imageUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get questions => $composableBuilder(
+      column: $table.questions, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$BibleQuizzesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BibleQuizzesTable> {
+  $$BibleQuizzesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ageBand => $composableBuilder(
+      column: $table.ageBand, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get difficulty => $composableBuilder(
+      column: $table.difficulty, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get featuredFrom => $composableBuilder(
+      column: $table.featuredFrom,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get featuredUntil => $composableBuilder(
+      column: $table.featuredUntil,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get imageUrl => $composableBuilder(
+      column: $table.imageUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get questions => $composableBuilder(
+      column: $table.questions, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BibleQuizzesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BibleQuizzesTable> {
+  $$BibleQuizzesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get ageBand =>
+      $composableBuilder(column: $table.ageBand, builder: (column) => column);
+
+  GeneratedColumn<int> get difficulty => $composableBuilder(
+      column: $table.difficulty, builder: (column) => column);
+
+  GeneratedColumn<String> get featuredFrom => $composableBuilder(
+      column: $table.featuredFrom, builder: (column) => column);
+
+  GeneratedColumn<String> get featuredUntil => $composableBuilder(
+      column: $table.featuredUntil, builder: (column) => column);
+
+  GeneratedColumn<String> get imageUrl =>
+      $composableBuilder(column: $table.imageUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get questions =>
+      $composableBuilder(column: $table.questions, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => column);
+}
+
+class $$BibleQuizzesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BibleQuizzesTable,
+    BibleQuizRow,
+    $$BibleQuizzesTableFilterComposer,
+    $$BibleQuizzesTableOrderingComposer,
+    $$BibleQuizzesTableAnnotationComposer,
+    $$BibleQuizzesTableCreateCompanionBuilder,
+    $$BibleQuizzesTableUpdateCompanionBuilder,
+    (
+      BibleQuizRow,
+      BaseReferences<_$AppDatabase, $BibleQuizzesTable, BibleQuizRow>
+    ),
+    BibleQuizRow,
+    PrefetchHooks Function()> {
+  $$BibleQuizzesTableTableManager(_$AppDatabase db, $BibleQuizzesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BibleQuizzesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BibleQuizzesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BibleQuizzesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String> title = const Value.absent(),
+            Value<String?> ageBand = const Value.absent(),
+            Value<int?> difficulty = const Value.absent(),
+            Value<String?> featuredFrom = const Value.absent(),
+            Value<String?> featuredUntil = const Value.absent(),
+            Value<String?> imageUrl = const Value.absent(),
+            Value<String?> questions = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+          }) =>
+              BibleQuizzesCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            title: title,
+            ageBand: ageBand,
+            difficulty: difficulty,
+            featuredFrom: featuredFrom,
+            featuredUntil: featuredUntil,
+            imageUrl: imageUrl,
+            questions: questions,
+            publishedAt: publishedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required String title,
+            Value<String?> ageBand = const Value.absent(),
+            Value<int?> difficulty = const Value.absent(),
+            Value<String?> featuredFrom = const Value.absent(),
+            Value<String?> featuredUntil = const Value.absent(),
+            Value<String?> imageUrl = const Value.absent(),
+            Value<String?> questions = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+          }) =>
+              BibleQuizzesCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            title: title,
+            ageBand: ageBand,
+            difficulty: difficulty,
+            featuredFrom: featuredFrom,
+            featuredUntil: featuredUntil,
+            imageUrl: imageUrl,
+            questions: questions,
+            publishedAt: publishedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BibleQuizzesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BibleQuizzesTable,
+    BibleQuizRow,
+    $$BibleQuizzesTableFilterComposer,
+    $$BibleQuizzesTableOrderingComposer,
+    $$BibleQuizzesTableAnnotationComposer,
+    $$BibleQuizzesTableCreateCompanionBuilder,
+    $$BibleQuizzesTableUpdateCompanionBuilder,
+    (
+      BibleQuizRow,
+      BaseReferences<_$AppDatabase, $BibleQuizzesTable, BibleQuizRow>
+    ),
+    BibleQuizRow,
+    PrefetchHooks Function()>;
+typedef $$BibleVersionsTableCreateCompanionBuilder = BibleVersionsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  required String code,
+  required String name,
+  Value<String?> language,
+  Value<String?> license,
+  Value<int?> sizeBytes,
+  Value<int> sortOrder,
+  Value<String?> archiveUrl,
+  Value<DateTime?> publishedAt,
+});
+typedef $$BibleVersionsTableUpdateCompanionBuilder = BibleVersionsCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<int> id,
+  Value<String> code,
+  Value<String> name,
+  Value<String?> language,
+  Value<String?> license,
+  Value<int?> sizeBytes,
+  Value<int> sortOrder,
+  Value<String?> archiveUrl,
+  Value<DateTime?> publishedAt,
+});
+
+class $$BibleVersionsTableFilterComposer
+    extends Composer<_$AppDatabase, $BibleVersionsTable> {
+  $$BibleVersionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get code => $composableBuilder(
+      column: $table.code, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get language => $composableBuilder(
+      column: $table.language, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get license => $composableBuilder(
+      column: $table.license, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sizeBytes => $composableBuilder(
+      column: $table.sizeBytes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+      column: $table.sortOrder, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get archiveUrl => $composableBuilder(
+      column: $table.archiveUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$BibleVersionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BibleVersionsTable> {
+  $$BibleVersionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get code => $composableBuilder(
+      column: $table.code, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get language => $composableBuilder(
+      column: $table.language, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get license => $composableBuilder(
+      column: $table.license, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sizeBytes => $composableBuilder(
+      column: $table.sizeBytes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+      column: $table.sortOrder, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get archiveUrl => $composableBuilder(
+      column: $table.archiveUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BibleVersionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BibleVersionsTable> {
+  $$BibleVersionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get language =>
+      $composableBuilder(column: $table.language, builder: (column) => column);
+
+  GeneratedColumn<String> get license =>
+      $composableBuilder(column: $table.license, builder: (column) => column);
+
+  GeneratedColumn<int> get sizeBytes =>
+      $composableBuilder(column: $table.sizeBytes, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<String> get archiveUrl => $composableBuilder(
+      column: $table.archiveUrl, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get publishedAt => $composableBuilder(
+      column: $table.publishedAt, builder: (column) => column);
+}
+
+class $$BibleVersionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BibleVersionsTable,
+    BibleVersionRow,
+    $$BibleVersionsTableFilterComposer,
+    $$BibleVersionsTableOrderingComposer,
+    $$BibleVersionsTableAnnotationComposer,
+    $$BibleVersionsTableCreateCompanionBuilder,
+    $$BibleVersionsTableUpdateCompanionBuilder,
+    (
+      BibleVersionRow,
+      BaseReferences<_$AppDatabase, $BibleVersionsTable, BibleVersionRow>
+    ),
+    BibleVersionRow,
+    PrefetchHooks Function()> {
+  $$BibleVersionsTableTableManager(_$AppDatabase db, $BibleVersionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BibleVersionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BibleVersionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BibleVersionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            Value<String> code = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> language = const Value.absent(),
+            Value<String?> license = const Value.absent(),
+            Value<int?> sizeBytes = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
+            Value<String?> archiveUrl = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+          }) =>
+              BibleVersionsCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            code: code,
+            name: name,
+            language: language,
+            license: license,
+            sizeBytes: sizeBytes,
+            sortOrder: sortOrder,
+            archiveUrl: archiveUrl,
+            publishedAt: publishedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<int> id = const Value.absent(),
+            required String code,
+            required String name,
+            Value<String?> language = const Value.absent(),
+            Value<String?> license = const Value.absent(),
+            Value<int?> sizeBytes = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
+            Value<String?> archiveUrl = const Value.absent(),
+            Value<DateTime?> publishedAt = const Value.absent(),
+          }) =>
+              BibleVersionsCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            code: code,
+            name: name,
+            language: language,
+            license: license,
+            sizeBytes: sizeBytes,
+            sortOrder: sortOrder,
+            archiveUrl: archiveUrl,
+            publishedAt: publishedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BibleVersionsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BibleVersionsTable,
+    BibleVersionRow,
+    $$BibleVersionsTableFilterComposer,
+    $$BibleVersionsTableOrderingComposer,
+    $$BibleVersionsTableAnnotationComposer,
+    $$BibleVersionsTableCreateCompanionBuilder,
+    $$BibleVersionsTableUpdateCompanionBuilder,
+    (
+      BibleVersionRow,
+      BaseReferences<_$AppDatabase, $BibleVersionsTable, BibleVersionRow>
+    ),
+    BibleVersionRow,
+    PrefetchHooks Function()>;
+typedef $$LocalBibleMarksTableCreateCompanionBuilder = LocalBibleMarksCompanion
+    Function({
+  required DateTime clientUpdatedAt,
+  Value<bool> dirty,
+  Value<String?> lastError,
+  required String id,
+  required String kind,
+  required String book,
+  required int chapter,
+  Value<int?> verseFrom,
+  Value<int?> verseTo,
+  Value<String?> color,
+  required DateTime clientCreatedAt,
+  Value<DateTime?> deletedAt,
+  Value<int> rowid,
+});
+typedef $$LocalBibleMarksTableUpdateCompanionBuilder = LocalBibleMarksCompanion
+    Function({
+  Value<DateTime> clientUpdatedAt,
+  Value<bool> dirty,
+  Value<String?> lastError,
+  Value<String> id,
+  Value<String> kind,
+  Value<String> book,
+  Value<int> chapter,
+  Value<int?> verseFrom,
+  Value<int?> verseTo,
+  Value<String?> color,
+  Value<DateTime> clientCreatedAt,
+  Value<DateTime?> deletedAt,
+  Value<int> rowid,
+});
+
+class $$LocalBibleMarksTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalBibleMarksTable> {
+  $$LocalBibleMarksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+      column: $table.dirty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get verseFrom => $composableBuilder(
+      column: $table.verseFrom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get verseTo => $composableBuilder(
+      column: $table.verseTo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+      column: $table.deletedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalBibleMarksTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalBibleMarksTable> {
+  $$LocalBibleMarksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+      column: $table.dirty, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get verseFrom => $composableBuilder(
+      column: $table.verseFrom, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get verseTo => $composableBuilder(
+      column: $table.verseTo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+      column: $table.deletedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalBibleMarksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalBibleMarksTable> {
+  $$LocalBibleMarksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get book =>
+      $composableBuilder(column: $table.book, builder: (column) => column);
+
+  GeneratedColumn<int> get chapter =>
+      $composableBuilder(column: $table.chapter, builder: (column) => column);
+
+  GeneratedColumn<int> get verseFrom =>
+      $composableBuilder(column: $table.verseFrom, builder: (column) => column);
+
+  GeneratedColumn<int> get verseTo =>
+      $composableBuilder(column: $table.verseTo, builder: (column) => column);
+
+  GeneratedColumn<String> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$LocalBibleMarksTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $LocalBibleMarksTable,
+    LocalBibleMarkRow,
+    $$LocalBibleMarksTableFilterComposer,
+    $$LocalBibleMarksTableOrderingComposer,
+    $$LocalBibleMarksTableAnnotationComposer,
+    $$LocalBibleMarksTableCreateCompanionBuilder,
+    $$LocalBibleMarksTableUpdateCompanionBuilder,
+    (
+      LocalBibleMarkRow,
+      BaseReferences<_$AppDatabase, $LocalBibleMarksTable, LocalBibleMarkRow>
+    ),
+    LocalBibleMarkRow,
+    PrefetchHooks Function()> {
+  $$LocalBibleMarksTableTableManager(
+      _$AppDatabase db, $LocalBibleMarksTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalBibleMarksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalBibleMarksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalBibleMarksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<DateTime> clientUpdatedAt = const Value.absent(),
+            Value<bool> dirty = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> kind = const Value.absent(),
+            Value<String> book = const Value.absent(),
+            Value<int> chapter = const Value.absent(),
+            Value<int?> verseFrom = const Value.absent(),
+            Value<int?> verseTo = const Value.absent(),
+            Value<String?> color = const Value.absent(),
+            Value<DateTime> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBibleMarksCompanion(
+            clientUpdatedAt: clientUpdatedAt,
+            dirty: dirty,
+            lastError: lastError,
+            id: id,
+            kind: kind,
+            book: book,
+            chapter: chapter,
+            verseFrom: verseFrom,
+            verseTo: verseTo,
+            color: color,
+            clientCreatedAt: clientCreatedAt,
+            deletedAt: deletedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required DateTime clientUpdatedAt,
+            Value<bool> dirty = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            required String id,
+            required String kind,
+            required String book,
+            required int chapter,
+            Value<int?> verseFrom = const Value.absent(),
+            Value<int?> verseTo = const Value.absent(),
+            Value<String?> color = const Value.absent(),
+            required DateTime clientCreatedAt,
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBibleMarksCompanion.insert(
+            clientUpdatedAt: clientUpdatedAt,
+            dirty: dirty,
+            lastError: lastError,
+            id: id,
+            kind: kind,
+            book: book,
+            chapter: chapter,
+            verseFrom: verseFrom,
+            verseTo: verseTo,
+            color: color,
+            clientCreatedAt: clientCreatedAt,
+            deletedAt: deletedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalBibleMarksTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $LocalBibleMarksTable,
+    LocalBibleMarkRow,
+    $$LocalBibleMarksTableFilterComposer,
+    $$LocalBibleMarksTableOrderingComposer,
+    $$LocalBibleMarksTableAnnotationComposer,
+    $$LocalBibleMarksTableCreateCompanionBuilder,
+    $$LocalBibleMarksTableUpdateCompanionBuilder,
+    (
+      LocalBibleMarkRow,
+      BaseReferences<_$AppDatabase, $LocalBibleMarksTable, LocalBibleMarkRow>
+    ),
+    LocalBibleMarkRow,
+    PrefetchHooks Function()>;
+typedef $$LocalBibleReadingStateTableCreateCompanionBuilder
+    = LocalBibleReadingStateCompanion Function({
+  required DateTime clientUpdatedAt,
+  Value<bool> dirty,
+  Value<String?> lastError,
+  required String id,
+  Value<String?> versionCode,
+  Value<String?> book,
+  Value<int?> chapter,
+  Value<int?> verse,
+  Value<String?> readChapters,
+  Value<int> streakDays,
+  Value<String?> lastReadOn,
+  Value<int> rowid,
+});
+typedef $$LocalBibleReadingStateTableUpdateCompanionBuilder
+    = LocalBibleReadingStateCompanion Function({
+  Value<DateTime> clientUpdatedAt,
+  Value<bool> dirty,
+  Value<String?> lastError,
+  Value<String> id,
+  Value<String?> versionCode,
+  Value<String?> book,
+  Value<int?> chapter,
+  Value<int?> verse,
+  Value<String?> readChapters,
+  Value<int> streakDays,
+  Value<String?> lastReadOn,
+  Value<int> rowid,
+});
+
+class $$LocalBibleReadingStateTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalBibleReadingStateTable> {
+  $$LocalBibleReadingStateTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+      column: $table.dirty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get verse => $composableBuilder(
+      column: $table.verse, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get readChapters => $composableBuilder(
+      column: $table.readChapters, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get streakDays => $composableBuilder(
+      column: $table.streakDays, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastReadOn => $composableBuilder(
+      column: $table.lastReadOn, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalBibleReadingStateTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalBibleReadingStateTable> {
+  $$LocalBibleReadingStateTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+      column: $table.dirty, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get book => $composableBuilder(
+      column: $table.book, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get chapter => $composableBuilder(
+      column: $table.chapter, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get verse => $composableBuilder(
+      column: $table.verse, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get readChapters => $composableBuilder(
+      column: $table.readChapters,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get streakDays => $composableBuilder(
+      column: $table.streakDays, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastReadOn => $composableBuilder(
+      column: $table.lastReadOn, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalBibleReadingStateTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalBibleReadingStateTable> {
+  $$LocalBibleReadingStateTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => column);
+
+  GeneratedColumn<String> get book =>
+      $composableBuilder(column: $table.book, builder: (column) => column);
+
+  GeneratedColumn<int> get chapter =>
+      $composableBuilder(column: $table.chapter, builder: (column) => column);
+
+  GeneratedColumn<int> get verse =>
+      $composableBuilder(column: $table.verse, builder: (column) => column);
+
+  GeneratedColumn<String> get readChapters => $composableBuilder(
+      column: $table.readChapters, builder: (column) => column);
+
+  GeneratedColumn<int> get streakDays => $composableBuilder(
+      column: $table.streakDays, builder: (column) => column);
+
+  GeneratedColumn<String> get lastReadOn => $composableBuilder(
+      column: $table.lastReadOn, builder: (column) => column);
+}
+
+class $$LocalBibleReadingStateTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $LocalBibleReadingStateTable,
+    LocalBibleReadingStateRow,
+    $$LocalBibleReadingStateTableFilterComposer,
+    $$LocalBibleReadingStateTableOrderingComposer,
+    $$LocalBibleReadingStateTableAnnotationComposer,
+    $$LocalBibleReadingStateTableCreateCompanionBuilder,
+    $$LocalBibleReadingStateTableUpdateCompanionBuilder,
+    (
+      LocalBibleReadingStateRow,
+      BaseReferences<_$AppDatabase, $LocalBibleReadingStateTable,
+          LocalBibleReadingStateRow>
+    ),
+    LocalBibleReadingStateRow,
+    PrefetchHooks Function()> {
+  $$LocalBibleReadingStateTableTableManager(
+      _$AppDatabase db, $LocalBibleReadingStateTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalBibleReadingStateTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalBibleReadingStateTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalBibleReadingStateTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<DateTime> clientUpdatedAt = const Value.absent(),
+            Value<bool> dirty = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String?> versionCode = const Value.absent(),
+            Value<String?> book = const Value.absent(),
+            Value<int?> chapter = const Value.absent(),
+            Value<int?> verse = const Value.absent(),
+            Value<String?> readChapters = const Value.absent(),
+            Value<int> streakDays = const Value.absent(),
+            Value<String?> lastReadOn = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBibleReadingStateCompanion(
+            clientUpdatedAt: clientUpdatedAt,
+            dirty: dirty,
+            lastError: lastError,
+            id: id,
+            versionCode: versionCode,
+            book: book,
+            chapter: chapter,
+            verse: verse,
+            readChapters: readChapters,
+            streakDays: streakDays,
+            lastReadOn: lastReadOn,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required DateTime clientUpdatedAt,
+            Value<bool> dirty = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            required String id,
+            Value<String?> versionCode = const Value.absent(),
+            Value<String?> book = const Value.absent(),
+            Value<int?> chapter = const Value.absent(),
+            Value<int?> verse = const Value.absent(),
+            Value<String?> readChapters = const Value.absent(),
+            Value<int> streakDays = const Value.absent(),
+            Value<String?> lastReadOn = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBibleReadingStateCompanion.insert(
+            clientUpdatedAt: clientUpdatedAt,
+            dirty: dirty,
+            lastError: lastError,
+            id: id,
+            versionCode: versionCode,
+            book: book,
+            chapter: chapter,
+            verse: verse,
+            readChapters: readChapters,
+            streakDays: streakDays,
+            lastReadOn: lastReadOn,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalBibleReadingStateTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $LocalBibleReadingStateTable,
+        LocalBibleReadingStateRow,
+        $$LocalBibleReadingStateTableFilterComposer,
+        $$LocalBibleReadingStateTableOrderingComposer,
+        $$LocalBibleReadingStateTableAnnotationComposer,
+        $$LocalBibleReadingStateTableCreateCompanionBuilder,
+        $$LocalBibleReadingStateTableUpdateCompanionBuilder,
+        (
+          LocalBibleReadingStateRow,
+          BaseReferences<_$AppDatabase, $LocalBibleReadingStateTable,
+              LocalBibleReadingStateRow>
+        ),
+        LocalBibleReadingStateRow,
+        PrefetchHooks Function()>;
+typedef $$LocalBiblePlanEnrollmentsTableCreateCompanionBuilder
+    = LocalBiblePlanEnrollmentsCompanion Function({
+  required DateTime clientUpdatedAt,
+  Value<bool> dirty,
+  Value<String?> lastError,
+  required String id,
+  required String source,
+  Value<String?> planCode,
+  Value<String?> planId,
+  Value<String?> custom,
+  Value<String?> startedOn,
+  Value<String?> completedDays,
+  Value<String?> challengeId,
+  required DateTime clientCreatedAt,
+  Value<DateTime?> deletedAt,
+  Value<int> rowid,
+});
+typedef $$LocalBiblePlanEnrollmentsTableUpdateCompanionBuilder
+    = LocalBiblePlanEnrollmentsCompanion Function({
+  Value<DateTime> clientUpdatedAt,
+  Value<bool> dirty,
+  Value<String?> lastError,
+  Value<String> id,
+  Value<String> source,
+  Value<String?> planCode,
+  Value<String?> planId,
+  Value<String?> custom,
+  Value<String?> startedOn,
+  Value<String?> completedDays,
+  Value<String?> challengeId,
+  Value<DateTime> clientCreatedAt,
+  Value<DateTime?> deletedAt,
+  Value<int> rowid,
+});
+
+class $$LocalBiblePlanEnrollmentsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalBiblePlanEnrollmentsTable> {
+  $$LocalBiblePlanEnrollmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+      column: $table.dirty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get planCode => $composableBuilder(
+      column: $table.planCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get planId => $composableBuilder(
+      column: $table.planId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get custom => $composableBuilder(
+      column: $table.custom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get startedOn => $composableBuilder(
+      column: $table.startedOn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get completedDays => $composableBuilder(
+      column: $table.completedDays, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get challengeId => $composableBuilder(
+      column: $table.challengeId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+      column: $table.deletedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalBiblePlanEnrollmentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalBiblePlanEnrollmentsTable> {
+  $$LocalBiblePlanEnrollmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+      column: $table.dirty, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get planCode => $composableBuilder(
+      column: $table.planCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get planId => $composableBuilder(
+      column: $table.planId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get custom => $composableBuilder(
+      column: $table.custom, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get startedOn => $composableBuilder(
+      column: $table.startedOn, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get completedDays => $composableBuilder(
+      column: $table.completedDays,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get challengeId => $composableBuilder(
+      column: $table.challengeId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+      column: $table.deletedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalBiblePlanEnrollmentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalBiblePlanEnrollmentsTable> {
+  $$LocalBiblePlanEnrollmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get planCode =>
+      $composableBuilder(column: $table.planCode, builder: (column) => column);
+
+  GeneratedColumn<String> get planId =>
+      $composableBuilder(column: $table.planId, builder: (column) => column);
+
+  GeneratedColumn<String> get custom =>
+      $composableBuilder(column: $table.custom, builder: (column) => column);
+
+  GeneratedColumn<String> get startedOn =>
+      $composableBuilder(column: $table.startedOn, builder: (column) => column);
+
+  GeneratedColumn<String> get completedDays => $composableBuilder(
+      column: $table.completedDays, builder: (column) => column);
+
+  GeneratedColumn<String> get challengeId => $composableBuilder(
+      column: $table.challengeId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$LocalBiblePlanEnrollmentsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $LocalBiblePlanEnrollmentsTable,
+    LocalBiblePlanEnrollmentRow,
+    $$LocalBiblePlanEnrollmentsTableFilterComposer,
+    $$LocalBiblePlanEnrollmentsTableOrderingComposer,
+    $$LocalBiblePlanEnrollmentsTableAnnotationComposer,
+    $$LocalBiblePlanEnrollmentsTableCreateCompanionBuilder,
+    $$LocalBiblePlanEnrollmentsTableUpdateCompanionBuilder,
+    (
+      LocalBiblePlanEnrollmentRow,
+      BaseReferences<_$AppDatabase, $LocalBiblePlanEnrollmentsTable,
+          LocalBiblePlanEnrollmentRow>
+    ),
+    LocalBiblePlanEnrollmentRow,
+    PrefetchHooks Function()> {
+  $$LocalBiblePlanEnrollmentsTableTableManager(
+      _$AppDatabase db, $LocalBiblePlanEnrollmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalBiblePlanEnrollmentsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalBiblePlanEnrollmentsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalBiblePlanEnrollmentsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<DateTime> clientUpdatedAt = const Value.absent(),
+            Value<bool> dirty = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<String?> planCode = const Value.absent(),
+            Value<String?> planId = const Value.absent(),
+            Value<String?> custom = const Value.absent(),
+            Value<String?> startedOn = const Value.absent(),
+            Value<String?> completedDays = const Value.absent(),
+            Value<String?> challengeId = const Value.absent(),
+            Value<DateTime> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBiblePlanEnrollmentsCompanion(
+            clientUpdatedAt: clientUpdatedAt,
+            dirty: dirty,
+            lastError: lastError,
+            id: id,
+            source: source,
+            planCode: planCode,
+            planId: planId,
+            custom: custom,
+            startedOn: startedOn,
+            completedDays: completedDays,
+            challengeId: challengeId,
+            clientCreatedAt: clientCreatedAt,
+            deletedAt: deletedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required DateTime clientUpdatedAt,
+            Value<bool> dirty = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            required String id,
+            required String source,
+            Value<String?> planCode = const Value.absent(),
+            Value<String?> planId = const Value.absent(),
+            Value<String?> custom = const Value.absent(),
+            Value<String?> startedOn = const Value.absent(),
+            Value<String?> completedDays = const Value.absent(),
+            Value<String?> challengeId = const Value.absent(),
+            required DateTime clientCreatedAt,
+            Value<DateTime?> deletedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBiblePlanEnrollmentsCompanion.insert(
+            clientUpdatedAt: clientUpdatedAt,
+            dirty: dirty,
+            lastError: lastError,
+            id: id,
+            source: source,
+            planCode: planCode,
+            planId: planId,
+            custom: custom,
+            startedOn: startedOn,
+            completedDays: completedDays,
+            challengeId: challengeId,
+            clientCreatedAt: clientCreatedAt,
+            deletedAt: deletedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalBiblePlanEnrollmentsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $LocalBiblePlanEnrollmentsTable,
+        LocalBiblePlanEnrollmentRow,
+        $$LocalBiblePlanEnrollmentsTableFilterComposer,
+        $$LocalBiblePlanEnrollmentsTableOrderingComposer,
+        $$LocalBiblePlanEnrollmentsTableAnnotationComposer,
+        $$LocalBiblePlanEnrollmentsTableCreateCompanionBuilder,
+        $$LocalBiblePlanEnrollmentsTableUpdateCompanionBuilder,
+        (
+          LocalBiblePlanEnrollmentRow,
+          BaseReferences<_$AppDatabase, $LocalBiblePlanEnrollmentsTable,
+              LocalBiblePlanEnrollmentRow>
+        ),
+        LocalBiblePlanEnrollmentRow,
+        PrefetchHooks Function()>;
+typedef $$LocalBibleQuizResultsTableCreateCompanionBuilder
+    = LocalBibleQuizResultsCompanion Function({
+  required DateTime clientUpdatedAt,
+  Value<bool> dirty,
+  Value<String?> lastError,
+  required String id,
+  required int quizId,
+  Value<int> score,
+  Value<int> total,
+  Value<int?> durationSeconds,
+  required DateTime playedAt,
+  Value<int> rowid,
+});
+typedef $$LocalBibleQuizResultsTableUpdateCompanionBuilder
+    = LocalBibleQuizResultsCompanion Function({
+  Value<DateTime> clientUpdatedAt,
+  Value<bool> dirty,
+  Value<String?> lastError,
+  Value<String> id,
+  Value<int> quizId,
+  Value<int> score,
+  Value<int> total,
+  Value<int?> durationSeconds,
+  Value<DateTime> playedAt,
+  Value<int> rowid,
+});
+
+class $$LocalBibleQuizResultsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalBibleQuizResultsTable> {
+  $$LocalBibleQuizResultsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+      column: $table.dirty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get quizId => $composableBuilder(
+      column: $table.quizId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get score => $composableBuilder(
+      column: $table.score, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get total => $composableBuilder(
+      column: $table.total, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get playedAt => $composableBuilder(
+      column: $table.playedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalBibleQuizResultsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalBibleQuizResultsTable> {
+  $$LocalBibleQuizResultsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+      column: $table.dirty, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get quizId => $composableBuilder(
+      column: $table.quizId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get score => $composableBuilder(
+      column: $table.score, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get total => $composableBuilder(
+      column: $table.total, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get playedAt => $composableBuilder(
+      column: $table.playedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalBibleQuizResultsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalBibleQuizResultsTable> {
+  $$LocalBibleQuizResultsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get quizId =>
+      $composableBuilder(column: $table.quizId, builder: (column) => column);
+
+  GeneratedColumn<int> get score =>
+      $composableBuilder(column: $table.score, builder: (column) => column);
+
+  GeneratedColumn<int> get total =>
+      $composableBuilder(column: $table.total, builder: (column) => column);
+
+  GeneratedColumn<int> get durationSeconds => $composableBuilder(
+      column: $table.durationSeconds, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get playedAt =>
+      $composableBuilder(column: $table.playedAt, builder: (column) => column);
+}
+
+class $$LocalBibleQuizResultsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $LocalBibleQuizResultsTable,
+    LocalBibleQuizResultRow,
+    $$LocalBibleQuizResultsTableFilterComposer,
+    $$LocalBibleQuizResultsTableOrderingComposer,
+    $$LocalBibleQuizResultsTableAnnotationComposer,
+    $$LocalBibleQuizResultsTableCreateCompanionBuilder,
+    $$LocalBibleQuizResultsTableUpdateCompanionBuilder,
+    (
+      LocalBibleQuizResultRow,
+      BaseReferences<_$AppDatabase, $LocalBibleQuizResultsTable,
+          LocalBibleQuizResultRow>
+    ),
+    LocalBibleQuizResultRow,
+    PrefetchHooks Function()> {
+  $$LocalBibleQuizResultsTableTableManager(
+      _$AppDatabase db, $LocalBibleQuizResultsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalBibleQuizResultsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalBibleQuizResultsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalBibleQuizResultsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<DateTime> clientUpdatedAt = const Value.absent(),
+            Value<bool> dirty = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<int> quizId = const Value.absent(),
+            Value<int> score = const Value.absent(),
+            Value<int> total = const Value.absent(),
+            Value<int?> durationSeconds = const Value.absent(),
+            Value<DateTime> playedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBibleQuizResultsCompanion(
+            clientUpdatedAt: clientUpdatedAt,
+            dirty: dirty,
+            lastError: lastError,
+            id: id,
+            quizId: quizId,
+            score: score,
+            total: total,
+            durationSeconds: durationSeconds,
+            playedAt: playedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required DateTime clientUpdatedAt,
+            Value<bool> dirty = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            required String id,
+            required int quizId,
+            Value<int> score = const Value.absent(),
+            Value<int> total = const Value.absent(),
+            Value<int?> durationSeconds = const Value.absent(),
+            required DateTime playedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBibleQuizResultsCompanion.insert(
+            clientUpdatedAt: clientUpdatedAt,
+            dirty: dirty,
+            lastError: lastError,
+            id: id,
+            quizId: quizId,
+            score: score,
+            total: total,
+            durationSeconds: durationSeconds,
+            playedAt: playedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalBibleQuizResultsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $LocalBibleQuizResultsTable,
+        LocalBibleQuizResultRow,
+        $$LocalBibleQuizResultsTableFilterComposer,
+        $$LocalBibleQuizResultsTableOrderingComposer,
+        $$LocalBibleQuizResultsTableAnnotationComposer,
+        $$LocalBibleQuizResultsTableCreateCompanionBuilder,
+        $$LocalBibleQuizResultsTableUpdateCompanionBuilder,
+        (
+          LocalBibleQuizResultRow,
+          BaseReferences<_$AppDatabase, $LocalBibleQuizResultsTable,
+              LocalBibleQuizResultRow>
+        ),
+        LocalBibleQuizResultRow,
+        PrefetchHooks Function()>;
+typedef $$BibleInstalledVersionsTableCreateCompanionBuilder
+    = BibleInstalledVersionsCompanion Function({
+  required String code,
+  required String name,
+  Value<String?> language,
+  Value<int?> sizeBytes,
+  Value<String?> localPath,
+  required DateTime installedAt,
+  Value<bool> indexed,
+  Value<int> rowid,
+});
+typedef $$BibleInstalledVersionsTableUpdateCompanionBuilder
+    = BibleInstalledVersionsCompanion Function({
+  Value<String> code,
+  Value<String> name,
+  Value<String?> language,
+  Value<int?> sizeBytes,
+  Value<String?> localPath,
+  Value<DateTime> installedAt,
+  Value<bool> indexed,
+  Value<int> rowid,
+});
+
+class $$BibleInstalledVersionsTableFilterComposer
+    extends Composer<_$AppDatabase, $BibleInstalledVersionsTable> {
+  $$BibleInstalledVersionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get code => $composableBuilder(
+      column: $table.code, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get language => $composableBuilder(
+      column: $table.language, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sizeBytes => $composableBuilder(
+      column: $table.sizeBytes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+      column: $table.localPath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get installedAt => $composableBuilder(
+      column: $table.installedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get indexed => $composableBuilder(
+      column: $table.indexed, builder: (column) => ColumnFilters(column));
+}
+
+class $$BibleInstalledVersionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BibleInstalledVersionsTable> {
+  $$BibleInstalledVersionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get code => $composableBuilder(
+      column: $table.code, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get language => $composableBuilder(
+      column: $table.language, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sizeBytes => $composableBuilder(
+      column: $table.sizeBytes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+      column: $table.localPath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get installedAt => $composableBuilder(
+      column: $table.installedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get indexed => $composableBuilder(
+      column: $table.indexed, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BibleInstalledVersionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BibleInstalledVersionsTable> {
+  $$BibleInstalledVersionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get language =>
+      $composableBuilder(column: $table.language, builder: (column) => column);
+
+  GeneratedColumn<int> get sizeBytes =>
+      $composableBuilder(column: $table.sizeBytes, builder: (column) => column);
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get installedAt => $composableBuilder(
+      column: $table.installedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get indexed =>
+      $composableBuilder(column: $table.indexed, builder: (column) => column);
+}
+
+class $$BibleInstalledVersionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BibleInstalledVersionsTable,
+    BibleInstalledVersionRow,
+    $$BibleInstalledVersionsTableFilterComposer,
+    $$BibleInstalledVersionsTableOrderingComposer,
+    $$BibleInstalledVersionsTableAnnotationComposer,
+    $$BibleInstalledVersionsTableCreateCompanionBuilder,
+    $$BibleInstalledVersionsTableUpdateCompanionBuilder,
+    (
+      BibleInstalledVersionRow,
+      BaseReferences<_$AppDatabase, $BibleInstalledVersionsTable,
+          BibleInstalledVersionRow>
+    ),
+    BibleInstalledVersionRow,
+    PrefetchHooks Function()> {
+  $$BibleInstalledVersionsTableTableManager(
+      _$AppDatabase db, $BibleInstalledVersionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BibleInstalledVersionsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BibleInstalledVersionsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BibleInstalledVersionsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> code = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> language = const Value.absent(),
+            Value<int?> sizeBytes = const Value.absent(),
+            Value<String?> localPath = const Value.absent(),
+            Value<DateTime> installedAt = const Value.absent(),
+            Value<bool> indexed = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleInstalledVersionsCompanion(
+            code: code,
+            name: name,
+            language: language,
+            sizeBytes: sizeBytes,
+            localPath: localPath,
+            installedAt: installedAt,
+            indexed: indexed,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String code,
+            required String name,
+            Value<String?> language = const Value.absent(),
+            Value<int?> sizeBytes = const Value.absent(),
+            Value<String?> localPath = const Value.absent(),
+            required DateTime installedAt,
+            Value<bool> indexed = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BibleInstalledVersionsCompanion.insert(
+            code: code,
+            name: name,
+            language: language,
+            sizeBytes: sizeBytes,
+            localPath: localPath,
+            installedAt: installedAt,
+            indexed: indexed,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BibleInstalledVersionsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $BibleInstalledVersionsTable,
+        BibleInstalledVersionRow,
+        $$BibleInstalledVersionsTableFilterComposer,
+        $$BibleInstalledVersionsTableOrderingComposer,
+        $$BibleInstalledVersionsTableAnnotationComposer,
+        $$BibleInstalledVersionsTableCreateCompanionBuilder,
+        $$BibleInstalledVersionsTableUpdateCompanionBuilder,
+        (
+          BibleInstalledVersionRow,
+          BaseReferences<_$AppDatabase, $BibleInstalledVersionsTable,
+              BibleInstalledVersionRow>
+        ),
+        BibleInstalledVersionRow,
+        PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $BibleFtsTableManager get bibleFts =>
+      $BibleFtsTableManager(_db, _db.bibleFts);
   $$SyncCursorsTableTableManager get syncCursors =>
       $$SyncCursorsTableTableManager(_db, _db.syncCursors);
   $$SyncStateTableTableManager get syncState =>
@@ -37614,4 +50021,37 @@ class $AppDatabaseManager {
       $$DownloadTitlesTableTableManager(_db, _db.downloadTitles);
   $$DownloadNotificationsTableTableManager get downloadNotifications =>
       $$DownloadNotificationsTableTableManager(_db, _db.downloadNotifications);
+  $$BibleMarksTableTableManager get bibleMarks =>
+      $$BibleMarksTableTableManager(_db, _db.bibleMarks);
+  $$BibleReadingStatesTableTableManager get bibleReadingStates =>
+      $$BibleReadingStatesTableTableManager(_db, _db.bibleReadingStates);
+  $$BiblePlanEnrollmentsTableTableManager get biblePlanEnrollments =>
+      $$BiblePlanEnrollmentsTableTableManager(_db, _db.biblePlanEnrollments);
+  $$BibleQuizResultsTableTableManager get bibleQuizResults =>
+      $$BibleQuizResultsTableTableManager(_db, _db.bibleQuizResults);
+  $$BibleVerseOfDaysTableTableManager get bibleVerseOfDays =>
+      $$BibleVerseOfDaysTableTableManager(_db, _db.bibleVerseOfDays);
+  $$BibleSundayPassagesTableTableManager get bibleSundayPassages =>
+      $$BibleSundayPassagesTableTableManager(_db, _db.bibleSundayPassages);
+  $$BiblePlansTableTableManager get biblePlans =>
+      $$BiblePlansTableTableManager(_db, _db.biblePlans);
+  $$BibleChallengesTableTableManager get bibleChallenges =>
+      $$BibleChallengesTableTableManager(_db, _db.bibleChallenges);
+  $$BibleQuizzesTableTableManager get bibleQuizzes =>
+      $$BibleQuizzesTableTableManager(_db, _db.bibleQuizzes);
+  $$BibleVersionsTableTableManager get bibleVersions =>
+      $$BibleVersionsTableTableManager(_db, _db.bibleVersions);
+  $$LocalBibleMarksTableTableManager get localBibleMarks =>
+      $$LocalBibleMarksTableTableManager(_db, _db.localBibleMarks);
+  $$LocalBibleReadingStateTableTableManager get localBibleReadingState =>
+      $$LocalBibleReadingStateTableTableManager(
+          _db, _db.localBibleReadingState);
+  $$LocalBiblePlanEnrollmentsTableTableManager get localBiblePlanEnrollments =>
+      $$LocalBiblePlanEnrollmentsTableTableManager(
+          _db, _db.localBiblePlanEnrollments);
+  $$LocalBibleQuizResultsTableTableManager get localBibleQuizResults =>
+      $$LocalBibleQuizResultsTableTableManager(_db, _db.localBibleQuizResults);
+  $$BibleInstalledVersionsTableTableManager get bibleInstalledVersions =>
+      $$BibleInstalledVersionsTableTableManager(
+          _db, _db.bibleInstalledVersions);
 }

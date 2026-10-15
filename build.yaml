@@ -19,3 +19,9 @@ targets:
             app_database: lib/data/local/app_database.dart
           test_dir: test/data/local/schema/
           schema_dir: drift_schemas/
+          # L'index plein texte de la Bible (`bible_fts.drift`, #199).
+          sql:
+            dialect: sqlite
+            options:
+              modules:
+                - fts5

@@ -23,7 +23,7 @@ void main() {
   });
 
   group('GET /sync — le manifeste', () {
-    test('rend les quarante collections du registre, enveloppe déballée',
+    test('rend les cinquante collections du registre, enveloppe déballée',
         () async {
       server.serveManifest(manifestNominal());
 
@@ -31,7 +31,7 @@ void main() {
       final data = res.data as Map;
 
       expect(data['scope_version'], 4);
-      expect((data['collections'] as List).length, 40);
+      expect((data['collections'] as List).length, 50);
       expect(
         (data['collections'] as List)
             .map((c) => (c as Map)['key'])

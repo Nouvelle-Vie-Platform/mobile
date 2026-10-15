@@ -11,6 +11,7 @@ import '../../models/legal_document_view.dart';
 import '../../models/teaching_download.dart';
 import 'announcement_dao.dart';
 import 'auth_channels_dao.dart';
+import 'bible_dao.dart';
 import 'chat_organization_dao.dart';
 // Utilisé par le code généré (`app_database.g.dart`), qui est une `part` de ce
 // fichier : le convertisseur de carte de traduction y est instancié.
@@ -44,6 +45,7 @@ import 'sync_dao.dart';
 import 'season_dao.dart';
 import 'tables/announcement_tables.dart';
 import 'tables/auth_tables.dart';
+import 'tables/bible_tables.dart';
 import 'tables/download_tables.dart';
 import 'tables/gathering_tables.dart';
 import 'tables/group_tables.dart';
@@ -144,7 +146,26 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     Downloads,
     DownloadTitles,
     DownloadNotifications,
+    // Le module Bible (#199) : toutes ses tables, en une étape (v29).
+    BibleMarks,
+    BibleReadingStates,
+    BiblePlanEnrollments,
+    BibleQuizResults,
+    BibleVerseOfDays,
+    BibleSundayPassages,
+    BiblePlans,
+    BibleChallenges,
+    BibleQuizzes,
+    BibleVersions,
+    LocalBibleMarks,
+    LocalBibleReadingState,
+    LocalBiblePlanEnrollments,
+    LocalBibleQuizResults,
+    BibleInstalledVersions,
   ],
+  // L'index plein texte FTS5 de la Bible (#199), qu'une table Dart ne sait
+  // pas déclarer.
+  include: {'tables/bible_fts.drift'},
   daos: [
     SyncDao,
     MediathequeDao,
@@ -167,6 +188,7 @@ const String kLocalDatabaseName = 'maison_du_miracle';
     SettingsDao,
     DownloadsDao,
     DownloadNotificationsDao,
+    BibleDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -293,8 +315,14 @@ class AppDatabase extends _$AppDatabase {
   /// `media_page_chips`, `media_page_sections`, trois collections répliquées
   /// de plus, trois créations de table ; et `branches.slug`, avec l'oubli du
   /// curseur de `branches`. Voir [kMediaPagesSchemaVersion].
+  ///
+  /// **v29** (#199) — **le module Bible, tout entier** : dix miroirs de
+  /// collections (quatre privées, six de référence), quatre tables locales
+  /// `local_bible_*`, `bible_installed_versions` et l'index FTS5
+  /// `bible_fts`. Seize créations, et rien d'autre. Voir
+  /// [kBibleSchemaVersion].
   @override
-  int get schemaVersion => kNotesSchemaVersion;
+  int get schemaVersion => kBibleSchemaVersion;
 
   /// **Le palier de la tranche M2** (#141) : v25, après M8 (v22), M3 (v23) et
   /// M5 (v24).
@@ -312,6 +340,10 @@ class AppDatabase extends _$AppDatabase {
   /// (v27). Quatre créations de table, et rien d'autre — N4 et N5 n'ajoutent
   /// pas de table.
   static const int kNotesSchemaVersion = 28;
+
+  /// **Le palier du module Bible** (#199) : v29, après les notes (v28). Le
+  /// seul palier du chantier — M2 à M7 n'ajoutent ni table ni colonne.
+  static const int kBibleSchemaVersion = 29;
 
   /// Les sept colonnes du média d'un message (M4), ajoutées ensemble au palier
   /// v26 — et retirées ensemble d'une table créée pour une version antérieure
@@ -951,6 +983,33 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(noteCategories);
             await m.createTable(localNotes);
             await m.createTable(pendingNoteMedia);
+          }
+          // v28 → v29 — le module Bible (#199). Seize créations, et rien
+          // d'autre. Les miroirs naissent vides, sans curseur : le prochain
+          // manifeste les annonce `from_zero` (un serveur en retard d'une
+          // version répond `404`, la collection est sautée). Les tables
+          // locales attendent le premier geste.
+          if (from < kBibleSchemaVersion) {
+            for (final table in <TableInfo<Table, Object?>>[
+              bibleMarks,
+              bibleReadingStates,
+              biblePlanEnrollments,
+              bibleQuizResults,
+              bibleVerseOfDays,
+              bibleSundayPassages,
+              biblePlans,
+              bibleChallenges,
+              bibleQuizzes,
+              bibleVersions,
+              localBibleMarks,
+              localBibleReadingState,
+              localBiblePlanEnrollments,
+              localBibleQuizResults,
+              bibleInstalledVersions,
+            ]) {
+              await m.createTable(table);
+            }
+            await m.create(bibleFts);
           }
         },
         beforeOpen: (details) async {

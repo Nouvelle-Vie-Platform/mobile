@@ -16,7 +16,7 @@ import '../helpers/sync_fixtures.dart';
 /// origines est en tête de `test/helpers/sync_fixtures.dart`.
 void main() {
   group('GET /sync — l\'enveloppe du manifeste est en snake_case', () {
-    test('les trente-neuf collections du registre, dans l\'ordre', () {
+    test('les cinquante collections du registre, dans l\'ordre', () {
       // **Ce nombre avait menti.** Il disait dix-neuf quand le registre serveur
       // en comptait vingt-cinq, et le test passait au vert en gardant un contrat
       // périmé — `seasons`, `decor`, `teaching_guests`, `group_members`,
@@ -40,8 +40,9 @@ void main() {
       // deviennent la trente-cinquième et la trente-sixième ; puis en #167,
       // où les trois collections de la médiathèque en pages portent le compte
       // à trente-neuf ; puis en #190 (notes N1), où `note_categories` porte
-      // le compte à quarante.
-      expect(kSyncCollections, hasLength(40));
+      // le compte à quarante ; puis en #199 (module Bible, S1–S5), où dix
+      // collections le portent à cinquante.
+      expect(kSyncCollections, hasLength(50));
       expect(
         _collections(manifestNominal()).map((c) => c['key']),
         kSyncCollections.keys,

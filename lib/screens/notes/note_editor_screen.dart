@@ -92,6 +92,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     _saver = NoteDraftSaver(
       dao: ref.read(notesDaoProvider),
       repository: ref.read(notesRepositoryProvider),
+      debounce: ref.read(noteDraftDebounceProvider),
     );
     _composer = ref.read(noteMediaComposerProvider);
     _titleFocus.addListener(_onFocus);

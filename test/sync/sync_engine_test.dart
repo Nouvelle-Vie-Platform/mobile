@@ -162,6 +162,14 @@ void main() {
           'auth_channels',
           'device_settings',
           'decor',
+          // Les référentiels du module Bible (#199) : avant toute privée qui
+          // les désigne ; les plans avant les défis qui les nomment.
+          'bible_versions',
+          'bible_verse_of_days',
+          'bible_sunday_passages',
+          'bible_plans',
+          'bible_challenges',
+          'bible_quizzes',
           'contributors',
           'branches',
           'teachings',
@@ -176,6 +184,11 @@ void main() {
           // qu'elles colorent — le référentiel avant le contenu.
           'note_categories',
           'spiritual_notes',
+          // Mes données Bible (#199) : privées, après leurs référentiels.
+          'bible_marks',
+          'bible_reading_states',
+          'bible_plan_enrollments',
+          'bible_quiz_results',
           // Les cinq d'« Échanges » (#96) ferment la marche, dans l'ordre que le
           // cadrage donne. `profiles` avant `group_messages` est la seule
           // contrainte d'ordre qu'il écrit en toutes lettres : elle nomme ce que

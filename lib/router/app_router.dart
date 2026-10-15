@@ -11,7 +11,6 @@ import '../screens/archived_chats_screen.dart';
 import '../screens/auth/code_screen.dart';
 import '../screens/auth/identifier_screen.dart';
 import '../screens/auth/profile_form_screen.dart';
-import '../screens/bible_screen.dart';
 import '../screens/branch_scope_screen.dart';
 import '../screens/chat_search_screen.dart';
 import '../screens/create_group_screen.dart';
@@ -33,6 +32,9 @@ import '../screens/media_library_screen.dart';
 import '../screens/member_profile_screen.dart';
 import '../screens/new_conversation_screen.dart';
 import '../screens/new_request_screen.dart';
+import '../features/bible/personalize/personalize_routes.dart';
+import '../features/bible/reader/bible_reader_screen.dart';
+import '../features/bible/shell/bible_shell.dart';
 import '../screens/notes/note_editor_screen.dart';
 import '../screens/group_info_screen.dart';
 import '../screens/group_shared_content_screen.dart';
@@ -82,6 +84,17 @@ abstract final class AppRoute {
   /// : la Bible était un onglet, elle n'avait donc rien ici. Elle est
   /// **ouverte** — la surface invitée décidée par le client la nomme.
   static const bible = 'bible';
+
+  /// **Le lecteur de la Bible** (#199), `/bible/read/:book/:chapter?v=16-18`.
+  static const bibleReader = 'bible-reader';
+
+  /// **Le mode sélection** (#199), `/bible/select` : la feuille « Ajouter un
+  /// lien » des notes la pousse et attend un `BibleLink` en retour.
+  static const bibleSelect = 'bible-select';
+
+  /// **Les écrans de M4** (#202), `/bible/personalize/:page` : Mon espace,
+  /// Paramètres, versions et hors ligne, thèmes, studio de partage.
+  static const biblePersonalize = 'bible-personalize';
   static const media = 'media';
 
   /// **New Life Radio** (#104). La route s'appelait `live` et servait un écran qui
@@ -443,18 +456,51 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) =>
             const AppBackground(child: ProfileScreen(showBack: true)),
       ),
-      // La Bible, **poussée** depuis l'en-tête de l'accueil. Aucune garde : elle
-      // appartient à la surface invitée, et l'écran est provisoire.
+      // Le module Bible (#199), **poussé** depuis l'en-tête de l'accueil. Aucune
+      // garde : il appartient à la surface invitée (l'onglet Notes y montre à
+      // l'invité une porte de session).
       GoRoute(
         name: AppRoute.bible,
         path: '/bible',
         builder: (_, state) => AppBackground(
-          child: BibleScreen(
-            // `?tab=bible|notes` (#190) ; sans lui, le dernier onglet ouvert.
-            initialTab:
-                BibleTab.values.asNameMap()[state.uri.queryParameters['tab']],
+          child: BibleShell(
+            // `?tab=home|bible|favorites|notes|more` ; sans lui, le dernier
+            // onglet ouvert.
+            initialTab: BibleModuleTab.values
+                .asNameMap()[state.uri.queryParameters['tab']],
           ),
         ),
+      ),
+      // Deux routes à part entière, et non des sous-routes de `/bible` : le
+      // lecteur et le mode sélection se poussent seuls, par-dessus l'écran qui
+      // les ouvre (une note, un lien, l'onglet Bible).
+      GoRoute(
+        name: AppRoute.bibleSelect,
+        path: '/bible/select',
+        builder: (_, __) =>
+            const AppBackground(child: BibleShell(selectMode: true)),
+      ),
+      GoRoute(
+        name: AppRoute.biblePersonalize,
+        path: '/bible/personalize/:page',
+        builder: (_, state) =>
+            AppBackground(child: biblePersonalizeScreen(state)),
+      ),
+      GoRoute(
+        name: AppRoute.bibleReader,
+        path: '/bible/read/:book/:chapter',
+        builder: (_, state) {
+          final (from, to) =
+              BibleReaderScreen.parseVerses(state.uri.queryParameters['v']);
+          return AppBackground(
+            child: BibleReaderScreen(
+              book: state.pathParameters['book']!,
+              chapter: int.tryParse(state.pathParameters['chapter']!) ?? 1,
+              from: from,
+              to: to,
+            ),
+          );
+        },
       ),
       // Composeur d'annonce — deux chemins, un seul écran. Ils ne se disputent
       // rien : `/announcement/compose` a un segment, `/announcement/:id/edit`

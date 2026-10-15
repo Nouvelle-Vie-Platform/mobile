@@ -6,7 +6,7 @@
 /// | `nv://note/<id>` | l'éditeur `/notes/:id` ; note inconnue → `SnackBar` |
 /// | `nv://teaching/<id>` | le lecteur `/teaching/:id` (qui dit lui-même « retiré ») |
 /// | `http(s)://…` | le navigateur du système (`externalLinkLauncherProvider`) |
-/// | `nv://bible/…` | l'onglet Bible, `/bible?tab=bible` |
+/// | `nv://bible/…` | le lecteur au verset, surligné un instant (#199) |
 ///
 /// Tout autre lien (hors schéma, ou navigateur indisponible) → `SnackBar`.
 library;
@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_extension.dart';
 import '../../../models/note_view.dart';
+import '../../bible/reader/bible_reader_screen.dart';
 import '../../../router/app_router.dart';
 import '../../../state/menu_providers.dart';
 import '../../../state/notes_providers.dart';
@@ -65,10 +66,8 @@ abstract final class NoteLinkOpener {
       case WebLink(:final url):
         final opened = await ref.read(externalLinkLauncherProvider).open(url);
         if (!opened) say(l.noteLinkCannotOpen);
-      case BibleLink():
-        unawaited(
-          router.pushNamed(AppRoute.bible, queryParameters: {'tab': 'bible'}),
-        );
+      case final BibleLink link:
+        unawaited(BibleReaderScreen.push(router, link));
       case null:
         say(l.noteLinkCannotOpen);
     }

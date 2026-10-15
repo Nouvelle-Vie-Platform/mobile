@@ -33,9 +33,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navBible => 'Bible';
 
   @override
-  String get pageUnderConstruction => 'Page under construction';
-
-  @override
   String get navAgenda => 'Agenda';
 
   @override
@@ -2479,9 +2476,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noteLinkToBible => 'The Bible';
 
   @override
-  String get noteLinkSoon => 'soon';
-
-  @override
   String get noteLinkSearch => 'Search';
 
   @override
@@ -2549,4 +2543,850 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noteAttachmentUnavailable => 'Attachment unavailable';
+
+  @override
+  String get bibleTabHome => 'Home';
+
+  @override
+  String get bibleTabBible => 'Bible';
+
+  @override
+  String get bibleTabFavorites => 'Favorites';
+
+  @override
+  String get bibleTabNotes => 'Notes';
+
+  @override
+  String get bibleTabMore => 'More';
+
+  @override
+  String get bibleBackToHome => 'Back to home';
+
+  @override
+  String get bibleOldTestament => 'Old Testament';
+
+  @override
+  String get bibleNewTestament => 'New Testament';
+
+  @override
+  String get bibleBookSearchHint => 'Quick book search';
+
+  @override
+  String get bibleNoBookFound => 'No matching book';
+
+  @override
+  String bibleChapterCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chapters',
+      one: '1 chapter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleChooseChapter => 'Choose a chapter';
+
+  @override
+  String get bibleChooseVerse => 'Choose a verse';
+
+  @override
+  String bibleStartReading(String reference) {
+    return 'Start $reference';
+  }
+
+  @override
+  String get bibleSelectTitle => 'Choose a passage';
+
+  @override
+  String get bibleSelectHint => 'Tap verses to choose a passage';
+
+  @override
+  String bibleInsertReference(String reference) {
+    return 'Insert $reference';
+  }
+
+  @override
+  String get bibleChangeChapter => 'Change chapter';
+
+  @override
+  String get bibleVersionTooltip => 'Bible version';
+
+  @override
+  String get bibleChapterUnavailable =>
+      'This chapter is not available in this version.';
+
+  @override
+  String get bibleSoonTitle => 'Coming soon';
+
+  @override
+  String get bibleHomeSoon =>
+      'Verse of the day, Sunday passage, reading plans and quizzes will appear here.';
+
+  @override
+  String get bibleFavoritesSoon =>
+      'Your favorite verses, marked chapters and highlights will be listed here.';
+
+  @override
+  String get bibleMoreSoon =>
+      'Reading plans, quizzes, versions and settings will appear here.';
+
+  @override
+  String get bibleM2Copy => 'Copy';
+
+  @override
+  String get bibleM2Copied => 'Verses copied';
+
+  @override
+  String get bibleM2Favorite => 'Favorite';
+
+  @override
+  String get bibleM2Note => 'Note';
+
+  @override
+  String get bibleM2Share => 'Share';
+
+  @override
+  String get bibleM2Highlight => 'Highlight';
+
+  @override
+  String get bibleM2ClearHighlight => 'Clear highlight';
+
+  @override
+  String get bibleM2Bookmark => 'Bookmark';
+
+  @override
+  String get bibleM2FilterAll => 'All';
+
+  @override
+  String get bibleM2FilterVerses => 'Verses';
+
+  @override
+  String get bibleM2FilterChapters => 'Chapters';
+
+  @override
+  String get bibleM2FilterHighlights => 'Highlights';
+
+  @override
+  String get bibleM2EmptyTitle => 'Nothing here yet';
+
+  @override
+  String get bibleM2Empty =>
+      'Tap a verse in the reader to favorite or highlight it, or bookmark a chapter.';
+
+  @override
+  String get bibleM4AppearanceTitle => 'Themes & fonts';
+
+  @override
+  String get bibleM4AppearanceSample =>
+      'Sample text — The Lord keeps those who seek him, morning and evening.';
+
+  @override
+  String get bibleM4Theme => 'Theme';
+
+  @override
+  String get bibleM4ThemeLight => 'Light';
+
+  @override
+  String get bibleM4ThemeDark => 'Dark';
+
+  @override
+  String get bibleM4ThemeSepia => 'Sepia';
+
+  @override
+  String get bibleM4Font => 'Font';
+
+  @override
+  String get bibleM4FontSystem => 'System';
+
+  @override
+  String get bibleM4FontSize => 'Text size';
+
+  @override
+  String get bibleM4LineHeight => 'Line spacing';
+
+  @override
+  String get bibleM4AudioPrevious => 'Previous chapter';
+
+  @override
+  String get bibleM4AudioNext => 'Next chapter';
+
+  @override
+  String get bibleM4AudioPlay => 'Play';
+
+  @override
+  String get bibleM4AudioPause => 'Pause';
+
+  @override
+  String get bibleM4AudioClose => 'Stop reading';
+
+  @override
+  String get bibleM4StudioTitle => 'Share studio';
+
+  @override
+  String get bibleM4StudioBackground => 'Background';
+
+  @override
+  String get bibleM4StudioInk => 'Text colour';
+
+  @override
+  String get bibleM4StudioShowReference => 'Show the reference';
+
+  @override
+  String get bibleM4StudioSave => 'Save';
+
+  @override
+  String get bibleM4StudioShare => 'Share';
+
+  @override
+  String get bibleM4StudioSaved => 'Image saved to the gallery';
+
+  @override
+  String get bibleM4StudioSaveFailed => 'Could not save the image';
+
+  @override
+  String get bibleM4VersionsTitle => 'Versions & offline';
+
+  @override
+  String get bibleM4VersionsHint =>
+      'Download a version to read it offline, and choose the active version.';
+
+  @override
+  String bibleM4SizeMb(String size) {
+    return '$size MB';
+  }
+
+  @override
+  String get bibleM4VersionBuiltIn => 'built in';
+
+  @override
+  String get bibleM4Download => 'Download';
+
+  @override
+  String get bibleM4VersionSoon => 'Soon';
+
+  @override
+  String get bibleM4Remove => 'Remove';
+
+  @override
+  String get bibleM4ActiveVersion => 'Active version';
+
+  @override
+  String get bibleM4MySpaceTitle => 'My space';
+
+  @override
+  String bibleM4Streak(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days of reading in a row',
+      one: '1 day of reading in a row',
+      zero: 'No streak yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleM4Badges => 'Badges';
+
+  @override
+  String bibleM4ChaptersRead(int count, int total) {
+    return '$count of $total chapters read';
+  }
+
+  @override
+  String bibleM4Favorites(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count favourites',
+      one: '1 favourite',
+      zero: 'No favourites',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bibleM4Notes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notes',
+      one: '1 note',
+      zero: 'No notes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bibleM4Quizzes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count quizzes played',
+      one: '1 quiz played',
+      zero: 'No quiz played',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleM4SettingsTitle => 'Settings';
+
+  @override
+  String get bibleM4Voice => 'Reading voice';
+
+  @override
+  String get bibleM4VoiceSystem => 'System voice';
+
+  @override
+  String get bibleM4Reminders => 'Reminders';
+
+  @override
+  String get bibleM4VerseOfDayTitle => 'Verse of the day';
+
+  @override
+  String get bibleM4PlanReminderTitle => 'Plan reading';
+
+  @override
+  String get bibleM4PlanReminderBody => 'It\'s time for today\'s reading.';
+
+  @override
+  String get bibleM4ChangeTime => 'Change the time';
+
+  @override
+  String get bibleM4About => 'About';
+
+  @override
+  String get bibleM4Licenses =>
+      'Fonts: Atkinson Hyperlegible (Braille Institute) and Literata (The Literata Project Authors), SIL Open Font License 1.1.';
+
+  @override
+  String get bibleM4OfflineShortcut => 'Offline';
+
+  @override
+  String get bibleM4ShareAsImage => 'Image';
+
+  @override
+  String get bibleM4ListenFromHere => 'Listen';
+
+  @override
+  String get bibleSearchTitle => 'Search';
+
+  @override
+  String get bibleSearchHint => 'A word, or a reference (jn 3 16)';
+
+  @override
+  String bibleSearchGoTo(String reference) {
+    return 'Go to $reference';
+  }
+
+  @override
+  String bibleSearchResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+      zero: 'No results',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleSearchScopeAll => 'All';
+
+  @override
+  String get bibleSearchScopeOld => 'OT';
+
+  @override
+  String get bibleSearchScopeNew => 'NT';
+
+  @override
+  String get bibleSearchScopeBook => 'Book';
+
+  @override
+  String get bibleSearchMore => 'Show more';
+
+  @override
+  String get bibleSearchHistory => 'Recent searches';
+
+  @override
+  String get bibleSearchClearHistory => 'Clear';
+
+  @override
+  String get bibleSearchIndexing => 'Preparing search…';
+
+  @override
+  String get bibleSearchEmpty =>
+      'Search a word in the Bible, or type a reference.';
+
+  @override
+  String get bibleSearchNoResults => 'No verse contains these words.';
+
+  @override
+  String get bibleSearchCompare => 'Compare versions';
+
+  @override
+  String get bibleSearchCompareTitle => 'Compared results';
+
+  @override
+  String get biblePlansTitle => 'Reading plans';
+
+  @override
+  String get biblePlansShortcut => 'Plans';
+
+  @override
+  String get biblePlansChallengesTitle => 'Challenges';
+
+  @override
+  String get biblePlansMine => 'My plans';
+
+  @override
+  String get biblePlansEmpty => 'No plan in progress: pick one below.';
+
+  @override
+  String get biblePlansChurch => 'Church plans';
+
+  @override
+  String get biblePlansBuiltin => 'Suggested plans';
+
+  @override
+  String get biblePlansCreate => 'Create a plan or challenge';
+
+  @override
+  String get biblePlansBible1y => 'The Bible in a year';
+
+  @override
+  String get biblePlansNt90 => 'The New Testament in 90 days';
+
+  @override
+  String get biblePlansPs30 => 'The Psalms in 30 days';
+
+  @override
+  String get biblePlansGospels40 => 'The Gospels in 40 days';
+
+  @override
+  String biblePlansDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '$count day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get biblePlansStart => 'Start';
+
+  @override
+  String biblePlansDayOf(int day, int total) {
+    return 'Day $day of $total';
+  }
+
+  @override
+  String get biblePlansChallengeBar => 'Challenge bar';
+
+  @override
+  String get biblePlansGoals => 'Goals';
+
+  @override
+  String get biblePlansGoalToday => 'Today\'s reading';
+
+  @override
+  String get biblePlansGoalWeek => '7 days in a row';
+
+  @override
+  String get biblePlansGoalHalf => 'Halfway';
+
+  @override
+  String get biblePlansGoalDone => 'Plan complete';
+
+  @override
+  String get biblePlansBadges => 'Badges';
+
+  @override
+  String get biblePlansBadgeFirstDay => 'First day';
+
+  @override
+  String get biblePlansBadgeWeek => '7-day streak';
+
+  @override
+  String get biblePlansBadgeMonth => '30-day streak';
+
+  @override
+  String get biblePlansBadgePlanDone => 'Plan complete';
+
+  @override
+  String get biblePlansBadgeBookDone => 'Book complete';
+
+  @override
+  String get biblePlansBadgeHundred => '100 chapters';
+
+  @override
+  String get biblePlansBadgeChallenge => 'Challenge joined';
+
+  @override
+  String get biblePlansToday => 'Today\'s reading';
+
+  @override
+  String get biblePlansMarkDone => 'Mark as read';
+
+  @override
+  String get biblePlansRead => 'Read';
+
+  @override
+  String biblePlansCatchUp(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count readings behind',
+      one: '$count reading behind',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get biblePlansCatchUpAction => 'Catch up';
+
+  @override
+  String biblePlansStreak(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Streak: $count days',
+      one: 'Streak: $count day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get biblePlansAllDays => 'All days';
+
+  @override
+  String get biblePlansFinished => 'Plan complete, well done!';
+
+  @override
+  String biblePlansNotStarted(String date) {
+    return 'Starts on $date';
+  }
+
+  @override
+  String get biblePlansUnavailable => 'This plan is no longer available.';
+
+  @override
+  String get biblePlansLeave => 'Leave the plan';
+
+  @override
+  String get biblePlansLeaveConfirm =>
+      'Leave this plan? Your progress will be erased.';
+
+  @override
+  String get biblePlansEdit => 'Edit';
+
+  @override
+  String get biblePlansCancel => 'Cancel';
+
+  @override
+  String get biblePlansEditorTitle => 'My plan';
+
+  @override
+  String get biblePlansEditorName => 'Title';
+
+  @override
+  String get biblePlansEditorBooks => 'Books';
+
+  @override
+  String get biblePlansEditorOld => 'Old Testament';
+
+  @override
+  String get biblePlansEditorNew => 'New Testament';
+
+  @override
+  String get biblePlansEditorClear => 'None';
+
+  @override
+  String get biblePlansEditorDuration => 'Duration (days)';
+
+  @override
+  String biblePlansEditorSummary(int chapters, String perDay) {
+    return '$chapters chapters, about $perDay a day';
+  }
+
+  @override
+  String get biblePlansEditorSave => 'Save';
+
+  @override
+  String get biblePlansChallengesEmpty => 'No challenge in progress.';
+
+  @override
+  String get biblePlansGuestTitle => 'Sign in to join';
+
+  @override
+  String get biblePlansGuestBody =>
+      'Challenges are taken together, under a biblical name.';
+
+  @override
+  String get biblePlansSignIn => 'Sign in';
+
+  @override
+  String get biblePlansJoin => 'Join';
+
+  @override
+  String get biblePlansJoined => 'You are taking part';
+
+  @override
+  String get biblePlansLeaderboard => 'Leaderboard';
+
+  @override
+  String get biblePlansOpenPlan => 'Open the plan';
+
+  @override
+  String get biblePlansPickName => 'Choose your name';
+
+  @override
+  String get biblePlansPickNameBody =>
+      'Other participants will only see this name.';
+
+  @override
+  String get biblePlansPickNameSearch => 'Search a name';
+
+  @override
+  String get biblePlansNameTaken =>
+      'This name was just taken: pick another one.';
+
+  @override
+  String get biblePlansAlreadyJoined =>
+      'You have already joined this challenge.';
+
+  @override
+  String get biblePlansRetry => 'Retry';
+
+  @override
+  String biblePlansParticipants(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count participants',
+      one: '$count participant',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String biblePlansOnTime(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count readings on time',
+      one: '$count reading on time',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get biblePlansYou => 'you';
+
+  @override
+  String biblePlansChallengeDates(String start, String end) {
+    return 'From $start to $end';
+  }
+
+  @override
+  String get biblePlansHomeTitle => 'My current plan';
+
+  @override
+  String get bibleQuizTitle => 'Quiz';
+
+  @override
+  String get bibleQuizWhoPlays => 'Who is playing?';
+
+  @override
+  String get bibleQuizWhoPlaysHint =>
+      'Pick a profile: it sets which quizzes are offered. You can change it at any time.';
+
+  @override
+  String get bibleQuizBandKids => 'Kids';
+
+  @override
+  String get bibleQuizBandTeens => 'Youth';
+
+  @override
+  String get bibleQuizBandAdults => 'Adults';
+
+  @override
+  String get bibleQuizBandKidsAges => 'Ages 6 to 11';
+
+  @override
+  String get bibleQuizBandTeensAges => 'Ages 12 to 17';
+
+  @override
+  String get bibleQuizBandAdultsAges => '18 and over';
+
+  @override
+  String get bibleQuizHubIntro =>
+      'Test your knowledge of the Bible, alone or with family. Who is playing?';
+
+  @override
+  String get bibleQuizBandKidsHint => 'Bible stories and heroes';
+
+  @override
+  String get bibleQuizBandTeensHint => 'challenges to go further';
+
+  @override
+  String get bibleQuizBandAdultsHint => 'to deepen your faith';
+
+  @override
+  String bibleQuizStepLocked(int number) {
+    return 'Pass step $number first to open this one.';
+  }
+
+  @override
+  String bibleQuizPathProgress(int done, int total) {
+    return 'Steps passed: $done / $total';
+  }
+
+  @override
+  String get bibleQuizEmpty => 'No quiz for this profile yet.';
+
+  @override
+  String get bibleQuizNew => 'New';
+
+  @override
+  String bibleQuizBest(int score, int total) {
+    return 'Best: $score/$total';
+  }
+
+  @override
+  String bibleQuizQuestionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '1 question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibleQuizDifficulty1 => 'Easy';
+
+  @override
+  String get bibleQuizDifficulty2 => 'Medium';
+
+  @override
+  String get bibleQuizDifficulty3 => 'Hard';
+
+  @override
+  String bibleQuizProgress(int index, int total) {
+    return 'Question $index of $total';
+  }
+
+  @override
+  String get bibleQuizRight => 'Correct!';
+
+  @override
+  String get bibleQuizWrong => 'Not quite.';
+
+  @override
+  String get bibleQuizTimeUp => 'Time\'s up.';
+
+  @override
+  String bibleQuizAnswerWas(String answer) {
+    return 'The answer: $answer';
+  }
+
+  @override
+  String get bibleQuizNext => 'Next';
+
+  @override
+  String get bibleQuizSeeScore => 'See my score';
+
+  @override
+  String bibleQuizScore(int score, int total) {
+    return '$score / $total';
+  }
+
+  @override
+  String get bibleQuizFinished => 'Quiz complete';
+
+  @override
+  String get bibleQuizReplay => 'Play again';
+
+  @override
+  String get bibleQuizDone => 'Done';
+
+  @override
+  String get bibleQuizListen => 'Listen to the question';
+
+  @override
+  String get bibleHomeHeroTitle => 'The Word\nevery day';
+
+  @override
+  String get bibleHomeVerseOfDay => 'Verse of the day';
+
+  @override
+  String get bibleHomeFavorite => 'Add to favorites';
+
+  @override
+  String get bibleHomeFavorited => 'In your favorites';
+
+  @override
+  String get bibleHomeShare => 'Share';
+
+  @override
+  String get bibleHomeReadChapter => 'Read the chapter';
+
+  @override
+  String get bibleHomeSearchHint => 'Search a word, a reference…';
+
+  @override
+  String get bibleHomeContinueTitle => 'Continue reading';
+
+  @override
+  String get bibleHomeSundayTitle => 'Sunday passage';
+
+  @override
+  String get bibleHomeSundayTeaching => 'Listen to the teaching';
+
+  @override
+  String get bibleHomeSundayGathering => 'See the gathering';
+
+  @override
+  String get bibleHomeQuizTitle => 'Quiz of the week';
+
+  @override
+  String bibleHomeBookProgress(int read, int total, String book) {
+    return '$read of $total chapters of $book read';
+  }
+
+  @override
+  String get bibleHomeHeroTagline =>
+      'Every day, let the Holy Scriptures inspire you.';
+
+  @override
+  String get bibleHomeDailyTitle => 'Today\'s reading';
+
+  @override
+  String get bibleHomeCardPlans => 'Plans';
+
+  @override
+  String get bibleHomeCardChallenges => 'Challenges';
+
+  @override
+  String get bibleHomeCardQuizzes => 'Quizzes';
+
+  @override
+  String get bibleHomeCardFavorites => 'Favorites';
+
+  @override
+  String get bibleQuizBadgeFirst => 'First quiz';
+
+  @override
+  String get bibleQuizBadgePerfect => 'Perfect score';
+
+  @override
+  String get bibleQuizBadgeTen => '10 different quizzes';
 }

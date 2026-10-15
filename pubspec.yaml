@@ -283,6 +283,20 @@ dependencies:
   pdf: ^3.13.1
   share_plus: ^13.3.1
 
+  # **Module Bible, M4** (mobile#202) — tout est lu sous
+  # `lib/features/bible/personalize/` seulement :
+  #
+  # - `stts` — la synthèse vocale **du système** (AVSpeechSynthesizer,
+  #   TextToSpeech). Pris à la place de `flutter_tts`, qui n'a pas de
+  #   `Package.swift` et ressusciterait CocoaPods (voir « iOS » dans
+  #   CLAUDE.md). Même auteur que `record`. Swift Package.
+  # - `timezone` (déjà là en transitif) — `zonedSchedule` des rappels.
+  #
+  # La voix naturelle Piper (`sherpa_onnx`) est **retirée** : sherpa-onnx
+  # embarque espeak-ng, sous GPL 3.0, incompatible avec les magasins.
+  stts: ^1.3.4
+  timezone: ^0.11.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -309,6 +323,8 @@ flutter:
     - assets/images/rameau_or.webp
     - assets/images/live_bg.png
     - assets/images/home_header_church.webp
+    - assets/images/bible_home_hero.webp
+    - assets/images/bible_home_hero_night.webp
 
   fonts:
     - family: Atkinson Hyperlegible
@@ -323,3 +339,16 @@ flutter:
         - asset: assets/fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-BoldItalic.ttf
           weight: 700
           style: italic
+    # Le titre de l'accueil du module Bible (« La Parole au quotidien »),
+    # mesuré sur la maquette : Playfair Display Medium. SIL OFL 1.1
+    # (`assets/fonts/Playfair_Display/OFL.txt`).
+    - family: Playfair Display
+      fonts:
+        - asset: assets/fonts/Playfair_Display/PlayfairDisplay-Medium.ttf
+          weight: 500
+    # La serif de lecture du lecteur de la Bible (M4, mobile#202), SIL OFL 1.1
+    # (`assets/fonts/Literata/OFL.txt`). Régulier seul : le texte des versets
+    # n'a pas de gras.
+    - family: Literata
+      fonts:
+        - asset: assets/fonts/Literata/Literata-Regular.ttf

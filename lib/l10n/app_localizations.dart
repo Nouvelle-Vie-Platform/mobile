@@ -148,12 +148,6 @@ abstract class AppLocalizations {
   /// **'Bible'**
   String get navBible;
 
-  /// Placeholder d'un écran pas encore livré (écran Bible)
-  ///
-  /// In fr, this message translates to:
-  /// **'Page en construction'**
-  String get pageUnderConstruction;
-
   /// No description provided for @navAgenda.
   ///
   /// In fr, this message translates to:
@@ -4546,12 +4540,6 @@ abstract class AppLocalizations {
   /// **'La Bible'**
   String get noteLinkToBible;
 
-  /// Feuille lien : mention à côté d'un choix pas encore disponible
-  ///
-  /// In fr, this message translates to:
-  /// **'bientôt'**
-  String get noteLinkSoon;
-
   /// Feuille lien : champ de recherche des notes ou enseignements
   ///
   /// In fr, this message translates to:
@@ -4689,6 +4677,1398 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pièce jointe indisponible'**
   String get noteAttachmentUnavailable;
+
+  /// Module Bible, onglet du bas : l'accueil du module
+  ///
+  /// In fr, this message translates to:
+  /// **'Accueil'**
+  String get bibleTabHome;
+
+  /// Module Bible, onglet du bas : parcourir les livres
+  ///
+  /// In fr, this message translates to:
+  /// **'Bible'**
+  String get bibleTabBible;
+
+  /// Module Bible, onglet du bas : versets favoris, chapitres marqués, surlignages
+  ///
+  /// In fr, this message translates to:
+  /// **'Favori'**
+  String get bibleTabFavorites;
+
+  /// Module Bible, onglet du bas : la liste des notes
+  ///
+  /// In fr, this message translates to:
+  /// **'Notes'**
+  String get bibleTabNotes;
+
+  /// Module Bible, onglet du bas : plans, quiz, versions, paramètres
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus'**
+  String get bibleTabMore;
+
+  /// Module Bible : info-bulle de la flèche de retour vers l'accueil de l'église
+  ///
+  /// In fr, this message translates to:
+  /// **'Retour à l\'accueil'**
+  String get bibleBackToHome;
+
+  /// No description provided for @bibleOldTestament.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ancien Testament'**
+  String get bibleOldTestament;
+
+  /// No description provided for @bibleNewTestament.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau Testament'**
+  String get bibleNewTestament;
+
+  /// Onglet Bible : champ de recherche d'un livre
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche rapide de livre'**
+  String get bibleBookSearchHint;
+
+  /// Onglet Bible : la recherche de livre ne trouve rien
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun livre ne correspond'**
+  String get bibleNoBookFound;
+
+  /// Onglet Bible : nombre de chapitres d'un livre
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 chapitre} other{{count} chapitres}}'**
+  String bibleChapterCount(int count);
+
+  /// No description provided for @bibleChooseChapter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un chapitre'**
+  String get bibleChooseChapter;
+
+  /// No description provided for @bibleChooseVerse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un verset'**
+  String get bibleChooseVerse;
+
+  /// Grille des versets : ouvrir le lecteur au début du chapitre (« Commencer Jean 3 »)
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencer {reference}'**
+  String bibleStartReading(String reference);
+
+  /// Mode sélection (lien d'une note) : titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un passage'**
+  String get bibleSelectTitle;
+
+  /// Mode sélection : sous-titre de la grille des versets
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez des versets pour choisir un passage'**
+  String get bibleSelectHint;
+
+  /// Mode sélection : bouton flottant (« Insérer Jean 3:16-18 »)
+  ///
+  /// In fr, this message translates to:
+  /// **'Insérer {reference}'**
+  String bibleInsertReference(String reference);
+
+  /// Lecteur : info-bulle de l'en-tête « Jean 3 ▾ »
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer de chapitre'**
+  String get bibleChangeChapter;
+
+  /// Lecteur : info-bulle du sélecteur de version
+  ///
+  /// In fr, this message translates to:
+  /// **'Version de la Bible'**
+  String get bibleVersionTooltip;
+
+  /// Lecteur : chapitre sans texte
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce chapitre n\'est pas disponible dans cette version.'**
+  String get bibleChapterUnavailable;
+
+  /// Module Bible : titre d'un onglet pas encore rempli
+  ///
+  /// In fr, this message translates to:
+  /// **'Bientôt ici'**
+  String get bibleSoonTitle;
+
+  /// Onglet Accueil du module, en attendant M7
+  ///
+  /// In fr, this message translates to:
+  /// **'Verset du jour, passage du dimanche, plans de lecture et quiz arriveront ici.'**
+  String get bibleHomeSoon;
+
+  /// Onglet Favori, en attendant M2
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos versets favoris, chapitres marqués et passages surlignés se rangeront ici.'**
+  String get bibleFavoritesSoon;
+
+  /// Onglet Plus, en attendant les tranches suivantes
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans de lecture, quiz, versions et paramètres arriveront ici.'**
+  String get bibleMoreSoon;
+
+  /// Menu d'un verset
+  ///
+  /// In fr, this message translates to:
+  /// **'Copier'**
+  String get bibleM2Copy;
+
+  /// Confirmation après Copier
+  ///
+  /// In fr, this message translates to:
+  /// **'Versets copiés'**
+  String get bibleM2Copied;
+
+  /// Menu d'un verset : poser ou retirer le favori
+  ///
+  /// In fr, this message translates to:
+  /// **'Favori'**
+  String get bibleM2Favorite;
+
+  /// Menu d'un verset : note de l'onglet Notes
+  ///
+  /// In fr, this message translates to:
+  /// **'Note'**
+  String get bibleM2Note;
+
+  /// Menu d'un verset
+  ///
+  /// In fr, this message translates to:
+  /// **'Partager'**
+  String get bibleM2Share;
+
+  /// Pastille de la palette de surlignage
+  ///
+  /// In fr, this message translates to:
+  /// **'Surligner'**
+  String get bibleM2Highlight;
+
+  /// Pastille « effacer » de la palette
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer le surlignage'**
+  String get bibleM2ClearHighlight;
+
+  /// En-tête du lecteur : marquer le chapitre
+  ///
+  /// In fr, this message translates to:
+  /// **'Marque-page'**
+  String get bibleM2Bookmark;
+
+  /// Onglet Favori, puce
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous'**
+  String get bibleM2FilterAll;
+
+  /// Onglet Favori, puce
+  ///
+  /// In fr, this message translates to:
+  /// **'Versets'**
+  String get bibleM2FilterVerses;
+
+  /// Onglet Favori, puce
+  ///
+  /// In fr, this message translates to:
+  /// **'Chapitres'**
+  String get bibleM2FilterChapters;
+
+  /// Onglet Favori, puce
+  ///
+  /// In fr, this message translates to:
+  /// **'Surlignés'**
+  String get bibleM2FilterHighlights;
+
+  /// Onglet Favori vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Rien ici pour l\'instant'**
+  String get bibleM2EmptyTitle;
+
+  /// Onglet Favori vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez un verset dans le lecteur pour le mettre en favori ou le surligner, ou marquez un chapitre.'**
+  String get bibleM2Empty;
+
+  /// Module Bible : écran des thèmes et polices du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Thèmes & polices'**
+  String get bibleM4AppearanceTitle;
+
+  /// Thèmes : texte de l'aperçu
+  ///
+  /// In fr, this message translates to:
+  /// **'Texte d\'exemple — Le Seigneur garde ceux qui le cherchent, au matin comme au soir.'**
+  String get bibleM4AppearanceSample;
+
+  /// Thèmes : titre du choix du thème
+  ///
+  /// In fr, this message translates to:
+  /// **'Thème'**
+  String get bibleM4Theme;
+
+  /// Thème clair du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Clair'**
+  String get bibleM4ThemeLight;
+
+  /// Thème sombre du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Sombre'**
+  String get bibleM4ThemeDark;
+
+  /// Thème sépia du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Sépia'**
+  String get bibleM4ThemeSepia;
+
+  /// Choix de la police
+  ///
+  /// In fr, this message translates to:
+  /// **'Police'**
+  String get bibleM4Font;
+
+  /// Police du système
+  ///
+  /// In fr, this message translates to:
+  /// **'Système'**
+  String get bibleM4FontSystem;
+
+  /// Réglage de la taille du texte
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille du texte'**
+  String get bibleM4FontSize;
+
+  /// Réglage de l'interligne
+  ///
+  /// In fr, this message translates to:
+  /// **'Interligne'**
+  String get bibleM4LineHeight;
+
+  /// Barre audio : chapitre précédent
+  ///
+  /// In fr, this message translates to:
+  /// **'Chapitre précédent'**
+  String get bibleM4AudioPrevious;
+
+  /// Barre audio : chapitre suivant
+  ///
+  /// In fr, this message translates to:
+  /// **'Chapitre suivant'**
+  String get bibleM4AudioNext;
+
+  /// Barre audio : lecture
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture'**
+  String get bibleM4AudioPlay;
+
+  /// Barre audio : pause
+  ///
+  /// In fr, this message translates to:
+  /// **'Pause'**
+  String get bibleM4AudioPause;
+
+  /// Barre audio : arrêter
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter la lecture'**
+  String get bibleM4AudioClose;
+
+  /// Studio de partage : titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Studio de partage'**
+  String get bibleM4StudioTitle;
+
+  /// Studio : choix du fond
+  ///
+  /// In fr, this message translates to:
+  /// **'Fond'**
+  String get bibleM4StudioBackground;
+
+  /// Studio : couleur du texte
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleur du texte'**
+  String get bibleM4StudioInk;
+
+  /// Studio : interrupteur de la référence
+  ///
+  /// In fr, this message translates to:
+  /// **'Afficher la référence'**
+  String get bibleM4StudioShowReference;
+
+  /// Studio : enregistrer dans la galerie
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get bibleM4StudioSave;
+
+  /// Studio : partager l'image
+  ///
+  /// In fr, this message translates to:
+  /// **'Partager'**
+  String get bibleM4StudioShare;
+
+  /// Studio : enregistrement réussi
+  ///
+  /// In fr, this message translates to:
+  /// **'Image enregistrée dans la galerie'**
+  String get bibleM4StudioSaved;
+
+  /// Studio : enregistrement refusé
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer l\'image'**
+  String get bibleM4StudioSaveFailed;
+
+  /// Écran des versions
+  ///
+  /// In fr, this message translates to:
+  /// **'Versions et hors ligne'**
+  String get bibleM4VersionsTitle;
+
+  /// Versions : explication
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargez une version pour la lire sans réseau, et choisissez la version active.'**
+  String get bibleM4VersionsHint;
+
+  /// Taille en mégaoctets
+  ///
+  /// In fr, this message translates to:
+  /// **'{size} Mo'**
+  String bibleM4SizeMb(String size);
+
+  /// Version factice installée d'office
+  ///
+  /// In fr, this message translates to:
+  /// **'intégrée'**
+  String get bibleM4VersionBuiltIn;
+
+  /// Bouton télécharger
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger'**
+  String get bibleM4Download;
+
+  /// Version pas encore téléchargeable
+  ///
+  /// In fr, this message translates to:
+  /// **'Bientôt'**
+  String get bibleM4VersionSoon;
+
+  /// Bouton supprimer
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get bibleM4Remove;
+
+  /// Choisir la version active
+  ///
+  /// In fr, this message translates to:
+  /// **'Version active'**
+  String get bibleM4ActiveVersion;
+
+  /// Mon espace : titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon espace'**
+  String get bibleM4MySpaceTitle;
+
+  /// Mon espace : série
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune série en cours} =1{1 jour de lecture de suite} other{{count} jours de lecture de suite}}'**
+  String bibleM4Streak(int count);
+
+  /// Mon espace : badges
+  ///
+  /// In fr, this message translates to:
+  /// **'Badges'**
+  String get bibleM4Badges;
+
+  /// Mon espace : chapitres lus
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} chapitres lus sur {total}'**
+  String bibleM4ChaptersRead(int count, int total);
+
+  /// Mon espace : favoris
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun favori} =1{1 favori} other{{count} favoris}}'**
+  String bibleM4Favorites(int count);
+
+  /// Mon espace : notes
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune note} =1{1 note} other{{count} notes}}'**
+  String bibleM4Notes(int count);
+
+  /// Mon espace : quiz
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun quiz joué} =1{1 quiz joué} other{{count} quiz joués}}'**
+  String bibleM4Quizzes(int count);
+
+  /// Paramètres du module
+  ///
+  /// In fr, this message translates to:
+  /// **'Paramètres'**
+  String get bibleM4SettingsTitle;
+
+  /// Paramètres : voix
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix de lecture'**
+  String get bibleM4Voice;
+
+  /// Voix du système
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix du système'**
+  String get bibleM4VoiceSystem;
+
+  /// Paramètres : rappels
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappels'**
+  String get bibleM4Reminders;
+
+  /// Rappel : verset du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Verset du jour'**
+  String get bibleM4VerseOfDayTitle;
+
+  /// Rappel : lecture du plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture du plan'**
+  String get bibleM4PlanReminderTitle;
+
+  /// Rappel : texte de la lecture du plan
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est l\'heure de votre lecture du jour.'**
+  String get bibleM4PlanReminderBody;
+
+  /// Rappel : changer l'heure
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer l\'heure'**
+  String get bibleM4ChangeTime;
+
+  /// Paramètres : à propos
+  ///
+  /// In fr, this message translates to:
+  /// **'À propos'**
+  String get bibleM4About;
+
+  /// Paramètres : licences
+  ///
+  /// In fr, this message translates to:
+  /// **'Polices : Atkinson Hyperlegible (Braille Institute) et Literata (The Literata Project Authors), SIL Open Font License 1.1.'**
+  String get bibleM4Licenses;
+
+  /// Raccourci de l'accueil du module
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors ligne'**
+  String get bibleM4OfflineShortcut;
+
+  /// Action de verset : studio
+  ///
+  /// In fr, this message translates to:
+  /// **'Image'**
+  String get bibleM4ShareAsImage;
+
+  /// Action de verset : lecture audio
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter'**
+  String get bibleM4ListenFromHere;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher'**
+  String get bibleSearchTitle;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Un mot, ou une référence (jn 3 16)'**
+  String get bibleSearchHint;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aller à {reference}'**
+  String bibleSearchGoTo(String reference);
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun résultat} =1{1 résultat} other{{count} résultats}}'**
+  String bibleSearchResults(int count);
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout'**
+  String get bibleSearchScopeAll;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'AT'**
+  String get bibleSearchScopeOld;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'NT'**
+  String get bibleSearchScopeNew;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Livre'**
+  String get bibleSearchScopeBook;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir plus'**
+  String get bibleSearchMore;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherches récentes'**
+  String get bibleSearchHistory;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer'**
+  String get bibleSearchClearHistory;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Préparation de la recherche…'**
+  String get bibleSearchIndexing;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Cherchez un mot dans la Bible, ou tapez une référence.'**
+  String get bibleSearchEmpty;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun verset ne contient ces mots.'**
+  String get bibleSearchNoResults;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Comparer les versions'**
+  String get bibleSearchCompare;
+
+  /// Recherche Bible (M3)
+  ///
+  /// In fr, this message translates to:
+  /// **'Résultats comparatifs'**
+  String get bibleSearchCompareTitle;
+
+  /// M5 : entrée Plus, raccourci, titre de l'écran des plans
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans de lecture'**
+  String get biblePlansTitle;
+
+  /// M5 : raccourci de l'accueil du module
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans'**
+  String get biblePlansShortcut;
+
+  /// M5 : entrée Plus, raccourci, titre de l'écran des défis
+  ///
+  /// In fr, this message translates to:
+  /// **'Défis'**
+  String get biblePlansChallengesTitle;
+
+  /// M5 : section des plans suivis
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes plans'**
+  String get biblePlansMine;
+
+  /// M5 : aucun plan suivi
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun plan en cours : choisissez-en un ci-dessous.'**
+  String get biblePlansEmpty;
+
+  /// M5 : section des plans publiés
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans de l\'église'**
+  String get biblePlansChurch;
+
+  /// M5 : section des plans intégrés
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans proposés'**
+  String get biblePlansBuiltin;
+
+  /// M5 : bouton de création d'un plan perso
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer un plan ou un défi'**
+  String get biblePlansCreate;
+
+  /// M5 : plan intégré bible-1y
+  ///
+  /// In fr, this message translates to:
+  /// **'La Bible en 1 an'**
+  String get biblePlansBible1y;
+
+  /// M5 : plan intégré nt-90
+  ///
+  /// In fr, this message translates to:
+  /// **'Le Nouveau Testament en 90 jours'**
+  String get biblePlansNt90;
+
+  /// M5 : plan intégré ps-30
+  ///
+  /// In fr, this message translates to:
+  /// **'Les Psaumes en 30 jours'**
+  String get biblePlansPs30;
+
+  /// M5 : plan intégré gospels-40
+  ///
+  /// In fr, this message translates to:
+  /// **'Les Évangiles en 40 jours'**
+  String get biblePlansGospels40;
+
+  /// M5 : durée d'un plan
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} jour} other{{count} jours}}'**
+  String biblePlansDays(int count);
+
+  /// M5 : commencer un plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencer'**
+  String get biblePlansStart;
+
+  /// M5 : position dans le plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Jour {day} sur {total}'**
+  String biblePlansDayOf(int day, int total);
+
+  /// M5 : titre de la barre de progression
+  ///
+  /// In fr, this message translates to:
+  /// **'Barre de défi'**
+  String get biblePlansChallengeBar;
+
+  /// M5 : titre de la rangée d'objectifs
+  ///
+  /// In fr, this message translates to:
+  /// **'Objectifs'**
+  String get biblePlansGoals;
+
+  /// M5 : objectif
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture du jour'**
+  String get biblePlansGoalToday;
+
+  /// M5 : objectif
+  ///
+  /// In fr, this message translates to:
+  /// **'7 jours de suite'**
+  String get biblePlansGoalWeek;
+
+  /// M5 : objectif
+  ///
+  /// In fr, this message translates to:
+  /// **'Moitié du plan'**
+  String get biblePlansGoalHalf;
+
+  /// M5 : objectif
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan terminé'**
+  String get biblePlansGoalDone;
+
+  /// M5 : titre de la grille de badges
+  ///
+  /// In fr, this message translates to:
+  /// **'Badges'**
+  String get biblePlansBadges;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'Premier jour'**
+  String get biblePlansBadgeFirstDay;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'7 jours d\'affilée'**
+  String get biblePlansBadgeWeek;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'30 jours d\'affilée'**
+  String get biblePlansBadgeMonth;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan terminé'**
+  String get biblePlansBadgePlanDone;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'Livre terminé'**
+  String get biblePlansBadgeBookDone;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'100 chapitres'**
+  String get biblePlansBadgeHundred;
+
+  /// M5 : badge
+  ///
+  /// In fr, this message translates to:
+  /// **'Défi rejoint'**
+  String get biblePlansBadgeChallenge;
+
+  /// M5 : carte de la lecture du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture du jour'**
+  String get biblePlansToday;
+
+  /// M5 : cocher un jour à la main
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme lu'**
+  String get biblePlansMarkDone;
+
+  /// M5 : ouvrir le lecteur sur la lecture du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Lire'**
+  String get biblePlansRead;
+
+  /// M5 : rattrapage
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} lecture en retard} other{{count} lectures en retard}}'**
+  String biblePlansCatchUp(int count);
+
+  /// M5 : ouvrir le premier jour en retard
+  ///
+  /// In fr, this message translates to:
+  /// **'Rattraper'**
+  String get biblePlansCatchUpAction;
+
+  /// M5 : série de jours
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{Série : {count} jour} other{Série : {count} jours}}'**
+  String biblePlansStreak(int count);
+
+  /// M5 : liste des jours du plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les jours'**
+  String get biblePlansAllDays;
+
+  /// M5 : plan fini
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan terminé, bravo !'**
+  String get biblePlansFinished;
+
+  /// M5 : plan pas commencé (défi à venir)
+  ///
+  /// In fr, this message translates to:
+  /// **'Commence le {date}'**
+  String biblePlansNotStarted(String date);
+
+  /// M5 : plan publié retiré
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce plan n\'est plus disponible.'**
+  String get biblePlansUnavailable;
+
+  /// M5 : menu du plan
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter le plan'**
+  String get biblePlansLeave;
+
+  /// M5 : confirmation
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter ce plan ? Votre progression sera effacée.'**
+  String get biblePlansLeaveConfirm;
+
+  /// M5 : modifier un plan perso
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get biblePlansEdit;
+
+  /// M5 : annuler
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get biblePlansCancel;
+
+  /// M5 : titre de l'éditeur de plan perso
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon plan'**
+  String get biblePlansEditorTitle;
+
+  /// M5 : champ titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get biblePlansEditorName;
+
+  /// M5 : choix des livres
+  ///
+  /// In fr, this message translates to:
+  /// **'Livres'**
+  String get biblePlansEditorBooks;
+
+  /// M5 : sélection rapide
+  ///
+  /// In fr, this message translates to:
+  /// **'Ancien Testament'**
+  String get biblePlansEditorOld;
+
+  /// M5 : sélection rapide
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau Testament'**
+  String get biblePlansEditorNew;
+
+  /// M5 : tout désélectionner
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun'**
+  String get biblePlansEditorClear;
+
+  /// M5 : champ durée
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée (jours)'**
+  String get biblePlansEditorDuration;
+
+  /// M5 : résumé de la répartition
+  ///
+  /// In fr, this message translates to:
+  /// **'{chapters} chapitres, environ {perDay} par jour'**
+  String biblePlansEditorSummary(int chapters, String perDay);
+
+  /// M5 : enregistrer le plan perso
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get biblePlansEditorSave;
+
+  /// M5 : liste des défis vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun défi en cours.'**
+  String get biblePlansChallengesEmpty;
+
+  /// M5 : carte de l'invité sur les défis
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour rejoindre'**
+  String get biblePlansGuestTitle;
+
+  /// M5 : carte de l'invité sur les défis
+  ///
+  /// In fr, this message translates to:
+  /// **'Les défis se relèvent à plusieurs, sous un nom biblique.'**
+  String get biblePlansGuestBody;
+
+  /// M5 : bouton de connexion
+  ///
+  /// In fr, this message translates to:
+  /// **'Se connecter'**
+  String get biblePlansSignIn;
+
+  /// M5 : rejoindre un défi
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoindre'**
+  String get biblePlansJoin;
+
+  /// M5 : défi rejoint
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous participez'**
+  String get biblePlansJoined;
+
+  /// M5 : classement d'un défi
+  ///
+  /// In fr, this message translates to:
+  /// **'Classement'**
+  String get biblePlansLeaderboard;
+
+  /// M5 : ouvrir le plan d'un défi
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir le plan'**
+  String get biblePlansOpenPlan;
+
+  /// M5 : choix du pseudonyme
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez votre nom'**
+  String get biblePlansPickName;
+
+  /// M5 : choix du pseudonyme
+  ///
+  /// In fr, this message translates to:
+  /// **'Les autres participants ne verront que ce nom.'**
+  String get biblePlansPickNameBody;
+
+  /// M5 : recherche dans les pseudonymes
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un nom'**
+  String get biblePlansPickNameSearch;
+
+  /// M5 : 409 pseudonyme pris
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce nom vient d\'être pris : choisissez-en un autre.'**
+  String get biblePlansNameTaken;
+
+  /// M5 : 409 déjà inscrit
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez déjà rejoint ce défi.'**
+  String get biblePlansAlreadyJoined;
+
+  /// M5 : réessayer
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get biblePlansRetry;
+
+  /// M5 : nombre de participants
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} participant} other{{count} participants}}'**
+  String biblePlansParticipants(int count);
+
+  /// M5 : classement
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} lecture à temps} other{{count} lectures à temps}}'**
+  String biblePlansOnTime(int count);
+
+  /// M5 : ma ligne du classement
+  ///
+  /// In fr, this message translates to:
+  /// **'vous'**
+  String get biblePlansYou;
+
+  /// M5 : dates d'un défi
+  ///
+  /// In fr, this message translates to:
+  /// **'Du {start} au {end}'**
+  String biblePlansChallengeDates(String start, String end);
+
+  /// M5 : section de l'accueil du module
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon plan en cours'**
+  String get biblePlansHomeTitle;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Quiz'**
+  String get bibleQuizTitle;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Qui joue ?'**
+  String get bibleQuizWhoPlays;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez un profil : il règle les quiz proposés. Vous pourrez le changer à tout moment.'**
+  String get bibleQuizWhoPlaysHint;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Enfants'**
+  String get bibleQuizBandKids;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Jeunes'**
+  String get bibleQuizBandTeens;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Adultes'**
+  String get bibleQuizBandAdults;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'6 à 11 ans'**
+  String get bibleQuizBandKidsAges;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'12 à 17 ans'**
+  String get bibleQuizBandTeensAges;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'18 ans et plus'**
+  String get bibleQuizBandAdultsAges;
+
+  /// Quiz : description sous « QUIZ » sur l'écran de choix du joueur
+  ///
+  /// In fr, this message translates to:
+  /// **'Testez vos connaissances de la Bible, seul ou en famille. Qui joue ?'**
+  String get bibleQuizHubIntro;
+
+  /// Quiz : seconde ligne de la tranche Enfants, après la fourchette d'âge
+  ///
+  /// In fr, this message translates to:
+  /// **'histoires et héros de la Bible'**
+  String get bibleQuizBandKidsHint;
+
+  /// Quiz : seconde ligne de la tranche Jeunes, après la fourchette d'âge
+  ///
+  /// In fr, this message translates to:
+  /// **'des défis pour aller plus loin'**
+  String get bibleQuizBandTeensHint;
+
+  /// Quiz : seconde ligne de la tranche Adultes, après la fourchette d'âge
+  ///
+  /// In fr, this message translates to:
+  /// **'pour approfondir sa foi'**
+  String get bibleQuizBandAdultsHint;
+
+  /// Parcours des quiz : toucher une étape verrouillée
+  ///
+  /// In fr, this message translates to:
+  /// **'Réussissez d\'abord l\'étape {number} pour ouvrir celle-ci.'**
+  String bibleQuizStepLocked(int number);
+
+  /// Parcours des quiz : avancement sous le nom de la tranche
+  ///
+  /// In fr, this message translates to:
+  /// **'Étapes réussies : {done} / {total}'**
+  String bibleQuizPathProgress(int done, int total);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun quiz pour ce profil pour l\'instant.'**
+  String get bibleQuizEmpty;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau'**
+  String get bibleQuizNew;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Meilleur : {score}/{total}'**
+  String bibleQuizBest(int score, int total);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 question} other{{count} questions}}'**
+  String bibleQuizQuestionCount(int count);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Facile'**
+  String get bibleQuizDifficulty1;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Moyen'**
+  String get bibleQuizDifficulty2;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Difficile'**
+  String get bibleQuizDifficulty3;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Question {index} sur {total}'**
+  String bibleQuizProgress(int index, int total);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonne réponse !'**
+  String get bibleQuizRight;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce n\'est pas ça.'**
+  String get bibleQuizWrong;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps écoulé.'**
+  String get bibleQuizTimeUp;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'La réponse : {answer}'**
+  String bibleQuizAnswerWas(String answer);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivant'**
+  String get bibleQuizNext;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir mon score'**
+  String get bibleQuizSeeScore;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'{score} / {total}'**
+  String bibleQuizScore(int score, int total);
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Quiz terminé'**
+  String get bibleQuizFinished;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejouer'**
+  String get bibleQuizReplay;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminer'**
+  String get bibleQuizDone;
+
+  /// Quiz bibliques (M6)
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter la question'**
+  String get bibleQuizListen;
+
+  /// Accueil du module Bible : titre de l'en-tête
+  ///
+  /// In fr, this message translates to:
+  /// **'La Parole\nau quotidien'**
+  String get bibleHomeHeroTitle;
+
+  /// Accueil du module Bible : libellé d'accessibilité de l'en-tête
+  ///
+  /// In fr, this message translates to:
+  /// **'Verset du jour'**
+  String get bibleHomeVerseOfDay;
+
+  /// Accueil du module Bible : mettre le verset du jour en favori
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter aux favoris'**
+  String get bibleHomeFavorite;
+
+  /// Accueil du module Bible : le verset du jour est déjà un favori
+  ///
+  /// In fr, this message translates to:
+  /// **'Dans vos favoris'**
+  String get bibleHomeFavorited;
+
+  /// Accueil du module Bible : partager le verset du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Partager'**
+  String get bibleHomeShare;
+
+  /// Accueil du module Bible : ouvrir le lecteur au verset du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Lire le chapitre'**
+  String get bibleHomeReadChapter;
+
+  /// Accueil du module Bible : barre de recherche
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un mot, une référence…'**
+  String get bibleHomeSearchHint;
+
+  /// Accueil du module Bible : carte de la dernière position
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer la lecture'**
+  String get bibleHomeContinueTitle;
+
+  /// Accueil du module Bible : carte du passage du dimanche
+  ///
+  /// In fr, this message translates to:
+  /// **'Passage du dimanche'**
+  String get bibleHomeSundayTitle;
+
+  /// Accueil du module Bible : ouvrir l'enseignement lié au passage du dimanche
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter l\'enseignement'**
+  String get bibleHomeSundayTeaching;
+
+  /// Accueil du module Bible : ouvrir la réunion liée au passage du dimanche
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la réunion'**
+  String get bibleHomeSundayGathering;
+
+  /// Accueil du module Bible : carte du quiz mis en avant
+  ///
+  /// In fr, this message translates to:
+  /// **'Quiz de la semaine'**
+  String get bibleHomeQuizTitle;
+
+  /// Accueil du module Bible : progression du livre en cours
+  ///
+  /// In fr, this message translates to:
+  /// **'{read} sur {total} chapitres de {book} lus'**
+  String bibleHomeBookProgress(int read, int total, String book);
+
+  /// Accueil du module Bible : accroche fixe de l'en-tête
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaque jour, laissez-vous inspirer par les Saintes Écritures.'**
+  String get bibleHomeHeroTagline;
+
+  /// Accueil du module Bible : titre de la carte du verset du jour
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture du jour'**
+  String get bibleHomeDailyTitle;
+
+  /// Accueil du module Bible : libellé de la carte des plans (le nombre est affiché au-dessus)
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans'**
+  String get bibleHomeCardPlans;
+
+  /// Accueil du module Bible : libellé de la carte des défis
+  ///
+  /// In fr, this message translates to:
+  /// **'Défis'**
+  String get bibleHomeCardChallenges;
+
+  /// Accueil du module Bible : libellé de la carte des quiz
+  ///
+  /// In fr, this message translates to:
+  /// **'Quiz'**
+  String get bibleHomeCardQuizzes;
+
+  /// Accueil du module Bible : libellé de la carte des favoris
+  ///
+  /// In fr, this message translates to:
+  /// **'Favoris'**
+  String get bibleHomeCardFavorites;
+
+  /// Mon espace du module Bible : badge de quiz
+  ///
+  /// In fr, this message translates to:
+  /// **'Premier quiz'**
+  String get bibleQuizBadgeFirst;
+
+  /// Mon espace du module Bible : badge de quiz
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans faute'**
+  String get bibleQuizBadgePerfect;
+
+  /// Mon espace du module Bible : badge de quiz
+  ///
+  /// In fr, this message translates to:
+  /// **'10 quiz différents'**
+  String get bibleQuizBadgeTen;
 }
 
 class _AppLocalizationsDelegate

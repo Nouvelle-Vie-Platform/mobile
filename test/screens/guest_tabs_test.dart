@@ -26,11 +26,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/legal_notice_store.dart';
+import 'package:maison_du_miracle/features/bible/shell/bible_shell.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/screens/announcements_screen.dart';
 import 'package:maison_du_miracle/screens/auth/identifier_screen.dart';
 import 'package:maison_du_miracle/screens/auth/sign_in_tab.dart';
-import 'package:maison_du_miracle/screens/bible_screen.dart';
 import 'package:maison_du_miracle/screens/groups_screen.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/screens/profile_screen.dart';
@@ -253,7 +253,7 @@ void main() {
   group('L\'en-tête de l\'accueil', () {
     testWidgets('l\'icône Profil a disparu, la Bible a pris sa place',
         (tester) async {
-      // La page Bible relit son dernier onglet dans le magasin Drift (#190) :
+      // Le module Bible relit son dernier onglet dans le magasin Drift (#190, #199) :
       // tout dans un seul `runAsync`.
       await tester.runAsync(() async {
         final router = await pumpGuestApp(tester, guestContainer());
@@ -272,7 +272,7 @@ void main() {
         // **Poussée, et ouverte à tous** : un invité l'ouvre sans qu'on lui
         // demande rien, et la coquille attend dessous.
         expect(router.state.matchedLocation, '/bible');
-        expect(find.byType(BibleScreen), findsOneWidget);
+        expect(find.byType(BibleShell), findsOneWidget);
         expect(find.byType(IdentifierScreen), findsNothing);
         expect(shellTab(tester), HomeTab.home);
       });

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/features/notes_editor/links/add_link_sheet.dart';
 import 'package:maison_du_miracle/features/notes_editor/links/note_link.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
+import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/notes_providers.dart';
 import 'package:maison_du_miracle/theme/app_theme.dart';
@@ -71,9 +72,21 @@ void main() {
     }) async {
       controller = controllerWith('Bonjour ');
       controller.updateSelection(selection, ChangeSource.local);
+      final router = linkTestRouter(
+        Center(
+          child: ColoredBox(
+            color: Colors.black,
+            child: NoteLinkButton(
+              controller: controller,
+              currentNoteId: _current,
+            ),
+          ),
+        ),
+      );
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            routerProvider.overrideWithValue(router),
             notesListProvider.overrideWith(
               (ref, q) => Stream.value([
                 fakeNote(_current, title: 'Celle-ci'),
@@ -92,22 +105,12 @@ void main() {
               ]),
             ),
           ],
-          child: MaterialApp(
+          child: MaterialApp.router(
             theme: AppTheme.light,
             locale: const Locale('fr'),
             localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: appSupportedLocales,
-            home: Scaffold(
-              body: Center(
-                child: ColoredBox(
-                  color: Colors.black,
-                  child: NoteLinkButton(
-                    controller: controller,
-                    currentNoteId: _current,
-                  ),
-                ),
-              ),
-            ),
+            routerConfig: router,
           ),
         ),
       );
@@ -115,20 +118,26 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('quatre choix, la Bible grisée « bientôt »', (tester) async {
+    testWidgets('quatre choix ; la Bible ouvre le mode sélection (#199)',
+        (tester) async {
       await pumpButton(tester);
       expect(find.text('Une note'), findsOneWidget);
       expect(find.text('Un enseignement'), findsOneWidget);
       expect(find.text('Une adresse web'), findsOneWidget);
       expect(find.text('La Bible'), findsOneWidget);
-      expect(find.text('bientôt'), findsOneWidget);
+      expect(find.text('bientôt'), findsNothing);
       final bible =
           tester.widget<ListTile>(find.byKey(AddLinkSheet.bibleOptionKey));
-      expect(bible.enabled, isFalse);
+      expect(bible.enabled, isTrue);
 
       await tester.tap(find.byKey(AddLinkSheet.bibleOptionKey));
       await tester.pumpAndSettle();
-      expect(find.text('Une note'), findsOneWidget, reason: 'rien ne bouge');
+      // Le module rend Jean 3:16-18 ; la feuille l'insère, lié, et se ferme.
+      await tester.tap(find.text('choisir'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AddLinkSheet), findsNothing);
+      expect(controller.document.toPlainText(), 'Bonjour Jean 3:16-18\n');
+      expect(linkOf(controller, 'Jean 3:16-18'), 'nv://bible/John/3/16-18');
     });
 
     testWidgets('une note : la courante exclue, le titre inséré et lié',

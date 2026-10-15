@@ -14,6 +14,7 @@ import 'tables/group_tables.dart';
 import 'tables/interaction_tables.dart';
 import 'tables/season_tables.dart';
 import 'tables/auth_tables.dart';
+import 'tables/bible_tables.dart';
 import 'tables/device_tables.dart';
 import 'tables/media_page_tables.dart';
 import 'tables/menu_tables.dart';
@@ -283,6 +284,47 @@ abstract final class SyncCollectionKey {
   /// **Mes « supprimé pour moi »** (tranche M2, #141). `partition: 'private'`,
   /// sans tombstone, rangée par `messageId`.
   static const String groupMessageHides = 'group_message_hides';
+
+  // ── Le module Bible (#199) ────────────────────────────────────────────────
+  //
+  // Six collections de **référence** (S2–S5), `partition: 'reference'`, servies
+  // au porteur sans compte : le verset du jour, le passage du dimanche, les
+  // plans, les défis, les quiz et le catalogue des versions appartiennent à la
+  // surface invitée. Avec tombstone.
+
+  /// Le verset du jour (S2).
+  static const String bibleVerseOfDays = 'bible_verse_of_days';
+
+  /// Le passage du dimanche (S2).
+  static const String bibleSundayPassages = 'bible_sunday_passages';
+
+  /// Les plans de lecture publiés par l'église (S3).
+  static const String biblePlans = 'bible_plans';
+
+  /// Les défis communautaires (S3), qui désignent un plan.
+  static const String bibleChallenges = 'bible_challenges';
+
+  /// Les quiz (S4).
+  static const String bibleQuizzes = 'bible_quizzes';
+
+  /// Le catalogue des versions (S5).
+  static const String bibleVersions = 'bible_versions';
+
+  // Quatre collections **privées** (S1), `owner_id = soi`, jamais servies à un
+  // invité : ses marques vivent dans les `local_bible_*` jusqu'à la fusion de
+  // la connexion (M2). Avec tombstone.
+
+  /// Favoris, surlignages, marque-pages.
+  static const String bibleMarks = 'bible_marks';
+
+  /// Ma position de lecture et mes chapitres lus (une ligne).
+  static const String bibleReadingStates = 'bible_reading_states';
+
+  /// Mes plans suivis.
+  static const String biblePlanEnrollments = 'bible_plan_enrollments';
+
+  /// Mes scores de quiz.
+  static const String bibleQuizResults = 'bible_quiz_results';
 }
 
 /// Descripteur local d'une collection répliquée : sa clé de protocole et la
@@ -357,6 +399,16 @@ const String _kSyncStampColumn = 'sync_stamp';
     GroupMutes,
     GroupMessageReactions,
     GroupMessageHides,
+    BibleMarks,
+    BibleReadingStates,
+    BiblePlanEnrollments,
+    BibleQuizResults,
+    BibleVerseOfDays,
+    BibleSundayPassages,
+    BiblePlans,
+    BibleChallenges,
+    BibleQuizzes,
+    BibleVersions,
   ],
 )
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
@@ -559,6 +611,37 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// **Sans tombstone**, rangée par `messageId` (M2, #141).
   LocalCollection<GroupMessageHideRow> get groupMessageHidesCollection =>
       LocalCollection._(SyncCollectionKey.groupMessageHides, groupMessageHides);
+
+  // Le module Bible (#199) : dix collections, toutes **avec tombstone**.
+  LocalCollection<BibleVerseOfDayRow> get bibleVerseOfDaysCollection =>
+      LocalCollection._(SyncCollectionKey.bibleVerseOfDays, bibleVerseOfDays);
+  LocalCollection<BibleSundayPassageRow> get bibleSundayPassagesCollection =>
+      LocalCollection._(
+        SyncCollectionKey.bibleSundayPassages,
+        bibleSundayPassages,
+      );
+  LocalCollection<BiblePlanRow> get biblePlansCollection =>
+      LocalCollection._(SyncCollectionKey.biblePlans, biblePlans);
+  LocalCollection<BibleChallengeRow> get bibleChallengesCollection =>
+      LocalCollection._(SyncCollectionKey.bibleChallenges, bibleChallenges);
+  LocalCollection<BibleQuizRow> get bibleQuizzesCollection =>
+      LocalCollection._(SyncCollectionKey.bibleQuizzes, bibleQuizzes);
+  LocalCollection<BibleVersionRow> get bibleVersionsCollection =>
+      LocalCollection._(SyncCollectionKey.bibleVersions, bibleVersions);
+  LocalCollection<BibleMarkRow> get bibleMarksCollection =>
+      LocalCollection._(SyncCollectionKey.bibleMarks, bibleMarks);
+  LocalCollection<BibleReadingStateRow> get bibleReadingStatesCollection =>
+      LocalCollection._(
+        SyncCollectionKey.bibleReadingStates,
+        bibleReadingStates,
+      );
+  LocalCollection<BiblePlanEnrollmentRow> get biblePlanEnrollmentsCollection =>
+      LocalCollection._(
+        SyncCollectionKey.biblePlanEnrollments,
+        biblePlanEnrollments,
+      );
+  LocalCollection<BibleQuizResultRow> get bibleQuizResultsCollection =>
+      LocalCollection._(SyncCollectionKey.bibleQuizResults, bibleQuizResults);
 
   // ───────────────────────────────────────────────────────────────────────────
   // Application d'une page

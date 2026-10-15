@@ -1,0 +1,13 @@
+-- **L'index plein texte de la Bible** (M1, #199 ; rempli par M3). Une ligne
+-- par verset et par version installée, construite à l'installation de la
+-- version. Seul `verse_text` est indexé (`text` heurterait
+-- `Table.text` dans le code généré) ; les quatre autres colonnes situent le
+-- verset. `remove_diacritics 2` : « eternel » trouve « Éternel ».
+CREATE VIRTUAL TABLE bible_fts USING fts5(
+  version_code UNINDEXED,
+  book UNINDEXED,
+  chapter UNINDEXED,
+  verse UNINDEXED,
+  verse_text,
+  tokenize = 'unicode61 remove_diacritics 2'
+);
