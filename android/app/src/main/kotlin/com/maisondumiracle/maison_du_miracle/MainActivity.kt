@@ -3,6 +3,7 @@ package com.maisondumiracle.maison_du_miracle
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.StatFs
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -17,6 +18,9 @@ import io.flutter.plugin.common.MethodChannel
  * `POST_NOTIFICATIONS`. Depuis Android 13, une permission déclarée au manifeste
  * ne suffit pas — sans la demande, la notification de lecture n'apparaît jamais,
  * et rien ne le signale.
+ *
+ * Et, depuis #236, la place libre sur le disque : `dart:io` ne l'expose pas, et
+ * un canal de méthode coûte moins qu'une dépendance pour une seule mesure.
  */
 class MainActivity : AudioServiceActivity() {
 
@@ -31,6 +35,36 @@ class MainActivity : AudioServiceActivity() {
                     else -> result.notImplemented()
                 }
             }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, DISK_SPACE_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "freeBytes" -> freeBytes(result)
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    /**
+     * Les octets libres **là où l'application écrit** : `filesDir`, c'est-à-dire
+     * le bac à sable interne, celui qui porte aussi bien les enseignements
+     * téléchargés que les médias de la messagerie. Mesurer « le disque » (le
+     * stockage externe, une carte SD) n'aurait aucun rapport avec l'endroit où
+     * l'écriture va échouer.
+     *
+     * `availableBytes` et non `freeBytes` : le second compte les blocs réservés
+     * au système, que l'application n'obtiendra pas — un pré-check qui laisse
+     * passer en croyant mesurer est pire que pas de pré-check du tout.
+     *
+     * En cas d'échec on rend une **erreur**, jamais `0` : côté Dart l'erreur
+     * devient « inconnu » et le pré-check laisse passer, alors que `0` dirait
+     * « disque plein » et bloquerait tout téléchargement.
+     */
+    private fun freeBytes(result: MethodChannel.Result) {
+        try {
+            result.success(StatFs(filesDir.absolutePath).availableBytes)
+        } catch (error: IllegalArgumentException) {
+            result.error("statfs", error.message, null)
+        }
     }
 
     /**
@@ -55,6 +89,7 @@ class MainActivity : AudioServiceActivity() {
 
     private companion object {
         const val CHANNEL = "com.maisondumiracle.maison_du_miracle/notifications"
+        const val DISK_SPACE_CHANNEL = "com.maisondumiracle.maison_du_miracle/disk_space"
         const val POST_NOTIFICATIONS_REQUEST_CODE = 1039
     }
 }
