@@ -1064,6 +1064,61 @@ WHERE (?1 IS NULL OR m.group_id = ?1)
         .go();
   }
 
+  /// **Les médias qui ne sont pas encore sur l'appareil** (T3, #225) — la file
+  /// de la descente automatique, et le chiffre de l'onglet MESSAGERIE.
+  ///
+  /// ## Il n'y a pas de table de file, et c'est volontaire
+  ///
+  /// La file est **dérivée** : « un message qui porte un média et dont
+  /// `local_message_media` n'a pas le chemin ». Elle n'a donc rien à
+  /// réconcilier au démarrage, rien à purger quand un message est supprimé, et
+  /// aucun état à rendre cohérent avec le disque — trois bogues qu'une table de
+  /// file aurait apportés avec elle. Une ligne descendue quitte la file parce
+  /// que `rememberLocalMedia` l'a notée, pas parce qu'on l'a rayée.
+  ///
+  /// [since] sépare l'**arrivé** de l'**historique** (voir
+  /// `SettingsDao.chatMediaDescentSince`) : seul l'arrivé descend tout seul.
+  /// Un `created_at` nul ne descend pas — il n'est pas datable, donc pas
+  /// classable, et le fil n'en produit pas.
+  ///
+  /// Les formes **sans fichier** (position, contact) sont écartées par
+  /// `media_key IS NOT NULL` : elles n'ont rien à télécharger. Les supprimés et
+  /// les masqués aussi — on ne descend pas ce qu'aucune bulle ne peindra.
+  ///
+  /// Le nom de fichier est le **dernier segment de la clé** du magasin : stable,
+  /// porteur de son extension, et sans incidence sur la lecture, qui passe par
+  /// le chemin noté et non par une déduction.
+  Stream<List<MediaToDescend>> watchMediaToDescend(DateTime since) {
+    return customSelect(
+      '''
+SELECT m.id, m.group_id, m.media_key, m.media_thumbnail_key, m.media_size
+FROM group_messages AS m
+LEFT JOIN local_message_media AS lm ON lm.message_id = m.id
+WHERE m.media_key IS NOT NULL
+  AND m.deleted_at IS NULL
+  AND m.created_at IS NOT NULL
+  AND m.created_at >= ?1
+  AND lm.path IS NULL
+  AND ${_notHidden('m')}
+ORDER BY m.created_at ASC, m.id ASC
+''',
+      variables: [Variable<DateTime>(since)],
+      readsFrom: {groupMessages, groupMessageHides, localMessageMedia},
+    ).map((row) {
+      final key = row.read<String>('media_key');
+      final thumb = row.read<String?>('media_thumbnail_key');
+      return MediaToDescend(
+        messageId: row.read<String>('id'),
+        groupId: row.read<String>('group_id'),
+        fileName: _lastSegment(key),
+        thumbFileName: thumb == null ? null : _lastSegment(thumb),
+        sizeBytes: row.read<int?>('media_size'),
+      );
+    }).watch();
+  }
+
+  static String _lastSegment(String key) => key.split('/').last;
+
   /// Un écho **par sa clé**, ou `null`. Sert au « réessayer » : il renvoie sous la
   /// **même** clé, et a donc besoin du corps et de l'instant d'origine.
   Future<PendingGroupMessageRow?> pendingById(String clientMessageId) {
@@ -1697,3 +1752,29 @@ typedef LocalMediaFileRow = ({
   String? path,
   String? thumbPath,
 });
+
+/// **Un média à descendre** (T3, #225) — ce qu'il faut à la file, et rien de
+/// plus : à qui parler, quoi nommer, et combien ça pèse.
+///
+/// [sizeBytes] vient de `group_messages.media_size`, **mesuré par le serveur** :
+/// la file connaît donc le poids avant le premier octet.
+@immutable
+class MediaToDescend {
+  const MediaToDescend({
+    required this.messageId,
+    required this.groupId,
+    required this.fileName,
+    this.thumbFileName,
+    this.sizeBytes,
+  });
+
+  final String messageId;
+  final String groupId;
+  final String fileName;
+
+  /// Le nom de la vignette d'une vidéo, quand le message en porte une.
+  final String? thumbFileName;
+
+  /// Le poids du fichier, en octets, ou `null` si le serveur ne l'a pas dit.
+  final int? sizeBytes;
+}

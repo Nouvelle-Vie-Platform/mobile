@@ -1064,6 +1064,57 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mediaSettingsRadio => 'Radio';
 
   @override
+  String get mediaSettingsMessaging => 'Messagerie';
+
+  @override
+  String get qualityQuestionMessaging =>
+      'Garder les médias des conversations ?';
+
+  @override
+  String get qualityLeadMessaging =>
+      'Un média gardé se revoit hors ligne, sans jamais être redemandé au serveur.';
+
+  @override
+  String get chatMediaDescentNever => 'Jamais';
+
+  @override
+  String get chatMediaDescentWifi => 'En wifi';
+
+  @override
+  String get chatMediaDescentAlways => 'Toujours';
+
+  @override
+  String get chatMediaNothingWaiting => 'Tout est déjà sur l\'appareil';
+
+  @override
+  String chatMediaWaiting(String size) {
+    return '$size en attente';
+  }
+
+  @override
+  String chatMediaWaitingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count médias reçus',
+      one: '1 média reçu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatMediaDescentNeverFact =>
+      'Rien ne descend tout seul : un média n\'est gardé que si vous l\'ouvrez.';
+
+  @override
+  String get chatMediaDescentWifiFact =>
+      'La descente attend le wifi : vos données mobiles ne partent pas.';
+
+  @override
+  String get chatMediaDescentAlwaysFact =>
+      'La descente part aussi en données mobiles, sur votre forfait.';
+
+  @override
   String get mediaSettingsListening => 'Écoute';
 
   @override

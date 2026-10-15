@@ -1053,6 +1053,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mediaSettingsRadio => 'Radio';
 
   @override
+  String get mediaSettingsMessaging => 'Messaging';
+
+  @override
+  String get qualityQuestionMessaging => 'Keep conversation media?';
+
+  @override
+  String get qualityLeadMessaging =>
+      'Kept media can be seen again offline, and is never asked of the server twice.';
+
+  @override
+  String get chatMediaDescentNever => 'Never';
+
+  @override
+  String get chatMediaDescentWifi => 'On Wi-Fi';
+
+  @override
+  String get chatMediaDescentAlways => 'Always';
+
+  @override
+  String get chatMediaNothingWaiting => 'Everything is already on the device';
+
+  @override
+  String chatMediaWaiting(String size) {
+    return '$size waiting';
+  }
+
+  @override
+  String chatMediaWaitingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count media received',
+      one: '1 media received',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatMediaDescentNeverFact =>
+      'Nothing comes down on its own: media is kept only if you open it.';
+
+  @override
+  String get chatMediaDescentWifiFact =>
+      'The download waits for Wi-Fi: your mobile data stays untouched.';
+
+  @override
+  String get chatMediaDescentAlwaysFact =>
+      'Media also comes down over mobile data, on your plan.';
+
+  @override
   String get mediaSettingsListening => 'Listening';
 
   @override

@@ -1948,6 +1948,78 @@ abstract class AppLocalizations {
   /// **'Radio'**
   String get mediaSettingsRadio;
 
+  /// Quatrième onglet de la page Qualité (T3, #225), affiché en capitales. Il règle QUAND les médias d'une conversation descendent sur l'appareil — un geste distinct du téléchargement d'un enseignement, d'où un onglet à lui
+  ///
+  /// In fr, this message translates to:
+  /// **'Messagerie'**
+  String get mediaSettingsMessaging;
+
+  /// Grand titre centré de l'onglet Messagerie, posé en question comme les trois autres
+  ///
+  /// In fr, this message translates to:
+  /// **'Garder les médias des conversations ?'**
+  String get qualityQuestionMessaging;
+
+  /// Ligne d'explication grise de l'onglet Messagerie. Elle dit le bénéfice (hors ligne, zéro requête), pas le mécanisme
+  ///
+  /// In fr, this message translates to:
+  /// **'Un média gardé se revoit hors ligne, sans jamais être redemandé au serveur.'**
+  String get qualityLeadMessaging;
+
+  /// Choix le plus économe de l'onglet Messagerie : rien ne descend tout seul
+  ///
+  /// In fr, this message translates to:
+  /// **'Jamais'**
+  String get chatMediaDescentNever;
+
+  /// Choix par défaut de l'onglet Messagerie : la descente à la réception, en wifi seulement (décision 2 du cadrage)
+  ///
+  /// In fr, this message translates to:
+  /// **'En wifi'**
+  String get chatMediaDescentWifi;
+
+  /// Choix le plus dépensier de l'onglet Messagerie : wifi ET données mobiles
+  ///
+  /// In fr, this message translates to:
+  /// **'Toujours'**
+  String get chatMediaDescentAlways;
+
+  /// Gros chiffre de la carte de l'onglet Messagerie quand rien n'attend. Une absence s'affiche comme une absence, jamais comme « 0 Mo »
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout est déjà sur l\'appareil'**
+  String get chatMediaNothingWaiting;
+
+  /// Gros chiffre de la carte de l'onglet Messagerie : le poids RÉEL des médias reçus pas encore descendus, somme de group_messages.media_size — mesuré par le serveur, jamais estimé
+  ///
+  /// In fr, this message translates to:
+  /// **'{size} en attente'**
+  String chatMediaWaiting(String size);
+
+  /// Ligne « forfait » de la carte de l'onglet Messagerie : combien de médias composent le poids annoncé
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 média reçu} other{{count} médias reçus}}'**
+  String chatMediaWaitingCount(int count);
+
+  /// Ligne « réseau » de la carte quand le choix est Jamais. Dit ce qui reste vrai malgré le choix — ouvrir garde, toujours
+  ///
+  /// In fr, this message translates to:
+  /// **'Rien ne descend tout seul : un média n\'est gardé que si vous l\'ouvrez.'**
+  String get chatMediaDescentNeverFact;
+
+  /// Ligne « réseau » de la carte quand le choix est En wifi. C'est le défaut, et la phrase dit ce qu'il protège
+  ///
+  /// In fr, this message translates to:
+  /// **'La descente attend le wifi : vos données mobiles ne partent pas.'**
+  String get chatMediaDescentWifiFact;
+
+  /// Ligne « réseau » de la carte quand le choix est Toujours. Nomme le coût : c'est le seul choix qui en a un
+  ///
+  /// In fr, this message translates to:
+  /// **'La descente part aussi en données mobiles, sur votre forfait.'**
+  String get chatMediaDescentAlwaysFact;
+
   /// Onglet « écoute des enseignements » de la page Qualité (#184), affiché en capitales
   ///
   /// In fr, this message translates to:
