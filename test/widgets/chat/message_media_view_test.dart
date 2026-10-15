@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/messaging/media/chat_media_picker.dart';
 import 'package:maison_du_miracle/data/messaging/media/group_media_urls.dart';
 import 'package:maison_du_miracle/data/messaging/media/media_upload_progress.dart';
+import 'package:maison_du_miracle/data/downloads/disk_space.dart';
 import 'package:maison_du_miracle/data/messaging/media/message_media_queue.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/models/media_preferences.dart';
@@ -146,6 +147,13 @@ void main() {
               urls: urls,
               network: network,
               descent: () async => descent,
+              // **Espace figé, comme partout ailleurs dans les tests.** Depuis
+              // que `BestEffortDiskSpace` interroge un canal natif (#236),
+              // le défaut ferait un aller-retour de plateforme qui ne
+              // s'achève pas sous l'horloge factice de `testWidgets` : le
+              // `keep()` déclenché par la vue n'aboutissait plus avant
+              // l'assertion. Le pré-check n'est pas le sujet de ce fichier.
+              diskSpace: const FixedDiskSpace(1 << 30),
             ),
           ),
           mediaOpenerProvider.overrideWithValue(opener),
