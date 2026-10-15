@@ -4,6 +4,26 @@ Application Flutter de l'**Église Évangélique Nouvelle Vie – Maison du Mira
 Ce fichier résume ce qu'il faut savoir pour travailler efficacement sur ce
 dépôt. Le respecter prime sur les habitudes par défaut.
 
+## ⚠️ Ce dépôt est **public** depuis le 14/10/2026
+
+Passé public pour que GitHub Actions y soit gratuit et sans plafond : il consommait **1 617 des
+2 022 minutes** d'octobre, et le quota ne compte que les dépôts privés. Voir
+`context/docs/CI-DE-SECOURS.md`.
+
+- **Tout ce qui entre ici est public, l'historique compris.** Aucun secret dans un commit, jamais,
+  même « le temps d'un essai » : un dépôt public est moissonné en quelques minutes, et repasser
+  privé ne dé-publie rien. Les secrets restent dans les secrets du dépôt
+  (`ANDROID_KEYSTORE_BASE64`, `APP_RELEASE_TOKEN`…), qui demeurent chiffrés et inaccessibles aux PR
+  venues d'un fork.
+- Les clés Firebase de `google-services.json`, `GoogleService-Info.plist` et
+  `lib/firebase_options.dart` étaient déjà publiques avant la bascule — elles voyagent dans l'APK que
+  le portail sert sur `/application`. Ce sont des identifiants client, pas des secrets ; leur
+  protection repose donc entièrement sur les règles Firebase et les restrictions d'API côté Google.
+- **La CI est gratuite ici** : plus de minutes à économiser, les contrôles peuvent tourner en
+  parallèle sur autant de PR qu'on veut.
+- **Ne pas poser la variable `CI_RUNNER` sur ce dépôt.** Elle enverrait des jobs *gratuits* occuper
+  le CPU de la machine de production.
+
 ## Stack & versions
 - **Flutter 3.44.2** / Dart `>=3.6.0 <4.0.0`. Material 3.
 - **flutter_riverpod ^3.x** (gestion d'état), **go_router ^17.x** (navigation),
