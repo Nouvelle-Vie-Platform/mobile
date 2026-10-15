@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
+import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/media_preferences.dart';
@@ -80,11 +81,38 @@ class DownloadManager {
 
   StreamSubscription<DownloadBackendEvent>? _subscription;
 
+  /// **Les rappels se traitent l'un après l'autre.**
+  ///
+  /// `listen(_onEvent)` jetait le `Future` du gestionnaire : deux rappels
+  /// rapprochés sur le même téléchargement — c'est le cas banal, progression
+  /// puis fin — s'exécutaient en concurrence et écrivaient la même ligne sans
+  /// ordre garanti. Les enchaîner coûte une référence et supprime la course.
+  ///
+  /// `catchError` est là pour que l'échec d'un rappel n'empoisonne pas la
+  /// chaîne : sans lui, un seul événement en erreur condamnerait tous les
+  /// suivants, silencieusement.
+  Future<void> _handling = Future<void>.value();
+
+  /// **L'attente des tests** : le moment où plus aucun rappel n'est en vol.
+  ///
+  /// Les tests ne peuvent pas attendre un abonnement. Ils comptaient donc des
+  /// tours de boucle (`Future.delayed(Duration.zero)`, puis `pumpEventQueue`),
+  /// et ça ne décrit pas une attente : ça la devine. Les chemins courts
+  /// passaient, le plus long — le départ de zéro, plusieurs écritures Drift —
+  /// arrivait après la fin du test, qui lisait une ligne encore intacte puis
+  /// fermait la base sous les pieds du traitement. Vert sur une machine, rouge
+  /// sur une autre.
+  @visibleForTesting
+  Future<void> get settled => _handling;
+
   /// Abonne le moteur aux rappels du transport. Idempotent : un second appel ne
   /// double pas l'abonnement (le provider n'est pas `autoDispose`, mais un
   /// `start()` de trop ne doit pas peindre deux fois).
   void start() {
-    _subscription ??= _backend.events.listen(_onEvent);
+    _subscription ??= _backend.events.listen((event) {
+      _handling =
+          _handling.then((_) => _onEvent(event)).catchError((Object _) {});
+    });
   }
 
   Future<void> dispose() async {
