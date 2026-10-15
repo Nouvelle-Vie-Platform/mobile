@@ -498,11 +498,17 @@ class _MiniProgress extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // **La durée du contrat gagne sur celle du lecteur** (#222) — la même règle
+    // qu'à l'écran de lecture, sans quoi les deux barres d'un même enseignement
+    // téléchargé n'en seraient pas au même endroit.
+    final contractDuration = ref.watch(playbackControllerProvider.select(
+      (r) => r?.contentId == contentId ? r?.contractDuration : null,
+    ));
     final progress = ref.watch(
       contentPlaybackProvider.select((p) {
         if (p.contentId != contentId) return 0.0;
         if (p.isCompleted) return 1.0;
-        return p.progress;
+        return p.progressFor(contractDuration ?? p.duration);
       }),
     );
     final palette = context.palette;

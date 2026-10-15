@@ -184,7 +184,7 @@ class PlaybackController extends Notifier<ContentRequest?> {
     _leaveSession();
     state = request;
     if (_tracks(request)) {
-      final session = await _openSession(request.contentId);
+      final session = await _openSession(request);
       if (!ref.mounted || !identical(state, request)) {
         session.close();
         return;
@@ -225,7 +225,8 @@ class PlaybackController extends Notifier<ContentRequest?> {
   /// enregistreur qui n'a pas pu s'ouvrir — base illisible, reprise
   /// introuvable — ne doit pas emporter l'audience avec lui. Ce sont deux
   /// mesures indépendantes, y compris en panne.
-  Future<_ListeningSession> _openSession(String contentId) async {
+  Future<_ListeningSession> _openSession(ContentRequest request) async {
+    final contentId = request.contentId;
     PlaybackProgressRecorder? recorder;
     try {
       recorder = await ref.read(playbackProgressRecorderProvider)(contentId);
@@ -235,7 +236,13 @@ class PlaybackController extends Notifier<ContentRequest?> {
       debugPrintStack(stackTrace: stack, maxFrames: 4);
     }
 
-    final session = _ListeningSession(contentId: contentId, recorder: recorder);
+    final session = _ListeningSession(
+      contentId: contentId,
+      recorder: recorder,
+      // La durée qui fait foi sur une copie locale (#222) : une progression
+      // écrite contre une durée estimée se corrige mal après coup.
+      contractDuration: request.contractDuration,
+    );
     if (!ref.mounted) return session;
 
     try {
@@ -437,10 +444,22 @@ class PlaybackController extends Notifier<ContentRequest?> {
 /// chargement » : rejouer ou reprendre après une pause ne recompte pas, charger
 /// de nouveau le même prêche, si.
 class _ListeningSession {
-  _ListeningSession({required this.contentId, this.recorder});
+  _ListeningSession({
+    required this.contentId,
+    this.recorder,
+    this.contractDuration,
+  });
 
   final String contentId;
   final PlaybackProgressRecorder? recorder;
+
+  /// **La durée du contrat de synchronisation**, ou `null` en HLS (#222).
+  ///
+  /// Voir [ContentRequest.contractDuration] : sur un `.aac` téléchargé, la durée
+  /// du lecteur n'est qu'une estimation, et l'enregistreur s'en sert pour
+  /// trancher « terminé ». Une durée trop courte de 5 % marque un enseignement
+  /// comme écouté six minutes avant la fin — au serveur, et durablement.
+  final Duration? contractDuration;
   PlayTracker? tracker;
 
   /// Les abonnements au magasin, fermés avec la session.
@@ -490,7 +509,7 @@ class _ListeningSession {
     _fireAndForget(
       recorder.onPosition(
         next.position,
-        duration: next.duration,
+        duration: contractDuration ?? next.duration,
         isPlaying: next.isPlaying,
       ),
     );

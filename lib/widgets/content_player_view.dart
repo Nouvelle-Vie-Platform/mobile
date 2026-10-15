@@ -409,6 +409,9 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
         contentId: content.id,
         url: url,
         filePath: resolution.localFilePath,
+        // La durée du contrat voyage avec la source qu'elle décrit (#222) :
+        // posée ici, elle est lue par les deux barres et par l'enregistreur.
+        contractDuration: resolution.contractDuration,
         title: content.title,
         author: content.authorName,
         artUrl: content.squareOrLandscape,
@@ -993,17 +996,28 @@ class _ProgressLineState extends ConsumerState<_ProgressLine> {
   @override
   Widget build(BuildContext context) {
     // Un autre contenu chargé — ou rien — se lit comme un début : zéro écoulé,
-    // pas de durée. Trois `select` plutôt que la valeur entière : la panne, le
+    // pas de durée. Des `select` plutôt que la valeur entière : la panne, le
     // tampon ou la lecture qui basculent ne redessinent pas la barre.
     final contentId = widget.contentId;
     final position = ref.watch(contentPlaybackProvider.select(
       (p) => p.contentId == contentId ? p.position : Duration.zero,
     ));
-    final duration = ref.watch(contentPlaybackProvider.select(
+    // **La durée du contrat gagne sur celle du lecteur** (#222) : sur un `.aac`
+    // téléchargé, le lecteur ne fait que l'estimer — jusqu'à ~6 minutes d'écart
+    // sur deux heures —, et c'est cette barre-là qui ment au fidèle. Elle n'est
+    // posée que sur une copie locale ; en HLS elle est nulle et le lecteur
+    // reprend la main, où sa mesure est juste.
+    final contractDuration = ref.watch(playbackControllerProvider.select(
+      (r) => r?.contentId == contentId ? r?.contractDuration : null,
+    ));
+    final playerDuration = ref.watch(contentPlaybackProvider.select(
       (p) => p.contentId == contentId ? p.duration : null,
     ));
+    final duration = contractDuration ?? playerDuration;
+    // Calculée contre la **même** durée que le compteur : la barre et les
+    // chiffres doivent toucher le bout en même temps.
     final progress = ref.watch(contentPlaybackProvider.select(
-      (p) => p.contentId == contentId ? p.progress : 0.0,
+      (p) => p.contentId == contentId ? p.progressFor(duration) : 0.0,
     ));
     final dragged = _dragged;
     final elapsed =

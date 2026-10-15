@@ -111,8 +111,17 @@ class ContentPlayback {
   ///
   /// `null` et `0` ne se dessinent pas pareil : une durée inconnue appelle une
   /// barre indéterminée, un zéro dessinerait une lecture figée au début.
-  double? get progress {
-    final total = duration;
+  double? get progress => progressFor(duration);
+
+  /// La même progression, **contre une durée donnée** plutôt que celle du
+  /// lecteur (#222).
+  ///
+  /// Les deux barres — l'écran de lecture et le mini-lecteur — la calculent
+  /// contre [ContentRequest.contractDuration] quand on joue une copie locale :
+  /// sans ça, le compteur dirait la durée du contrat pendant que la barre
+  /// avancerait sur celle, estimée, du lecteur — et toucherait le bout avant que
+  /// le compteur n'y soit.
+  double? progressFor(Duration? total) {
     if (total == null) return null;
     if (total <= Duration.zero) return 0;
     return (position.inMicroseconds / total.inMicroseconds).clamp(0.0, 1.0);
@@ -204,6 +213,7 @@ class ContentRequest {
     this.author,
     this.artUrl,
     this.filePath,
+    this.contractDuration,
     this.isLive = false,
     this.headers = const {},
   });
@@ -249,6 +259,27 @@ class ContentRequest {
   /// sans redemander à l'écran. Un fichier local rouvre le fichier ; le HLS
   /// rouvre [url].
   final String? filePath;
+
+  /// **La durée qui fait foi quand on joue une copie locale** (#222) — celle du
+  /// contrat de synchronisation (`download.durationSeconds`), posée par
+  /// `DownloadResolver` et `null` sur une résolution HLS.
+  ///
+  /// **La règle, en un mot : non nulle, elle gagne.** Le champ ne porte donc pas
+  /// qu'une valeur, il porte la décision — « c'est une copie locale **et** on
+  /// connaît sa vraie durée » —, ce qui évite de refaire le test « est-ce local ?
+  /// » dans chacun des trois lecteurs de cette valeur (le compteur et la barre
+  /// de l'écran de lecture, la barre du mini-lecteur, l'enregistreur de
+  /// progression du contrôleur).
+  ///
+  /// Pourquoi elle gagne : sur un `.aac`, [ContentPlayback.duration] n'est
+  /// qu'une estimation — l'ADTS ne porte pas sa durée et l'encodeur est ABR —,
+  /// et l'estimation ment jusqu'à ~6 minutes sur deux heures. Elle **ne descend
+  /// pas au lecteur** : lui garde ce qu'il mesure, qui est ce qui fait avancer
+  /// le son ; c'est l'affichage et le relevé de progression qui lisent celle-ci.
+  ///
+  /// En HLS, `null` : la durée du lecteur y est juste, et une durée de contrat
+  /// y entrerait en concurrence avec un flux qu'on ne joue pas en entier.
+  final Duration? contractDuration;
 }
 
 /// **Lecteur d'un contenu de médiathèque.**

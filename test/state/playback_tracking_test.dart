@@ -24,7 +24,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maison_du_miracle/core/config/radio_config.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/data/local/tables/download_tables.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
@@ -32,6 +34,7 @@ import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/models/models.dart';
+import 'package:maison_du_miracle/models/teaching_download.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
@@ -474,6 +477,64 @@ void main() {
       final row = await database().playbackDao.localPositionFor(_id);
       expect(row?.completed, isTrue);
       expect(progress.reports.last.completed, isTrue);
+    });
+
+    testWidgets(
+        'sur une copie locale, c\'est la durée du contrat qui tranche (#222)',
+        (tester) async {
+      await pumpApp(tester);
+      final db = database();
+      // Une copie locale complète, et son contrat : une heure, mesurée sur la
+      // **source** au transcodage.
+      await db.downloadsDao.upsert(
+        DownloadsCompanion.insert(
+          contentType: 'teaching',
+          contentId: _id,
+          quality: 'mid',
+          state: const Value(DownloadState.complete),
+          localPath: const Value('/data/downloads/$_id.mid.aac'),
+          bytesReceived: const Value(500),
+          bytesTotal: const Value(500),
+          createdAt: DateTime.utc(2026, 8, 15),
+        ),
+      );
+      await db.into(db.teachings).insert(
+            TeachingsCompanion.insert(
+              id: _id,
+              title: _title,
+              download: Value(
+                const TeachingDownload(
+                  version: 'v1',
+                  durationSeconds: 3600,
+                  renditions: {
+                    'mid': DownloadRendition(
+                      url: 'https://x/mid.aac',
+                      bytes: 500,
+                    ),
+                  },
+                ),
+              ),
+            ),
+          );
+      await launchFromHome(tester);
+      expect(player.loadedFilePath, isNotNull, reason: 'prémisse : du local');
+
+      // Ce que le lecteur **estime** sur l'ADTS : 54 minutes au lieu de 60. À
+      // 53:40, sa durée dirait « terminé » — et ce faux serait écrit au serveur,
+      // où il se corrige mal : le fidèle croirait avoir fini un enseignement
+      // auquel il reste six minutes.
+      await reach(
+        tester,
+        const Duration(minutes: 53, seconds: 40),
+        duration: const Duration(minutes: 54),
+      );
+      await settle(tester);
+
+      expect(
+        (await db.playbackDao.localPositionFor(_id))?.completed,
+        isFalse,
+      );
+      expect(progress.reports.every((r) => !r.completed), isTrue);
     });
 
     testWidgets('jamais sur une durée inconnue — seul l\'état terminal tranche',
