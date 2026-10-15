@@ -869,6 +869,79 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notesSearchHint => 'Rechercher une note...';
 
   @override
+  String get notesTab => 'Notes';
+
+  @override
+  String get notesGuestTitle => 'Vos notes vous attendent';
+
+  @override
+  String get notesGuestMessage =>
+      'Connectez-vous pour écrire vos notes et les retrouver sur tous vos appareils.';
+
+  @override
+  String get notesEmptyTitle => 'Aucune note';
+
+  @override
+  String get notesEmptyMessage => 'Touchez + pour écrire votre première note.';
+
+  @override
+  String get notesFilterAll => 'Toutes';
+
+  @override
+  String get notesUntitled => 'Nouvelle note';
+
+  @override
+  String get notesBodyHint => 'Écrivez ici…';
+
+  @override
+  String get notesDone => 'Terminé';
+
+  @override
+  String get notesPin => 'Épingler';
+
+  @override
+  String get notesUnpin => 'Désépingler';
+
+  @override
+  String get notesDelete => 'Supprimer';
+
+  @override
+  String get notesDeleteConfirmTitle => 'Supprimer cette note ?';
+
+  @override
+  String get notesDeleteConfirmMessage =>
+      'Elle sera retirée de tous vos appareils.';
+
+  @override
+  String get notesCategoryTitle => 'Catégorie';
+
+  @override
+  String get notesCategoryAdd => 'Ajouter une catégorie';
+
+  @override
+  String get notesCategoryNameHint => 'Nom de la catégorie';
+
+  @override
+  String get notesCategoryCreate => 'Ajouter';
+
+  @override
+  String get notesCategoryNone => 'Sans catégorie';
+
+  @override
+  String get notesCategoryEditTitle => 'Modifier la catégorie';
+
+  @override
+  String get notesCategoryDelete => 'Supprimer la catégorie';
+
+  @override
+  String notesCategoryDeleteConfirm(String name) {
+    return 'Supprimer « $name » ? Ses notes resteront, sans catégorie.';
+  }
+
+  @override
+  String get notesShareFailed => 'Le partage n\'a pas abouti.';
+
+  @override
   String get profileRole => 'Membre Nouvelle Vie';
 
   @override
@@ -2344,4 +2417,158 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get radioOfflineMessage =>
       'La radio repart toute seule dès que le réseau revient.';
+
+  @override
+  String get noteEditorPlaceholder => 'Écrivez votre note…';
+
+  @override
+  String get noteEditorOpenFormat => 'Mise en forme';
+
+  @override
+  String get noteEditorFormatTitle => 'Format';
+
+  @override
+  String get noteEditorClose => 'Fermer';
+
+  @override
+  String get noteEditorStyleTitle => 'Titre';
+
+  @override
+  String get noteEditorStyleSubtitle => 'Sous-titre';
+
+  @override
+  String get noteEditorStyleHeading => 'Titre secondaire';
+
+  @override
+  String get noteEditorStyleBody => 'Corps';
+
+  @override
+  String get noteEditorBold => 'Gras';
+
+  @override
+  String get noteEditorItalic => 'Italique';
+
+  @override
+  String get noteEditorUnderline => 'Souligné';
+
+  @override
+  String get noteEditorStrike => 'Barré';
+
+  @override
+  String get noteEditorHighlight => 'Surligner';
+
+  @override
+  String get noteEditorTextColor => 'Couleur du texte';
+
+  @override
+  String get noteEditorBulletList => 'Liste à puces';
+
+  @override
+  String get noteEditorNumberedList => 'Liste numérotée';
+
+  @override
+  String get noteEditorChecklist => 'Cases à cocher';
+
+  @override
+  String get noteEditorOutdent => 'Diminuer le retrait';
+
+  @override
+  String get noteEditorIndent => 'Augmenter le retrait';
+
+  @override
+  String get noteEditorMonostyle => 'Monostyle';
+
+  @override
+  String get noteEditorQuote => 'Citation';
+
+  @override
+  String get noteLinkAdd => 'Ajouter un lien';
+
+  @override
+  String get noteLinkSheetTitle => 'Ajouter un lien';
+
+  @override
+  String get noteLinkToNote => 'Une note';
+
+  @override
+  String get noteLinkToTeaching => 'Un enseignement';
+
+  @override
+  String get noteLinkToWeb => 'Une adresse web';
+
+  @override
+  String get noteLinkToBible => 'La Bible';
+
+  @override
+  String get noteLinkSoon => 'bientôt';
+
+  @override
+  String get noteLinkSearch => 'Rechercher';
+
+  @override
+  String get noteLinkInvalidUrl => 'Adresse web invalide';
+
+  @override
+  String get noteLinkInsert => 'Insérer le lien';
+
+  @override
+  String get noteLinkNoResult => 'Aucun résultat';
+
+  @override
+  String get noteLinkNoteMissing => 'Cette note n\'existe plus';
+
+  @override
+  String get noteLinkCannotOpen => 'Impossible d\'ouvrir ce lien';
+
+  @override
+  String get noteAttachmentButton => 'Joindre';
+
+  @override
+  String get noteAttachmentChooseMedia => 'Choisir une photo ou une vidéo';
+
+  @override
+  String get noteAttachmentTakeMedia => 'Prendre une photo ou une vidéo';
+
+  @override
+  String get noteAttachmentTakePhoto => 'Photo';
+
+  @override
+  String get noteAttachmentTakeVideo => 'Vidéo';
+
+  @override
+  String get noteAttachmentRecordAudio => 'Enregistrer un audio';
+
+  @override
+  String get noteAttachmentAttachFile => 'Joindre un fichier';
+
+  @override
+  String get noteAttachmentRecording => 'Enregistrement…';
+
+  @override
+  String get noteAttachmentRecordStop => 'Terminer';
+
+  @override
+  String get noteAttachmentRecordCancel => 'Annuler';
+
+  @override
+  String get noteAttachmentMicDenied =>
+      'Autorisez le micro pour enregistrer un audio.';
+
+  @override
+  String get noteAttachmentRecordingName => 'Enregistrement audio';
+
+  @override
+  String get noteAttachmentPreparing => 'En préparation…';
+
+  @override
+  String get noteAttachmentUploading => 'Envoi…';
+
+  @override
+  String get noteAttachmentFailed => 'Échec de l\'envoi';
+
+  @override
+  String get noteAttachmentRetry => 'Réessayer';
+
+  @override
+  String get noteAttachmentUnavailable => 'Pièce jointe indisponible';
 }

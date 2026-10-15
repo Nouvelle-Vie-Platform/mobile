@@ -12,7 +12,7 @@ import '../models/models.dart';
 /// `MediathequeRepository`, `GatheringRepository`, `AnnouncementRepository`, et
 /// désormais `EchangesRepository` — #96 lui a pris les groupes, les conversations
 /// et les discussions). Ce qui reste ici est **le dernier reste fictif de
-/// l'application** : les requêtes de prière et les notes.
+/// l'application** : les requêtes de prière (les notes sont parties avec #190).
 final churchRepositoryProvider = Provider<ChurchRepository>(
   (ref) => const InMemoryChurchRepository(),
 );
@@ -39,9 +39,4 @@ final eventsProvider = Provider<List<ChurchEvent>>((ref) => SampleData.events);
 /// `SampleData.prayers`, et ne rien brancher de neuf dessus.
 final prayersProvider = Provider<List<PrayerRequest>>(
   (ref) => ref.watch(churchRepositoryProvider).prayers(),
-);
-
-/// Notes spirituelles. **Fictif**, pour la même raison.
-final notesProvider = Provider<List<SpiritualNote>>(
-  (ref) => ref.watch(churchRepositoryProvider).notes(),
 );

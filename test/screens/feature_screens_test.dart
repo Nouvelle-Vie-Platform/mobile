@@ -9,7 +9,6 @@ import 'package:maison_du_miracle/screens/donations_screen.dart';
 import 'package:maison_du_miracle/screens/group_chat_screen.dart';
 import 'package:maison_du_miracle/screens/radio_screen.dart';
 import 'package:maison_du_miracle/screens/new_request_screen.dart';
-import 'package:maison_du_miracle/screens/notes_screen.dart';
 import 'package:maison_du_miracle/screens/prayer_requests_screen.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
@@ -51,11 +50,6 @@ void main() {
     testWidgets('NewRequestScreen se monte', (tester) async {
       await pumpScreen(tester, const NewRequestScreen());
       expect(find.byType(NewRequestScreen), findsOneWidget);
-    });
-
-    testWidgets('NotesScreen se monte', (tester) async {
-      await pumpScreen(tester, const NotesScreen());
-      expect(find.byType(NotesScreen), findsOneWidget);
     });
 
     testWidgets('DonationsScreen se monte', (tester) async {

@@ -19723,6 +19723,2166 @@ class MyInteractionsCompanion extends UpdateCompanion<MyInteractionRow> {
   }
 }
 
+class $SpiritualNotesTable extends SpiritualNotes
+    with TableInfo<$SpiritualNotesTable, SpiritualNoteRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SpiritualNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ownerIdMeta =
+      const VerificationMeta('ownerId');
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+      'owner_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _teachingIdMeta =
+      const VerificationMeta('teachingId');
+  @override
+  late final GeneratedColumn<String> teachingId = GeneratedColumn<String>(
+      'teaching_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _contentMeta =
+      const VerificationMeta('content');
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+      'content', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+      'body', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _categoryIdMeta =
+      const VerificationMeta('categoryId');
+  @override
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+      'category_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _pinnedMeta = const VerificationMeta('pinned');
+  @override
+  late final GeneratedColumn<bool> pinned = GeneratedColumn<bool>(
+      'pinned', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("pinned" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _clientCreatedAtMeta =
+      const VerificationMeta('clientCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientCreatedAt =
+      GeneratedColumn<DateTime>('client_created_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        ownerId,
+        teachingId,
+        title,
+        content,
+        body,
+        categoryId,
+        pinned,
+        clientCreatedAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'spiritual_notes';
+  @override
+  VerificationContext validateIntegrity(Insertable<SpiritualNoteRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(_ownerIdMeta,
+          ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta));
+    }
+    if (data.containsKey('teaching_id')) {
+      context.handle(
+          _teachingIdMeta,
+          teachingId.isAcceptableOrUnknown(
+              data['teaching_id']!, _teachingIdMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    }
+    if (data.containsKey('content')) {
+      context.handle(_contentMeta,
+          content.isAcceptableOrUnknown(data['content']!, _contentMeta));
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+          _bodyMeta, body.isAcceptableOrUnknown(data['body']!, _bodyMeta));
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+          _categoryIdMeta,
+          categoryId.isAcceptableOrUnknown(
+              data['category_id']!, _categoryIdMeta));
+    }
+    if (data.containsKey('pinned')) {
+      context.handle(_pinnedMeta,
+          pinned.isAcceptableOrUnknown(data['pinned']!, _pinnedMeta));
+    }
+    if (data.containsKey('client_created_at')) {
+      context.handle(
+          _clientCreatedAtMeta,
+          clientCreatedAt.isAcceptableOrUnknown(
+              data['client_created_at']!, _clientCreatedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SpiritualNoteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SpiritualNoteRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      ownerId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_id']),
+      teachingId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}teaching_id']),
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title']),
+      content: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}content']),
+      body: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}body'])!,
+      categoryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category_id']),
+      pinned: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}pinned'])!,
+      clientCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_created_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $SpiritualNotesTable createAlias(String alias) {
+    return $SpiritualNotesTable(attachedDatabase, alias);
+  }
+}
+
+class SpiritualNoteRow extends DataClass
+    implements Insertable<SpiritualNoteRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String id;
+  final String? ownerId;
+  final String? teachingId;
+  final String? title;
+
+  /// Le Delta Quill, **tel que servi** (JSON brut). Lu par l'éditeur riche de
+  /// N3 ; cette tranche n'écrit qu'un Delta minimal (`plainToDeltaJson`).
+  final String? content;
+  final String body;
+  final String? categoryId;
+  final bool pinned;
+  final DateTime? clientCreatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const SpiritualNoteRow(
+      {required this.syncStamp,
+      required this.id,
+      this.ownerId,
+      this.teachingId,
+      this.title,
+      this.content,
+      required this.body,
+      this.categoryId,
+      required this.pinned,
+      this.clientCreatedAt,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || ownerId != null) {
+      map['owner_id'] = Variable<String>(ownerId);
+    }
+    if (!nullToAbsent || teachingId != null) {
+      map['teaching_id'] = Variable<String>(teachingId);
+    }
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(title);
+    }
+    if (!nullToAbsent || content != null) {
+      map['content'] = Variable<String>(content);
+    }
+    map['body'] = Variable<String>(body);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<String>(categoryId);
+    }
+    map['pinned'] = Variable<bool>(pinned);
+    if (!nullToAbsent || clientCreatedAt != null) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  SpiritualNotesCompanion toCompanion(bool nullToAbsent) {
+    return SpiritualNotesCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      ownerId: ownerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerId),
+      teachingId: teachingId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(teachingId),
+      title:
+          title == null && nullToAbsent ? const Value.absent() : Value(title),
+      content: content == null && nullToAbsent
+          ? const Value.absent()
+          : Value(content),
+      body: Value(body),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      pinned: Value(pinned),
+      clientCreatedAt: clientCreatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientCreatedAt),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory SpiritualNoteRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SpiritualNoteRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      ownerId: serializer.fromJson<String?>(json['ownerId']),
+      teachingId: serializer.fromJson<String?>(json['teachingId']),
+      title: serializer.fromJson<String?>(json['title']),
+      content: serializer.fromJson<String?>(json['content']),
+      body: serializer.fromJson<String>(json['body']),
+      categoryId: serializer.fromJson<String?>(json['categoryId']),
+      pinned: serializer.fromJson<bool>(json['pinned']),
+      clientCreatedAt: serializer.fromJson<DateTime?>(json['clientCreatedAt']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'ownerId': serializer.toJson<String?>(ownerId),
+      'teachingId': serializer.toJson<String?>(teachingId),
+      'title': serializer.toJson<String?>(title),
+      'content': serializer.toJson<String?>(content),
+      'body': serializer.toJson<String>(body),
+      'categoryId': serializer.toJson<String?>(categoryId),
+      'pinned': serializer.toJson<bool>(pinned),
+      'clientCreatedAt': serializer.toJson<DateTime?>(clientCreatedAt),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  SpiritualNoteRow copyWith(
+          {int? syncStamp,
+          String? id,
+          Value<String?> ownerId = const Value.absent(),
+          Value<String?> teachingId = const Value.absent(),
+          Value<String?> title = const Value.absent(),
+          Value<String?> content = const Value.absent(),
+          String? body,
+          Value<String?> categoryId = const Value.absent(),
+          bool? pinned,
+          Value<DateTime?> clientCreatedAt = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      SpiritualNoteRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        ownerId: ownerId.present ? ownerId.value : this.ownerId,
+        teachingId: teachingId.present ? teachingId.value : this.teachingId,
+        title: title.present ? title.value : this.title,
+        content: content.present ? content.value : this.content,
+        body: body ?? this.body,
+        categoryId: categoryId.present ? categoryId.value : this.categoryId,
+        pinned: pinned ?? this.pinned,
+        clientCreatedAt: clientCreatedAt.present
+            ? clientCreatedAt.value
+            : this.clientCreatedAt,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  SpiritualNoteRow copyWithCompanion(SpiritualNotesCompanion data) {
+    return SpiritualNoteRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      teachingId:
+          data.teachingId.present ? data.teachingId.value : this.teachingId,
+      title: data.title.present ? data.title.value : this.title,
+      content: data.content.present ? data.content.value : this.content,
+      body: data.body.present ? data.body.value : this.body,
+      categoryId:
+          data.categoryId.present ? data.categoryId.value : this.categoryId,
+      pinned: data.pinned.present ? data.pinned.value : this.pinned,
+      clientCreatedAt: data.clientCreatedAt.present
+          ? data.clientCreatedAt.value
+          : this.clientCreatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SpiritualNoteRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('teachingId: $teachingId, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('body: $body, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('pinned: $pinned, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, ownerId, teachingId, title,
+      content, body, categoryId, pinned, clientCreatedAt, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SpiritualNoteRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.ownerId == this.ownerId &&
+          other.teachingId == this.teachingId &&
+          other.title == this.title &&
+          other.content == this.content &&
+          other.body == this.body &&
+          other.categoryId == this.categoryId &&
+          other.pinned == this.pinned &&
+          other.clientCreatedAt == this.clientCreatedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SpiritualNotesCompanion extends UpdateCompanion<SpiritualNoteRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String?> ownerId;
+  final Value<String?> teachingId;
+  final Value<String?> title;
+  final Value<String?> content;
+  final Value<String> body;
+  final Value<String?> categoryId;
+  final Value<bool> pinned;
+  final Value<DateTime?> clientCreatedAt;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const SpiritualNotesCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.teachingId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    this.body = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.pinned = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SpiritualNotesCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    this.ownerId = const Value.absent(),
+    this.teachingId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    this.body = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.pinned = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id);
+  static Insertable<SpiritualNoteRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? ownerId,
+    Expression<String>? teachingId,
+    Expression<String>? title,
+    Expression<String>? content,
+    Expression<String>? body,
+    Expression<String>? categoryId,
+    Expression<bool>? pinned,
+    Expression<DateTime>? clientCreatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (teachingId != null) 'teaching_id': teachingId,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (body != null) 'body': body,
+      if (categoryId != null) 'category_id': categoryId,
+      if (pinned != null) 'pinned': pinned,
+      if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SpiritualNotesCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String?>? ownerId,
+      Value<String?>? teachingId,
+      Value<String?>? title,
+      Value<String?>? content,
+      Value<String>? body,
+      Value<String?>? categoryId,
+      Value<bool>? pinned,
+      Value<DateTime?>? clientCreatedAt,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return SpiritualNotesCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      ownerId: ownerId ?? this.ownerId,
+      teachingId: teachingId ?? this.teachingId,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      body: body ?? this.body,
+      categoryId: categoryId ?? this.categoryId,
+      pinned: pinned ?? this.pinned,
+      clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (teachingId.present) {
+      map['teaching_id'] = Variable<String>(teachingId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (pinned.present) {
+      map['pinned'] = Variable<bool>(pinned.value);
+    }
+    if (clientCreatedAt.present) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SpiritualNotesCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('teachingId: $teachingId, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('body: $body, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('pinned: $pinned, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NoteCategoriesTable extends NoteCategories
+    with TableInfo<$NoteCategoriesTable, NoteCategoryRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NoteCategoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _syncStampMeta =
+      const VerificationMeta('syncStamp');
+  @override
+  late final GeneratedColumn<int> syncStamp = GeneratedColumn<int>(
+      'sync_stamp', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ownerIdMeta =
+      const VerificationMeta('ownerId');
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+      'owner_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<String> color = GeneratedColumn<String>(
+      'color', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _clientCreatedAtMeta =
+      const VerificationMeta('clientCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientCreatedAt =
+      GeneratedColumn<DateTime>('client_created_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        syncStamp,
+        id,
+        ownerId,
+        name,
+        color,
+        clientCreatedAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'note_categories';
+  @override
+  VerificationContext validateIntegrity(Insertable<NoteCategoryRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('sync_stamp')) {
+      context.handle(_syncStampMeta,
+          syncStamp.isAcceptableOrUnknown(data['sync_stamp']!, _syncStampMeta));
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(_ownerIdMeta,
+          ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+          _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
+    } else if (isInserting) {
+      context.missing(_colorMeta);
+    }
+    if (data.containsKey('client_created_at')) {
+      context.handle(
+          _clientCreatedAtMeta,
+          clientCreatedAt.isAcceptableOrUnknown(
+              data['client_created_at']!, _clientCreatedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NoteCategoryRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NoteCategoryRow(
+      syncStamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      ownerId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_id']),
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      color: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}color'])!,
+      clientCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_created_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+    );
+  }
+
+  @override
+  $NoteCategoriesTable createAlias(String alias) {
+    return $NoteCategoriesTable(attachedDatabase, alias);
+  }
+}
+
+class NoteCategoryRow extends DataClass implements Insertable<NoteCategoryRow> {
+  /// Jeton de la transaction qui a écrit cette ligne pour la dernière fois.
+  ///
+  /// Le défaut existe pour que l'appelant n'ait **pas** à le renseigner : le
+  /// jeton est une mécanique du magasin, posée par `SyncDao`, pas une donnée du
+  /// serveur. Une ligne qui arriverait ici sans jeton porterait `0`, donc
+  /// serait traitée comme jamais revue — la panne va dans le sens sûr.
+  final int syncStamp;
+  final String id;
+  final String? ownerId;
+  final String name;
+  final String color;
+  final DateTime? clientCreatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  const NoteCategoryRow(
+      {required this.syncStamp,
+      required this.id,
+      this.ownerId,
+      required this.name,
+      required this.color,
+      this.clientCreatedAt,
+      this.createdAt,
+      this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['sync_stamp'] = Variable<int>(syncStamp);
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || ownerId != null) {
+      map['owner_id'] = Variable<String>(ownerId);
+    }
+    map['name'] = Variable<String>(name);
+    map['color'] = Variable<String>(color);
+    if (!nullToAbsent || clientCreatedAt != null) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    return map;
+  }
+
+  NoteCategoriesCompanion toCompanion(bool nullToAbsent) {
+    return NoteCategoriesCompanion(
+      syncStamp: Value(syncStamp),
+      id: Value(id),
+      ownerId: ownerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerId),
+      name: Value(name),
+      color: Value(color),
+      clientCreatedAt: clientCreatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientCreatedAt),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
+  }
+
+  factory NoteCategoryRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NoteCategoryRow(
+      syncStamp: serializer.fromJson<int>(json['syncStamp']),
+      id: serializer.fromJson<String>(json['id']),
+      ownerId: serializer.fromJson<String?>(json['ownerId']),
+      name: serializer.fromJson<String>(json['name']),
+      color: serializer.fromJson<String>(json['color']),
+      clientCreatedAt: serializer.fromJson<DateTime?>(json['clientCreatedAt']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'syncStamp': serializer.toJson<int>(syncStamp),
+      'id': serializer.toJson<String>(id),
+      'ownerId': serializer.toJson<String?>(ownerId),
+      'name': serializer.toJson<String>(name),
+      'color': serializer.toJson<String>(color),
+      'clientCreatedAt': serializer.toJson<DateTime?>(clientCreatedAt),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+    };
+  }
+
+  NoteCategoryRow copyWith(
+          {int? syncStamp,
+          String? id,
+          Value<String?> ownerId = const Value.absent(),
+          String? name,
+          String? color,
+          Value<DateTime?> clientCreatedAt = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent()}) =>
+      NoteCategoryRow(
+        syncStamp: syncStamp ?? this.syncStamp,
+        id: id ?? this.id,
+        ownerId: ownerId.present ? ownerId.value : this.ownerId,
+        name: name ?? this.name,
+        color: color ?? this.color,
+        clientCreatedAt: clientCreatedAt.present
+            ? clientCreatedAt.value
+            : this.clientCreatedAt,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+      );
+  NoteCategoryRow copyWithCompanion(NoteCategoriesCompanion data) {
+    return NoteCategoryRow(
+      syncStamp: data.syncStamp.present ? data.syncStamp.value : this.syncStamp,
+      id: data.id.present ? data.id.value : this.id,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      name: data.name.present ? data.name.value : this.name,
+      color: data.color.present ? data.color.value : this.color,
+      clientCreatedAt: data.clientCreatedAt.present
+          ? data.clientCreatedAt.value
+          : this.clientCreatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NoteCategoryRow(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('name: $name, ')
+          ..write('color: $color, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(syncStamp, id, ownerId, name, color,
+      clientCreatedAt, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NoteCategoryRow &&
+          other.syncStamp == this.syncStamp &&
+          other.id == this.id &&
+          other.ownerId == this.ownerId &&
+          other.name == this.name &&
+          other.color == this.color &&
+          other.clientCreatedAt == this.clientCreatedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NoteCategoriesCompanion extends UpdateCompanion<NoteCategoryRow> {
+  final Value<int> syncStamp;
+  final Value<String> id;
+  final Value<String?> ownerId;
+  final Value<String> name;
+  final Value<String> color;
+  final Value<DateTime?> clientCreatedAt;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<int> rowid;
+  const NoteCategoriesCompanion({
+    this.syncStamp = const Value.absent(),
+    this.id = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.color = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NoteCategoriesCompanion.insert({
+    this.syncStamp = const Value.absent(),
+    required String id,
+    this.ownerId = const Value.absent(),
+    required String name,
+    required String color,
+    this.clientCreatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        name = Value(name),
+        color = Value(color);
+  static Insertable<NoteCategoryRow> custom({
+    Expression<int>? syncStamp,
+    Expression<String>? id,
+    Expression<String>? ownerId,
+    Expression<String>? name,
+    Expression<String>? color,
+    Expression<DateTime>? clientCreatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (syncStamp != null) 'sync_stamp': syncStamp,
+      if (id != null) 'id': id,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (name != null) 'name': name,
+      if (color != null) 'color': color,
+      if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NoteCategoriesCompanion copyWith(
+      {Value<int>? syncStamp,
+      Value<String>? id,
+      Value<String?>? ownerId,
+      Value<String>? name,
+      Value<String>? color,
+      Value<DateTime?>? clientCreatedAt,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<int>? rowid}) {
+    return NoteCategoriesCompanion(
+      syncStamp: syncStamp ?? this.syncStamp,
+      id: id ?? this.id,
+      ownerId: ownerId ?? this.ownerId,
+      name: name ?? this.name,
+      color: color ?? this.color,
+      clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (syncStamp.present) {
+      map['sync_stamp'] = Variable<int>(syncStamp.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<String>(color.value);
+    }
+    if (clientCreatedAt.present) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NoteCategoriesCompanion(')
+          ..write('syncStamp: $syncStamp, ')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('name: $name, ')
+          ..write('color: $color, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalNotesTable extends LocalNotes
+    with TableInfo<$LocalNotesTable, LocalNoteRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _teachingIdMeta =
+      const VerificationMeta('teachingId');
+  @override
+  late final GeneratedColumn<String> teachingId = GeneratedColumn<String>(
+      'teaching_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _contentMeta =
+      const VerificationMeta('content');
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+      'content', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+      'body', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _categoryIdMeta =
+      const VerificationMeta('categoryId');
+  @override
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+      'category_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _pinnedMeta = const VerificationMeta('pinned');
+  @override
+  late final GeneratedColumn<bool> pinned = GeneratedColumn<bool>(
+      'pinned', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("pinned" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _clientCreatedAtMeta =
+      const VerificationMeta('clientCreatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientCreatedAt =
+      GeneratedColumn<DateTime>('client_created_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _clientUpdatedAtMeta =
+      const VerificationMeta('clientUpdatedAt');
+  @override
+  late final GeneratedColumn<DateTime> clientUpdatedAt =
+      GeneratedColumn<DateTime>('client_updated_at', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+      'dirty', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("dirty" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _lastErrorMeta =
+      const VerificationMeta('lastError');
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+      'last_error', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        teachingId,
+        title,
+        content,
+        body,
+        categoryId,
+        pinned,
+        clientCreatedAt,
+        clientUpdatedAt,
+        dirty,
+        lastError
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_notes';
+  @override
+  VerificationContext validateIntegrity(Insertable<LocalNoteRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('teaching_id')) {
+      context.handle(
+          _teachingIdMeta,
+          teachingId.isAcceptableOrUnknown(
+              data['teaching_id']!, _teachingIdMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    }
+    if (data.containsKey('content')) {
+      context.handle(_contentMeta,
+          content.isAcceptableOrUnknown(data['content']!, _contentMeta));
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+          _bodyMeta, body.isAcceptableOrUnknown(data['body']!, _bodyMeta));
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+          _categoryIdMeta,
+          categoryId.isAcceptableOrUnknown(
+              data['category_id']!, _categoryIdMeta));
+    }
+    if (data.containsKey('pinned')) {
+      context.handle(_pinnedMeta,
+          pinned.isAcceptableOrUnknown(data['pinned']!, _pinnedMeta));
+    }
+    if (data.containsKey('client_created_at')) {
+      context.handle(
+          _clientCreatedAtMeta,
+          clientCreatedAt.isAcceptableOrUnknown(
+              data['client_created_at']!, _clientCreatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_clientCreatedAtMeta);
+    }
+    if (data.containsKey('client_updated_at')) {
+      context.handle(
+          _clientUpdatedAtMeta,
+          clientUpdatedAt.isAcceptableOrUnknown(
+              data['client_updated_at']!, _clientUpdatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_clientUpdatedAtMeta);
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+          _dirtyMeta, dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta));
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(_lastErrorMeta,
+          lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalNoteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalNoteRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      teachingId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}teaching_id']),
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title']),
+      content: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}content']),
+      body: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}body'])!,
+      categoryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category_id']),
+      pinned: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}pinned'])!,
+      clientCreatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_created_at'])!,
+      clientUpdatedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}client_updated_at'])!,
+      dirty: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}dirty'])!,
+      lastError: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_error']),
+    );
+  }
+
+  @override
+  $LocalNotesTable createAlias(String alias) {
+    return $LocalNotesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalNoteRow extends DataClass implements Insertable<LocalNoteRow> {
+  final String id;
+  final String? teachingId;
+  final String? title;
+  final String? content;
+  final String body;
+  final String? categoryId;
+  final bool pinned;
+  final DateTime clientCreatedAt;
+
+  /// L'horloge de l'**appareil** à la dernière frappe. Envoyée au serveur
+  /// (`clientUpdatedAt`) pour qu'un rejeu en retard n'écrase pas une frappe
+  /// plus récente faite ailleurs, et comparée à l'`updatedAt` serveur pour
+  /// savoir quand cette ligne peut partir.
+  final DateTime clientUpdatedAt;
+
+  /// Reste-t-il un envoi à faire ? Vrai à chaque frappe, faux après un `2xx`.
+  final bool dirty;
+
+  /// Le dernier échec d'envoi, pour le diagnostic — aucun écran ne le lit.
+  final String? lastError;
+  const LocalNoteRow(
+      {required this.id,
+      this.teachingId,
+      this.title,
+      this.content,
+      required this.body,
+      this.categoryId,
+      required this.pinned,
+      required this.clientCreatedAt,
+      required this.clientUpdatedAt,
+      required this.dirty,
+      this.lastError});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || teachingId != null) {
+      map['teaching_id'] = Variable<String>(teachingId);
+    }
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(title);
+    }
+    if (!nullToAbsent || content != null) {
+      map['content'] = Variable<String>(content);
+    }
+    map['body'] = Variable<String>(body);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<String>(categoryId);
+    }
+    map['pinned'] = Variable<bool>(pinned);
+    map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
+    map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt);
+    map['dirty'] = Variable<bool>(dirty);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    return map;
+  }
+
+  LocalNotesCompanion toCompanion(bool nullToAbsent) {
+    return LocalNotesCompanion(
+      id: Value(id),
+      teachingId: teachingId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(teachingId),
+      title:
+          title == null && nullToAbsent ? const Value.absent() : Value(title),
+      content: content == null && nullToAbsent
+          ? const Value.absent()
+          : Value(content),
+      body: Value(body),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      pinned: Value(pinned),
+      clientCreatedAt: Value(clientCreatedAt),
+      clientUpdatedAt: Value(clientUpdatedAt),
+      dirty: Value(dirty),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+    );
+  }
+
+  factory LocalNoteRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalNoteRow(
+      id: serializer.fromJson<String>(json['id']),
+      teachingId: serializer.fromJson<String?>(json['teachingId']),
+      title: serializer.fromJson<String?>(json['title']),
+      content: serializer.fromJson<String?>(json['content']),
+      body: serializer.fromJson<String>(json['body']),
+      categoryId: serializer.fromJson<String?>(json['categoryId']),
+      pinned: serializer.fromJson<bool>(json['pinned']),
+      clientCreatedAt: serializer.fromJson<DateTime>(json['clientCreatedAt']),
+      clientUpdatedAt: serializer.fromJson<DateTime>(json['clientUpdatedAt']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'teachingId': serializer.toJson<String?>(teachingId),
+      'title': serializer.toJson<String?>(title),
+      'content': serializer.toJson<String?>(content),
+      'body': serializer.toJson<String>(body),
+      'categoryId': serializer.toJson<String?>(categoryId),
+      'pinned': serializer.toJson<bool>(pinned),
+      'clientCreatedAt': serializer.toJson<DateTime>(clientCreatedAt),
+      'clientUpdatedAt': serializer.toJson<DateTime>(clientUpdatedAt),
+      'dirty': serializer.toJson<bool>(dirty),
+      'lastError': serializer.toJson<String?>(lastError),
+    };
+  }
+
+  LocalNoteRow copyWith(
+          {String? id,
+          Value<String?> teachingId = const Value.absent(),
+          Value<String?> title = const Value.absent(),
+          Value<String?> content = const Value.absent(),
+          String? body,
+          Value<String?> categoryId = const Value.absent(),
+          bool? pinned,
+          DateTime? clientCreatedAt,
+          DateTime? clientUpdatedAt,
+          bool? dirty,
+          Value<String?> lastError = const Value.absent()}) =>
+      LocalNoteRow(
+        id: id ?? this.id,
+        teachingId: teachingId.present ? teachingId.value : this.teachingId,
+        title: title.present ? title.value : this.title,
+        content: content.present ? content.value : this.content,
+        body: body ?? this.body,
+        categoryId: categoryId.present ? categoryId.value : this.categoryId,
+        pinned: pinned ?? this.pinned,
+        clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+        clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+        dirty: dirty ?? this.dirty,
+        lastError: lastError.present ? lastError.value : this.lastError,
+      );
+  LocalNoteRow copyWithCompanion(LocalNotesCompanion data) {
+    return LocalNoteRow(
+      id: data.id.present ? data.id.value : this.id,
+      teachingId:
+          data.teachingId.present ? data.teachingId.value : this.teachingId,
+      title: data.title.present ? data.title.value : this.title,
+      content: data.content.present ? data.content.value : this.content,
+      body: data.body.present ? data.body.value : this.body,
+      categoryId:
+          data.categoryId.present ? data.categoryId.value : this.categoryId,
+      pinned: data.pinned.present ? data.pinned.value : this.pinned,
+      clientCreatedAt: data.clientCreatedAt.present
+          ? data.clientCreatedAt.value
+          : this.clientCreatedAt,
+      clientUpdatedAt: data.clientUpdatedAt.present
+          ? data.clientUpdatedAt.value
+          : this.clientUpdatedAt,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalNoteRow(')
+          ..write('id: $id, ')
+          ..write('teachingId: $teachingId, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('body: $body, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('pinned: $pinned, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('lastError: $lastError')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, teachingId, title, content, body,
+      categoryId, pinned, clientCreatedAt, clientUpdatedAt, dirty, lastError);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalNoteRow &&
+          other.id == this.id &&
+          other.teachingId == this.teachingId &&
+          other.title == this.title &&
+          other.content == this.content &&
+          other.body == this.body &&
+          other.categoryId == this.categoryId &&
+          other.pinned == this.pinned &&
+          other.clientCreatedAt == this.clientCreatedAt &&
+          other.clientUpdatedAt == this.clientUpdatedAt &&
+          other.dirty == this.dirty &&
+          other.lastError == this.lastError);
+}
+
+class LocalNotesCompanion extends UpdateCompanion<LocalNoteRow> {
+  final Value<String> id;
+  final Value<String?> teachingId;
+  final Value<String?> title;
+  final Value<String?> content;
+  final Value<String> body;
+  final Value<String?> categoryId;
+  final Value<bool> pinned;
+  final Value<DateTime> clientCreatedAt;
+  final Value<DateTime> clientUpdatedAt;
+  final Value<bool> dirty;
+  final Value<String?> lastError;
+  final Value<int> rowid;
+  const LocalNotesCompanion({
+    this.id = const Value.absent(),
+    this.teachingId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    this.body = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.pinned = const Value.absent(),
+    this.clientCreatedAt = const Value.absent(),
+    this.clientUpdatedAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalNotesCompanion.insert({
+    required String id,
+    this.teachingId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    this.body = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.pinned = const Value.absent(),
+    required DateTime clientCreatedAt,
+    required DateTime clientUpdatedAt,
+    this.dirty = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        clientCreatedAt = Value(clientCreatedAt),
+        clientUpdatedAt = Value(clientUpdatedAt);
+  static Insertable<LocalNoteRow> custom({
+    Expression<String>? id,
+    Expression<String>? teachingId,
+    Expression<String>? title,
+    Expression<String>? content,
+    Expression<String>? body,
+    Expression<String>? categoryId,
+    Expression<bool>? pinned,
+    Expression<DateTime>? clientCreatedAt,
+    Expression<DateTime>? clientUpdatedAt,
+    Expression<bool>? dirty,
+    Expression<String>? lastError,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (teachingId != null) 'teaching_id': teachingId,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (body != null) 'body': body,
+      if (categoryId != null) 'category_id': categoryId,
+      if (pinned != null) 'pinned': pinned,
+      if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
+      if (clientUpdatedAt != null) 'client_updated_at': clientUpdatedAt,
+      if (dirty != null) 'dirty': dirty,
+      if (lastError != null) 'last_error': lastError,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalNotesCompanion copyWith(
+      {Value<String>? id,
+      Value<String?>? teachingId,
+      Value<String?>? title,
+      Value<String?>? content,
+      Value<String>? body,
+      Value<String?>? categoryId,
+      Value<bool>? pinned,
+      Value<DateTime>? clientCreatedAt,
+      Value<DateTime>? clientUpdatedAt,
+      Value<bool>? dirty,
+      Value<String?>? lastError,
+      Value<int>? rowid}) {
+    return LocalNotesCompanion(
+      id: id ?? this.id,
+      teachingId: teachingId ?? this.teachingId,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      body: body ?? this.body,
+      categoryId: categoryId ?? this.categoryId,
+      pinned: pinned ?? this.pinned,
+      clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
+      clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
+      dirty: dirty ?? this.dirty,
+      lastError: lastError ?? this.lastError,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (teachingId.present) {
+      map['teaching_id'] = Variable<String>(teachingId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (pinned.present) {
+      map['pinned'] = Variable<bool>(pinned.value);
+    }
+    if (clientCreatedAt.present) {
+      map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
+    }
+    if (clientUpdatedAt.present) {
+      map['client_updated_at'] = Variable<DateTime>(clientUpdatedAt.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalNotesCompanion(')
+          ..write('id: $id, ')
+          ..write('teachingId: $teachingId, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('body: $body, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('pinned: $pinned, ')
+          ..write('clientCreatedAt: $clientCreatedAt, ')
+          ..write('clientUpdatedAt: $clientUpdatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('lastError: $lastError, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PendingNoteMediaTable extends PendingNoteMedia
+    with TableInfo<$PendingNoteMediaTable, PendingNoteMediaRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingNoteMediaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
+  @override
+  late final GeneratedColumn<String> noteId = GeneratedColumn<String>(
+      'note_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _embedIdMeta =
+      const VerificationMeta('embedId');
+  @override
+  late final GeneratedColumn<String> embedId = GeneratedColumn<String>(
+      'embed_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+      'kind', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _localPathMeta =
+      const VerificationMeta('localPath');
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+      'local_path', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _thumbPathMeta =
+      const VerificationMeta('thumbPath');
+  @override
+  late final GeneratedColumn<String> thumbPath = GeneratedColumn<String>(
+      'thumb_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mimeMeta = const VerificationMeta('mime');
+  @override
+  late final GeneratedColumn<String> mime = GeneratedColumn<String>(
+      'mime', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sizeMeta = const VerificationMeta('size');
+  @override
+  late final GeneratedColumn<int> size = GeneratedColumn<int>(
+      'size', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _durationMeta =
+      const VerificationMeta('duration');
+  @override
+  late final GeneratedColumn<int> duration = GeneratedColumn<int>(
+      'duration', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+      'key', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _thumbKeyMeta =
+      const VerificationMeta('thumbKey');
+  @override
+  late final GeneratedColumn<String> thumbKey = GeneratedColumn<String>(
+      'thumb_key', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _errorMeta = const VerificationMeta('error');
+  @override
+  late final GeneratedColumn<String> error = GeneratedColumn<String>(
+      'error', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        noteId,
+        embedId,
+        kind,
+        localPath,
+        thumbPath,
+        mime,
+        size,
+        duration,
+        key,
+        thumbKey,
+        error
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_note_media';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<PendingNoteMediaRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('note_id')) {
+      context.handle(_noteIdMeta,
+          noteId.isAcceptableOrUnknown(data['note_id']!, _noteIdMeta));
+    } else if (isInserting) {
+      context.missing(_noteIdMeta);
+    }
+    if (data.containsKey('embed_id')) {
+      context.handle(_embedIdMeta,
+          embedId.isAcceptableOrUnknown(data['embed_id']!, _embedIdMeta));
+    } else if (isInserting) {
+      context.missing(_embedIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+          _kindMeta, kind.isAcceptableOrUnknown(data['kind']!, _kindMeta));
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(_localPathMeta,
+          localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta));
+    } else if (isInserting) {
+      context.missing(_localPathMeta);
+    }
+    if (data.containsKey('thumb_path')) {
+      context.handle(_thumbPathMeta,
+          thumbPath.isAcceptableOrUnknown(data['thumb_path']!, _thumbPathMeta));
+    }
+    if (data.containsKey('mime')) {
+      context.handle(
+          _mimeMeta, mime.isAcceptableOrUnknown(data['mime']!, _mimeMeta));
+    }
+    if (data.containsKey('size')) {
+      context.handle(
+          _sizeMeta, size.isAcceptableOrUnknown(data['size']!, _sizeMeta));
+    }
+    if (data.containsKey('duration')) {
+      context.handle(_durationMeta,
+          duration.isAcceptableOrUnknown(data['duration']!, _durationMeta));
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+          _keyMeta, key.isAcceptableOrUnknown(data['key']!, _keyMeta));
+    }
+    if (data.containsKey('thumb_key')) {
+      context.handle(_thumbKeyMeta,
+          thumbKey.isAcceptableOrUnknown(data['thumb_key']!, _thumbKeyMeta));
+    }
+    if (data.containsKey('error')) {
+      context.handle(
+          _errorMeta, error.isAcceptableOrUnknown(data['error']!, _errorMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {noteId, embedId};
+  @override
+  PendingNoteMediaRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingNoteMediaRow(
+      noteId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}note_id'])!,
+      embedId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}embed_id'])!,
+      kind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
+      localPath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}local_path'])!,
+      thumbPath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}thumb_path']),
+      mime: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}mime']),
+      size: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}size']),
+      duration: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration']),
+      key: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}key']),
+      thumbKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}thumb_key']),
+      error: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}error']),
+    );
+  }
+
+  @override
+  $PendingNoteMediaTable createAlias(String alias) {
+    return $PendingNoteMediaTable(attachedDatabase, alias);
+  }
+}
+
+class PendingNoteMediaRow extends DataClass
+    implements Insertable<PendingNoteMediaRow> {
+  final String noteId;
+
+  /// L'identifiant de l'embed dans le Delta, frappé par le client.
+  final String embedId;
+  final String kind;
+  final String localPath;
+  final String? thumbPath;
+  final String? mime;
+  final int? size;
+  final int? duration;
+
+  /// La clé posée par le serveur une fois téléversé.
+  final String? key;
+  final String? thumbKey;
+  final String? error;
+  const PendingNoteMediaRow(
+      {required this.noteId,
+      required this.embedId,
+      required this.kind,
+      required this.localPath,
+      this.thumbPath,
+      this.mime,
+      this.size,
+      this.duration,
+      this.key,
+      this.thumbKey,
+      this.error});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['note_id'] = Variable<String>(noteId);
+    map['embed_id'] = Variable<String>(embedId);
+    map['kind'] = Variable<String>(kind);
+    map['local_path'] = Variable<String>(localPath);
+    if (!nullToAbsent || thumbPath != null) {
+      map['thumb_path'] = Variable<String>(thumbPath);
+    }
+    if (!nullToAbsent || mime != null) {
+      map['mime'] = Variable<String>(mime);
+    }
+    if (!nullToAbsent || size != null) {
+      map['size'] = Variable<int>(size);
+    }
+    if (!nullToAbsent || duration != null) {
+      map['duration'] = Variable<int>(duration);
+    }
+    if (!nullToAbsent || key != null) {
+      map['key'] = Variable<String>(key);
+    }
+    if (!nullToAbsent || thumbKey != null) {
+      map['thumb_key'] = Variable<String>(thumbKey);
+    }
+    if (!nullToAbsent || error != null) {
+      map['error'] = Variable<String>(error);
+    }
+    return map;
+  }
+
+  PendingNoteMediaCompanion toCompanion(bool nullToAbsent) {
+    return PendingNoteMediaCompanion(
+      noteId: Value(noteId),
+      embedId: Value(embedId),
+      kind: Value(kind),
+      localPath: Value(localPath),
+      thumbPath: thumbPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbPath),
+      mime: mime == null && nullToAbsent ? const Value.absent() : Value(mime),
+      size: size == null && nullToAbsent ? const Value.absent() : Value(size),
+      duration: duration == null && nullToAbsent
+          ? const Value.absent()
+          : Value(duration),
+      key: key == null && nullToAbsent ? const Value.absent() : Value(key),
+      thumbKey: thumbKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbKey),
+      error:
+          error == null && nullToAbsent ? const Value.absent() : Value(error),
+    );
+  }
+
+  factory PendingNoteMediaRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingNoteMediaRow(
+      noteId: serializer.fromJson<String>(json['noteId']),
+      embedId: serializer.fromJson<String>(json['embedId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      localPath: serializer.fromJson<String>(json['localPath']),
+      thumbPath: serializer.fromJson<String?>(json['thumbPath']),
+      mime: serializer.fromJson<String?>(json['mime']),
+      size: serializer.fromJson<int?>(json['size']),
+      duration: serializer.fromJson<int?>(json['duration']),
+      key: serializer.fromJson<String?>(json['key']),
+      thumbKey: serializer.fromJson<String?>(json['thumbKey']),
+      error: serializer.fromJson<String?>(json['error']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'noteId': serializer.toJson<String>(noteId),
+      'embedId': serializer.toJson<String>(embedId),
+      'kind': serializer.toJson<String>(kind),
+      'localPath': serializer.toJson<String>(localPath),
+      'thumbPath': serializer.toJson<String?>(thumbPath),
+      'mime': serializer.toJson<String?>(mime),
+      'size': serializer.toJson<int?>(size),
+      'duration': serializer.toJson<int?>(duration),
+      'key': serializer.toJson<String?>(key),
+      'thumbKey': serializer.toJson<String?>(thumbKey),
+      'error': serializer.toJson<String?>(error),
+    };
+  }
+
+  PendingNoteMediaRow copyWith(
+          {String? noteId,
+          String? embedId,
+          String? kind,
+          String? localPath,
+          Value<String?> thumbPath = const Value.absent(),
+          Value<String?> mime = const Value.absent(),
+          Value<int?> size = const Value.absent(),
+          Value<int?> duration = const Value.absent(),
+          Value<String?> key = const Value.absent(),
+          Value<String?> thumbKey = const Value.absent(),
+          Value<String?> error = const Value.absent()}) =>
+      PendingNoteMediaRow(
+        noteId: noteId ?? this.noteId,
+        embedId: embedId ?? this.embedId,
+        kind: kind ?? this.kind,
+        localPath: localPath ?? this.localPath,
+        thumbPath: thumbPath.present ? thumbPath.value : this.thumbPath,
+        mime: mime.present ? mime.value : this.mime,
+        size: size.present ? size.value : this.size,
+        duration: duration.present ? duration.value : this.duration,
+        key: key.present ? key.value : this.key,
+        thumbKey: thumbKey.present ? thumbKey.value : this.thumbKey,
+        error: error.present ? error.value : this.error,
+      );
+  PendingNoteMediaRow copyWithCompanion(PendingNoteMediaCompanion data) {
+    return PendingNoteMediaRow(
+      noteId: data.noteId.present ? data.noteId.value : this.noteId,
+      embedId: data.embedId.present ? data.embedId.value : this.embedId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      localPath: data.localPath.present ? data.localPath.value : this.localPath,
+      thumbPath: data.thumbPath.present ? data.thumbPath.value : this.thumbPath,
+      mime: data.mime.present ? data.mime.value : this.mime,
+      size: data.size.present ? data.size.value : this.size,
+      duration: data.duration.present ? data.duration.value : this.duration,
+      key: data.key.present ? data.key.value : this.key,
+      thumbKey: data.thumbKey.present ? data.thumbKey.value : this.thumbKey,
+      error: data.error.present ? data.error.value : this.error,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingNoteMediaRow(')
+          ..write('noteId: $noteId, ')
+          ..write('embedId: $embedId, ')
+          ..write('kind: $kind, ')
+          ..write('localPath: $localPath, ')
+          ..write('thumbPath: $thumbPath, ')
+          ..write('mime: $mime, ')
+          ..write('size: $size, ')
+          ..write('duration: $duration, ')
+          ..write('key: $key, ')
+          ..write('thumbKey: $thumbKey, ')
+          ..write('error: $error')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(noteId, embedId, kind, localPath, thumbPath,
+      mime, size, duration, key, thumbKey, error);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingNoteMediaRow &&
+          other.noteId == this.noteId &&
+          other.embedId == this.embedId &&
+          other.kind == this.kind &&
+          other.localPath == this.localPath &&
+          other.thumbPath == this.thumbPath &&
+          other.mime == this.mime &&
+          other.size == this.size &&
+          other.duration == this.duration &&
+          other.key == this.key &&
+          other.thumbKey == this.thumbKey &&
+          other.error == this.error);
+}
+
+class PendingNoteMediaCompanion extends UpdateCompanion<PendingNoteMediaRow> {
+  final Value<String> noteId;
+  final Value<String> embedId;
+  final Value<String> kind;
+  final Value<String> localPath;
+  final Value<String?> thumbPath;
+  final Value<String?> mime;
+  final Value<int?> size;
+  final Value<int?> duration;
+  final Value<String?> key;
+  final Value<String?> thumbKey;
+  final Value<String?> error;
+  final Value<int> rowid;
+  const PendingNoteMediaCompanion({
+    this.noteId = const Value.absent(),
+    this.embedId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.thumbPath = const Value.absent(),
+    this.mime = const Value.absent(),
+    this.size = const Value.absent(),
+    this.duration = const Value.absent(),
+    this.key = const Value.absent(),
+    this.thumbKey = const Value.absent(),
+    this.error = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingNoteMediaCompanion.insert({
+    required String noteId,
+    required String embedId,
+    required String kind,
+    required String localPath,
+    this.thumbPath = const Value.absent(),
+    this.mime = const Value.absent(),
+    this.size = const Value.absent(),
+    this.duration = const Value.absent(),
+    this.key = const Value.absent(),
+    this.thumbKey = const Value.absent(),
+    this.error = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : noteId = Value(noteId),
+        embedId = Value(embedId),
+        kind = Value(kind),
+        localPath = Value(localPath);
+  static Insertable<PendingNoteMediaRow> custom({
+    Expression<String>? noteId,
+    Expression<String>? embedId,
+    Expression<String>? kind,
+    Expression<String>? localPath,
+    Expression<String>? thumbPath,
+    Expression<String>? mime,
+    Expression<int>? size,
+    Expression<int>? duration,
+    Expression<String>? key,
+    Expression<String>? thumbKey,
+    Expression<String>? error,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (noteId != null) 'note_id': noteId,
+      if (embedId != null) 'embed_id': embedId,
+      if (kind != null) 'kind': kind,
+      if (localPath != null) 'local_path': localPath,
+      if (thumbPath != null) 'thumb_path': thumbPath,
+      if (mime != null) 'mime': mime,
+      if (size != null) 'size': size,
+      if (duration != null) 'duration': duration,
+      if (key != null) 'key': key,
+      if (thumbKey != null) 'thumb_key': thumbKey,
+      if (error != null) 'error': error,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingNoteMediaCompanion copyWith(
+      {Value<String>? noteId,
+      Value<String>? embedId,
+      Value<String>? kind,
+      Value<String>? localPath,
+      Value<String?>? thumbPath,
+      Value<String?>? mime,
+      Value<int?>? size,
+      Value<int?>? duration,
+      Value<String?>? key,
+      Value<String?>? thumbKey,
+      Value<String?>? error,
+      Value<int>? rowid}) {
+    return PendingNoteMediaCompanion(
+      noteId: noteId ?? this.noteId,
+      embedId: embedId ?? this.embedId,
+      kind: kind ?? this.kind,
+      localPath: localPath ?? this.localPath,
+      thumbPath: thumbPath ?? this.thumbPath,
+      mime: mime ?? this.mime,
+      size: size ?? this.size,
+      duration: duration ?? this.duration,
+      key: key ?? this.key,
+      thumbKey: thumbKey ?? this.thumbKey,
+      error: error ?? this.error,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (noteId.present) {
+      map['note_id'] = Variable<String>(noteId.value);
+    }
+    if (embedId.present) {
+      map['embed_id'] = Variable<String>(embedId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (thumbPath.present) {
+      map['thumb_path'] = Variable<String>(thumbPath.value);
+    }
+    if (mime.present) {
+      map['mime'] = Variable<String>(mime.value);
+    }
+    if (size.present) {
+      map['size'] = Variable<int>(size.value);
+    }
+    if (duration.present) {
+      map['duration'] = Variable<int>(duration.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (thumbKey.present) {
+      map['thumb_key'] = Variable<String>(thumbKey.value);
+    }
+    if (error.present) {
+      map['error'] = Variable<String>(error.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingNoteMediaCompanion(')
+          ..write('noteId: $noteId, ')
+          ..write('embedId: $embedId, ')
+          ..write('kind: $kind, ')
+          ..write('localPath: $localPath, ')
+          ..write('thumbPath: $thumbPath, ')
+          ..write('mime: $mime, ')
+          ..write('size: $size, ')
+          ..write('duration: $duration, ')
+          ..write('key: $key, ')
+          ..write('thumbKey: $thumbKey, ')
+          ..write('error: $error, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $GroupArrangementsTable extends GroupArrangements
     with TableInfo<$GroupArrangementsTable, GroupArrangementRow> {
   @override
@@ -23341,6 +25501,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PendingGroupReadsTable pendingGroupReads =
       $PendingGroupReadsTable(this);
   late final $MyInteractionsTable myInteractions = $MyInteractionsTable(this);
+  late final $SpiritualNotesTable spiritualNotes = $SpiritualNotesTable(this);
+  late final $NoteCategoriesTable noteCategories = $NoteCategoriesTable(this);
+  late final $LocalNotesTable localNotes = $LocalNotesTable(this);
+  late final $PendingNoteMediaTable pendingNoteMedia =
+      $PendingNoteMediaTable(this);
   late final $GroupArrangementsTable groupArrangements =
       $GroupArrangementsTable(this);
   late final $PendingGroupArrangementsTable pendingGroupArrangements =
@@ -23377,6 +25542,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final GroupDao groupDao = GroupDao(this as AppDatabase);
   late final InteractionDao interactionDao =
       InteractionDao(this as AppDatabase);
+  late final NotesDao notesDao = NotesDao(this as AppDatabase);
   late final ChatOrganizationDao chatOrganizationDao =
       ChatOrganizationDao(this as AppDatabase);
   late final ReceiptsDao receiptsDao = ReceiptsDao(this as AppDatabase);
@@ -23424,6 +25590,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         groupReads,
         pendingGroupReads,
         myInteractions,
+        spiritualNotes,
+        noteCategories,
+        localNotes,
+        pendingNoteMedia,
         groupArrangements,
         pendingGroupArrangements,
         messageReceipts,
@@ -32393,6 +34563,1037 @@ typedef $$MyInteractionsTableProcessedTableManager = ProcessedTableManager<
     ),
     MyInteractionRow,
     PrefetchHooks Function()>;
+typedef $$SpiritualNotesTableCreateCompanionBuilder = SpiritualNotesCompanion
+    Function({
+  Value<int> syncStamp,
+  required String id,
+  Value<String?> ownerId,
+  Value<String?> teachingId,
+  Value<String?> title,
+  Value<String?> content,
+  Value<String> body,
+  Value<String?> categoryId,
+  Value<bool> pinned,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$SpiritualNotesTableUpdateCompanionBuilder = SpiritualNotesCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String?> ownerId,
+  Value<String?> teachingId,
+  Value<String?> title,
+  Value<String?> content,
+  Value<String> body,
+  Value<String?> categoryId,
+  Value<bool> pinned,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$SpiritualNotesTableFilterComposer
+    extends Composer<_$AppDatabase, $SpiritualNotesTable> {
+  $$SpiritualNotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get body => $composableBuilder(
+      column: $table.body, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get pinned => $composableBuilder(
+      column: $table.pinned, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SpiritualNotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SpiritualNotesTable> {
+  $$SpiritualNotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get body => $composableBuilder(
+      column: $table.body, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get pinned => $composableBuilder(
+      column: $table.pinned, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SpiritualNotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SpiritualNotesTable> {
+  $$SpiritualNotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => column);
+
+  GeneratedColumn<bool> get pinned =>
+      $composableBuilder(column: $table.pinned, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SpiritualNotesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SpiritualNotesTable,
+    SpiritualNoteRow,
+    $$SpiritualNotesTableFilterComposer,
+    $$SpiritualNotesTableOrderingComposer,
+    $$SpiritualNotesTableAnnotationComposer,
+    $$SpiritualNotesTableCreateCompanionBuilder,
+    $$SpiritualNotesTableUpdateCompanionBuilder,
+    (
+      SpiritualNoteRow,
+      BaseReferences<_$AppDatabase, $SpiritualNotesTable, SpiritualNoteRow>
+    ),
+    SpiritualNoteRow,
+    PrefetchHooks Function()> {
+  $$SpiritualNotesTableTableManager(
+      _$AppDatabase db, $SpiritualNotesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SpiritualNotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SpiritualNotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SpiritualNotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String?> ownerId = const Value.absent(),
+            Value<String?> teachingId = const Value.absent(),
+            Value<String?> title = const Value.absent(),
+            Value<String?> content = const Value.absent(),
+            Value<String> body = const Value.absent(),
+            Value<String?> categoryId = const Value.absent(),
+            Value<bool> pinned = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SpiritualNotesCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            teachingId: teachingId,
+            title: title,
+            content: content,
+            body: body,
+            categoryId: categoryId,
+            pinned: pinned,
+            clientCreatedAt: clientCreatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            Value<String?> ownerId = const Value.absent(),
+            Value<String?> teachingId = const Value.absent(),
+            Value<String?> title = const Value.absent(),
+            Value<String?> content = const Value.absent(),
+            Value<String> body = const Value.absent(),
+            Value<String?> categoryId = const Value.absent(),
+            Value<bool> pinned = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SpiritualNotesCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            teachingId: teachingId,
+            title: title,
+            content: content,
+            body: body,
+            categoryId: categoryId,
+            pinned: pinned,
+            clientCreatedAt: clientCreatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SpiritualNotesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SpiritualNotesTable,
+    SpiritualNoteRow,
+    $$SpiritualNotesTableFilterComposer,
+    $$SpiritualNotesTableOrderingComposer,
+    $$SpiritualNotesTableAnnotationComposer,
+    $$SpiritualNotesTableCreateCompanionBuilder,
+    $$SpiritualNotesTableUpdateCompanionBuilder,
+    (
+      SpiritualNoteRow,
+      BaseReferences<_$AppDatabase, $SpiritualNotesTable, SpiritualNoteRow>
+    ),
+    SpiritualNoteRow,
+    PrefetchHooks Function()>;
+typedef $$NoteCategoriesTableCreateCompanionBuilder = NoteCategoriesCompanion
+    Function({
+  Value<int> syncStamp,
+  required String id,
+  Value<String?> ownerId,
+  required String name,
+  required String color,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+typedef $$NoteCategoriesTableUpdateCompanionBuilder = NoteCategoriesCompanion
+    Function({
+  Value<int> syncStamp,
+  Value<String> id,
+  Value<String?> ownerId,
+  Value<String> name,
+  Value<String> color,
+  Value<DateTime?> clientCreatedAt,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<int> rowid,
+});
+
+class $$NoteCategoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $NoteCategoriesTable> {
+  $$NoteCategoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$NoteCategoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $NoteCategoriesTable> {
+  $$NoteCategoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get syncStamp => $composableBuilder(
+      column: $table.syncStamp, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$NoteCategoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NoteCategoriesTable> {
+  $$NoteCategoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get syncStamp =>
+      $composableBuilder(column: $table.syncStamp, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$NoteCategoriesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $NoteCategoriesTable,
+    NoteCategoryRow,
+    $$NoteCategoriesTableFilterComposer,
+    $$NoteCategoriesTableOrderingComposer,
+    $$NoteCategoriesTableAnnotationComposer,
+    $$NoteCategoriesTableCreateCompanionBuilder,
+    $$NoteCategoriesTableUpdateCompanionBuilder,
+    (
+      NoteCategoryRow,
+      BaseReferences<_$AppDatabase, $NoteCategoriesTable, NoteCategoryRow>
+    ),
+    NoteCategoryRow,
+    PrefetchHooks Function()> {
+  $$NoteCategoriesTableTableManager(
+      _$AppDatabase db, $NoteCategoriesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NoteCategoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NoteCategoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NoteCategoriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String?> ownerId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> color = const Value.absent(),
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              NoteCategoriesCompanion(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            name: name,
+            color: color,
+            clientCreatedAt: clientCreatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<int> syncStamp = const Value.absent(),
+            required String id,
+            Value<String?> ownerId = const Value.absent(),
+            required String name,
+            required String color,
+            Value<DateTime?> clientCreatedAt = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              NoteCategoriesCompanion.insert(
+            syncStamp: syncStamp,
+            id: id,
+            ownerId: ownerId,
+            name: name,
+            color: color,
+            clientCreatedAt: clientCreatedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$NoteCategoriesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $NoteCategoriesTable,
+    NoteCategoryRow,
+    $$NoteCategoriesTableFilterComposer,
+    $$NoteCategoriesTableOrderingComposer,
+    $$NoteCategoriesTableAnnotationComposer,
+    $$NoteCategoriesTableCreateCompanionBuilder,
+    $$NoteCategoriesTableUpdateCompanionBuilder,
+    (
+      NoteCategoryRow,
+      BaseReferences<_$AppDatabase, $NoteCategoriesTable, NoteCategoryRow>
+    ),
+    NoteCategoryRow,
+    PrefetchHooks Function()>;
+typedef $$LocalNotesTableCreateCompanionBuilder = LocalNotesCompanion Function({
+  required String id,
+  Value<String?> teachingId,
+  Value<String?> title,
+  Value<String?> content,
+  Value<String> body,
+  Value<String?> categoryId,
+  Value<bool> pinned,
+  required DateTime clientCreatedAt,
+  required DateTime clientUpdatedAt,
+  Value<bool> dirty,
+  Value<String?> lastError,
+  Value<int> rowid,
+});
+typedef $$LocalNotesTableUpdateCompanionBuilder = LocalNotesCompanion Function({
+  Value<String> id,
+  Value<String?> teachingId,
+  Value<String?> title,
+  Value<String?> content,
+  Value<String> body,
+  Value<String?> categoryId,
+  Value<bool> pinned,
+  Value<DateTime> clientCreatedAt,
+  Value<DateTime> clientUpdatedAt,
+  Value<bool> dirty,
+  Value<String?> lastError,
+  Value<int> rowid,
+});
+
+class $$LocalNotesTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalNotesTable> {
+  $$LocalNotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get body => $composableBuilder(
+      column: $table.body, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get pinned => $composableBuilder(
+      column: $table.pinned, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+      column: $table.dirty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalNotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalNotesTable> {
+  $$LocalNotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get body => $composableBuilder(
+      column: $table.body, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get pinned => $composableBuilder(
+      column: $table.pinned, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+      column: $table.dirty, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalNotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalNotesTable> {
+  $$LocalNotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get teachingId => $composableBuilder(
+      column: $table.teachingId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => column);
+
+  GeneratedColumn<bool> get pinned =>
+      $composableBuilder(column: $table.pinned, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
+      column: $table.clientCreatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get clientUpdatedAt => $composableBuilder(
+      column: $table.clientUpdatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+}
+
+class $$LocalNotesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $LocalNotesTable,
+    LocalNoteRow,
+    $$LocalNotesTableFilterComposer,
+    $$LocalNotesTableOrderingComposer,
+    $$LocalNotesTableAnnotationComposer,
+    $$LocalNotesTableCreateCompanionBuilder,
+    $$LocalNotesTableUpdateCompanionBuilder,
+    (
+      LocalNoteRow,
+      BaseReferences<_$AppDatabase, $LocalNotesTable, LocalNoteRow>
+    ),
+    LocalNoteRow,
+    PrefetchHooks Function()> {
+  $$LocalNotesTableTableManager(_$AppDatabase db, $LocalNotesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalNotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalNotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalNotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String?> teachingId = const Value.absent(),
+            Value<String?> title = const Value.absent(),
+            Value<String?> content = const Value.absent(),
+            Value<String> body = const Value.absent(),
+            Value<String?> categoryId = const Value.absent(),
+            Value<bool> pinned = const Value.absent(),
+            Value<DateTime> clientCreatedAt = const Value.absent(),
+            Value<DateTime> clientUpdatedAt = const Value.absent(),
+            Value<bool> dirty = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalNotesCompanion(
+            id: id,
+            teachingId: teachingId,
+            title: title,
+            content: content,
+            body: body,
+            categoryId: categoryId,
+            pinned: pinned,
+            clientCreatedAt: clientCreatedAt,
+            clientUpdatedAt: clientUpdatedAt,
+            dirty: dirty,
+            lastError: lastError,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            Value<String?> teachingId = const Value.absent(),
+            Value<String?> title = const Value.absent(),
+            Value<String?> content = const Value.absent(),
+            Value<String> body = const Value.absent(),
+            Value<String?> categoryId = const Value.absent(),
+            Value<bool> pinned = const Value.absent(),
+            required DateTime clientCreatedAt,
+            required DateTime clientUpdatedAt,
+            Value<bool> dirty = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalNotesCompanion.insert(
+            id: id,
+            teachingId: teachingId,
+            title: title,
+            content: content,
+            body: body,
+            categoryId: categoryId,
+            pinned: pinned,
+            clientCreatedAt: clientCreatedAt,
+            clientUpdatedAt: clientUpdatedAt,
+            dirty: dirty,
+            lastError: lastError,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalNotesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $LocalNotesTable,
+    LocalNoteRow,
+    $$LocalNotesTableFilterComposer,
+    $$LocalNotesTableOrderingComposer,
+    $$LocalNotesTableAnnotationComposer,
+    $$LocalNotesTableCreateCompanionBuilder,
+    $$LocalNotesTableUpdateCompanionBuilder,
+    (
+      LocalNoteRow,
+      BaseReferences<_$AppDatabase, $LocalNotesTable, LocalNoteRow>
+    ),
+    LocalNoteRow,
+    PrefetchHooks Function()>;
+typedef $$PendingNoteMediaTableCreateCompanionBuilder
+    = PendingNoteMediaCompanion Function({
+  required String noteId,
+  required String embedId,
+  required String kind,
+  required String localPath,
+  Value<String?> thumbPath,
+  Value<String?> mime,
+  Value<int?> size,
+  Value<int?> duration,
+  Value<String?> key,
+  Value<String?> thumbKey,
+  Value<String?> error,
+  Value<int> rowid,
+});
+typedef $$PendingNoteMediaTableUpdateCompanionBuilder
+    = PendingNoteMediaCompanion Function({
+  Value<String> noteId,
+  Value<String> embedId,
+  Value<String> kind,
+  Value<String> localPath,
+  Value<String?> thumbPath,
+  Value<String?> mime,
+  Value<int?> size,
+  Value<int?> duration,
+  Value<String?> key,
+  Value<String?> thumbKey,
+  Value<String?> error,
+  Value<int> rowid,
+});
+
+class $$PendingNoteMediaTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingNoteMediaTable> {
+  $$PendingNoteMediaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get noteId => $composableBuilder(
+      column: $table.noteId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get embedId => $composableBuilder(
+      column: $table.embedId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+      column: $table.localPath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get thumbPath => $composableBuilder(
+      column: $table.thumbPath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mime => $composableBuilder(
+      column: $table.mime, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get size => $composableBuilder(
+      column: $table.size, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get duration => $composableBuilder(
+      column: $table.duration, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get thumbKey => $composableBuilder(
+      column: $table.thumbKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get error => $composableBuilder(
+      column: $table.error, builder: (column) => ColumnFilters(column));
+}
+
+class $$PendingNoteMediaTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingNoteMediaTable> {
+  $$PendingNoteMediaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get noteId => $composableBuilder(
+      column: $table.noteId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get embedId => $composableBuilder(
+      column: $table.embedId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+      column: $table.localPath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get thumbPath => $composableBuilder(
+      column: $table.thumbPath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mime => $composableBuilder(
+      column: $table.mime, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get size => $composableBuilder(
+      column: $table.size, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get duration => $composableBuilder(
+      column: $table.duration, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get key => $composableBuilder(
+      column: $table.key, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get thumbKey => $composableBuilder(
+      column: $table.thumbKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get error => $composableBuilder(
+      column: $table.error, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PendingNoteMediaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingNoteMediaTable> {
+  $$PendingNoteMediaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get noteId =>
+      $composableBuilder(column: $table.noteId, builder: (column) => column);
+
+  GeneratedColumn<String> get embedId =>
+      $composableBuilder(column: $table.embedId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbPath =>
+      $composableBuilder(column: $table.thumbPath, builder: (column) => column);
+
+  GeneratedColumn<String> get mime =>
+      $composableBuilder(column: $table.mime, builder: (column) => column);
+
+  GeneratedColumn<int> get size =>
+      $composableBuilder(column: $table.size, builder: (column) => column);
+
+  GeneratedColumn<int> get duration =>
+      $composableBuilder(column: $table.duration, builder: (column) => column);
+
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbKey =>
+      $composableBuilder(column: $table.thumbKey, builder: (column) => column);
+
+  GeneratedColumn<String> get error =>
+      $composableBuilder(column: $table.error, builder: (column) => column);
+}
+
+class $$PendingNoteMediaTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PendingNoteMediaTable,
+    PendingNoteMediaRow,
+    $$PendingNoteMediaTableFilterComposer,
+    $$PendingNoteMediaTableOrderingComposer,
+    $$PendingNoteMediaTableAnnotationComposer,
+    $$PendingNoteMediaTableCreateCompanionBuilder,
+    $$PendingNoteMediaTableUpdateCompanionBuilder,
+    (
+      PendingNoteMediaRow,
+      BaseReferences<_$AppDatabase, $PendingNoteMediaTable, PendingNoteMediaRow>
+    ),
+    PendingNoteMediaRow,
+    PrefetchHooks Function()> {
+  $$PendingNoteMediaTableTableManager(
+      _$AppDatabase db, $PendingNoteMediaTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingNoteMediaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingNoteMediaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingNoteMediaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> noteId = const Value.absent(),
+            Value<String> embedId = const Value.absent(),
+            Value<String> kind = const Value.absent(),
+            Value<String> localPath = const Value.absent(),
+            Value<String?> thumbPath = const Value.absent(),
+            Value<String?> mime = const Value.absent(),
+            Value<int?> size = const Value.absent(),
+            Value<int?> duration = const Value.absent(),
+            Value<String?> key = const Value.absent(),
+            Value<String?> thumbKey = const Value.absent(),
+            Value<String?> error = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PendingNoteMediaCompanion(
+            noteId: noteId,
+            embedId: embedId,
+            kind: kind,
+            localPath: localPath,
+            thumbPath: thumbPath,
+            mime: mime,
+            size: size,
+            duration: duration,
+            key: key,
+            thumbKey: thumbKey,
+            error: error,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String noteId,
+            required String embedId,
+            required String kind,
+            required String localPath,
+            Value<String?> thumbPath = const Value.absent(),
+            Value<String?> mime = const Value.absent(),
+            Value<int?> size = const Value.absent(),
+            Value<int?> duration = const Value.absent(),
+            Value<String?> key = const Value.absent(),
+            Value<String?> thumbKey = const Value.absent(),
+            Value<String?> error = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PendingNoteMediaCompanion.insert(
+            noteId: noteId,
+            embedId: embedId,
+            kind: kind,
+            localPath: localPath,
+            thumbPath: thumbPath,
+            mime: mime,
+            size: size,
+            duration: duration,
+            key: key,
+            thumbKey: thumbKey,
+            error: error,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PendingNoteMediaTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PendingNoteMediaTable,
+    PendingNoteMediaRow,
+    $$PendingNoteMediaTableFilterComposer,
+    $$PendingNoteMediaTableOrderingComposer,
+    $$PendingNoteMediaTableAnnotationComposer,
+    $$PendingNoteMediaTableCreateCompanionBuilder,
+    $$PendingNoteMediaTableUpdateCompanionBuilder,
+    (
+      PendingNoteMediaRow,
+      BaseReferences<_$AppDatabase, $PendingNoteMediaTable, PendingNoteMediaRow>
+    ),
+    PendingNoteMediaRow,
+    PrefetchHooks Function()>;
 typedef $$GroupArrangementsTableCreateCompanionBuilder
     = GroupArrangementsCompanion Function({
   Value<int> syncStamp,
@@ -34382,6 +37583,14 @@ class $AppDatabaseManager {
       $$PendingGroupReadsTableTableManager(_db, _db.pendingGroupReads);
   $$MyInteractionsTableTableManager get myInteractions =>
       $$MyInteractionsTableTableManager(_db, _db.myInteractions);
+  $$SpiritualNotesTableTableManager get spiritualNotes =>
+      $$SpiritualNotesTableTableManager(_db, _db.spiritualNotes);
+  $$NoteCategoriesTableTableManager get noteCategories =>
+      $$NoteCategoriesTableTableManager(_db, _db.noteCategories);
+  $$LocalNotesTableTableManager get localNotes =>
+      $$LocalNotesTableTableManager(_db, _db.localNotes);
+  $$PendingNoteMediaTableTableManager get pendingNoteMedia =>
+      $$PendingNoteMediaTableTableManager(_db, _db.pendingNoteMedia);
   $$GroupArrangementsTableTableManager get groupArrangements =>
       $$GroupArrangementsTableTableManager(_db, _db.groupArrangements);
   $$PendingGroupArrangementsTableTableManager get pendingGroupArrangements =>

@@ -253,24 +253,29 @@ void main() {
   group('L\'en-tête de l\'accueil', () {
     testWidgets('l\'icône Profil a disparu, la Bible a pris sa place',
         (tester) async {
-      final router = await pumpGuestApp(tester, guestContainer());
+      // La page Bible relit son dernier onglet dans le magasin Drift (#190) :
+      // tout dans un seul `runAsync`.
+      await tester.runAsync(() async {
+        final router = await pumpGuestApp(tester, guestContainer());
 
-      // Le profil est redescendu dans la barre ; l'en-tête ne porte plus son
-      // icône, et donc plus aucun geste réservé. On vise son **infobulle** :
-      // la clé, elle, a disparu du code — c'est le compilateur qui l'atteste.
-      expect(find.byTooltip(_fr.navProfile), findsNothing);
-      expect(find.byKey(HomeScreen.menuButtonKey), findsOneWidget);
-      expect(find.byKey(HomeScreen.bibleButtonKey), findsOneWidget);
+        // Le profil est redescendu dans la barre ; l'en-tête ne porte plus
+        // son icône, et donc plus aucun geste réservé. On vise son
+        // **infobulle** : la clé, elle, a disparu du code — c'est le
+        // compilateur qui l'atteste.
+        expect(find.byTooltip(_fr.navProfile), findsNothing);
+        expect(find.byKey(HomeScreen.menuButtonKey), findsOneWidget);
+        expect(find.byKey(HomeScreen.bibleButtonKey), findsOneWidget);
 
-      await tester.tap(find.byKey(HomeScreen.bibleButtonKey));
-      await settle(tester);
+        await tester.tap(find.byKey(HomeScreen.bibleButtonKey));
+        await settle(tester);
 
-      // **Poussée, et ouverte à tous** : un invité l'ouvre sans qu'on lui
-      // demande rien, et la coquille attend dessous.
-      expect(router.state.matchedLocation, '/bible');
-      expect(find.byType(BibleScreen), findsOneWidget);
-      expect(find.byType(IdentifierScreen), findsNothing);
-      expect(shellTab(tester), HomeTab.home);
+        // **Poussée, et ouverte à tous** : un invité l'ouvre sans qu'on lui
+        // demande rien, et la coquille attend dessous.
+        expect(router.state.matchedLocation, '/bible');
+        expect(find.byType(BibleScreen), findsOneWidget);
+        expect(find.byType(IdentifierScreen), findsNothing);
+        expect(shellTab(tester), HomeTab.home);
+      });
     });
   });
 }

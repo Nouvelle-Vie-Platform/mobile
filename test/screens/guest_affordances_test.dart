@@ -81,6 +81,13 @@ const _screensBehindTheGuard = <String, String>{
   // La ligne « Médias, liens et docs » de la fiche d'un groupe.
   'lib/widgets/chat/media/group_shared_media.dart':
       'monté par /group-info, réservé',
+  // L'éditeur d'une note (#190) : `/notes/:id` est réservé, et son bouton
+  // « nouvelle note » ne fait qu'y rester, sous un autre identifiant.
+  'lib/screens/notes/note_editor_screen.dart': '/notes/:id est réservé',
+  // L'ouverture d'un lien d'une note (#193) : appelée par l'éditeur seul, et
+  // elle pousse par la `GoRouter` du conteneur.
+  'lib/features/notes_editor/links/note_link_opener.dart':
+      'appelé par /notes/:id, réservé',
 };
 
 /// Les fichiers qui **nomment** les routes sans y naviguer.

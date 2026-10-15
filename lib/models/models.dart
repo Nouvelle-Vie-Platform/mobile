@@ -390,12 +390,6 @@ class PrayerRequest {
   final bool confidential;
 }
 
-class SpiritualNote {
-  const SpiritualNote({required this.title, required this.preview});
-  final String title;
-  final String preview;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Authentification (voir docs/auth-contract.md)
 // ─────────────────────────────────────────────────────────────────────────────

@@ -37,10 +37,12 @@ GoRouter _router() => GoRouter(
           path: '/downloads',
           builder: (_, __) => _marker('PAGE_DOWNLOADS'),
         ),
+        // Depuis #190, « Notes » ouvre l'onglet Notes de la page Bible.
         GoRoute(
-          name: AppRoute.notes,
-          path: '/notes',
-          builder: (_, __) => _marker('PAGE_NOTES'),
+          name: AppRoute.bible,
+          path: '/bible',
+          builder: (_, state) =>
+              _marker('PAGE_BIBLE_${state.uri.queryParameters['tab']}'),
         ),
         GoRoute(
           name: AppRoute.agenda,
@@ -81,11 +83,12 @@ void main() {
       expect(find.text('Agenda'), findsOneWidget);
       expect(find.text('Qualité'), findsOneWidget);
 
-      // …et « Notes » mène toujours à sa page, preuve qu'on n'a pas déplacé les
-      // autres raccourcis en relabelant le premier.
+      // …et « Notes » mène toujours à sa page — l'onglet Notes de la page
+      // Bible depuis #190 —, preuve qu'on n'a pas déplacé les autres
+      // raccourcis en relabelant le premier.
       await tester.tap(find.text('Notes'));
       await tester.pumpAndSettle();
-      expect(find.text('PAGE_NOTES'), findsOneWidget);
+      expect(find.text('PAGE_BIBLE_notes'), findsOneWidget);
     });
   });
 }

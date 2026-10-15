@@ -449,6 +449,22 @@ List<SyncedCollection<Object?>> syncedCollections() => [
         idOf: (item) => contentId(SyncCollectionKey.myInteractions, item),
         rowOf: myInteractionRowOf,
       ),
+      // **Mes notes et leurs catégories** (#190) : privées, sans dépendance
+      // d'ordre — une note se joint à sa catégorie à la lecture, et la
+      // jointure est tolérante. Les catégories d'abord quand même, pour que la
+      // première synchronisation peigne les cartes déjà colorées.
+      SyncedCollection<NoteCategoryRow>(
+        key: SyncCollectionKey.noteCategories,
+        local: (dao) => dao.noteCategoriesCollection,
+        idOf: (item) => contentId(SyncCollectionKey.noteCategories, item),
+        rowOf: noteCategoryRowOf,
+      ),
+      SyncedCollection<SpiritualNoteRow>(
+        key: SyncCollectionKey.spiritualNotes,
+        local: (dao) => dao.spiritualNotesCollection,
+        idOf: (item) => contentId(SyncCollectionKey.spiritualNotes, item),
+        rowOf: spiritualNoteRowOf,
+      ),
       SyncedCollection<ProfileRow>(
         key: SyncCollectionKey.profiles,
         local: (dao) => dao.profilesCollection,

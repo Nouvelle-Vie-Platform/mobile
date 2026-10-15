@@ -664,18 +664,6 @@ abstract final class SampleData {
     ),
   ];
 
-  static const List<SpiritualNote> notes = [
-    SpiritualNote(
-        title: 'La foi qui déplace les montagnes',
-        preview: 'Dieu veut que nous ayons une foi vivante et agissante...'),
-    SpiritualNote(
-        title: 'Culte du 19 Mai 2024',
-        preview: 'Points importants à retenir du culte.'),
-    SpiritualNote(
-        title: 'Marcher par l\'Esprit',
-        preview: 'Notes personnelles sur le message.'),
-  ];
-
   // Les branches ne sont **plus** des données fictives : elles viennent du
   // serveur (`GET /sync/branches`, voir `BranchRepository`). En garder une
   // copie ici, c'était un second référentiel à tenir à jour — et le risque

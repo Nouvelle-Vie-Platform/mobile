@@ -860,6 +860,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notesSearchHint => 'Search for a note...';
 
   @override
+  String get notesTab => 'Notes';
+
+  @override
+  String get notesGuestTitle => 'Your notes are waiting';
+
+  @override
+  String get notesGuestMessage =>
+      'Sign in to write your notes and find them on all your devices.';
+
+  @override
+  String get notesEmptyTitle => 'No notes';
+
+  @override
+  String get notesEmptyMessage => 'Tap + to write your first note.';
+
+  @override
+  String get notesFilterAll => 'All';
+
+  @override
+  String get notesUntitled => 'New note';
+
+  @override
+  String get notesBodyHint => 'Write here…';
+
+  @override
+  String get notesDone => 'Done';
+
+  @override
+  String get notesPin => 'Pin';
+
+  @override
+  String get notesUnpin => 'Unpin';
+
+  @override
+  String get notesDelete => 'Delete';
+
+  @override
+  String get notesDeleteConfirmTitle => 'Delete this note?';
+
+  @override
+  String get notesDeleteConfirmMessage =>
+      'It will be removed from all your devices.';
+
+  @override
+  String get notesCategoryTitle => 'Category';
+
+  @override
+  String get notesCategoryAdd => 'Add a category';
+
+  @override
+  String get notesCategoryNameHint => 'Category name';
+
+  @override
+  String get notesCategoryCreate => 'Add';
+
+  @override
+  String get notesCategoryNone => 'No category';
+
+  @override
+  String get notesCategoryEditTitle => 'Edit category';
+
+  @override
+  String get notesCategoryDelete => 'Delete category';
+
+  @override
+  String notesCategoryDeleteConfirm(String name) {
+    return 'Delete “$name”? Its notes will stay, without a category.';
+  }
+
+  @override
+  String get notesShareFailed => 'Sharing failed.';
+
+  @override
   String get profileRole => 'New Life member';
 
   @override
@@ -2323,4 +2396,157 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get radioOfflineMessage =>
       'The radio starts again on its own as soon as the network is back.';
+
+  @override
+  String get noteEditorPlaceholder => 'Write your note…';
+
+  @override
+  String get noteEditorOpenFormat => 'Formatting';
+
+  @override
+  String get noteEditorFormatTitle => 'Format';
+
+  @override
+  String get noteEditorClose => 'Close';
+
+  @override
+  String get noteEditorStyleTitle => 'Title';
+
+  @override
+  String get noteEditorStyleSubtitle => 'Heading';
+
+  @override
+  String get noteEditorStyleHeading => 'Subheading';
+
+  @override
+  String get noteEditorStyleBody => 'Body';
+
+  @override
+  String get noteEditorBold => 'Bold';
+
+  @override
+  String get noteEditorItalic => 'Italic';
+
+  @override
+  String get noteEditorUnderline => 'Underline';
+
+  @override
+  String get noteEditorStrike => 'Strikethrough';
+
+  @override
+  String get noteEditorHighlight => 'Highlight';
+
+  @override
+  String get noteEditorTextColor => 'Text color';
+
+  @override
+  String get noteEditorBulletList => 'Bulleted list';
+
+  @override
+  String get noteEditorNumberedList => 'Numbered list';
+
+  @override
+  String get noteEditorChecklist => 'Checklist';
+
+  @override
+  String get noteEditorOutdent => 'Decrease indent';
+
+  @override
+  String get noteEditorIndent => 'Increase indent';
+
+  @override
+  String get noteEditorMonostyle => 'Monostyled';
+
+  @override
+  String get noteEditorQuote => 'Block quote';
+
+  @override
+  String get noteLinkAdd => 'Add a link';
+
+  @override
+  String get noteLinkSheetTitle => 'Add a link';
+
+  @override
+  String get noteLinkToNote => 'A note';
+
+  @override
+  String get noteLinkToTeaching => 'A teaching';
+
+  @override
+  String get noteLinkToWeb => 'A web address';
+
+  @override
+  String get noteLinkToBible => 'The Bible';
+
+  @override
+  String get noteLinkSoon => 'soon';
+
+  @override
+  String get noteLinkSearch => 'Search';
+
+  @override
+  String get noteLinkInvalidUrl => 'Invalid web address';
+
+  @override
+  String get noteLinkInsert => 'Insert link';
+
+  @override
+  String get noteLinkNoResult => 'No results';
+
+  @override
+  String get noteLinkNoteMissing => 'This note no longer exists';
+
+  @override
+  String get noteLinkCannotOpen => 'Unable to open this link';
+
+  @override
+  String get noteAttachmentButton => 'Attach';
+
+  @override
+  String get noteAttachmentChooseMedia => 'Choose Photo or Video';
+
+  @override
+  String get noteAttachmentTakeMedia => 'Take Photo or Video';
+
+  @override
+  String get noteAttachmentTakePhoto => 'Photo';
+
+  @override
+  String get noteAttachmentTakeVideo => 'Video';
+
+  @override
+  String get noteAttachmentRecordAudio => 'Record Audio';
+
+  @override
+  String get noteAttachmentAttachFile => 'Attach File';
+
+  @override
+  String get noteAttachmentRecording => 'Recording…';
+
+  @override
+  String get noteAttachmentRecordStop => 'Done';
+
+  @override
+  String get noteAttachmentRecordCancel => 'Cancel';
+
+  @override
+  String get noteAttachmentMicDenied => 'Allow the microphone to record audio.';
+
+  @override
+  String get noteAttachmentRecordingName => 'Audio recording';
+
+  @override
+  String get noteAttachmentPreparing => 'Preparing…';
+
+  @override
+  String get noteAttachmentUploading => 'Uploading…';
+
+  @override
+  String get noteAttachmentFailed => 'Upload failed';
+
+  @override
+  String get noteAttachmentRetry => 'Retry';
+
+  @override
+  String get noteAttachmentUnavailable => 'Attachment unavailable';
 }

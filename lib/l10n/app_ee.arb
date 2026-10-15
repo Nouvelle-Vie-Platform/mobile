@@ -56,5 +56,10 @@
 
   "playerErrorTitle": "Sese la tɔ",
   "playerErrorMessage": "Gbeɖiɖi la tɔ. Kpɔ wò internet ŋu, eye nàgbugbɔ ase edzi.",
-  "playerErrorRetry": "Gbugbɔ se edzi"
+  "playerErrorRetry": "Gbugbɔ se edzi",
+  "noteEditorPlaceholder": "Ŋlɔ wò nuŋlɔɖi…",
+  "noteEditorFormatTitle": "Nɔnɔme",
+  "noteEditorClose": "Tu",
+  "noteEditorStyleTitle": "Tanya",
+  "noteEditorStyleBody": "Nuŋɔŋlɔ"
 }

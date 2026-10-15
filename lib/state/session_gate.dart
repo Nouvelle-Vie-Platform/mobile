@@ -164,7 +164,7 @@ final sessionGateProvider = NotifierProvider<SessionGate, SessionIntent?>(
 ///
 /// ```dart
 /// onTap: () => ref.requireSession(
-///   action: () => context.pushNamed(AppRoute.notes),
+///   action: () => context.pushNamed(AppRoute.prayers),
 /// ),
 /// ```
 ///

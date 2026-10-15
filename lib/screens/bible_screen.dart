@@ -1,45 +1,136 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/l10n_extension.dart';
+import '../state/theme_provider.dart';
+import '../theme/app_spacing.dart';
 import '../widgets/brand_app_bar.dart';
+import '../widgets/segmented_tabs.dart';
+import 'notes/notes_tab.dart';
 
-/// Écran **provisoire** de la Bible, atteint depuis l'icône en haut à droite de
-/// l'accueil (route `/bible`).
+/// Les deux onglets de la page, par leur nom dans `?tab=`.
+enum BibleTab { bible, notes }
+
+/// **La page Bible, à deux onglets** (#190) : **Bible** — encore « en
+/// construction » — et **Notes**. Pilules maison sous la [BrandAppBar],
+/// glissement latéral entre les deux, **dernier onglet mémorisé** dans
+/// `app_settings` et rouvert quand la route ne dit rien (`/bible` nu, le
+/// bouton de l'accueil).
 ///
-/// ## Poussé, et non plus monté en permanence
+/// Route `/bible?tab=bible|notes`, **ouverte à tous** : la Bible appartient à
+/// la surface invitée, et l'onglet Notes montre à un invité une porte de
+/// session plutôt qu'une liste — sans qu'aucune lecture privée ne parte.
 ///
-/// La Bible occupait un onglet de la barre du bas : elle vivait donc dans
-/// l'`IndexedStack` de la coquille, construite au démarrage et jamais démontée.
-/// Elle est désormais une route **poussée** — elle naît à l'ouverture et meurt à
-/// la fermeture, comme la médiathèque ou l'agenda.
-///
-/// ⚠️ **Elle ne survit donc plus en arrière-plan.** Sans conséquence tant que
-/// l'écran est celui-ci : il n'a ni contenu, ni défilement, ni position de
-/// lecture à perdre. Le jour où il portera un passage ouvert, cette position
-/// devra vivre ailleurs que dans son `State` — dans le magasin local, comme la
-/// reprise de lecture du lecteur.
-///
-/// **Ouvert à tous.** `/bible` n'est pas dans `memberOnlyRoutes`, et c'est la
-/// décision écrite du client : la Bible appartient à la surface invitée.
-///
-/// Le contenu est déplacé **tel quel** depuis l'ancien onglet. Le remplir est un
-/// autre chantier ; seule la barre d'application est neuve, et elle n'est pas
-/// cosmétique : un écran poussé sans retour serait un cul-de-sac.
-class BibleScreen extends StatelessWidget {
-  const BibleScreen({super.key});
+/// Poussée, et non montée en permanence. Elle ne survit donc pas en
+/// arrière-plan, et c'est pourquoi l'onglet se garde dans le magasin et non
+/// dans son `State`.
+class BibleScreen extends ConsumerStatefulWidget {
+  const BibleScreen({super.key, this.initialTab});
+
+  /// L'onglet demandé par la route, ou `null` pour « le dernier ouvert ».
+  final BibleTab? initialTab;
+
+  static const tabsKey = Key('bible_tabs');
+
+  @override
+  ConsumerState<BibleScreen> createState() => _BibleScreenState();
+}
+
+class _BibleScreenState extends ConsumerState<BibleScreen> {
+  late BibleTab _tab = widget.initialTab ?? BibleTab.bible;
+  late final PageController _pages = PageController(initialPage: _tab.index);
+  bool _touched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTab == null) _restoreTab();
+  }
+
+  Future<void> _restoreTab() async {
+    final saved = await ref.read(settingsDaoProvider).bibleTab();
+    final tab = BibleTab.values.asNameMap()[saved];
+    // Un geste fait entre-temps l'emporte sur la mémoire.
+    if (tab == null || !mounted || _touched || tab == _tab) return;
+    setState(() => _tab = tab);
+    if (_pages.hasClients) {
+      _pages.jumpToPage(tab.index);
+      return;
+    }
+    // Le magasin a répondu avant la première image : le `PageView` n'est pas
+    // encore attaché, on saute dès qu'il l'est.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _pages.hasClients) _pages.jumpToPage(tab.index);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  void _select(BibleTab tab, {bool animate = true}) {
+    _touched = true;
+    if (tab != _tab) setState(() => _tab = tab);
+    if (animate && _pages.hasClients) {
+      _pages.animateToPage(
+        tab.index,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
+    ref.read(settingsDaoProvider).setBibleTab(tab.name);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return Scaffold(
-      appBar: BrandAppBar(title: context.l10n.navBible),
-      body: Center(
-        child: Text(
-          // La phrase était écrite en dur dans la coquille, alors que
-          // `pageUnderConstruction` existait dans les trois fichiers de
-          // traduction sans appelant.
-          context.l10n.pageUnderConstruction,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      appBar: BrandAppBar(
+        title: _tab == BibleTab.bible ? l.navBible : l.notesAppBarTitle,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: AppSpacing.screenPadding.copyWith(
+                top: AppSpacing.md,
+                bottom: AppSpacing.md,
+              ),
+              child: SegmentedTabs(
+                key: BibleScreen.tabsKey,
+                tabs: [l.navBible, l.notesTab],
+                selected: _tab.index,
+                onSelect: (i) => _select(BibleTab.values[i]),
+              ),
+            ),
+            Expanded(
+              child: PageView(
+                controller: _pages,
+                onPageChanged: (i) =>
+                    _select(BibleTab.values[i], animate: false),
+                children: const [_BibleTab(), NotesTab()],
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+/// Le contenu provisoire de la Bible, déplacé **tel quel** de l'ancien écran.
+/// Le remplir est un autre chantier.
+class _BibleTab extends StatelessWidget {
+  const _BibleTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        context.l10n.pageUnderConstruction,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:go_router/go_router.dart';
 
 import '../data/local/app_database.dart';
+import '../data/repositories/notes_repository.dart';
 import '../data/local/tables/download_tables.dart';
 import '../data/players/content_player.dart';
 import '../l10n/l10n_extension.dart';
@@ -17,6 +18,7 @@ import '../state/playback_controller.dart';
 import '../state/player_providers.dart';
 import '../state/season_providers.dart';
 import '../state/session_gate.dart';
+import '../state/notes_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -496,15 +498,28 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
   /// prêche compris, sans qu'aucune phrase ne dise pourquoi. `requireSession()`
   /// ouvre la connexion à la place, et les notes s'ouvrent après.
   ///
-  /// **Le geste est rejouable, et ce n'est pas gratuit** : la `GoRouter` est lue
-  /// *maintenant*, tant que cet élément est monté. La reprise passe par un
-  /// `router.go(origin)` qui reconstruit la pile, et un `context.pushNamed`
-  /// s'appuierait alors sur un `BuildContext` dont rien ne garantit la survie.
-  /// Rien d'autre du geste ne dépend de cet écran : ni la position de lecture, ni
-  /// le contenu — `NotesScreen` ne reçoit aucun argument.
-  void _requireNotes() {
+  /// **Le geste est rejouable, et ce n'est pas gratuit** : la `GoRouter` et le
+  /// DAO sont lus *maintenant*, tant que cet élément est monté. La reprise passe
+  /// par un `router.go(origin)` qui reconstruit la pile, et un
+  /// `context.pushNamed` s'appuierait alors sur un `BuildContext` dont rien ne
+  /// garantit la survie.
+  ///
+  /// **Le geste porte l'enseignement** (#190) : s'il existe déjà une note de ce
+  /// contenu, c'est elle qu'on ouvre ; sinon un brouillon **pré-lié**, sous un
+  /// identifiant frappé ici.
+  void _requireNotes(String teachingId) {
     final router = ref.read(routerProvider);
-    ref.requireSession(action: () => router.pushNamed(AppRoute.notes));
+    final dao = ref.read(notesDaoProvider);
+    ref.requireSession(action: () {
+      unawaited(() async {
+        final id = await dao.noteIdForTeaching(teachingId) ?? mintNoteId();
+        await router.pushNamed(
+          AppRoute.noteEditor,
+          pathParameters: {'id': id},
+          extra: teachingId,
+        );
+      }());
+    });
   }
 
   Widget _buildPlayer(BuildContext context, ContentView content) {
@@ -607,7 +622,7 @@ class _ContentPlayerViewState extends ConsumerState<ContentPlayerView> {
                   ref.read(playbackControllerProvider.notifier).seek(position),
               onPlayPause: () => _togglePlayback(content),
               onLike: () => setState(() => _liked = !_liked),
-              onNotes: _requireNotes,
+              onNotes: () => _requireNotes(content.id),
               downloadButton:
                   widget.downloadContentType == null || widget.isLive
                       ? null

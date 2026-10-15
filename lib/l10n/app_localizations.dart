@@ -1594,6 +1594,144 @@ abstract class AppLocalizations {
   /// **'Rechercher une note...'**
   String get notesSearchHint;
 
+  /// Page Bible (#190) : libellé de la pilule de l'onglet Notes, à côté de « Bible »
+  ///
+  /// In fr, this message translates to:
+  /// **'Notes'**
+  String get notesTab;
+
+  /// Onglet Notes, invité : titre de la porte de session
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos notes vous attendent'**
+  String get notesGuestTitle;
+
+  /// Onglet Notes, invité : explication sous le titre, au-dessus du bouton « Se connecter »
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour écrire vos notes et les retrouver sur tous vos appareils.'**
+  String get notesGuestMessage;
+
+  /// Onglet Notes : état vide de la liste
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune note'**
+  String get notesEmptyTitle;
+
+  /// Onglet Notes : explication de l'état vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez + pour écrire votre première note.'**
+  String get notesEmptyMessage;
+
+  /// Onglet Notes : la première puce de filtre, qui ne filtre rien
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes'**
+  String get notesFilterAll;
+
+  /// Titre affiché pour une note sans titre (carte), placeholder du champ titre, et infobulle du bouton « nouvelle note »
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle note'**
+  String get notesUntitled;
+
+  /// Éditeur : placeholder du corps de la note
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez ici…'**
+  String get notesBodyHint;
+
+  /// Éditeur : infobulle de la coche qui ferme le clavier
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminé'**
+  String get notesDone;
+
+  /// Éditeur : infobulle de l'épingle, note non épinglée
+  ///
+  /// In fr, this message translates to:
+  /// **'Épingler'**
+  String get notesPin;
+
+  /// Éditeur : infobulle de l'épingle, note épinglée
+  ///
+  /// In fr, this message translates to:
+  /// **'Désépingler'**
+  String get notesUnpin;
+
+  /// Éditeur et catégories : l'action de suppression, dans le menu et dans la confirmation
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get notesDelete;
+
+  /// Éditeur : titre de la confirmation de suppression
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer cette note ?'**
+  String get notesDeleteConfirmTitle;
+
+  /// Éditeur : corps de la confirmation de suppression
+  ///
+  /// In fr, this message translates to:
+  /// **'Elle sera retirée de tous vos appareils.'**
+  String get notesDeleteConfirmMessage;
+
+  /// Feuille « Category » de la maquette : titre, et entrée du menu de l'éditeur
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégorie'**
+  String get notesCategoryTitle;
+
+  /// Feuille Catégorie : la ligne qui déplie le formulaire de création
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une catégorie'**
+  String get notesCategoryAdd;
+
+  /// Feuille Catégorie : placeholder du champ nom
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de la catégorie'**
+  String get notesCategoryNameHint;
+
+  /// Feuille Catégorie : bouton qui crée la catégorie saisie
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter'**
+  String get notesCategoryCreate;
+
+  /// Feuille Catégorie : l'option qui retire la catégorie de la note
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans catégorie'**
+  String get notesCategoryNone;
+
+  /// Feuille ouverte par un appui long sur une puce : renommer, recolorer, supprimer
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier la catégorie'**
+  String get notesCategoryEditTitle;
+
+  /// Feuille de modification d'une catégorie : bouton de suppression et titre de sa confirmation
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la catégorie'**
+  String get notesCategoryDelete;
+
+  /// Confirmation de suppression d'une catégorie
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer « {name} » ? Ses notes resteront, sans catégorie.'**
+  String notesCategoryDeleteConfirm(String name);
+
+  /// Éditeur de note : le PDF n'a pu être produit ou partagé
+  ///
+  /// In fr, this message translates to:
+  /// **'Le partage n\'a pas abouti.'**
+  String get notesShareFailed;
+
   /// No description provided for @profileRole.
   ///
   /// In fr, this message translates to:
@@ -4245,6 +4383,312 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'La radio repart toute seule dès que le réseau revient.'**
   String get radioOfflineMessage;
+
+  /// Éditeur de note (N3) : texte fantôme du corps vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez votre note…'**
+  String get noteEditorPlaceholder;
+
+  /// Pilule de l'éditeur : bouton « T » qui ouvre la feuille Format
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise en forme'**
+  String get noteEditorOpenFormat;
+
+  /// Titre de la feuille de mise en forme façon Apple
+  ///
+  /// In fr, this message translates to:
+  /// **'Format'**
+  String get noteEditorFormatTitle;
+
+  /// Croix de la feuille Format
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get noteEditorClose;
+
+  /// Feuille Format : style de paragraphe header 1
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get noteEditorStyleTitle;
+
+  /// Feuille Format : style de paragraphe header 2
+  ///
+  /// In fr, this message translates to:
+  /// **'Sous-titre'**
+  String get noteEditorStyleSubtitle;
+
+  /// Feuille Format : style de paragraphe header 3
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre secondaire'**
+  String get noteEditorStyleHeading;
+
+  /// Feuille Format : paragraphe sans titre
+  ///
+  /// In fr, this message translates to:
+  /// **'Corps'**
+  String get noteEditorStyleBody;
+
+  /// Pilule et feuille Format : bouton B
+  ///
+  /// In fr, this message translates to:
+  /// **'Gras'**
+  String get noteEditorBold;
+
+  /// Pilule et feuille Format : bouton I
+  ///
+  /// In fr, this message translates to:
+  /// **'Italique'**
+  String get noteEditorItalic;
+
+  /// Pilule et feuille Format : bouton U
+  ///
+  /// In fr, this message translates to:
+  /// **'Souligné'**
+  String get noteEditorUnderline;
+
+  /// Feuille Format : bouton S
+  ///
+  /// In fr, this message translates to:
+  /// **'Barré'**
+  String get noteEditorStrike;
+
+  /// Feuille Format : surlignage jaune de la marque
+  ///
+  /// In fr, this message translates to:
+  /// **'Surligner'**
+  String get noteEditorHighlight;
+
+  /// Feuille Format : pastille qui ouvre la palette de huit couleurs
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleur du texte'**
+  String get noteEditorTextColor;
+
+  /// Pilule et feuille Format : liste à puces
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste à puces'**
+  String get noteEditorBulletList;
+
+  /// Pilule et feuille Format : liste numérotée
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste numérotée'**
+  String get noteEditorNumberedList;
+
+  /// Pilule et feuille Format : liste de cases à cocher
+  ///
+  /// In fr, this message translates to:
+  /// **'Cases à cocher'**
+  String get noteEditorChecklist;
+
+  /// Feuille Format : désindenter
+  ///
+  /// In fr, this message translates to:
+  /// **'Diminuer le retrait'**
+  String get noteEditorOutdent;
+
+  /// Feuille Format : indenter
+  ///
+  /// In fr, this message translates to:
+  /// **'Augmenter le retrait'**
+  String get noteEditorIndent;
+
+  /// Feuille Format : bloc à chasse fixe (code-block)
+  ///
+  /// In fr, this message translates to:
+  /// **'Monostyle'**
+  String get noteEditorMonostyle;
+
+  /// Feuille Format : bloc citation (blockquote)
+  ///
+  /// In fr, this message translates to:
+  /// **'Citation'**
+  String get noteEditorQuote;
+
+  /// Pilule de l'éditeur : bouton lien (N5)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un lien'**
+  String get noteLinkAdd;
+
+  /// Titre de la feuille d'ajout de lien
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un lien'**
+  String get noteLinkSheetTitle;
+
+  /// Feuille lien : lier une autre note
+  ///
+  /// In fr, this message translates to:
+  /// **'Une note'**
+  String get noteLinkToNote;
+
+  /// Feuille lien : lier un enseignement de la médiathèque
+  ///
+  /// In fr, this message translates to:
+  /// **'Un enseignement'**
+  String get noteLinkToTeaching;
+
+  /// Feuille lien : lier une adresse web
+  ///
+  /// In fr, this message translates to:
+  /// **'Une adresse web'**
+  String get noteLinkToWeb;
+
+  /// Feuille lien : lier une référence biblique (grisé pour l'instant)
+  ///
+  /// In fr, this message translates to:
+  /// **'La Bible'**
+  String get noteLinkToBible;
+
+  /// Feuille lien : mention à côté d'un choix pas encore disponible
+  ///
+  /// In fr, this message translates to:
+  /// **'bientôt'**
+  String get noteLinkSoon;
+
+  /// Feuille lien : champ de recherche des notes ou enseignements
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher'**
+  String get noteLinkSearch;
+
+  /// Feuille lien : erreur du champ URL
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse web invalide'**
+  String get noteLinkInvalidUrl;
+
+  /// Feuille lien : bouton de validation de l'adresse web
+  ///
+  /// In fr, this message translates to:
+  /// **'Insérer le lien'**
+  String get noteLinkInsert;
+
+  /// Feuille lien : liste vide
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun résultat'**
+  String get noteLinkNoResult;
+
+  /// SnackBar : lien vers une note absente
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette note n\'existe plus'**
+  String get noteLinkNoteMissing;
+
+  /// SnackBar : lien illisible ou navigateur indisponible
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir ce lien'**
+  String get noteLinkCannotOpen;
+
+  /// Pilule de l'éditeur : le trombone, qui ouvre le menu des pièces jointes
+  ///
+  /// In fr, this message translates to:
+  /// **'Joindre'**
+  String get noteAttachmentButton;
+
+  /// Menu du trombone : galerie
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une photo ou une vidéo'**
+  String get noteAttachmentChooseMedia;
+
+  /// Menu du trombone : appareil photo
+  ///
+  /// In fr, this message translates to:
+  /// **'Prendre une photo ou une vidéo'**
+  String get noteAttachmentTakeMedia;
+
+  /// Menu du trombone, appareil photo : prendre une photo
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo'**
+  String get noteAttachmentTakePhoto;
+
+  /// Menu du trombone, appareil photo : filmer une vidéo
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo'**
+  String get noteAttachmentTakeVideo;
+
+  /// Menu du trombone : enregistrement au micro
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer un audio'**
+  String get noteAttachmentRecordAudio;
+
+  /// Menu du trombone : document ou fichier audio
+  ///
+  /// In fr, this message translates to:
+  /// **'Joindre un fichier'**
+  String get noteAttachmentAttachFile;
+
+  /// Feuille d'enregistrement audio : en cours
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement…'**
+  String get noteAttachmentRecording;
+
+  /// Feuille d'enregistrement audio : arrêter et joindre
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminer'**
+  String get noteAttachmentRecordStop;
+
+  /// Feuille d'enregistrement audio : arrêter et jeter
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get noteAttachmentRecordCancel;
+
+  /// Feuille d'enregistrement : permission du micro refusée
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisez le micro pour enregistrer un audio.'**
+  String get noteAttachmentMicDenied;
+
+  /// Nom donné à un audio enregistré dans une note
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement audio'**
+  String get noteAttachmentRecordingName;
+
+  /// Bloc d'une pièce jointe : image ou vidéo en cours de compression
+  ///
+  /// In fr, this message translates to:
+  /// **'En préparation…'**
+  String get noteAttachmentPreparing;
+
+  /// Bloc d'une pièce jointe : montée en cours
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoi…'**
+  String get noteAttachmentUploading;
+
+  /// Bloc d'une pièce jointe : panne réseau, réessayable
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec de l\'envoi'**
+  String get noteAttachmentFailed;
+
+  /// Bloc d'une pièce jointe en échec : relancer l'envoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get noteAttachmentRetry;
+
+  /// Bloc d'une pièce jointe : fichier ni local ni joignable (hors ligne)
+  ///
+  /// In fr, this message translates to:
+  /// **'Pièce jointe indisponible'**
+  String get noteAttachmentUnavailable;
 }
 
 class _AppLocalizationsDelegate

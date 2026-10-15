@@ -16,8 +16,9 @@ import '../sample_data.dart';
 /// **« Échanges »** avec #96 (`EchangesRepository`) : ce contrat **rétrécit à
 /// chaque domaine branché**, jusqu'à disparaître.
 ///
-/// ⚠️ **Il ne reste que deux méthodes, et c'est le dernier reste fictif de
-/// l'application.** Les requêtes de prière et les notes — décision 10 du cadrage
+/// ⚠️ **Il ne reste qu'une méthode, et c'est le dernier reste fictif de
+/// l'application.** Les requêtes de prière — les notes sont parties avec #190
+/// (`NotesDao`, `NotesRepository`) — décision 10 du cadrage
 /// de #96 : tout retirer, espace de prière compris, aurait été plus net d'un
 /// `grep`, mais aurait **retiré une fonctionnalité aux membres** pour une raison
 /// d'hygiène de code. La route `/prayers` reste donc servie, et reste fictive.
@@ -27,7 +28,6 @@ import '../sample_data.dart';
 /// repository. **Rien de neuf ne doit se brancher ici.**
 abstract interface class ChurchRepository {
   List<PrayerRequest> prayers();
-  List<SpiritualNote> notes();
 }
 
 /// Implémentation en mémoire adossée aux [SampleData] (maquettes).
@@ -43,7 +43,4 @@ class InMemoryChurchRepository implements ChurchRepository {
 
   @override
   List<PrayerRequest> prayers() => SampleData.prayers;
-
-  @override
-  List<SpiritualNote> notes() => SampleData.notes;
 }

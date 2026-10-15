@@ -21,6 +21,8 @@ library;
 
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
+import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/repositories/announcement_repository.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/models/announcement_draft.dart';
@@ -29,6 +31,7 @@ import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/screens/announcements_screen.dart';
 import 'package:maison_du_miracle/screens/auth/identifier_screen.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
+import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/startup_providers.dart';
 import 'package:maison_du_miracle/widgets/content_player_view.dart';
 
@@ -48,9 +51,16 @@ const _teaching = TeachingView(
 /// Un enseignement posé **sans magasin ni réseau** : la fiche est un écran de la
 /// surface invitée, et ce qu'on y teste est son bouton de notes, pas la
 /// médiathèque.
+///
+/// **L'antenne est doublée aussi** : l'accueil la demande au premier frame par
+/// le vrai `Dio`, et sous `runAsync` (les deux tests des notes) l'erreur du
+/// canal natif arriverait **après** la fin du test et le ferait rougir.
 List<Override> get _oneTeaching => [
       teachingByIdProvider.overrideWith(
         (ref, id) => Stream.value(id == _teachingId ? _teaching : null),
+      ),
+      radioRepositoryProvider.overrideWithValue(
+        const FixedRadioRepository(RadioAntenna.unknown),
       ),
     ];
 
@@ -90,44 +100,55 @@ Future<void> _showAnnouncements(WidgetTester tester) async {
 
 void main() {
   group('Écrire une note, depuis la fiche d\'un enseignement', () {
+    // Le geste cherche dans le magasin Drift une note déjà liée à
+    // l'enseignement : tout dans un seul `runAsync`, sans quoi il se fige.
     testWidgets('un invité : la connexion, puis les notes', (tester) async {
-      final container = guestContainer(extra: _oneTeaching);
-      final router = await pumpGuestApp(tester, container);
+      await tester.runAsync(() async {
+        final container = guestContainer(extra: _oneTeaching);
+        final router = await pumpGuestApp(tester, container);
 
-      // La fiche est **ouverte** à un invité : c'est la décision du client, et
-      // c'est ce qui rend ce bouton-ci dangereux sans garde de geste.
-      router.go('/teaching/$_teachingId');
-      await settle(tester);
-      expect(router.state.matchedLocation, '/teaching/$_teachingId');
+        // La fiche est **ouverte** à un invité : c'est la décision du client,
+        // et c'est ce qui rend ce bouton-ci dangereux sans garde de geste.
+        router.go('/teaching/$_teachingId');
+        await settle(tester);
+        expect(router.state.matchedLocation, '/teaching/$_teachingId');
 
-      await tester.tap(find.byKey(ContentPlayerView.notesButtonKey));
-      await settle(tester);
-      expect(router.state.matchedLocation, '/auth');
+        await tester.tap(find.byKey(ContentPlayerView.notesButtonKey));
+        await settle(tester);
+        expect(router.state.matchedLocation, '/auth');
 
-      await signIn(container);
-      await settle(tester);
+        await signIn(container);
+        await settle(tester);
+        await settle(tester);
 
-      // On revient sur la fiche — l'origine — et les notes s'ouvrent dessus.
-      expect(router.state.matchedLocation, '/notes');
+        // On revient sur la fiche — l'origine — et l'éditeur s'ouvre dessus,
+        // sur un brouillon **pré-lié** à l'enseignement (#190).
+        expect(router.state.matchedLocation, startsWith('/notes/'));
+        expect(router.state.extra, _teachingId);
+      });
     });
 
     testWidgets('un membre : les notes au premier appui', (tester) async {
-      final container = guestContainer(
-        auth: GuestAuthRepository(signedIn: true),
-        vault: StartupVault.memberSession,
-        extra: _oneTeaching,
-      );
-      final router = await pumpGuestApp(tester, container);
-      await untilSignedIn(tester, container);
+      await tester.runAsync(() async {
+        final container = guestContainer(
+          auth: GuestAuthRepository(signedIn: true),
+          vault: StartupVault.memberSession,
+          extra: _oneTeaching,
+        );
+        final router = await pumpGuestApp(tester, container);
+        await untilSignedIn(tester, container);
 
-      router.go('/teaching/$_teachingId');
-      await settle(tester);
+        router.go('/teaching/$_teachingId');
+        await settle(tester);
 
-      await tester.tap(find.byKey(ContentPlayerView.notesButtonKey));
-      await settle(tester);
+        await tester.tap(find.byKey(ContentPlayerView.notesButtonKey));
+        await settle(tester);
+        await settle(tester);
 
-      expect(router.state.matchedLocation, '/notes');
-      expect(find.byType(IdentifierScreen), findsNothing);
+        expect(router.state.matchedLocation, startsWith('/notes/'));
+        expect(router.state.extra, _teachingId);
+        expect(find.byType(IdentifierScreen), findsNothing);
+      });
     });
   });
 
