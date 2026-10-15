@@ -25,6 +25,18 @@ abstract interface class DiskSpace {
 /// **logique** de pré-check, elle, est complète et testée. Câbler une vraie
 /// mesure (plugin, canal de méthode) est un point laissé ouvert, sans toucher au
 /// manager : il suffira de faire rendre un nombre à [freeBytes].
+///
+/// **F9 n'est pas aveugle pour autant**, et c'est pourquoi on n'ajoute pas une
+/// dépendance ici : le moteur de transfert, lui, mesure déjà — `StatFs` sur
+/// Android, `volumeAvailableCapacityForImportantUsage` sur iOS — et refuse la
+/// tâche s'il ne devait pas rester la marge configurée
+/// (`BackgroundDownloaderBackend.initialize`). Le manager traduit ce refus en
+/// « échec — espace insuffisant », partiel conservé. Ce qui manque donc ici
+/// n'est pas le filet, c'est de pouvoir le dire **avant** le premier octet.
+///
+/// ponytail: mesure absente côté Dart, donc pré-check fail-open ; le filet
+/// natif rattrape en cours de transfert. Brancher un vrai `freeBytes()` le jour
+/// où le refus doit se prononcer au lancement.
 class BestEffortDiskSpace implements DiskSpace {
   const BestEffortDiskSpace();
 

@@ -120,20 +120,51 @@ class DownloadProgressEvent extends DownloadBackendEvent {
   int get hashCode => Object.hash(taskId, bytesReceived, bytesTotal);
 }
 
+/// **Pourquoi la tâche a échoué**, en vocabulaire d'interface — jamais la
+/// phrase brute du moteur natif.
+///
+/// Trois familles seulement, parce que le manager n'en tire que trois
+/// **gestes** : repartir de zéro, conserver le partiel faute de place, ou
+/// réessayer. Le mur de traduction range les exceptions du plugin ici ; le
+/// manager n'a plus à lire une description en anglais pour décider.
+enum DownloadBackendFailure {
+  /// **La reprise est impossible** : le moteur a comparé l'`ETag` porté par le
+  /// `206` à celui gardé au premier tir et il a changé (ou il est faible), ou
+  /// le fichier temporaire a disparu. Le partiel ne vaut plus rien — la seule
+  /// issue est de **repartir de zéro**.
+  ///
+  /// C'est **la** garde de reprise de cette origine, et elle ne peut pas passer
+  /// par `If-Range` : mesuré en production le 2026-10-15, RustFS **ignore**
+  /// `If-Range` et répond `206` même sur un validateur périmé (streaming
+  /// ADR-0012, PRD §6 spike 3). Armer l'en-tête ne protégerait de rien ; la
+  /// comparaison d'`ETag` est donc faite pour de bon, jamais déléguée au
+  /// serveur.
+  resume,
+
+  /// **Plus de place sur le disque**, constaté par le moteur au moment d'écrire
+  /// — le second filet derrière le pré-check de taille (F9). Partiel conservé.
+  insufficientSpace,
+
+  /// Tout le reste — réseau, HTTP, inconnu.
+  other,
+}
+
 /// La tâche a changé d'état. [filePath] n'est renseigné qu'à la complétion (le
-/// chemin absolu résolu par le moteur), [reason] qu'à l'échec.
+/// chemin absolu résolu par le moteur), [failure] qu'à l'échec.
 @immutable
 class DownloadStatusEvent extends DownloadBackendEvent {
   const DownloadStatusEvent(
     super.taskId, {
     required this.status,
     this.filePath,
-    this.reason,
+    this.failure,
   });
 
   final DownloadBackendStatus status;
   final String? filePath;
-  final String? reason;
+
+  /// Le motif, **classé** (voir [DownloadBackendFailure]). Nul hors échec.
+  final DownloadBackendFailure? failure;
 
   @override
   bool operator ==(Object other) =>
@@ -141,10 +172,10 @@ class DownloadStatusEvent extends DownloadBackendEvent {
       other.taskId == taskId &&
       other.status == status &&
       other.filePath == filePath &&
-      other.reason == reason;
+      other.failure == failure;
 
   @override
-  int get hashCode => Object.hash(taskId, status, filePath, reason);
+  int get hashCode => Object.hash(taskId, status, filePath, failure);
 }
 
 /// Les états **bruts** du moteur natif, avant traduction en [DownloadState].
