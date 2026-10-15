@@ -36,13 +36,10 @@ void main() {
     expect(files, isNotEmpty);
     return {
       for (final file in files)
-        file.path: file
-            .readAsLinesSync()
-            .where((line) {
-              final trimmed = line.trimLeft();
-              return !trimmed.startsWith('///') && !trimmed.startsWith('//');
-            })
-            .join('\n'),
+        file.path: file.readAsLinesSync().where((line) {
+          final trimmed = line.trimLeft();
+          return !trimmed.startsWith('///') && !trimmed.startsWith('//');
+        }).join('\n'),
     };
   }
 
@@ -68,7 +65,8 @@ void main() {
     expect(
       mentioning(RegExp(r'''\bHEAD\b''')),
       isEmpty,
-      reason: 'une reprenabilité se sonde par un GET avec plage, jamais un HEAD',
+      reason:
+          'une reprenabilité se sonde par un GET avec plage, jamais un HEAD',
     );
     expect(
       mentioning('ParallelDownloadTask'),
