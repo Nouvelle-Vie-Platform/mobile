@@ -5,6 +5,8 @@
 /// Discipline du dépôt : `pump()` + `pump(1s)`, jamais `pumpAndSettle`.
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,13 +43,18 @@ class _FakeUrls implements GroupMediaUrls {
     return give ? 'https://store.test/$messageId' : null;
   }
 
+  final List<String> downloaded = [];
+
   @override
   Future<String?> download({
     required String groupId,
     required String messageId,
     required String fileName,
-  }) async =>
-      '/tmp/$fileName';
+    bool thumbnail = false,
+  }) async {
+    downloaded.add(messageId);
+    return '/tmp/$fileName';
+  }
 }
 
 class _RecordingOpener implements MediaOpener {
@@ -403,6 +410,157 @@ void main() {
     });
   });
 
+  // ── T1 des médias locaux (#223) ────────────────────────────────────────
+  //
+  // La règle : si le fichier est là, on le sert, et `resolve()` **n'est pas
+  // appelé**. Ces tests écrivent un **vrai** fichier temporaire — un chemin
+  // inventé ne prouverait rien, puisque c'est l'existence qui décide.
+  group('Le disque avant le réseau', () {
+    late Directory root;
+
+    setUp(() async {
+      root = await Directory.systemTemp.createTemp('bulle_media_');
+    });
+
+    tearDown(() async {
+      if (await root.exists()) await root.delete(recursive: true);
+    });
+
+    /// Un fichier de un pixel : `Image.file` doit pouvoir le décoder.
+    ///
+    /// **Écrit en synchrone**, et c'est la seule forme qui marche : un
+    /// `writeAsBytes` lancé dans le corps d'un `testWidgets` ne s'achève
+    /// jamais — la zone d'`async` y est **feinte** et ne fait pas avancer une
+    /// entrée-sortie réelle (mesuré : 10 min de dépassement).
+    String onePixel(String name) {
+      final path = '${root.path}/$name';
+      File(path).writeAsBytesSync(_kOnePixelPng);
+      return path;
+    }
+
+    /// **`Image.file` lit vraiment le disque**, et cette lecture-là ne
+    /// s'achève pas dans la zone d'`async` **feint** de `flutter test` : le
+    /// test pendrait à la barrière de fin (mesuré : 10 min de dépassement).
+    /// `runAsync` rend la main à la vraie boucle d'événements le temps que la
+    /// lecture finisse. Une vraie attente de temps, pas un comptage de tours.
+    Future<void> settleRealIo(WidgetTester tester) async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('une image reçue déjà en magasin : aucune requête d’URL',
+        (tester) async {
+      final local = onePixel('p.jpg');
+      await pump(tester, [
+        _message('m-1',
+            media: MessageMedia(
+              kind: MessageMediaKind.image,
+              key: 'group-media/g-1/p.jpg',
+              localPath: local,
+            )),
+      ]);
+
+      expect(find.byKey(const Key('m4_image_tile')), findsOneWidget);
+      expect(urls.resolved, isEmpty,
+          reason: 'le fichier est là : rien à demander au serveur');
+      expect(find.byType(Image), findsOneWidget);
+      expect(
+        (tester.widget<Image>(find.byType(Image)).image as ResizeImage)
+            .imageProvider,
+        isA<FileImage>(),
+        reason: 'le fil peint le fichier, pas une URL',
+      );
+      await settleRealIo(tester);
+    });
+
+    testWidgets('un fichier noté mais disparu retombe sur le réseau',
+        (tester) async {
+      await pump(tester, [
+        _message('m-1',
+            media: const MessageMedia(
+              kind: MessageMediaKind.image,
+              key: 'group-media/g-1/p.jpg',
+              localPath: '/magasin/efface/p.jpg',
+            )),
+      ]);
+
+      expect(
+        urls.resolved,
+        ['m-1'],
+        reason: 'un cadre cassé n’est pas une réponse',
+      );
+    });
+
+    testWidgets('un vocal reçu déjà en magasin se lit sans requête',
+        (tester) async {
+      final local = onePixel('v.m4a');
+      await pump(tester, [
+        _message('m-1',
+            media: MessageMedia(
+              kind: MessageMediaKind.voice,
+              key: 'group-media/g-1/v.m4a',
+              durationSeconds: 42,
+              localPath: local,
+            )),
+      ]);
+
+      await tester.tap(find.byKey(const Key('m4_audio_play_m-1')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(engine.calls, contains('load $local'));
+      expect(urls.resolved, isEmpty);
+    });
+
+    testWidgets('une vidéo reçue : vignette locale, et le fichier au toucher',
+        (tester) async {
+      final file = onePixel('clip.mp4');
+      final thumb = onePixel('thumb_clip.jpg');
+      await pump(tester, [
+        _message('m-1',
+            media: MessageMedia(
+              kind: MessageMediaKind.video,
+              key: 'k',
+              thumbnailKey: 't',
+              durationSeconds: 65,
+              localPath: file,
+              localThumbPath: thumb,
+            )),
+      ]);
+
+      expect(find.byKey(const Key('m4_video_tile')), findsOneWidget);
+      expect(tester.widget<Image>(find.byType(Image)).image, isA<FileImage>());
+      expect(urls.resolved, isEmpty);
+      expect(file, isNotEmpty);
+      await settleRealIo(tester);
+    });
+
+    testWidgets('un document déjà en magasin s’ouvre sans téléchargement',
+        (tester) async {
+      final local = onePixel('Bulletin.pdf');
+      await pump(tester, [
+        _message('m-1',
+            media: MessageMedia(
+              kind: MessageMediaKind.document,
+              key: 'k',
+              name: 'Bulletin.pdf',
+              mime: 'application/pdf',
+              localPath: local,
+            )),
+      ]);
+
+      await tester.tap(find.byKey(const Key('m4_document_tile')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(opener.calls, ['file $local application/pdf']);
+      expect(urls.downloaded, isEmpty);
+      expect(urls.resolved, isEmpty);
+    });
+  });
+
   group('L’état d’envoi', () {
     const echo = MessageMedia(
       kind: MessageMediaKind.document,
@@ -457,3 +615,17 @@ void main() {
     expect(mediaPreviewLabel(_fr, MessageMediaKind.unknown), isNull);
   });
 }
+
+/// Un PNG de 1×1 px, transparent — de quoi faire un fichier que `Image.file`
+/// décode vraiment.
+const List<int> _kOnePixelPng = [
+  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, //
+  0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+  0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+  0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+  0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+  0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+  0x42, 0x60, 0x82,
+];
