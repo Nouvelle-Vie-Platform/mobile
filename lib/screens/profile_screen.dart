@@ -29,6 +29,9 @@ class ProfileScreen extends ConsumerWidget {
 
   /// L'entrée « Confidentialité » (#142).
   static const Key privacyKey = Key('profile_privacy');
+
+  /// L'entrée de l'écran « Stockage » des médias de la messagerie (#226).
+  static const Key mediaStorageKey = Key('profile_media_storage');
   static const Key themeButtonKey = Key('profile_theme_button');
 
   /// La ligne « Mon assemblée » (#184).
@@ -96,6 +99,18 @@ class ProfileScreen extends ConsumerWidget {
                       label: l.privacyMenu,
                       subtitle: l.privacyMenuSubtitle,
                       onTap: () => context.pushNamed(AppRoute.privacySettings),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    // #226 (T4) : ce que les conversations occupent sur cet
+                    // appareil, et de quoi vider. Une ligne de menu et non un
+                    // cinquième hexagone : la rangée en porte déjà quatre, et
+                    // un `Expanded` de plus écraserait les libellés.
+                    MenuTile(
+                      key: ProfileScreen.mediaStorageKey,
+                      icon: Icons.sd_storage_outlined,
+                      label: l.mediaStorageMenu,
+                      subtitle: l.mediaStorageMenuSubtitle,
+                      onTap: () => context.pushNamed(AppRoute.mediaStorage),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                   ],

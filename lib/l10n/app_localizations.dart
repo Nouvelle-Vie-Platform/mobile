@@ -6069,6 +6069,84 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'10 quiz différents'**
   String get bibleQuizBadgeTen;
+
+  /// Profil : entrée qui ouvre l'écran « Stockage » des médias de la messagerie (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Stockage des médias'**
+  String get mediaStorageMenu;
+
+  /// Profil : sous-titre de l'entrée « Stockage des médias » (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce que les conversations occupent sur cet appareil'**
+  String get mediaStorageMenuSubtitle;
+
+  /// Titre de l'écran « Stockage » des médias de la messagerie (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Stockage'**
+  String get mediaStorageTitle;
+
+  /// Écran Stockage : le poids total des médias de la messagerie réellement présents sur le disque (#226). {size} est déjà formaté (« 12,4 Mo »)
+  ///
+  /// In fr, this message translates to:
+  /// **'{size} sur cet appareil'**
+  String mediaStorageTotal(String size);
+
+  /// Écran Stockage : le bandeau qui dit la décision — aucune éviction automatique, et une purge est réversible par un nouveau téléchargement (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Rien ne s\'efface tout seul. Ce que vous videz ici se retéléchargera à la demande.'**
+  String get mediaStorageNotice;
+
+  /// Écran Stockage : titre de la section des poids par forme de média (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Par type'**
+  String get mediaStorageByKind;
+
+  /// Écran Stockage : titre de la liste des conversations, de la plus lourde à la plus légère (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Par conversation'**
+  String get mediaStorageByConversation;
+
+  /// Écran Stockage : le nombre de fichiers d'une conversation, vignettes comprises (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 fichier} other{{count} fichiers}}'**
+  String mediaStorageFiles(int count);
+
+  /// Écran Stockage : l'état vide — le magasin ne contient rien (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun média de la messagerie n\'est enregistré sur cet appareil.'**
+  String get mediaStorageEmpty;
+
+  /// Écran Stockage : titre de la confirmation avant une purge (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Vider ?'**
+  String get mediaStoragePurgeTitle;
+
+  /// Écran Stockage : corps de la confirmation avant une purge. {label} est le nom de la conversation ou de la forme de média (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Les médias de « {label} » quittent cet appareil. Ils resteront téléchargeables à la demande.'**
+  String mediaStoragePurgeMessage(String label);
+
+  /// Écran Stockage : le bouton qui confirme la purge (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Vider'**
+  String get mediaStoragePurgeAction;
+
+  /// Écran Stockage : un groupe dont on ne connaît plus le nom, mais dont les fichiers occupent encore la place (#226)
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversation quittée'**
+  String get mediaStorageUnknownConversation;
 }
 
 class _AppLocalizationsDelegate

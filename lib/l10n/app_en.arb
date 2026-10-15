@@ -1055,5 +1055,21 @@
   "bibleHomeCardFavorites": "Favorites",
   "bibleQuizBadgeFirst": "First quiz",
   "bibleQuizBadgePerfect": "Perfect score",
-  "bibleQuizBadgeTen": "10 different quizzes"
+  "bibleQuizBadgeTen": "10 different quizzes",
+  "mediaStorageMenu": "Media storage",
+  "mediaStorageMenuSubtitle": "What your conversations take up on this device",
+  "mediaStorageTitle": "Storage",
+  "mediaStorageTotal": "{size} on this device",
+  "@mediaStorageTotal": { "placeholders": { "size": { "type": "String", "example": "12.4 MB" } } },
+  "mediaStorageNotice": "Nothing is deleted on its own. Whatever you clear here will download again on demand.",
+  "mediaStorageByKind": "By type",
+  "mediaStorageByConversation": "By conversation",
+  "mediaStorageFiles": "{count, plural, =1{1 file} other{{count} files}}",
+  "@mediaStorageFiles": { "placeholders": { "count": { "type": "int", "example": "12" } } },
+  "mediaStorageEmpty": "No messaging media is stored on this device.",
+  "mediaStoragePurgeTitle": "Clear?",
+  "mediaStoragePurgeMessage": "The media from \u00ab\u00a0{label}\u00a0\u00bb will leave this device. They will stay available to download on demand.",
+  "@mediaStoragePurgeMessage": { "placeholders": { "label": { "type": "String", "example": "Jeunesse Lom\u00e9" } } },
+  "mediaStoragePurgeAction": "Clear",
+  "mediaStorageUnknownConversation": "Conversation you left"
 }
