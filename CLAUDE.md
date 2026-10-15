@@ -1277,8 +1277,14 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   c'est le décochage lui-même qui voyage.
   `tables/group_tables.dart` — les cinq collections d'**« Échanges »** (#96) :
   `profiles`, `groups`, `group_members`, `group_join_requests`, `group_messages`,
-  plus `pending_group_messages`, **locale seule** (l'écho optimiste d'un envoi,
-  même patron que `local_playback_positions`). Deux types de PK — UUID pour
+  plus deux tables **locales seules** (même patron que
+  `local_playback_positions`) : `pending_group_messages`, l'écho optimiste d'un
+  envoi, et `local_message_media` (#223, v30), **le magasin durable d'un média
+  reçu** — le chemin du fichier descendu sur l'appareil, joint à la lecture du
+  fil. Il n'est **pas** une colonne de `group_messages`, et ce n'est pas un
+  oubli : `applyPage` réécrit cette collection en `insertOrReplace`, qui remet
+  à `NULL` toute colonne que `groupMessageRowOf` ne cite pas (mesuré dans
+  `test/data/local/migration_message_media_test.dart`). Deux types de PK — UUID pour
   `groups`/`group_messages`/`profiles`, **entier** pour `group_members` et
   `group_join_requests` —, et deux collections **sans tombstone** (`groups`,
   `profiles`), dont le coût est borné par la lecture : une conversation se lit sur
@@ -1305,7 +1311,7 @@ synchronisation y écrit, elle ne rend rien. Le réseau ne peint jamais.
   `legal_dao.dart`, `menu_dao.dart` et `group_dao.dart` — lectures, **un DAO par
   domaine**. `playback_dao` et `group_dao` sont les seuls qui **écrivent**, et
   seulement dans une table locale seule (`local_playback_positions`,
-  `pending_group_messages`).
+  `pending_group_messages`, `local_message_media`).
 
 **Six règles qui ne se renégocient pas** (ADR-0026 en donne le *pourquoi*) :
 1. **Une page appliquée = une transaction** : ses lignes **et** son curseur, ou
