@@ -60,6 +60,51 @@ class MessageMediaStore {
     return path;
   }
 
+  /// **Fait entrer au magasin un fichier déjà sur l'appareil** (T2, #224) —
+  /// typiquement celui qu'on vient d'envoyer, encore dans l'outbox. Rend le
+  /// chemin au magasin, ou `null` si la source a disparu.
+  ///
+  /// **Un déplacement, pas une copie** : les octets d'une vidéo ne s'écrivent
+  /// pas deux fois. `rename` est atomique, et les deux dossiers vivent dans le
+  /// même support — la copie n'est là que pour le cas où ils n'y vivraient
+  /// pas (un jour, un dossier sur une carte).
+  ///
+  /// [fileName] par défaut : le nom de la source. Le passer sert au document,
+  /// dont le nom déclaré est celui que l'ouvreur du système montrera — et
+  /// celui sous lequel `GroupMediaUrls.download` chercherait le même fichier.
+  Future<String?> adopt({
+    required String messageId,
+    required String sourcePath,
+    String? fileName,
+    bool thumbnail = false,
+  }) async {
+    final source = File(sourcePath);
+    if (!source.existsSync()) return null;
+    final target = await pathFor(
+      messageId: messageId,
+      fileName: fileName ?? _basename(sourcePath),
+      thumbnail: thumbnail,
+    );
+    if (target == sourcePath) return target;
+    await prepare(target);
+    try {
+      await source.rename(target);
+    } on FileSystemException {
+      await source.copy(target);
+      try {
+        await source.delete();
+      } on FileSystemException {
+        // La copie est faite : le doublon partira au prochain balayage.
+      }
+    }
+    return target;
+  }
+
+  static String _basename(String path) {
+    final slash = path.lastIndexOf('/');
+    return slash < 0 ? path : path.substring(slash + 1);
+  }
+
   /// Un séparateur dans un nom de fichier ferait un sous-dossier, ou sortirait
   /// du magasin (`../`). Le nom vient du serveur : on ne le suppose pas sain.
   static String _safe(String raw) => raw.replaceAll(RegExp(r'[/\\:]'), '_');

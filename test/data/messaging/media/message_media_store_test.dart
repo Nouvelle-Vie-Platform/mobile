@@ -119,6 +119,75 @@ void main() {
     });
   });
 
+  group('adopt — le fichier envoyé entre au magasin (T2, #224)', () {
+    late Directory outbox;
+
+    setUp(() {
+      outbox = Directory.systemTemp.createTempSync('outbox_');
+    });
+
+    tearDown(() {
+      if (outbox.existsSync()) outbox.deleteSync(recursive: true);
+    });
+
+    File sourceFile(String name, String contents) =>
+        File('${outbox.path}/$name')..writeAsStringSync(contents);
+
+    test('un déplacement, pas une copie : la source ne reste pas', () async {
+      final source = sourceFile('c-1-src.m4a', 'des octets');
+
+      final path =
+          await storeOf().adopt(messageId: 'm-1', sourcePath: source.path);
+
+      expect(path, '${root.path}/message_media/m-1/c-1-src.m4a');
+      expect(File(path!).readAsStringSync(), 'des octets',
+          reason: 'les octets sont arrivés entiers');
+      expect(source.existsSync(), isFalse,
+          reason: 'la source est déplacée, pas recopiée');
+    });
+
+    test('un nom donné prime : le document garde le sien', () async {
+      final path = await storeOf().adopt(
+        messageId: 'm-1',
+        sourcePath: sourceFile('c-1-src.pdf', 'pdf').path,
+        fileName: 'budget 2026.pdf',
+      );
+      expect(path, '${root.path}/message_media/m-1/budget 2026.pdf');
+    });
+
+    test('la vignette prend la variante du magasin', () async {
+      final path = await storeOf().adopt(
+        messageId: 'm-1',
+        sourcePath: sourceFile('c-1-thumb.jpg', 'jpg').path,
+        thumbnail: true,
+      );
+      expect(path, '${root.path}/message_media/m-1/thumb_c-1-thumb.jpg');
+    });
+
+    test('une source disparue rend `null`, sans rien créer', () async {
+      final store = storeOf();
+      expect(
+        await store.adopt(
+            messageId: 'm-1', sourcePath: '${outbox.path}/jamais.m4a'),
+        isNull,
+      );
+      expect(Directory('${root.path}/message_media').existsSync(), isFalse);
+    });
+
+    test('un fichier déjà au magasin est rendu tel quel — idempotent',
+        () async {
+      final store = storeOf();
+      final first = await store.adopt(
+          messageId: 'm-1', sourcePath: sourceFile('c-1.jpg', 'jpg').path);
+
+      final second = await store.adopt(messageId: 'm-1', sourcePath: first!);
+
+      expect(second, first);
+      expect(File(first).readAsStringSync(), 'jpg',
+          reason: 'se renommer sur soi-même ne doit pas vider le fichier');
+    });
+  });
+
   group('download — le disque avant le réseau', () {
     late _CountingApi api;
     late _CountingOrigin origin;

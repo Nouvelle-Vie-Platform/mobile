@@ -40,6 +40,7 @@ import 'group_media_transport.dart';
 import 'media_outbox.dart';
 import 'media_preparer.dart';
 import 'media_upload_progress.dart';
+import 'message_media_store.dart';
 
 /// Ce qu'on veut envoyer — une seule des formes est renseignée.
 class OutgoingMedia {
@@ -174,6 +175,7 @@ class GroupMediaComposer {
     required GroupMediaTransport transport,
     required MediaPreparer preparer,
     required MediaOutbox outbox,
+    required MessageMediaStore store,
     required MediaUploadProgress progress,
     required Future<void> Function() resynchronize,
     DateTime Function()? now,
@@ -182,6 +184,7 @@ class GroupMediaComposer {
         _transport = transport,
         _preparer = preparer,
         _outbox = outbox,
+        _store = store,
         _progress = progress,
         _resynchronize = resynchronize,
         _now = now ?? DateTime.now,
@@ -191,6 +194,7 @@ class GroupMediaComposer {
   final GroupMediaTransport _transport;
   final MediaPreparer _preparer;
   final MediaOutbox _outbox;
+  final MessageMediaStore _store;
   final MediaUploadProgress _progress;
   final Future<void> Function() _resynchronize;
   final DateTime Function() _now;
@@ -279,7 +283,7 @@ class GroupMediaComposer {
       }
 
       final meta = MessageMedia.decodeMeta(pending.mediaMeta);
-      await _transport.sendMessage(
+      final messageId = await _transport.sendMessage(
         groupId: pending.groupId,
         clientMessageId: pending.clientMessageId,
         clientCreatedAt: pending.createdAt,
@@ -290,6 +294,7 @@ class GroupMediaComposer {
         mediaMeta: meta.isEmpty ? null : meta,
         mediaThumbnailKey: pending.mediaThumbnailKey,
       );
+      if (messageId != null) await _keep(messageId, pending, meta);
 
       _progress.clear(clientMessageId);
       // Le flux delta ramène la ligne autoritaire ; `threadOf` fait alors
@@ -319,6 +324,79 @@ class GroupMediaComposer {
     } finally {
       _progress.clear(clientMessageId);
       _inFlight.remove(clientMessageId);
+    }
+  }
+
+  /// **Le fichier envoyé passe de l'outbox au magasin** (T2, #224).
+  ///
+  /// Sans ce passage, le fichier qu'on venait d'envoyer était **effacé** par le
+  /// balayage dès que l'écho cessait de le citer, puis **retéléchargé** depuis
+  /// le serveur pour paraître dans sa propre bulle. On l'avait, on le jetait, on
+  /// le reprenait.
+  ///
+  /// **Un déplacement, pas une copie** : les octets d'une vidéo ne s'écrivent
+  /// pas deux fois (`MessageMediaStore.adopt`).
+  ///
+  /// ## Relier l'écho à l'identité définitive du message
+  ///
+  /// Le magasin est indexé par l'identité **serveur** du message ; un écho n'a
+  /// que sa clé d'idempotence, frappée par le téléphone. Les deux ne se voient
+  /// qu'ici : le `201` de `POST /groups/:id/messages` rend le message
+  /// autoritaire, et le rend aussi sur un renvoi sous la même clé — un envoi
+  /// repris après une coupure apprend donc la même identité, et le passage est
+  /// **idempotent** (la source est alors déjà au magasin, `adopt` n'a rien à
+  /// faire).
+  ///
+  /// Attendre la réconciliation aurait été plus fragile : la ligne autoritaire
+  /// arrive par le cycle delta **ou** par le canal `users/{id}`, et
+  /// `purgeReconciled` efface l'écho — donc le lien — dès qu'elle est là.
+  ///
+  /// ## Jamais au prix de l'envoi
+  ///
+  /// Le message **est parti**. Un disque plein, un dossier refusé ne doivent
+  /// donc pas marquer l'écho « pas parti » : l'erreur est avalée, et le fichier
+  /// reste dans l'outbox — où le balayage finira par le prendre, comme avant
+  /// cette tranche. On perd un retéléchargement, pas un message.
+  Future<void> _keep(
+    String messageId,
+    PendingGroupMessageRow pending,
+    Map<String, Object?> meta,
+  ) async {
+    final source = pending.mediaPath;
+    if (source == null) return;
+    try {
+      // Le nom déclaré d'un document est celui que l'ouvreur du système
+      // montrera ; l'image et la vidéo gardent le nom de l'outbox.
+      final name = meta['name'];
+      final path = await _store.adopt(
+        messageId: messageId,
+        sourcePath: source,
+        fileName: name is String && name.trim().isNotEmpty ? name.trim() : null,
+      );
+      final thumbSource = pending.mediaThumbPath;
+      final thumb = thumbSource == null
+          ? null
+          : await _store.adopt(
+              messageId: messageId,
+              sourcePath: thumbSource,
+              thumbnail: true,
+            );
+      if (path == null && thumb == null) return;
+
+      await _dao.rememberLocalMedia(messageId, path: path, thumbPath: thumb);
+      // L'écho cite désormais le fichier **là où il vit**. Deux raisons : la
+      // bulle de l'écho continue de montrer la vignette le temps que la ligne
+      // autoritaire arrive, et le balayage ne voit plus un chemin d'outbox
+      // qu'il croirait à garder.
+      await _dao.updatePendingMedia(
+        pending.clientMessageId,
+        PendingGroupMessagesCompanion(
+          mediaPath: path == null ? const Value.absent() : Value(path),
+          mediaThumbPath: thumb == null ? const Value.absent() : Value(thumb),
+        ),
+      );
+    } on Object {
+      // Voir ci-dessus : le message est parti, c'est tout ce qui compte.
     }
   }
 

@@ -493,8 +493,10 @@ class LocalMessageMedia extends Table {
   @override
   String get tableName => 'local_message_media';
 
-  /// L'identité **serveur** du message — jamais un `clientMessageId` : l'écho
-  /// d'un envoi garde son fichier dans l'outbox jusqu'à T2 (#224).
+  /// L'identité **serveur** du message — jamais un `clientMessageId`. L'écho
+  /// d'un envoi n'a pas encore cette identité : il garde son fichier dans
+  /// l'outbox, et ne prend sa ligne ici qu'au retour de l'envoi, qui la lui
+  /// apprend (T2, #224 — `GroupMediaComposer._keep`).
   TextColumn get messageId => text()();
 
   /// Le fichier du média dans le magasin durable (`MessageMediaStore`).
