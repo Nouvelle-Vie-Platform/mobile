@@ -12,6 +12,7 @@ import 'package:maison_du_miracle/data/downloads/download_resolver.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/local/tables/download_tables.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
+import 'package:maison_du_miracle/models/teaching_download.dart';
 
 import '../local/local_database_fixtures.dart';
 
@@ -46,9 +47,31 @@ void main() {
     );
   }
 
+  /// L'enseignement et son **contrat de téléchargement** — la seule durée
+  /// disponible hors ligne (#222) : `teachings` n'en porte aucune colonne.
+  Future<void> seedContract({int durationSeconds = 3600}) {
+    return db.into(db.teachings).insert(
+          TeachingsCompanion.insert(
+            id: _id,
+            title: 'La foi qui déplace',
+            download: Value(
+              TeachingDownload(
+                version: 'v1',
+                durationSeconds: durationSeconds,
+                renditions: const {
+                  'mid':
+                      DownloadRendition(url: 'https://x/mid.aac', bytes: 500),
+                },
+              ),
+            ),
+          ),
+        );
+  }
+
   DownloadResolver resolver({bool offline = false}) => DownloadResolver(
         dao: db.downloadsDao,
         network: FixedNetworkStatus(offline: offline),
+        metadataFor: db.mediathequeDao.downloadFor,
       );
 
   Future<PlaybackResolution> resolve({bool offline = false}) =>
@@ -150,6 +173,65 @@ void main() {
         bytesTotal: 500,
       );
       expect((await resolve(offline: true)).hlsUrl, _hls);
+    });
+  });
+
+  group('la durée qui fait foi (#222)', () {
+    test('un complet porte la durée du contrat, pas celle du lecteur',
+        () async {
+      await seed(
+        state: DownloadState.complete,
+        localPath: _path,
+        bytesReceived: 500,
+        bytesTotal: 500,
+      );
+      await seedContract(durationSeconds: 3600);
+
+      // Mesurée sur la **source** au transcodage : c'est ce que l'écran doit
+      // afficher, parce qu'un ADTS ne dit pas la sienne et que le lecteur ne
+      // peut que l'estimer.
+      expect((await resolve()).contractDuration, const Duration(hours: 1));
+    });
+
+    test('un partiel porte la durée de l\'enseignement **entier**', () async {
+      await seed(
+        state: DownloadState.paused,
+        localPath: _path,
+        bytesReceived: 120,
+        bytesTotal: 500,
+      );
+      await seedContract(durationSeconds: 7200);
+
+      // **L'arbitrage de la tranche.** Les octets reçus ne font qu'un quart du
+      // fichier ; l'écran affiche quand même 2:00:00, et la lecture s'arrête à
+      // l'EOF. Dire la durée des octets reçus serait l'estimation que cette
+      // tranche supprime, ferait passer deux heures d'enseignement pour trente
+      // minutes, et ferait enregistrer « terminé » au bout du tronçon.
+      expect(
+        (await resolve(offline: true)).contractDuration,
+        const Duration(hours: 2),
+      );
+    });
+
+    test('en HLS, aucune durée : le lecteur garde la main', () async {
+      await seedContract();
+      final r = await resolve();
+      expect(r.isLocal, isFalse);
+      expect(r.contractDuration, isNull);
+    });
+
+    test('un local sans contrat ne ment pas : durée nulle', () async {
+      // Le fonds ancien, jamais re-transcodé : pas de contrat, donc pas de
+      // durée. L'affichage retombe sur le lecteur, comme avant #222.
+      await seed(
+        state: DownloadState.complete,
+        localPath: _path,
+        bytesReceived: 500,
+        bytesTotal: 500,
+      );
+      final r = await resolve();
+      expect(r.localFilePath, _path);
+      expect(r.contractDuration, isNull);
     });
   });
 }

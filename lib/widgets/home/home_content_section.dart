@@ -74,6 +74,10 @@ Future<void> _loadHomeContent(
         contentId: content.id,
         url: url,
         filePath: resolution.localFilePath,
+        // Même source, même durée qu'à la fiche (#222) : une carte de l'accueil
+        // ne doit pas afficher une durée estimée là où la fiche en montre une
+        // juste.
+        contractDuration: resolution.contractDuration,
         title: content.title,
         author: content.authorName,
         artUrl: content.squareOrLandscape,

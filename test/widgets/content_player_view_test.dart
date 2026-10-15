@@ -20,6 +20,7 @@ import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
+import 'package:maison_du_miracle/models/teaching_download.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/gathering_providers.dart';
 import 'package:maison_du_miracle/state/measurement_providers.dart';
@@ -796,6 +797,7 @@ void main() {
       String? path = localPath,
       int bytesReceived = 500,
       int bytesTotal = 500,
+      int? durationSeconds,
     }) async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
@@ -811,8 +813,81 @@ void main() {
           createdAt: DateTime.utc(2026, 8, 15),
         ),
       );
+      // L'enseignement et son contrat : la seule durée disponible hors ligne
+      // (#222) — `teachings` n'en porte aucune colonne.
+      if (durationSeconds != null) {
+        await db.into(db.teachings).insert(
+              TeachingsCompanion.insert(
+                id: _id,
+                title: 'La foi qui déplace',
+                download: Value(
+                  TeachingDownload(
+                    version: 'v1',
+                    durationSeconds: durationSeconds,
+                    renditions: const {
+                      'mid': DownloadRendition(
+                        url: 'https://x/mid.aac',
+                        bytes: 500,
+                      ),
+                    },
+                  ),
+                ),
+              ),
+            );
+      }
       return db;
     }
+
+    testWidgets('la durée affichée vient du contrat, pas du lecteur (#222)', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+      final db = await dbWithDownload(
+        state: DownloadState.complete,
+        durationSeconds: 3600,
+      );
+
+      await _pump(tester, player: player, database: db);
+      await _demarrer(tester, player);
+
+      // Ce que le lecteur **mesure** sur l'ADTS : faux, et il ne peut pas faire
+      // mieux — la durée n'est écrite nulle part dans le fichier et l'encodeur
+      // est ABR. Six minutes d'écart sur deux heures, mesuré.
+      player.emit(
+        player.value.copyWith(
+          position: const Duration(minutes: 30),
+          duration: const Duration(minutes: 54),
+        ),
+      );
+      await tester.pump();
+
+      // Le contrat gagne : une heure, et une barre à la moitié — pas aux 55 %
+      // qu'une durée de 54 minutes dessinerait.
+      expect(find.text('1:00:00'), findsOneWidget);
+      expect(find.text('54:00'), findsNothing);
+      expect(
+        tester.widget<Slider>(find.byType(Slider)).value,
+        closeTo(0.5, 0.001),
+      );
+    });
+
+    testWidgets('en HLS, la durée du lecteur reste la source (#222)', (
+      tester,
+    ) async {
+      final player = InertContentPlayer();
+      addTearDown(player.dispose);
+
+      await _pump(tester, player: player);
+      await _demarrer(tester, player);
+      player.emit(
+        player.value.copyWith(duration: const Duration(minutes: 54)),
+      );
+      await tester.pump();
+
+      // Sur un flux, la mesure du lecteur est juste : rien ne doit la supplanter.
+      expect(find.text('54:00'), findsOneWidget);
+    });
 
     testWidgets('un complet est joué depuis le disque, pas en HLS', (
       tester,

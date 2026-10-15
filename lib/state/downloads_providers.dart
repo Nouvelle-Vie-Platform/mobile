@@ -130,6 +130,10 @@ final downloadResolverProvider = Provider<DownloadResolver>(
   (ref) => DownloadResolver(
     dao: ref.watch(downloadsDaoProvider),
     network: ref.watch(networkStatusProvider),
+    // La durée qui fait foi sur une copie locale (#222), connue hors ligne par
+    // le même contrat que les URLs et les tailles (ADR-0038).
+    metadataFor: (contentId) =>
+        ref.read(mediathequeDaoProvider).downloadFor(contentId),
   ),
 );
 
