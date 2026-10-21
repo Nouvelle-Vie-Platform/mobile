@@ -42,13 +42,23 @@ final playbackProgressReporterProvider = Provider<PlaybackProgressReporter>(
 /// L'appelant — le contrôleur global, et lui seul — garde l'objet rendu tant
 /// que le contenu est chargé, lui pousse la position, et l'informe des quatre
 /// événements.
-final playbackProgressRecorderProvider =
-    Provider<Future<PlaybackProgressRecorder> Function(String contentId)>(
-  (ref) => (contentId) => PlaybackProgressRecorder.open(
-        dao: ref.read(playbackDaoProvider),
-        reporter: ref.read(playbackProgressReporterProvider),
-        contentId: contentId,
-      ),
+///
+/// [partialSource] dit que la source jouée est un `.aac` **incomplet** (#228) :
+/// l'enregistreur n'en marquera alors jamais « écouté », la fin manquant. Le
+/// contrôleur le tranche au chargement, parce que lui seul sait quelle source
+/// est réellement ouverte.
+final playbackProgressRecorderProvider = Provider<
+    Future<PlaybackProgressRecorder> Function(
+      String contentId, {
+      bool partialSource,
+    })>(
+  (ref) =>
+      (contentId, {partialSource = false}) => PlaybackProgressRecorder.open(
+            dao: ref.read(playbackDaoProvider),
+            reporter: ref.read(playbackProgressReporterProvider),
+            contentId: contentId,
+            partialSource: partialSource,
+          ),
 );
 
 /// Rapporteur de mode maquette : il accepte tout et n'envoie rien.

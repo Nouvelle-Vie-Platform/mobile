@@ -29,7 +29,7 @@
 /// |---|---|
 /// | pause | une émission du lecteur qui passe de « joue » à « ne joue pas » |
 /// | **contenu arrêté ou remplacé** (l'ancienne « sortie d'écran ») | [stop], et [load] d'un autre contenu — radio comprise —, **avant** que le lecteur ne change de main |
-/// | complétion | l'état terminal du lecteur, ou le seuil dans la position poussée |
+/// | complétion | l'état terminal du lecteur, ou le seuil dans la position poussée — **jamais sur un fichier partiel** (#228, voir [_playsPartialFile]) |
 /// | ~30 s de temps joué | la position poussée à chaque émission |
 /// | `AppLifecycleState.paused` | un observateur du cycle de vie — **sans arrêter la lecture** |
 ///
@@ -55,10 +55,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/radio_config.dart';
+import '../data/local/tables/download_tables.dart';
 import '../data/measurement/play_tracker.dart';
 import '../data/players/content_player.dart';
 import '../data/repositories/playback_progress_recorder.dart';
 import '../models/content_view.dart';
+import 'downloads_providers.dart';
 import 'gathering_providers.dart';
 import 'measurement_providers.dart';
 import 'mediatheque_providers.dart';
@@ -235,7 +237,12 @@ class PlaybackController extends Notifier<ContentRequest?> {
     final contentId = request.contentId;
     PlaybackProgressRecorder? recorder;
     try {
-      recorder = await ref.read(playbackProgressRecorderProvider)(contentId);
+      recorder = await ref.read(playbackProgressRecorderProvider)(
+        contentId,
+        // Un partiel ne peut pas être « écouté » (#228) : le magasin fait foi,
+        // et il est lu ici, au chargement, où la source ouverte est connue.
+        partialSource: await _playsPartialFile(request),
+      );
     } catch (error, stack) {
       debugPrint(
           '[progression] enregistreur indisponible pour $contentId : $error');
@@ -262,6 +269,31 @@ class PlaybackController extends Notifier<ContentRequest?> {
     _observeLifecycle();
     _watchRetraction(session);
     return session;
+  }
+
+  /// **La source ouverte est-elle un fichier incomplet ?** (#228)
+  ///
+  /// Deux faits, et il faut les deux. Le premier est la décision du résolveur,
+  /// qu'on relit sur la requête : un `filePath` nul, c'est le HLS — un flux
+  /// entier, dont la fin est une vraie fin, partiel téléchargé ou non. Le
+  /// second est le magasin, qui fait foi (ADR-0026) : un état non terminé avec
+  /// des octets reçus, c'est la ligne « partiel » de la matrice du résolveur
+  /// (PRD §3.3, F11), le seul cas où un fichier sur le disque s'arrête avant
+  /// l'enseignement.
+  ///
+  /// Relu ici plutôt que porté par la requête : cette question se pose à
+  /// **chaque** chargement d'une copie locale, d'où qu'il vienne, et un
+  /// appelant qui oublierait de la porter ferait revenir le faux « écouté »
+  /// sans que rien ne le dise.
+  Future<bool> _playsPartialFile(ContentRequest request) async {
+    if (request.filePath == null) return false;
+    final row =
+        await ref.read(downloadsDaoProvider).forContent(request.contentId);
+    if (row == null) return false;
+    return switch (row.state) {
+      DownloadState.complete || DownloadState.outdated => false,
+      _ => row.bytesReceived > 0,
+    };
   }
 
   /// **Le contenu chargé est-il encore au catalogue ?** — l'arrêt sur

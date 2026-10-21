@@ -103,6 +103,7 @@ class PlaybackProgressRecorder {
     required this.contentId,
     required this.progressId,
     required this.resume,
+    required this.partialSource,
     required Duration position,
     required bool completed,
     required int? savedSeconds,
@@ -125,6 +126,7 @@ class PlaybackProgressRecorder {
     required PlaybackDao dao,
     required PlaybackProgressReporter reporter,
     required String contentId,
+    bool partialSource = false,
     String Function()? mintId,
   }) async {
     final resume = await dao.resumeFor(contentId);
@@ -134,6 +136,7 @@ class PlaybackProgressRecorder {
       contentId: contentId,
       progressId: resume?.progressId ?? (mintId ?? _mintUuidV7)(),
       resume: resume,
+      partialSource: partialSource,
       position: resume?.position ?? Duration.zero,
       completed: resume?.completed ?? false,
       savedSeconds: resume?.positionSeconds,
@@ -163,6 +166,23 @@ class PlaybackProgressRecorder {
   /// contrôleur global qui décide d'y aller ou non — un contenu déjà terminé se rouvre
   /// vraisemblablement pour être réécouté.
   final PlaybackResume? resume;
+
+  /// **La source jouée est un fichier incomplet** — un `.aac` partiel ouvert
+  /// hors ligne (PRD F11), dont les octets de la fin manquent (#228).
+  ///
+  /// Elle change une seule chose, et c'est [_complete] qui la tient : rien ne
+  /// peut marquer ce contenu **écouté**. Un partiel s'arrête proprement à la
+  /// limite de ses octets — AVPlayer comme ExoPlayer rendent `completed` sans
+  /// erreur, c'est mesuré (spike 1, mobile#215) —, donc ni l'état terminal du
+  /// lecteur ni le seuil ne prouvent plus que l'enseignement a été entendu
+  /// jusqu'au bout. La position atteinte, elle, reste écrite : un fidèle qui a
+  /// écouté quarante minutes hors ligne les garde, et il reprendra là une fois
+  /// le fichier complet.
+  ///
+  /// `false` partout ailleurs, y compris sur un téléchargement partiel joué
+  /// **en ligne** : c'est alors le HLS entier qui joue, et sa fin est une vraie
+  /// fin.
+  final bool partialSource;
 
   Duration _position;
   Duration? _duration;
@@ -244,6 +264,9 @@ class PlaybackProgressRecorder {
   /// observé plutôt qu'une soustraction. Il reste vrai même si la durée est
   /// nulle, aberrante, ou plus courte que le seuil.
   ///
+  /// **Sauf sur un fichier partiel** : voir [partialSource]. Le fait observé
+  /// est alors « plus d'octets », pas « fin de l'enseignement » (#228).
+  ///
   /// Remettre le lecteur d'aplomb (`pause()` **et** `seek(zero)` : à l'état
   /// terminal `just_audio` reste `playing == true`, curseur en fin, sans son)
   /// appartient au lecteur, pas à cet objet — il n'en connaît aucun.
@@ -266,7 +289,23 @@ class PlaybackProgressRecorder {
     await _report();
   }
 
+  /// **Marque le contenu écouté** — le seul endroit qui le fait, par où
+  /// passent les deux déclencheurs : l'état terminal du lecteur ([onTerminated])
+  /// et le seuil atteint dans [onPosition].
+  ///
+  /// D'où le garde ici et non chez eux (#228) : sur une [partialSource], aucun
+  /// des deux ne dit « fini » — le premier ne dit que « plus d'octets », et le
+  /// second se laisse atteindre par un partiel téléchargé à 99 %. On garde donc
+  /// la position et rien d'autre. Faire porter ce faux « écouté » à la
+  /// progression et aux recommandations (#61) coûterait plus cher que de
+  /// sous-déclarer : l'écriture locale suit la seconde courante
+  /// ([_saveLocalIfSecondChanged]), et le serveur reçoit cette position au
+  /// déclencheur suivant — pause, sortie, écran éteint.
   Future<void> _complete() async {
+    if (partialSource) {
+      await _saveLocalIfSecondChanged();
+      return;
+    }
     _completed = true;
     await _saveLocal(completed: true);
     await _report(completed: true);
