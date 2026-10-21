@@ -136,6 +136,11 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     // de fichier local, [localFilePath] y est donc toujours nul et ignoré. Le
     // paramètre n'existe que pour satisfaire le contrat [ContentPlayer].
     String? localFilePath,
+    // **Toujours nulle ici** (#229), et pour la même raison que [localFilePath] :
+    // la durée du contrat ne naît que d'une résolution **locale**, et le web n'a
+    // pas de fichier local. Retenue dans la requête malgré tout, comme le reste
+    // — une réouverture doit rejouer la même source avec les mêmes promesses.
+    Duration? contractDuration,
     // [isLive] (#104) ne sert qu'aux boutons de la notification et de l'écran
     // verrouillé — **qui n'existent ni l'un ni l'autre sur le web** : il n'y a
     // pas de session média ici, pour la même raison que [title] et [author] ne
@@ -164,6 +169,7 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
       title: title,
       author: author,
       artUrl: artUrl,
+      contractDuration: contractDuration,
       isLive: isLive,
     );
     _resumeAt = null;
