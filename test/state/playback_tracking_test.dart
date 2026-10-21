@@ -27,6 +27,7 @@ import 'package:maison_du_miracle/core/config/radio_config.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/local/tables/download_tables.dart';
+import 'package:maison_du_miracle/data/network/network_transport.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
@@ -39,6 +40,7 @@ import 'package:maison_du_miracle/router/app_router.dart';
 import 'package:maison_du_miracle/screens/home_screen.dart';
 import 'package:maison_du_miracle/screens/teaching_detail_screen.dart';
 import 'package:maison_du_miracle/state/calendar_providers.dart';
+import 'package:maison_du_miracle/state/downloads_providers.dart';
 import 'package:maison_du_miracle/state/mediatheque_providers.dart';
 import 'package:maison_du_miracle/state/playback_controller.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
@@ -160,6 +162,7 @@ void main() {
   Future<void> pumpApp(
     WidgetTester tester, {
     RadioRepository radio = const FixedRadioRepository(kTestAntennaOnAir),
+    bool offline = false,
   }) async {
     // Écran haut : les listes de l'accueil sont paresseuses, et une carte jamais
     // construite ne peut pas être touchée.
@@ -180,6 +183,11 @@ void main() {
       overrides: [
         contentPlayerProvider.overrideWithValue(player),
         calendarRepositoryProvider.overrideWithValue(_EmptyCalendar()),
+        // Hors ligne, un partiel se joue en local (F11) — c'est la seule
+        // branche de la matrice du résolveur qui interroge le réseau.
+        if (offline)
+          networkStatusProvider
+              .overrideWithValue(const FixedNetworkStatus(offline: true)),
       ],
     );
     container = ProviderScope.containerOf(
@@ -571,6 +579,95 @@ void main() {
       // La mesure du lecteur est juste sur un manifeste, et une durée de contrat
       // y entrerait en concurrence avec un flux qu'on ne joue pas en entier.
       expect(player.loadedContractDuration, isNull);
+    });
+
+    testWidgets(
+        'un fichier PARTIEL arrivé au bout de ses octets n\'est pas écouté '
+        '(#228)', (tester) async {
+      await pumpApp(tester, offline: true);
+      final db = database();
+      // Un téléchargement interrompu, conservé (F9), et jouable hors ligne
+      // (F11) : 300 octets sur 500.
+      await db.downloadsDao.upsert(
+        DownloadsCompanion.insert(
+          contentType: 'teaching',
+          contentId: _id,
+          quality: 'mid',
+          state: const Value(DownloadState.failed),
+          localPath: const Value('/data/downloads/$_id.mid.aac'),
+          bytesReceived: const Value(300),
+          bytesTotal: const Value(500),
+          createdAt: DateTime.utc(2026, 8, 15),
+        ),
+      );
+      await db.into(db.teachings).insert(
+            TeachingsCompanion.insert(
+              id: _id,
+              title: _title,
+              download: Value(
+                const TeachingDownload(
+                  version: 'v1',
+                  durationSeconds: 3600,
+                  renditions: {
+                    'mid': DownloadRendition(
+                      url: 'https://x/mid.aac',
+                      bytes: 500,
+                    ),
+                  },
+                ),
+              ),
+            ),
+          );
+      await launchFromHome(tester);
+      expect(player.loadedFilePath, isNotNull,
+          reason: 'prémisse : le partiel est joué en local');
+
+      // Quarante minutes écoutées, puis l'EOF des octets reçus. AVPlayer et
+      // ExoPlayer rendent `completed` à la coupure, **sans erreur** (spike 1,
+      // mobile#215) : pour le contrôleur, ce fait ne se distinguait pas d'une
+      // fin d'enseignement.
+      await reach(tester, const Duration(minutes: 40));
+      player.emit(player.value.copyWith(isCompleted: true));
+      await settle(tester);
+
+      final row = await db.playbackDao.localPositionFor(_id);
+      expect(row?.completed, isFalse,
+          reason: 'il manque vingt minutes sur le disque');
+      // La position atteinte, elle, est gardée : on ne perd pas l'écoute
+      // réelle, et le fidèle reprendra là une fois le fichier complet.
+      expect(row?.positionSeconds, 2400);
+      expect(progress.reports.every((r) => !r.completed), isTrue);
+    });
+
+    testWidgets(
+        'le même fichier, COMPLET, marque bien écouté à son état terminal',
+        (tester) async {
+      await pumpApp(tester);
+      final db = database();
+      await db.downloadsDao.upsert(
+        DownloadsCompanion.insert(
+          contentType: 'teaching',
+          contentId: _id,
+          quality: 'mid',
+          state: const Value(DownloadState.complete),
+          localPath: const Value('/data/downloads/$_id.mid.aac'),
+          bytesReceived: const Value(500),
+          bytesTotal: const Value(500),
+          createdAt: DateTime.utc(2026, 8, 15),
+        ),
+      );
+      await launchFromHome(tester);
+      expect(player.loadedFilePath, isNotNull, reason: 'prémisse : du local');
+
+      await reach(tester, const Duration(minutes: 60));
+      player.emit(player.value.copyWith(isCompleted: true));
+      await settle(tester);
+
+      // Le cas normal, et il ne bouge pas : un fichier entier mené à son terme
+      // reste écouté.
+      final row = await db.playbackDao.localPositionFor(_id);
+      expect(row?.completed, isTrue);
+      expect(progress.reports.last.completed, isTrue);
     });
 
     testWidgets('jamais sur une durée inconnue — seul l\'état terminal tranche',

@@ -76,11 +76,13 @@ void main() {
 
   Future<PlaybackProgressRecorder> openRecorder({
     PlaybackProgressReporter? withReporter,
+    bool partialSource = false,
   }) =>
       PlaybackProgressRecorder.open(
         dao: dao,
         reporter: withReporter ?? reporter,
         contentId: _contentId,
+        partialSource: partialSource,
         mintId: () => _mintedId,
       );
 
@@ -598,6 +600,83 @@ void main() {
       // ligne. Le réseau ne peint jamais.
       expect(await db.select(db.playbackProgress).get(), isEmpty);
       expect(reporter.sent, isNotEmpty);
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // #228 — un fichier partiel n'est jamais « écouté »
+  // ───────────────────────────────────────────────────────────────────────────
+
+  group('Un fichier partiel (#228)', () {
+    test('l\'état terminal n\'est que la fin des octets, pas celle du prêche',
+        () async {
+      // Un `.aac` partiel joué hors ligne (F11) s'arrête proprement à la limite
+      // des octets reçus : AVPlayer et ExoPlayer rendent `completed`, **sans
+      // erreur** — c'est mesuré (spike 1, mobile#215). Ce fait-là ne dit pas que
+      // l'enseignement a été entendu jusqu'au bout.
+      final recorder = await openRecorder(partialSource: true);
+      await play(recorder, from: 2395, to: 2400);
+
+      await recorder.onTerminated();
+
+      expect(recorder.isCompleted, isFalse);
+      // Mais les quarante minutes réellement écoutées sont gardées : le fidèle
+      // reprendra là une fois le fichier complet.
+      final row = await db.select(db.localPlaybackPositions).get();
+      expect(row.single.positionSeconds, 2400);
+      expect(row.single.completed, isFalse);
+      expect(reporter.sent.every((r) => !r.completed), isTrue);
+    });
+
+    test('le seuil ne le termine pas non plus, même téléchargé à 99 %',
+        () async {
+      // L'autre entrée de la complétion, et la raison du garde dans la fonction
+      // partagée : sur un partiel presque entier, la position atteint bien les
+      // trente dernières secondes de la **vraie** durée (celle du contrat,
+      // #222) — le seuil marquerait « écouté » un enseignement dont la fin
+      // manque sur le disque.
+      final recorder = await openRecorder(partialSource: true);
+
+      await recorder.onPosition(
+        const Duration(hours: 1, minutes: 59, seconds: 35),
+        duration: const Duration(hours: 2),
+        isPlaying: true,
+      );
+
+      expect(recorder.isCompleted, isFalse);
+      final row = await db.select(db.localPlaybackPositions).get();
+      expect(row.single.completed, isFalse);
+      expect(reporter.sent.every((r) => !r.completed), isTrue);
+    });
+
+    test('un fichier entier, lui, termine toujours par l\'état terminal',
+        () async {
+      // Le cas normal : sans le drapeau, rien ne change. La base est neuve à
+      // chaque test — aucune complétion d'un autre cas ne peut faire passer
+      // celui-ci.
+      final recorder = await openRecorder();
+
+      await recorder.onTerminated();
+
+      expect(recorder.isCompleted, isTrue);
+      expect(reporter.last.completed, isTrue);
+    });
+
+    test('un fichier entier, lui, termine toujours par le seuil', () async {
+      final recorder = await openRecorder();
+
+      await recorder.onPosition(
+        const Duration(hours: 1, minutes: 59, seconds: 35),
+        duration: const Duration(hours: 2),
+        isPlaying: true,
+      );
+
+      expect(recorder.isCompleted, isTrue);
+      expect(reporter.last.completed, isTrue);
+      expect(
+        (await db.select(db.localPlaybackPositions).get()).single.completed,
+        isTrue,
+      );
     });
   });
 }
