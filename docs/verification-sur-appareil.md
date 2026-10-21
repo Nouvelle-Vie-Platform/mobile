@@ -92,6 +92,37 @@ lancement d'une lecture, observer la demande de permission de notification.
 → **Attendu** : la lecture fonctionne quand même, l'app ne plante pas ; seule la
 notification manque.
 
+2.7 — [ ] **La durée affichée sur l'écran verrouillé, sur une copie
+téléchargée** (#229). Télécharger un enseignement d'au moins une heure, passer
+en **mode avion** (pour être sûr de jouer le `.aac` et non le HLS), le lancer,
+noter la durée totale que l'**application** affiche, puis verrouiller l'écran et
+noter celle que le **système** affiche.
+→ **Attendu** : **le même chiffre à la seconde**. C'est le seul endroit où le
+correctif se voit : avant, le système montrait l'estimation du lecteur sur
+l'ADTS — jusqu'à 1,02 s d'écart mesuré, et −0,9 % à +4,8 % pour une estimation
+par le conteneur, soit ~6 minutes sur deux heures. **Noter les deux chiffres**,
+pas « ça correspond » : un écart de quelques secondes est exactement le symptôme
+qu'on cherche.
+
+2.8 — [ ] **Le « +30 s » de l'écran verrouillé près de la fin**, même copie
+téléchargée. Se placer à une minute de la fin, puis appuyer **plusieurs fois**
+sur « +30 s » depuis l'écran verrouillé.
+→ **Attendu** : la position s'arrête à la fin et la lecture se termine
+proprement. `SeekHandler` borne ses avances sur la durée annoncée au système,
+qui est désormais celle du contrat : si celle-ci dépasse de quelques secondes la
+fin réelle des octets du `.aac`, le dernier appui demande une position qui
+n'existe pas. **Attendu quand même** : pas de plantage, pas de roue qui tourne,
+pas de retour au début. **Noter ce qui se passe** — c'est le seul geste de la
+tranche qu'aucun test ne couvre.
+
+2.9 — [ ] **En HLS, rien ne doit changer.** Hors mode avion, sur un
+enseignement **non téléchargé**, refaire 2.2 et 2.7.
+→ **Attendu** : la durée arrive sur l'écran verrouillé comme avant (quelques
+secondes après le début, le temps du manifeste) et les ±30 s fonctionnent. Une
+durée qui resterait **vide** sur l'écran verrouillé en HLS serait la régression
+exacte de cette tranche : le flux du lecteur aurait été réduit au silence sur un
+chemin où il doit parler.
+
 ---
 
 ## 3. La notification, sur un Android qui n'est pas un Pixel
@@ -394,7 +425,7 @@ ajouter en tête :
 - pour chaque case **non cochée** : ce qui s'est passé à la place, en une phrase
   observable (« le son s'est arrêté sans message pendant 40 s »), une capture
   d'écran si c'est visuel, et la trace si l'app a planté ;
-- pour les points qui demandent un chiffre (4.3, 4.4, 6.1.b, 6.1.d, 9.1, 9.2) :
-  **le chiffre**, pas « ça marche ».
+- pour les points qui demandent un chiffre (2.7, 4.3, 4.4, 6.1.b, 6.1.d, 9.1,
+  9.2) : **le chiffre**, pas « ça marche ».
 
 Une case cochée sans chiffre là où un chiffre est demandé ne vaut rien.

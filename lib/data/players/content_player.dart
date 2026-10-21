@@ -340,6 +340,15 @@ abstract interface class ContentPlayer
   /// comme **repli HLS** et locator de réouverture ; `null` → on joue [url],
   /// c'est-à-dire le comportement d'avant #191.
   ///
+  /// **[contractDuration] est la durée qui fait foi** (#229) — celle du contrat
+  /// de synchronisation, `null` en HLS. Voir
+  /// [ContentRequest.contractDuration] : elle descend jusqu'ici parce que le
+  /// **système** — écran verrouillé, centre de contrôle, Android Auto — ne lit
+  /// pas ce que l'application affiche. #222 l'a fait gagner dans l'application
+  /// et s'est arrêté là : sur un `.aac` téléchargé, le système montrait encore
+  /// l'estimation du lecteur, et le même enseignement portait deux durées selon
+  /// l'endroit où on le regardait.
+  ///
   /// Charger **ne démarre pas** la lecture : ouvrir un enseignement ne doit pas
   /// faire sortir du son dans une salle de culte.
   ///
@@ -367,6 +376,7 @@ abstract interface class ContentPlayer
     String? author,
     String? artUrl,
     String? localFilePath,
+    Duration? contractDuration,
     bool isLive,
     Map<String, String> headers,
   });
@@ -527,6 +537,17 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
   @visibleForTesting
   Map<String, String>? loadedHeaders;
 
+  /// **La durée du contrat reçue au dernier chargement** (#229) — `null` en HLS,
+  /// avant tout `load` et après un [stop].
+  ///
+  /// Exposée pour la raison de [loadedIsLive], et c'est le seul endroit où elle
+  /// soit vérifiable : ce que l'écran verrouillé affiche ne se voit que sur un
+  /// appareil, mais le **chemin** qui porte cette durée depuis la résolution
+  /// jusqu'au lecteur, lui, peut se briser en silence — et alors le système
+  /// remonte afficher l'estimation du lecteur sans qu'aucun test ne rougisse.
+  @visibleForTesting
+  Duration? loadedContractDuration;
+
   /// Nombre de chargements — un rechargement en boucle se voit ici.
   @visibleForTesting
   int loadCount = 0;
@@ -559,12 +580,14 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     String? author,
     String? artUrl,
     String? localFilePath,
+    Duration? contractDuration,
     bool isLive = false,
     Map<String, String> headers = const {},
   }) async {
     if (_disposed) return;
     loadedUrl = url;
     loadedFilePath = localFilePath;
+    loadedContractDuration = contractDuration;
     loadedTitle = title;
     loadedAuthor = author;
     loadedIsLive = isLive;
@@ -578,6 +601,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
       author: author,
       artUrl: artUrl,
       filePath: localFilePath,
+      contractDuration: contractDuration,
       isLive: isLive,
       headers: headers,
     );
@@ -673,6 +697,7 @@ class InertContentPlayer extends ValueNotifier<ContentPlayback>
     // que fait `ContentAudioHandler.stop()` avec `mediaItem.add(null)`.
     loadedUrl = null;
     loadedFilePath = null;
+    loadedContractDuration = null;
     loadedTitle = null;
     loadedAuthor = null;
     loadedIsLive = null;

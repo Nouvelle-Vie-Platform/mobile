@@ -198,6 +198,12 @@ class PlaybackController extends Notifier<ContentRequest?> {
       author: request.author,
       artUrl: request.artUrl,
       localFilePath: request.filePath,
+      // **Jusqu'au système, pas seulement jusqu'à l'écran** (#229) : l'écran
+      // verrouillé et le centre de contrôle ne lisent pas ce que l'application
+      // affiche, ils lisent le `MediaItem`. Perdue ici, la durée du contrat
+      // laissait le système montrer l'estimation du lecteur — deux durées pour
+      // le même enseignement.
+      contractDuration: request.contractDuration,
       isLive: request.isLive,
       headers: request.headers,
     );

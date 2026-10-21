@@ -59,7 +59,15 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
     // republier dans le `MediaItem` : `SeekHandler` borne ses avances sur
     // `mediaItem.duration`, et tant qu'elle vaut `null` il ramène chaque avance
     // rapide à zéro — le bouton « +30 s » ferait alors revenir au début.
+    //
+    // **Sauf quand le contrat a parlé** (#229) : sur un `.aac`, ce que le
+    // lecteur annonce n'est qu'une estimation, et la republier ici effacerait
+    // la durée juste du `MediaItem` dans la seconde qui suit l'ouverture — le
+    // système afficherait l'estimation pendant que l'application afficherait le
+    // contrat. Le flux reste écouté, son émission est simplement ignorée : le
+    // couper laisserait le HLS sans durée.
     _player.durationStream.listen((duration) {
+      if (_durationIsFromContract) return;
       final item = mediaItem.value;
       if (item == null || duration == null || item.duration == duration) return;
       mediaItem.add(item.copyWith(duration: duration));
@@ -77,6 +85,15 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
 
   /// Dernière panne connue, remise à zéro à chaque chargement.
   Object? _failure;
+
+  /// **La durée affichée vient-elle du contrat ?** (#229)
+  ///
+  /// Posé à chaque [open] depuis `item.duration` — la seule façon dont une
+  /// durée entre dans le `MediaItem` au chargement —, et lu par le seul
+  /// abonnement à `durationStream`, qu'il réduit au silence. C'est ce qui
+  /// empêche la mesure du lecteur de recouvrir la durée du contrat une fois
+  /// l'ADTS sondé.
+  bool _durationIsFromContract = false;
 
   /// **La source en main est-elle une antenne ?** (#104)
   ///
@@ -99,6 +116,11 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
   /// Un partiel (AAC-ADTS tronqué) s'arrête proprement à l'EOF des octets reçus
   /// — ExoPlayer et AVPlayer terminent en `completed`, sans boucle de tampon
   /// (Spike 1, F11) —, donc le chien de garde du décrochage ne s'arme pas.
+  /// **`item.duration` est la durée que le système affichera** et celle sur
+  /// laquelle `SeekHandler` borne son « +30 s ». Non nulle, elle vient du
+  /// contrat de synchronisation (#229) et **gagne définitivement** : la mesure
+  /// du lecteur ne la recouvrira pas. Nulle, c'est le HLS d'avant — le lecteur
+  /// la remplit dès que le manifeste a répondu.
   /// [isLive] retire de la notification et de l'écran verrouillé les boutons de
   /// recul, d'avance et le déplacement : voir [_broadcastState].
   /// [headers] porte la session de l'antenne (#108). Ils ne concernent que le
@@ -131,6 +153,7 @@ class ContentAudioHandler extends BaseAudioHandler with SeekHandler {
   }) async {
     _failure = null;
     _isLive = isLive;
+    _durationIsFromContract = item.duration != null;
     mediaItem.add(item);
     if (filePath != null) {
       await _player.setFilePath(filePath, initialPosition: at);
@@ -359,6 +382,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
     String? author,
     String? artUrl,
     String? localFilePath,
+    Duration? contractDuration,
     bool isLive = false,
     Map<String, String> headers = const {},
   }) async {
@@ -370,6 +394,7 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
       author: author,
       artUrl: artUrl,
       filePath: localFilePath,
+      contractDuration: contractDuration,
       isLive: isLive,
       headers: headers,
     );
@@ -470,6 +495,12 @@ class JustAudioContentPlayer extends ValueNotifier<ContentPlayback>
           id: request.contentId,
           title: request.title,
           artist: _statusLine ?? request.author,
+          // **La durée que le système affichera** (#229) : celle du contrat
+          // quand on joue une copie locale, `null` en HLS — où le lecteur la
+          // remplira. Reposée à chaque réouverture, comme la ligne d'état : le
+          // chien de garde et le repli de [resume] construisent un `MediaItem`
+          // neuf, qui repartirait sans elle.
+          duration: request.contractDuration,
           artUri: request.artUrl == null ? null : Uri.tryParse(request.artUrl!),
         ),
       );

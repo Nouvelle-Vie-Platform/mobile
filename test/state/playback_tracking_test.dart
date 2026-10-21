@@ -192,6 +192,46 @@ void main() {
   PlaybackController controller() =>
       container.read(playbackControllerProvider.notifier);
 
+  /// **Une copie locale complète et son contrat** — une heure, mesurée sur la
+  /// source au transcodage, la seule durée juste d'un `.aac` (#222).
+  ///
+  /// Partagé par les deux tests qui en dépendent : celui de l'enregistreur de
+  /// progression (#222) et celui de la durée annoncée au système (#229). Deux
+  /// semis séparés dériveraient, et c'est la même situation qu'ils décrivent.
+  Future<void> seedLocalCopy() async {
+    final db = database();
+    await db.downloadsDao.upsert(
+      DownloadsCompanion.insert(
+        contentType: 'teaching',
+        contentId: _id,
+        quality: 'mid',
+        state: const Value(DownloadState.complete),
+        localPath: const Value('/data/downloads/$_id.mid.aac'),
+        bytesReceived: const Value(500),
+        bytesTotal: const Value(500),
+        createdAt: DateTime.utc(2026, 8, 15),
+      ),
+    );
+    await db.into(db.teachings).insert(
+          TeachingsCompanion.insert(
+            id: _id,
+            title: _title,
+            download: Value(
+              const TeachingDownload(
+                version: 'v1',
+                durationSeconds: 3600,
+                renditions: {
+                  'mid': DownloadRendition(
+                    url: 'https://x/mid.aac',
+                    bytes: 500,
+                  ),
+                },
+              ),
+            ),
+          ),
+        );
+  }
+
   /// Laisse passer les requêtes au magasin — résolution du téléchargement,
   /// lecture de la reprise, écritures de position — sans jamais attendre une
   /// stabilisation que l'animation du bouton d'antenne n'offrirait pas.
@@ -484,38 +524,7 @@ void main() {
         (tester) async {
       await pumpApp(tester);
       final db = database();
-      // Une copie locale complète, et son contrat : une heure, mesurée sur la
-      // **source** au transcodage.
-      await db.downloadsDao.upsert(
-        DownloadsCompanion.insert(
-          contentType: 'teaching',
-          contentId: _id,
-          quality: 'mid',
-          state: const Value(DownloadState.complete),
-          localPath: const Value('/data/downloads/$_id.mid.aac'),
-          bytesReceived: const Value(500),
-          bytesTotal: const Value(500),
-          createdAt: DateTime.utc(2026, 8, 15),
-        ),
-      );
-      await db.into(db.teachings).insert(
-            TeachingsCompanion.insert(
-              id: _id,
-              title: _title,
-              download: Value(
-                const TeachingDownload(
-                  version: 'v1',
-                  durationSeconds: 3600,
-                  renditions: {
-                    'mid': DownloadRendition(
-                      url: 'https://x/mid.aac',
-                      bytes: 500,
-                    ),
-                  },
-                ),
-              ),
-            ),
-          );
+      await seedLocalCopy();
       await launchFromHome(tester);
       expect(player.loadedFilePath, isNotNull, reason: 'prémisse : du local');
 
@@ -535,6 +544,33 @@ void main() {
         isFalse,
       );
       expect(progress.reports.every((r) => !r.completed), isTrue);
+    });
+
+    testWidgets(
+        'la durée du contrat descend jusqu\'au lecteur, donc jusqu\'au système '
+        '(#229)', (tester) async {
+      await pumpApp(tester);
+      await seedLocalCopy();
+      await launchFromHome(tester);
+
+      expect(player.loadedFilePath, isNotNull, reason: 'prémisse : du local');
+      // Ce que le lecteur reçoit est ce que le `MediaItem` annoncera au système
+      // — écran verrouillé, centre de contrôle —, et ce sur quoi `SeekHandler`
+      // bornera son « +30 s ». Perdue entre le contrôleur et le lecteur, elle
+      // laissait le système afficher l'estimation de l'ADTS pendant que
+      // l'application affichait l'heure juste : deux durées, un enseignement.
+      expect(player.loadedContractDuration, const Duration(hours: 1));
+    });
+
+    testWidgets('en HLS, rien à annoncer : le lecteur garde sa mesure (#229)',
+        (tester) async {
+      await pumpApp(tester);
+      await launchFromHome(tester);
+
+      expect(player.loadedFilePath, isNull, reason: 'prémisse : du HLS');
+      // La mesure du lecteur est juste sur un manifeste, et une durée de contrat
+      // y entrerait en concurrence avec un flux qu'on ne joue pas en entier.
+      expect(player.loadedContractDuration, isNull);
     });
 
     testWidgets('jamais sur une durée inconnue — seul l\'état terminal tranche',

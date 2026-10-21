@@ -92,6 +92,20 @@ celle des octets reçus : celle-là serait l'estimation qu'on vient de supprimer
 elle ferait passer deux heures pour trente minutes, et elle ferait enregistrer
 « terminé » au bout du tronçon.
 
+**Et jusqu'au système (#229).** #222 s'était arrêté à la frontière de
+l'application : le `MediaItem` d'`audio_service` tenait encore sa durée de
+`durationStream`, donc de l'estimation du lecteur, et l'écran verrouillé
+affichait un autre chiffre que l'écran de lecture — jusqu'à 1,02 s d'écart pour
+le lecteur, −0,9 % à +4,8 % pour une estimation par le conteneur. La durée du
+contrat descend désormais dans le `load` des **trois** implémentations de
+`ContentPlayer` et jusqu'au `MediaItem` ; une fois posée, la mesure du lecteur ne
+la recouvre plus. En HLS rien ne change : le `MediaItem` part sans durée et le
+flux du lecteur la remplit, comme avant. Conséquence à connaître :
+`SeekHandler` borne son « +30 s » sur cette durée-là, donc le geste de l'écran
+verrouillé vise maintenant la fin **du contrat** et non la fin estimée du `.aac`
+— ce que seul un appareil peut confirmer (`verification-sur-appareil.md`, 2.7 à
+2.9).
+
 ## Ce qui n'est pas mesuré ici
 
 - **Le son lui-même.** Aucune de ces mesures n'écoute : elles lisent des états et
