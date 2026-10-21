@@ -49,16 +49,16 @@ final playbackProgressReporterProvider = Provider<PlaybackProgressReporter>(
 /// est réellement ouverte.
 final playbackProgressRecorderProvider = Provider<
     Future<PlaybackProgressRecorder> Function(
-  String contentId, {
-  bool partialSource,
-})>(
-  (ref) => (contentId, {partialSource = false}) =>
-      PlaybackProgressRecorder.open(
-        dao: ref.read(playbackDaoProvider),
-        reporter: ref.read(playbackProgressReporterProvider),
-        contentId: contentId,
-        partialSource: partialSource,
-      ),
+      String contentId, {
+      bool partialSource,
+    })>(
+  (ref) =>
+      (contentId, {partialSource = false}) => PlaybackProgressRecorder.open(
+            dao: ref.read(playbackDaoProvider),
+            reporter: ref.read(playbackProgressReporterProvider),
+            contentId: contentId,
+            partialSource: partialSource,
+          ),
 );
 
 /// Rapporteur de mode maquette : il accepte tout et n'envoie rien.
