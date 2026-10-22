@@ -10,6 +10,10 @@
 ///   référence, la coquille porte le bouton « Insérer » ;
 /// - [BibleBrowserMode.pickChapter] — la feuille de l'en-tête du lecteur :
 ///   un chapitre touché est rendu tel quel.
+///
+/// **Les grilles suivent la version ouverte** (C3, #240) : chapitres et
+/// versets viennent de sa versification, et un chapitre qu'elle n'a pas — la
+/// S21 n'a pas de Malachie 4 — n'est **pas proposé**.
 library;
 
 import 'package:flutter/material.dart';
@@ -139,6 +143,7 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
   @override
   Widget build(BuildContext context) {
     final book = _book == null ? null : bibleBook(_book!);
+    final versification = ref.watch(bibleVersificationProvider);
     return PopScope(
       // Le retour système remonte d'un niveau avant de quitter la page.
       canPop: book == null || widget.initialBook == _book && _chapter == null,
@@ -146,23 +151,26 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
         if (!didPop) _back();
       },
       child: book == null
-          ? _books(context)
+          ? _books(context, versification)
           : _chapter == null
-              ? _chapters(context, book)
-              : _verses(context, book, _chapter!),
+              ? _chapters(context, book, versification)
+              : _verses(context, book, _chapter!, versification),
     );
   }
 
-  Widget _books(BuildContext context) {
+  Widget _books(BuildContext context, BibleVersification versification) {
     final l = context.l10n;
     final palette = context.palette;
     final needle = _fold(_query.trim());
+    // Un livre absent de la version ne mène qu'à une grille vide : l'éwé 2014
+    // n'a ni Esther ni Daniel (décision 3 du PRD, comblés en C5).
     final books = [
       for (final b in bibleCanon)
-        if (needle.isEmpty
-            ? b.testament == _testament
-            : _fold(b.name).contains(needle) ||
-                b.abbreviations.any((a) => _fold(a).startsWith(needle)))
+        if (versification.chapterCount(b.osis) > 0 &&
+            (needle.isEmpty
+                ? b.testament == _testament
+                : _fold(b.name).contains(needle) ||
+                    b.abbreviations.any((a) => _fold(a).startsWith(needle))))
           b,
     ];
     return Column(
@@ -221,7 +229,9 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
                         ),
                       ),
                       title: Text(b.name),
-                      subtitle: Text(l.bibleChapterCount(b.chapterCount)),
+                      subtitle: Text(
+                        l.bibleChapterCount(versification.chapterCount(b.osis)),
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => _openBook(b.osis),
                     );
@@ -265,7 +275,11 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
     );
   }
 
-  Widget _chapters(BuildContext context, BibleBook book) {
+  Widget _chapters(
+    BuildContext context,
+    BibleBook book,
+    BibleVersification versification,
+  ) {
     final state = ref.watch(bibleReadingStateProvider).value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -273,7 +287,7 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
         _header(context, book.name, context.l10n.bibleChooseChapter),
         Expanded(
           child: _Grid(
-            count: book.chapterCount,
+            numbers: versification.chaptersOf(book.osis),
             keyOf: BibleBrowser.chapterKey,
             tone: (c) => state != null &&
                     ((state.book == book.osis && state.chapter == c) ||
@@ -287,7 +301,12 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
     );
   }
 
-  Widget _verses(BuildContext context, BibleBook book, int chapter) {
+  Widget _verses(
+    BuildContext context,
+    BibleBook book,
+    int chapter,
+    BibleVersification versification,
+  ) {
     final l = context.l10n;
     final select = widget.mode == BibleBrowserMode.select;
     final reference = BibleLink(book.osis, chapter).labelFr;
@@ -301,7 +320,12 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
         ),
         Expanded(
           child: _Grid(
-            count: book.versesIn(chapter),
+            numbers: [
+              for (var v = 1;
+                  v <= versification.versesIn(book.osis, chapter);
+                  v++)
+                v,
+            ],
             keyOf: BibleBrowser.verseKey,
             tone: (v) => _from != null && v >= _from! && v <= _to!
                 ? _Tone.strong
@@ -331,15 +355,18 @@ enum _Tone { neutral, soft, strong }
 
 /// La grille des numéros : des pastilles rondes, neutres ; [_Tone.soft] pour
 /// le chapitre courant ou lu, [_Tone.strong] pour les versets choisis.
+///
+/// Une **liste** de numéros, et non un compte : la versification d'une version
+/// peut sauter un chapitre (C3, #240), et la grille ne doit pas le proposer.
 class _Grid extends StatelessWidget {
   const _Grid({
-    required this.count,
+    required this.numbers,
     required this.keyOf,
     required this.tone,
     required this.onTap,
   });
 
-  final int count;
+  final List<int> numbers;
   final Key Function(int n) keyOf;
   final _Tone Function(int n) tone;
   final ValueChanged<int> onTap;
@@ -359,9 +386,9 @@ class _Grid extends StatelessWidget {
         mainAxisSpacing: AppSpacing.md,
         crossAxisSpacing: AppSpacing.md,
       ),
-      itemCount: count,
+      itemCount: numbers.length,
       itemBuilder: (context, i) {
-        final n = i + 1;
+        final n = numbers[i];
         final t = tone(n);
         final (bg, fg) = switch (t) {
           _Tone.neutral => (palette.surfaceAlt, palette.textPrimary),

@@ -8,6 +8,7 @@ import '../../../data/local/bible_dao.dart';
 import '../../../state/auth_providers.dart';
 import '../../../state/sync_providers.dart';
 import 'bible_source.dart';
+import 'versification.dart';
 import '../personalize/bible_catalog.dart';
 
 export '../../../data/local/bible_dao.dart' show BibleReadingSnapshot;
@@ -59,6 +60,16 @@ class ActiveBibleVersion extends Notifier<String> {
     if (ref.read(bibleCatalogProvider).sourceFor(code) != null) state = code;
   }
 }
+
+/// **La versification de la version ouverte** (C3, #240, décision 2 de
+/// server-portal#605) : la grille, la validation d'une référence tapée et
+/// l'index plein texte la suivent, au lieu du canon figé. Une version sans
+/// relevé — la Bible factice, et toute version installée avant C4 — rend
+/// `kCanonVersification`, donc rien ne bouge pour elle.
+final bibleVersificationProvider = Provider<BibleVersification>((ref) {
+  final code = ref.watch(activeBibleVersionProvider);
+  return ref.watch(bibleCatalogProvider).versificationFor(code);
+});
 
 /// La clé d'un chapitre dans une version.
 typedef BibleChapterKey = ({String version, String book, int chapter});

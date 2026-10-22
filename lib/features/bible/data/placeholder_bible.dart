@@ -46,6 +46,12 @@ final class PlaceholderBibleCatalog implements BibleCatalog {
     final i = kPlaceholderVersions.indexWhere((v) => v.code == versionCode);
     return i < 0 ? null : PlaceholderBibleSource(versionCode, variant: i);
   }
+
+  /// La Bible factice **est** le canon figé : c'est sa versification, et elle
+  /// ne change pas (C3, #240).
+  @override
+  BibleVersification versificationFor(String versionCode) =>
+      kCanonVersification;
 }
 
 /// Le texte d'exemple d'une version factice.

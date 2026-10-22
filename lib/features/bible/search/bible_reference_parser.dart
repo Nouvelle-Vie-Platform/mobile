@@ -1,6 +1,10 @@
 /// **Lire une référence tapée** (M3, #201) : « jn 3 16 », « Jean 3:16-18 »,
 /// « 1 Co 13 », « ps 23 » → [BibleLink].
 ///
+/// La **validité** se juge dans la versification passée — celle de la version
+/// ouverte (C3, #240) —, le canon figé par défaut : « Exode 7:29 » se refuse
+/// dans le canon et s'accepte en éwé 1913, qui a 29 versets à ce chapitre.
+///
 /// Le livre se reconnaît par son nom, une abréviation du canon ou son code
 /// OSIS (sans casse ni accents, espaces et points ignorés), sinon par un
 /// **préfixe** de son nom qui ne désigne qu'un livre (« philip » → Philippiens ;
@@ -53,8 +57,12 @@ String? resolveBibleBook(String input) {
   return candidates.length == 1 ? candidates.single : null;
 }
 
-/// La référence que [query] désigne, ou `null`.
-BibleLink? parseBibleReference(String query) {
+/// La référence que [query] désigne, ou `null`. [versification] : celle de la
+/// version ouverte ; le canon figé sans elle.
+BibleLink? parseBibleReference(
+  String query, {
+  BibleVersification? versification,
+}) {
   final m = _shape.firstMatch(query);
   if (m == null) return null;
   final book = resolveBibleBook(m.group(1)!);
@@ -64,5 +72,5 @@ BibleLink? parseBibleReference(String query) {
   var to = m.group(4) == null ? null : int.parse(m.group(4)!);
   if (to == from) to = null;
   final link = BibleLink(book, chapter, from: from, to: to);
-  return isValidBibleRef(link) ? link : null;
+  return (versification ?? kCanonVersification).isValid(link) ? link : null;
 }

@@ -3,8 +3,10 @@
 /// plus »), référence qui ouvre le lecteur, historique, recherche croisée et
 /// résultats comparatifs.
 ///
-/// Le catalogue est la Bible factice **réduite à quatre livres** : l'index se
-/// construit alors en un instant, et tout le reste est réel.
+/// Le catalogue est la Bible factice **réduite à quatre livres** : sa source
+/// ne rend que ceux-là, et sa versification ne déclare que ceux-là (C3,
+/// #240) — l'index se construit alors en un instant, et tout le reste est
+/// réel.
 library;
 
 import 'package:flutter/material.dart';
@@ -55,7 +57,16 @@ final class _SmallCatalog implements BibleCatalog {
     final s = _full.sourceFor(code);
     return s == null ? null : _SmallSource(s as PlaceholderBibleSource);
   }
+
+  @override
+  BibleVersification versificationFor(String code) => _versification;
 }
+
+/// Les quatre livres, à la versification du canon : l'index ne parcourt
+/// qu'eux, et ses deux bornes (Genèse 1, Apocalypse 22) y sont.
+final _versification = BibleVersification.of({
+  for (final b in _books) b: bibleBook(b)!.verseCounts,
+});
 
 final List<Override> _extra = [
   radioRepositoryProvider.overrideWithValue(

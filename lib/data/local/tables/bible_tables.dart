@@ -397,6 +397,19 @@ class BibleInstalledVersions extends Table {
   /// L'index `bible_fts` de cette version est-il complet ? (M3)
   BoolColumn get indexed => boolean().withDefault(const Constant(false))();
 
+  /// **La versification de cette version** (C3, #240, décision 2 de
+  /// server-portal#605) : `{ "<OSIS>": [versets du chapitre 1, …] }`, un 0
+  /// pour un chapitre que cette version n'a pas. Nulle = « aucun relevé », et
+  /// c'est le canon figé qui sert de repli — ce dont vit la Bible factice,
+  /// qui n'a d'ailleurs pas de ligne ici.
+  ///
+  /// Elle vit **ici** et non sur `bible_versions` : ce miroir-là est une
+  /// collection répliquée, que le tirage réécrit en `insertOrReplace` — une
+  /// colonne y serait effacée au prochain cycle (la mesure est au bas de
+  /// `migration_message_media_test.dart`, #223). Et une versification n'a de
+  /// sens qu'avec le texte installé : désinstaller l'emporte.
+  TextColumn get versification => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {code};
 }

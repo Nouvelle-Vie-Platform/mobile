@@ -24,9 +24,12 @@ void main() {
 
   const v = AppDatabase.kMessageMediaSchemaVersion;
 
-  test('v30 est la version courante', () {
+  // « v30 est la version courante » a déménagé dans
+  // `migration_versification_test.dart` avec le palier v31 : l'assertion
+  // appartient au **dernier** palier, qui est le seul à savoir qu'il l'est.
+  test('v30 reste un palier de la liste', () {
     expect(v, 30);
-    expect(GeneratedHelper.versions.last, v);
+    expect(GeneratedHelper.versions, contains(v));
     expect(AppDatabase.kMessageMediaSchemaVersion,
         AppDatabase.kBibleSchemaVersion + 1);
   });
