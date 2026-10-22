@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/local/app_database.dart';
 import '../../../state/sync_providers.dart';
 import '../data/bible_source.dart';
+import '../data/canon.dart';
 import '../data/placeholder_bible.dart';
 import '../search/bible_search_index.dart';
 
@@ -25,6 +26,7 @@ final class BibleCatalogEntry {
     required this.version,
     this.sizeBytes,
     this.license,
+    this.versification,
     this.builtIn = false,
     this.downloadable = false,
   });
@@ -32,6 +34,10 @@ final class BibleCatalogEntry {
   final BibleVersion version;
   final int? sizeBytes;
   final String? license;
+
+  /// La versification **relevée** de cette version installée (C3, #240), ou
+  /// `null` : le canon figé sert alors de repli.
+  final BibleVersification? versification;
 
   /// Une des deux versions factices : ni téléchargée, ni supprimable.
   final bool builtIn;
@@ -55,7 +61,8 @@ final class MergedBibleCatalog implements BibleCatalog {
   late final String _signature = [
     for (final e in entries)
       '${e.version.code}:${e.version.name}:${e.version.language}:'
-          '${e.version.installed}:${e.downloadable}:${e.sizeBytes}:${e.license}',
+          '${e.version.installed}:${e.downloadable}:${e.sizeBytes}:${e.license}'
+          ':${e.versification?.signature.hashCode}',
   ].join('|');
 
   @override
@@ -71,6 +78,11 @@ final class MergedBibleCatalog implements BibleCatalog {
   ) {
     final builtIn = {for (final v in kPlaceholderVersions) v.code};
     final installedCodes = {for (final i in installed) i.code};
+    final versifications = {
+      for (final i in installed)
+        if (BibleVersification.tryParse(i.versification) case final v?)
+          i.code: v,
+    };
     final served = [...remote]..sort((a, b) {
         final byOrder = a.sortOrder.compareTo(b.sortOrder);
         return byOrder != 0 ? byOrder : a.id.compareTo(b.id);
@@ -89,6 +101,7 @@ final class MergedBibleCatalog implements BibleCatalog {
             ),
             sizeBytes: r.sizeBytes,
             license: r.license,
+            versification: versifications[r.code],
             downloadable: r.archiveUrl == null,
           ),
     ];
@@ -115,6 +128,19 @@ final class MergedBibleCatalog implements BibleCatalog {
       return PlaceholderBibleSource(versionCode, variant: variant);
     }
     return null;
+  }
+
+  /// La versification relevée de la version installée, sinon le canon figé
+  /// (C3, #240) : une version servie sans relevé — et les deux factices — se
+  /// lisent donc exactement comme avant.
+  @override
+  BibleVersification versificationFor(String versionCode) {
+    for (final e in entries) {
+      if (e.version.code == versionCode && e.versification != null) {
+        return e.versification!;
+      }
+    }
+    return kCanonVersification;
   }
 }
 

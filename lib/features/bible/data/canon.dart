@@ -3,14 +3,19 @@
 /// chapitre** (versification courante, 1 189 chapitres, 31 102 versets).
 ///
 /// La structure est vraie ; seul le texte est factice
-/// (`placeholder_bible.dart`). Les noms viennent de [osisBooksFr], la table
+/// (`placeholder_bible.dart`). Depuis C3 (#240) cette table n'est **plus la
+/// seule** : elle est la versification de la Bible factice et le repli des
+/// versions qui n'en déclarent pas ([kCanonVersification]) — une version
+/// installée impose la sienne. Les noms viennent de [osisBooksFr], la table
 /// que les liens des notes partagent avec le serveur : une seule liste de
 /// livres dans tout le dépôt. Pur Dart.
 library;
 
 import '../../notes_editor/links/note_link.dart';
+import 'versification.dart';
 
 export '../../notes_editor/links/note_link.dart' show BibleLink, osisBooksFr;
+export 'versification.dart';
 
 enum Testament { old, newT }
 
@@ -67,40 +72,26 @@ final Map<String, BibleBook> _byOsis = {for (final b in bibleCanon) b.osis: b};
 /// Le livre d'un code OSIS, ou `null`.
 BibleBook? bibleBook(String osis) => _byOsis[osis];
 
-/// **Un chapitre du canon par son rang global** (0 à 1 188) : c'est ce qui
-/// permet au lecteur de glisser d'un livre à l'autre sans rupture.
-final List<({String book, int chapter})> bibleChapters = List.unmodifiable([
-  for (final b in bibleCanon)
-    for (var c = 1; c <= b.chapterCount; c++) (book: b.osis, chapter: c),
-]);
+/// **Le canon figé, en versification** (C3, #240) : la versification de la
+/// Bible factice, et le repli de toute version installée qui n'en déclare pas
+/// (`bible_installed_versions.versification` nulle). Ce qui suit la version
+/// ouverte passe par [BibleVersification] — jamais par ces trois raccourcis,
+/// qui restent le canon.
+final BibleVersification kCanonVersification =
+    BibleVersification.of(_verseCounts);
 
-/// Le rang global de [book] [chapter], ou `-1`.
-int bibleChapterIndex(String book, int chapter) {
-  final b = bibleBook(book);
-  if (b == null || chapter < 1 || chapter > b.chapterCount) return -1;
-  return _firstChapterIndex[b.index] + chapter - 1;
-}
+/// **Un chapitre du canon par son rang global** (0 à 1 188).
+final List<({String book, int chapter})> bibleChapters =
+    kCanonVersification.chapters;
 
-final List<int> _firstChapterIndex = () {
-  final firsts = <int>[];
-  var n = 0;
-  for (final b in bibleCanon) {
-    firsts.add(n);
-    n += b.chapterCount;
-  }
-  return firsts;
-}();
+/// Le rang d'un chapitre **dans le canon**, ou `-1`.
+int bibleChapterIndex(String book, int chapter) =>
+    kCanonVersification.chapterIndex(book, chapter);
 
 /// Une référence est-elle dans le canon ? (livre connu, chapitre et versets
-/// dans les bornes, `from ≤ to`).
-bool isValidBibleRef(BibleLink ref) {
-  final verses = bibleBook(ref.book)?.versesIn(ref.chapter) ?? 0;
-  if (verses == 0) return false;
-  final from = ref.from;
-  final to = ref.to ?? from;
-  if (from == null) return true;
-  return from >= 1 && to! >= from && to <= verses;
-}
+/// dans les bornes, `from ≤ to`). Pour juger dans une version, demander à sa
+/// [BibleVersification] (`isValid`).
+bool isValidBibleRef(BibleLink ref) => kCanonVersification.isValid(ref);
 
 const Map<String, List<String>> _abbreviations = {
   'Gen': ['Gn', 'Ge', 'Gen'],

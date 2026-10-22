@@ -4,8 +4,12 @@
 /// [BibleCatalog] — jamais une implémentation. Aujourd'hui la seule est
 /// factice (`placeholder_bible.dart`) ; le chantier du contenu (versions
 /// téléchargées en zip) posera la vraie derrière les mêmes signatures.
-/// Une référence (`BibleLink`) ne dépend **jamais** d'une version.
+/// Une référence (`BibleLink`) ne dépend **jamais** d'une version — mais sa
+/// **validité**, si : la versification est propre à chaque version (C3, #240),
+/// et c'est le catalogue qui la rend ([BibleCatalog.versificationFor]).
 library;
+
+import 'versification.dart';
 
 /// Un verset : son numéro et son texte.
 final class BibleVerse {
@@ -50,4 +54,10 @@ abstract interface class BibleCatalog {
 
   /// Le texte d'une version installée, ou `null`.
   BibleSource? sourceFor(String versionCode);
+
+  /// **La versification de [versionCode]** : la sienne si la version
+  /// installée en porte une, sinon le canon figé (`kCanonVersification`).
+  /// C'est elle que suivent la grille, la validation des références et
+  /// l'index plein texte.
+  BibleVersification versificationFor(String versionCode);
 }

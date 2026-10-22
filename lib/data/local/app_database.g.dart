@@ -18907,8 +18907,10 @@ class $LocalMessageMediaTable extends LocalMessageMedia
 
 class LocalMessageMediaRow extends DataClass
     implements Insertable<LocalMessageMediaRow> {
-  /// L'identité **serveur** du message — jamais un `clientMessageId` : l'écho
-  /// d'un envoi garde son fichier dans l'outbox jusqu'à T2 (#224).
+  /// L'identité **serveur** du message — jamais un `clientMessageId`. L'écho
+  /// d'un envoi n'a pas encore cette identité : il garde son fichier dans
+  /// l'outbox, et ne prend sa ligne ici qu'au retour de l'envoi, qui la lui
+  /// apprend (T2, #224 — `GroupMediaComposer._keep`).
   final String messageId;
 
   /// Le fichier du média dans le magasin durable (`MessageMediaStore`).
@@ -33707,9 +33709,23 @@ class $BibleInstalledVersionsTable extends BibleInstalledVersions
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("indexed" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _versificationMeta =
+      const VerificationMeta('versification');
   @override
-  List<GeneratedColumn> get $columns =>
-      [code, name, language, sizeBytes, localPath, installedAt, indexed];
+  late final GeneratedColumn<String> versification = GeneratedColumn<String>(
+      'versification', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        code,
+        name,
+        language,
+        sizeBytes,
+        localPath,
+        installedAt,
+        indexed,
+        versification
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -33757,6 +33773,12 @@ class $BibleInstalledVersionsTable extends BibleInstalledVersions
       context.handle(_indexedMeta,
           indexed.isAcceptableOrUnknown(data['indexed']!, _indexedMeta));
     }
+    if (data.containsKey('versification')) {
+      context.handle(
+          _versificationMeta,
+          versification.isAcceptableOrUnknown(
+              data['versification']!, _versificationMeta));
+    }
     return context;
   }
 
@@ -33781,6 +33803,8 @@ class $BibleInstalledVersionsTable extends BibleInstalledVersions
           .read(DriftSqlType.dateTime, data['${effectivePrefix}installed_at'])!,
       indexed: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}indexed'])!,
+      versification: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}versification']),
     );
   }
 
@@ -33803,6 +33827,19 @@ class BibleInstalledVersionRow extends DataClass
 
   /// L'index `bible_fts` de cette version est-il complet ? (M3)
   final bool indexed;
+
+  /// **La versification de cette version** (C3, #240, décision 2 de
+  /// server-portal#605) : `{ "<OSIS>": [versets du chapitre 1, …] }`, un 0
+  /// pour un chapitre que cette version n'a pas. Nulle = « aucun relevé », et
+  /// c'est le canon figé qui sert de repli — ce dont vit la Bible factice,
+  /// qui n'a d'ailleurs pas de ligne ici.
+  ///
+  /// Elle vit **ici** et non sur `bible_versions` : ce miroir-là est une
+  /// collection répliquée, que le tirage réécrit en `insertOrReplace` — une
+  /// colonne y serait effacée au prochain cycle (la mesure est au bas de
+  /// `migration_message_media_test.dart`, #223). Et une versification n'a de
+  /// sens qu'avec le texte installé : désinstaller l'emporte.
+  final String? versification;
   const BibleInstalledVersionRow(
       {required this.code,
       required this.name,
@@ -33810,7 +33847,8 @@ class BibleInstalledVersionRow extends DataClass
       this.sizeBytes,
       this.localPath,
       required this.installedAt,
-      required this.indexed});
+      required this.indexed,
+      this.versification});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -33827,6 +33865,9 @@ class BibleInstalledVersionRow extends DataClass
     }
     map['installed_at'] = Variable<DateTime>(installedAt);
     map['indexed'] = Variable<bool>(indexed);
+    if (!nullToAbsent || versification != null) {
+      map['versification'] = Variable<String>(versification);
+    }
     return map;
   }
 
@@ -33845,6 +33886,9 @@ class BibleInstalledVersionRow extends DataClass
           : Value(localPath),
       installedAt: Value(installedAt),
       indexed: Value(indexed),
+      versification: versification == null && nullToAbsent
+          ? const Value.absent()
+          : Value(versification),
     );
   }
 
@@ -33859,6 +33903,7 @@ class BibleInstalledVersionRow extends DataClass
       localPath: serializer.fromJson<String?>(json['localPath']),
       installedAt: serializer.fromJson<DateTime>(json['installedAt']),
       indexed: serializer.fromJson<bool>(json['indexed']),
+      versification: serializer.fromJson<String?>(json['versification']),
     );
   }
   @override
@@ -33872,6 +33917,7 @@ class BibleInstalledVersionRow extends DataClass
       'localPath': serializer.toJson<String?>(localPath),
       'installedAt': serializer.toJson<DateTime>(installedAt),
       'indexed': serializer.toJson<bool>(indexed),
+      'versification': serializer.toJson<String?>(versification),
     };
   }
 
@@ -33882,7 +33928,8 @@ class BibleInstalledVersionRow extends DataClass
           Value<int?> sizeBytes = const Value.absent(),
           Value<String?> localPath = const Value.absent(),
           DateTime? installedAt,
-          bool? indexed}) =>
+          bool? indexed,
+          Value<String?> versification = const Value.absent()}) =>
       BibleInstalledVersionRow(
         code: code ?? this.code,
         name: name ?? this.name,
@@ -33891,6 +33938,8 @@ class BibleInstalledVersionRow extends DataClass
         localPath: localPath.present ? localPath.value : this.localPath,
         installedAt: installedAt ?? this.installedAt,
         indexed: indexed ?? this.indexed,
+        versification:
+            versification.present ? versification.value : this.versification,
       );
   BibleInstalledVersionRow copyWithCompanion(
       BibleInstalledVersionsCompanion data) {
@@ -33903,6 +33952,9 @@ class BibleInstalledVersionRow extends DataClass
       installedAt:
           data.installedAt.present ? data.installedAt.value : this.installedAt,
       indexed: data.indexed.present ? data.indexed.value : this.indexed,
+      versification: data.versification.present
+          ? data.versification.value
+          : this.versification,
     );
   }
 
@@ -33915,14 +33967,15 @@ class BibleInstalledVersionRow extends DataClass
           ..write('sizeBytes: $sizeBytes, ')
           ..write('localPath: $localPath, ')
           ..write('installedAt: $installedAt, ')
-          ..write('indexed: $indexed')
+          ..write('indexed: $indexed, ')
+          ..write('versification: $versification')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      code, name, language, sizeBytes, localPath, installedAt, indexed);
+  int get hashCode => Object.hash(code, name, language, sizeBytes, localPath,
+      installedAt, indexed, versification);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -33933,7 +33986,8 @@ class BibleInstalledVersionRow extends DataClass
           other.sizeBytes == this.sizeBytes &&
           other.localPath == this.localPath &&
           other.installedAt == this.installedAt &&
-          other.indexed == this.indexed);
+          other.indexed == this.indexed &&
+          other.versification == this.versification);
 }
 
 class BibleInstalledVersionsCompanion
@@ -33945,6 +33999,7 @@ class BibleInstalledVersionsCompanion
   final Value<String?> localPath;
   final Value<DateTime> installedAt;
   final Value<bool> indexed;
+  final Value<String?> versification;
   final Value<int> rowid;
   const BibleInstalledVersionsCompanion({
     this.code = const Value.absent(),
@@ -33954,6 +34009,7 @@ class BibleInstalledVersionsCompanion
     this.localPath = const Value.absent(),
     this.installedAt = const Value.absent(),
     this.indexed = const Value.absent(),
+    this.versification = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   BibleInstalledVersionsCompanion.insert({
@@ -33964,6 +34020,7 @@ class BibleInstalledVersionsCompanion
     this.localPath = const Value.absent(),
     required DateTime installedAt,
     this.indexed = const Value.absent(),
+    this.versification = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : code = Value(code),
         name = Value(name),
@@ -33976,6 +34033,7 @@ class BibleInstalledVersionsCompanion
     Expression<String>? localPath,
     Expression<DateTime>? installedAt,
     Expression<bool>? indexed,
+    Expression<String>? versification,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -33986,6 +34044,7 @@ class BibleInstalledVersionsCompanion
       if (localPath != null) 'local_path': localPath,
       if (installedAt != null) 'installed_at': installedAt,
       if (indexed != null) 'indexed': indexed,
+      if (versification != null) 'versification': versification,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -33998,6 +34057,7 @@ class BibleInstalledVersionsCompanion
       Value<String?>? localPath,
       Value<DateTime>? installedAt,
       Value<bool>? indexed,
+      Value<String?>? versification,
       Value<int>? rowid}) {
     return BibleInstalledVersionsCompanion(
       code: code ?? this.code,
@@ -34007,6 +34067,7 @@ class BibleInstalledVersionsCompanion
       localPath: localPath ?? this.localPath,
       installedAt: installedAt ?? this.installedAt,
       indexed: indexed ?? this.indexed,
+      versification: versification ?? this.versification,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -34035,6 +34096,9 @@ class BibleInstalledVersionsCompanion
     if (indexed.present) {
       map['indexed'] = Variable<bool>(indexed.value);
     }
+    if (versification.present) {
+      map['versification'] = Variable<String>(versification.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -34051,6 +34115,7 @@ class BibleInstalledVersionsCompanion
           ..write('localPath: $localPath, ')
           ..write('installedAt: $installedAt, ')
           ..write('indexed: $indexed, ')
+          ..write('versification: $versification, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -50100,6 +50165,7 @@ typedef $$BibleInstalledVersionsTableCreateCompanionBuilder
   Value<String?> localPath,
   required DateTime installedAt,
   Value<bool> indexed,
+  Value<String?> versification,
   Value<int> rowid,
 });
 typedef $$BibleInstalledVersionsTableUpdateCompanionBuilder
@@ -50111,6 +50177,7 @@ typedef $$BibleInstalledVersionsTableUpdateCompanionBuilder
   Value<String?> localPath,
   Value<DateTime> installedAt,
   Value<bool> indexed,
+  Value<String?> versification,
   Value<int> rowid,
 });
 
@@ -50143,6 +50210,9 @@ class $$BibleInstalledVersionsTableFilterComposer
 
   ColumnFilters<bool> get indexed => $composableBuilder(
       column: $table.indexed, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get versification => $composableBuilder(
+      column: $table.versification, builder: (column) => ColumnFilters(column));
 }
 
 class $$BibleInstalledVersionsTableOrderingComposer
@@ -50174,6 +50244,10 @@ class $$BibleInstalledVersionsTableOrderingComposer
 
   ColumnOrderings<bool> get indexed => $composableBuilder(
       column: $table.indexed, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get versification => $composableBuilder(
+      column: $table.versification,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$BibleInstalledVersionsTableAnnotationComposer
@@ -50205,6 +50279,9 @@ class $$BibleInstalledVersionsTableAnnotationComposer
 
   GeneratedColumn<bool> get indexed =>
       $composableBuilder(column: $table.indexed, builder: (column) => column);
+
+  GeneratedColumn<String> get versification => $composableBuilder(
+      column: $table.versification, builder: (column) => column);
 }
 
 class $$BibleInstalledVersionsTableTableManager extends RootTableManager<
@@ -50245,6 +50322,7 @@ class $$BibleInstalledVersionsTableTableManager extends RootTableManager<
             Value<String?> localPath = const Value.absent(),
             Value<DateTime> installedAt = const Value.absent(),
             Value<bool> indexed = const Value.absent(),
+            Value<String?> versification = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               BibleInstalledVersionsCompanion(
@@ -50255,6 +50333,7 @@ class $$BibleInstalledVersionsTableTableManager extends RootTableManager<
             localPath: localPath,
             installedAt: installedAt,
             indexed: indexed,
+            versification: versification,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -50265,6 +50344,7 @@ class $$BibleInstalledVersionsTableTableManager extends RootTableManager<
             Value<String?> localPath = const Value.absent(),
             required DateTime installedAt,
             Value<bool> indexed = const Value.absent(),
+            Value<String?> versification = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               BibleInstalledVersionsCompanion.insert(
@@ -50275,6 +50355,7 @@ class $$BibleInstalledVersionsTableTableManager extends RootTableManager<
             localPath: localPath,
             installedAt: installedAt,
             indexed: indexed,
+            versification: versification,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

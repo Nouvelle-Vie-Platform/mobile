@@ -1,6 +1,8 @@
 /// **Le lecteur** (M1, #199) : un chapitre par page, glissement gauche/droite
-/// d'un chapitre à l'autre **et d'un livre à l'autre** (le canon est une
-/// seule suite de 1 189 pages), numéros de versets en exposant.
+/// d'un chapitre à l'autre **et d'un livre à l'autre** (la version ouverte est
+/// une seule suite de pages — 1 189 dans le canon figé), numéros de versets en
+/// exposant. La suite des pages est celle de **sa** versification (C3, #240) :
+/// changer de version la refait, et replace le lecteur sur le même chapitre.
 ///
 /// - L'en-tête « Jean 3 ▾ » rouvre le choix du livre et du chapitre.
 /// - Le sélecteur de version change la version active.
@@ -99,8 +101,13 @@ class BibleReaderScreen extends ConsumerStatefulWidget {
 }
 
 class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
+  /// Les pages de la version ouverte, et le rang de la page courante dedans.
+  late List<({String book, int chapter})> _chapters =
+      ref.read(bibleVersificationProvider).chapters;
   late int _index = () {
-    final i = bibleChapterIndex(widget.book, widget.chapter);
+    final i = ref
+        .read(bibleVersificationProvider)
+        .chapterIndex(widget.book, widget.chapter);
     return i < 0 ? 0 : i;
   }();
   late final PageController _pages = PageController(initialPage: _index);
@@ -146,7 +153,23 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     super.dispose();
   }
 
-  ({String book, int chapter}) get _current => bibleChapters[_index];
+  ({String book, int chapter}) get _current => _chapters.isEmpty
+      ? (book: widget.book, chapter: widget.chapter)
+      : _chapters[_index];
+
+  /// La version a changé, et sa versification avec : refaire la suite des
+  /// pages et **y retrouver le chapitre ouvert** — sans cela, le rang pointait
+  /// une autre page (ou Malachie 4, que la S21 n'a pas).
+  void _followVersification(BibleVersification next) {
+    final c = _current;
+    final i = next.chapterIndex(c.book, c.chapter);
+    setState(() {
+      _chapters = next.chapters;
+      _index = i < 0 ? 0 : i;
+      _from = _to = null;
+    });
+    if (_pages.hasClients) _pages.jumpToPage(_index);
+  }
 
   void _savePosition({int? verse}) {
     final c = _current;
@@ -173,6 +196,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
 
   Future<void> _pickChapter() async {
     final c = _current;
+    final versification = ref.read(bibleVersificationProvider);
     final picked = await showModalBottomSheet<BibleLink>(
       context: context,
       isScrollControlled: true,
@@ -190,7 +214,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       ),
     );
     if (picked == null || !mounted) return;
-    final i = bibleChapterIndex(picked.book, picked.chapter);
+    final i = versification.chapterIndex(picked.book, picked.chapter);
     if (i >= 0) _pages.jumpToPage(i);
   }
 
@@ -231,6 +255,10 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     final c = _current;
     final version = ref.watch(activeBibleVersionProvider);
     final versions = ref.watch(bibleVersionsProvider).value ?? const [];
+    ref.listen<BibleVersification>(
+      bibleVersificationProvider,
+      (_, next) => _followVersification(next),
+    );
     final actions = ref.watch(bibleSlotsProvider).verseActions;
     final from = _from;
     final member = ref.watch(bibleIsMemberProvider);
@@ -336,7 +364,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
             child: PageView.builder(
               key: BibleReaderScreen.pagesKey,
               controller: _pages,
-              itemCount: bibleChapters.length,
+              itemCount: _chapters.length,
               onPageChanged: (i) {
                 setState(() {
                   _index = i;
@@ -345,7 +373,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                 _savePosition();
               },
               itemBuilder: (context, i) {
-                final page = bibleChapters[i];
+                final page = _chapters[i];
                 final arrival = page.book == widget.book &&
                     page.chapter == widget.chapter &&
                     widget.from != null;

@@ -162,7 +162,10 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
     final query = text.trim();
     if (query.isEmpty) return;
     _remember(query);
-    final link = parseBibleReference(query);
+    final link = parseBibleReference(
+      query,
+      versification: ref.read(bibleVersificationProvider),
+    );
     if (link != null) {
       _debounce?.cancel();
       await _openReader(link);
@@ -196,7 +199,10 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final text = _controller.text.trim();
-    final reference = parseBibleReference(text);
+    final reference = parseBibleReference(
+      text,
+      versification: ref.watch(bibleVersificationProvider),
+    );
     return Scaffold(
       appBar: BrandAppBar(title: l.bibleSearchTitle),
       body: Column(

@@ -329,8 +329,15 @@ class AppDatabase extends _$AppDatabase {
   /// d'autre. Aucune colonne de `group_messages` ne bouge, et c'est délibéré —
   /// voir l'en-tête de [LocalMessageMedia]. Voir
   /// [kMessageMediaSchemaVersion].
+  ///
+  /// **v31** (C3, mobile#240) — **la versification propre à chaque version** :
+  /// `bible_installed_versions.versification`, **une** colonne nullable, et
+  /// rien d'autre. Aucune ligne n'est réécrite, et nulle veut dire « aucun
+  /// relevé » : le canon figé sert de repli, donc la Bible factice et les
+  /// versions déjà installées se lisent exactement comme avant. Voir
+  /// [kVersificationSchemaVersion].
   @override
-  int get schemaVersion => kMessageMediaSchemaVersion;
+  int get schemaVersion => kVersificationSchemaVersion;
 
   /// **Le palier de la tranche M2** (#141) : v25, après M8 (v22), M3 (v23) et
   /// M5 (v24).
@@ -357,6 +364,10 @@ class AppDatabase extends _$AppDatabase {
   /// le module Bible (v29). Le seul palier du chantier — T2, T3 et T4
   /// n'ajoutent ni table ni colonne.
   static const int kMessageMediaSchemaVersion = 30;
+
+  /// **Le palier de la versification par version** (mobile#240) : v31, après
+  /// le magasin des médias (v30). Une colonne, et rien d'autre.
+  static const int kVersificationSchemaVersion = 31;
 
   /// Les sept colonnes du média d'un message (M4), ajoutées ensemble au palier
   /// v26 — et retirées ensemble d'une table créée pour une version antérieure
@@ -440,6 +451,22 @@ class AppDatabase extends _$AppDatabase {
       '"created_at" INTEGER NOT NULL, '
       '"failed" INTEGER NOT NULL DEFAULT 0 CHECK ("failed" IN (0, 1)), '
       'PRIMARY KEY ("client_message_id"))';
+
+  /// `bible_installed_versions` dans sa forme v29 et v30 — **sans**
+  /// `versification` (palier v31). Pour les migrations de test vers une
+  /// version antérieure à [kVersificationSchemaVersion] seulement, comme
+  /// [_groupMessagesV20] : un téléphone migre toujours jusqu'à
+  /// `schemaVersion`, où `createTable` donne la forme courante.
+  static const String _bibleInstalledVersionsV29 =
+      'CREATE TABLE IF NOT EXISTS "bible_installed_versions" ('
+      '"code" TEXT NOT NULL, '
+      '"name" TEXT NOT NULL, '
+      '"language" TEXT NULL, '
+      '"size_bytes" INTEGER NULL, '
+      '"local_path" TEXT NULL, '
+      '"installed_at" INTEGER NOT NULL, '
+      '"indexed" INTEGER NOT NULL DEFAULT 0 CHECK ("indexed" IN (0, 1)), '
+      'PRIMARY KEY ("code"))';
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1018,9 +1045,19 @@ class AppDatabase extends _$AppDatabase {
               localBibleReadingState,
               localBiblePlanEnrollments,
               localBibleQuizResults,
-              bibleInstalledVersions,
             ]) {
               await m.createTable(table);
+            }
+            // `bible_installed_versions` à part : `createTable` donne la forme
+            // **courante**, `versification` comprise (palier v31), et le
+            // vérificateur refuse cette colonne surnuméraire sur une cible
+            // antérieure. Un téléphone migre toujours jusqu'à `schemaVersion`
+            // et prend donc la première branche ; la seconde ne sert qu'aux
+            // migrations de test vers la v29 ou la v30.
+            if (to >= kVersificationSchemaVersion) {
+              await m.createTable(bibleInstalledVersions);
+            } else {
+              await customStatement(_bibleInstalledVersionsV29);
             }
             await m.create(bibleFts);
           }
@@ -1033,6 +1070,28 @@ class AppDatabase extends _$AppDatabase {
           // le vérificateur ignore une table surnuméraire.
           if (from < kMessageMediaSchemaVersion) {
             await m.createTable(localMessageMedia);
+          }
+          // v30 → v31 — la versification propre à chaque version (C3,
+          // mobile#240). **Une** colonne nullable sur une table **locale
+          // seule**, et rien d'autre : aucune ligne n'est réécrite, aucun
+          // curseur n'est en jeu (la table n'est dans aucun registre de
+          // synchronisation). Nulle veut dire « aucun relevé » — le canon
+          // figé sert de repli, donc une version déjà installée se lit comme
+          // avant, et son relevé arrivera avec la vraie archive (C4).
+          //
+          // La garde `from >=` a la raison du palier v18 → v19 : au-dessous,
+          // `bible_installed_versions` est **créée** par le palier v29 dans
+          // sa forme courante, colonne comprise — un `addColumn` y
+          // doublonnerait. La garde `to >=` est celle du palier v7 → v8 : le
+          // vérificateur signale une colonne surnuméraire sur un palier
+          // intermédiaire.
+          if (from >= kBibleSchemaVersion &&
+              from < kVersificationSchemaVersion &&
+              to >= kVersificationSchemaVersion) {
+            await m.addColumn(
+              bibleInstalledVersions,
+              bibleInstalledVersions.versification,
+            );
           }
         },
         beforeOpen: (details) async {

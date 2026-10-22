@@ -113,6 +113,10 @@ class BibleMySpaceScreen extends ConsumerWidget {
     final stats =
         ref.watch(bibleMySpaceStatsProvider).value ?? const BibleMySpaceStats();
     final quizBadges = ref.watch(quizBadgesProvider);
+    // Le canon figé, et non la versification de la version ouverte (C3,
+    // #240) : un chapitre lu est retenu par son code OSIS, pas par version —
+    // Malachie 3 lu en S21 compte aussi pour la KJV. Le dénominateur ne doit
+    // donc pas changer quand on change de version.
     final total = bibleChapters.length;
     return Scaffold(
       appBar: BrandAppBar(title: l.bibleM4MySpaceTitle),

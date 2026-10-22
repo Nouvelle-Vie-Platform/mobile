@@ -7,11 +7,15 @@
 ///   l'appelle après une installation ; l'écran de recherche l'appelle pour
 ///   chaque version installée à son ouverture (c'est ce qui indexe les deux
 ///   versions factices, qui n'ont pas de ligne `bible_installed_versions`).
-/// - **Complet** = le premier et le dernier verset du canon sont indexés avec
-///   le texte que la source rend aujourd'hui, et, si la version a une ligne
-///   `bible_installed_versions`, son drapeau `indexed` est levé. Une version
-///   réinstallée (M4 réécrit la ligne, `indexed` retombe à `false`) ou dont le
-///   texte a changé est donc reconstruite.
+/// - **Complet** = le premier et le dernier verset **de cette version** sont
+///   indexés avec le texte que la source rend aujourd'hui, et, si la version a
+///   une ligne `bible_installed_versions`, son drapeau `indexed` est levé. Une
+///   version réinstallée (M4 réécrit la ligne, `indexed` retombe à `false`) ou
+///   dont le texte a changé est donc reconstruite.
+/// - **Le jugement suit la versification de la version** (C3, #240), et non
+///   le canon figé : une version dont le dernier chapitre n'est pas celui du
+///   canon était jugée incomplète pour toujours, et reconstruite à chaque
+///   ouverture de la recherche.
 /// - [BibleSearchIndex.search] : mots dans une ou plusieurs versions, filtre
 ///   par testament ou par livre, résultats **regroupés par verset** dans
 ///   l'ordre du canon, paginés. Le mot trouvé est encadré par
@@ -126,11 +130,12 @@ class BibleSearchIndex {
       'DELETE FROM bible_fts WHERE version_code = ?',
       [code],
     );
-    for (final book in bibleCanon) {
+    final versification = _catalog.versificationFor(code);
+    for (final book in versification.books) {
       final rows = <List<Object>>[
-        for (var c = 1; c <= book.chapterCount; c++)
-          for (final v in await source.chapter(book.osis, c))
-            [code, book.osis, '$c', '${v.number}', v.text],
+        for (final c in versification.chaptersOf(book))
+          for (final v in await source.chapter(book, c))
+            [code, book, '$c', '${v.number}', v.text],
       ];
       // Un `INSERT` à plusieurs lignes : dix fois plus rapide qu'un `batch`
       // ligne à ligne (mesuré : 1 533 versets, 70 ms contre 840 ms).
@@ -159,22 +164,22 @@ class BibleSearchIndex {
           ..where((t) => t.code.equals(versionCode)))
         .getSingleOrNull();
     if (row != null && !row.indexed) return false;
-    final first = bibleCanon.first;
-    final last = bibleCanon.last;
-    for (final (book, chapter) in [
-      (first, 1),
-      (last, last.chapterCount),
-    ]) {
-      final verses = await source.chapter(book.osis, chapter);
+    // Les deux bornes de **cette** version : son premier et son dernier
+    // chapitre (C3, #240). Demander Apocalypse 22 à une version qui s'arrête
+    // ailleurs rendait un chapitre vide, donc « incomplet » pour toujours.
+    final chapters = _catalog.versificationFor(versionCode).chapters;
+    if (chapters.isEmpty) return false;
+    for (final (i, page) in [chapters.first, chapters.last].indexed) {
+      final verses = await source.chapter(page.book, page.chapter);
       if (verses.isEmpty) return false;
-      final verse = chapter == 1 ? verses.first : verses.last;
+      final verse = i == 0 ? verses.first : verses.last;
       final stored = await _db.customSelect(
         'SELECT verse_text FROM bible_fts WHERE version_code = ? '
         'AND book = ? AND chapter = ? AND verse = ? LIMIT 1',
         variables: [
           Variable.withString(versionCode),
-          Variable.withString(book.osis),
-          Variable.withString('$chapter'),
+          Variable.withString(page.book),
+          Variable.withString('${page.chapter}'),
           Variable.withString('${verse.number}'),
         ],
       ).getSingleOrNull();
