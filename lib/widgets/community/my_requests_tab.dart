@@ -162,7 +162,7 @@ class MyRequestTile extends StatelessWidget {
             Text(
               [
                 if (sentAt != null)
-                  l.requestSentOn(formatRequestDate(sentAt, l.localeName)),
+                  l.requestSentOn(formatRequestDate(sentAt, l.intlLocale)),
                 if (request.isAnonymous) l.anonymousLabel,
               ].join(' · '),
               style:

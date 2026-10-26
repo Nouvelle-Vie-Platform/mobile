@@ -521,7 +521,7 @@ class _UpcomingSectionState extends ConsumerState<_UpcomingSection>
         message: horizon == null
             ? l10n.homeUpcomingEmptyMessage
             : l10n.homeUpcomingHorizonMessage(
-                formatHorizonDate(horizon, l10n.localeName),
+                formatHorizonDate(horizon, l10n.intlLocale),
               ),
       ),
     );
@@ -568,7 +568,7 @@ class _UpcomingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final locale = context.l10n.localeName;
+    final locale = context.l10n.intlLocale;
     final startTime = formatEventTime(event, locale, startOnly: true);
     // **Le lieu est optionnel.** `null`, vide, ou réduit à des espaces : il n'y
     // a alors rien à montrer, et la ligne de localisation — épingle comprise —

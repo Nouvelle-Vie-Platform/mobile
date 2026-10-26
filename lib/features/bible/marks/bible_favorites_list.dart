@@ -89,7 +89,7 @@ class _MarkCard extends ConsumerWidget {
       BibleMarkKind.favorite => Icons.favorite,
       BibleMarkKind.bookmark => Icons.bookmark,
     };
-    final date = DateFormat.yMd(context.l10n.localeName)
+    final date = DateFormat.yMd(context.l10n.intlLocale)
         .format(mark.updatedAt.toLocal());
     return Dismissible(
       key: BibleFavoritesList.cardKey(mark.id),

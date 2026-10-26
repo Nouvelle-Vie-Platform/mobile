@@ -327,7 +327,7 @@ class _MessageHitTile extends StatelessWidget {
                       ),
                       if (stamp != null)
                         Text(
-                          formatConversationStamp(stamp, l.localeName),
+                          formatConversationStamp(stamp, l.intlLocale),
                           style: AppTypography.caption
                               .copyWith(color: palette.textSecondary),
                         ),

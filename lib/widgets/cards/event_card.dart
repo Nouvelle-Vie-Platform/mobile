@@ -23,7 +23,7 @@ class EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Le modèle ne porte plus que des données : date, heure et intitulé sont
     // formatés ici, dans la locale courante.
-    final locale = context.l10n.localeName;
+    final locale = context.l10n.intlLocale;
     final category = event.category;
 
     return AppCard(

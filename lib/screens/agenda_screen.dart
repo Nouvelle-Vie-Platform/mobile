@@ -175,7 +175,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
     return Scaffold(
       appBar: BrandAppBar(
-        title: _monthTitle(_month, l10n.localeName),
+        title: _monthTitle(_month, l10n.intlLocale),
         actions: [
           _MonthArrow(
             icon: Icons.chevron_left,

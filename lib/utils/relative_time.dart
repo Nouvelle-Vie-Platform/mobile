@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
+import '../l10n/l10n_extension.dart';
 
 /// Formate un instant en horodatage **relatif et localisé**.
 ///
@@ -26,5 +27,5 @@ String relativeTime(AppLocalizations l10n, DateTime when, {DateTime? now}) {
   if (elapsed.inHours < 24) return l10n.timeHoursAgo(elapsed.inHours);
   if (elapsed.inHours < 48) return l10n.timeYesterday;
   if (elapsed.inDays < 7) return l10n.timeDaysAgo(elapsed.inDays);
-  return DateFormat.yMMMd(l10n.localeName).format(moment);
+  return DateFormat.yMMMd(l10n.intlLocale).format(moment);
 }
