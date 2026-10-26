@@ -3,6 +3,7 @@
 /// Paramètres.
 library;
 
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ import 'package:maison_du_miracle/features/bible/personalize/bible_settings_scre
 import 'package:maison_du_miracle/features/bible/personalize/bible_versions_screen.dart';
 import 'package:maison_du_miracle/features/bible/personalize/my_space_screen.dart';
 import 'package:maison_du_miracle/features/bible/personalize/reader_appearance.dart';
+import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/features/bible/plans/plan_logic.dart';
 import 'package:maison_du_miracle/features/bible/plans/plans_providers.dart';
 import 'package:maison_du_miracle/features/bible/plans/plans_widgets.dart';
@@ -31,6 +33,7 @@ import 'package:maison_du_miracle/state/sync_providers.dart';
 import 'package:maison_du_miracle/theme/app_palette.dart';
 
 import '../../../helpers/pump_screen.dart';
+import '../data/bible_archive_fixture.dart';
 
 /// Les réglages en mémoire, sans magasin.
 class _MemoryPrefs extends BiblePrefsNotifier {
@@ -154,26 +157,50 @@ void main() {
     expect(sink.saved, hasLength(1));
   });
 
-  testWidgets('Versions : télécharger installe et indexe', (tester) async {
+  /// La version servie du test : avec archive, donc téléchargeable depuis C4.
+  BibleVersionRow served(String code, {String? archiveUrl}) => BibleVersionRow(
+        syncStamp: 0,
+        id: 1,
+        code: code,
+        name: 'Biblia $code',
+        sortOrder: 0,
+        archiveUrl: archiveUrl,
+        publishedAt: DateTime.utc(2026),
+      );
+
+  testWidgets('Versions : télécharger installe la vraie archive et indexe',
+      (tester) async {
     final indexed = <String>[];
+    final root = Directory.systemTemp.createTempSync('bible_c4_ui_');
+    addTearDown(() => root.deleteSync(recursive: true));
+    final archive = fakeBibleArchive(
+      code: 'S21',
+      versification: const {
+        'Gen': [1]
+      },
+      books: const {
+        1: [
+          ['Au commencement']
+        ]
+      },
+    );
     late AppDatabase db;
     await tester.runAsync(() async {
       await pumpScreen(
         tester,
-        const BibleVersionsScreen(step: Duration.zero),
+        const BibleVersionsScreen(),
         overrides: [
           mergedBibleCatalogProvider.overrideWithValue(
             MergedBibleCatalog(
-              remote: [
-                BibleVersionRow(
-                  syncStamp: 0,
-                  id: 1,
-                  code: 'EWE',
-                  name: 'Biblia Ewe',
-                  sortOrder: 0,
-                  publishedAt: DateTime.utc(2026),
-                ),
-              ],
+                remote: [served('S21', archiveUrl: archive.url)]),
+          ),
+          bibleInstallerProvider.overrideWithValue(
+            BibleVersionInstaller(
+              fetch: (url, onProgress) async {
+                onProgress(1, 2);
+                return archive.bytes;
+              },
+              root: () async => root,
             ),
           ),
           bibleEnsureIndexedProvider
@@ -183,17 +210,77 @@ void main() {
       );
       expect(find.byKey(BibleVersionsScreen.rowKey('EXA')), findsOneWidget);
       expect(find.byKey(BibleVersionsScreen.removeKey('EXA')), findsNothing);
-      await tester.tap(find.byKey(BibleVersionsScreen.downloadKey('EWE')));
+      await tester.tap(find.byKey(BibleVersionsScreen.downloadKey('S21')));
       for (var i = 0; i < 20 && indexed.isEmpty; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 20));
         await tester.pump();
       }
       final ctx = tester.element(find.byType(BibleVersionsScreen));
       db = ProviderScope.containerOf(ctx).read(appDatabaseProvider);
-      final rows = await db.select(db.bibleInstalledVersions).get();
-      expect(rows.single.code, 'EWE');
+      final row = (await db.select(db.bibleInstalledVersions).get()).single;
+      expect(row.code, 'S21');
+      expect(row.localPath, '${root.path}/bible/S21');
     });
-    expect(indexed, ['EWE']);
+    expect(indexed, ['S21']);
+  });
+
+  testWidgets('Versions : une version sans archive n\'offre pas le bouton',
+      (tester) async {
+    await pumpScreen(
+      tester,
+      const BibleVersionsScreen(),
+      overrides: [
+        mergedBibleCatalogProvider
+            .overrideWithValue(MergedBibleCatalog(remote: [served('EWE')])),
+        bibleReadingStateProvider.overrideWith((ref) => Stream.value(null)),
+      ],
+    );
+    expect(find.byKey(BibleVersionsScreen.rowKey('EWE')), findsOneWidget);
+    expect(find.byKey(BibleVersionsScreen.downloadKey('EWE')), findsNothing);
+    expect(find.text(AppLocalizationsFr().bibleM4VersionSoon), findsOneWidget);
+  });
+
+  testWidgets('Versions : une archive refusée le dit, et n\'installe rien',
+      (tester) async {
+    final root = Directory.systemTemp.createTempSync('bible_c4_ko_');
+    addTearDown(() => root.deleteSync(recursive: true));
+    final archive = fakeBibleArchive(code: 'S21');
+    late AppDatabase db;
+    await tester.runAsync(() async {
+      await pumpScreen(
+        tester,
+        const BibleVersionsScreen(),
+        overrides: [
+          mergedBibleCatalogProvider.overrideWithValue(
+            MergedBibleCatalog(
+                remote: [served('S21', archiveUrl: archive.url)]),
+          ),
+          bibleInstallerProvider.overrideWithValue(
+            BibleVersionInstaller(
+              // Les octets servis ne sont pas ceux que l'URL annonce.
+              fetch: (url, onProgress) async => [...archive.bytes, 0],
+              root: () async => root,
+            ),
+          ),
+          bibleReadingStateProvider.overrideWith((ref) => Stream.value(null)),
+        ],
+      );
+      await tester.tap(find.byKey(BibleVersionsScreen.downloadKey('S21')));
+      for (var i = 0; i < 20; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await tester.pump();
+      }
+      final ctx = tester.element(find.byType(BibleVersionsScreen));
+      db = ProviderScope.containerOf(ctx).read(appDatabaseProvider);
+      expect(await db.select(db.bibleInstalledVersions).get(), isEmpty);
+    });
+    await tester.pump();
+    expect(
+      find.text(AppLocalizationsFr().bibleM4DownloadFailed),
+      findsOneWidget,
+    );
+    // Le bouton est revenu : le geste est rejouable.
+    expect(find.byKey(BibleVersionsScreen.downloadKey('S21')), findsOneWidget);
   });
 
   testWidgets('Versions : la licence ne paraît pas dans l\'appli (#242)',
@@ -201,7 +288,7 @@ void main() {
     await tester.runAsync(() async {
       await pumpScreen(
         tester,
-        const BibleVersionsScreen(step: Duration.zero),
+        const BibleVersionsScreen(),
         overrides: [
           mergedBibleCatalogProvider.overrideWithValue(
             MergedBibleCatalog(

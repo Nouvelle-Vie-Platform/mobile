@@ -5,11 +5,13 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show Value, Variable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/features/bible/data/bible_archive.dart';
 import 'package:maison_du_miracle/features/bible/data/bible_providers.dart';
 import 'package:maison_du_miracle/features/bible/data/canon.dart';
 import 'package:maison_du_miracle/features/bible/data/placeholder_bible.dart';
@@ -26,6 +28,7 @@ import 'package:maison_du_miracle/theme/app_palette.dart';
 import 'package:maison_du_miracle/theme/app_typography.dart';
 
 import '../../../data/local/local_database_fixtures.dart';
+import '../data/bible_archive_fixture.dart';
 
 BibleVersionRow _served(
   int id,
@@ -51,6 +54,38 @@ BibleInstalledVersionRow _installed(String code) => BibleInstalledVersionRow(
       installedAt: DateTime.utc(2026, 10),
       indexed: false,
     );
+
+/// Une descente qui rend [bytes] sans réseau, en annonçant sa progression en
+/// deux temps — de quoi voir la barre monter.
+BibleArchiveFetch _fetch(List<int> bytes) => (url, onProgress) async {
+      onProgress(bytes.length ~/ 2, bytes.length);
+      onProgress(bytes.length, bytes.length);
+      return bytes;
+    };
+
+/// Une descente qui ne doit **jamais** être appelée.
+Future<List<int>> _refuse(
+  String url,
+  void Function(int, int) onProgress,
+) async =>
+    throw StateError('rien à télécharger pour cette version : $url');
+
+/// La ligne d'installation écrite par l'installeur.
+Future<BibleInstalledVersionRow> _installedRow(
+  AppDatabase db,
+  String code,
+) async =>
+    (await (db.select(db.bibleInstalledVersions)
+              ..where((t) => t.code.equals(code)))
+            .get())
+        .single;
+
+Future<int> _ftsCount(AppDatabase db, String code) async =>
+    (await db.customSelect(
+      'SELECT count(*) AS n FROM bible_fts WHERE version_code = ?',
+      variables: [Variable.withString(code)],
+    ).getSingle())
+        .read<int>('n');
 
 /// Le double du greffon de notification.
 class _FakeScheduler implements BibleReminderScheduler {
@@ -191,8 +226,9 @@ void main() {
           versions.map((v) => v.installed), [true, true, false, true, false]);
       final entries = {for (final e in catalog.entries) e.version.code: e};
       expect(entries['EXA']!.builtIn, isTrue);
-      expect(entries['EWE']!.downloadable, isTrue);
-      expect(entries['ZIP']!.downloadable, isFalse);
+      // **Téléchargeable = une archive existe.** ZIP en a une, EWE non.
+      expect(entries['ZIP']!.downloadable, isTrue);
+      expect(entries['EWE']!.downloadable, isFalse);
       // Installée : du texte ; pas installée : rien.
       expect(catalog.sourceFor('LSG'), isNotNull);
       expect(await catalog.sourceFor('LSG')!.chapter('John', 3), isNotEmpty);
@@ -203,60 +239,183 @@ void main() {
       expect(catalog, isNot(MergedBibleCatalog()));
     });
 
-    test('télécharger : progression simulée, installation, indexation',
+    test(
+        '« téléchargeable » suit l\'archive, et non son absence (l\'inversion '
+        'de M4)', () {
+      // **La garde de la tranche.** `downloadable: r.archiveUrl == null` a
+      // vécu ici jusqu'à C4 : une version devenait téléchargeable quand elle
+      // n'avait **pas** d'archive, et cessait de l'être à l'instant où elle
+      // en acquérait une. Rien ne se voyait, puisque aucune version servie
+      // n'avait d'`archive_url`. Ce test rougit si l'inversion revient.
+      BibleCatalogEntry entry(String? url) =>
+          MergedBibleCatalog(remote: [_served(1, 'S21', archiveUrl: url)])
+              .entries
+              .last;
+      expect(entry('https://x/uploads/bible/S21-0123456789ab.zip').downloadable,
+          isTrue);
+      expect(entry(null).downloadable, isFalse);
+    });
+
+    test('télécharger : l\'archive réelle, la ligne, la versification',
         () async {
       final db = openTestDatabase();
       addTearDown(db.close);
-      final entry =
-          MergedBibleCatalog(remote: [_served(1, 'EWE')]).entries.last;
+      final root = Directory.systemTemp.createTempSync('bible_c4_cat_');
+      addTearDown(() => root.deleteSync(recursive: true));
+      final archive = fakeBibleArchive(
+        code: 'S21',
+        versification: {
+          'Gen': [31],
+          'Mal': [14, 17, 24, 0],
+        },
+        books: {
+          1: [
+            ['Au commencement, Dieu créa…']
+          ]
+        },
+      );
+      final catalog = MergedBibleCatalog(
+        remote: [_served(1, 'S21', archiveUrl: archive.url)],
+      );
       final indexed = <String>[];
-      final progress = await installBibleVersion(
-        db,
-        entry,
-        ensureIndexed: (code) async => indexed.add(code),
-        step: Duration.zero,
-      ).toList();
-      expect(progress, hasLength(kSimulatedSteps));
+      final progress = await BibleVersionInstaller(
+        fetch: _fetch(archive.bytes),
+        root: () async => root,
+      )
+          .install(
+            db,
+            catalog.entries.last,
+            ensureIndexed: (code) async => indexed.add(code),
+          )
+          .toList();
+      // La barre monte, s'arrête à 90 % le temps du dézippage, puis finit.
+      expect(progress.first, lessThan(1));
+      expect(progress, contains(0.9));
       expect(progress.last, 1.0);
-      final rows = await db.select(db.bibleInstalledVersions).get();
-      expect(rows.single.code, 'EWE');
-      expect(indexed, ['EWE']);
+      expect(indexed, ['S21']);
 
-      await removeBibleVersion(db, 'EWE');
-      expect(await db.select(db.bibleInstalledVersions).get(), isEmpty);
+      final row = (await db.select(db.bibleInstalledVersions).get()).single;
+      expect(row.code, 'S21');
+      expect(row.localPath, '${root.path}/bible/S21');
+      expect(row.indexed, isFalse);
+      // La versification du manifeste va **ici**, pas sur `bible_versions`.
+      expect(
+          BibleVersification.tryParse(row.versification)!.chapterCount('Mal'),
+          3);
+
+      // Et le catalogue relu sert l'Écriture, non plus le texte d'exemple.
+      final installed = MergedBibleCatalog(
+        remote: [_served(1, 'S21', archiveUrl: archive.url)],
+        installed: [await _installedRow(db, 'S21')],
+      );
+      final source = installed.sourceFor('S21');
+      expect(source, isA<InstalledBibleSource>());
+      expect((await source!.chapter('Gen', 1)).single.text,
+          'Au commencement, Dieu créa…');
+      expect(installed.versificationFor('S21').versesIn('Mal', 4), 0);
     });
 
-    test('après installation, la version servie est indexée (M3)', () async {
+    test('une archive abîmée n\'installe rien du tout', () async {
       final db = openTestDatabase();
       addTearDown(db.close);
-      await db.into(db.bibleVersions).insert(
-            BibleVersionsCompanion.insert(
-              id: const Value(7),
-              code: 'EWE',
-              name: 'Biblia',
-              publishedAt: Value(DateTime.utc(2026)),
-            ),
-          );
+      final root = Directory.systemTemp.createTempSync('bible_c4_bad_');
+      addTearDown(() => root.deleteSync(recursive: true));
+      final archive = fakeBibleArchive(code: 'S21');
+      final indexed = <String>[];
+      // Les octets servis ne sont pas ceux que l'URL annonce : une
+      // troncature, et c'est tout ce que 48 bits ont à détecter.
+      await expectLater(
+        BibleVersionInstaller(
+          fetch: _fetch([...archive.bytes, 0]),
+          root: () async => root,
+        ).install(
+          db,
+          MergedBibleCatalog(
+            remote: [_served(1, 'S21', archiveUrl: archive.url)],
+          ).entries.last,
+          ensureIndexed: (code) async => indexed.add(code),
+        ),
+        emitsThrough(emitsError(isA<BibleArchiveException>())),
+      );
+      expect(await db.select(db.bibleInstalledVersions).get(), isEmpty);
+      expect(indexed, isEmpty);
+      expect(Directory('${root.path}/bible/S21').existsSync(), isFalse);
+    });
+
+    test('supprimer emporte les octets, la ligne et l\'index', () async {
+      final db = openTestDatabase();
+      addTearDown(db.close);
+      final root = Directory.systemTemp.createTempSync('bible_c4_rm_');
+      addTearDown(() {
+        if (root.existsSync()) root.deleteSync(recursive: true);
+      });
+      final archive = fakeBibleArchive(
+        code: 'S21',
+        versification: {
+          'Gen': [1]
+        },
+        books: {
+          1: [
+            ['Au commencement']
+          ]
+        },
+      );
       final container = ProviderContainer(
         overrides: [appDatabaseProvider.overrideWithValue(db)],
       );
       addTearDown(container.dispose);
-      final entry =
-          MergedBibleCatalog(remote: [_served(7, 'EWE')]).entries.last;
-      await installBibleVersion(
-        db,
-        entry,
-        ensureIndexed: container.read(bibleEnsureIndexedProvider),
-        step: Duration.zero,
-      ).drain<void>();
-      final n = await db
-          .customSelect(
-            "SELECT count(*) AS n FROM bible_fts WHERE version_code = 'EWE'",
+      await db.into(db.bibleVersions).insert(
+            BibleVersionsCompanion.insert(
+              id: const Value(1),
+              code: 'S21',
+              name: 'Version S21',
+              archiveUrl: Value(archive.url),
+              publishedAt: Value(DateTime.utc(2026)),
+            ),
+          );
+      final installer = BibleVersionInstaller(
+        fetch: _fetch(archive.bytes),
+        root: () async => root,
+      );
+      await installer
+          .install(
+            db,
+            MergedBibleCatalog(
+              remote: [_served(1, 'S21', archiveUrl: archive.url)],
+            ).entries.last,
+            ensureIndexed: container.read(bibleEnsureIndexedProvider),
           )
-          .getSingle();
-      expect(n.read<int>('n'), greaterThan(30000));
-      final row = (await db.select(db.bibleInstalledVersions).get()).single;
-      expect(row.indexed, isTrue);
+          .drain<void>();
+      final dir = Directory('${root.path}/bible/S21');
+      expect(dir.existsSync(), isTrue);
+      expect(await _ftsCount(db, 'S21'), 1);
+      expect((await db.select(db.bibleInstalledVersions).get()).single.indexed,
+          isTrue);
+
+      await installer.remove(db, 'S21');
+      expect(dir.existsSync(), isFalse);
+      expect(await db.select(db.bibleInstalledVersions).get(), isEmpty);
+      expect(await _ftsCount(db, 'S21'), 0);
+    });
+
+    test('une version intégrée ou sans archive ne télécharge rien', () async {
+      final db = openTestDatabase();
+      addTearDown(db.close);
+      final catalog = MergedBibleCatalog(remote: [_served(1, 'EWE')]);
+      const installer = BibleVersionInstaller(fetch: _refuse);
+      expect(
+        await installer
+            .install(db, catalog.entries.first, ensureIndexed: (_) async {})
+            .toList(),
+        isEmpty,
+      );
+      expect(
+        await installer
+            .install(db, catalog.entries.last, ensureIndexed: (_) async {})
+            .toList(),
+        isEmpty,
+      );
+      expect(await db.select(db.bibleInstalledVersions).get(), isEmpty);
     });
 
     test('bibleCatalogProvider rend le catalogue fusionné du magasin',

@@ -2820,6 +2820,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bibleM4Remove => 'Remove';
 
   @override
+  String get bibleM4DownloadFailed =>
+      'Download failed. Please try again later.';
+
+  @override
   String get bibleM4ActiveVersion => 'Active version';
 
   @override

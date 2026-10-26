@@ -297,13 +297,33 @@ dependencies:
   stts: ^1.3.4
   timezone: ^0.11.0
 
+  # **Module Bible, C4** (server-portal#605) — les versions téléchargées. Les
+  # deux paquets étaient **déjà là, mais pas à la bonne place** ; les déclarer
+  # ne descend rien de neuf (`pubspec.lock` ne bouge que d'une ligne
+  # `dependency:` chacun), c'est ce qu'exige `depend_on_referenced_packages`
+  # dès qu'on les importe soi-même — la même histoire que `web` et `uuid`.
+  #
+  # - `archive` — y était en **transitif** (tiré par `pdf`, `flutter_quill`).
+  #   Le zip d'une version porte 67 entrées : écrire un lecteur de zip à la
+  #   main pour ça serait du travail à maintenir pour rien.
+  # - `crypto` — y était en **dev** seulement, donc hors de portée de `lib/` :
+  #   le code de production ne compilait pas avec. Il sert à **refuser une
+  #   archive tronquée** (sha256 des octets reçus contre les 12 hex du nom de
+  #   l'archive, décision du propriétaire du produit) : une vérification au
+  #   bord du réseau, pas un ornement.
+  #
+  # Pur Dart tous les deux : aucune permission, aucune configuration native,
+  # la cible web reste tenue. Lus **uniquement** par
+  # `lib/features/bible/data/bible_archive.dart`.
+  archive: ^4.3.0
+  crypto: ^3.0.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   drift_dev: ^2.34.0
   build_runner: ^2.15.1
-  crypto: ^3.0.7
 
 # **Copie modifiée de just_audio 0.10.6** : elle ajoute `programTimeMs()`,
 # l'heure de programme (EXT-X-PROGRAM-DATE-TIME) de ce qu'on entend — le

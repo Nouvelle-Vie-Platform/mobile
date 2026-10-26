@@ -1,6 +1,6 @@
 /// **Versions et hors ligne** (M4, mobile#202, décision 9) : le catalogue
-/// fusionné, « Télécharger » (progression simulée, installation factice),
-/// « Supprimer », et le choix de la version active.
+/// fusionné, « Télécharger » (l'archive réelle depuis C4), « Supprimer », et
+/// le choix de la version active.
 library;
 
 import 'dart:async';
@@ -16,10 +16,7 @@ import '../data/bible_providers.dart';
 import 'bible_catalog.dart';
 
 class BibleVersionsScreen extends ConsumerStatefulWidget {
-  const BibleVersionsScreen({super.key, this.step = kSimulatedStep});
-
-  /// Un pas du téléchargement simulé (raccourci en test).
-  final Duration step;
+  const BibleVersionsScreen({super.key});
 
   static Key rowKey(String code) => Key('bible_version_row_$code');
   static Key downloadKey(String code) => Key('bible_version_download_$code');
@@ -38,17 +35,21 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
   Future<void> _download(BibleCatalogEntry entry) async {
     final code = entry.version.code;
     setState(() => _progress[code] = 0);
+    final messenger = ScaffoldMessenger.of(context);
+    final failed = context.l10n.bibleM4DownloadFailed;
     final db = ref.read(appDatabaseProvider);
+    final installer = ref.read(bibleInstallerProvider);
     final ensureIndexed = ref.read(bibleEnsureIndexedProvider);
     try {
-      await for (final p in installBibleVersion(
-        db,
-        entry,
-        ensureIndexed: ensureIndexed,
-        step: widget.step,
-      )) {
+      await for (final p
+          in installer.install(db, entry, ensureIndexed: ensureIndexed)) {
         if (mounted) setState(() => _progress[code] = p);
       }
+    } on Object {
+      // Une archive refusée (empreinte, réseau) **n'installe rien** : le
+      // fidèle doit savoir que le bouton n'a rien produit, sinon il le
+      // regarde redevenir « Télécharger » sans explication.
+      if (mounted) messenger.showSnackBar(SnackBar(content: Text(failed)));
     } finally {
       if (mounted) setState(() => _progress.remove(code));
     }
@@ -130,10 +131,10 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
         key: BibleVersionsScreen.removeKey(v.code),
         tooltip: l.bibleM4Remove,
         icon: const Icon(Icons.delete_outline),
-        onPressed: () => removeBibleVersion(
-          ref.read(appDatabaseProvider),
-          v.code,
-        ),
+        onPressed: () => ref.read(bibleInstallerProvider).remove(
+              ref.read(appDatabaseProvider),
+              v.code,
+            ),
       );
     } else {
       trailing = const Icon(Icons.offline_pin_outlined);
