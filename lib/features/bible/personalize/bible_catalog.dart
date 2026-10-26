@@ -25,7 +25,6 @@ final class BibleCatalogEntry {
   const BibleCatalogEntry({
     required this.version,
     this.sizeBytes,
-    this.license,
     this.versification,
     this.builtIn = false,
     this.downloadable = false,
@@ -33,7 +32,6 @@ final class BibleCatalogEntry {
 
   final BibleVersion version;
   final int? sizeBytes;
-  final String? license;
 
   /// La versification **relevée** de cette version installée (C3, #240), ou
   /// `null` : le canon figé sert alors de repli.
@@ -61,7 +59,7 @@ final class MergedBibleCatalog implements BibleCatalog {
   late final String _signature = [
     for (final e in entries)
       '${e.version.code}:${e.version.name}:${e.version.language}:'
-          '${e.version.installed}:${e.downloadable}:${e.sizeBytes}:${e.license}'
+          '${e.version.installed}:${e.downloadable}:${e.sizeBytes}'
           ':${e.versification?.signature.hashCode}',
   ].join('|');
 
@@ -100,7 +98,6 @@ final class MergedBibleCatalog implements BibleCatalog {
               installed: installedCodes.contains(r.code),
             ),
             sizeBytes: r.sizeBytes,
-            license: r.license,
             versification: versifications[r.code],
             downloadable: r.archiveUrl == null,
           ),

@@ -97,11 +97,17 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
     final v = e.version;
     final progress = _progress[v.code];
     final size = e.sizeBytes;
+
+    /// La langue, la taille et « incluse » — les trois choses qui aident à
+    /// choisir quoi télécharger. **Pas la licence** : décision du 26/10/2026,
+    /// elle ne paraît que dans le portail. Plusieurs licences bibliques exigent
+    /// pourtant la mention là où le texte est lu (la S21 : « Reproduit avec
+    /// aimable autorisation »), et le portail n'est pas lu par le fidèle — la
+    /// dette est consignée dans `context/docs/DETTE.md`, pas oubliée.
     final subtitle = [
       v.language.toUpperCase(),
       if (size != null) l.bibleM4SizeMb((size / 1e6).toStringAsFixed(1)),
       if (e.builtIn) l.bibleM4VersionBuiltIn,
-      if (e.license case final license? when license.isNotEmpty) license,
     ].join(' · ');
     final Widget trailing;
     if (progress != null) {

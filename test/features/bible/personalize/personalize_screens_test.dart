@@ -196,6 +196,49 @@ void main() {
     expect(indexed, ['EWE']);
   });
 
+  testWidgets('Versions : la licence ne paraît pas dans l\'appli (#242)',
+      (tester) async {
+    await tester.runAsync(() async {
+      await pumpScreen(
+        tester,
+        const BibleVersionsScreen(step: Duration.zero),
+        overrides: [
+          mergedBibleCatalogProvider.overrideWithValue(
+            MergedBibleCatalog(
+              remote: [
+                BibleVersionRow(
+                  syncStamp: 0,
+                  id: 1,
+                  code: 'EWE',
+                  name: 'Biblia Ewe',
+                  language: 'ee',
+                  license: '© Bible Society of Ghana, 1913, 2006',
+                  sortOrder: 0,
+                  publishedAt: DateTime.utc(2026),
+                ),
+              ],
+            ),
+          ),
+          bibleEnsureIndexedProvider.overrideWithValue((code) async {}),
+          bibleReadingStateProvider.overrideWith((ref) => Stream.value(null)),
+        ],
+      );
+
+      // La ligne est bien là, et la langue y est : ce n'est donc pas un écran vide
+      // qui ferait passer l'assertion suivante pour acquise.
+      expect(find.byKey(BibleVersionsScreen.rowKey('EWE')), findsOneWidget);
+      expect(find.textContaining('EE'), findsWidgets);
+
+      // La licence, elle, n'est nulle part — ni entière, ni par son fragment le plus
+      // reconnaissable.
+      expect(find.textContaining('Bible Society'), findsNothing);
+      expect(
+        find.textContaining('© Bible Society of Ghana, 1913, 2006'),
+        findsNothing,
+      );
+    });
+  });
+
   testWidgets('Paramètres : un rappel s\'active et se reprogramme',
       (tester) async {
     var refreshed = 0;
