@@ -30,7 +30,7 @@ class EventDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final locale = l.localeName;
+    final locale = l.intlLocale;
     final palette = context.palette;
 
     final category = event.category;
@@ -90,7 +90,7 @@ class _WhenAndWhere extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final locale = context.l10n.localeName;
+    final locale = context.l10n.intlLocale;
 
     return AppCard(
       child: Column(

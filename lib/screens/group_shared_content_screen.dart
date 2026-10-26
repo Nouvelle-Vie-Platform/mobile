@@ -220,7 +220,7 @@ class _AudioCell extends StatelessWidget {
 
 String _date(BuildContext context, DateTime? at) => at == null
     ? ''
-    : DateFormat.yMd(context.l10n.localeName).format(at.toLocal());
+    : DateFormat.yMd(context.l10n.intlLocale).format(at.toLocal());
 
 class _LinkList extends ConsumerWidget {
   const _LinkList(this.links);

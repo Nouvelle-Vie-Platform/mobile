@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 
 import '../data/messaging/messaging_channel.dart' show MessagingPresenceEvent;
 import '../l10n/app_localizations.dart';
+import '../l10n/l10n_extension.dart';
 
 /// **« écrit… »** — `null` si personne n'écrit.
 ///
@@ -48,13 +49,13 @@ String? presenceLabel(
 
   final local = seen.toLocal();
   final today = (now ?? DateTime.now()).toLocal();
-  final time = DateFormat.Hm(l.localeName).format(local);
+  final time = DateFormat.Hm(l.intlLocale).format(local);
   final days = DateTime(today.year, today.month, today.day)
       .difference(DateTime(local.year, local.month, local.day))
       .inDays;
   if (days <= 0) return l.chatLastSeenToday(time);
   if (days == 1) return l.chatLastSeenYesterday(time);
-  return l.chatLastSeenOn(DateFormat.MMMd(l.localeName).format(local), time);
+  return l.chatLastSeenOn(DateFormat.MMMd(l.intlLocale).format(local), time);
 }
 
 /// **L'instant d'un accusé** dans « Infos du message » : « aujourd'hui à
@@ -66,11 +67,11 @@ String receiptInstantLabel(
 }) {
   final local = instant.toLocal();
   final today = (now ?? DateTime.now()).toLocal();
-  final time = DateFormat.Hm(l.localeName).format(local);
+  final time = DateFormat.Hm(l.intlLocale).format(local);
   final days = DateTime(today.year, today.month, today.day)
       .difference(DateTime(local.year, local.month, local.day))
       .inDays;
   if (days <= 0) return l.messageInfoToday(time);
   if (days == 1) return l.messageInfoYesterday(time);
-  return l.messageInfoOn(DateFormat.MMMd(l.localeName).format(local), time);
+  return l.messageInfoOn(DateFormat.MMMd(l.intlLocale).format(local), time);
 }

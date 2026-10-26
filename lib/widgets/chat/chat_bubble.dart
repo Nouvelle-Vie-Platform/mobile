@@ -164,7 +164,7 @@ class ChatBubble extends StatelessWidget {
               // Un instant absent ne se rend pas, plutôt qu'une date inventée.
               if (message.createdAt != null)
                 Text(
-                  formatMessageTime(message.createdAt!, l.localeName),
+                  formatMessageTime(message.createdAt!, l.intlLocale),
                   style: AppTypography.caption.copyWith(
                     fontSize: 10,
                     color: mine
