@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -129,7 +130,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get authEmail => 'Email';
 
   @override
-  String get actionJoin => 'Rejoindre';
+  String get actionJoin => 'Ge ɖe eme / Wɔ ɖeka';
 
   @override
   String get onboardingCodeTitle => 'Vérification';
@@ -202,7 +203,7 @@ class AppLocalizationsEe extends AppLocalizations {
   }
 
   @override
-  String get homeGreetingNoName => 'Bonjour !';
+  String get homeGreetingNoName => 'Ŋdi na wò !';
 
   @override
   String get homeBlessing => 'Mawu nayra wò egbe.';
@@ -295,8 +296,7 @@ class AppLocalizationsEe extends AppLocalizations {
       'Un modérateur a suspendu vos commentaires jusqu\'à la fin du direct.';
 
   @override
-  String get radioCommentClosed =>
-      'Le direct est terminé : les commentaires sont fermés.';
+  String get radioCommentClosed => 'Tẽe wɔna la wu enu : nusɔsɔwo le mɔ me.';
 
   @override
   String get radioCommentThrottled =>
@@ -610,13 +610,13 @@ class AppLocalizationsEe extends AppLocalizations {
   String get teachingAppBarTitle => 'Message';
 
   @override
-  String get actionDownload => 'Télécharger';
+  String get actionDownload => 'Ɖee kɔ';
 
   @override
   String get actionMyNotes => 'Mes notes';
 
   @override
-  String get actionShare => 'Partager';
+  String get actionShare => 'Ma';
 
   @override
   String get tabDescription => 'Description';
@@ -638,7 +638,7 @@ class AppLocalizationsEe extends AppLocalizations {
   }
 
   @override
-  String get actionDownloadAudio => 'Télécharger l\'audio';
+  String get actionDownloadAudio => 'Ɖe gbeɖiɖi la kɔ';
 
   @override
   String get downloadStateDownloading => 'Téléchargement en cours';
@@ -754,7 +754,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get weekdaySun => 'Dim';
 
   @override
-  String get liveAppBarTitle => 'Culte en direct';
+  String get liveAppBarTitle => 'Sɔlemɔ tẽe';
 
   @override
   String get liveAudioOnly => 'Audio seul';
@@ -766,8 +766,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get liveAboutTitle => 'À propos de ce live';
 
   @override
-  String get liveAboutBody =>
-      'Soyez bénis par la Parole de Dieu et restez connectés.';
+  String get liveAboutBody => 'Mawu fe Nyagbɔna neyra mi eye mianɔ habɔbɔ me.';
 
   @override
   String liveConnectedPeople(String count) {
@@ -1050,7 +1049,7 @@ class AppLocalizationsEe extends AppLocalizations {
       'Choisissez l\'assemblée dont vous voulez suivre les messages, les rassemblements et les annonces. L\'agenda et le mur de prière ne changent pas.';
 
   @override
-  String get branchScopeAll => 'Toutes les assemblées';
+  String get branchScopeAll => 'Hamewo katã';
 
   @override
   String get branchScopeAllSubtitle =>
@@ -1157,19 +1156,19 @@ class AppLocalizationsEe extends AppLocalizations {
   String get themeSectionTitle => 'Apparence';
 
   @override
-  String get themeLight => 'Clair';
+  String get themeLight => 'Kɔtɔɔ / Ɣe';
 
   @override
   String get themeSystem => 'Système';
 
   @override
-  String get themeAuto => 'Auto';
+  String get themeAuto => 'Dokuiwɔwɔ';
 
   @override
-  String get themeDark => 'Sombre';
+  String get themeDark => 'Yibɔ / Viviti';
 
   @override
-  String get themeAutoHoursTitle => 'Heures de bascule';
+  String get themeAutoHoursTitle => 'Tɔtrɔ fe gafoɖokuiwo';
 
   @override
   String get themeDarkFrom => 'Passe en sombre à';
@@ -1181,7 +1180,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get logout => 'Do go';
 
   @override
-  String get donationsAppBarTitle => 'Dons & Offrandes';
+  String get donationsAppBarTitle => 'Nunanawo kple Vɔsawo';
 
   @override
   String get donationsTitle => 'Do alɔ Mawu ƒe dɔ la';
@@ -1191,10 +1190,10 @@ class AppLocalizationsEe extends AppLocalizations {
       'Donnez selon ce que Dieu met dans votre cœur.';
 
   @override
-  String get donationsAmountLabel => 'Montant';
+  String get donationsAmountLabel => 'Ga agbɔsɔsɔ';
 
   @override
-  String get donationsPaymentMethodLabel => 'Méthode de paiement';
+  String get donationsPaymentMethodLabel => 'Fexexe mɔnu';
 
   @override
   String get paymentCard => 'Carte bancaire';
@@ -1283,10 +1282,10 @@ class AppLocalizationsEe extends AppLocalizations {
   String get fieldYourBranch => 'Votre branche';
 
   @override
-  String get branchImNew => 'Je suis nouveau';
+  String get branchImNew => 'Yeye ye menye';
 
   @override
-  String get branchMotherChurch => 'Église Mère';
+  String get branchMotherChurch => 'Dada Sɔlemɔ';
 
   @override
   String get branchesEmpty => 'Aucune branche à sélectionner pour le moment.';
@@ -1370,29 +1369,29 @@ class AppLocalizationsEe extends AppLocalizations {
   String get stateRetry => 'Réessayer';
 
   @override
-  String get homeUpcomingEmptyTitle => 'Aucun rassemblement à venir';
+  String get homeUpcomingEmptyTitle => 'Rassemblement aɖeke meli le ŋgɔ o';
 
   @override
   String get homeUpcomingEmptyMessage =>
-      'Le calendrier n\'annonce rien pour le moment. Revenez bientôt.';
+      'Ŋkeke ɖoɖo la meɖe nu aɖeke fia fifia o. Gba trɔ gbɔ va fiayi.';
 
   @override
   String homeUpcomingHorizonMessage(String date) {
-    return 'Le calendrier n\'annonce rien jusqu\'au $date.';
+    return 'Ŋkeke ɖoɖo la meɖe nu aɖeke fia va se ɖe $date o.';
   }
 
   @override
-  String get agendaEmptyMonthTitle => 'Aucun événement ce mois-ci';
+  String get agendaEmptyMonthTitle => 'Wɔna aɖeke meli le ɣleti sia me o';
 
   @override
-  String get agendaEmptyMonthMessage => 'Rien n\'est prévu pour cette période.';
+  String get agendaEmptyMonthMessage =>
+      'Nu aɖeke meli ɖoɖo me na ɣeyiɣi sia o.';
 
   @override
-  String get agendaHorizonTitle => 'Fin du calendrier';
+  String get agendaHorizonTitle => 'Ŋkeke ɖoɖo la fe nuwuwu';
 
   @override
-  String get agendaHorizonMessage =>
-      'Les événements plus lointains ne sont pas encore annoncés.';
+  String get agendaHorizonMessage => 'Mewayɔ wɔna siwo le adzɔge wu la gbe o.';
 
   @override
   String get agendaPreviousMonth => 'Mois précédent';
@@ -1405,9 +1404,9 @@ class AppLocalizationsEe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count événements',
-      one: '$count événement',
-      zero: 'aucun événement',
+      other: '$count wɔnawo',
+      one: '$count wɔna',
+      zero: 'wɔna aɖeke meli o',
     );
     return '$day — $_temp0';
   }
@@ -2064,7 +2063,7 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String notificationNewMessageFrom(String name) {
-    return 'Nouveau message de $name';
+    return 'Gbedeasi yeye tso $name gbɔ';
   }
 
   @override
@@ -2178,7 +2177,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get chatActionReply => 'Répondre';
 
   @override
-  String get chatActionCopy => 'Copier';
+  String get chatActionCopy => 'Wɔ efe kɔpi';
 
   @override
   String get chatActionForward => 'Transférer';
@@ -2187,10 +2186,10 @@ class AppLocalizationsEe extends AppLocalizations {
   String get chatActionEdit => 'Modifier';
 
   @override
-  String get chatActionDeleteForMe => 'Supprimer pour moi';
+  String get chatActionDeleteForMe => 'Tutu eɖa na nye ko';
 
   @override
-  String get chatActionDeleteForEveryone => 'Supprimer pour tous';
+  String get chatActionDeleteForEveryone => 'Tutu eɖa na ame katã';
 
   @override
   String get chatMoreReactions => 'Plus de réactions';
@@ -2631,7 +2630,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get bibleTabMore => 'Plus';
 
   @override
-  String get bibleBackToHome => 'Retour à l\'accueil';
+  String get bibleBackToHome => 'Trɔ yi afe-te';
 
   @override
   String get bibleOldTestament => 'Ancien Testament';
@@ -2640,7 +2639,7 @@ class AppLocalizationsEe extends AppLocalizations {
   String get bibleNewTestament => 'Nouveau Testament';
 
   @override
-  String get bibleBookSearchHint => 'Recherche rapide de livre';
+  String get bibleBookSearchHint => 'Agbalẽ di kaba';
 
   @override
   String get bibleNoBookFound => 'Aucun livre ne correspond';
@@ -2650,8 +2649,8 @@ class AppLocalizationsEe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count chapitres',
-      one: '1 chapitre',
+      other: 'ta ${count}wo',
+      one: 'ta 1',
     );
     return '$_temp0';
   }
@@ -2675,11 +2674,11 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String bibleInsertReference(String reference) {
-    return 'Insérer $reference';
+    return 'De $reference ɖe eme';
   }
 
   @override
-  String get bibleChangeChapter => 'Changer de chapitre';
+  String get bibleChangeChapter => 'Trɔ ta';
 
   @override
   String get bibleVersionTooltip => 'Version de la Bible';
@@ -2875,9 +2874,9 @@ class AppLocalizationsEe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count favoris',
-      one: '1 favori',
-      zero: 'Aucun favori',
+      other: 'nu vevi ${count}wo',
+      one: 'nu vevi 1',
+      zero: 'Nu vevi aɖeke meli o',
     );
     return '$_temp0';
   }
@@ -2887,9 +2886,9 @@ class AppLocalizationsEe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count notes',
-      one: '1 note',
-      zero: 'Aucune note',
+      other: 'nuŋŋlɔ ${count}wo',
+      one: 'nuŋŋlɔ 1',
+      zero: 'Nuŋŋlɔ aɖeke meli o',
     );
     return '$_temp0';
   }
@@ -3371,7 +3370,7 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String bibleQuizAnswerWas(String answer) {
-    return 'La réponse : $answer';
+    return 'Ŋuɖoɖo la : $answer';
   }
 
   @override
@@ -3435,7 +3434,7 @@ class AppLocalizationsEe extends AppLocalizations {
 
   @override
   String bibleHomeBookProgress(int read, int total, String book) {
-    return '$read sur $total chapitres de $book lus';
+    return '$book fe ta $read le $total me siwo xle';
   }
 
   @override

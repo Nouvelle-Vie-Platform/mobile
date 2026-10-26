@@ -1,43 +1,57 @@
 {
   "@@locale": "ee",
-
   "splashTagline": "Míeɖe gbeƒã kple xɔse.",
-
   "navHome": "Aƒe",
   "navGroups": "Dzeɖoɖowo",
-
   "actionNext": "Yi ŋgɔ",
-
+  "actionJoin": "Ge ɖe eme / Wɔ ɖeka",
   "loginSubtitle": "Ge ɖe eme be nàyi edzi.",
   "actionLogin": "Ge ɖe eme",
-
   "registerSubtitle": "Va míaƒe habɔbɔ la me.",
-
   "homeGreeting": "Ŋdi {name}!",
+  "homeGreetingNoName": "Ŋdi na wò !",
   "homeBlessing": "Mawu nayra wò egbe.",
+  "radioCommentClosed": "Tẽe wɔna la wu enu : nusɔsɔwo le mɔ me.",
   "actionSeeAll": "Kpɔ wo katã",
-
+  "actionDownload": "Ɖee kɔ",
+  "actionShare": "Ma",
+  "actionDownloadAudio": "Ɖe gbeɖiɖi la kɔ",
+  "liveAppBarTitle": "Sɔlemɔ tẽe",
+  "liveAboutBody": "Mawu fe Nyagbɔna neyra mi eye mianɔ habɔbɔ me.",
   "prayersTabCommunity": "Habɔbɔ",
-
   "anonymousLabel": "Ŋkɔ maɖemaɖe",
-
-  "logout": "Do go",
+  "actionSend": "Ɖo ɖa",
   "settings": "Ɖoɖowo",
   "helpSupport": "Kpekpeɖeŋu",
-
+  "branchScopeAll": "Hamewo katã",
+  "themeLight": "Kɔtɔɔ / Ɣe",
+  "themeAuto": "Dokuiwɔwɔ",
+  "themeDark": "Yibɔ / Viviti",
+  "themeAutoHoursTitle": "Tɔtrɔ fe gafoɖokuiwo",
+  "logout": "Do go",
+  "donationsAppBarTitle": "Nunanawo kple Vɔsawo",
   "donationsTitle": "Do alɔ Mawu ƒe dɔ la",
+  "donationsAmountLabel": "Ga agbɔsɔsɔ",
+  "donationsPaymentMethodLabel": "Fexexe mɔnu",
   "actionContinue": "Yi edzi",
-  "actionSend": "Ɖo ɖa",
-
-  "authContinue": "Yi edzi",
   "authNoticeEmailOnly": "Woaɖo wò gegeɖeme dzesi la ɖa to email dzi.",
   "authNoticePhoneOnly": "Woaɖo wò gegeɖeme dzesi la ɖa to wò kaƒomɔ̃ dzi.",
+  "authContinue": "Yi edzi",
   "titleBrother": "Nɔviŋutsu",
   "titleSister": "Nɔvinyɔnu",
   "fieldYourName": "Wò ŋkɔ",
-  "actionCancel": "Gbugbɔ",
+  "branchImNew": "Yeye ye menye",
+  "branchMotherChurch": "Dada Sɔlemɔ",
   "actionSave": "Dzra ɖo",
-
+  "actionCancel": "Gbugbɔ",
+  "homeUpcomingEmptyTitle": "Rassemblement aɖeke meli le ŋgɔ o",
+  "homeUpcomingEmptyMessage": "Ŋkeke ɖoɖo la meɖe nu aɖeke fia fifia o. Gba trɔ gbɔ va fiayi.",
+  "homeUpcomingHorizonMessage": "Ŋkeke ɖoɖo la meɖe nu aɖeke fia va se ɖe {date} o.",
+  "agendaEmptyMonthTitle": "Wɔna aɖeke meli le ɣleti sia me o",
+  "agendaEmptyMonthMessage": "Nu aɖeke meli ɖoɖo me na ɣeyiɣi sia o.",
+  "agendaHorizonTitle": "Ŋkeke ɖoɖo la fe nuwuwu",
+  "agendaHorizonMessage": "Mewayɔ wɔna siwo le adzɔge wu la gbe o.",
+  "agendaDaySummary": "{day} — {count, plural, =0{wɔna aɖeke meli o} one{{count} wɔna} other{{count} wɔnawo}}",
   "absenceRetractedTitle": "Woɖe nu sia ɖa",
   "absenceRetractedMessage": "Nu sia megali o. Sɔlemeha la ɖee ɖa.",
   "absenceNotSyncedTitle": "Womekɔ ɖe mɔ̃a dzi haɖe o",
@@ -52,14 +66,25 @@
   "sectionGatherings": "Takpekpewo",
   "teachingRetractedTitle": "Gbedeasi sia megali o",
   "teachingRetractedMessage": "Woɖee ɖa le nudzraɖoƒe la. Sese la tɔ.",
-
-
   "playerErrorTitle": "Sese la tɔ",
   "playerErrorMessage": "Gbeɖiɖi la tɔ. Kpɔ wò internet ŋu, eye nàgbugbɔ ase edzi.",
   "playerErrorRetry": "Gbugbɔ se edzi",
+  "notificationNewMessageFrom": "Gbedeasi yeye tso {name} gbɔ",
+  "chatActionCopy": "Wɔ efe kɔpi",
+  "chatActionDeleteForMe": "Tutu eɖa na nye ko",
+  "chatActionDeleteForEveryone": "Tutu eɖa na ame katã",
   "noteEditorPlaceholder": "Ŋlɔ wò nuŋlɔɖi…",
   "noteEditorFormatTitle": "Nɔnɔme",
   "noteEditorClose": "Tu",
   "noteEditorStyleTitle": "Tanya",
-  "noteEditorStyleBody": "Nuŋɔŋlɔ"
+  "noteEditorStyleBody": "Nuŋɔŋlɔ",
+  "bibleBackToHome": "Trɔ yi afe-te",
+  "bibleBookSearchHint": "Agbalẽ di kaba",
+  "bibleChapterCount": "{count, plural, =1{ta 1} other{ta {count}wo}}",
+  "bibleInsertReference": "De {reference} ɖe eme",
+  "bibleChangeChapter": "Trɔ ta",
+  "bibleM4Favorites": "{count, plural, =0{Nu vevi aɖeke meli o} =1{nu vevi 1} other{nu vevi {count}wo}}",
+  "bibleM4Notes": "{count, plural, =0{Nuŋŋlɔ aɖeke meli o} =1{nuŋŋlɔ 1} other{nuŋŋlɔ {count}wo}}",
+  "bibleQuizAnswerWas": "Ŋuɖoɖo la : {answer}",
+  "bibleHomeBookProgress": "{book} fe ta {read} le {total} me siwo xle"
 }
