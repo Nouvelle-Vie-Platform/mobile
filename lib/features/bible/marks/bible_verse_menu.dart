@@ -1,16 +1,23 @@
-/// **Le menu d'action flottant** (M2, #200), posé par le lecteur sous la
-/// sélection : une rangée d'actions (les `verseActions` de toutes les
-/// tranches — copier, favori, note, partager ; écouter, studio… pour M4), et
-/// la palette des cinq pastels avec « effacer ».
+/// **La pilule d'action flottante** (M2, #200), posée par le lecteur
+/// au-dessus de la sélection : la palette des cinq pastels, « effacer », puis
+/// les actions des tranches (`verseActions` — copier, favori, note, partager ;
+/// écouter, studio… pour M4).
+///
+/// Elle était une boîte sombre à deux étages, libellés compris. Les références
+/// de #250 montrent **une seule rangée d'icônes dans une pilule translucide**,
+/// qui laisse deviner le verset derrière elle : d'où le flou de fond, la forme
+/// de stade, et les libellés passés en infobulle — le sens reste accessible,
+/// mais il ne mange plus deux lignes au-dessus du texte.
 library;
+
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_extension.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
-import '../../../theme/app_typography.dart';
 import '../data/canon.dart';
 import '../shell/bible_slots.dart';
 import 'bible_marks_store.dart';
@@ -38,58 +45,24 @@ class BibleVerseMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const fg = Colors.white;
+    final l = context.l10n;
+    final palette = context.palette;
     return Material(
       key: menuKey,
-      color: AppColors.neutralDark,
-      elevation: 10,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xs,
-          vertical: AppSpacing.sm,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final a in actions)
-                    InkWell(
-                      key: Key('bible_action_${a.id}'),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      onTap: () {
-                        onDone();
-                        a.run(context, ref, selection, versionCode);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: AppSpacing.xs,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(a.icon, color: fg, size: 22),
-                            const SizedBox(height: 2),
-                            Text(
-                              a.label(context),
-                              style: AppTypography.caption.copyWith(
-                                color: fg,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
+      color: Colors.transparent,
+      elevation: 8,
+      shadowColor: Colors.black38,
+      shape: const StadiumBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: BackdropFilter(
+        // Le flou est ce qui fait la pilule « translucide » : sans lui, un
+        // fond à 80 % n'est qu'un gris sale.
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: ColoredBox(
+          color: palette.surface.withValues(alpha: 0.82),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 for (final MapEntry(key: name, value: color)
@@ -97,7 +70,7 @@ class BibleVerseMenu extends ConsumerWidget {
                   _Swatch(
                     key: colorKey(name),
                     color: color,
-                    tooltip: context.l10n.bibleM2Highlight,
+                    tooltip: l.bibleM2Highlight,
                     onTap: () {
                       onDone();
                       highlightVerses(ref, selection, name);
@@ -105,15 +78,41 @@ class BibleVerseMenu extends ConsumerWidget {
                   ),
                 _Swatch(
                   key: clearKey,
-                  tooltip: context.l10n.bibleM2ClearHighlight,
+                  tooltip: l.bibleM2ClearHighlight,
                   onTap: () {
                     onDone();
                     highlightVerses(ref, selection, null);
                   },
                 ),
+                Container(
+                  width: 1,
+                  height: 24,
+                  margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                  color: palette.divider,
+                ),
+                for (final a in actions)
+                  Tooltip(
+                    message: a.label(context),
+                    child: InkResponse(
+                      key: Key('bible_action_${a.id}'),
+                      radius: 24,
+                      onTap: () {
+                        onDone();
+                        a.run(context, ref, selection, versionCode);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        child: Icon(
+                          a.icon,
+                          size: 22,
+                          color: palette.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -135,26 +134,30 @@ class _Swatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Tooltip(
       message: tooltip,
       child: InkResponse(
         onTap: onTap,
-        radius: 22,
+        radius: 20,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 5,
+            vertical: AppSpacing.sm,
+          ),
           child: Container(
-            width: 28,
-            height: 28,
+            width: 24,
+            height: 24,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white70, width: 1.5),
+              border: Border.all(color: palette.border, width: 1.5),
             ),
             child: color == null
-                ? const Icon(
+                ? Icon(
                     Icons.format_color_reset,
-                    size: 16,
-                    color: Colors.white,
+                    size: 14,
+                    color: palette.textSecondary,
                   )
                 : null,
           ),

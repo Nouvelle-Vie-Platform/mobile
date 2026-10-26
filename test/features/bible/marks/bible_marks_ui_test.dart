@@ -22,6 +22,7 @@ import 'package:maison_du_miracle/features/bible/marks/bible_marks_outbox.dart';
 import 'package:maison_du_miracle/features/bible/marks/bible_marks_store.dart';
 import 'package:maison_du_miracle/features/bible/marks/bible_verse_menu.dart';
 import 'package:maison_du_miracle/features/bible/reader/bible_reader_screen.dart';
+import 'package:maison_du_miracle/features/bible/reader/marker_highlight.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_shell.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
@@ -60,14 +61,17 @@ Future<List<LocalBibleMarkRow>> _marks(ProviderContainer c) {
   return db.select(db.localBibleMarks).get();
 }
 
+/// La couleur du surlignage d'un verset. Depuis #250 elle n'est plus un fond
+/// de `BoxDecoration` mais l'encre du trait de marqueur : [MarkerHighlight]
+/// disparaît de l'arbre quand il n'y a rien à peindre.
 Color? _background(WidgetTester tester, int verse) {
-  final box = tester.widget<AnimatedContainer>(
-    find.descendant(
-      of: find.byKey(BibleReaderScreen.verseKey(verse)),
-      matching: find.byType(AnimatedContainer),
-    ),
+  final marker = find.descendant(
+    of: find.byKey(BibleReaderScreen.verseKey(verse)),
+    matching: find.byType(MarkerHighlight),
   );
-  return (box.decoration! as BoxDecoration).color;
+  return marker.evaluate().isEmpty
+      ? null
+      : tester.widget<MarkerHighlight>(marker).color;
 }
 
 Future<void> _tapVerse(WidgetTester tester, int verse) async {
