@@ -17,34 +17,46 @@ import 'bible_marks_store.dart';
 import 'bible_verse_actions.dart';
 
 final BibleSlots marksSlots = BibleSlots(
+  // L'ordre est celui des références de #250 : note, signet, partage, copie.
+  // Le favori les suit — il n'y figure pas, mais personne n'a demandé de le
+  // retirer, et il est la seule porte d'entrée de l'onglet Favoris.
   verseActions: [
     BibleVerseAction(
-      id: 'copy',
+      id: 'note',
       order: 10,
+      icon: Icons.edit_note,
+      label: (c) => c.l10n.bibleM2Note,
+      run: noteOnVerses,
+    ),
+    // Le signet reste ce qu'il est dans notre modèle : celui du **chapitre**,
+    // le même que l'icône de l'en-tête (les deux se reflètent).
+    BibleVerseAction(
+      id: 'bookmark',
+      order: 20,
+      icon: Icons.bookmark_border,
+      label: (c) => c.l10n.bibleM2Bookmark,
+      run: (_, ref, link, __) => toggleChapterBookmark(ref, link),
+    ),
+    BibleVerseAction(
+      id: 'share',
+      order: 30,
+      icon: Icons.ios_share,
+      label: (c) => c.l10n.bibleM2Share,
+      run: shareVerses,
+    ),
+    BibleVerseAction(
+      id: 'copy',
+      order: 40,
       icon: Icons.copy_outlined,
       label: (c) => c.l10n.bibleM2Copy,
       run: copyVerses,
     ),
     BibleVerseAction(
       id: 'favorite',
-      order: 20,
+      order: 50,
       icon: Icons.favorite_border,
       label: (c) => c.l10n.bibleM2Favorite,
       run: (_, ref, link, __) => toggleFavorite(ref, link),
-    ),
-    BibleVerseAction(
-      id: 'note',
-      order: 30,
-      icon: Icons.edit_note,
-      label: (c) => c.l10n.bibleM2Note,
-      run: noteOnVerses,
-    ),
-    BibleVerseAction(
-      id: 'share',
-      order: 40,
-      icon: Icons.ios_share,
-      label: (c) => c.l10n.bibleM2Share,
-      run: shareVerses,
     ),
   ],
   favoriteFilters: [

@@ -2711,6 +2711,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bibleM2Bookmark => 'Bookmark';
 
   @override
+  String get bibleM2Colors => 'Colours';
+
+  @override
+  String get bibleM2ExtendSelection => 'Extend to the next verse';
+
+  @override
   String get bibleM2FilterAll => 'All';
 
   @override

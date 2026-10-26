@@ -37,6 +37,7 @@ import 'package:go_router/go_router.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_extension.dart';
 import '../../../router/app_router.dart';
+import '../../../theme/app_colors.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
@@ -79,6 +80,7 @@ class BibleReaderScreen extends ConsumerStatefulWidget {
   static const Key actionsKey = BibleVerseMenu.menuKey;
   static const Key bookmarkKey = Key('bible_reader_bookmark');
   static const Key downloadKey = Key('bible_reader_download');
+  static const Key extendKey = Key('bible_reader_extend');
   static Key pageKey(String book, int chapter) =>
       Key('bible_reader_page_${book}_$chapter');
   static Key verseKey(int verse) => Key('bible_reader_verse_$verse');
@@ -249,6 +251,30 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
         _from = _to = verse;
       }
     });
+    _placeMenu();
+  }
+
+  /// **Le « + » de la sélection** (#250) : la plage gagne le verset suivant.
+  /// L'appui long puis glisser faisait déjà cela, mais rien ne l'annonçait —
+  /// une fonction que personne ne trouvait. Le bouton la rend visible, et le
+  /// glissement continue de marcher.
+  void _extendSelection() {
+    final to = _to;
+    if (to == null) return;
+    final c = _current;
+    final verses = ref
+        .read(
+          bibleChapterProvider((
+            version: ref.read(activeBibleVersionProvider),
+            book: c.book,
+            chapter: c.chapter,
+          )),
+        )
+        .value;
+    // Au bout du chapitre, le « + » ne fait rien plutôt que de déborder sur
+    // le suivant : la sélection ne traverse pas une page.
+    if (verses == null || verses.isEmpty || to >= verses.last.number) return;
+    setState(() => _to = to + 1);
     _placeMenu();
   }
 
@@ -477,6 +503,23 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                       onDone: () => setState(() => _from = _to = null),
                     ),
                   ),
+                ),
+              ),
+            ),
+          // Le « + » des références : au centre du dernier verset choisi,
+          // là où le doigt descend pour en prendre un de plus.
+          if (from != null && actions.isNotEmpty)
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              child: CompositedTransformFollower(
+                link: _belowLink,
+                showWhenUnlinked: false,
+                targetAnchor: Alignment.center,
+                followerAnchor: Alignment.center,
+                child: Center(
+                  child: _ExtendButton(onTap: _extendSelection),
                 ),
               ),
             ),
@@ -822,6 +865,42 @@ class _VerseLine extends StatelessWidget {
                   child: Icon(icon, size: 16, color: palette.textSecondary),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// **Le « + » posé sur la sélection** : rond, translucide, au centre du
+/// dernier verset choisi. Il n'ouvre rien — il étend d'un verset.
+class _ExtendButton extends StatelessWidget {
+  const _ExtendButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return Tooltip(
+      message: l.bibleM2ExtendSelection,
+      child: Semantics(
+        button: true,
+        label: l.bibleM2ExtendSelection,
+        child: Material(
+          key: BibleReaderScreen.extendKey,
+          // Translucide pour qu'on lise le verset à travers : c'est ce qui le
+          // distingue d'un bouton flottant posé par-dessus le texte.
+          color: AppColors.neutralDark.withValues(alpha: 0.45),
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: const SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(Icons.add, color: Colors.white, size: 24),
+            ),
           ),
         ),
       ),
