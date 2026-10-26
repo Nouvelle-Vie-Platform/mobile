@@ -2843,6 +2843,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bibleM4Remove => 'Supprimer';
 
   @override
+  String get bibleM4DownloadFailed =>
+      'Téléchargement impossible. Réessayez plus tard.';
+
+  @override
   String get bibleM4ActiveVersion => 'Version active';
 
   @override

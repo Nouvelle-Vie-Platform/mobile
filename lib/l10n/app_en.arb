@@ -904,6 +904,7 @@
   "bibleM4Download": "Download",
   "bibleM4VersionSoon": "Soon",
   "bibleM4Remove": "Remove",
+  "bibleM4DownloadFailed": "Download failed. Please try again later.",
   "bibleM4ActiveVersion": "Active version",
   "bibleM4MySpaceTitle": "My space",
   "bibleM4Streak": "{count, plural, =0{No streak yet} =1{1 day of reading in a row} other{{count} days of reading in a row}}",

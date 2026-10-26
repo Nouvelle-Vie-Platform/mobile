@@ -5158,6 +5158,12 @@ abstract class AppLocalizations {
   /// **'Supprimer'**
   String get bibleM4Remove;
 
+  /// Archive refusée ou réseau en panne : rien n'a été installé
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargement impossible. Réessayez plus tard.'**
+  String get bibleM4DownloadFailed;
+
   /// Choisir la version active
   ///
   /// In fr, this message translates to:

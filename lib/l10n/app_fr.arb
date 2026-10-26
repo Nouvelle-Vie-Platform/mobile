@@ -1654,6 +1654,8 @@
   "@bibleM4VersionSoon": {"description": "Version pas encore téléchargeable"},
   "bibleM4Remove": "Supprimer",
   "@bibleM4Remove": {"description": "Bouton supprimer"},
+  "bibleM4DownloadFailed": "Téléchargement impossible. Réessayez plus tard.",
+  "@bibleM4DownloadFailed": {"description": "Archive refusée ou réseau en panne : rien n'a été installé"},
   "bibleM4ActiveVersion": "Version active",
   "@bibleM4ActiveVersion": {"description": "Choisir la version active"},
   "bibleM4MySpaceTitle": "Mon espace",
