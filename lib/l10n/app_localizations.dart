@@ -4870,6 +4870,12 @@ abstract class AppLocalizations {
   /// **'Ce chapitre n\'est pas disponible dans cette version.'**
   String get bibleChapterUnavailable;
 
+  /// Lecteur : la version active n'a aucun texte sur l'appareil, il faut la télécharger (#249)
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette version n\'est pas encore téléchargée sur cet appareil.'**
+  String get bibleVersionNotInstalled;
+
   /// Module Bible : titre d'un onglet pas encore rempli
   ///
   /// In fr, this message translates to:

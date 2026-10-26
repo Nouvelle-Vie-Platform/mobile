@@ -856,6 +856,7 @@
   "bibleChangeChapter": "Change chapter",
   "bibleVersionTooltip": "Bible version",
   "bibleChapterUnavailable": "This chapter is not available in this version.",
+  "bibleVersionNotInstalled": "This version is not downloaded on this device yet.",
   "bibleSoonTitle": "Coming soon",
   "bibleHomeSoon": "Verse of the day, Sunday passage, reading plans and quizzes will appear here.",
   "bibleFavoritesSoon": "Your favorite verses, marked chapters and highlights will be listed here.",

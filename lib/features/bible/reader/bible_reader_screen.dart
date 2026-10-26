@@ -39,6 +39,7 @@ import '../data/bible_source.dart';
 import '../data/canon.dart';
 import '../marks/bible_marks_store.dart';
 import '../marks/bible_verse_menu.dart';
+import '../personalize/personalize_routes.dart';
 import '../personalize/reader_appearance.dart';
 import '../shell/bible_browser.dart';
 import '../shell/bible_slots.dart';
@@ -70,6 +71,7 @@ class BibleReaderScreen extends ConsumerStatefulWidget {
   static const Key pagesKey = Key('bible_reader_pages');
   static const Key actionsKey = BibleVerseMenu.menuKey;
   static const Key bookmarkKey = Key('bible_reader_bookmark');
+  static const Key downloadKey = Key('bible_reader_download');
   static Key pageKey(String book, int chapter) =>
       Key('bible_reader_page_${book}_$chapter');
   static Key verseKey(int verse) => Key('bible_reader_verse_$verse');
@@ -565,12 +567,41 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
       error: (_, __) => Center(child: Text(l.bibleChapterUnavailable)),
       data: (list) {
         if (list.isEmpty) {
+          // **« Rien sur l'appareil » n'est pas « chapitre indisponible »**
+          // (#249). Depuis que les exemples s'effacent dès qu'une vraie
+          // version est proposée, le lecteur s'ouvre sur une version que rien
+          // n'a encore descendue : `sourceFor` rend `null`,
+          // `bibleChapterProvider` rend une liste vide, et le fidèle lisait
+          // « pas disponible dans cette version » — vrai, inutile, et sans
+          // issue. La règle de #249 n'est tenable qu'avec cette contrepartie :
+          // ici on dit quoi faire, et on y mène.
+          final missing =
+              ref.watch(bibleCatalogProvider).sourceFor(key.version) == null;
           return Center(
             child: Padding(
               padding: AppSpacing.screenPadding,
-              child: Text(
-                l.bibleChapterUnavailable,
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    missing
+                        ? l.bibleVersionNotInstalled
+                        : l.bibleChapterUnavailable,
+                    textAlign: TextAlign.center,
+                  ),
+                  if (missing) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    FilledButton.icon(
+                      key: BibleReaderScreen.downloadKey,
+                      onPressed: () => openBiblePersonalize(
+                        ref,
+                        BiblePersonalizePage.offline,
+                      ),
+                      icon: const Icon(Icons.download_for_offline_outlined),
+                      label: Text(l.bibleM4Download),
+                    ),
+                  ],
+                ],
               ),
             ),
           );

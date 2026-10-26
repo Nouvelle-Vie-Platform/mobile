@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2686,6 +2685,10 @@ class AppLocalizationsEe extends AppLocalizations {
   @override
   String get bibleChapterUnavailable =>
       'Ce chapitre n\'est pas disponible dans cette version.';
+
+  @override
+  String get bibleVersionNotInstalled =>
+      'Cette version n\'est pas encore téléchargée sur cet appareil.';
 
   @override
   String get bibleSoonTitle => 'Bientôt ici';
