@@ -26077,6 +26077,23 @@ class $BibleMarksTable extends BibleMarks
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
       'color', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _versionCodeMeta =
+      const VerificationMeta('versionCode');
+  @override
+  late final GeneratedColumn<String> versionCode = GeneratedColumn<String>(
+      'version_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _charFromMeta =
+      const VerificationMeta('charFrom');
+  @override
+  late final GeneratedColumn<int> charFrom = GeneratedColumn<int>(
+      'char_from', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _charToMeta = const VerificationMeta('charTo');
+  @override
+  late final GeneratedColumn<int> charTo = GeneratedColumn<int>(
+      'char_to', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _clientCreatedAtMeta =
       const VerificationMeta('clientCreatedAt');
   @override
@@ -26112,6 +26129,9 @@ class $BibleMarksTable extends BibleMarks
         verseFrom,
         verseTo,
         color,
+        versionCode,
+        charFrom,
+        charTo,
         clientCreatedAt,
         clientUpdatedAt,
         createdAt,
@@ -26170,6 +26190,20 @@ class $BibleMarksTable extends BibleMarks
       context.handle(
           _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
     }
+    if (data.containsKey('version_code')) {
+      context.handle(
+          _versionCodeMeta,
+          versionCode.isAcceptableOrUnknown(
+              data['version_code']!, _versionCodeMeta));
+    }
+    if (data.containsKey('char_from')) {
+      context.handle(_charFromMeta,
+          charFrom.isAcceptableOrUnknown(data['char_from']!, _charFromMeta));
+    }
+    if (data.containsKey('char_to')) {
+      context.handle(_charToMeta,
+          charTo.isAcceptableOrUnknown(data['char_to']!, _charToMeta));
+    }
     if (data.containsKey('client_created_at')) {
       context.handle(
           _clientCreatedAtMeta,
@@ -26217,6 +26251,12 @@ class $BibleMarksTable extends BibleMarks
           .read(DriftSqlType.int, data['${effectivePrefix}verse_to']),
       color: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}color']),
+      versionCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}version_code']),
+      charFrom: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}char_from']),
+      charTo: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}char_to']),
       clientCreatedAt: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime, data['${effectivePrefix}client_created_at']),
       clientUpdatedAt: attachedDatabase.typeMapping.read(
@@ -26254,6 +26294,23 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
 
   /// Surlignage : `yellow | green | blue | pink | purple`, brut.
   final String? color;
+
+  /// **La traduction de la marque** (#252, server-portal#620) : nulle = la
+  /// marque vaut pour **toutes** les versions, comme avant ce palier — et
+  /// c'est ce que portent toutes les marques déjà posées. Une marque **au
+  /// mot** la nomme toujours : un surlignage de quelques mots n'a de sens que
+  /// dans le texte où il a été posé, les mots des autres traductions n'étant
+  /// pas les mêmes (arbitrage du propriétaire). Le serveur refuse d'ailleurs
+  /// un décalage sans elle (422 `E_BIBLE_PAYLOAD_INVALID`).
+  final String? versionCode;
+
+  /// Le décalage de caractère dans `verseFrom`, borne **comprise**.
+  /// ⚠️ `0` — le premier caractère — est une valeur **légitime** : comparer à
+  /// `null`, jamais tester la vérité de ce champ.
+  final int? charFrom;
+
+  /// Le décalage de caractère dans `verseTo`, borne **exclue**.
+  final int? charTo;
   final DateTime? clientCreatedAt;
   final DateTime? clientUpdatedAt;
   final DateTime? createdAt;
@@ -26268,6 +26325,9 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
       this.verseFrom,
       this.verseTo,
       this.color,
+      this.versionCode,
+      this.charFrom,
+      this.charTo,
       this.clientCreatedAt,
       this.clientUpdatedAt,
       this.createdAt,
@@ -26291,6 +26351,15 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
     }
     if (!nullToAbsent || color != null) {
       map['color'] = Variable<String>(color);
+    }
+    if (!nullToAbsent || versionCode != null) {
+      map['version_code'] = Variable<String>(versionCode);
+    }
+    if (!nullToAbsent || charFrom != null) {
+      map['char_from'] = Variable<int>(charFrom);
+    }
+    if (!nullToAbsent || charTo != null) {
+      map['char_to'] = Variable<int>(charTo);
     }
     if (!nullToAbsent || clientCreatedAt != null) {
       map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
@@ -26325,6 +26394,14 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
           : Value(verseTo),
       color:
           color == null && nullToAbsent ? const Value.absent() : Value(color),
+      versionCode: versionCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(versionCode),
+      charFrom: charFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(charFrom),
+      charTo:
+          charTo == null && nullToAbsent ? const Value.absent() : Value(charTo),
       clientCreatedAt: clientCreatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(clientCreatedAt),
@@ -26353,6 +26430,9 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
       verseFrom: serializer.fromJson<int?>(json['verseFrom']),
       verseTo: serializer.fromJson<int?>(json['verseTo']),
       color: serializer.fromJson<String?>(json['color']),
+      versionCode: serializer.fromJson<String?>(json['versionCode']),
+      charFrom: serializer.fromJson<int?>(json['charFrom']),
+      charTo: serializer.fromJson<int?>(json['charTo']),
       clientCreatedAt: serializer.fromJson<DateTime?>(json['clientCreatedAt']),
       clientUpdatedAt: serializer.fromJson<DateTime?>(json['clientUpdatedAt']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
@@ -26372,6 +26452,9 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
       'verseFrom': serializer.toJson<int?>(verseFrom),
       'verseTo': serializer.toJson<int?>(verseTo),
       'color': serializer.toJson<String?>(color),
+      'versionCode': serializer.toJson<String?>(versionCode),
+      'charFrom': serializer.toJson<int?>(charFrom),
+      'charTo': serializer.toJson<int?>(charTo),
       'clientCreatedAt': serializer.toJson<DateTime?>(clientCreatedAt),
       'clientUpdatedAt': serializer.toJson<DateTime?>(clientUpdatedAt),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
@@ -26389,6 +26472,9 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
           Value<int?> verseFrom = const Value.absent(),
           Value<int?> verseTo = const Value.absent(),
           Value<String?> color = const Value.absent(),
+          Value<String?> versionCode = const Value.absent(),
+          Value<int?> charFrom = const Value.absent(),
+          Value<int?> charTo = const Value.absent(),
           Value<DateTime?> clientCreatedAt = const Value.absent(),
           Value<DateTime?> clientUpdatedAt = const Value.absent(),
           Value<DateTime?> createdAt = const Value.absent(),
@@ -26403,6 +26489,9 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
         verseFrom: verseFrom.present ? verseFrom.value : this.verseFrom,
         verseTo: verseTo.present ? verseTo.value : this.verseTo,
         color: color.present ? color.value : this.color,
+        versionCode: versionCode.present ? versionCode.value : this.versionCode,
+        charFrom: charFrom.present ? charFrom.value : this.charFrom,
+        charTo: charTo.present ? charTo.value : this.charTo,
         clientCreatedAt: clientCreatedAt.present
             ? clientCreatedAt.value
             : this.clientCreatedAt,
@@ -26423,6 +26512,10 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
       verseFrom: data.verseFrom.present ? data.verseFrom.value : this.verseFrom,
       verseTo: data.verseTo.present ? data.verseTo.value : this.verseTo,
       color: data.color.present ? data.color.value : this.color,
+      versionCode:
+          data.versionCode.present ? data.versionCode.value : this.versionCode,
+      charFrom: data.charFrom.present ? data.charFrom.value : this.charFrom,
+      charTo: data.charTo.present ? data.charTo.value : this.charTo,
       clientCreatedAt: data.clientCreatedAt.present
           ? data.clientCreatedAt.value
           : this.clientCreatedAt,
@@ -26446,6 +26539,9 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
           ..write('verseFrom: $verseFrom, ')
           ..write('verseTo: $verseTo, ')
           ..write('color: $color, ')
+          ..write('versionCode: $versionCode, ')
+          ..write('charFrom: $charFrom, ')
+          ..write('charTo: $charTo, ')
           ..write('clientCreatedAt: $clientCreatedAt, ')
           ..write('clientUpdatedAt: $clientUpdatedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -26465,6 +26561,9 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
       verseFrom,
       verseTo,
       color,
+      versionCode,
+      charFrom,
+      charTo,
       clientCreatedAt,
       clientUpdatedAt,
       createdAt,
@@ -26482,6 +26581,9 @@ class BibleMarkRow extends DataClass implements Insertable<BibleMarkRow> {
           other.verseFrom == this.verseFrom &&
           other.verseTo == this.verseTo &&
           other.color == this.color &&
+          other.versionCode == this.versionCode &&
+          other.charFrom == this.charFrom &&
+          other.charTo == this.charTo &&
           other.clientCreatedAt == this.clientCreatedAt &&
           other.clientUpdatedAt == this.clientUpdatedAt &&
           other.createdAt == this.createdAt &&
@@ -26498,6 +26600,9 @@ class BibleMarksCompanion extends UpdateCompanion<BibleMarkRow> {
   final Value<int?> verseFrom;
   final Value<int?> verseTo;
   final Value<String?> color;
+  final Value<String?> versionCode;
+  final Value<int?> charFrom;
+  final Value<int?> charTo;
   final Value<DateTime?> clientCreatedAt;
   final Value<DateTime?> clientUpdatedAt;
   final Value<DateTime?> createdAt;
@@ -26513,6 +26618,9 @@ class BibleMarksCompanion extends UpdateCompanion<BibleMarkRow> {
     this.verseFrom = const Value.absent(),
     this.verseTo = const Value.absent(),
     this.color = const Value.absent(),
+    this.versionCode = const Value.absent(),
+    this.charFrom = const Value.absent(),
+    this.charTo = const Value.absent(),
     this.clientCreatedAt = const Value.absent(),
     this.clientUpdatedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -26529,6 +26637,9 @@ class BibleMarksCompanion extends UpdateCompanion<BibleMarkRow> {
     this.verseFrom = const Value.absent(),
     this.verseTo = const Value.absent(),
     this.color = const Value.absent(),
+    this.versionCode = const Value.absent(),
+    this.charFrom = const Value.absent(),
+    this.charTo = const Value.absent(),
     this.clientCreatedAt = const Value.absent(),
     this.clientUpdatedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -26548,6 +26659,9 @@ class BibleMarksCompanion extends UpdateCompanion<BibleMarkRow> {
     Expression<int>? verseFrom,
     Expression<int>? verseTo,
     Expression<String>? color,
+    Expression<String>? versionCode,
+    Expression<int>? charFrom,
+    Expression<int>? charTo,
     Expression<DateTime>? clientCreatedAt,
     Expression<DateTime>? clientUpdatedAt,
     Expression<DateTime>? createdAt,
@@ -26564,6 +26678,9 @@ class BibleMarksCompanion extends UpdateCompanion<BibleMarkRow> {
       if (verseFrom != null) 'verse_from': verseFrom,
       if (verseTo != null) 'verse_to': verseTo,
       if (color != null) 'color': color,
+      if (versionCode != null) 'version_code': versionCode,
+      if (charFrom != null) 'char_from': charFrom,
+      if (charTo != null) 'char_to': charTo,
       if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
       if (clientUpdatedAt != null) 'client_updated_at': clientUpdatedAt,
       if (createdAt != null) 'created_at': createdAt,
@@ -26582,6 +26699,9 @@ class BibleMarksCompanion extends UpdateCompanion<BibleMarkRow> {
       Value<int?>? verseFrom,
       Value<int?>? verseTo,
       Value<String?>? color,
+      Value<String?>? versionCode,
+      Value<int?>? charFrom,
+      Value<int?>? charTo,
       Value<DateTime?>? clientCreatedAt,
       Value<DateTime?>? clientUpdatedAt,
       Value<DateTime?>? createdAt,
@@ -26597,6 +26717,9 @@ class BibleMarksCompanion extends UpdateCompanion<BibleMarkRow> {
       verseFrom: verseFrom ?? this.verseFrom,
       verseTo: verseTo ?? this.verseTo,
       color: color ?? this.color,
+      versionCode: versionCode ?? this.versionCode,
+      charFrom: charFrom ?? this.charFrom,
+      charTo: charTo ?? this.charTo,
       clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
       clientUpdatedAt: clientUpdatedAt ?? this.clientUpdatedAt,
       createdAt: createdAt ?? this.createdAt,
@@ -26635,6 +26758,15 @@ class BibleMarksCompanion extends UpdateCompanion<BibleMarkRow> {
     if (color.present) {
       map['color'] = Variable<String>(color.value);
     }
+    if (versionCode.present) {
+      map['version_code'] = Variable<String>(versionCode.value);
+    }
+    if (charFrom.present) {
+      map['char_from'] = Variable<int>(charFrom.value);
+    }
+    if (charTo.present) {
+      map['char_to'] = Variable<int>(charTo.value);
+    }
     if (clientCreatedAt.present) {
       map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
     }
@@ -26665,6 +26797,9 @@ class BibleMarksCompanion extends UpdateCompanion<BibleMarkRow> {
           ..write('verseFrom: $verseFrom, ')
           ..write('verseTo: $verseTo, ')
           ..write('color: $color, ')
+          ..write('versionCode: $versionCode, ')
+          ..write('charFrom: $charFrom, ')
+          ..write('charTo: $charTo, ')
           ..write('clientCreatedAt: $clientCreatedAt, ')
           ..write('clientUpdatedAt: $clientUpdatedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -31406,6 +31541,23 @@ class $LocalBibleMarksTable extends LocalBibleMarks
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
       'color', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _versionCodeMeta =
+      const VerificationMeta('versionCode');
+  @override
+  late final GeneratedColumn<String> versionCode = GeneratedColumn<String>(
+      'version_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _charFromMeta =
+      const VerificationMeta('charFrom');
+  @override
+  late final GeneratedColumn<int> charFrom = GeneratedColumn<int>(
+      'char_from', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _charToMeta = const VerificationMeta('charTo');
+  @override
+  late final GeneratedColumn<int> charTo = GeneratedColumn<int>(
+      'char_to', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _clientCreatedAtMeta =
       const VerificationMeta('clientCreatedAt');
   @override
@@ -31430,6 +31582,9 @@ class $LocalBibleMarksTable extends LocalBibleMarks
         verseFrom,
         verseTo,
         color,
+        versionCode,
+        charFrom,
+        charTo,
         clientCreatedAt,
         deletedAt
       ];
@@ -31494,6 +31649,20 @@ class $LocalBibleMarksTable extends LocalBibleMarks
       context.handle(
           _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
     }
+    if (data.containsKey('version_code')) {
+      context.handle(
+          _versionCodeMeta,
+          versionCode.isAcceptableOrUnknown(
+              data['version_code']!, _versionCodeMeta));
+    }
+    if (data.containsKey('char_from')) {
+      context.handle(_charFromMeta,
+          charFrom.isAcceptableOrUnknown(data['char_from']!, _charFromMeta));
+    }
+    if (data.containsKey('char_to')) {
+      context.handle(_charToMeta,
+          charTo.isAcceptableOrUnknown(data['char_to']!, _charToMeta));
+    }
     if (data.containsKey('client_created_at')) {
       context.handle(
           _clientCreatedAtMeta,
@@ -31535,6 +31704,12 @@ class $LocalBibleMarksTable extends LocalBibleMarks
           .read(DriftSqlType.int, data['${effectivePrefix}verse_to']),
       color: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}color']),
+      versionCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}version_code']),
+      charFrom: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}char_from']),
+      charTo: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}char_to']),
       clientCreatedAt: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime, data['${effectivePrefix}client_created_at'])!,
       deletedAt: attachedDatabase.typeMapping
@@ -31565,6 +31740,11 @@ class LocalBibleMarkRow extends DataClass
   final int? verseFrom;
   final int? verseTo;
   final String? color;
+
+  /// Les trois champs du mot (#252) — mêmes règles que sur le miroir.
+  final String? versionCode;
+  final int? charFrom;
+  final int? charTo;
   final DateTime clientCreatedAt;
 
   /// Posé quand la marque est retirée et que le `DELETE` reste à partir.
@@ -31580,6 +31760,9 @@ class LocalBibleMarkRow extends DataClass
       this.verseFrom,
       this.verseTo,
       this.color,
+      this.versionCode,
+      this.charFrom,
+      this.charTo,
       required this.clientCreatedAt,
       this.deletedAt});
   @override
@@ -31602,6 +31785,15 @@ class LocalBibleMarkRow extends DataClass
     }
     if (!nullToAbsent || color != null) {
       map['color'] = Variable<String>(color);
+    }
+    if (!nullToAbsent || versionCode != null) {
+      map['version_code'] = Variable<String>(versionCode);
+    }
+    if (!nullToAbsent || charFrom != null) {
+      map['char_from'] = Variable<int>(charFrom);
+    }
+    if (!nullToAbsent || charTo != null) {
+      map['char_to'] = Variable<int>(charTo);
     }
     map['client_created_at'] = Variable<DateTime>(clientCreatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -31629,6 +31821,14 @@ class LocalBibleMarkRow extends DataClass
           : Value(verseTo),
       color:
           color == null && nullToAbsent ? const Value.absent() : Value(color),
+      versionCode: versionCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(versionCode),
+      charFrom: charFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(charFrom),
+      charTo:
+          charTo == null && nullToAbsent ? const Value.absent() : Value(charTo),
       clientCreatedAt: Value(clientCreatedAt),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
@@ -31650,6 +31850,9 @@ class LocalBibleMarkRow extends DataClass
       verseFrom: serializer.fromJson<int?>(json['verseFrom']),
       verseTo: serializer.fromJson<int?>(json['verseTo']),
       color: serializer.fromJson<String?>(json['color']),
+      versionCode: serializer.fromJson<String?>(json['versionCode']),
+      charFrom: serializer.fromJson<int?>(json['charFrom']),
+      charTo: serializer.fromJson<int?>(json['charTo']),
       clientCreatedAt: serializer.fromJson<DateTime>(json['clientCreatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
@@ -31668,6 +31871,9 @@ class LocalBibleMarkRow extends DataClass
       'verseFrom': serializer.toJson<int?>(verseFrom),
       'verseTo': serializer.toJson<int?>(verseTo),
       'color': serializer.toJson<String?>(color),
+      'versionCode': serializer.toJson<String?>(versionCode),
+      'charFrom': serializer.toJson<int?>(charFrom),
+      'charTo': serializer.toJson<int?>(charTo),
       'clientCreatedAt': serializer.toJson<DateTime>(clientCreatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
@@ -31684,6 +31890,9 @@ class LocalBibleMarkRow extends DataClass
           Value<int?> verseFrom = const Value.absent(),
           Value<int?> verseTo = const Value.absent(),
           Value<String?> color = const Value.absent(),
+          Value<String?> versionCode = const Value.absent(),
+          Value<int?> charFrom = const Value.absent(),
+          Value<int?> charTo = const Value.absent(),
           DateTime? clientCreatedAt,
           Value<DateTime?> deletedAt = const Value.absent()}) =>
       LocalBibleMarkRow(
@@ -31697,6 +31906,9 @@ class LocalBibleMarkRow extends DataClass
         verseFrom: verseFrom.present ? verseFrom.value : this.verseFrom,
         verseTo: verseTo.present ? verseTo.value : this.verseTo,
         color: color.present ? color.value : this.color,
+        versionCode: versionCode.present ? versionCode.value : this.versionCode,
+        charFrom: charFrom.present ? charFrom.value : this.charFrom,
+        charTo: charTo.present ? charTo.value : this.charTo,
         clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
       );
@@ -31714,6 +31926,10 @@ class LocalBibleMarkRow extends DataClass
       verseFrom: data.verseFrom.present ? data.verseFrom.value : this.verseFrom,
       verseTo: data.verseTo.present ? data.verseTo.value : this.verseTo,
       color: data.color.present ? data.color.value : this.color,
+      versionCode:
+          data.versionCode.present ? data.versionCode.value : this.versionCode,
+      charFrom: data.charFrom.present ? data.charFrom.value : this.charFrom,
+      charTo: data.charTo.present ? data.charTo.value : this.charTo,
       clientCreatedAt: data.clientCreatedAt.present
           ? data.clientCreatedAt.value
           : this.clientCreatedAt,
@@ -31734,6 +31950,9 @@ class LocalBibleMarkRow extends DataClass
           ..write('verseFrom: $verseFrom, ')
           ..write('verseTo: $verseTo, ')
           ..write('color: $color, ')
+          ..write('versionCode: $versionCode, ')
+          ..write('charFrom: $charFrom, ')
+          ..write('charTo: $charTo, ')
           ..write('clientCreatedAt: $clientCreatedAt, ')
           ..write('deletedAt: $deletedAt')
           ..write(')'))
@@ -31741,8 +31960,22 @@ class LocalBibleMarkRow extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(clientUpdatedAt, dirty, lastError, id, kind,
-      book, chapter, verseFrom, verseTo, color, clientCreatedAt, deletedAt);
+  int get hashCode => Object.hash(
+      clientUpdatedAt,
+      dirty,
+      lastError,
+      id,
+      kind,
+      book,
+      chapter,
+      verseFrom,
+      verseTo,
+      color,
+      versionCode,
+      charFrom,
+      charTo,
+      clientCreatedAt,
+      deletedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -31757,6 +31990,9 @@ class LocalBibleMarkRow extends DataClass
           other.verseFrom == this.verseFrom &&
           other.verseTo == this.verseTo &&
           other.color == this.color &&
+          other.versionCode == this.versionCode &&
+          other.charFrom == this.charFrom &&
+          other.charTo == this.charTo &&
           other.clientCreatedAt == this.clientCreatedAt &&
           other.deletedAt == this.deletedAt);
 }
@@ -31772,6 +32008,9 @@ class LocalBibleMarksCompanion extends UpdateCompanion<LocalBibleMarkRow> {
   final Value<int?> verseFrom;
   final Value<int?> verseTo;
   final Value<String?> color;
+  final Value<String?> versionCode;
+  final Value<int?> charFrom;
+  final Value<int?> charTo;
   final Value<DateTime> clientCreatedAt;
   final Value<DateTime?> deletedAt;
   final Value<int> rowid;
@@ -31786,6 +32025,9 @@ class LocalBibleMarksCompanion extends UpdateCompanion<LocalBibleMarkRow> {
     this.verseFrom = const Value.absent(),
     this.verseTo = const Value.absent(),
     this.color = const Value.absent(),
+    this.versionCode = const Value.absent(),
+    this.charFrom = const Value.absent(),
+    this.charTo = const Value.absent(),
     this.clientCreatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -31801,6 +32043,9 @@ class LocalBibleMarksCompanion extends UpdateCompanion<LocalBibleMarkRow> {
     this.verseFrom = const Value.absent(),
     this.verseTo = const Value.absent(),
     this.color = const Value.absent(),
+    this.versionCode = const Value.absent(),
+    this.charFrom = const Value.absent(),
+    this.charTo = const Value.absent(),
     required DateTime clientCreatedAt,
     this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -31821,6 +32066,9 @@ class LocalBibleMarksCompanion extends UpdateCompanion<LocalBibleMarkRow> {
     Expression<int>? verseFrom,
     Expression<int>? verseTo,
     Expression<String>? color,
+    Expression<String>? versionCode,
+    Expression<int>? charFrom,
+    Expression<int>? charTo,
     Expression<DateTime>? clientCreatedAt,
     Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
@@ -31836,6 +32084,9 @@ class LocalBibleMarksCompanion extends UpdateCompanion<LocalBibleMarkRow> {
       if (verseFrom != null) 'verse_from': verseFrom,
       if (verseTo != null) 'verse_to': verseTo,
       if (color != null) 'color': color,
+      if (versionCode != null) 'version_code': versionCode,
+      if (charFrom != null) 'char_from': charFrom,
+      if (charTo != null) 'char_to': charTo,
       if (clientCreatedAt != null) 'client_created_at': clientCreatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
@@ -31853,6 +32104,9 @@ class LocalBibleMarksCompanion extends UpdateCompanion<LocalBibleMarkRow> {
       Value<int?>? verseFrom,
       Value<int?>? verseTo,
       Value<String?>? color,
+      Value<String?>? versionCode,
+      Value<int?>? charFrom,
+      Value<int?>? charTo,
       Value<DateTime>? clientCreatedAt,
       Value<DateTime?>? deletedAt,
       Value<int>? rowid}) {
@@ -31867,6 +32121,9 @@ class LocalBibleMarksCompanion extends UpdateCompanion<LocalBibleMarkRow> {
       verseFrom: verseFrom ?? this.verseFrom,
       verseTo: verseTo ?? this.verseTo,
       color: color ?? this.color,
+      versionCode: versionCode ?? this.versionCode,
+      charFrom: charFrom ?? this.charFrom,
+      charTo: charTo ?? this.charTo,
       clientCreatedAt: clientCreatedAt ?? this.clientCreatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
@@ -31906,6 +32163,15 @@ class LocalBibleMarksCompanion extends UpdateCompanion<LocalBibleMarkRow> {
     if (color.present) {
       map['color'] = Variable<String>(color.value);
     }
+    if (versionCode.present) {
+      map['version_code'] = Variable<String>(versionCode.value);
+    }
+    if (charFrom.present) {
+      map['char_from'] = Variable<int>(charFrom.value);
+    }
+    if (charTo.present) {
+      map['char_to'] = Variable<int>(charTo.value);
+    }
     if (clientCreatedAt.present) {
       map['client_created_at'] = Variable<DateTime>(clientCreatedAt.value);
     }
@@ -31931,6 +32197,9 @@ class LocalBibleMarksCompanion extends UpdateCompanion<LocalBibleMarkRow> {
           ..write('verseFrom: $verseFrom, ')
           ..write('verseTo: $verseTo, ')
           ..write('color: $color, ')
+          ..write('versionCode: $versionCode, ')
+          ..write('charFrom: $charFrom, ')
+          ..write('charTo: $charTo, ')
           ..write('clientCreatedAt: $clientCreatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
@@ -46540,6 +46809,9 @@ typedef $$BibleMarksTableCreateCompanionBuilder = BibleMarksCompanion Function({
   Value<int?> verseFrom,
   Value<int?> verseTo,
   Value<String?> color,
+  Value<String?> versionCode,
+  Value<int?> charFrom,
+  Value<int?> charTo,
   Value<DateTime?> clientCreatedAt,
   Value<DateTime?> clientUpdatedAt,
   Value<DateTime?> createdAt,
@@ -46556,6 +46828,9 @@ typedef $$BibleMarksTableUpdateCompanionBuilder = BibleMarksCompanion Function({
   Value<int?> verseFrom,
   Value<int?> verseTo,
   Value<String?> color,
+  Value<String?> versionCode,
+  Value<int?> charFrom,
+  Value<int?> charTo,
   Value<DateTime?> clientCreatedAt,
   Value<DateTime?> clientUpdatedAt,
   Value<DateTime?> createdAt,
@@ -46598,6 +46873,15 @@ class $$BibleMarksTableFilterComposer
 
   ColumnFilters<String> get color => $composableBuilder(
       column: $table.color, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get charFrom => $composableBuilder(
+      column: $table.charFrom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get charTo => $composableBuilder(
+      column: $table.charTo, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
       column: $table.clientCreatedAt,
@@ -46650,6 +46934,15 @@ class $$BibleMarksTableOrderingComposer
   ColumnOrderings<String> get color => $composableBuilder(
       column: $table.color, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get charFrom => $composableBuilder(
+      column: $table.charFrom, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get charTo => $composableBuilder(
+      column: $table.charTo, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
       column: $table.clientCreatedAt,
       builder: (column) => ColumnOrderings(column));
@@ -46701,6 +46994,15 @@ class $$BibleMarksTableAnnotationComposer
   GeneratedColumn<String> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
 
+  GeneratedColumn<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => column);
+
+  GeneratedColumn<int> get charFrom =>
+      $composableBuilder(column: $table.charFrom, builder: (column) => column);
+
+  GeneratedColumn<int> get charTo =>
+      $composableBuilder(column: $table.charTo, builder: (column) => column);
+
   GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
       column: $table.clientCreatedAt, builder: (column) => column);
 
@@ -46749,6 +47051,9 @@ class $$BibleMarksTableTableManager extends RootTableManager<
             Value<int?> verseFrom = const Value.absent(),
             Value<int?> verseTo = const Value.absent(),
             Value<String?> color = const Value.absent(),
+            Value<String?> versionCode = const Value.absent(),
+            Value<int?> charFrom = const Value.absent(),
+            Value<int?> charTo = const Value.absent(),
             Value<DateTime?> clientCreatedAt = const Value.absent(),
             Value<DateTime?> clientUpdatedAt = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -46765,6 +47070,9 @@ class $$BibleMarksTableTableManager extends RootTableManager<
             verseFrom: verseFrom,
             verseTo: verseTo,
             color: color,
+            versionCode: versionCode,
+            charFrom: charFrom,
+            charTo: charTo,
             clientCreatedAt: clientCreatedAt,
             clientUpdatedAt: clientUpdatedAt,
             createdAt: createdAt,
@@ -46781,6 +47089,9 @@ class $$BibleMarksTableTableManager extends RootTableManager<
             Value<int?> verseFrom = const Value.absent(),
             Value<int?> verseTo = const Value.absent(),
             Value<String?> color = const Value.absent(),
+            Value<String?> versionCode = const Value.absent(),
+            Value<int?> charFrom = const Value.absent(),
+            Value<int?> charTo = const Value.absent(),
             Value<DateTime?> clientCreatedAt = const Value.absent(),
             Value<DateTime?> clientUpdatedAt = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -46797,6 +47108,9 @@ class $$BibleMarksTableTableManager extends RootTableManager<
             verseFrom: verseFrom,
             verseTo: verseTo,
             color: color,
+            versionCode: versionCode,
+            charFrom: charFrom,
+            charTo: charTo,
             clientCreatedAt: clientCreatedAt,
             clientUpdatedAt: clientUpdatedAt,
             createdAt: createdAt,
@@ -49063,6 +49377,9 @@ typedef $$LocalBibleMarksTableCreateCompanionBuilder = LocalBibleMarksCompanion
   Value<int?> verseFrom,
   Value<int?> verseTo,
   Value<String?> color,
+  Value<String?> versionCode,
+  Value<int?> charFrom,
+  Value<int?> charTo,
   required DateTime clientCreatedAt,
   Value<DateTime?> deletedAt,
   Value<int> rowid,
@@ -49079,6 +49396,9 @@ typedef $$LocalBibleMarksTableUpdateCompanionBuilder = LocalBibleMarksCompanion
   Value<int?> verseFrom,
   Value<int?> verseTo,
   Value<String?> color,
+  Value<String?> versionCode,
+  Value<int?> charFrom,
+  Value<int?> charTo,
   Value<DateTime> clientCreatedAt,
   Value<DateTime?> deletedAt,
   Value<int> rowid,
@@ -49123,6 +49443,15 @@ class $$LocalBibleMarksTableFilterComposer
 
   ColumnFilters<String> get color => $composableBuilder(
       column: $table.color, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get charFrom => $composableBuilder(
+      column: $table.charFrom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get charTo => $composableBuilder(
+      column: $table.charTo, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get clientCreatedAt => $composableBuilder(
       column: $table.clientCreatedAt,
@@ -49172,6 +49501,15 @@ class $$LocalBibleMarksTableOrderingComposer
   ColumnOrderings<String> get color => $composableBuilder(
       column: $table.color, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get charFrom => $composableBuilder(
+      column: $table.charFrom, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get charTo => $composableBuilder(
+      column: $table.charTo, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get clientCreatedAt => $composableBuilder(
       column: $table.clientCreatedAt,
       builder: (column) => ColumnOrderings(column));
@@ -49219,6 +49557,15 @@ class $$LocalBibleMarksTableAnnotationComposer
   GeneratedColumn<String> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
 
+  GeneratedColumn<String> get versionCode => $composableBuilder(
+      column: $table.versionCode, builder: (column) => column);
+
+  GeneratedColumn<int> get charFrom =>
+      $composableBuilder(column: $table.charFrom, builder: (column) => column);
+
+  GeneratedColumn<int> get charTo =>
+      $composableBuilder(column: $table.charTo, builder: (column) => column);
+
   GeneratedColumn<DateTime> get clientCreatedAt => $composableBuilder(
       column: $table.clientCreatedAt, builder: (column) => column);
 
@@ -49263,6 +49610,9 @@ class $$LocalBibleMarksTableTableManager extends RootTableManager<
             Value<int?> verseFrom = const Value.absent(),
             Value<int?> verseTo = const Value.absent(),
             Value<String?> color = const Value.absent(),
+            Value<String?> versionCode = const Value.absent(),
+            Value<int?> charFrom = const Value.absent(),
+            Value<int?> charTo = const Value.absent(),
             Value<DateTime> clientCreatedAt = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -49278,6 +49628,9 @@ class $$LocalBibleMarksTableTableManager extends RootTableManager<
             verseFrom: verseFrom,
             verseTo: verseTo,
             color: color,
+            versionCode: versionCode,
+            charFrom: charFrom,
+            charTo: charTo,
             clientCreatedAt: clientCreatedAt,
             deletedAt: deletedAt,
             rowid: rowid,
@@ -49293,6 +49646,9 @@ class $$LocalBibleMarksTableTableManager extends RootTableManager<
             Value<int?> verseFrom = const Value.absent(),
             Value<int?> verseTo = const Value.absent(),
             Value<String?> color = const Value.absent(),
+            Value<String?> versionCode = const Value.absent(),
+            Value<int?> charFrom = const Value.absent(),
+            Value<int?> charTo = const Value.absent(),
             required DateTime clientCreatedAt,
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -49308,6 +49664,9 @@ class $$LocalBibleMarksTableTableManager extends RootTableManager<
             verseFrom: verseFrom,
             verseTo: verseTo,
             color: color,
+            versionCode: versionCode,
+            charFrom: charFrom,
+            charTo: charTo,
             clientCreatedAt: clientCreatedAt,
             deletedAt: deletedAt,
             rowid: rowid,

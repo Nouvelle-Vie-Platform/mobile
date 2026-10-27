@@ -36,11 +36,20 @@ class BibleVerseMenu extends ConsumerStatefulWidget {
     required this.versionCode,
     required this.actions,
     required this.onDone,
+    this.charFrom,
+    this.charTo,
   });
 
   final BibleLink selection;
   final String versionCode;
   final List<BibleVerseAction> actions;
+
+  /// Les mots choisis dans `selection.from` (#252), [charTo] **exclue** ;
+  /// nulles = la sélection porte sur des versets entiers. Seul le surlignage
+  /// les lit — les autres actions (copier, note, partager…) continuent de
+  /// porter sur les versets entiers.
+  final int? charFrom;
+  final int? charTo;
 
   /// Appelé après un geste : le lecteur lève la sélection.
   final VoidCallback onDone;
@@ -94,21 +103,13 @@ class _BibleVerseMenuState extends ConsumerState<BibleVerseMenu> {
                       key: BibleVerseMenu.colorKey(name),
                       color: color,
                       tooltip: l.bibleM2Highlight,
-                      onTap: () => _run(() => highlightVerses(
-                            ref,
-                            widget.selection,
-                            name,
-                          )),
+                      onTap: () => _run(() => _highlight(ref, name)),
                     )
                 else ...[
                   _Swatch(
                     key: BibleVerseMenu.clearKey,
                     tooltip: l.bibleM2ClearHighlight,
-                    onTap: () => _run(() => highlightVerses(
-                          ref,
-                          widget.selection,
-                          null,
-                        )),
+                    onTap: () => _run(() => _highlight(ref, null)),
                     child: Icon(
                       Icons.close,
                       size: 16,
@@ -152,6 +153,17 @@ class _BibleVerseMenuState extends ConsumerState<BibleVerseMenu> {
       ),
     );
   }
+
+  /// Le surlignage, au verset ou **au mot** : les bornes ne partent qu'avec
+  /// leur traduction, le contrat les exige ensemble.
+  void _highlight(WidgetRef ref, String? color) => highlightVerses(
+        ref,
+        widget.selection,
+        color,
+        versionCode: widget.versionCode,
+        charFrom: widget.charFrom,
+        charTo: widget.charTo,
+      );
 
   /// Un geste : la sélection se lève, puis l'action part.
   void _run(VoidCallback action) {

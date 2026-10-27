@@ -19,9 +19,14 @@
 ///   il défile jusqu'au premier et les **surligne un instant**.
 /// - Les emplacements : l'habillage des versets (`chapterDecorators`) et le
 ///   menu d'action (`verseActions`) — s'il y a des actions, toucher un verset
-///   le sélectionne, toucher un autre étend la plage contiguë (un appui long
-///   puis glisser aussi), et le **menu flottant** de M2 paraît sous la
-///   sélection, palette de surlignage comprise.
+///   le sélectionne, toucher un autre étend la plage contiguë (le « + »
+///   aussi), et le **menu flottant** de M2 paraît sous la sélection, palette
+///   de surlignage comprise.
+/// - **L'appui long prend un mot** (#252), et le doigt maintenu étend la
+///   sélection mot à mot sans quitter le verset ; le surlignage posé alors ne
+///   couvre que ces caractères, et n'appartient qu'à la traduction ouverte.
+///   Ce geste a pris la place de l'extension de versets par glissement : voir
+///   `_pickWord`.
 /// - Le **marque-page** du chapitre, dans l'en-tête (M2).
 ///
 /// Route `/bible/read/:book/:chapter?v=…`, ouverte à tous.
@@ -127,14 +132,44 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   int? _from;
   int? _to;
 
-  /// Le menu flottant se pose **au-dessus** du premier verset choisi — les
-  /// versets suivants restent à portée du doigt pour étendre la plage —, et
-  /// **sous** le dernier quand la place manque en haut de l'écran.
+  /// **La sélection au mot** (#252) : les bornes de caractère dans le texte du
+  /// verset `_from` (qui vaut alors `_to`), `_charTo` **exclue**. Nulles = la
+  /// sélection porte sur des versets entiers, comme avant.
+  /// ⚠️ `_charFrom == 0` est légitime — comparer à `null`.
+  int? _charFrom;
+  int? _charTo;
+
+  /// Le mot sur lequel l'appui long a commencé : le glissement étend de part
+  /// et d'autre de lui, et non depuis le dernier mot touché.
+  ({int verse, int from, int to})? _wordAnchor;
+
+  /// Le menu flottant se pose **toujours au-dessus** du premier verset choisi —
+  /// les versets suivants restent à portée du doigt pour étendre la plage.
+  ///
+  /// Il basculait auparavant **sous** la sélection quand la place manquait en
+  /// haut. Constaté le 27/10/2026 : sur un verset haut de six lignes, la pilule
+  /// passait sous lui et recouvrait le verset suivant — elle changeait donc de
+  /// côté selon la longueur du verset, sans que rien ne l'annonce. Quand la
+  /// place manque, elle est désormais **épinglée sous la barre** plutôt que
+  /// renvoyée en bas : toujours au même endroit, jamais hors de l'écran.
   final _aboveLink = LayerLink();
   final _belowLink = LayerLink();
   final _firstKey = GlobalKey();
   final _stackKey = GlobalKey();
-  bool _menuBelow = false;
+  bool _menuEpingle = false;
+
+  /// **La pilule et le « + » ne paraissent jamais ensemble** (#252).
+  ///
+  /// Deux temps, et c'est ce que montrent les références : on **choisit**, puis
+  /// on **agit**.
+  ///
+  /// 1. Un appui sur un verset le sélectionne et fait paraître le « + » au
+  ///    milieu de la sélection. D'autres appuis étendent la plage.
+  /// 2. Un appui sur le « + » ouvre la pilule et le « + » s'efface.
+  ///
+  /// Le « + » n'étend donc pas la sélection — c'est l'appui sur les versets qui
+  /// le fait. Il dit « j'ai fini de choisir, montre-moi les actions ».
+  bool _actionsOuvertes = false;
 
   /// La hauteur à réserver au-dessus du premier verset pour le menu. La
   /// pilule de #250 tient sur une rangée : il lui en faut bien moins.
@@ -146,8 +181,8 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       final stack = _stackKey.currentContext?.findRenderObject() as RenderBox?;
       if (!mounted || verse == null || stack == null) return;
       final top = verse.localToGlobal(Offset.zero, ancestor: stack).dy;
-      final below = top < _menuRoom;
-      if (below != _menuBelow) setState(() => _menuBelow = below);
+      final epingle = top < _menuRoom;
+      if (epingle != _menuEpingle) setState(() => _menuEpingle = epingle);
     });
   }
 
@@ -178,7 +213,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     setState(() {
       _chapters = next.chapters;
       _index = i < 0 ? 0 : i;
-      _from = _to = null;
+      _clearSelection();
     });
     if (_pages.hasClients) _pages.jumpToPage(_index);
   }
@@ -235,7 +270,14 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   /// de lui seul.
   void _tapVerse(int verse) {
     setState(() {
-      final (from, to) = (_from, _to);
+      // Un toucher rouvre la sélection **au verset** : les bornes du mot d'un
+      // appui long précédent ne survivent pas à un geste d'une autre nature.
+      final wasWord = _charFrom != null;
+      // Toute sélection touchée referme les actions : on revient au choix.
+      _actionsOuvertes = false;
+      _charFrom = _charTo = null;
+      _wordAnchor = null;
+      final (from, to) = (_from, wasWord ? null : _to);
       if (from == null || to == null) {
         _from = _to = verse;
       } else if (verse < from || verse > to) {
@@ -254,10 +296,22 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     _placeMenu();
   }
 
-  /// **Le « + » de la sélection** (#250) : la plage gagne le verset suivant.
-  /// L'appui long puis glisser faisait déjà cela, mais rien ne l'annonçait —
-  /// une fonction que personne ne trouvait. Le bouton la rend visible, et le
-  /// glissement continue de marcher.
+  /// **Le « + » de la sélection** (#252) : il **ouvre les actions**.
+  ///
+  /// Il étendait la plage d'un verset (#250). Le propriétaire du produit a
+  /// corrigé le modèle le 27/10/2026 : on choisit d'abord — en touchant les
+  /// versets, autant qu'on veut —, puis on appuie sur le « + » pour agir. Le
+  /// « + » s'efface alors, et la pilule prend sa place.
+  void _openActions() {
+    if (_from == null) return;
+    setState(() => _actionsOuvertes = true);
+    _placeMenu();
+  }
+
+  /// Étend la plage d'un verset. N'est plus câblée au « + » (voir ci-dessus) :
+  /// l'extension se fait en touchant les versets. Gardée parce qu'elle décrit
+  /// la seule règle de bord qui vaille — la sélection ne traverse pas une page.
+  // ignore: unused_element
   void _extendSelection() {
     final to = _to;
     if (to == null) return;
@@ -274,16 +328,57 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     // Au bout du chapitre, le « + » ne fait rien plutôt que de déborder sur
     // le suivant : la sélection ne traverse pas une page.
     if (verses == null || verses.isEmpty || to >= verses.last.number) return;
-    setState(() => _to = to + 1);
+    // Le « + » parle en versets : il rend au verset entier une sélection qui
+    // ne tenait que quelques mots.
+    setState(() {
+      _to = to + 1;
+      _charFrom = _charTo = null;
+      _wordAnchor = null;
+    });
     _placeMenu();
   }
 
-  /// Appui long puis glisser : la plage d'[anchor] à [verse].
-  void _dragVerses(int anchor, int verse) => setState(() {
-        _from = anchor < verse ? anchor : verse;
-        _to = anchor < verse ? verse : anchor;
-        _placeMenu();
-      });
+  void _clearSelection() {
+    _from = _to = null;
+    _charFrom = _charTo = null;
+    _wordAnchor = null;
+  }
+
+  /// **Appui long sur un mot, puis glisser** (#252) : le mot sous le doigt est
+  /// pris, et tant que le doigt reste posé la sélection s'étend de part et
+  /// d'autre du mot d'ancrage — à gauche comme à droite.
+  ///
+  /// **Ce geste a remplacé l'extension de versets par glissement**, que
+  /// l'appui long portait depuis M2. Les deux ne pouvaient pas cohabiter sur
+  /// le même appui, et c'est celui-là qui cède : #250 avait déjà constaté que
+  /// « rien ne l'annonçait — une fonction que personne ne trouvait », et lui a
+  /// donné une porte visible, le « + ». La sélection au verset garde donc ses
+  /// deux chemins (toucher un verset, puis le « + »), et l'appui long sert
+  /// enfin à ce que le propriétaire en attendait.
+  ///
+  /// **Le glissement ne quitte pas le verset** : un mot d'un autre verset est
+  /// ignoré plutôt que de faire basculer la sélection. Mesuré sur l'appareil
+  /// — le doigt sort du verset sans arrêt pendant qu'on vise un mot de la
+  /// ligne du bas, et une sélection qui sautait au verset suivant à chaque
+  /// débordement était impossible à viser. Le contrat le permettrait
+  /// (`charFrom` dans `verseFrom`, `charTo` dans `verseTo`) : il reste
+  /// disponible le jour où l'ergonomie le demandera.
+  void _pickWord(({int verse, int from, int to}) word, {bool start = false}) {
+    if (start) _wordAnchor = word;
+    final anchor = _wordAnchor;
+    if (anchor == null || anchor.verse != word.verse) return;
+    setState(() {
+      // **Le mot ouvre les actions tout de suite**, contrairement au verset qui
+      // demande un appui sur le « + ». Un glissement a une fin nette — le doigt
+      // se lève — là où une suite de touchers n'en a aucune : c'est pour celle-ci
+      // que le « + » existe, pour dire « j'ai fini de choisir ».
+      _actionsOuvertes = true;
+      _from = _to = word.verse;
+      _charFrom = word.from < anchor.from ? word.from : anchor.from;
+      _charTo = word.to > anchor.to ? word.to : anchor.to;
+    });
+    _placeMenu();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -440,7 +535,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
             onPageChanged: (i) {
               setState(() {
                 _index = i;
-                _from = _to = null;
+                _clearSelection();
               });
               _savePosition();
             },
@@ -460,8 +555,10 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                 flashTo: arrival ? (widget.to ?? widget.from) : null,
                 selectedFrom: i == _index ? _from : null,
                 selectedTo: i == _index ? _to : null,
+                selectedCharFrom: i == _index ? _charFrom : null,
+                selectedCharTo: i == _index ? _charTo : null,
                 onVerseTap: actions.isEmpty ? null : _tapVerse,
-                onVerseDrag: actions.isEmpty ? null : _dragVerses,
+                onWordPick: actions.isEmpty ? null : _pickWord,
                 menu: i == _index
                     ? (
                         above: _aboveLink,
@@ -475,19 +572,14 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
               );
             },
           ),
-          if (from != null && actions.isNotEmpty)
+          if (from != null && actions.isNotEmpty && _actionsOuvertes)
             Positioned(
               left: 0,
               right: 0,
               top: 0,
-              child: CompositedTransformFollower(
-                link: _menuBelow ? _belowLink : _aboveLink,
-                showWhenUnlinked: false,
-                targetAnchor:
-                    _menuBelow ? Alignment.bottomCenter : Alignment.topCenter,
-                followerAnchor:
-                    _menuBelow ? Alignment.topCenter : Alignment.bottomCenter,
-                offset: Offset(0, _menuBelow ? AppSpacing.xs : -AppSpacing.xs),
+              child: _MenuPlace(
+                epingle: _menuEpingle,
+                link: _aboveLink,
                 child: Center(
                   child: Padding(
                     padding: AppSpacing.screenPadding,
@@ -499,16 +591,19 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                         to: _to == from ? null : _to,
                       ),
                       versionCode: version,
+                      charFrom: _charFrom,
+                      charTo: _charTo,
                       actions: actions,
-                      onDone: () => setState(() => _from = _to = null),
+                      onDone: () => setState(_clearSelection),
                     ),
                   ),
                 ),
               ),
             ),
           // Le « + » des références : au centre du dernier verset choisi,
-          // là où le doigt descend pour en prendre un de plus.
-          if (from != null && actions.isNotEmpty)
+          // là où le doigt descend pour en prendre un de plus. **Jamais en même
+          // temps que la pilule** (#252) : les deux encombraient le verset.
+          if (from != null && actions.isNotEmpty && !_actionsOuvertes)
             Positioned(
               left: 0,
               right: 0,
@@ -519,7 +614,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                 targetAnchor: Alignment.center,
                 followerAnchor: Alignment.center,
                 child: Center(
-                  child: _ExtendButton(onTap: _extendSelection),
+                  child: _ExtendButton(onTap: _openActions),
                 ),
               ),
             ),
@@ -530,6 +625,41 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
 }
 
 /// Une page : le texte d'un chapitre.
+/// **Où se pose la pilule de sélection** (#250, corrigé #252).
+///
+/// Deux cas, et un seul côté : au-dessus du premier verset choisi quand la place
+/// existe, **épinglée sous la barre** sinon. Jamais en dessous — une pilule qui
+/// change de côté selon la hauteur du verset se cherche à chaque fois.
+class _MenuPlace extends StatelessWidget {
+  const _MenuPlace({
+    required this.epingle,
+    required this.link,
+    required this.child,
+  });
+
+  final bool epingle;
+  final LayerLink link;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (epingle) {
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.xs),
+        child: child,
+      );
+    }
+    return CompositedTransformFollower(
+      link: link,
+      showWhenUnlinked: false,
+      targetAnchor: Alignment.topCenter,
+      followerAnchor: Alignment.bottomCenter,
+      offset: const Offset(0, -AppSpacing.xs),
+      child: child,
+    );
+  }
+}
+
 class _ChapterPage extends ConsumerStatefulWidget {
   const _ChapterPage({
     super.key,
@@ -539,8 +669,10 @@ class _ChapterPage extends ConsumerStatefulWidget {
     this.flashTo,
     this.selectedFrom,
     this.selectedTo,
+    this.selectedCharFrom,
+    this.selectedCharTo,
     this.onVerseTap,
-    this.onVerseDrag,
+    this.onWordPick,
     this.menu,
   });
 
@@ -549,11 +681,16 @@ class _ChapterPage extends ConsumerStatefulWidget {
   final int? flashTo;
   final int? selectedFrom;
   final int? selectedTo;
+
+  /// Les bornes du mot choisi dans [selectedFrom] (#252), `selectedCharTo`
+  /// exclue ; nulles = la sélection porte sur des versets entiers.
+  final int? selectedCharFrom;
+  final int? selectedCharTo;
   final ValueChanged<int>? onVerseTap;
 
-  /// Appui long sur un verset puis glisser : (verset de départ, verset sous
-  /// le doigt).
-  final void Function(int anchor, int verse)? onVerseDrag;
+  /// Appui long sur un mot puis glisser : le mot sous le doigt (#252).
+  final void Function(({int verse, int from, int to}) word, {bool start})?
+      onWordPick;
 
   /// Posé sur la page courante : les cibles du menu flottant (au-dessus du
   /// premier verset choisi, sous le dernier) et la clé du premier.
@@ -571,30 +708,61 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
   bool _scrolledToTarget = false;
   bool _reported = false;
   Timer? _flashTimer;
-  int? _dragAnchor;
 
-  /// Le verset sous [global] : chaque ligne porte son numéro en `MetaData`.
-  int? _verseAt(Offset global) {
+  /// **Le mot sous [global]** (#252) : le verset vient du `MetaData` que porte
+  /// chaque ligne, les bornes du mot du paragraphe lui-même — c'est lui qui
+  /// sait où sa mise en page a posé chaque caractère. Le chemin du test de
+  /// toucher va du plus profond au plus haut : le paragraphe d'abord, son
+  /// `MetaData` ensuite.
+  ///
+  /// Rend les décalages dans **le texte du verset**, le numéro en tête du
+  /// paragraphe retiré : c'est ce que le contrat serveur nomme `charFrom` /
+  /// `charTo`.
+  ({int verse, int from, int to})? _wordAt(Offset global) {
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return null;
     final result = BoxHitTestResult();
     box.hitTest(result, position: box.globalToLocal(global));
+    RenderParagraph? paragraph;
+    Offset? local;
+    int? verse;
     for (final entry in result.path) {
       final target = entry.target;
-      if (target is RenderMetaData && target.metaData is int) {
-        return target.metaData as int;
+      if (paragraph == null &&
+          target is RenderParagraph &&
+          entry is BoxHitTestEntry) {
+        paragraph = target;
+        local = entry.localPosition;
+      }
+      if (verse == null && target is RenderMetaData && target.metaData is int) {
+        verse = target.metaData as int;
       }
     }
-    return null;
+    if (paragraph == null || local == null || verse == null) return null;
+    // La lettrine est un `Text` elle aussi : seul le paragraphe qui commence
+    // par le numéro du verset est le bon.
+    final plain = paragraph.text.toPlainText();
+    final prefix = '$verse ';
+    if (!plain.startsWith(prefix)) return null;
+    final word =
+        paragraph.getWordBoundary(paragraph.getPositionForOffset(local));
+    final from = word.start - prefix.length;
+    // Le doigt est sur le numéro, ou entre deux mots : rien ne bouge, plutôt
+    // qu'une bande posée sur une espace (invisible) ou sur le numéro (qui
+    // n'appartient pas au texte du verset).
+    if (from < 0 ||
+        word.end <= word.start ||
+        plain.substring(word.start, word.end).trim().isEmpty) {
+      return null;
+    }
+    return (verse: verse, from: from, to: word.end - prefix.length);
   }
 
-  void _drag(Offset global, {bool start = false}) {
-    final drag = widget.onVerseDrag;
-    final verse = _verseAt(global);
-    if (drag == null || verse == null) return;
-    if (start) _dragAnchor = verse;
-    final anchor = _dragAnchor;
-    if (anchor != null) drag(anchor, verse);
+  void _pick(Offset global, {bool start = false}) {
+    final pick = widget.onWordPick;
+    final word = _wordAt(global);
+    if (pick == null || word == null) return;
+    pick(word, start: start);
   }
 
   @override
@@ -704,12 +872,12 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
             bottom: 160,
           ),
           child: GestureDetector(
-            onLongPressStart: widget.onVerseDrag == null
+            onLongPressStart: widget.onWordPick == null
                 ? null
-                : (d) => _drag(d.globalPosition, start: true),
-            onLongPressMoveUpdate: widget.onVerseDrag == null
+                : (d) => _pick(d.globalPosition, start: true),
+            onLongPressMoveUpdate: widget.onWordPick == null
                 ? null
-                : (d) => _drag(d.globalPosition),
+                : (d) => _pick(d.globalPosition),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -723,9 +891,19 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
                       flashed: _flashing &&
                           v.number >= widget.flashFrom! &&
                           v.number <= widget.flashTo!,
-                      selected: widget.selectedFrom != null &&
+                      // La bande pleine du verset ne paraît pas quand la
+                      // sélection ne tient que quelques mots : ce sont les
+                      // mots qui se montrent choisis.
+                      selected: widget.selectedCharFrom == null &&
+                          widget.selectedFrom != null &&
                           v.number >= widget.selectedFrom! &&
                           v.number <= widget.selectedTo!,
+                      selectedCharFrom: v.number == widget.selectedFrom
+                          ? widget.selectedCharFrom
+                          : null,
+                      selectedCharTo: v.number == widget.selectedFrom
+                          ? widget.selectedCharTo
+                          : null,
                       palette: palette,
                       // La lettrine ouvre le chapitre sur son premier verset ;
                       // le titre dans le corps, lui, a disparu — la barre du
@@ -778,6 +956,8 @@ class _VerseLine extends StatelessWidget {
     required this.selected,
     required this.palette,
     required this.onTap,
+    this.selectedCharFrom,
+    this.selectedCharTo,
     this.dropCap,
   });
 
@@ -788,19 +968,63 @@ class _VerseLine extends StatelessWidget {
   final AppPalette palette;
   final VoidCallback? onTap;
 
+  /// Les mots choisis en ce moment (#252), `selectedCharTo` exclue.
+  final int? selectedCharFrom;
+  final int? selectedCharTo;
+
   /// Le numéro du chapitre en lettrine, sur le premier verset seulement.
   final String? dropCap;
 
   @override
   Widget build(BuildContext context) {
-    final background = flashed
-        ? palette.primary.withValues(alpha: 0.18)
-        : decoration?.background;
+    // Le surlignage enregistré et le surlignage d'arrivée sont deux choses :
+    // l'arrivée couvre **tout** le verset, même quand la marque n'en tient
+    // que quelques mots — c'est elle qui dit « vous êtes ici ».
+    final flash = flashed ? palette.primary.withValues(alpha: 0.18) : null;
+    final mark = decoration?.background;
+    final words = decoration?.charFrom;
     final body = BibleReaderAppearance.verseStyle(context);
     final rubric = BibleReaderAppearance.rubric(context);
     final icons = decoration?.marginIcons ?? const <IconData>[];
     final line = (body.fontSize ?? 18) * (body.height ?? 1.6);
     final cap = dropCap;
+    // Le numéro est **dans** le paragraphe : les décalages du contrat, qui
+    // comptent dans le texte du verset, se décalent donc de sa longueur — à
+    // la peinture comme au test de toucher.
+    final prefix = '${verse.number} ';
+    final span = TextSpan(
+      style: body,
+      children: [
+        // Le numéro est **en ligne** et à la taille du texte : lisible comme
+        // sur les références, et l'interligne reste régulier — ce dont le
+        // marqueur a besoin pour poser ses bandes.
+        TextSpan(
+          text: prefix,
+          style: TextStyle(fontWeight: FontWeight.w700, color: rubric),
+        ),
+        TextSpan(text: verse.text),
+      ],
+    );
+    // Les bandes posées sur quelques mots : d'abord le surlignage enregistré,
+    // puis la sélection en cours par-dessus. `MarkerWordHighlight` enveloppe
+    // le `Text` **seul** — il refait sa mise en page pour trouver les
+    // rectangles, et la lettrine la fausserait.
+    Widget text = Text.rich(span);
+    for (final band in <(Color, int, int)>[
+      if (words != null && mark != null) (mark, words, decoration!.charTo!),
+      if (selectedCharFrom case final from?)
+        // La teinte de l'arrivée sur un lien : la couleur du lecteur pour
+        // « regardez ici », déjà connue du fidèle.
+        (palette.primary.withValues(alpha: 0.22), from, selectedCharTo!),
+    ]) {
+      text = MarkerWordHighlight(
+        color: band.$1,
+        span: span,
+        from: prefix.length + band.$2,
+        to: prefix.length + band.$3,
+        child: text,
+      );
+    }
     return InkWell(
       key: BibleReaderScreen.verseKey(verse.number),
       onTap: onTap,
@@ -810,7 +1034,10 @@ class _VerseLine extends StatelessWidget {
         // (références, verset 4) ; le surlignage, lui, est **peint**.
         decoration: BoxDecoration(color: selected ? palette.surfaceAlt : null),
         child: MarkerHighlight(
-          color: background,
+          // Au mot, c'est `MarkerWordHighlight` qui peint la marque : la
+          // bande pleine ligne se taira, sans quoi les deux se
+          // superposeraient. L'arrivée, elle, passe toujours par ici.
+          color: flash ?? (words == null ? mark : null),
           lineHeight: line,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
@@ -838,27 +1065,7 @@ class _VerseLine extends StatelessWidget {
                     ),
                   ),
                 ),
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      // Le numéro est **en ligne** et à la taille du texte :
-                      // lisible comme sur les références, et l'interligne
-                      // reste régulier — ce dont le marqueur a besoin pour
-                      // poser ses bandes.
-                      TextSpan(
-                        text: '${verse.number} ',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: rubric,
-                        ),
-                      ),
-                      TextSpan(text: verse.text),
-                    ],
-                  ),
-                  style: body,
-                ),
-              ),
+              Expanded(child: text),
               for (final icon in icons)
                 Padding(
                   padding: const EdgeInsets.only(left: AppSpacing.xs, top: 6),

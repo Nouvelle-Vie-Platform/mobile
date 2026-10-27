@@ -1,6 +1,8 @@
 /// **Toutes les tables du module Bible** (M1, #199) — schéma v29, posé en une
-/// seule étape pour les tranches M1 à M7 : **aucune autre tranche ne change le
-/// schéma** (plan du module, §3 « Mobile »).
+/// seule étape pour les tranches M1 à M7 : **aucune de ces tranches-là ne
+/// change le schéma** (plan du module, §3 « Mobile »). Les chantiers venus
+/// après, eux, l'ont fait : `versification` au palier v31 (C3, #240), et les
+/// trois champs du mot sur les deux tables de marques au palier v32 (#252).
 ///
 /// Trois familles, le patron de `note_tables.dart` :
 ///
@@ -60,6 +62,23 @@ class BibleMarks extends Table with SyncedRow {
 
   /// Surlignage : `yellow | green | blue | pink | purple`, brut.
   TextColumn get color => text().nullable()();
+
+  /// **La traduction de la marque** (#252, server-portal#620) : nulle = la
+  /// marque vaut pour **toutes** les versions, comme avant ce palier — et
+  /// c'est ce que portent toutes les marques déjà posées. Une marque **au
+  /// mot** la nomme toujours : un surlignage de quelques mots n'a de sens que
+  /// dans le texte où il a été posé, les mots des autres traductions n'étant
+  /// pas les mêmes (arbitrage du propriétaire). Le serveur refuse d'ailleurs
+  /// un décalage sans elle (422 `E_BIBLE_PAYLOAD_INVALID`).
+  TextColumn get versionCode => text().nullable()();
+
+  /// Le décalage de caractère dans `verseFrom`, borne **comprise**.
+  /// ⚠️ `0` — le premier caractère — est une valeur **légitime** : comparer à
+  /// `null`, jamais tester la vérité de ce champ.
+  IntColumn get charFrom => integer().nullable()();
+
+  /// Le décalage de caractère dans `verseTo`, borne **exclue**.
+  IntColumn get charTo => integer().nullable()();
   DateTimeColumn get clientCreatedAt => dateTime().nullable()();
   DateTimeColumn get clientUpdatedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().nullable()();
@@ -307,6 +326,11 @@ class LocalBibleMarks extends Table with LocalBibleOutbox {
   IntColumn get verseFrom => integer().nullable()();
   IntColumn get verseTo => integer().nullable()();
   TextColumn get color => text().nullable()();
+
+  /// Les trois champs du mot (#252) — mêmes règles que sur le miroir.
+  TextColumn get versionCode => text().nullable()();
+  IntColumn get charFrom => integer().nullable()();
+  IntColumn get charTo => integer().nullable()();
   DateTimeColumn get clientCreatedAt => dateTime()();
 
   /// Posé quand la marque est retirée et que le `DELETE` reste à partir.

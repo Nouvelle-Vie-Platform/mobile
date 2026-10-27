@@ -221,6 +221,12 @@ Map<String, Object?> markPayload(LocalBibleMarkRow m) => {
       'verseFrom': m.verseFrom,
       'verseTo': m.verseTo,
       'color': m.color,
+      // #252 : le serveur refuse un décalage sans `versionCode` (422
+      // `E_BIBLE_PAYLOAD_INVALID`), et la marque au mot ne vaut que pour sa
+      // traduction. Les trois voyagent donc ensemble, ou pas du tout.
+      'versionCode': m.versionCode,
+      'charFrom': m.charFrom,
+      'charTo': m.charTo,
       'clientCreatedAt': _utc(m.clientCreatedAt),
       'clientUpdatedAt': _utc(m.clientUpdatedAt),
     };

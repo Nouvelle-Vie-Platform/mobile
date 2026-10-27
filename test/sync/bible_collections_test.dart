@@ -122,6 +122,27 @@ const Map<String, List<Map<String, Object?>>> _payloads = {
       'updatedAt': '2026-10-13T07:00:01.000Z',
       'deletedAt': null,
     },
+    // Une marque **au mot** (#252, server-portal#620) : sa traduction, et un
+    // `charFrom` à **0** — le premier caractère du verset, valeur légitime
+    // qu'un test de vérité avalerait.
+    {
+      'id': '019f9000-0000-7000-8000-0000000000m2',
+      'ownerId': _owner,
+      'kind': 'highlight',
+      'book': 'Ps',
+      'chapter': 23,
+      'verseFrom': 1,
+      'verseTo': 1,
+      'color': 'green',
+      'versionCode': 'LSG',
+      'charFrom': 0,
+      'charTo': 11,
+      'clientCreatedAt': '2026-10-27T07:00:00.000Z',
+      'clientUpdatedAt': '2026-10-27T07:00:00.000Z',
+      'createdAt': '2026-10-27T07:00:01.000Z',
+      'updatedAt': '2026-10-27T07:00:01.000Z',
+      'deletedAt': null,
+    },
   ],
   'bible_reading_states': [
     {
@@ -262,8 +283,14 @@ void main() {
     expect(challenge.planId, _planId);
     final quiz = (await db.select(db.bibleQuizzes).get()).single;
     expect((quiz.id, quiz.ageBand), (4, 'kids'));
-    final mark = (await db.select(db.bibleMarks).get()).single;
+    final marks = await db.select(db.bibleMarks).get();
+    final mark = marks.firstWhere((m) => m.book == 'John');
     expect((mark.kind, mark.verseTo, mark.color), ('highlight', 18, 'yellow'));
+    // Une marque d'avant #252 n'a aucun des trois champs, et c'est ce qui la
+    // garde valable dans toutes les traductions.
+    expect((mark.versionCode, mark.charFrom, mark.charTo), (null, null, null));
+    final word = marks.firstWhere((m) => m.book == 'Ps');
+    expect((word.versionCode, word.charFrom, word.charTo), ('LSG', 0, 11));
     final state = (await db.select(db.bibleReadingStates).get()).single;
     expect(state.readChapters, '{"John":[1,2,3]}');
     expect(state.streakDays, 4);
@@ -283,8 +310,10 @@ void main() {
       server.servePages(e.key, [
         deltaPage(items: e.value, nextCursor: 'c1'),
         deltaPage(items: [
+          // La première ligne de chaque collection ; `bible_marks` en a deux
+          // depuis #252, et sa seconde (la marque au mot) doit rester.
           {
-            'id': e.value.single['id'],
+            'id': e.value.first['id'],
             'deletedAt': '2026-10-14T00:00:00.000Z',
           },
         ], nextCursor: 'c2'),
@@ -296,7 +325,7 @@ void main() {
     await engine().synchronize();
     expect(await db.select(db.bibleQuizzes).get(), isEmpty);
     expect(await db.select(db.biblePlans).get(), isEmpty);
-    expect(await db.select(db.bibleMarks).get(), isEmpty);
+    expect((await db.select(db.bibleMarks).get()).single.book, 'Ps');
     expect(await db.select(db.bibleVersions).get(), isEmpty);
   });
 

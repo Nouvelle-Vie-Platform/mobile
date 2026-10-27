@@ -8,6 +8,7 @@ library;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -74,6 +75,16 @@ Color? _background(WidgetTester tester, int verse) {
       : tester.widget<MarkerHighlight>(marker).color;
 }
 
+/// **Ouvrir les actions**, c'est-à-dire appuyer sur le « + » (#252).
+///
+/// Deux temps : on choisit les versets, puis on demande les actions. Les tests
+/// qui veulent la pilule passent donc tous par ici — et c'est voulu : si
+/// quelqu'un recâblait le « + » sur l'extension, ils rougiraient tous d'un coup.
+Future<void> _ouvrirActions(WidgetTester tester) async {
+  await tester.tap(find.byKey(BibleReaderScreen.extendKey));
+  await _settle(tester);
+}
+
 Future<void> _tapVerse(WidgetTester tester, int verse) async {
   final f = find.byKey(BibleReaderScreen.verseKey(verse));
   if (f.hitTestable().evaluate().isEmpty) {
@@ -82,6 +93,54 @@ Future<void> _tapVerse(WidgetTester tester, int verse) async {
   }
   await tester.tap(f);
   await _settle(tester);
+}
+
+/// Le paragraphe d'un verset : c'est lui qui sait où sa mise en page a posé
+/// chaque caractère, dans le test comme dans le lecteur.
+RenderParagraph _paragraph(WidgetTester tester, int verse) =>
+    tester.renderObject<RenderParagraph>(
+      find
+          .descendant(
+            of: find.byKey(BibleReaderScreen.verseKey(verse)),
+            matching: find.byType(RichText),
+          )
+          .first,
+    );
+
+/// Le texte du verset tel qu'il est peint, numéro de tête retiré.
+String _verseText(WidgetTester tester, int verse) =>
+    _paragraph(tester, verse).text.toPlainText().substring('$verse '.length);
+
+/// Le point à l'écran du caractère [index] du texte du verset.
+Offset _charCenter(WidgetTester tester, int verse, int index) {
+  final paragraph = _paragraph(tester, verse);
+  final at = '$verse '.length + index;
+  final box = paragraph
+      .getBoxesForSelection(
+        TextSelection(baseOffset: at, extentOffset: at + 1),
+      )
+      .first;
+  return paragraph.localToGlobal(
+    Offset((box.left + box.right) / 2, (box.top + box.bottom) / 2),
+  );
+}
+
+/// Un caractère au milieu du mot de rang [rank] (0 = le premier). Sert à
+/// **poser le doigt**, pas à prédire les bornes : celles-ci viennent du
+/// découpage en mots de Flutter, que le lecteur interroge.
+int _insideWord(String text, int rank) {
+  final words = RegExp(r'\S+').allMatches(text).toList();
+  final w = words[rank];
+  return w.start + (w.end - w.start) ~/ 2;
+}
+
+/// La bande peinte sur quelques mots d'un verset, s'il y en a une.
+MarkerWordHighlight? _wordBand(WidgetTester tester, int verse) {
+  final f = find.descendant(
+    of: find.byKey(BibleReaderScreen.verseKey(verse)),
+    matching: find.byType(MarkerWordHighlight),
+  );
+  return f.evaluate().isEmpty ? null : tester.widget<MarkerWordHighlight>(f);
 }
 
 Finder _marginIcon(int verse, IconData icon) => find.descendant(
@@ -111,12 +170,19 @@ void main() {
 
       expect(find.byKey(BibleVerseMenu.menuKey), findsNothing);
       await _tapVerse(tester, 6);
+      // On choisit d'abord : le « + » paraît, la pilule non (#252).
+      expect(find.byKey(BibleReaderScreen.extendKey), findsOneWidget);
+      expect(find.byKey(BibleVerseMenu.menuKey), findsNothing);
+      await _ouvrirActions(tester);
       expect(find.byKey(BibleVerseMenu.menuKey), findsOneWidget);
+      // Et le « + » s'efface : les deux ne paraissent jamais ensemble.
+      expect(find.byKey(BibleReaderScreen.extendKey), findsNothing);
       for (final id in ['copy', 'favorite', 'note', 'share', 'bookmark']) {
         expect(find.byKey(Key('bible_action_$id')), findsOneWidget);
       }
       // Le menu se tient au-dessus : le verset 8 reste à portée.
       await _tapVerse(tester, 8);
+      await _ouvrirActions(tester);
 
       // Palette : vert sur 6-8. Depuis #250 les pastels sont repliés sous
       // la pastille multicolore — il faut l'ouvrir d'abord.
@@ -134,6 +200,7 @@ void main() {
 
       // Favori sur 7 seul.
       await _tapVerse(tester, 7);
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(const Key('bible_action_favorite')));
       await _settle(tester);
       expect(_marginIcon(7, Icons.favorite), findsOneWidget);
@@ -141,6 +208,7 @@ void main() {
 
       // Effacer : le surlignage qui touche le verset 6 part en entier.
       await _tapVerse(tester, 6);
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(BibleVerseMenu.clearKey));
       await _settle(tester);
       expect(_background(tester, 7), isNull);
@@ -151,12 +219,21 @@ void main() {
     });
   });
 
-  // #250 : l'appui long puis glisser étendait déjà la plage, mais rien ne
-  // l'annonçait. Le « + » des références rend la fonction visible ; ce test
-  // tient le geste, pas son dessin.
+  /*
+   * #252 — **le « + » ouvre les actions, il n'étend rien.**
+   *
+   * Il étendait la plage d'un verset (#250) ; le propriétaire du produit a corrigé
+   * le modèle le 27/10/2026 : on choisit en touchant les versets, puis on appuie
+   * sur le « + » pour agir.
+   *
+   * Ce test tient les deux moitiés de la règle, et la seconde est la plus
+   * exposée : `_extendSelection` est **toujours dans le fichier**, débranchée.
+   * Rien n'empêcherait de la recâbler sur le « + » en croyant réparer quelque
+   * chose — sauf ceci.
+   */
   testWidgets(
-      'le « + » étend la sélection d\'un verset, et le signet de la pilule '
-      'est celui du chapitre', (tester) async {
+      'le « + » ouvre les actions sans étendre ; l\'extension se fait en '
+      'touchant les versets', (tester) async {
     await tester.runAsync(() async {
       final container = guestContainer(extra: [_radioOff]);
       final router = await pumpGuestApp(tester, container);
@@ -167,11 +244,13 @@ void main() {
       await _tapVerse(tester, 6);
       expect(find.byKey(BibleReaderScreen.extendKey), findsOneWidget);
 
-      // Deux appuis : la plage passe de 6 seul à 6-8.
-      await tester.tap(find.byKey(BibleReaderScreen.extendKey));
-      await _settle(tester);
-      await tester.tap(find.byKey(BibleReaderScreen.extendKey));
-      await _settle(tester);
+      // L'extension se fait en TOUCHANT les versets : 6 seul, puis 6-8.
+      await _tapVerse(tester, 8);
+      expect(find.byKey(BibleReaderScreen.extendKey), findsOneWidget);
+      // Et toujours pas de pilule : on n'a pas encore demandé les actions.
+      expect(find.byKey(BibleVerseMenu.menuKey), findsNothing);
+
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(BibleVerseMenu.paletteKey));
       await _settle(tester);
       await tester.tap(find.byKey(BibleVerseMenu.colorKey('blue')));
@@ -185,6 +264,7 @@ void main() {
       // Le signet de la pilule est **chapitré**, comme le nôtre l'a toujours
       // été : la ligne n'a pas de verset, et l'icône de l'en-tête s'allume.
       await _tapVerse(tester, 6);
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(const Key('bible_action_bookmark')));
       await _settle(tester);
       final bookmark =
@@ -201,6 +281,101 @@ void main() {
             .icon,
         Icons.bookmark,
       );
+    });
+  });
+
+  // #252 — l'appui long ne sert plus à étendre une plage de versets (le « + »
+  // le fait, visiblement, depuis #250) : il prend **un mot**, et le doigt
+  // maintenu étend mot à mot, à gauche comme à droite.
+  testWidgets(
+      'appui long : un mot est pris, le glissement étend à gauche et à '
+      'droite, et le surlignage ne couvre que ces mots-là', (tester) async {
+    await tester.runAsync(() async {
+      final container = guestContainer(extra: [_radioOff]);
+      final router = await pumpGuestApp(tester, container);
+      router.push('/bible/read/John/3');
+      await _settle(tester);
+
+      final text = _verseText(tester, 6);
+      final second = _insideWord(text, 1);
+      final third = _insideWord(text, 2);
+      final first = _insideWord(text, 0);
+
+      // Appui long sur le deuxième mot : il est pris, seul, et la pilule est
+      // là comme pour un verset.
+      final gesture = await tester.startGesture(_charCenter(tester, 6, second));
+      // L'appui long se compte sur une **vraie** minuterie : sous `runAsync`
+      // le temps de `tester.pump` n'est pas celui du détecteur de gestes.
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      await tester.pump();
+      expect(find.byKey(BibleVerseMenu.menuKey), findsOneWidget);
+      var band = _wordBand(tester, 6)!;
+      final start = band.from - '6 '.length;
+      final end = band.to - '6 '.length;
+      expect(start, lessThanOrEqualTo(second));
+      expect(end, greaterThan(second));
+      expect(text.substring(start, end).trim(), text.substring(start, end),
+          reason: 'un mot, pas deux : aucune espace dedans');
+      expect(end - start, lessThan(text.length), reason: 'pas tout le verset');
+      // La bande pleine ligne se tait : ce sont les mots qui se montrent.
+      expect(_background(tester, 6), isNull);
+
+      // Le doigt glisse à droite, sans se lever : la sélection gagne le
+      // troisième mot et garde son ancre.
+      await gesture.moveTo(_charCenter(tester, 6, third));
+      await tester.pump();
+      band = _wordBand(tester, 6)!;
+      expect(band.from - '6 '.length, start);
+      expect(band.to - '6 '.length, greaterThan(third));
+
+      // Puis à gauche, au-delà de l'ancre : c'est le début qui recule.
+      await gesture.moveTo(_charCenter(tester, 6, first));
+      await tester.pump();
+      band = _wordBand(tester, 6)!;
+      final left = band.from - '6 '.length;
+      expect(left, lessThanOrEqualTo(first));
+      expect(band.to - '6 '.length, greaterThan(second));
+
+      // **Le glissement ne quitte pas le verset** : un mot du verset 8 ne
+      // déplace rien (décision mesurée sur l'appareil).
+      await gesture.moveTo(
+          _charCenter(tester, 8, _insideWord(_verseText(tester, 8), 1)));
+      await tester.pump();
+      expect(_wordBand(tester, 8), isNull);
+      band = _wordBand(tester, 6)!;
+      expect(band.from - '6 '.length, left);
+      final covered = band.to - '6 '.length;
+
+      await gesture.up();
+      await _settle(tester);
+
+      // La pilule surligne : la marque nomme sa traduction et ses bornes.
+      await tester.tap(find.byKey(BibleVerseMenu.paletteKey));
+      await _settle(tester);
+      await tester.tap(find.byKey(BibleVerseMenu.colorKey('yellow')));
+      await _settle(tester);
+      final row = (await _marks(container)).single;
+      expect(
+        (row.kind, row.verseFrom, row.verseTo, row.versionCode),
+        ('highlight', 6, 6, 'EXA'),
+      );
+      expect((row.charFrom, row.charTo), (left, covered));
+
+      // Peinte : la bande du surlignage couvre les mêmes caractères.
+      final painted = _wordBand(tester, 6)!;
+      expect((painted.from - '6 '.length, painted.to - '6 '.length),
+          (left, covered));
+
+      // **Le filtrage par traduction** : la même page en version B n'en
+      // montre rien — ces décalages désignent le texte de la version A.
+      await tester.tap(find.byKey(BibleReaderScreen.versionKey));
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('bible_version_EXB')));
+      await _settle(tester);
+      expect(_wordBand(tester, 6), isNull);
+      expect(_background(tester, 6), isNull);
+
+      expect(_wire.requests, isEmpty);
     });
   });
 
@@ -239,6 +414,7 @@ void main() {
       await _settle(tester);
       await tester.tap(find.byKey(BibleReaderScreen.bookmarkKey));
       await _tapVerse(tester, 1);
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(const Key('bible_action_favorite')));
       await _settle(tester);
 
@@ -288,6 +464,7 @@ void main() {
       await _settle(tester);
 
       await _tapVerse(tester, 16);
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(const Key('bible_action_note')));
       await _settle(tester);
       // La connexion d'abord.
