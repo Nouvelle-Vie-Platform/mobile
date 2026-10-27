@@ -82,6 +82,86 @@ void main() {
     expect(marks, isEmpty);
   });
 
+  // #252 — le surlignage de quelques mots. `charFrom` **comprise**, `charTo`
+  // **exclue**, et la traduction nommée : c'est le contrat de
+  // server-portal#620.
+  test('au mot : la marque nomme sa traduction, et `charFrom = 0` y survit',
+      () async {
+    await store.highlight(
+      member: false,
+      link: const BibleLink('John', 3, from: 16),
+      color: 'yellow',
+      versionCode: 'LSG',
+      charFrom: 0,
+      charTo: 4,
+    );
+    final row = (await _local(db)).single;
+    expect((row.versionCode, row.charFrom, row.charTo), ('LSG', 0, 4));
+    // Le zéro est un zéro : si une garde de vérité l'avait avalé, la colonne
+    // serait nulle et le serveur refuserait l'envoi (422).
+    expect(row.charFrom, isNotNull);
+
+    // Un autre mot du **même** verset cohabite : ce sont les caractères qui
+    // départagent, et 0..4 ne touche pas 10..15.
+    await store.highlight(
+      member: false,
+      link: const BibleLink('John', 3, from: 16),
+      color: 'blue',
+      versionCode: 'LSG',
+      charFrom: 10,
+      charTo: 15,
+    );
+    final marks = await store.watch(member: false).first;
+    expect(marks, hasLength(2));
+    expect(marks.map((m) => m.color).toSet(), {'yellow', 'blue'});
+
+    // Un surlignage **au verset** reste « une couleur par verset » : il
+    // efface les deux mots, et ne nomme aucune traduction.
+    await store.highlight(
+      member: false,
+      link: const BibleLink('John', 3, from: 16),
+      color: 'green',
+    );
+    final whole = (await store.watch(member: false).first).single;
+    expect((whole.color, whole.versionCode, whole.isWordMark),
+        ('green', null, false));
+  });
+
+  test('au mot : le mot d\'à côté survit, le mot qui chevauche est remplacé',
+      () async {
+    await store.highlight(
+      member: false,
+      link: const BibleLink('Ps', 23, from: 1),
+      color: 'yellow',
+      versionCode: 'LSG',
+      charFrom: 2,
+      charTo: 10,
+    );
+    // 10 est **exclue** côté voisin comme côté marque : les deux se touchent
+    // sans se chevaucher.
+    await store.highlight(
+      member: false,
+      link: const BibleLink('Ps', 23, from: 1),
+      color: 'blue',
+      versionCode: 'LSG',
+      charFrom: 10,
+      charTo: 14,
+    );
+    expect(await store.watch(member: false).first, hasLength(2));
+
+    // Un caractère commun suffit à remplacer.
+    await store.highlight(
+      member: false,
+      link: const BibleLink('Ps', 23, from: 1),
+      color: 'pink',
+      versionCode: 'LSG',
+      charFrom: 9,
+      charTo: 12,
+    );
+    final left = await store.watch(member: false).first;
+    expect(left.map((m) => m.color).toList(), ['pink']);
+  });
+
   test('marque-page : un chapitre entier, sans verset', () async {
     await store.toggleBookmark(member: false, book: 'Ps', chapter: 23);
     final m = (await store.watch(member: false, book: 'Ps', chapter: 23).first)
@@ -187,6 +267,11 @@ void main() {
       expect(post['clientUpdatedAt'], _t0.toIso8601String());
       expect((post['kind'], post['verseFrom'], post['verseTo']),
           ('favorite', 16, 16));
+      // #252 : les trois champs voyagent toujours, nuls pour une marque au
+      // verset — un décalage sans traduction serait refusé (422).
+      expect(post.containsKey('charFrom'), isTrue);
+      expect((post['versionCode'], post['charFrom'], post['charTo']),
+          (null, null, null));
       final put = (wire.requests[2].data as Map);
       expect(put['readChapters'], {
         'John': [3]
@@ -200,6 +285,22 @@ void main() {
       expect(wire.requests, hasLength(3));
       expect(await _local(db), isEmpty);
       expect(await db.select(db.localBibleReadingState).get(), isEmpty);
+    });
+
+    test('au mot : les trois champs partent ensemble', () async {
+      await store.highlight(
+        member: true,
+        link: const BibleLink('John', 3, from: 16),
+        color: 'yellow',
+        versionCode: 'LSG',
+        charFrom: 0,
+        charTo: 4,
+      );
+      final (:outbox, :wire) = _outbox(db);
+      await outbox.run();
+      final post = (wire.requests.single.data as Map);
+      expect((post['versionCode'], post['charFrom'], post['charTo']),
+          ('LSG', 0, 4));
     });
 
     test('hors ligne : la ligne reste à envoyer', () async {

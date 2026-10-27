@@ -44,6 +44,9 @@ class BibleMark {
     this.verseFrom,
     this.verseTo,
     this.color,
+    this.versionCode,
+    this.charFrom,
+    this.charTo,
     required this.updatedAt,
   });
 
@@ -54,7 +57,23 @@ class BibleMark {
   final int? verseFrom;
   final int? verseTo;
   final String? color;
+
+  /// La traduction de la marque (#252) : nulle = toutes les traductions.
+  final String? versionCode;
+
+  /// Les bornes du mot dans le texte du verset — [charFrom] comprise,
+  /// [charTo] **exclue**. Nulles = le verset entier. ⚠️ `0` est légitime.
+  final int? charFrom;
+  final int? charTo;
   final DateTime updatedAt;
+
+  /// Cette marque porte-t-elle sur quelques mots plutôt que sur des versets ?
+  bool get isWordMark => charFrom != null && charTo != null;
+
+  /// Paraît-elle dans la traduction [version] ? Une marque sans traduction
+  /// suit toutes les versions, **comme avant #252** — c'est ce que portent
+  /// toutes les marques déjà posées.
+  bool showsIn(String version) => versionCode == null || versionCode == version;
 
   BibleLink get link => BibleLink(
         book,
@@ -67,10 +86,20 @@ class BibleMark {
   bool covers(int v) =>
       verseFrom == null || (v >= verseFrom! && v <= (verseTo ?? verseFrom!));
 
-  /// La plage touche-t-elle `from..to` ?
-  bool overlaps(int from, int to) =>
-      verseFrom == null ||
-      (verseFrom! <= to && (verseTo ?? verseFrom!) >= from);
+  /// La plage touche-t-elle `from..to`, éventuellement restreinte aux
+  /// caractères `charFrom..charTo` (bornes du mot, `charTo` exclue) ?
+  ///
+  /// Deux marques **au mot** du même verset ne se touchent que si leurs
+  /// caractères se chevauchent : sans cela, surligner un mot effacerait le
+  /// surlignage du mot d'à côté. Dès que l'une des deux porte sur le verset
+  /// entier, le verset suffit — c'est la règle « un verset, une couleur » de
+  /// M2, qu'on ne change pas.
+  bool overlaps(int from, int to, {int? charFrom, int? charTo}) {
+    if (verseFrom == null) return true;
+    if (verseFrom! > to || (verseTo ?? verseFrom!) < from) return false;
+    if (!isWordMark || charFrom == null || charTo == null) return true;
+    return this.charFrom! < charTo && charFrom < this.charTo!;
+  }
 }
 
 class BibleMarksStore {
@@ -90,7 +119,8 @@ class BibleMarksStore {
     final where = book == null ? '' : 'WHERE book = ? AND chapter = ? ';
     final mirror = member
         ? 'UNION ALL SELECT s.id, s.kind, s.book, s.chapter, s.verse_from, '
-            's.verse_to, s.color, coalesce(s.updated_at, s.client_updated_at) '
+            's.verse_to, s.color, s.version_code, s.char_from, s.char_to, '
+            'coalesce(s.updated_at, s.client_updated_at) '
             'AS at, NULL AS deleted_at FROM bible_marks s '
             'WHERE NOT EXISTS (SELECT 1 FROM local_bible_marks l '
             'WHERE l.id = s.id) '
@@ -98,7 +128,8 @@ class BibleMarksStore {
     return _db
         .customSelect(
           'SELECT * FROM (SELECT id, kind, book, chapter, verse_from, '
-          'verse_to, color, client_updated_at AS at, deleted_at '
+          'verse_to, color, version_code, char_from, char_to, '
+          'client_updated_at AS at, deleted_at '
           'FROM local_bible_marks $mirror) '
           '${where.isEmpty ? 'WHERE' : '${where}AND'} deleted_at IS NULL '
           'ORDER BY at DESC, id DESC',
@@ -122,6 +153,9 @@ class BibleMarksStore {
                   verseFrom: r.readNullable<int>('verse_from'),
                   verseTo: r.readNullable<int>('verse_to'),
                   color: r.readNullable<String>('color'),
+                  versionCode: r.readNullable<String>('version_code'),
+                  charFrom: r.readNullable<int>('char_from'),
+                  charTo: r.readNullable<int>('char_to'),
                   updatedAt: DateTime.fromMillisecondsSinceEpoch(
                     (r.readNullable<int>('at') ?? 0) * 1000,
                     isUtc: true,
@@ -169,23 +203,58 @@ class BibleMarksStore {
 
   /// Surligne [link] en [color] ; `null` efface. Les surlignages qui touchent
   /// la sélection sont retirés d'abord : un verset n'a qu'une couleur.
+  ///
+  /// **Au mot** (#252) : [charFrom] comprise, [charTo] **exclue**, dans le
+  /// texte du seul verset `link.from`. Un décalage **nomme toujours** sa
+  /// traduction [versionCode] — sans quoi le serveur refuse l'envoi (422
+  /// `E_BIBLE_PAYLOAD_INVALID`) et la marque paraîtrait sur des mots qui ne
+  /// sont pas les siens. Sans décalage, [versionCode] n'est pas posé : la
+  /// marque au verset suit toutes les traductions, comme avant.
   Future<void> highlight({
     required bool member,
     required BibleLink link,
     String? color,
+    String? versionCode,
+    int? charFrom,
+    int? charTo,
   }) async {
     assert(color == null || bibleHighlightColors.containsKey(color));
+    // ⚠️ `charFrom == 0` est légitime : on compare à `null`, on ne teste
+    // jamais la vérité de ces deux champs.
+    assert(
+      (charFrom == null) == (charTo == null),
+      'les deux bornes du mot vont ensemble',
+    );
+    assert(charFrom == null || charTo! > charFrom, 'charTo est exclue');
+    assert(charFrom == null || versionCode != null, 'le mot nomme sa version');
     final from = link.from ?? 1;
     final to = link.to ?? from;
     for (final m in await _chapter(member, link.book, link.chapter)) {
-      if (m.kind == BibleMarkKind.highlight && m.overlaps(from, to)) {
+      if (m.kind == BibleMarkKind.highlight &&
+          m.overlaps(from, to, charFrom: charFrom, charTo: charTo)) {
         await remove(member: member, mark: m);
       }
     }
-    if (color != null) await _add(BibleMarkKind.highlight, link, color: color);
+    if (color != null) {
+      await _add(
+        BibleMarkKind.highlight,
+        link,
+        color: color,
+        versionCode: versionCode,
+        charFrom: charFrom,
+        charTo: charTo,
+      );
+    }
   }
 
-  Future<void> _add(BibleMarkKind kind, BibleLink link, {String? color}) {
+  Future<void> _add(
+    BibleMarkKind kind,
+    BibleLink link, {
+    String? color,
+    String? versionCode,
+    int? charFrom,
+    int? charTo,
+  }) {
     final now = _now().toUtc();
     return _db.into(_db.localBibleMarks).insert(
           LocalBibleMarksCompanion.insert(
@@ -196,6 +265,11 @@ class BibleMarksStore {
             verseFrom: Value(link.from),
             verseTo: Value(link.from == null ? null : (link.to ?? link.from)),
             color: Value(color),
+            // La traduction ne s'inscrit **qu'avec** un décalage : une marque
+            // au verset sans elle reste valable partout, et c'est le contrat.
+            versionCode: Value(charFrom == null ? null : versionCode),
+            charFrom: Value(charFrom),
+            charTo: Value(charTo),
             clientCreatedAt: now,
             clientUpdatedAt: now,
           ),
@@ -219,6 +293,9 @@ class BibleMarksStore {
             verseFrom: Value(mark.verseFrom),
             verseTo: Value(mark.verseTo),
             color: Value(mark.color),
+            versionCode: Value(mark.versionCode),
+            charFrom: Value(mark.charFrom),
+            charTo: Value(mark.charTo),
             clientCreatedAt: now,
             clientUpdatedAt: now,
             deletedAt: Value(now),

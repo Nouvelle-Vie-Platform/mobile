@@ -336,8 +336,15 @@ class AppDatabase extends _$AppDatabase {
   /// relevé » : le canon figé sert de repli, donc la Bible factice et les
   /// versions déjà installées se lisent exactement comme avant. Voir
   /// [kVersificationSchemaVersion].
+  ///
+  /// **v32** (#252, server-portal#620) — **le surlignage de quelques mots** :
+  /// `version_code`, `char_from` et `char_to`, trois colonnes nullables, sur
+  /// le miroir `bible_marks` **et** sur `local_bible_marks`. Aucune ligne
+  /// n'est réécrite : nulles partout veut dire « marque au verset, valable
+  /// dans toutes les traductions », ce que sont toutes les marques déjà
+  /// posées. Voir [kWordMarkSchemaVersion].
   @override
-  int get schemaVersion => kVersificationSchemaVersion;
+  int get schemaVersion => kWordMarkSchemaVersion;
 
   /// **Le palier de la tranche M2** (#141) : v25, après M8 (v22), M3 (v23) et
   /// M5 (v24).
@@ -368,6 +375,27 @@ class AppDatabase extends _$AppDatabase {
   /// **Le palier de la versification par version** (mobile#240) : v31, après
   /// le magasin des médias (v30). Une colonne, et rien d'autre.
   static const int kVersificationSchemaVersion = 31;
+
+  /// **Le palier du surlignage au mot** (mobile#252) : v32, après la
+  /// versification (v31). Trois colonnes nullables sur chacune des deux
+  /// tables de marques, et rien d'autre.
+  static const int kWordMarkSchemaVersion = 32;
+
+  /// Les trois champs du mot (#252), ajoutés ensemble au palier v32 — et
+  /// retirés ensemble d'une table **créée** pour une version antérieure
+  /// (migrations de test seulement, comme [_announcementMediaColumns]).
+  List<GeneratedColumn<Object>> get _markWordColumns => [
+        bibleMarks.versionCode,
+        bibleMarks.charFrom,
+        bibleMarks.charTo,
+      ];
+
+  /// Les mêmes sur la table locale.
+  List<GeneratedColumn<Object>> get _localMarkWordColumns => [
+        localBibleMarks.versionCode,
+        localBibleMarks.charFrom,
+        localBibleMarks.charTo,
+      ];
 
   /// Les sept colonnes du média d'un message (M4), ajoutées ensemble au palier
   /// v26 — et retirées ensemble d'une table créée pour une version antérieure
@@ -1059,6 +1087,21 @@ class AppDatabase extends _$AppDatabase {
             } else {
               await customStatement(_bibleInstalledVersionsV29);
             }
+            // Même règle pour les deux tables de marques, qui gagnent au
+            // palier v32 les trois champs du mot : `createTable` vient d'en
+            // donner la forme **courante**, et le vérificateur refuse ces
+            // colonnes sur une cible antérieure. Les retirer plutôt que
+            // recopier deux DDL (le choix du palier v2 → v3 pour le média
+            // d'une annonce) : une table qui vient de naître est vide, il n'y
+            // a rien à y perdre.
+            if (to < kWordMarkSchemaVersion) {
+              for (final column in _markWordColumns) {
+                await m.dropColumn(bibleMarks, column.name);
+              }
+              for (final column in _localMarkWordColumns) {
+                await m.dropColumn(localBibleMarks, column.name);
+              }
+            }
             await m.create(bibleFts);
           }
           // v29 → v30 — le magasin durable des médias de la messagerie
@@ -1092,6 +1135,29 @@ class AppDatabase extends _$AppDatabase {
               bibleInstalledVersions,
               bibleInstalledVersions.versification,
             );
+          }
+          // v31 → v32 — **le surlignage de quelques mots** (#252,
+          // server-portal#620) : `version_code`, `char_from`, `char_to`, sur
+          // le miroir `bible_marks` et sur `local_bible_marks`. Six
+          // `addColumn` nullables, aucune ligne réécrite, aucun curseur en
+          // jeu — **nulles partout veut dire « ce qu'on faisait avant »** :
+          // une marque au verset, valable dans toutes les traductions. C'est
+          // ce que portent toutes les marques déjà posées, et c'est pourquoi
+          // le miroir n'a pas besoin d'être retiré pour être re-tiré.
+          //
+          // Les deux gardes ont les raisons du palier v31 : au-dessous de la
+          // v29 les tables sont **créées** dans leur forme courante, colonnes
+          // comprises (un `addColumn` y doublonnerait) ; et le vérificateur
+          // signale une colonne surnuméraire sur un palier intermédiaire.
+          if (from >= kBibleSchemaVersion &&
+              from < kWordMarkSchemaVersion &&
+              to >= kWordMarkSchemaVersion) {
+            for (final column in _markWordColumns) {
+              await m.addColumn(bibleMarks, column);
+            }
+            for (final column in _localMarkWordColumns) {
+              await m.addColumn(localBibleMarks, column);
+            }
           }
         },
         beforeOpen: (details) async {

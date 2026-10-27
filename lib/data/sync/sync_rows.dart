@@ -1424,6 +1424,12 @@ BibleMarksCompanion bibleMarkRowOf(Map<String, Object?> item) {
     verseFrom: Value(_optionalInt(item, 'verseFrom')),
     verseTo: Value(_optionalInt(item, 'verseTo')),
     color: Value(_optionalText(item, 'color')),
+    // Les trois champs du mot (#252, server-portal#620). Nuls = une marque au
+    // verset valable dans toutes les traductions — ce que sert un serveur en
+    // retard d'une version, et ce que portent les marques déjà posées.
+    versionCode: Value(_optionalText(item, 'versionCode')),
+    charFrom: Value(_optionalInt(item, 'charFrom')),
+    charTo: Value(_optionalInt(item, 'charTo')),
     clientCreatedAt: Value(_instant(item, 'clientCreatedAt')),
     clientUpdatedAt: Value(_instant(item, 'clientUpdatedAt')),
     createdAt: Value(_instant(item, 'createdAt')),
