@@ -2,6 +2,9 @@
 /// versions factices, installées d'office, **fusionnées** avec la collection
 /// `bible_versions` (S5), installées ou non selon `bible_installed_versions`.
 ///
+/// Depuis #249, les factices ne paraissent que **tant qu'aucune vraie version
+/// n'est proposée** — voir [MergedBibleCatalog._merge].
+///
 /// Depuis C4 (server-portal#605), « Télécharger » descend la **vraie**
 /// archive de la version (`bible_archive.dart`) : M4 ne simulait une
 /// progression que parce que le portail n'en servait aucune. Une version
@@ -108,9 +111,26 @@ final class MergedBibleCatalog implements BibleCatalog {
         final byOrder = a.sortOrder.compareTo(b.sortOrder);
         return byOrder != 0 ? byOrder : a.id.compareTo(b.id);
       });
+    // **Les exemples s'effacent dès qu'une vraie version est proposée**
+    // (#249, décision du 26/10/2026) : constaté sur l'émulateur, « Bible
+    // Bovet Bonnet » installée et lisible, et les deux exemples toujours
+    // affichés à côté d'elle.
+    //
+    // « Proposée » = servie par la synchro **et** porteuse d'une archive.
+    // Pas « publiée » : une version déposée mais pas encore convertie n'a pas
+    // d'`archive_url`, n'est utilisable d'aucune façon, et laisser les
+    // exemples disparaître pour elle priverait le fidèle de tout texte sans
+    // rien lui donner en échange. Un code factice servi est exclu du
+    // catalogue quelques lignes plus bas — il ne compte donc pas ici non
+    // plus, sinon les exemples s'effaceraient au profit d'une ligne que
+    // personne ne verrait.
+    final proposed = served.any(
+      (r) => r.archiveUrl != null && !builtIn.contains(r.code),
+    );
     return [
-      for (final v in kPlaceholderVersions)
-        BibleCatalogEntry(version: v, builtIn: true),
+      if (!proposed)
+        for (final v in kPlaceholderVersions)
+          BibleCatalogEntry(version: v, builtIn: true),
       for (final r in served)
         if (!builtIn.contains(r.code))
           BibleCatalogEntry(
@@ -132,8 +152,25 @@ final class MergedBibleCatalog implements BibleCatalog {
   Future<List<BibleVersion>> versions() async =>
       [for (final e in entries) e.version];
 
+  /// **La version ouverte par défaut** (`ActiveBibleVersion.build`) : la
+  /// première **installée** du catalogue.
+  ///
+  /// C'était le code du premier exemple, qui n'existe plus dans le catalogue
+  /// dès qu'une vraie version est proposée (#249). « La première ligne » n'y
+  /// suffisait pas : le portail sert ses versions avant qu'aucune ne soit
+  /// descendue, et le lecteur se serait ouvert sur l'invitation à télécharger
+  /// alors qu'une autre version était déjà lisible. Catalogue vide — avant la
+  /// première synchro, aucune ligne du tout : le code du premier exemple, ce
+  /// que rendait M4.
   @override
-  String get defaultVersionCode => kPlaceholderVersions.first.code;
+  String get defaultVersionCode {
+    for (final e in entries) {
+      if (e.version.installed) return e.version.code;
+    }
+    return entries.isEmpty
+        ? kPlaceholderVersions.first.code
+        : entries.first.version.code;
+  }
 
   /// Le texte d'une version installée : **celui de son archive** si elle en a
   /// une sur le disque (C4), sinon la Bible factice.

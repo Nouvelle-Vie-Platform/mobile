@@ -209,8 +209,7 @@ void main() {
   });
 
   group('Catalogue fusionné', () {
-    test('les deux factices d\'abord, puis S5 dans l\'ordre du portail',
-        () async {
+    test('les versions de S5 dans l\'ordre du portail', () async {
       final catalog = MergedBibleCatalog(
         remote: [
           _served(2, 'EWE', sortOrder: 2),
@@ -221,11 +220,11 @@ void main() {
         installed: [_installed('LSG')],
       );
       final versions = await catalog.versions();
-      expect(versions.map((v) => v.code), ['EXA', 'EXB', 'ZIP', 'LSG', 'EWE']);
-      expect(
-          versions.map((v) => v.installed), [true, true, false, true, false]);
+      // ZIP a une archive : une vraie version est proposée, donc les deux
+      // exemples ne sont plus du catalogue (#249).
+      expect(versions.map((v) => v.code), ['ZIP', 'LSG', 'EWE']);
+      expect(versions.map((v) => v.installed), [false, true, false]);
       final entries = {for (final e in catalog.entries) e.version.code: e};
-      expect(entries['EXA']!.builtIn, isTrue);
       // **Téléchargeable = une archive existe.** ZIP en a une, EWE non.
       expect(entries['ZIP']!.downloadable, isTrue);
       expect(entries['EWE']!.downloadable, isFalse);
@@ -233,10 +232,73 @@ void main() {
       expect(catalog.sourceFor('LSG'), isNotNull);
       expect(await catalog.sourceFor('LSG')!.chapter('John', 3), isNotEmpty);
       expect(catalog.sourceFor('EWE'), isNull);
-      expect(catalog.sourceFor('EXB'), isA<PlaceholderBibleSource>());
       // Même contenu, même catalogue : le chapitre ouvert ne se recharge pas.
       expect(MergedBibleCatalog(), MergedBibleCatalog());
       expect(catalog, isNot(MergedBibleCatalog()));
+    });
+
+    test('sans aucune version proposée, les deux exemples restent', () async {
+      // L'installation neuve, avant la première synchro : sans les exemples,
+      // le fidèle n'aurait **rien** à lire du tout.
+      final neuf = MergedBibleCatalog();
+      expect((await neuf.versions()).map((v) => v.code), ['EXA', 'EXB']);
+      expect(neuf.entries.every((e) => e.builtIn), isTrue);
+      expect(neuf.sourceFor('EXB'), isA<PlaceholderBibleSource>());
+      expect(neuf.defaultVersionCode, 'EXA');
+    });
+
+    test('« proposée » veut dire téléchargeable, et non publiée', () async {
+      // Déposée mais pas encore convertie : pas d'`archive_url`, donc
+      // utilisable d'aucune façon. Effacer les exemples pour elle ne
+      // donnerait aucun texte en échange.
+      final deposee = MergedBibleCatalog(remote: [_served(1, 'LSG')]);
+      expect(
+        (await deposee.versions()).map((v) => v.code),
+        ['EXA', 'EXB', 'LSG'],
+      );
+
+      // Convertie : l'archive est là, les exemples s'en vont — même si rien
+      // n'est encore descendu sur l'appareil.
+      final proposee = MergedBibleCatalog(
+        remote: [_served(1, 'LSG', archiveUrl: 'https://x/lsg.zip')],
+      );
+      expect((await proposee.versions()).map((v) => v.code), ['LSG']);
+      expect(proposee.sourceFor('EXA'), isNull);
+
+      // Un code factice servi est exclu du catalogue : il ne peut donc pas
+      // faire disparaître les exemples au profit d'une ligne invisible.
+      final doublon = MergedBibleCatalog(
+        remote: [_served(1, 'EXA', archiveUrl: 'https://x/exa.zip')],
+      );
+      expect((await doublon.versions()).map((v) => v.code), ['EXA', 'EXB']);
+    });
+
+    test('la version par défaut : la première installée, jamais un exemple',
+        () {
+      // Deux vraies versions proposées, une seule descendue : le défaut doit
+      // être celle qu'on peut lire, et non la première ligne du catalogue —
+      // sinon le lecteur s'ouvre sur l'invitation à télécharger alors qu'un
+      // texte est là.
+      final catalog = MergedBibleCatalog(
+        remote: [
+          _served(1, 'ZIP', sortOrder: 1, archiveUrl: 'https://x/zip'),
+          _served(2, 'LSG', sortOrder: 2, archiveUrl: 'https://x/lsg'),
+        ],
+        installed: [_installed('LSG')],
+      );
+      expect(catalog.entries.first.version.code, 'ZIP');
+      expect(catalog.defaultVersionCode, 'LSG');
+      expect(catalog.sourceFor(catalog.defaultVersionCode), isNotNull);
+
+      // Rien d'installé : le défaut est la première ligne, et elle n'a pas de
+      // texte — c'est là que le lecteur invite à télécharger.
+      final rien = MergedBibleCatalog(
+        remote: [
+          _served(1, 'ZIP', sortOrder: 1, archiveUrl: 'https://x/zip'),
+        ],
+      );
+      expect(rien.defaultVersionCode, 'ZIP');
+      expect(rien.sourceFor('ZIP'), isNull);
     });
 
     test(

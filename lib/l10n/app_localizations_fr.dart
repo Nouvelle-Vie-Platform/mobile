@@ -2691,6 +2691,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ce chapitre n\'est pas disponible dans cette version.';
 
   @override
+  String get bibleVersionNotInstalled =>
+      'Cette version n\'est pas encore téléchargée sur cet appareil.';
+
+  @override
   String get bibleSoonTitle => 'Bientôt ici';
 
   @override

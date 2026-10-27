@@ -1558,6 +1558,8 @@
   "@bibleVersionTooltip": {"description": "Lecteur : info-bulle du sélecteur de version"},
   "bibleChapterUnavailable": "Ce chapitre n'est pas disponible dans cette version.",
   "@bibleChapterUnavailable": {"description": "Lecteur : chapitre sans texte"},
+  "bibleVersionNotInstalled": "Cette version n'est pas encore téléchargée sur cet appareil.",
+  "@bibleVersionNotInstalled": {"description": "Lecteur : la version active n'a aucun texte sur l'appareil, il faut la télécharger (#249)"},
   "bibleSoonTitle": "Bientôt ici",
   "@bibleSoonTitle": {"description": "Module Bible : titre d'un onglet pas encore rempli"},
   "bibleHomeSoon": "Verset du jour, passage du dimanche, plans de lecture et quiz arriveront ici.",

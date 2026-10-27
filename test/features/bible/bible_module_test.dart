@@ -10,6 +10,7 @@ library;
 
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -532,6 +533,53 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 200));
         await _settle(tester);
         expect(colorOf(16), isNull);
+      });
+    });
+
+    testWidgets(
+        'une version proposée mais pas descendue : le lecteur invite à la '
+        'télécharger au lieu d\'un chapitre vide', (tester) async {
+      await tester.runAsync(() async {
+        final container = guestContainer(extra: [_radioOff]);
+        // L'état que crée la règle de #249 : une vraie version **proposée**
+        // (servie et porteuse d'une archive) efface les exemples, et rien
+        // n'est encore installé. L'appli n'a donc aucun texte — c'est le
+        // moment que M4 passait en silence, avec un chapitre sans un verset.
+        final db = container.read(appDatabaseProvider);
+        await db.into(db.bibleVersions).insert(
+              BibleVersionsCompanion.insert(
+                id: const Value(1),
+                code: 'BOV',
+                name: 'Bible Bovet Bonnet',
+                archiveUrl: const Value('https://x/uploads/bible/BOV-ab.zip'),
+                publishedAt: Value(DateTime.utc(2026, 10)),
+              ),
+            );
+        final router = await pumpGuestApp(tester, container);
+        router.push('/bible/read/John/3');
+        await _settle(tester);
+
+        // La page courante, et non le `PageView` entier : ses voisines
+        // portent la même invitation.
+        final page = find.byKey(BibleReaderScreen.pageKey('John', 3));
+        Finder on(Finder matching) =>
+            find.descendant(of: page, matching: matching);
+        expect(
+          on(find.text(_fr.bibleVersionNotInstalled)),
+          findsOneWidget,
+        );
+        // « Pas disponible dans cette version » était vrai, inutile et sans
+        // issue : ce n'est plus ce qui est dit.
+        expect(on(find.text(_fr.bibleChapterUnavailable)), findsNothing);
+
+        // Et l'action mène au catalogue, où le bouton existe vraiment.
+        await tester.tap(on(find.byKey(BibleReaderScreen.downloadKey)));
+        await _settle(tester);
+        expect(router.state.matchedLocation, '/bible/personalize/offline');
+        expect(find.text(_fr.bibleM4VersionsTitle), findsOneWidget);
+        expect(find.text('Bible Bovet Bonnet'), findsOneWidget);
+        // Les exemples ne sont plus proposés à côté d'elle (#249).
+        expect(find.text("Version d'exemple A"), findsNothing);
       });
     });
   });

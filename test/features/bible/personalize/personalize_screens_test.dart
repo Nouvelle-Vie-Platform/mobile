@@ -208,8 +208,11 @@ void main() {
           bibleReadingStateProvider.overrideWith((ref) => Stream.value(null)),
         ],
       );
-      expect(find.byKey(BibleVersionsScreen.rowKey('EXA')), findsOneWidget);
-      expect(find.byKey(BibleVersionsScreen.removeKey('EXA')), findsNothing);
+      // Les deux exemples ne sont plus là : S21 porte une archive, donc une
+      // vraie version est proposée (#249). Ce que devient une ligne factice
+      // se vérifie désormais dans le test voisin, sur une version sans
+      // archive.
+      expect(find.byKey(BibleVersionsScreen.rowKey('EXA')), findsNothing);
       await tester.tap(find.byKey(BibleVersionsScreen.downloadKey('S21')));
       for (var i = 0; i < 20 && indexed.isEmpty; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -238,6 +241,10 @@ void main() {
     expect(find.byKey(BibleVersionsScreen.rowKey('EWE')), findsOneWidget);
     expect(find.byKey(BibleVersionsScreen.downloadKey('EWE')), findsNothing);
     expect(find.text(AppLocalizationsFr().bibleM4VersionSoon), findsOneWidget);
+    // Aucune vraie version proposée : les exemples tiennent la place, et
+    // aucun ne s'enlève.
+    expect(find.byKey(BibleVersionsScreen.rowKey('EXA')), findsOneWidget);
+    expect(find.byKey(BibleVersionsScreen.removeKey('EXA')), findsNothing);
   });
 
   testWidgets('Versions : une archive refusée le dit, et n\'installe rien',
