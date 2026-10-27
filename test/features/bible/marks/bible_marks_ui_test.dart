@@ -75,6 +75,16 @@ Color? _background(WidgetTester tester, int verse) {
       : tester.widget<MarkerHighlight>(marker).color;
 }
 
+/// **Ouvrir les actions**, c'est-à-dire appuyer sur le « + » (#252).
+///
+/// Deux temps : on choisit les versets, puis on demande les actions. Les tests
+/// qui veulent la pilule passent donc tous par ici — et c'est voulu : si
+/// quelqu'un recâblait le « + » sur l'extension, ils rougiraient tous d'un coup.
+Future<void> _ouvrirActions(WidgetTester tester) async {
+  await tester.tap(find.byKey(BibleReaderScreen.extendKey));
+  await _settle(tester);
+}
+
 Future<void> _tapVerse(WidgetTester tester, int verse) async {
   final f = find.byKey(BibleReaderScreen.verseKey(verse));
   if (f.hitTestable().evaluate().isEmpty) {
@@ -160,12 +170,19 @@ void main() {
 
       expect(find.byKey(BibleVerseMenu.menuKey), findsNothing);
       await _tapVerse(tester, 6);
+      // On choisit d'abord : le « + » paraît, la pilule non (#252).
+      expect(find.byKey(BibleReaderScreen.extendKey), findsOneWidget);
+      expect(find.byKey(BibleVerseMenu.menuKey), findsNothing);
+      await _ouvrirActions(tester);
       expect(find.byKey(BibleVerseMenu.menuKey), findsOneWidget);
+      // Et le « + » s'efface : les deux ne paraissent jamais ensemble.
+      expect(find.byKey(BibleReaderScreen.extendKey), findsNothing);
       for (final id in ['copy', 'favorite', 'note', 'share', 'bookmark']) {
         expect(find.byKey(Key('bible_action_$id')), findsOneWidget);
       }
       // Le menu se tient au-dessus : le verset 8 reste à portée.
       await _tapVerse(tester, 8);
+      await _ouvrirActions(tester);
 
       // Palette : vert sur 6-8. Depuis #250 les pastels sont repliés sous
       // la pastille multicolore — il faut l'ouvrir d'abord.
@@ -183,6 +200,7 @@ void main() {
 
       // Favori sur 7 seul.
       await _tapVerse(tester, 7);
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(const Key('bible_action_favorite')));
       await _settle(tester);
       expect(_marginIcon(7, Icons.favorite), findsOneWidget);
@@ -190,6 +208,7 @@ void main() {
 
       // Effacer : le surlignage qui touche le verset 6 part en entier.
       await _tapVerse(tester, 6);
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(BibleVerseMenu.clearKey));
       await _settle(tester);
       expect(_background(tester, 7), isNull);
@@ -200,12 +219,21 @@ void main() {
     });
   });
 
-  // #250 : l'appui long puis glisser étendait déjà la plage, mais rien ne
-  // l'annonçait. Le « + » des références rend la fonction visible ; ce test
-  // tient le geste, pas son dessin.
+  /*
+   * #252 — **le « + » ouvre les actions, il n'étend rien.**
+   *
+   * Il étendait la plage d'un verset (#250) ; le propriétaire du produit a corrigé
+   * le modèle le 27/10/2026 : on choisit en touchant les versets, puis on appuie
+   * sur le « + » pour agir.
+   *
+   * Ce test tient les deux moitiés de la règle, et la seconde est la plus
+   * exposée : `_extendSelection` est **toujours dans le fichier**, débranchée.
+   * Rien n'empêcherait de la recâbler sur le « + » en croyant réparer quelque
+   * chose — sauf ceci.
+   */
   testWidgets(
-      'le « + » étend la sélection d\'un verset, et le signet de la pilule '
-      'est celui du chapitre', (tester) async {
+      'le « + » ouvre les actions sans étendre ; l\'extension se fait en '
+      'touchant les versets', (tester) async {
     await tester.runAsync(() async {
       final container = guestContainer(extra: [_radioOff]);
       final router = await pumpGuestApp(tester, container);
@@ -216,11 +244,13 @@ void main() {
       await _tapVerse(tester, 6);
       expect(find.byKey(BibleReaderScreen.extendKey), findsOneWidget);
 
-      // Deux appuis : la plage passe de 6 seul à 6-8.
-      await tester.tap(find.byKey(BibleReaderScreen.extendKey));
-      await _settle(tester);
-      await tester.tap(find.byKey(BibleReaderScreen.extendKey));
-      await _settle(tester);
+      // L'extension se fait en TOUCHANT les versets : 6 seul, puis 6-8.
+      await _tapVerse(tester, 8);
+      expect(find.byKey(BibleReaderScreen.extendKey), findsOneWidget);
+      // Et toujours pas de pilule : on n'a pas encore demandé les actions.
+      expect(find.byKey(BibleVerseMenu.menuKey), findsNothing);
+
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(BibleVerseMenu.paletteKey));
       await _settle(tester);
       await tester.tap(find.byKey(BibleVerseMenu.colorKey('blue')));
@@ -234,6 +264,7 @@ void main() {
       // Le signet de la pilule est **chapitré**, comme le nôtre l'a toujours
       // été : la ligne n'a pas de verset, et l'icône de l'en-tête s'allume.
       await _tapVerse(tester, 6);
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(const Key('bible_action_bookmark')));
       await _settle(tester);
       final bookmark =
@@ -383,6 +414,7 @@ void main() {
       await _settle(tester);
       await tester.tap(find.byKey(BibleReaderScreen.bookmarkKey));
       await _tapVerse(tester, 1);
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(const Key('bible_action_favorite')));
       await _settle(tester);
 
@@ -432,6 +464,7 @@ void main() {
       await _settle(tester);
 
       await _tapVerse(tester, 16);
+      await _ouvrirActions(tester);
       await tester.tap(find.byKey(const Key('bible_action_note')));
       await _settle(tester);
       // La connexion d'abord.

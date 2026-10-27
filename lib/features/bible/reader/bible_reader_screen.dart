@@ -143,14 +143,33 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   /// et d'autre de lui, et non depuis le dernier mot touché.
   ({int verse, int from, int to})? _wordAnchor;
 
-  /// Le menu flottant se pose **au-dessus** du premier verset choisi — les
-  /// versets suivants restent à portée du doigt pour étendre la plage —, et
-  /// **sous** le dernier quand la place manque en haut de l'écran.
+  /// Le menu flottant se pose **toujours au-dessus** du premier verset choisi —
+  /// les versets suivants restent à portée du doigt pour étendre la plage.
+  ///
+  /// Il basculait auparavant **sous** la sélection quand la place manquait en
+  /// haut. Constaté le 27/10/2026 : sur un verset haut de six lignes, la pilule
+  /// passait sous lui et recouvrait le verset suivant — elle changeait donc de
+  /// côté selon la longueur du verset, sans que rien ne l'annonce. Quand la
+  /// place manque, elle est désormais **épinglée sous la barre** plutôt que
+  /// renvoyée en bas : toujours au même endroit, jamais hors de l'écran.
   final _aboveLink = LayerLink();
   final _belowLink = LayerLink();
   final _firstKey = GlobalKey();
   final _stackKey = GlobalKey();
-  bool _menuBelow = false;
+  bool _menuEpingle = false;
+
+  /// **La pilule et le « + » ne paraissent jamais ensemble** (#252).
+  ///
+  /// Deux temps, et c'est ce que montrent les références : on **choisit**, puis
+  /// on **agit**.
+  ///
+  /// 1. Un appui sur un verset le sélectionne et fait paraître le « + » au
+  ///    milieu de la sélection. D'autres appuis étendent la plage.
+  /// 2. Un appui sur le « + » ouvre la pilule et le « + » s'efface.
+  ///
+  /// Le « + » n'étend donc pas la sélection — c'est l'appui sur les versets qui
+  /// le fait. Il dit « j'ai fini de choisir, montre-moi les actions ».
+  bool _actionsOuvertes = false;
 
   /// La hauteur à réserver au-dessus du premier verset pour le menu. La
   /// pilule de #250 tient sur une rangée : il lui en faut bien moins.
@@ -162,8 +181,8 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       final stack = _stackKey.currentContext?.findRenderObject() as RenderBox?;
       if (!mounted || verse == null || stack == null) return;
       final top = verse.localToGlobal(Offset.zero, ancestor: stack).dy;
-      final below = top < _menuRoom;
-      if (below != _menuBelow) setState(() => _menuBelow = below);
+      final epingle = top < _menuRoom;
+      if (epingle != _menuEpingle) setState(() => _menuEpingle = epingle);
     });
   }
 
@@ -254,6 +273,8 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       // Un toucher rouvre la sélection **au verset** : les bornes du mot d'un
       // appui long précédent ne survivent pas à un geste d'une autre nature.
       final wasWord = _charFrom != null;
+      // Toute sélection touchée referme les actions : on revient au choix.
+      _actionsOuvertes = false;
       _charFrom = _charTo = null;
       _wordAnchor = null;
       final (from, to) = (_from, wasWord ? null : _to);
@@ -275,10 +296,22 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     _placeMenu();
   }
 
-  /// **Le « + » de la sélection** (#250) : la plage gagne le verset suivant.
-  /// L'appui long puis glisser faisait déjà cela, mais rien ne l'annonçait —
-  /// une fonction que personne ne trouvait. Le bouton la rend visible, et le
-  /// glissement continue de marcher.
+  /// **Le « + » de la sélection** (#252) : il **ouvre les actions**.
+  ///
+  /// Il étendait la plage d'un verset (#250). Le propriétaire du produit a
+  /// corrigé le modèle le 27/10/2026 : on choisit d'abord — en touchant les
+  /// versets, autant qu'on veut —, puis on appuie sur le « + » pour agir. Le
+  /// « + » s'efface alors, et la pilule prend sa place.
+  void _openActions() {
+    if (_from == null) return;
+    setState(() => _actionsOuvertes = true);
+    _placeMenu();
+  }
+
+  /// Étend la plage d'un verset. N'est plus câblée au « + » (voir ci-dessus) :
+  /// l'extension se fait en touchant les versets. Gardée parce qu'elle décrit
+  /// la seule règle de bord qui vaille — la sélection ne traverse pas une page.
+  // ignore: unused_element
   void _extendSelection() {
     final to = _to;
     if (to == null) return;
@@ -335,6 +368,11 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     final anchor = _wordAnchor;
     if (anchor == null || anchor.verse != word.verse) return;
     setState(() {
+      // **Le mot ouvre les actions tout de suite**, contrairement au verset qui
+      // demande un appui sur le « + ». Un glissement a une fin nette — le doigt
+      // se lève — là où une suite de touchers n'en a aucune : c'est pour celle-ci
+      // que le « + » existe, pour dire « j'ai fini de choisir ».
+      _actionsOuvertes = true;
       _from = _to = word.verse;
       _charFrom = word.from < anchor.from ? word.from : anchor.from;
       _charTo = word.to > anchor.to ? word.to : anchor.to;
@@ -534,19 +572,14 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
               );
             },
           ),
-          if (from != null && actions.isNotEmpty)
+          if (from != null && actions.isNotEmpty && _actionsOuvertes)
             Positioned(
               left: 0,
               right: 0,
               top: 0,
-              child: CompositedTransformFollower(
-                link: _menuBelow ? _belowLink : _aboveLink,
-                showWhenUnlinked: false,
-                targetAnchor:
-                    _menuBelow ? Alignment.bottomCenter : Alignment.topCenter,
-                followerAnchor:
-                    _menuBelow ? Alignment.topCenter : Alignment.bottomCenter,
-                offset: Offset(0, _menuBelow ? AppSpacing.xs : -AppSpacing.xs),
+              child: _MenuPlace(
+                epingle: _menuEpingle,
+                link: _aboveLink,
                 child: Center(
                   child: Padding(
                     padding: AppSpacing.screenPadding,
@@ -568,8 +601,9 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
               ),
             ),
           // Le « + » des références : au centre du dernier verset choisi,
-          // là où le doigt descend pour en prendre un de plus.
-          if (from != null && actions.isNotEmpty)
+          // là où le doigt descend pour en prendre un de plus. **Jamais en même
+          // temps que la pilule** (#252) : les deux encombraient le verset.
+          if (from != null && actions.isNotEmpty && !_actionsOuvertes)
             Positioned(
               left: 0,
               right: 0,
@@ -580,7 +614,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                 targetAnchor: Alignment.center,
                 followerAnchor: Alignment.center,
                 child: Center(
-                  child: _ExtendButton(onTap: _extendSelection),
+                  child: _ExtendButton(onTap: _openActions),
                 ),
               ),
             ),
@@ -591,6 +625,41 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
 }
 
 /// Une page : le texte d'un chapitre.
+/// **Où se pose la pilule de sélection** (#250, corrigé #252).
+///
+/// Deux cas, et un seul côté : au-dessus du premier verset choisi quand la place
+/// existe, **épinglée sous la barre** sinon. Jamais en dessous — une pilule qui
+/// change de côté selon la hauteur du verset se cherche à chaque fois.
+class _MenuPlace extends StatelessWidget {
+  const _MenuPlace({
+    required this.epingle,
+    required this.link,
+    required this.child,
+  });
+
+  final bool epingle;
+  final LayerLink link;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (epingle) {
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.xs),
+        child: child,
+      );
+    }
+    return CompositedTransformFollower(
+      link: link,
+      showWhenUnlinked: false,
+      targetAnchor: Alignment.topCenter,
+      followerAnchor: Alignment.bottomCenter,
+      offset: const Offset(0, -AppSpacing.xs),
+      child: child,
+    );
+  }
+}
+
 class _ChapterPage extends ConsumerStatefulWidget {
   const _ChapterPage({
     super.key,
