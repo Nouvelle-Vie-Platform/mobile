@@ -14,7 +14,8 @@ library;
 import '../../notes_editor/links/note_link.dart';
 import 'versification.dart';
 
-export '../../notes_editor/links/note_link.dart' show BibleLink, osisBooksFr;
+export '../../notes_editor/links/note_link.dart'
+    show BibleLink, osisBooksFr, osisBooksFor;
 export 'versification.dart';
 
 enum Testament { old, newT }
@@ -46,6 +47,14 @@ final class BibleBook {
 
   /// Rang dans le canon, 0 à 65.
   final int index;
+
+  /// **Le nom du livre dans la langue demandée**, le français à défaut (#254).
+  ///
+  /// [name] reste le nom français : il sert de clé d'indexation à la recherche et à
+  /// l'analyse des références, qui doivent continuer de reconnaître « Jean » quelle que
+  /// soit la langue de l'écran. **Seul l'affichage passe par ici.**
+  String nameIn(String languageCode) =>
+      osisBooksFor(languageCode)[osis] ?? name;
 
   int get chapterCount => verseCounts.length;
 
