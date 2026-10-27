@@ -81,6 +81,14 @@ final class BibleMoreEntry {
 /// **Une action du menu d'un verset** (M2 : copier, favori, surligner, note,
 /// partager ; M4 : écouter…). [run] reçoit la sélection — un livre, un
 /// chapitre, une plage contiguë `from..to` — et la version affichée.
+///
+/// Il reçoit aussi, facultativement, **les mots choisis** (#257) : `charFrom`
+/// comprise, `charTo` **exclue**, décalages dans le texte du verset
+/// `selection.from` — une sélection de mots ne franchit jamais un verset.
+/// Nulles = la sélection porte sur des versets entiers. Les actions qui
+/// emportent du texte (copier, partager, note) les mettent en exergue ; les
+/// autres les ignorent, et le déclarent pour rester assignables à ce type.
+/// ⚠️ `charFrom == 0` est légitime : comparer à `null`.
 final class BibleVerseAction {
   const BibleVerseAction({
     required this.id,
@@ -98,8 +106,10 @@ final class BibleVerseAction {
     BuildContext context,
     WidgetRef ref,
     BibleLink selection,
-    String versionCode,
-  ) run;
+    String versionCode, {
+    int? charFrom,
+    int? charTo,
+  }) run;
 }
 
 /// **Une puce de filtre de l'onglet Favori** (M2 : Tous, Versets, Chapitres,

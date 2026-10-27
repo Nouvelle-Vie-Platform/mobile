@@ -36,7 +36,10 @@ final BibleSlots marksSlots = BibleSlots(
       order: 20,
       icon: Icons.bookmark_border,
       label: (c) => c.l10n.bibleM2Bookmark,
-      run: (_, ref, link, __) => toggleChapterBookmark(ref, link),
+      // Le signet ne porte pas de texte : les mots choisis (#257) ne le
+      // concernent pas, il les déclare pour rester assignable et les ignore.
+      run: (_, ref, link, __, {charFrom, charTo}) =>
+          toggleChapterBookmark(ref, link),
     ),
     BibleVerseAction(
       id: 'share',
@@ -57,7 +60,7 @@ final BibleSlots marksSlots = BibleSlots(
       order: 50,
       icon: Icons.favorite_border,
       label: (c) => c.l10n.bibleM2Favorite,
-      run: (_, ref, link, __) => toggleFavorite(ref, link),
+      run: (_, ref, link, __, {charFrom, charTo}) => toggleFavorite(ref, link),
     ),
   ],
   favoriteFilters: [

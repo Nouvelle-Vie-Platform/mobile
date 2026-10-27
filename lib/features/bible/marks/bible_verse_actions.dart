@@ -40,25 +40,69 @@ Future<String> bibleVerseText(
   ].join(' ');
 }
 
+/// **Les mots choisis, découpés du texte** (#257) : avant, en exergue, après.
+///
+/// [charFrom] comprise, [charTo] **exclue**. Bornes nulles, vides ou hors du
+/// texte — une traduction a changé sous les décalages — : tout revient en
+/// « avant » et rien n'est mis en exergue, le verset reste lisible.
+/// ⚠️ `charFrom == 0` est légitime, c'est le premier caractère du verset :
+/// comparer à `null`, **jamais** à la vérité d'un entier.
+(String before, String chosen, String after) bibleEmphasis(
+  String text,
+  int? charFrom,
+  int? charTo,
+) {
+  if (charFrom == null || charTo == null) return (text, '', '');
+  final from = charFrom.clamp(0, text.length);
+  final to = charTo.clamp(from, text.length);
+  if (from == to) return (text, '', '');
+  return (
+    text.substring(0, from),
+    text.substring(from, to),
+    text.substring(to),
+  );
+}
+
 /// « texte » — Jean 3:16 (EXA) : ce que Copier et Partager emportent.
+///
+/// Le verset **entier** — tronquer la citation la rendrait illisible, et la
+/// référence annonce un verset — mais les mots choisis (#257) encadrés
+/// d'astérisques : le verset est déjà entre guillemets français, l'astérisque
+/// n'y collisionne avec rien et survit à tout presse-papiers.
 Future<String> bibleQuotation(
   WidgetRef ref,
   BibleLink link,
-  String version,
-) async =>
-    '« ${await bibleVerseText(ref.read(bibleCatalogProvider), link, version)} »\n'
-    '— ${link.labelFr} ($version)';
+  String version, {
+  int? charFrom,
+  int? charTo,
+}) async {
+  final text =
+      await bibleVerseText(ref.read(bibleCatalogProvider), link, version);
+  final (before, chosen, after) = bibleEmphasis(text, charFrom, charTo);
+  final quoted = chosen.isEmpty ? before : '$before*$chosen*$after';
+  return '« $quoted »\n— ${link.labelFr} ($version)';
+}
 
 Future<void> copyVerses(
   BuildContext context,
   WidgetRef ref,
   BibleLink link,
-  String version,
-) async {
+  String version, {
+  int? charFrom,
+  int? charTo,
+}) async {
   final messenger = ScaffoldMessenger.maybeOf(context);
   final copied = context.l10n.bibleM2Copied;
   await Clipboard.setData(
-    ClipboardData(text: await bibleQuotation(ref, link, version)),
+    ClipboardData(
+      text: await bibleQuotation(
+        ref,
+        link,
+        version,
+        charFrom: charFrom,
+        charTo: charTo,
+      ),
+    ),
   );
   messenger?.showSnackBar(SnackBar(content: Text(copied)));
 }
@@ -67,13 +111,21 @@ Future<void> shareVerses(
   BuildContext context,
   WidgetRef ref,
   BibleLink link,
-  String version,
-) async {
+  String version, {
+  int? charFrom,
+  int? charTo,
+}) async {
   final box = context.findRenderObject() as RenderBox?;
   final origin = box == null ? null : box.localToGlobal(Offset.zero) & box.size;
   await SharePlus.instance.share(
     ShareParams(
-      text: await bibleQuotation(ref, link, version),
+      text: await bibleQuotation(
+        ref,
+        link,
+        version,
+        charFrom: charFrom,
+        charTo: charTo,
+      ),
       sharePositionOrigin: origin,
     ),
   );
@@ -120,21 +172,46 @@ void highlightVerses(
     );
 
 /// Le contenu d'une note sur [link] : le lien, puis le texte cité.
-String bibleNoteContent(BibleLink link, String text) => jsonEncode({
-      'ops': [
+///
+/// Les mots choisis (#257) y sont en exergue **pour de vrai** : l'`insert` du
+/// texte se coupe en trois, celui du milieu en `bold`. ⚠️ Le serveur valide
+/// le Delta contre une liste close (`upsert_spiritual_note_controller`) :
+/// `bold` y est, et **aucun autre attribut** ne doit s'inviter ici, sous
+/// peine de 422 `E_NOTE_CONTENT_INVALID`. Un `insert` vide n'est pas un
+/// Delta valide non plus : les morceaux vides sont omis, et c'est ce qui
+/// arrive quand les mots choisis commencent le verset (`charFrom == 0`).
+String bibleNoteContent(
+  BibleLink link,
+  String text, {
+  int? charFrom,
+  int? charTo,
+}) {
+  final (before, chosen, after) = bibleEmphasis(text, charFrom, charTo);
+  return jsonEncode({
+    'ops': [
+      {
+        'insert': link.labelFr,
+        'attributes': {'link': link.toUrl()},
+      },
+      {'insert': '\n'},
+      if (chosen.isEmpty)
+        {'insert': text}
+      else ...[
+        if (before.isNotEmpty) {'insert': before},
         {
-          'insert': link.labelFr,
-          'attributes': {'link': link.toUrl()},
+          'insert': chosen,
+          'attributes': {'bold': true},
         },
-        {'insert': '\n'},
-        {'insert': text},
-        {
-          'insert': '\n',
-          'attributes': {'blockquote': true},
-        },
-        {'insert': '\n'},
+        if (after.isNotEmpty) {'insert': after},
       ],
-    });
+      {
+        'insert': '\n',
+        'attributes': {'blockquote': true},
+      },
+      {'insert': '\n'},
+    ],
+  });
+}
 
 /// **Note sur un verset** — réservée aux membres. Rouvre la note qui commence
 /// déjà par ce lien, sinon en crée une : lien `nv://bible/...` en tête, texte
@@ -143,8 +220,10 @@ void noteOnVerses(
   BuildContext context,
   WidgetRef ref,
   BibleLink link,
-  String version,
-) {
+  String version, {
+  int? charFrom,
+  int? charTo,
+}) {
   // Lus maintenant : le geste peut être rejoué après la connexion.
   final router = ref.read(routerProvider);
   final dao = ref.read(notesDaoProvider);
@@ -160,6 +239,8 @@ void noteOnVerses(
               bibleNoteContent(
                 link,
                 await bibleVerseText(catalog, link, version),
+                charFrom: charFrom,
+                charTo: charTo,
               ),
             );
         await router.pushNamed(AppRoute.noteEditor, pathParameters: {'id': id});

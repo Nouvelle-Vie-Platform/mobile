@@ -45,9 +45,10 @@ class BibleVerseMenu extends ConsumerStatefulWidget {
   final List<BibleVerseAction> actions;
 
   /// Les mots choisis dans `selection.from` (#252), [charTo] **exclue** ;
-  /// nulles = la sélection porte sur des versets entiers. Seul le surlignage
-  /// les lit — les autres actions (copier, note, partager…) continuent de
-  /// porter sur les versets entiers.
+  /// nulles = la sélection porte sur des versets entiers. Le surlignage les
+  /// lit, et depuis #257 toutes les actions les reçoivent : celles qui
+  /// emportent du texte (copier, partager, note) rendent le verset entier
+  /// avec ces mots-là **en exergue**.
   final int? charFrom;
   final int? charTo;
 
@@ -134,6 +135,8 @@ class _BibleVerseMenuState extends ConsumerState<BibleVerseMenu> {
                               ref,
                               widget.selection,
                               widget.versionCode,
+                              charFrom: widget.charFrom,
+                              charTo: widget.charTo,
                             )),
                         child: Padding(
                           padding: const EdgeInsets.all(AppSpacing.sm),
