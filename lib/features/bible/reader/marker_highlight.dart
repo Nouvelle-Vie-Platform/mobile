@@ -12,6 +12,12 @@
 /// texte). Les lignes sont donc déduites de la hauteur, et chaque bande est
 /// pleine largeur — comme sur les références, où le trait court jusqu'au bord,
 /// quelle que soit la longueur de la phrase.
+///
+/// **Au mot** (#252), c'est l'**étendue** qui change, pas le dessin :
+/// [MarkerWordHighlight] peint les mêmes bandes dentelées, mais une par
+/// rectangle que le texte occupe réellement — `getBoxesForSelection` les
+/// donne, une par ligne traversée. L'interligne déduite ne suffisait plus :
+/// un mot commence et finit quelque part sur sa ligne.
 library;
 
 import 'dart:math' as math;
@@ -54,12 +60,64 @@ class MarkerHighlight extends StatelessWidget {
   }
 }
 
+/// Peint le trait de marqueur derrière **quelques mots** de [span] (#252) :
+/// de [from] (comprise) à [to] (**exclue**), décalages de caractère dans le
+/// paragraphe — numéro de verset compris, puisqu'il en fait partie.
+///
+/// À poser autour du `Text` **lui-même** et de rien d'autre : le peintre
+/// refait la mise en page du paragraphe à la largeur qu'on lui donne, et un
+/// `Row` autour (lettrine, icônes de marge) la fausserait. C'est aussi pour
+/// cela qu'il reçoit le même [InlineSpan] que le `Text`, et non le texte brut.
+class MarkerWordHighlight extends StatelessWidget {
+  const MarkerWordHighlight({
+    super.key,
+    required this.color,
+    required this.span,
+    required this.from,
+    required this.to,
+    required this.child,
+  });
+
+  final Color? color;
+  final InlineSpan span;
+  final int from;
+  final int to;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color;
+    if (c == null || to <= from) return child;
+    return CustomPaint(
+      painter: _MarkerPainter(
+        c,
+        0,
+        0,
+        words: (
+          span: span,
+          from: from,
+          to: to,
+          // La même échelle que le `Text`, qui la prend là aussi : sans elle
+          // un réglage d'accessibilité décalait les bandes d'un mot.
+          scaler: MediaQuery.textScalerOf(context),
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
 class _MarkerPainter extends CustomPainter {
-  const _MarkerPainter(this.color, this.lineHeight, this.top);
+  const _MarkerPainter(this.color, this.lineHeight, this.top, {this.words});
 
   final Color color;
   final double lineHeight;
   final double top;
+
+  /// Posé par [MarkerWordHighlight] : le paragraphe entier et les bornes du
+  /// surlignage **dedans** ([to] exclue). Nul, le trait couvre chaque ligne
+  /// d'un bord à l'autre, comme depuis #250.
+  final ({InlineSpan span, int from, int to, TextScaler scaler})? words;
 
   /// Un bruit stable : la même bande est repeinte à l'identique d'une image à
   /// l'autre (sinon le trait grésillait à chaque défilement).
@@ -72,7 +130,7 @@ class _MarkerPainter extends CustomPainter {
   /// dentelé, et une **sortie de feutre** — sur les derniers pour-cent de la
   /// largeur le haut plonge vers le bas, sans quoi la bande se terminait sur
   /// une arête verticale nette qui trahissait la forme vectorielle.
-  Path _band(double width, double y, double height, int seed) {
+  Path _band(double left, double width, double y, double height, int seed) {
     const steps = 14;
     const tail = 0.16;
     double top(int s) {
@@ -84,39 +142,78 @@ class _MarkerPainter extends CustomPainter {
 
     double bottom(int s) => y + height * (0.82 + 0.18 * _noise(seed, s + 31));
 
-    final path = Path()..moveTo(0, top(0));
+    final path = Path()..moveTo(left, top(0));
     for (var s = 1; s <= steps; s++) {
-      path.lineTo(width * s / steps, top(s));
+      path.lineTo(left + width * s / steps, top(s));
     }
     for (var s = steps; s >= 0; s--) {
-      path.lineTo(width * s / steps, bottom(s));
+      path.lineTo(left + width * s / steps, bottom(s));
     }
     return path..close();
   }
 
+  /// Les deux passages d'un trait, de [left] sur [width] : le second plus
+  /// court et décalé, pour que les deux translucides se superposent et donnent
+  /// les traînées d'encre inégale des références.
+  void _stroke(
+    Canvas canvas,
+    Paint paint,
+    double left,
+    double width,
+    double y,
+    double height,
+    int seed,
+  ) {
+    canvas.drawPath(_band(left, width, y, height, seed), paint);
+    canvas.drawPath(
+      _band(left, width * (0.72 + 0.26 * _noise(seed, 7)), y + height * 0.18,
+          height * 0.62, seed + 101),
+      paint,
+    );
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
-    final lines = (size.height - top) ~/ lineHeight;
     final paint = Paint()
       ..color = color
       // Le feutre ne laisse pas d'arête nette : un flou d'un demi-pixel suffit
       // à ôter l'aspect « forme vectorielle ».
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.7);
+    final selection = words;
+    if (selection != null) {
+      // **Au mot** : le texte dit lui-même où il se trouve. Même mise en page
+      // que le `Text` au-dessus (même `InlineSpan`, même largeur, même échelle
+      // de police), donc les mêmes rectangles — un par ligne traversée.
+      final painter = TextPainter(
+        text: selection.span,
+        textDirection: TextDirection.ltr,
+        textScaler: selection.scaler,
+      )..layout(maxWidth: size.width);
+      final boxes = painter.getBoxesForSelection(
+        TextSelection(
+          baseOffset: selection.from,
+          extentOffset: selection.to,
+        ),
+      );
+      for (final (i, box) in boxes.indexed) {
+        _stroke(canvas, paint, box.left, box.right - box.left, box.top,
+            box.bottom - box.top, i);
+      }
+      painter.dispose();
+      return;
+    }
+    final lines = (size.height - top) ~/ lineHeight;
     for (var i = 0; i <= lines; i++) {
       final y = top + i * lineHeight;
       if (y + lineHeight * 0.4 > size.height) break;
-      canvas.drawPath(_band(size.width, y, lineHeight, i), paint);
-      // Un second passage, plus court et décalé : les deux translucides se
-      // superposent et donnent les traînées d'encre inégale des références.
-      canvas.drawPath(
-        _band(size.width * (0.72 + 0.26 * _noise(i, 7)), y + lineHeight * 0.18,
-            lineHeight * 0.62, i + 101),
-        paint,
-      );
+      _stroke(canvas, paint, 0, size.width, y, lineHeight, i);
     }
   }
 
   @override
   bool shouldRepaint(_MarkerPainter old) =>
-      old.color != color || old.lineHeight != lineHeight || old.top != top;
+      old.color != color ||
+      old.lineHeight != lineHeight ||
+      old.top != top ||
+      old.words != words;
 }

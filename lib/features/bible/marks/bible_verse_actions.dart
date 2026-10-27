@@ -96,11 +96,26 @@ void toggleFavorite(WidgetRef ref, BibleLink link) => unawaited(
           .toggleFavorite(member: ref.read(bibleIsMemberProvider), link: link),
     );
 
-void highlightVerses(WidgetRef ref, BibleLink link, String? color) => unawaited(
+/// Surligne la sélection. **Au mot** (#252) : [charFrom] comprise, [charTo]
+/// exclue, et [versionCode] obligatoire — sans quoi le serveur refuse (422
+/// `E_BIBLE_PAYLOAD_INVALID`). Sans bornes, la marque reste au verset et
+/// suit toutes les traductions, comme avant.
+void highlightVerses(
+  WidgetRef ref,
+  BibleLink link,
+  String? color, {
+  String? versionCode,
+  int? charFrom,
+  int? charTo,
+}) =>
+    unawaited(
       ref.read(bibleMarksStoreProvider).highlight(
             member: ref.read(bibleIsMemberProvider),
             link: link,
             color: color,
+            versionCode: versionCode,
+            charFrom: charFrom,
+            charTo: charTo,
           ),
     );
 

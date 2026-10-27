@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_extension.dart';
+import '../data/bible_providers.dart';
 import '../shell/bible_slots.dart';
 import 'bible_favorites_list.dart';
 import 'bible_marks_store.dart';
@@ -95,11 +96,16 @@ Map<int, BibleVerseDecoration> decorateBibleChapter(
   int chapter,
 ) {
   final key = (book: book, chapter: chapter);
+  // **Le filtrage par traduction** (#252) : une marque qui nomme sa version
+  // ne paraît que là — ses décalages de caractères désignent *ce* texte, et
+  // le mot n'est pas au même endroit ailleurs. Une marque sans version suit
+  // toutes les traductions, et c'est le cas de toutes celles d'avant #252.
+  final version = ref.watch(activeBibleVersionProvider);
   // Les plus récentes d'abord : le premier surlignage trouvé gagne.
   final marks = [
     for (final m in ref.watch(bibleChapterMarksProvider(key)).value ??
         const <BibleMark>[])
-      if (m.verseFrom != null) m,
+      if (m.verseFrom != null && m.showsIn(version)) m,
   ];
   final noted = ref.watch(bibleNotedVersesProvider(key)).value ?? const {};
   final verses = <int>{
@@ -111,9 +117,21 @@ Map<int, BibleVerseDecoration> decorateBibleChapter(
     final here = marks.where((m) => m.covers(v));
     final highlight =
         here.where((m) => m.kind == BibleMarkKind.highlight).firstOrNull;
+    final single = highlight != null &&
+        highlight.isWordMark &&
+        highlight.verseFrom == v &&
+        (highlight.verseTo ?? v) == v;
     return BibleVerseDecoration(
       background:
           highlight == null ? null : bibleHighlightBackground(highlight.color),
+      // Les bornes ne descendent que si la marque est **au mot** sur ce
+      // verset-là : sinon la bande couvre le verset, comme elle l'a toujours
+      // fait. Le contrat permet un décalage à cheval sur deux versets
+      // (`charFrom` dans `verseFrom`, `charTo` dans `verseTo`) — notre geste
+      // n'en pose pas, et une telle marque venue du serveur se peint ici au
+      // verset entier plutôt que de poser deux fois les mêmes bornes.
+      charFrom: single ? highlight.charFrom : null,
+      charTo: single ? highlight.charTo : null,
       marginIcons: [
         if (here.any((m) => m.kind == BibleMarkKind.favorite)) Icons.favorite,
         if (noted.contains(v)) Icons.sticky_note_2_outlined,

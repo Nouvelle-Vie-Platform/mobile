@@ -122,10 +122,22 @@ final class BibleFavoriteFilter {
 /// **L'habillage d'un verset dans le lecteur** (M2 : fond de surlignage,
 /// icônes de marge — favori, note, marque-page).
 final class BibleVerseDecoration {
-  const BibleVerseDecoration({this.background, this.marginIcons = const []});
+  const BibleVerseDecoration({
+    this.background,
+    this.marginIcons = const [],
+    this.charFrom,
+    this.charTo,
+  });
 
   final Color? background;
   final List<IconData> marginIcons;
+
+  /// **L'étendue du surlignage** (#252) : nulles, il couvre le verset entier
+  /// — c'est le cas de toutes les marques d'avant. Posées, il ne couvre que
+  /// `charFrom` (comprise) à `charTo` (**exclue**) du texte du verset.
+  /// ⚠️ `charFrom == 0` est légitime : comparer à `null`.
+  final int? charFrom;
+  final int? charTo;
 }
 
 /// Rend l'habillage des versets d'un chapitre, par numéro de verset. Appelé
