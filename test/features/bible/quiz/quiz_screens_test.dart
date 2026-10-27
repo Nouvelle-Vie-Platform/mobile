@@ -68,13 +68,14 @@ final Map<String, Object?> _served = {
 Quiz get _quiz => Quiz.fromRow(
       BibleQuizRow(
         id: 4,
-        title: 'Les patriarches',
+        title: const {'fr': 'Les patriarches'},
         ageBand: 'kids',
         difficulty: 1,
         questions: '[{"kind":"truefalse","prompt":"Noé a bâti une arche.",'
             '"choices":["Vrai","Faux"],"answer":0}]',
         syncStamp: 0,
       ),
+      'fr',
     )!;
 
 Future<void> _settle(WidgetTester tester) async {

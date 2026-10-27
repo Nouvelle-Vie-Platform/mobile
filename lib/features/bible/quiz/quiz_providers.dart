@@ -16,6 +16,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../data/local/app_database.dart';
+import '../../../state/locale_providers.dart';
 import '../../../state/sync_providers.dart';
 import '../../../state/theme_provider.dart';
 import '../data/bible_providers.dart';
@@ -70,13 +71,18 @@ class QuizStore {
   /// Clé stable de `app_settings` : la renommer oublierait le profil choisi.
   static const ageBandKey = 'bible_quiz_age_band';
 
-  Stream<List<Quiz>> watchQuizzes() {
+  /// Les quiz publiés, **repliés dans [locale]** — le magasin garde les
+  /// cartes, c'est la lecture qui choisit (#263).
+  Stream<List<Quiz>> watchQuizzes(String locale) {
     final q = db.select(db.bibleQuizzes)
       ..where((t) => t.publishedAt.isNotNull())
       ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)]);
-    return q
-        .watch()
-        .map((rows) => rows.map(Quiz.fromRow).whereType<Quiz>().toList());
+    return q.watch().map(
+          (rows) => rows
+              .map((row) => Quiz.fromRow(row, locale))
+              .whereType<Quiz>()
+              .toList(),
+        );
   }
 
   Stream<QuizAgeBand?> watchAgeBand() {
@@ -185,9 +191,12 @@ class QuizStore {
 final quizStoreProvider =
     Provider<QuizStore>((ref) => QuizStore(ref.watch(appDatabaseProvider)));
 
-/// Les quiz publiés et jouables, les plus récents d'abord.
+/// Les quiz publiés et jouables, les plus récents d'abord — et repliés dans la
+/// langue de l'interface, dont un changement **re-replie** la liste.
 final quizzesProvider = StreamProvider<List<Quiz>>(
-  (ref) => ref.watch(quizStoreProvider).watchQuizzes(),
+  (ref) => ref
+      .watch(quizStoreProvider)
+      .watchQuizzes(ref.watch(contentLocaleProvider)),
 );
 
 /// Le profil d'âge du joueur ; `null` tant qu'il n'a pas été choisi.

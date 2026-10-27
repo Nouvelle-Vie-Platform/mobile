@@ -39,7 +39,7 @@ Future<void> _seedChallenge(AppDatabase db) async {
     upserts: [
       BiblePlansCompanion.insert(
         id: 'p-1',
-        title: 'Marc en 16 jours',
+        title: const {'fr': 'Marc en 16 jours'},
         days: const Value('[[{"book":"Mark","chapter":1}]]'),
         publishedAt: Value(DateTime.utc(2026, 9, 1)),
       ),
@@ -51,7 +51,7 @@ Future<void> _seedChallenge(AppDatabase db) async {
     upserts: [
       BibleChallengesCompanion.insert(
         id: _cid,
-        title: 'Défi de l\'Avent',
+        title: const {'fr': 'Défi de l\'Avent'},
         planId: const Value('p-1'),
         startsOn: const Value('2026-10-10'),
         endsOn: const Value('2026-10-25'),

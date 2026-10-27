@@ -62,3 +62,23 @@ String? _valueFor(Map<String, String> map, String language) {
   }
   return null;
 }
+
+/// Lit une carte de traduction servie **soit en carte, soit en chaîne nue**.
+///
+/// Une **chaîne se lit comme `{ 'fr': valeur }`**, et c'est le point : le
+/// plancher de compatibilité du serveur est réglable par variable
+/// d'environnement (`BIBLE_I18N_COMPAT_FLOOR_VERSION`), donc un client qui sait
+/// lire les cartes *peut* recevoir l'ancienne forme. Elle ne vaut pas une ligne
+/// mutilée — c'est ce que le serveur servait hier, et le français est la langue
+/// dont il est toujours rempli ([kContentFallbackLocale]).
+///
+/// Les langues inconnues de l'application sont conservées telles quelles : le
+/// choix et le repli appartiennent à [pick], pas à la lecture.
+Map<String, String> i18nMapOf(Object? raw) {
+  if (raw is String) return {kContentFallbackLocale: raw};
+  if (raw is! Map) return const {};
+  return {
+    for (final entry in raw.entries)
+      if (entry.value is String) entry.key.toString(): entry.value! as String,
+  };
+}

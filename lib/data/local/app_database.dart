@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
@@ -343,8 +345,15 @@ class AppDatabase extends _$AppDatabase {
   /// n'est réécrite : nulles partout veut dire « marque au verset, valable
   /// dans toutes les traductions », ce que sont toutes les marques déjà
   /// posées. Voir [kWordMarkSchemaVersion].
+  ///
+  /// **v33** (#263, server-portal#628) — **les cartes de traduction des plans,
+  /// des défis et des quiz** : aucune colonne ne bouge — elles étaient déjà
+  /// en `TEXT` et seul leur convertisseur change —, mais **ce qu'elles
+  /// contiennent** change, et les lignes déjà en magasin portent une chaîne
+  /// nue que `I18nMapConverter` lirait comme une carte vide, donc un titre
+  /// blanc. Le palier les replie. Voir [kBibleI18nSchemaVersion].
   @override
-  int get schemaVersion => kWordMarkSchemaVersion;
+  int get schemaVersion => kBibleI18nSchemaVersion;
 
   /// **Le palier de la tranche M2** (#141) : v25, après M8 (v22), M3 (v23) et
   /// M5 (v24).
@@ -380,6 +389,13 @@ class AppDatabase extends _$AppDatabase {
   /// versification (v31). Trois colonnes nullables sur chacune des deux
   /// tables de marques, et rien d'autre.
   static const int kWordMarkSchemaVersion = 32;
+
+  /// **Le palier des cartes de traduction du module Bible** (mobile#263) :
+  /// v33, après le surlignage au mot (v32). **Aucune DDL** — les quatre
+  /// colonnes concernées (`bible_plans.title` et `.description`,
+  /// `bible_challenges.title`, `bible_quizzes.title`) étaient et restent en
+  /// `TEXT` ; le palier ne fait que **replier leur contenu** en carte.
+  static const int kBibleI18nSchemaVersion = 33;
 
   /// Les trois champs du mot (#252), ajoutés ensemble au palier v32 — et
   /// retirés ensemble d'une table **créée** pour une version antérieure
@@ -1159,6 +1175,24 @@ class AppDatabase extends _$AppDatabase {
               await m.addColumn(localBibleMarks, column);
             }
           }
+          // v32 → v33 — **les cartes de traduction** des plans, des défis et
+          // des quiz (#263, server-portal#628). Aucune colonne n'est ajoutée,
+          // retirée ni retypée : elles étaient déjà en `TEXT`, et le
+          // vrai changement est que le texte y est désormais du JSON. Ce
+          // palier est donc un palier de **données**, le premier du magasin.
+          //
+          // Il est nécessaire : le delta ne ramène que les lignes
+          // **modifiées**, donc un plan déjà en magasin garderait sa chaîne
+          // nue indéfiniment, et `I18nMapConverter` la lirait comme une carte
+          // vide — un titre blanc, sans erreur pour le dire. On le replie ici,
+          // comme le `up` du serveur : `to_jsonb(json_build_object('fr', …))`.
+          //
+          // La garde `from >=` a la raison des paliers v31 et v32 : au-dessous
+          // de la v29 les trois tables sont **créées** par ce palier-là, donc
+          // vides — il n'y a rien à replier.
+          if (from >= kBibleSchemaVersion && from < kBibleI18nSchemaVersion) {
+            await _foldBibleTitlesIntoCards();
+          }
         },
         beforeOpen: (details) async {
           // La ligne d'état global doit exister avant la première allocation de
@@ -1168,6 +1202,39 @@ class AppDatabase extends _$AppDatabase {
           await _ensureGlobalStateRow();
         },
       );
+
+  /// **Replie en carte `{"fr": …}` les titres déjà en magasin** (palier v33).
+  ///
+  /// Écrit en Dart, et non en `json_object()` : l'extension JSON1 de SQLite
+  /// n'est pas garantie sur les trois cibles (Android, iOS, et le `sqlite3`
+  /// du web), alors que `jsonEncode` l'est. Ces trois miroirs comptent de
+  /// toute façon quelques lignes — zéro en production le jour du palier.
+  ///
+  /// `NOT LIKE '{%'` saute ce qui est **déjà** une carte : le palier doit
+  /// pouvoir être rejoué (migration de test v29 → v33 après un cycle) sans
+  /// emballer une carte dans une carte.
+  Future<void> _foldBibleTitlesIntoCards() async {
+    for (final (table, column) in const [
+      ('bible_plans', 'title'),
+      ('bible_plans', 'description'),
+      ('bible_challenges', 'title'),
+      ('bible_quizzes', 'title'),
+    ]) {
+      final rows = await customSelect(
+        'SELECT rowid AS r, "$column" AS v FROM "$table" '
+        'WHERE "$column" IS NOT NULL AND "$column" NOT LIKE \'{%\'',
+      ).get();
+      for (final row in rows) {
+        await customUpdate(
+          'UPDATE "$table" SET "$column" = ? WHERE rowid = ?',
+          variables: [
+            Variable<String>(jsonEncode({'fr': row.read<String>('v')})),
+            Variable<int>(row.read<int>('r')),
+          ],
+        );
+      }
+    }
+  }
 
   /// **Palier des accusés (#142, M3)** — deux créations de table, et rien
   /// d'autre : aucune colonne existante ne bouge, aucune donnée n'est recopiée.

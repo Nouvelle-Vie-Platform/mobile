@@ -15,6 +15,7 @@ import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/app_card.dart';
+import '../../../utils/i18n_text.dart';
 import '../data/bible_providers.dart';
 import '../data/canon.dart';
 import '../shell/bible_route.dart';
@@ -74,19 +75,22 @@ class BiblePlansScreen extends ConsumerWidget {
                   ),
                 if (published.isNotEmpty) ...[
                   PlansSectionTitle(l.biblePlansChurch),
+                  // Le repli de langue se fait **ici**, au rendu : le magasin
+                  // garde la carte entière (#263), et `l.localeName` est la
+                  // langue que `MaterialApp` a résolue.
                   for (final p in published)
                     _PlanTile(
                       key: publishedKey(p.id),
-                      title: p.title,
-                      subtitle: p.description,
+                      title: pick(p.title, l.localeName),
+                      subtitle: _describe(p.description, l.localeName),
                       days: parsePlanDays(p.days).length,
                       onTap: () => _start(
                         context,
                         ref,
                         source: PlanSource.published,
                         planId: p.id,
-                        title: p.title,
-                        description: p.description,
+                        title: pick(p.title, l.localeName),
+                        description: _describe(p.description, l.localeName),
                         days: parsePlanDays(p.days).length,
                       ),
                     ),
@@ -165,6 +169,14 @@ class BiblePlansScreen extends ConsumerWidget {
         );
     await _openDetail(ref, e.id);
   }
+}
+
+/// La description d'un plan publié, repliée — `null` si elle est absente
+/// **ou** vide dans toutes les langues : l'absence s'affiche comme une
+/// absence, pas comme une ligne blanche.
+String? _describe(Map<String, String>? card, String locale) {
+  final text = card == null ? '' : pick(card, locale);
+  return text.isEmpty ? null : text;
 }
 
 Future<void> _openDetail(WidgetRef ref, String enrollmentId) =>
