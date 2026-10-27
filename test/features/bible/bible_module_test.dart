@@ -22,6 +22,7 @@ import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/features/bible/data/placeholder_bible.dart';
 import 'package:maison_du_miracle/features/bible/reader/bible_reader_screen.dart';
+import 'package:maison_du_miracle/features/bible/reader/marker_highlight.dart';
 import 'package:maison_du_miracle/features/bible/search/bible_search_screen.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_browser.dart';
 import 'package:maison_du_miracle/features/bible/home/home_view.dart';
@@ -407,6 +408,58 @@ void main() {
       });
     });
 
+    // #250 : le propriétaire a jugé l'écran sur son allure, pas sur ses
+    // fonctions. Les deux traits qu'un test peut tenir sont la lettrine et
+    // l'encre des numéros ; la brique est écrite en clair des deux côtés,
+    // sinon changer la couleur changerait aussi l'attente.
+    testWidgets(
+        'l\'allure : une lettrine ouvre le chapitre, les numéros sont '
+        'en ligne et rouge brique', (tester) async {
+      await tester.runAsync(() async {
+        final router =
+            await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
+        router.push('/bible/read/John/3');
+        await _settle(tester);
+
+        // La lettrine : le numéro du chapitre en Playfair, dans le premier
+        // verset — et le titre du corps a disparu avec elle.
+        final first = tester.widgetList<Text>(
+          find.descendant(
+            of: find.byKey(BibleReaderScreen.verseKey(1)),
+            matching: find.byType(Text),
+          ),
+        );
+        expect(
+          first.where(
+            (t) => t.data == '3' && t.style?.fontFamily == 'Playfair Display',
+          ),
+          hasLength(1),
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(BibleReaderScreen.pageKey('John', 3)),
+            matching: find.text('Jean 3'),
+          ),
+          findsNothing,
+        );
+
+        // Le numéro : un simple `TextSpan` (plus de `WidgetSpan` en exposant),
+        // à la taille du texte et en brique.
+        final line = tester.widget<Text>(
+          find.descendant(
+            of: find.byKey(BibleReaderScreen.verseKey(2)),
+            matching: find.byType(Text),
+          ),
+        );
+        final spans = (line.textSpan! as TextSpan).children!;
+        expect(spans.whereType<WidgetSpan>(), isEmpty);
+        final number = spans.first as TextSpan;
+        expect(number.text, '2 ');
+        expect(number.style?.color, const Color(0xFFAE3B23));
+        expect(number.style?.fontSize, isNull);
+      });
+    });
+
     testWidgets('l\'en-tête rouvre le choix du chapitre', (tester) async {
       await tester.runAsync(() async {
         final router =
@@ -504,14 +557,16 @@ void main() {
         final v16 = find.byKey(BibleReaderScreen.verseKey(16));
         expect(v16.hitTestable(), findsOneWidget);
 
+        // Depuis #250 le surlignage d'arrivée est peint au marqueur, et
+        // [MarkerHighlight] n'est dans l'arbre que s'il y a de l'encre.
         Color? colorOf(int verse) {
-          final box = tester.widget<AnimatedContainer>(
-            find.descendant(
-              of: find.byKey(BibleReaderScreen.verseKey(verse)),
-              matching: find.byType(AnimatedContainer),
-            ),
+          final marker = find.descendant(
+            of: find.byKey(BibleReaderScreen.verseKey(verse)),
+            matching: find.byType(MarkerHighlight),
           );
-          return (box.decoration! as BoxDecoration).color;
+          return marker.evaluate().isEmpty
+              ? null
+              : tester.widget<MarkerHighlight>(marker).color;
         }
 
         expect(colorOf(16), isNotNull);

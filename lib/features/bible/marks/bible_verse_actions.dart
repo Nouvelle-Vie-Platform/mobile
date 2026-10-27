@@ -1,5 +1,5 @@
-/// **Les gestes du menu d'un verset** (M2, #200) : copier, favori, note,
-/// partager — et le surlignage, que le menu offre par sa palette.
+/// **Les gestes de la pilule d'un verset** (M2, #200) : note, signet, partage,
+/// copie, favori — et le surlignage, que la pilule offre par sa palette.
 library;
 
 import 'dart:async';
@@ -78,6 +78,17 @@ Future<void> shareVerses(
     ),
   );
 }
+
+/// **Le signet du chapitre** où se trouve [link] — le même que celui de
+/// l'en-tête du lecteur : notre marque-page est chapitré (décision 13), la
+/// pilule ne lui invente pas une portée au verset.
+void toggleChapterBookmark(WidgetRef ref, BibleLink link) => unawaited(
+      ref.read(bibleMarksStoreProvider).toggleBookmark(
+            member: ref.read(bibleIsMemberProvider),
+            book: link.book,
+            chapter: link.chapter,
+          ),
+    );
 
 void toggleFavorite(WidgetRef ref, BibleLink link) => unawaited(
       ref

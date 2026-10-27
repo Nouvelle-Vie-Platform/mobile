@@ -1,8 +1,14 @@
 /// **Le lecteur** (M1, #199) : un chapitre par page, glissement gauche/droite
 /// d'un chapitre à l'autre **et d'un livre à l'autre** (la version ouverte est
-/// une seule suite de pages — 1 189 dans le canon figé), numéros de versets en
-/// exposant. La suite des pages est celle de **sa** versification (C3, #240) :
-/// changer de version la refait, et replace le lecteur sur le même chapitre.
+/// une seule suite de pages — 1 189 dans le canon figé).
+/// La suite des pages est celle de **sa** versification (C3, #240) : changer
+/// de version la refait, et replace le lecteur sur le même chapitre.
+///
+/// L'allure vient des références de #250 : barre du haut claire, **lettrine**
+/// rouge brique ouvrant le chapitre (dont le titre quitte le corps — il
+/// doublait la barre), numéros de versets **en ligne** à la taille du texte,
+/// un paragraphe par verset, et des surlignages peints au marqueur
+/// ([MarkerHighlight]) plutôt que des rectangles arrondis.
 ///
 /// - L'en-tête « Jean 3 ▾ » rouvre le choix du livre et du chapitre.
 /// - Le sélecteur de version change la version active.
@@ -28,6 +34,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_extension.dart';
 import '../../../router/app_router.dart';
 import '../../../theme/app_colors.dart';
@@ -43,6 +50,7 @@ import '../personalize/personalize_routes.dart';
 import '../personalize/reader_appearance.dart';
 import '../shell/bible_browser.dart';
 import '../shell/bible_slots.dart';
+import 'marker_highlight.dart';
 
 /// La durée du surlignage d'arrivée. Surchargée en test : sous `runAsync`
 /// sa minuterie est réelle, et une machine chargée l'éteignait avant que le
@@ -72,6 +80,7 @@ class BibleReaderScreen extends ConsumerStatefulWidget {
   static const Key actionsKey = BibleVerseMenu.menuKey;
   static const Key bookmarkKey = Key('bible_reader_bookmark');
   static const Key downloadKey = Key('bible_reader_download');
+  static const Key extendKey = Key('bible_reader_extend');
   static Key pageKey(String book, int chapter) =>
       Key('bible_reader_page_${book}_$chapter');
   static Key verseKey(int verse) => Key('bible_reader_verse_$verse');
@@ -127,8 +136,9 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   final _stackKey = GlobalKey();
   bool _menuBelow = false;
 
-  /// La hauteur à réserver au-dessus du premier verset pour le menu.
-  static const double _menuRoom = 140;
+  /// La hauteur à réserver au-dessus du premier verset pour le menu. La
+  /// pilule de #250 tient sur une rangée : il lui en faut bien moins.
+  static const double _menuRoom = 96;
 
   void _placeMenu() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -244,6 +254,30 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     _placeMenu();
   }
 
+  /// **Le « + » de la sélection** (#250) : la plage gagne le verset suivant.
+  /// L'appui long puis glisser faisait déjà cela, mais rien ne l'annonçait —
+  /// une fonction que personne ne trouvait. Le bouton la rend visible, et le
+  /// glissement continue de marcher.
+  void _extendSelection() {
+    final to = _to;
+    if (to == null) return;
+    final c = _current;
+    final verses = ref
+        .read(
+          bibleChapterProvider((
+            version: ref.read(activeBibleVersionProvider),
+            book: c.book,
+            chapter: c.chapter,
+          )),
+        )
+        .value;
+    // Au bout du chapitre, le « + » ne fait rien plutôt que de déborder sur
+    // le suivant : la sélection ne traverse pas une page.
+    if (verses == null || verses.isEmpty || to >= verses.last.number) return;
+    setState(() => _to = to + 1);
+    _placeMenu();
+  }
+
   /// Appui long puis glisser : la plage d'[anchor] à [verse].
   void _dragVerses(int anchor, int verse) => setState(() {
         _from = anchor < verse ? anchor : verse;
@@ -275,15 +309,43 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
             const <BibleMark>[])
         .where((m) => m.kind == BibleMarkKind.bookmark)
         .toList();
+    // L'habillage du lecteur enveloppe maintenant l'écran entier, et non plus
+    // les seules pages : la barre du haut des références est **claire**, donc
+    // elle doit suivre le thème choisi (sépia, sombre) comme le texte. Le
+    // `Builder` n'est là que pour lire la palette du thème ainsi posé.
+    return BibleReaderAppearance(
+      child: Builder(
+        builder: (context) => _scaffold(context, context.palette, l, c,
+            version: version,
+            versions: versions,
+            actions: actions,
+            from: from,
+            member: member,
+            bookmarked: bookmarked),
+      ),
+    );
+  }
+
+  Widget _scaffold(
+    BuildContext context,
+    AppPalette palette,
+    AppLocalizations l,
+    ({String book, int chapter}) c, {
+    required String version,
+    required List<BibleVersion> versions,
+    required List<BibleVerseAction> actions,
+    required int? from,
+    required bool member,
+    required List<BibleMark> bookmarked,
+  }) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: palette.surfaceAlt,
+        foregroundColor: palette.textSecondary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
-        flexibleSpace: const DecoratedBox(
-          decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
-        ),
         title: Tooltip(
           message: l.bibleChangeChapter,
           child: InkWell(
@@ -300,9 +362,15 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                 children: [
                   Text(
                     BibleLink(c.book, c.chapter).labelFr,
-                    style: AppTypography.h5.copyWith(color: Colors.white),
+                    style: AppTypography.h5.copyWith(
+                      color: palette.textSecondary,
+                    ),
                   ),
-                  const Icon(Icons.arrow_drop_down, color: Colors.white),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    size: 20,
+                    color: palette.textSecondary,
+                  ),
                 ],
               ),
             ),
@@ -314,7 +382,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
             tooltip: l.bibleM2Bookmark,
             icon: Icon(
               bookmarked.isEmpty ? Icons.bookmark_border : Icons.bookmark,
-              color: Colors.white,
+              color: palette.textSecondary,
             ),
             onPressed: () => unawaited(
               ref.read(bibleMarksStoreProvider).toggleBookmark(
@@ -348,10 +416,14 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                   Text(
                     version,
                     style: AppTypography.bodyStrong.copyWith(
-                      color: Colors.white,
+                      color: palette.textSecondary,
                     ),
                   ),
-                  const Icon(Icons.arrow_drop_down, color: Colors.white),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    size: 20,
+                    color: palette.textSecondary,
+                  ),
                 ],
               ),
             ),
@@ -361,50 +433,47 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       body: Stack(
         key: _stackKey,
         children: [
-          // Le thème et la police du lecteur (M4).
-          BibleReaderAppearance(
-            child: PageView.builder(
-              key: BibleReaderScreen.pagesKey,
-              controller: _pages,
-              itemCount: _chapters.length,
-              onPageChanged: (i) {
-                setState(() {
-                  _index = i;
-                  _from = _to = null;
-                });
-                _savePosition();
-              },
-              itemBuilder: (context, i) {
-                final page = _chapters[i];
-                final arrival = page.book == widget.book &&
-                    page.chapter == widget.chapter &&
-                    widget.from != null;
-                return _ChapterPage(
-                  key: BibleReaderScreen.pageKey(page.book, page.chapter),
-                  chapterKey: (
-                    version: version,
-                    book: page.book,
-                    chapter: page.chapter,
-                  ),
-                  flashFrom: arrival ? widget.from : null,
-                  flashTo: arrival ? (widget.to ?? widget.from) : null,
-                  selectedFrom: i == _index ? _from : null,
-                  selectedTo: i == _index ? _to : null,
-                  onVerseTap: actions.isEmpty ? null : _tapVerse,
-                  onVerseDrag: actions.isEmpty ? null : _dragVerses,
-                  menu: i == _index
-                      ? (
-                          above: _aboveLink,
-                          below: _belowLink,
-                          firstKey: _firstKey,
-                        )
-                      : null,
-                  onReadToEnd: () {
-                    if (i == _index) _markRead(page.book, page.chapter);
-                  },
-                );
-              },
-            ),
+          PageView.builder(
+            key: BibleReaderScreen.pagesKey,
+            controller: _pages,
+            itemCount: _chapters.length,
+            onPageChanged: (i) {
+              setState(() {
+                _index = i;
+                _from = _to = null;
+              });
+              _savePosition();
+            },
+            itemBuilder: (context, i) {
+              final page = _chapters[i];
+              final arrival = page.book == widget.book &&
+                  page.chapter == widget.chapter &&
+                  widget.from != null;
+              return _ChapterPage(
+                key: BibleReaderScreen.pageKey(page.book, page.chapter),
+                chapterKey: (
+                  version: version,
+                  book: page.book,
+                  chapter: page.chapter,
+                ),
+                flashFrom: arrival ? widget.from : null,
+                flashTo: arrival ? (widget.to ?? widget.from) : null,
+                selectedFrom: i == _index ? _from : null,
+                selectedTo: i == _index ? _to : null,
+                onVerseTap: actions.isEmpty ? null : _tapVerse,
+                onVerseDrag: actions.isEmpty ? null : _dragVerses,
+                menu: i == _index
+                    ? (
+                        above: _aboveLink,
+                        below: _belowLink,
+                        firstKey: _firstKey,
+                      )
+                    : null,
+                onReadToEnd: () {
+                  if (i == _index) _markRead(page.book, page.chapter);
+                },
+              );
+            },
           ),
           if (from != null && actions.isNotEmpty)
             Positioned(
@@ -434,6 +503,23 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                       onDone: () => setState(() => _from = _to = null),
                     ),
                   ),
+                ),
+              ),
+            ),
+          // Le « + » des références : au centre du dernier verset choisi,
+          // là où le doigt descend pour en prendre un de plus.
+          if (from != null && actions.isNotEmpty)
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              child: CompositedTransformFollower(
+                link: _belowLink,
+                showWhenUnlinked: false,
+                targetAnchor: Alignment.center,
+                followerAnchor: Alignment.center,
+                child: Center(
+                  child: _ExtendButton(onTap: _extendSelection),
                 ),
               ),
             ),
@@ -609,12 +695,13 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
         _afterLayout();
         return SingleChildScrollView(
           controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            // De quoi loger le menu flottant sous le dernier verset.
-            240,
+          // La marge latérale est passée dans chaque verset : la bande de
+          // sélection et le trait de marqueur doivent filer **jusqu'aux
+          // bords**, comme sur les références.
+          padding: const EdgeInsets.only(
+            top: AppSpacing.lg,
+            // De quoi loger la pilule flottante sous le dernier verset.
+            bottom: 160,
           ),
           child: GestureDetector(
             onLongPressStart: widget.onVerseDrag == null
@@ -626,11 +713,6 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  BibleLink(key.book, key.chapter).labelFr,
-                  style: AppTypography.h3,
-                ),
-                const SizedBox(height: AppSpacing.md),
                 for (final v in list)
                   _wrap(
                     v.number,
@@ -645,6 +727,12 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
                           v.number >= widget.selectedFrom! &&
                           v.number <= widget.selectedTo!,
                       palette: palette,
+                      // La lettrine ouvre le chapitre sur son premier verset ;
+                      // le titre dans le corps, lui, a disparu — la barre du
+                      // haut le portait déjà.
+                      dropCap: v.number == list.first.number
+                          ? '${key.chapter}'
+                          : null,
                       onTap: widget.onVerseTap == null
                           ? null
                           : () => widget.onVerseTap!(v.number),
@@ -690,6 +778,7 @@ class _VerseLine extends StatelessWidget {
     required this.selected,
     required this.palette,
     required this.onTap,
+    this.dropCap,
   });
 
   final BibleVerse verse;
@@ -699,61 +788,120 @@ class _VerseLine extends StatelessWidget {
   final AppPalette palette;
   final VoidCallback? onTap;
 
+  /// Le numéro du chapitre en lettrine, sur le premier verset seulement.
+  final String? dropCap;
+
   @override
   Widget build(BuildContext context) {
     final background = flashed
         ? palette.primary.withValues(alpha: 0.18)
         : decoration?.background;
     final body = BibleReaderAppearance.verseStyle(context);
+    final rubric = BibleReaderAppearance.rubric(context);
     final icons = decoration?.marginIcons ?? const <IconData>[];
+    final line = (body.fontSize ?? 18) * (body.height ?? 1.6);
+    final cap = dropCap;
     return InkWell(
       key: BibleReaderScreen.verseKey(verse.number),
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
-        margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-        decoration: BoxDecoration(
+        // La sélection reste une bande pleine et nette, d'un bord à l'autre
+        // (références, verset 4) ; le surlignage, lui, est **peint**.
+        decoration: BoxDecoration(color: selected ? palette.surfaceAlt : null),
+        child: MarkerHighlight(
           color: background,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: selected
-              ? Border(bottom: BorderSide(color: palette.primary, width: 2))
-              : null,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    // Le numéro en exposant : plus petit, remonté.
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.top,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 3),
-                        child: Text(
-                          '${verse.number}',
-                          style: AppTypography.caption.copyWith(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: palette.primary,
-                          ),
+          lineHeight: line,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (cap != null)
+                Padding(
+                  // Le chiffre descend sous sa ligne de base : on le remonte
+                  // pour que sa panse s'aligne sur la première ligne du texte.
+                  padding: EdgeInsets.only(
+                    right: AppSpacing.sm,
+                    top: line * 0.10,
+                  ),
+                  child: Text(
+                    cap,
+                    style: TextStyle(
+                      fontFamily: 'Playfair Display',
+                      fontWeight: FontWeight.w500,
+                      fontSize: line * 2.9,
+                      height: 0.78,
+                      color: rubric,
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      // Le numéro est **en ligne** et à la taille du texte :
+                      // lisible comme sur les références, et l'interligne
+                      // reste régulier — ce dont le marqueur a besoin pour
+                      // poser ses bandes.
+                      TextSpan(
+                        text: '${verse.number} ',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: rubric,
                         ),
                       ),
-                    ),
-                    TextSpan(text: verse.text),
-                  ],
+                      TextSpan(text: verse.text),
+                    ],
+                  ),
+                  style: body,
                 ),
-                style: body,
               ),
+              for (final icon in icons)
+                Padding(
+                  padding: const EdgeInsets.only(left: AppSpacing.xs, top: 6),
+                  child: Icon(icon, size: 16, color: palette.textSecondary),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// **Le « + » posé sur la sélection** : rond, translucide, au centre du
+/// dernier verset choisi. Il n'ouvre rien — il étend d'un verset.
+class _ExtendButton extends StatelessWidget {
+  const _ExtendButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return Tooltip(
+      message: l.bibleM2ExtendSelection,
+      child: Semantics(
+        button: true,
+        label: l.bibleM2ExtendSelection,
+        child: Material(
+          key: BibleReaderScreen.extendKey,
+          // Translucide pour qu'on lise le verset à travers : c'est ce qui le
+          // distingue d'un bouton flottant posé par-dessus le texte.
+          color: AppColors.neutralDark.withValues(alpha: 0.45),
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: const SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(Icons.add, color: Colors.white, size: 24),
             ),
-            for (final icon in icons)
-              Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.xs, top: 6),
-                child: Icon(icon, size: 16, color: palette.textSecondary),
-              ),
-          ],
+          ),
         ),
       ),
     );

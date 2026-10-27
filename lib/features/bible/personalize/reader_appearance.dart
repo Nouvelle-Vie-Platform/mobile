@@ -42,6 +42,16 @@ String bibleFontFamily(BibleReaderFont font) => switch (font) {
       BibleReaderFont.system => 'sans-serif',
     };
 
+/// **Le rouge brique du lecteur** (#250) : numéros de versets et lettrine. Il
+/// suit le sort du sépia — c'est l'encre d'un réglage de lecture, pas une
+/// couleur de l'appli, et il n'a donc rien à faire dans [AppPalette]. Sur fond
+/// sombre la brique vire à la terre cuite, sans quoi elle disparaissait.
+Color bibleRubricColor(BibleReaderTheme theme) => switch (theme) {
+      BibleReaderTheme.light => const Color(0xFFAE3B23),
+      BibleReaderTheme.sepia => const Color(0xFF9C3A1E),
+      BibleReaderTheme.dark => const Color(0xFFE07A5F),
+    };
+
 /// Le style d'un verset pour [prefs] sur [palette].
 TextStyle bibleVerseTextStyle(BiblePrefs prefs, AppPalette palette) =>
     TextStyle(
@@ -62,14 +72,19 @@ class BibleReaderAppearance extends ConsumerWidget {
   /// Pour l'aperçu : des réglages qui ne sont pas (encore) enregistrés.
   final BiblePrefs? prefs;
 
+  /// Les réglages sous ce widget (le défaut s'il n'y en a pas : l'aperçu des
+  /// réglages et les tests posent des bouts de lecteur hors du lecteur).
+  static BiblePrefs prefsOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_Scope>()?.prefs ??
+      const BiblePrefs();
+
   /// Le style d'un verset sous ce widget (le défaut s'il n'y en a pas).
-  static TextStyle verseStyle(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<_Scope>();
-    return bibleVerseTextStyle(
-      scope?.prefs ?? const BiblePrefs(),
-      context.palette,
-    );
-  }
+  static TextStyle verseStyle(BuildContext context) =>
+      bibleVerseTextStyle(prefsOf(context), context.palette);
+
+  /// Le rouge brique sous ce widget : numéros de versets, lettrine.
+  static Color rubric(BuildContext context) =>
+      bibleRubricColor(prefsOf(context).theme);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -137,9 +152,9 @@ class BibleAppearanceScreen extends ConsumerWidget {
                       children: [
                         TextSpan(
                           text: '16 ',
-                          style: AppTypography.caption.copyWith(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: context.palette.primary,
+                            color: BibleReaderAppearance.rubric(context),
                           ),
                         ),
                         TextSpan(text: l.bibleM4AppearanceSample),

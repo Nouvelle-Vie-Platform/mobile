@@ -4948,6 +4948,18 @@ abstract class AppLocalizations {
   /// **'Marque-page'**
   String get bibleM2Bookmark;
 
+  /// Pilule d'un verset : la pastille qui déploie la palette
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleurs'**
+  String get bibleM2Colors;
+
+  /// Bouton « + » posé sur la sélection du lecteur
+  ///
+  /// In fr, this message translates to:
+  /// **'Étendre au verset suivant'**
+  String get bibleM2ExtendSelection;
+
   /// Onglet Favori, puce
   ///
   /// In fr, this message translates to:

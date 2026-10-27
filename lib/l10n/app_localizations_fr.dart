@@ -2734,6 +2734,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bibleM2Bookmark => 'Marque-page';
 
   @override
+  String get bibleM2Colors => 'Couleurs';
+
+  @override
+  String get bibleM2ExtendSelection => 'Étendre au verset suivant';
+
+  @override
   String get bibleM2FilterAll => 'Tous';
 
   @override
