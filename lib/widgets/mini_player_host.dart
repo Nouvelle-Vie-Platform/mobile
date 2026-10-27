@@ -179,26 +179,36 @@ class _MiniPlayerHostState extends ConsumerState<MiniPlayerHost> {
     _popups = null;
   }
 
-  /// **Reconstruire, mais jamais pendant une construction.**
+  /// **Reconstruire, mais jamais pendant une construction** — et donc
+  /// **toujours après l'image**, sans jamais consulter la phase.
   ///
   /// Le délégué du routeur et l'observateur préviennent pendant que le
   /// `Navigator` vide sa file — c'est-à-dire en pleine construction, sous
-  /// l'hôte. Un `setState` sur un ancêtre à ce moment-là lève ; on attend donc
-  /// la fin de l'image.
+  /// l'hôte. Un `setState` sur un ancêtre à ce moment-là lève.
+  ///
+  /// **La phase ne dit pas « une construction est en cours ».** Elle a servi
+  /// de garde, et elle laissait passer le seul cas qui compte : `runApp` monte
+  /// l'arbre **hors trame**, dans un `buildScope` synchrone
+  /// (`RootWidget.attach`), donc en phase `idle` — et c'est là, sous l'hôte,
+  /// que le `Router` se monte et appelle `setInitialRoutePath`, qui prévient le
+  /// délégué. Mesuré : phase `idle`, construction en cours, `setState`
+  /// immédiat, assertion à chaque démarrage en débogage.
+  ///
+  /// ⚠️ **Différer impose de demander l'image.** `addPostFrameCallback` seul
+  /// n'est jamais appelé si personne n'en demande : une route qui change hors
+  /// trame laisserait la carte figée sur l'écran précédent. D'où
+  /// `ensureVisualUpdate`.
   void _refresh() {
     if (!mounted) return;
     _findPopups();
-    final binding = SchedulerBinding.instance;
-    if (binding.schedulerPhase != SchedulerPhase.persistentCallbacks) {
-      setState(() {});
-      return;
-    }
     if (_refreshScheduled) return;
     _refreshScheduled = true;
+    final binding = SchedulerBinding.instance;
     binding.addPostFrameCallback((_) {
       _refreshScheduled = false;
       if (mounted) setState(() {});
     });
+    binding.ensureVisualUpdate();
   }
 
   void _shield(Object token, {required bool active}) {
