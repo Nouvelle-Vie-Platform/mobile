@@ -36,7 +36,14 @@ final Map<String, String?> _exact = () {
   }
 
   for (final b in bibleCanon) {
+    // Les trois langues, pas seulement celle de l'écran : « Genesis » et « 1 Mɔse »
+    // doivent se taper même en français, et réciproquement. Le jeu des noms est fermé
+    // et connu à la compilation — l'ouvrir ne coûte rien et évite qu'un fidèle doive
+    // deviner dans quelle langue l'appli l'attend.
     add(b.name, b.osis);
+    for (final lang in const ['en', 'ee']) {
+      add(b.nameIn(lang), b.osis);
+    }
     add(b.osis, b.osis);
     for (final a in b.abbreviations) {
       add(a, b.osis);

@@ -170,6 +170,8 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
             (needle.isEmpty
                 ? b.testament == _testament
                 : _fold(b.name).contains(needle) ||
+                    _fold(b.nameIn('en')).contains(needle) ||
+                    _fold(b.nameIn('ee')).contains(needle) ||
                     b.abbreviations.any((a) => _fold(a).startsWith(needle))))
           b,
     ];
@@ -228,7 +230,7 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
                               .copyWith(color: palette.primary),
                         ),
                       ),
-                      title: Text(b.name),
+                      title: Text(b.nameIn(l.localeName)),
                       subtitle: Text(
                         l.bibleChapterCount(versification.chapterCount(b.osis)),
                       ),
@@ -284,7 +286,8 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _header(context, book.name, context.l10n.bibleChooseChapter),
+        _header(context, book.nameIn(context.l10n.localeName),
+            context.l10n.bibleChooseChapter),
         Expanded(
           child: _Grid(
             numbers: versification.chaptersOf(book.osis),

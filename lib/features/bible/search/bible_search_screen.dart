@@ -270,12 +270,14 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
             onSelected: (osis) => _setScope(BibleSearchScope.book(osis)),
             itemBuilder: (_) => [
               for (final b in bibleCanon)
-                PopupMenuItem(value: b.osis, child: Text(b.name)),
+                PopupMenuItem(
+                    value: b.osis, child: Text(b.nameIn(l.localeName))),
             ],
             child: Chip(
               avatar: const Icon(Icons.arrow_drop_down, size: 18),
-              label: Text(
-                  book == null ? l.bibleSearchScopeBook : osisBooksFr[book]!),
+              label: Text(book == null
+                  ? l.bibleSearchScopeBook
+                  : osisBooksFor(l.localeName)[book]!),
               backgroundColor: book == null
                   ? null
                   : context.palette.primary.withValues(alpha: 0.14),

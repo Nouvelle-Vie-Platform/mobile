@@ -195,3 +195,170 @@ const Map<String, String> osisBooksFr = {
   'Jude': 'Jude',
   'Rev': 'Apocalypse',
 };
+
+/// **Le nom d'un livre dans la langue de l'application.**
+///
+/// Les codes OSIS ne bougent **jamais** : ce sont les clés de `bible_marks`, de
+/// `bible_reading_states` et des liens de notes. Seuls les libellés suivent la langue.
+///
+/// Repli sur le français pour toute langue sans table, et pour un code inconnu — un titre
+/// dans la mauvaise langue reste lisible, un titre absent ne l'est pas.
+Map<String, String> osisBooksFor(String languageCode) => switch (languageCode) {
+      'en' => osisBooksEn,
+      'ee' => osisBooksEe,
+      _ => osisBooksFr,
+    };
+
+/// **Les 66 livres en anglais**, code OSIS → nom.
+///
+/// Ce n'est pas une traduction mais la **nomenclature canonique** : « Song of Songs »
+/// n'est pas un choix de traducteur. Elle manquait, et l'application servait donc des
+/// titres français à ses lecteurs anglophones — constaté le 27/10/2026 sur une capture
+/// où « Genèse » et « Exode » s'alignaient sous « Old Testament ».
+
+const Map<String, String> osisBooksEn = {
+  'Gen': 'Genesis',
+  'Exod': 'Exodus',
+  'Lev': 'Leviticus',
+  'Num': 'Numbers',
+  'Deut': 'Deuteronomy',
+  'Josh': 'Joshua',
+  'Judg': 'Judges',
+  'Ruth': 'Ruth',
+  '1Sam': '1 Samuel',
+  '2Sam': '2 Samuel',
+  '1Kgs': '1 Kings',
+  '2Kgs': '2 Kings',
+  '1Chr': '1 Chronicles',
+  '2Chr': '2 Chronicles',
+  'Ezra': 'Ezra',
+  'Neh': 'Nehemiah',
+  'Esth': 'Esther',
+  'Job': 'Job',
+  'Ps': 'Psalms',
+  'Prov': 'Proverbs',
+  'Eccl': 'Ecclesiastes',
+  'Song': 'Song of Songs',
+  'Isa': 'Isaiah',
+  'Jer': 'Jeremiah',
+  'Lam': 'Lamentations',
+  'Ezek': 'Ezekiel',
+  'Dan': 'Daniel',
+  'Hos': 'Hosea',
+  'Joel': 'Joel',
+  'Amos': 'Amos',
+  'Obad': 'Obadiah',
+  'Jonah': 'Jonah',
+  'Mic': 'Micah',
+  'Nah': 'Nahum',
+  'Hab': 'Habakkuk',
+  'Zeph': 'Zephaniah',
+  'Hag': 'Haggai',
+  'Zech': 'Zechariah',
+  'Mal': 'Malachi',
+  'Matt': 'Matthew',
+  'Mark': 'Mark',
+  'Luke': 'Luke',
+  'John': 'John',
+  'Acts': 'Acts',
+  'Rom': 'Romans',
+  '1Cor': '1 Corinthians',
+  '2Cor': '2 Corinthians',
+  'Gal': 'Galatians',
+  'Eph': 'Ephesians',
+  'Phil': 'Philippians',
+  'Col': 'Colossians',
+  '1Thess': '1 Thessalonians',
+  '2Thess': '2 Thessalonians',
+  '1Tim': '1 Timothy',
+  '2Tim': '2 Timothy',
+  'Titus': 'Titus',
+  'Phlm': 'Philemon',
+  'Heb': 'Hebrews',
+  'Jas': 'James',
+  '1Pet': '1 Peter',
+  '2Pet': '2 Peter',
+  '1John': '1 John',
+  '2John': '2 John',
+  '3John': '3 John',
+  'Jude': 'Jude',
+  'Rev': 'Revelation',
+};
+
+/// **Les 66 livres en éwé**, code OSIS → nom.
+///
+/// Fournis par un locuteur et vérifiés un à un contre [osisBooksFr] : même ordre, mêmes
+/// livres. Le Pentateuque y porte le nom de Moïse (« 1 Mɔse »), usage des Bibles éwé, et
+/// non un calque du français.
+///
+/// Sans cette table, une Bible en éwé afficherait du vrai texte éwé sous des titres
+/// français : le texte juste, l'habillage dans la mauvaise langue.
+
+const Map<String, String> osisBooksEe = {
+  'Gen': '1 Mɔse (Gɔmedzedze)',
+  'Exod': '2 Mɔse (Do-Do-Ɖa)',
+  'Lev': '3 Mɔse (Lewiwo)',
+  'Num': '4 Mɔse (Xexlẽwo)',
+  'Deut': '5 Mɔse (Se-Mɔ-Ɖoɖowo)',
+  'Josh': 'Yosua',
+  'Judg': 'Vonɔlawo',
+  'Ruth': 'Rut',
+  '1Sam': '1 Samuel',
+  '2Sam': '2 Samuel',
+  '1Kgs': '1 Fiawo',
+  '2Kgs': '2 Fiawo',
+  '1Chr': '1 Kronika',
+  '2Chr': '2 Kronika',
+  'Ezra': 'Ezra',
+  'Neh': 'Nehemia',
+  'Esth': 'Ester',
+  'Job': 'Hiob',
+  'Ps': 'Hakpukpuiwo',
+  'Prov': 'Lododowo',
+  'Eccl': 'Nyagblɔla',
+  'Song': 'Hawo fe Ha',
+  'Isa': 'Yesaya',
+  'Jer': 'Yeremia',
+  'Lam': 'Yeremia fe Aviwo',
+  'Ezek': 'Esekiel',
+  'Dan': 'Daniel',
+  'Hos': 'Hosea',
+  'Joel': 'Yoel',
+  'Amos': 'Amos',
+  'Obad': 'Obadya',
+  'Jonah': 'Yona',
+  'Mic': 'Mika',
+  'Nah': 'Nahum',
+  'Hab': 'Habakuk',
+  'Zeph': 'Zefanya',
+  'Hag': 'Hagai',
+  'Zech': 'Sakarya',
+  'Mal': 'Malaki',
+  'Matt': 'Mateo',
+  'Mark': 'Marko',
+  'Luke': 'Luka',
+  'John': 'Yohanes',
+  'Acts': 'Dɔwɔwɔwo',
+  'Rom': 'Romatɔwo',
+  '1Cor': '1 Korintotɔwo',
+  '2Cor': '2 Korintotɔwo',
+  'Gal': 'Galatiatɔwo',
+  'Eph': 'Efesotɔwo',
+  'Phil': 'Filipitɔwo',
+  'Col': 'Kolositɔwo',
+  '1Thess': '1 Tesalonikatɔwo',
+  '2Thess': '2 Tesalonikatɔwo',
+  '1Tim': '1 Timoteo',
+  '2Tim': '2 Timoteo',
+  'Titus': 'Tito',
+  'Phlm': 'Filemon',
+  'Heb': 'Hebrewtɔwo',
+  'Jas': 'Yakobo',
+  '1Pet': '1 Petro',
+  '2Pet': '2 Petro',
+  '1John': '1 Yohanes',
+  '2John': '2 Yohanes',
+  '3John': '3 Yohanes',
+  'Jude': 'Yuda',
+  'Rev': 'Nyaɖeɖefia',
+};
