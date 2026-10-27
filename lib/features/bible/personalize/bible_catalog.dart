@@ -33,6 +33,7 @@ final class BibleCatalogEntry {
   const BibleCatalogEntry({
     required this.version,
     this.sizeBytes,
+    this.license,
     this.versification,
     this.archiveUrl,
     this.localPath,
@@ -41,6 +42,12 @@ final class BibleCatalogEntry {
 
   final BibleVersion version;
   final int? sizeBytes;
+
+  /// `bible_versions.license` — la mention que plusieurs ayants droit exigent
+  /// **là où le texte est lu** (la S21 : « Reproduit avec aimable
+  /// autorisation »). Elle vit ici et non sur [BibleVersion] : les deux
+  /// exemples figés n'en ont pas, et ce n'est pas l'identité d'une traduction.
+  final String? license;
 
   /// La versification **relevée** de cette version installée (C3, #240), ou
   /// `null` : le canon figé sert alors de repli.
@@ -86,7 +93,8 @@ final class MergedBibleCatalog implements BibleCatalog {
     for (final e in entries)
       '${e.version.code}:${e.version.name}:${e.version.language}:'
           '${e.version.installed}:${e.downloadable}:${e.sizeBytes}'
-          ':${e.versification?.signature.hashCode}:${e.localPath}',
+          ':${e.versification?.signature.hashCode}:${e.localPath}'
+          ':${e.license}',
   ].join('|');
 
   @override
@@ -141,6 +149,7 @@ final class MergedBibleCatalog implements BibleCatalog {
               installed: installedPaths.containsKey(r.code),
             ),
             sizeBytes: r.sizeBytes,
+            license: r.license,
             versification: versifications[r.code],
             archiveUrl: r.archiveUrl,
             localPath: installedPaths[r.code],

@@ -290,7 +290,7 @@ void main() {
     expect(find.byKey(BibleVersionsScreen.downloadKey('S21')), findsOneWidget);
   });
 
-  testWidgets('Versions : la licence ne paraît pas dans l\'appli (#242)',
+  testWidgets('Versions : la licence paraît sous la traduction (#258)',
       (tester) async {
     await tester.runAsync(() async {
       await pumpScreen(
@@ -310,6 +310,18 @@ void main() {
                   sortOrder: 0,
                   publishedAt: DateTime.utc(2026),
                 ),
+                // Une traduction que le portail sert **sans** licence : le
+                // sous-titre doit s'arrêter aux faits, et surtout ne pas
+                // afficher le mot « null » à la place.
+                BibleVersionRow(
+                  syncStamp: 0,
+                  id: 2,
+                  code: 'LSG',
+                  name: 'Louis Segond',
+                  language: 'fr',
+                  sortOrder: 1,
+                  publishedAt: DateTime.utc(2026),
+                ),
               ],
             ),
           ),
@@ -323,13 +335,15 @@ void main() {
       expect(find.byKey(BibleVersionsScreen.rowKey('EWE')), findsOneWidget);
       expect(find.textContaining('EE'), findsWidgets);
 
-      // La licence, elle, n'est nulle part — ni entière, ni par son fragment le plus
-      // reconnaissable.
-      expect(find.textContaining('Bible Society'), findsNothing);
+      // Et la licence est là, **entière** : plusieurs ayants droit exigent la
+      // mention exacte, pas un fragment ni une abréviation. Elle en était partie
+      // le 26/10 (#242) ; elle revient le 27 (#258), sur sa propre ligne.
       expect(
         find.textContaining('© Bible Society of Ghana, 1913, 2006'),
-        findsNothing,
+        findsOneWidget,
       );
+      expect(find.byKey(BibleVersionsScreen.rowKey('LSG')), findsOneWidget);
+      expect(find.textContaining('null'), findsNothing);
     });
   });
 
