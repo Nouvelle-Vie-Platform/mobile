@@ -9,6 +9,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -85,13 +86,18 @@ Future<void> _ouvrirActions(WidgetTester tester) async {
   await _settle(tester);
 }
 
-Future<void> _tapVerse(WidgetTester tester, int verse) async {
+/// Amène le verset sous le doigt : plus bas que l'écran, rien ne le touche.
+Future<void> _ensureVerse(WidgetTester tester, int verse) async {
   final f = find.byKey(BibleReaderScreen.verseKey(verse));
   if (f.hitTestable().evaluate().isEmpty) {
     await Scrollable.ensureVisible(tester.element(f), alignment: 0.5);
     await _settle(tester);
   }
-  await tester.tap(f);
+}
+
+Future<void> _tapVerse(WidgetTester tester, int verse) async {
+  await _ensureVerse(tester, verse);
+  await tester.tap(find.byKey(BibleReaderScreen.verseKey(verse)));
   await _settle(tester);
 }
 
@@ -141,6 +147,51 @@ MarkerWordHighlight? _wordBand(WidgetTester tester, int verse) {
     matching: find.byType(MarkerWordHighlight),
   );
   return f.evaluate().isEmpty ? null : tester.widget<MarkerWordHighlight>(f);
+}
+
+/// **Prendre des mots au doigt** : appui long sur le mot de rang [from],
+/// glissé jusqu'au mot [to] s'il y en a un, puis le doigt se lève — la pilule
+/// reste. Rend les bornes **réellement** retenues par le lecteur, dans le
+/// texte du verset : ce sont celles que les actions reçoivent (#257).
+Future<(int, int)> _prendreMots(
+  WidgetTester tester,
+  int verse, {
+  required int from,
+  int? to,
+}) async {
+  await _ensureVerse(tester, verse);
+  final text = _verseText(tester, verse);
+  final gesture = await tester.startGesture(
+    _charCenter(tester, verse, _insideWord(text, from)),
+  );
+  // Comme le test de #252 : sous `runAsync`, l'appui long se compte sur une
+  // vraie minuterie.
+  await Future<void>.delayed(const Duration(milliseconds: 700));
+  await tester.pump();
+  if (to != null) {
+    await gesture.moveTo(_charCenter(tester, verse, _insideWord(text, to)));
+    await tester.pump();
+  }
+  final band = _wordBand(tester, verse)!;
+  await gesture.up();
+  await _settle(tester);
+  return (band.from - '$verse '.length, band.to - '$verse '.length);
+}
+
+/// Écoute ce que le presse-papiers reçoit vraiment : `Clipboard.setData` passe
+/// par le canal de la plateforme, muet dans un test sans ce guetteur.
+List<String?> _guetterPressePapiers(WidgetTester tester) {
+  final textes = <String?>[];
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    SystemChannels.platform,
+    (call) async {
+      if (call.method == 'Clipboard.setData') {
+        textes.add((call.arguments as Map)['text'] as String?);
+      }
+      return null;
+    },
+  );
+  return textes;
 }
 
 Finder _marginIcon(int verse, IconData icon) => find.descendant(
@@ -376,6 +427,143 @@ void main() {
       expect(_background(tester, 6), isNull);
 
       expect(_wire.requests, isEmpty);
+    });
+  });
+
+  /*
+   * #257 — **copier trois mots rend le verset entier, ces mots en exergue.**
+   *
+   * Avant, la pilule ne passait les bornes qu'au surlignage : copier une
+   * sélection de mots rendait le verset entier sans aucune trace du geste.
+   * Tronquer la citation la rendrait illisible, et « Jean 3:6 » annonce un
+   * verset : c'est donc le verset entier, avec les astérisques.
+   */
+  testWidgets(
+      'Copier sur trois mots : le verset entier, les mots choisis entre '
+      'astérisques', (tester) async {
+    await tester.runAsync(() async {
+      final container = guestContainer(extra: [_radioOff]);
+      final router = await pumpGuestApp(tester, container);
+      router.push('/bible/read/John/3');
+      await _settle(tester);
+      final presse = _guetterPressePapiers(tester);
+
+      final texte = _verseText(tester, 6);
+      final (from, to) = await _prendreMots(tester, 6, from: 1, to: 3);
+      expect(from, greaterThan(0),
+          reason: 'pas le premier mot : voir le test '
+              'de charFrom == 0');
+      expect(RegExp(r'\S+').allMatches(texte.substring(from, to)), hasLength(3),
+          reason: 'trois mots');
+
+      await tester.tap(find.byKey(const Key('bible_action_copy')));
+      await _settle(tester);
+
+      expect(
+        presse.single,
+        '« ${texte.substring(0, from)}*${texte.substring(from, to)}*'
+        '${texte.substring(to)} »\n— Jean 3:6 (EXA)',
+      );
+      // Ce qu'on lira dans six mois : le verset complet, et le geste visible.
+      expect(presse.single, startsWith('« ${texte.substring(0, from)}*'));
+      expect(presse.single!.split('*'), hasLength(3));
+      expect(_wire.requests, isEmpty);
+    });
+  });
+
+  /*
+   * #257 — **`charFrom == 0` est le premier caractère du verset**, et il est
+   * légitime. Un `if (charFrom != null && charFrom > 0)` quelque part entre la
+   * pilule et le presse-papiers ne mettrait **rien** en exergue : ce test est
+   * là pour ça, et il interroge le texte produit, pas l'appel.
+   */
+  testWidgets(
+      'Copier au premier mot (charFrom == 0) : le DÉBUT du verset est '
+      'mis en exergue', (tester) async {
+    await tester.runAsync(() async {
+      final container = guestContainer(extra: [_radioOff]);
+      final router = await pumpGuestApp(tester, container);
+      router.push('/bible/read/John/3');
+      await _settle(tester);
+      final presse = _guetterPressePapiers(tester);
+
+      final texte = _verseText(tester, 6);
+      final (from, to) = await _prendreMots(tester, 6, from: 0);
+      expect(from, 0, reason: 'le premier mot commence au caractère 0');
+
+      await tester.tap(find.byKey(const Key('bible_action_copy')));
+      await _settle(tester);
+
+      expect(
+        presse.single,
+        '« *${texte.substring(0, to)}*${texte.substring(to)} »\n'
+        '— Jean 3:6 (EXA)',
+      );
+      // L'astérisque ouvrante touche bien le premier mot, et rien ne précède.
+      expect(presse.single, startsWith('« *${texte.substring(0, to)}*'));
+    });
+  });
+
+  /*
+   * #257 — **la note met les mots choisis en gras pour de vrai** : le Delta le
+   * permet, l'`insert` du texte se coupe en trois. `bold` est dans la liste
+   * close du serveur (`upsert_spiritual_note_controller`) ; aucun autre
+   * attribut ne doit s'inviter, sous peine de 422.
+   */
+  testWidgets(
+      'Note sur quelques mots : la citation en trois morceaux, celui du '
+      'milieu en gras — et le lien du verset inchangé', (tester) async {
+    await tester.runAsync(() async {
+      _wire = FakeAdapter((o) => jsonReply(200, {}));
+      ApiClient.instance.dio.httpClientAdapter = _wire;
+      final container = guestContainer(extra: [_radioOff]);
+      container.listen(bibleMarksOutboxProvider, (_, __) {});
+      final router = await pumpGuestApp(tester, container);
+      router.push('/bible/read/John/3');
+      await _settle(tester);
+
+      final (from, to) = await _prendreMots(tester, 16, from: 1, to: 2);
+      final texte = _verseText(tester, 16);
+      expect(from, greaterThan(0));
+
+      await tester.tap(find.byKey(const Key('bible_action_note')));
+      await _settle(tester);
+      await signIn(container);
+      await untilSignedIn(tester, container);
+      await _settle(tester);
+      await _settle(tester);
+
+      expect(router.state.name, AppRoute.noteEditor);
+      final db = container.read(appDatabaseProvider);
+      final note = (await db.select(db.localNotes).get()).single;
+      final ops = (jsonDecode(note.content!) as Map)['ops'] as List;
+      // Le lien reste l'identité du **verset** : une note prise sur trois mots
+      // retrouve la note du verset, et `toUrl()` n'a pas changé de forme.
+      expect(ops[0], {
+        'insert': 'Jean 3:16',
+        'attributes': {'link': 'nv://bible/John/3/16'},
+      });
+      expect(ops[2], {'insert': texte.substring(0, from)});
+      expect(ops[3], {
+        'insert': texte.substring(from, to),
+        'attributes': {'bold': true},
+      });
+      expect(ops[4], {'insert': texte.substring(to)});
+      expect(ops[5], {
+        'insert': '\n',
+        'attributes': {'blockquote': true},
+      });
+      // Aucun attribut hors de la liste close du serveur.
+      expect(
+        ops.map((o) => ((o as Map)['attributes'] as Map?)?.keys ?? const []),
+        everyElement(
+          predicate<Iterable>(
+            (k) => k.every(['link', 'bold', 'blockquote'].contains),
+          ),
+        ),
+      );
+      // Le texte cité est entier : le gras ne remplace pas la citation.
+      expect(note.body, contains(texte));
     });
   });
 

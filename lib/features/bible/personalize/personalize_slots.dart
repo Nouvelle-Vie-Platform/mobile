@@ -62,7 +62,9 @@ final BibleSlots personalizeSlots = BibleSlots(
       order: 60,
       icon: Icons.image_outlined,
       label: (context) => context.l10n.bibleM4ShareAsImage,
-      run: (_, ref, selection, version) =>
+      // Les mots choisis (#257) ne descendent pas jusqu'à l'image : déclarés
+      // pour rester assignable, ignorés.
+      run: (_, ref, selection, version, {charFrom, charTo}) =>
           openBibleStudio(ref, selection, version),
     ),
     BibleVerseAction(
@@ -70,7 +72,8 @@ final BibleSlots personalizeSlots = BibleSlots(
       order: 70,
       icon: Icons.headphones_outlined,
       label: (context) => context.l10n.bibleM4ListenFromHere,
-      run: listenFromHere,
+      run: (context, ref, selection, version, {charFrom, charTo}) =>
+          listenFromHere(context, ref, selection, version),
     ),
   ],
   chapterDecorators: [bibleAudioDecorator],

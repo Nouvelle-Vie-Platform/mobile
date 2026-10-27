@@ -214,6 +214,26 @@ void main() {
     expect(await store.watchNotedVerses('John', 3).first, {16, 17});
   });
 
+  // #257 — `charFrom == 0` : les mots choisis **ouvrent** le verset. Le
+  // morceau d'avant est alors vide, et un `insert` vide n'est pas un Delta
+  // valide : c'est le gras qui commence la citation, et non rien du tout.
+  test('note : charFrom == 0 met le début du verset en gras', () {
+    final ops = (jsonDecode(bibleNoteContent(
+      const BibleLink('John', 3, from: 16),
+      'Car Dieu a tant aimé',
+      charFrom: 0,
+      charTo: 8,
+    )) as Map)['ops'] as List;
+    expect(ops[2], {
+      'insert': 'Car Dieu',
+      'attributes': {'bold': true},
+    });
+    expect(ops[3], {'insert': ' a tant aimé'});
+    expect(ops.map((o) => (o as Map)['insert']), isNot(contains('')));
+    // Le lien — l'identité qui retrouve la note du verset — ne bouge pas.
+    expect((ops[0] as Map)['attributes'], {'link': 'nv://bible/John/3/16'});
+  });
+
   test('le contenu d\'une note : lien en tête, citation en blockquote', () {
     final ops = (jsonDecode(bibleNoteContent(
             const BibleLink('John', 3, from: 16), 'Car Dieu a tant aimé'))
