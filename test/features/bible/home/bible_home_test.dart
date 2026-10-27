@@ -425,7 +425,7 @@ void main() {
       await db.into(db.bibleQuizzes).insert(
             BibleQuizzesCompanion.insert(
               id: const Value(7),
-              title: 'Les patriarches',
+              title: const {'fr': 'Les patriarches'},
               ageBand: const Value('adults'),
               questions: const Value(
                 '[{"kind":"truefalse","prompt":"Abraham ?",'
@@ -456,7 +456,7 @@ void main() {
         seed: (db) => db.into(db.bibleQuizzes).insert(
               BibleQuizzesCompanion.insert(
                 id: const Value(7),
-                title: 'Passé',
+                title: const {'fr': 'Passé'},
                 ageBand: const Value('adults'),
                 questions: const Value(
                   '[{"kind":"truefalse","prompt":"?",'

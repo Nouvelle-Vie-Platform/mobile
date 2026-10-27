@@ -38,6 +38,7 @@ library;
 
 import 'package:drift/drift.dart';
 
+import '../converters/i18n_map_converter.dart';
 import 'mediatheque_tables.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -223,8 +224,15 @@ class BiblePlans extends Table with SyncedRow {
   String get tableName => 'bible_plans';
 
   TextColumn get id => text()();
-  TextColumn get title => text()();
-  TextColumn get description => text().nullable()();
+
+  /// Carte de traduction `{fr, en?, ee?}` (#263), comme `teaching_types.label`
+  /// : le magasin garde la carte entière, et c'est `pick` qui replie à la
+  /// lecture. Figer le français ici laisserait un lecteur passé en éwé avec
+  /// des titres français jusqu'à une resynchronisation complète que rien ne
+  /// déclencherait.
+  TextColumn get title => text().map(const I18nMapConverter())();
+  TextColumn get description =>
+      text().map(const I18nMapConverter()).nullable()();
   IntColumn get coverBackgroundId => integer().nullable()();
 
   /// `[[référence]]`, en JSON.
@@ -243,7 +251,9 @@ class BibleChallenges extends Table with SyncedRow {
 
   TextColumn get id => text()();
   TextColumn get planId => text().nullable()();
-  TextColumn get title => text()();
+
+  /// Carte de traduction (#263) — voir [BiblePlans.title].
+  TextColumn get title => text().map(const I18nMapConverter())();
   TextColumn get startsOn => text().nullable()();
   TextColumn get endsOn => text().nullable()();
   DateTimeColumn get publishedAt => dateTime().nullable()();
@@ -259,7 +269,10 @@ class BibleQuizzes extends Table with SyncedRow {
   String get tableName => 'bible_quizzes';
 
   IntColumn get id => integer()();
-  TextColumn get title => text()();
+
+  /// Carte de traduction (#263) — voir [BiblePlans.title]. Les textes des
+  /// questions sont des cartes **dans** [questions], repliés à l'analyse.
+  TextColumn get title => text().map(const I18nMapConverter())();
 
   /// `kids | teens | adults`.
   TextColumn get ageBand => text().nullable()();

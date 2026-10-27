@@ -15,7 +15,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../data/local/app_database.dart';
+import '../../../state/locale_providers.dart';
 import '../../../state/sync_providers.dart';
+import '../../../utils/i18n_text.dart';
 import '../data/bible_providers.dart';
 import 'plan_logic.dart';
 import 'plans_api.dart';
@@ -49,12 +51,21 @@ final biblePlanEnrollmentsProvider = StreamProvider<List<PlanEnrollment>>(
 
 /// Les plans **publiés** par l'église : `publishedAt == null` masqué, les
 /// retirés ont déjà quitté le miroir (tombstone).
+///
+/// Le tri par titre se fait **en Dart, sur le titre replié** : depuis #263 la
+/// colonne porte la carte entière en JSON, et trier dessus en SQL rangerait
+/// les plans par l'orthographe de leur carte, pas par ce que le lecteur lit.
 final biblePublishedPlansProvider = StreamProvider<List<BiblePlanRow>>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return (db.select(db.biblePlans)
-        ..where((t) => t.publishedAt.isNotNull())
-        ..orderBy([(t) => OrderingTerm.asc(t.title)]))
-      .watch();
+  final locale = ref.watch(contentLocaleProvider);
+  return (db.select(db.biblePlans)..where((t) => t.publishedAt.isNotNull()))
+      .watch()
+      .map(
+        (rows) => rows
+          ..sort(
+            (a, b) => pick(a.title, locale).compareTo(pick(b.title, locale)),
+          ),
+      );
 }, retry: _noRetry);
 
 /// Les défis publiés **pas encore finis** (en cours ou à venir), par date de
@@ -96,10 +107,12 @@ final class PlanTracker {
   bool get available => days.isNotEmpty;
 }
 
-/// Les jours d'une inscription, et le titre qui va avec.
+/// Les jours d'une inscription, et le titre qui va avec — celui d'un plan
+/// publié **replié dans [locale]** (#263).
 (List<PlanDay>, String?) resolvePlan(
   PlanEnrollment e,
   List<BiblePlanRow> published,
+  String locale,
 ) {
   switch (e.source) {
     case PlanSource.builtin:
@@ -111,7 +124,9 @@ final class PlanTracker {
           : (spreadBooks(c.books, c.days), c.title);
     case PlanSource.published:
       for (final p in published) {
-        if (p.id == e.planId) return (parsePlanDays(p.days), p.title);
+        if (p.id == e.planId) {
+          return (parsePlanDays(p.days), pick(p.title, locale));
+        }
       }
       return (const [], null);
   }
@@ -123,9 +138,12 @@ final biblePlanTrackersProvider = Provider<List<PlanTracker>?>((ref) {
   final published = ref.watch(biblePublishedPlansProvider).value ?? const [];
   if (enrollments == null) return null;
   final today = ref.watch(bibleTodayProvider);
+  final locale = ref.watch(contentLocaleProvider);
   final read = ref.watch(bibleReadingStateProvider).value;
   bool hasRead(String b, int c) => read?.hasRead(b, c) ?? false;
-  return [for (final e in enrollments) _track(e, published, today, hasRead)];
+  return [
+    for (final e in enrollments) _track(e, published, today, hasRead, locale),
+  ];
 });
 
 PlanTracker _track(
@@ -133,8 +151,9 @@ PlanTracker _track(
   List<BiblePlanRow> published,
   DateTime today,
   bool Function(String, int) hasRead,
+  String locale,
 ) {
-  final (days, title) = resolvePlan(e, published);
+  final (days, title) = resolvePlan(e, published, locale);
   final start = parseDay(e.startedOn) ?? today;
   final stored = PlanProgress(
     totalDays: days.length,
@@ -202,6 +221,7 @@ final biblePlansOutboxProvider = Provider<Future<void> Function()>((ref) {
     final store = ref.read(biblePlansStoreProvider);
     final db = ref.read(appDatabaseProvider);
     final today = ref.read(bibleTodayProvider);
+    final locale = ref.read(contentLocaleProvider);
     final published = await (db.select(
       db.biblePlans,
     )..where((t) => t.publishedAt.isNotNull()))
@@ -210,7 +230,10 @@ final biblePlansOutboxProvider = Provider<Future<void> Function()>((ref) {
         await ref.read(bibleDaoProvider).watchReadingState(member: true).first;
     bool hasRead(String b, int c) => read?.hasRead(b, c) ?? false;
     for (final e in await store.enrollments(member: true)) {
-      final t = _track(e, published, today, hasRead);
+      // La langue ne sert qu'au titre, dont la file n'a que faire ; on la
+      // passe quand même plutôt que de donner un défaut au paramètre, qui
+      // servirait un jour la mauvaise langue en silence ailleurs.
+      final t = _track(e, published, today, hasRead, locale);
       if (!e.completedDays.containsAll(t.progress.completed)) {
         await store.save(e.copyWith(completedDays: t.progress.completed));
       }

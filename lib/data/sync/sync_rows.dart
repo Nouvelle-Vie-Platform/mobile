@@ -27,6 +27,7 @@ import 'package:drift/drift.dart';
 
 import '../../models/legal_document_view.dart';
 import '../../models/teaching_download.dart';
+import '../../utils/i18n_text.dart';
 import '../local/app_database.dart';
 import '../local/converters/string_list_converter.dart';
 import '../local/converters/teaching_download_converter.dart';
@@ -1279,18 +1280,15 @@ List<LegalSection> _legalSections(
   return sections;
 }
 
-/// Une carte de traduction `{fr, en, ee}` **entière**, tolérante à l'absence.
+/// Une carte de traduction `{fr, en, ee}` **entière**, tolérante à l'absence
+/// **et à la chaîne nue**.
 ///
 /// À la différence d'[_i18nMap], elle ne lève pas : une section sans `heading`
 /// est un trou de contenu que le rendu dessine comme un trou, pas une raison de
-/// rejeter la page qui portait tout le document.
-Map<String, String> _localizedText(Object? raw) {
-  if (raw is! Map) return const {};
-  return {
-    for (final entry in raw.entries)
-      if (entry.value is String) entry.key.toString(): entry.value! as String,
-  };
-}
+/// rejeter la page qui portait tout le document. Et une chaîne reçue se lit
+/// comme `{ 'fr': valeur }` plutôt que de coûter la page — voir [i18nMapOf],
+/// où cette règle est écrite une seule fois.
+Map<String, String> _localizedText(Object? raw) => i18nMapOf(raw);
 
 String _text(String collection, Map<String, Object?> item, String field) {
   final value = item[field];
@@ -1363,11 +1361,7 @@ Map<String, String>? _optionalI18nMap(
   String field,
 ) {
   final value = item[field];
-  if (value is! Map) return null;
-  return {
-    for (final entry in value.entries)
-      if (entry.value is String) entry.key.toString(): entry.value! as String,
-  };
+  return value == null ? null : i18nMapOf(value);
 }
 
 /// Lit une carte de traduction `{fr, en, ee}` **entière**.
@@ -1531,8 +1525,11 @@ BiblePlansCompanion biblePlanRowOf(Map<String, Object?> item) {
   const c = 'bible_plans';
   return BiblePlansCompanion.insert(
     id: bibleId(c, item),
-    title: _text(c, item, 'title'),
-    description: Value(_optionalText(item, 'description')),
+    // Carte de traduction depuis T1 (server-portal#628), **tolérante à la
+    // chaîne** : le plancher du serveur est réglable, donc l'ancienne forme
+    // peut arriver ici. La carte entière est stockée ; l'écran replie.
+    title: _localizedText(item['title']),
+    description: Value(_optionalI18nMap(item, 'description')),
     coverBackgroundId: Value(_optionalInt(item, 'coverBackgroundId')),
     days: Value(_anyJson(item, 'days')),
     publishedAt: Value(_instant(item, 'publishedAt')),
@@ -1545,7 +1542,7 @@ BibleChallengesCompanion bibleChallengeRowOf(Map<String, Object?> item) {
   return BibleChallengesCompanion.insert(
     id: bibleId(c, item),
     planId: Value(_idText(item['planId'])),
-    title: _text(c, item, 'title'),
+    title: _localizedText(item['title']),
     startsOn: Value(_optionalText(item, 'startsOn')),
     endsOn: Value(_optionalText(item, 'endsOn')),
     publishedAt: Value(_instant(item, 'publishedAt')),
@@ -1557,7 +1554,7 @@ BibleQuizzesCompanion bibleQuizRowOf(Map<String, Object?> item) {
   const c = 'bible_quizzes';
   return BibleQuizzesCompanion.insert(
     id: Value(referenceId(c, item)),
-    title: _text(c, item, 'title'),
+    title: _localizedText(item['title']),
     ageBand: Value(_optionalText(item, 'ageBand')),
     difficulty: Value(_optionalInt(item, 'difficulty')),
     featuredFrom: Value(_optionalText(item, 'featuredFrom')),

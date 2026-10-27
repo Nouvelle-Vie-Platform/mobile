@@ -12,6 +12,7 @@ import 'package:maison_du_miracle/data/sync/branch_filter.dart';
 import 'package:maison_du_miracle/data/sync/sync_api.dart';
 import 'package:maison_du_miracle/data/sync/sync_engine.dart';
 import 'package:maison_du_miracle/data/sync/synced_collection.dart';
+import 'package:maison_du_miracle/features/bible/quiz/quiz.dart';
 
 import '../data/local/local_database_fixtures.dart';
 import '../helpers/fake_sync_server.dart';
@@ -279,10 +280,15 @@ void main() {
     final plan = (await db.select(db.biblePlans).get()).single;
     expect(plan.id, _planId);
     expect(plan.days, '[[{"book":"Matt","chapter":1}]]');
+    // Les trois titres arrivent ici en **chaîne** (#263) : un serveur sous son
+    // plancher de compatibilité, ou d'avant T1. Ils se lisent sur `fr`.
+    expect(plan.title, {'fr': 'Évangiles en 40 jours'});
     final challenge = (await db.select(db.bibleChallenges).get()).single;
     expect(challenge.planId, _planId);
+    expect(challenge.title, {'fr': 'Défi de l\'Avent'});
     final quiz = (await db.select(db.bibleQuizzes).get()).single;
     expect((quiz.id, quiz.ageBand), (4, 'kids'));
+    expect(quiz.title, {'fr': 'Les patriarches'});
     final marks = await db.select(db.bibleMarks).get();
     final mark = marks.firstWhere((m) => m.book == 'John');
     expect((mark.kind, mark.verseTo, mark.color), ('highlight', 18, 'yellow'));
@@ -327,6 +333,136 @@ void main() {
     expect(await db.select(db.biblePlans).get(), isEmpty);
     expect((await db.select(db.bibleMarks).get()).single.book, 'Ps');
     expect(await db.select(db.bibleVersions).get(), isEmpty);
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Les cartes de traduction (#263, T1 server-portal#628)
+  // ─────────────────────────────────────────────────────────────────────────
+  //
+  // **Deux formes voyagent, et aucune ne doit lever.** Au-dessus de son
+  // plancher de compatibilité le serveur sert la carte ; au-dessous, la chaîne
+  // d'avant. Le plancher se règle par variable d'environnement
+  // (`BIBLE_I18N_COMPAT_FLOOR_VERSION`), donc un client qui sait lire les
+  // cartes *peut* recevoir une chaîne — et c'est exactement le défaut
+  // symétrique de celui qu'on corrige, où `_text` levait sur une carte.
+  //
+  // Chaque test joue les deux formes d'affilée, sur la même ligne : la carte
+  // au premier cycle, la chaîne au second.
+  group('les trois collections lisent la carte et la chaîne', () {
+    /// Deux cycles sur une seule collection ; les autres répondent 404, que le
+    /// moteur saute (voir le test suivant).
+    void twoForms(
+      String collection,
+      Map<String, Object?> asCard,
+      Map<String, Object?> asString,
+    ) {
+      server.serveManifests([manifest('c1'), manifest('c2')]);
+      server.servePages(collection, [
+        deltaPage(items: [asCard], nextCursor: 'c1'),
+        deltaPage(items: [asString], nextCursor: 'c2'),
+      ]);
+    }
+
+    test('bible_plans : titre et description', () async {
+      final base = _payloads['bible_plans']!.single;
+      twoForms(
+        'bible_plans',
+        {
+          ...base,
+          'title': const {
+            'fr': 'Évangiles en 40 jours',
+            'en': 'The Gospels in 40 days',
+            'ee': 'Nyanyui 40',
+          },
+          'description': const {'fr': 'Un chapitre par jour'},
+        },
+        base,
+      );
+
+      await engine().synchronize();
+      var plan = (await db.select(db.biblePlans).get()).single;
+      expect(plan.title, {
+        'fr': 'Évangiles en 40 jours',
+        'en': 'The Gospels in 40 days',
+        'ee': 'Nyanyui 40',
+      });
+      expect(plan.description, {'fr': 'Un chapitre par jour'});
+
+      // La même ligne, servie par un serveur resté en arrière.
+      await engine().synchronize();
+      plan = (await db.select(db.biblePlans).get()).single;
+      expect(plan.title, {'fr': 'Évangiles en 40 jours'});
+      expect(plan.description, isNull, reason: 'absente reste absente');
+    });
+
+    test('bible_challenges : titre', () async {
+      final base = _payloads['bible_challenges']!.single;
+      twoForms(
+        'bible_challenges',
+        {
+          ...base,
+          'title': const {'fr': 'Défi de l\'Avent', 'en': 'Advent challenge'},
+        },
+        base,
+      );
+
+      await engine().synchronize();
+      expect((await db.select(db.bibleChallenges).get()).single.title,
+          {'fr': 'Défi de l\'Avent', 'en': 'Advent challenge'});
+
+      await engine().synchronize();
+      expect((await db.select(db.bibleChallenges).get()).single.title,
+          {'fr': 'Défi de l\'Avent'});
+    });
+
+    test('bible_quizzes : titre, et les textes des questions', () async {
+      final base = _payloads['bible_quizzes']!.single;
+      twoForms(
+        'bible_quizzes',
+        {
+          ...base,
+          'title': const {'fr': 'Les patriarches', 'ee': 'Tɔgbuiwo'},
+          'questions': const [
+            {
+              'kind': 'truefalse',
+              'prompt': {
+                'fr': 'Abraham est le père d\'Isaac.',
+                'ee': 'Abraham nye Isaac fofo.',
+              },
+              'choices': [
+                {'fr': 'Vrai', 'ee': 'Nyateƒe'},
+                {'fr': 'Faux', 'ee': 'Aʋatso'},
+              ],
+              'answer': 0,
+              'explanation': {'fr': 'Genèse 21.'},
+            },
+          ],
+        },
+        base,
+      );
+
+      await engine().synchronize();
+      var row = (await db.select(db.bibleQuizzes).get()).single;
+      expect(row.title, {'fr': 'Les patriarches', 'ee': 'Tɔgbuiwo'});
+      // Les cartes des questions sont stockées **telles quelles** : c'est
+      // `Quiz.fromRow` qui replie, à la lecture (`quiz_test.dart`).
+      expect(row.questions, contains('"ee":"Nyateƒe"'));
+      var quiz = Quiz.fromRow(row, 'ee')!;
+      expect(quiz.title, 'Tɔgbuiwo');
+      expect(quiz.questions.single.choices, ['Nyateƒe', 'Aʋatso']);
+      expect(Quiz.fromRow(row, 'en')!.questions.single.prompt,
+          'Abraham est le père d\'Isaac.',
+          reason: 'repli sur le français');
+
+      // La même ligne, servie en chaînes par un serveur resté en arrière.
+      await engine().synchronize();
+      row = (await db.select(db.bibleQuizzes).get()).single;
+      expect(row.title, {'fr': 'Les patriarches'});
+      quiz = Quiz.fromRow(row, 'ee')!;
+      expect(quiz.title, 'Les patriarches');
+      expect(quiz.questions.single.choices, ['Vrai', 'Faux']);
+      expect(quiz.questions.single.prompt, 'Abraham est le père d\'Isaac.');
+    });
   });
 
   test('le 404 d\'un serveur en retard saute les collections', () async {

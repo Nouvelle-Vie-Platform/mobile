@@ -6,11 +6,21 @@
 /// (index base 0), explanation?, reference? }`. Une question illisible est
 /// **écartée**, jamais une erreur ; un quiz sans question lisible ne se montre
 /// pas.
+///
+/// Depuis #263, `prompt`, chaque `choices[]` et `explanation` sont des
+/// **cartes** `{fr, en?, ee?}` — et `kind`, `answer` et `reference` restent
+/// uniques, parce qu'`answer` est un *index* dans `choices` et qu'une place ne
+/// bouge pas d'une langue à l'autre. Le magasin garde la carte entière
+/// (`questions` est stocké tel quel) ; **c'est ici, à la lecture, qu'on
+/// replie**, par la langue que [Quiz.fromRow] reçoit. Une **chaîne** reçue se
+/// lit comme `{ 'fr': valeur }` ([i18nMapOf]) : l'ancienne forme traverse sans
+/// lever, et c'est aussi ce que portent les lignes d'avant le palier v33.
 library;
 
 import 'dart:convert';
 
 import '../../../data/local/app_database.dart';
+import '../../../utils/i18n_text.dart';
 import '../data/canon.dart';
 
 /// La tranche d'âge d'un quiz — et le profil du joueur.
@@ -46,26 +56,33 @@ final class QuizQuestion {
   final String? explanation;
   final BibleLink? reference;
 
-  /// `null` si la question n'est pas jouable.
-  static QuizQuestion? tryParse(Object? raw) {
+  /// `null` si la question n'est pas jouable, dans [locale] repliée.
+  ///
+  /// Un texte vide **dans toutes les langues** rend la question injouable,
+  /// comme une `prompt` vide le faisait avant les cartes : mieux vaut une
+  /// question en moins qu'un énoncé blanc. `pick` ayant déjà son repli sur le
+  /// français, cela ne peut arriver que si la carte est vide.
+  static QuizQuestion? tryParse(Object? raw, String locale) {
     if (raw is! Map) return null;
     final kind = raw['kind'];
-    final prompt = raw['prompt'];
     final choices = raw['choices'];
     final answer = raw['answer'];
     if (kind != 'choice' && kind != 'truefalse') return null;
-    if (prompt is! String || prompt.trim().isEmpty) return null;
+    final prompt = pick(i18nMapOf(raw['prompt']), locale);
+    if (prompt.trim().isEmpty) return null;
     if (choices is! List || choices.length < 2) return null;
-    if (choices.any((c) => c is! String)) return null;
-    if (answer is! int || answer < 0 || answer >= choices.length) return null;
-    final explanation = raw['explanation'];
+    final labels = [
+      for (final c in choices) pick(i18nMapOf(c), locale),
+    ];
+    if (labels.any((c) => c.trim().isEmpty)) return null;
+    if (answer is! int || answer < 0 || answer >= labels.length) return null;
+    final explanation = pick(i18nMapOf(raw['explanation']), locale);
     return QuizQuestion(
       isTrueFalse: kind == 'truefalse',
       prompt: prompt,
-      choices: choices.cast<String>(),
+      choices: labels,
       answer: answer,
-      explanation:
-          explanation is String && explanation.isNotEmpty ? explanation : null,
+      explanation: explanation.isEmpty ? null : explanation,
       reference: _reference(raw['reference']),
     );
   }
@@ -114,8 +131,10 @@ final class Quiz {
   final String? imageUrl;
   final DateTime? publishedAt;
 
-  /// `null` si le quiz n'est pas jouable (tranche inconnue, aucune question).
-  static Quiz? fromRow(BibleQuizRow row) {
+  /// `null` si le quiz n'est pas jouable (tranche inconnue, aucune question),
+  /// ses textes repliés dans [locale] — la langue de l'interface, recopiée
+  /// dans `contentLocaleProvider`. Le magasin, lui, garde les cartes.
+  static Quiz? fromRow(BibleQuizRow row, String locale) {
     final band = QuizAgeBand.parse(row.ageBand);
     if (band == null) return null;
     Object? raw;
@@ -125,12 +144,14 @@ final class Quiz {
       return null;
     }
     if (raw is! List) return null;
-    final questions =
-        raw.map(QuizQuestion.tryParse).whereType<QuizQuestion>().toList();
+    final questions = raw
+        .map((q) => QuizQuestion.tryParse(q, locale))
+        .whereType<QuizQuestion>()
+        .toList();
     if (questions.isEmpty) return null;
     return Quiz(
       id: row.id,
-      title: row.title,
+      title: pick(row.title, locale),
       ageBand: band,
       difficulty: (row.difficulty ?? 1).clamp(1, 3),
       questions: questions,

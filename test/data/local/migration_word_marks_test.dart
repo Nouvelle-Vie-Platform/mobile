@@ -26,9 +26,9 @@ void main() {
 
   const v = AppDatabase.kWordMarkSchemaVersion;
 
-  test('v32 est la version courante', () {
+  test('v32 suit la versification', () {
     expect(v, 32);
-    expect(GeneratedHelper.versions.last, v);
+    expect(GeneratedHelper.versions, contains(v));
     expect(AppDatabase.kWordMarkSchemaVersion,
         AppDatabase.kVersificationSchemaVersion + 1);
   });

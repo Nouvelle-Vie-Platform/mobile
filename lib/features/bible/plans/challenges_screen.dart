@@ -16,6 +16,7 @@ import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../utils/error_message.dart';
+import '../../../utils/i18n_text.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/app_error_state.dart';
 import '../data/bible_providers.dart';
@@ -94,9 +95,12 @@ class BibleChallengesScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(c.title, style: AppTypography.h5),
+                          // Repli au rendu (#263), comme la liste des plans.
+                          Text(pick(c.title, l.localeName),
+                              style: AppTypography.h5),
                           if (publishedPlan(plans, c.planId) case final p?)
-                            Text(p.title, style: AppTypography.body),
+                            Text(pick(p.title, l.localeName),
+                                style: AppTypography.body),
                           Text(
                             l.biblePlansChallengeDates(
                               day(c.startsOn),
@@ -166,7 +170,10 @@ class _MemberActions extends ConsumerWidget {
           key: BibleChallengesScreen.leaderboardKey(c.id),
           onPressed: () => pushBiblePlansPage<void>(
             ref,
-            BibleLeaderboardScreen(challengeId: c.id, title: c.title),
+            BibleLeaderboardScreen(
+              challengeId: c.id,
+              title: pick(c.title, l.localeName),
+            ),
           ),
           child: Text(l.biblePlansLeaderboard),
         ),

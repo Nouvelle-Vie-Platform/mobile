@@ -233,11 +233,14 @@ void main() {
         upserts: [
           BiblePlansCompanion.insert(
             id: 'p-pub',
-            title: 'Publié',
+            title: const {'fr': 'Publié'},
             days: const Value('[[{"book":"Ruth","chapter":1}]]'),
             publishedAt: Value(DateTime.utc(2026, 9, 1)),
           ),
-          BiblePlansCompanion.insert(id: 'p-draft', title: 'Brouillon'),
+          BiblePlansCompanion.insert(
+            id: 'p-draft',
+            title: const {'fr': 'Brouillon'},
+          ),
         ],
         cursor: 'p1',
       );
@@ -251,7 +254,7 @@ void main() {
           ])
             BibleChallengesCompanion.insert(
               id: id,
-              title: id,
+              title: {'fr': id},
               planId: const Value('p-pub'),
               startsOn: const Value('2026-10-01'),
               endsOn: Value(ends),

@@ -17,7 +17,7 @@ BibleQuizRow _row({
 }) =>
     BibleQuizRow(
       id: 4,
-      title: 'Les patriarches',
+      title: const {'fr': 'Les patriarches'},
       ageBand: ageBand,
       difficulty: 2,
       featuredFrom: featuredFrom,
@@ -26,6 +26,11 @@ BibleQuizRow _row({
       publishedAt: DateTime.utc(2026, 10, 1),
       syncStamp: 0,
     );
+
+/// Le repli se fait à la lecture : ces tests-là lisent en français, sauf ceux
+/// qui mesurent justement le repli.
+Quiz? _fromRow(BibleQuizRow row, [String locale = 'fr']) =>
+    Quiz.fromRow(row, locale);
 
 const _choice = {
   'kind': 'choice',
@@ -46,7 +51,7 @@ const _trueFalse = {
 void main() {
   group('Lecture des questions', () {
     test('la forme exacte de S4, référence comprise', () {
-      final quiz = Quiz.fromRow(_row())!;
+      final quiz = _fromRow(_row())!;
       expect(quiz.ageBand, QuizAgeBand.adults);
       expect(quiz.difficulty, 2);
       expect(quiz.questions, hasLength(2));
@@ -61,7 +66,7 @@ void main() {
     });
 
     test('une question illisible est écartée, jamais une erreur', () {
-      final quiz = Quiz.fromRow(_row(questions: [
+      final quiz = _fromRow(_row(questions: [
         _trueFalse,
         {..._choice, 'answer': 5}, // hors des choix
         {
@@ -83,10 +88,68 @@ void main() {
     test(
         'un quiz sans question jouable ou de tranche inconnue ne se montre pas',
         () {
-      expect(Quiz.fromRow(_row(questions: [])), isNull);
-      expect(Quiz.fromRow(_row(ageBand: 'seniors')), isNull);
+      expect(_fromRow(_row(questions: [])), isNull);
+      expect(_fromRow(_row(ageBand: 'seniors')), isNull);
       expect(
-        Quiz.fromRow(_row().copyWith(questions: const Value('{oups'))),
+        _fromRow(_row().copyWith(questions: const Value('{oups'))),
+        isNull,
+      );
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Les cartes de traduction (#263)
+  // ───────────────────────────────────────────────────────────────────────────
+  group('Le repli des textes', () {
+    const card = {
+      'kind': 'choice',
+      'prompt': {'fr': 'Qui est le père d\'Isaac ?', 'ee': 'Ame kae nye ?'},
+      'choices': [
+        {'fr': 'Abraham', 'ee': 'Abraham'},
+        {'fr': 'Jacob', 'ee': 'Yakob'},
+      ],
+      'answer': 0,
+      'explanation': {'fr': 'Le fils de la promesse.'},
+    };
+
+    test('la carte se replie dans la langue demandée', () {
+      final q = _fromRow(_row(questions: [card]), 'ee')!.questions.single;
+      expect(q.prompt, 'Ame kae nye ?');
+      expect(q.choices, ['Abraham', 'Yakob']);
+      // `answer` est un **index** : la place ne bouge pas d'une langue à
+      // l'autre, et c'est pourquoi les choix sont des cartes plutôt qu'un jeu
+      // de questions par langue.
+      expect(q.answer, 0);
+      expect(q.explanation, 'Le fils de la promesse.',
+          reason: 'repli sur le français, faute d\'éwé');
+    });
+
+    test('une chaîne reçue se lit comme du français, sans lever', () {
+      // L'ancienne forme : c'est ce que sert un serveur sous son plancher de
+      // compatibilité, et ce que portent les lignes d'avant le palier v33.
+      final quiz = _fromRow(_row(questions: [_choice]), 'ee')!;
+      expect(quiz.title, 'Les patriarches');
+      expect(quiz.questions.single.prompt, 'Qui est le père d\'Isaac ?');
+      expect(quiz.questions.single.choices, ['Abraham', 'Jacob', 'Moïse']);
+      expect(quiz.questions.single.explanation,
+          'Isaac est le fils de la promesse.');
+    });
+
+    test('un énoncé vide dans toutes les langues écarte la question', () {
+      expect(
+        _fromRow(_row(questions: [
+          {
+            ...card,
+            'prompt': const {'fr': '  '}
+          },
+          {
+            ...card,
+            'choices': const [
+              {'fr': 'Abraham'},
+              {'fr': ''},
+            ],
+          },
+        ])),
         isNull,
       );
     });
@@ -94,7 +157,7 @@ void main() {
 
   group('La partie', () {
     test('bonne réponse, mauvaise réponse, fin et score', () {
-      final game = QuizGame(Quiz.fromRow(_row())!);
+      final game = QuizGame(_fromRow(_row())!);
       expect(game.next(), isFalse, reason: 'pas avant d\'avoir répondu');
       expect(game.answer(0), isTrue);
       game.answer(1); // une seule réponse comptée
@@ -108,7 +171,7 @@ void main() {
     });
 
     test('le temps écoulé compte faux', () {
-      final game = QuizGame(Quiz.fromRow(_row())!);
+      final game = QuizGame(_fromRow(_row())!);
       expect(game.answer(-1), isFalse);
       expect(game.picked, -1);
       expect(game.score, 0);
@@ -124,7 +187,7 @@ void main() {
 
   test('la fenêtre de mise en avant, bornes comprises et ouvertes', () {
     Quiz q(String? from, String? until) =>
-        Quiz.fromRow(_row(featuredFrom: from, featuredUntil: until))!;
+        _fromRow(_row(featuredFrom: from, featuredUntil: until))!;
     expect(q(null, null).featuredOn('2026-10-13'), isFalse);
     expect(q('2026-10-12', '2026-10-18').featuredOn('2026-10-13'), isTrue);
     expect(q('2026-10-13', '2026-10-13').featuredOn('2026-10-13'), isTrue);

@@ -29672,17 +29672,17 @@ class $BiblePlansTable extends BiblePlans
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
-      'title', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _descriptionMeta =
-      const VerificationMeta('description');
+  late final GeneratedColumnWithTypeConverter<Map<String, String>, String>
+      title = GeneratedColumn<String>('title', aliasedName, false,
+              type: DriftSqlType.string, requiredDuringInsert: true)
+          .withConverter<Map<String, String>>($BiblePlansTable.$convertertitle);
   @override
-  late final GeneratedColumn<String> description = GeneratedColumn<String>(
-      'description', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      description = GeneratedColumn<String>('description', aliasedName, true,
+              type: DriftSqlType.string, requiredDuringInsert: false)
+          .withConverter<Map<String, String>?>(
+              $BiblePlansTable.$converterdescriptionn);
   static const VerificationMeta _coverBackgroundIdMeta =
       const VerificationMeta('coverBackgroundId');
   @override
@@ -29722,18 +29722,6 @@ class $BiblePlansTable extends BiblePlans
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('title')) {
-      context.handle(
-          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
-    } else if (isInserting) {
-      context.missing(_titleMeta);
-    }
-    if (data.containsKey('description')) {
-      context.handle(
-          _descriptionMeta,
-          description.isAcceptableOrUnknown(
-              data['description']!, _descriptionMeta));
-    }
     if (data.containsKey('cover_background_id')) {
       context.handle(
           _coverBackgroundIdMeta,
@@ -29763,10 +29751,12 @@ class $BiblePlansTable extends BiblePlans
           .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      title: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
-      description: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      title: $BiblePlansTable.$convertertitle.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!),
+      description: $BiblePlansTable.$converterdescriptionn.fromSql(
+          attachedDatabase.typeMapping.read(
+              DriftSqlType.string, data['${effectivePrefix}description'])),
       coverBackgroundId: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}cover_background_id']),
       days: attachedDatabase.typeMapping
@@ -29780,6 +29770,13 @@ class $BiblePlansTable extends BiblePlans
   $BiblePlansTable createAlias(String alias) {
     return $BiblePlansTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<Map<String, String>, String> $convertertitle =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>, String> $converterdescription =
+      const I18nMapConverter();
+  static TypeConverter<Map<String, String>?, String?> $converterdescriptionn =
+      NullAwareTypeConverter.wrap($converterdescription);
 }
 
 class BiblePlanRow extends DataClass implements Insertable<BiblePlanRow> {
@@ -29791,8 +29788,14 @@ class BiblePlanRow extends DataClass implements Insertable<BiblePlanRow> {
   /// serait traitée comme jamais revue — la panne va dans le sens sûr.
   final int syncStamp;
   final String id;
-  final String title;
-  final String? description;
+
+  /// Carte de traduction `{fr, en?, ee?}` (#263), comme `teaching_types.label`
+  /// : le magasin garde la carte entière, et c'est `pick` qui replie à la
+  /// lecture. Figer le français ici laisserait un lecteur passé en éwé avec
+  /// des titres français jusqu'à une resynchronisation complète que rien ne
+  /// déclencherait.
+  final Map<String, String> title;
+  final Map<String, String>? description;
   final int? coverBackgroundId;
 
   /// `[[référence]]`, en JSON.
@@ -29811,9 +29814,13 @@ class BiblePlanRow extends DataClass implements Insertable<BiblePlanRow> {
     final map = <String, Expression>{};
     map['sync_stamp'] = Variable<int>(syncStamp);
     map['id'] = Variable<String>(id);
-    map['title'] = Variable<String>(title);
+    {
+      map['title'] =
+          Variable<String>($BiblePlansTable.$convertertitle.toSql(title));
+    }
     if (!nullToAbsent || description != null) {
-      map['description'] = Variable<String>(description);
+      map['description'] = Variable<String>(
+          $BiblePlansTable.$converterdescriptionn.toSql(description));
     }
     if (!nullToAbsent || coverBackgroundId != null) {
       map['cover_background_id'] = Variable<int>(coverBackgroundId);
@@ -29851,8 +29858,9 @@ class BiblePlanRow extends DataClass implements Insertable<BiblePlanRow> {
     return BiblePlanRow(
       syncStamp: serializer.fromJson<int>(json['syncStamp']),
       id: serializer.fromJson<String>(json['id']),
-      title: serializer.fromJson<String>(json['title']),
-      description: serializer.fromJson<String?>(json['description']),
+      title: serializer.fromJson<Map<String, String>>(json['title']),
+      description:
+          serializer.fromJson<Map<String, String>?>(json['description']),
       coverBackgroundId: serializer.fromJson<int?>(json['coverBackgroundId']),
       days: serializer.fromJson<String?>(json['days']),
       publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
@@ -29864,8 +29872,8 @@ class BiblePlanRow extends DataClass implements Insertable<BiblePlanRow> {
     return <String, dynamic>{
       'syncStamp': serializer.toJson<int>(syncStamp),
       'id': serializer.toJson<String>(id),
-      'title': serializer.toJson<String>(title),
-      'description': serializer.toJson<String?>(description),
+      'title': serializer.toJson<Map<String, String>>(title),
+      'description': serializer.toJson<Map<String, String>?>(description),
       'coverBackgroundId': serializer.toJson<int?>(coverBackgroundId),
       'days': serializer.toJson<String?>(days),
       'publishedAt': serializer.toJson<DateTime?>(publishedAt),
@@ -29875,8 +29883,8 @@ class BiblePlanRow extends DataClass implements Insertable<BiblePlanRow> {
   BiblePlanRow copyWith(
           {int? syncStamp,
           String? id,
-          String? title,
-          Value<String?> description = const Value.absent(),
+          Map<String, String>? title,
+          Value<Map<String, String>?> description = const Value.absent(),
           Value<int?> coverBackgroundId = const Value.absent(),
           Value<String?> days = const Value.absent(),
           Value<DateTime?> publishedAt = const Value.absent()}) =>
@@ -29940,8 +29948,8 @@ class BiblePlanRow extends DataClass implements Insertable<BiblePlanRow> {
 class BiblePlansCompanion extends UpdateCompanion<BiblePlanRow> {
   final Value<int> syncStamp;
   final Value<String> id;
-  final Value<String> title;
-  final Value<String?> description;
+  final Value<Map<String, String>> title;
+  final Value<Map<String, String>?> description;
   final Value<int?> coverBackgroundId;
   final Value<String?> days;
   final Value<DateTime?> publishedAt;
@@ -29959,7 +29967,7 @@ class BiblePlansCompanion extends UpdateCompanion<BiblePlanRow> {
   BiblePlansCompanion.insert({
     this.syncStamp = const Value.absent(),
     required String id,
-    required String title,
+    required Map<String, String> title,
     this.description = const Value.absent(),
     this.coverBackgroundId = const Value.absent(),
     this.days = const Value.absent(),
@@ -29992,8 +30000,8 @@ class BiblePlansCompanion extends UpdateCompanion<BiblePlanRow> {
   BiblePlansCompanion copyWith(
       {Value<int>? syncStamp,
       Value<String>? id,
-      Value<String>? title,
-      Value<String?>? description,
+      Value<Map<String, String>>? title,
+      Value<Map<String, String>?>? description,
       Value<int?>? coverBackgroundId,
       Value<String?>? days,
       Value<DateTime?>? publishedAt,
@@ -30020,10 +30028,12 @@ class BiblePlansCompanion extends UpdateCompanion<BiblePlanRow> {
       map['id'] = Variable<String>(id.value);
     }
     if (title.present) {
-      map['title'] = Variable<String>(title.value);
+      map['title'] =
+          Variable<String>($BiblePlansTable.$convertertitle.toSql(title.value));
     }
     if (description.present) {
-      map['description'] = Variable<String>(description.value);
+      map['description'] = Variable<String>(
+          $BiblePlansTable.$converterdescriptionn.toSql(description.value));
     }
     if (coverBackgroundId.present) {
       map['cover_background_id'] = Variable<int>(coverBackgroundId.value);
@@ -30080,11 +30090,12 @@ class $BibleChallengesTable extends BibleChallenges
   late final GeneratedColumn<String> planId = GeneratedColumn<String>(
       'plan_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
-      'title', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+  late final GeneratedColumnWithTypeConverter<Map<String, String>, String>
+      title = GeneratedColumn<String>('title', aliasedName, false,
+              type: DriftSqlType.string, requiredDuringInsert: true)
+          .withConverter<Map<String, String>>(
+              $BibleChallengesTable.$convertertitle);
   static const VerificationMeta _startsOnMeta =
       const VerificationMeta('startsOn');
   @override
@@ -30128,12 +30139,6 @@ class $BibleChallengesTable extends BibleChallenges
       context.handle(_planIdMeta,
           planId.isAcceptableOrUnknown(data['plan_id']!, _planIdMeta));
     }
-    if (data.containsKey('title')) {
-      context.handle(
-          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
-    } else if (isInserting) {
-      context.missing(_titleMeta);
-    }
     if (data.containsKey('starts_on')) {
       context.handle(_startsOnMeta,
           startsOn.isAcceptableOrUnknown(data['starts_on']!, _startsOnMeta));
@@ -30163,8 +30168,9 @@ class $BibleChallengesTable extends BibleChallenges
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       planId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}plan_id']),
-      title: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      title: $BibleChallengesTable.$convertertitle.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!),
       startsOn: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}starts_on']),
       endsOn: attachedDatabase.typeMapping
@@ -30178,6 +30184,9 @@ class $BibleChallengesTable extends BibleChallenges
   $BibleChallengesTable createAlias(String alias) {
     return $BibleChallengesTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<Map<String, String>, String> $convertertitle =
+      const I18nMapConverter();
 }
 
 class BibleChallengeRow extends DataClass
@@ -30191,7 +30200,9 @@ class BibleChallengeRow extends DataClass
   final int syncStamp;
   final String id;
   final String? planId;
-  final String title;
+
+  /// Carte de traduction (#263) — voir [BiblePlans.title].
+  final Map<String, String> title;
   final String? startsOn;
   final String? endsOn;
   final DateTime? publishedAt;
@@ -30211,7 +30222,10 @@ class BibleChallengeRow extends DataClass
     if (!nullToAbsent || planId != null) {
       map['plan_id'] = Variable<String>(planId);
     }
-    map['title'] = Variable<String>(title);
+    {
+      map['title'] =
+          Variable<String>($BibleChallengesTable.$convertertitle.toSql(title));
+    }
     if (!nullToAbsent || startsOn != null) {
       map['starts_on'] = Variable<String>(startsOn);
     }
@@ -30249,7 +30263,7 @@ class BibleChallengeRow extends DataClass
       syncStamp: serializer.fromJson<int>(json['syncStamp']),
       id: serializer.fromJson<String>(json['id']),
       planId: serializer.fromJson<String?>(json['planId']),
-      title: serializer.fromJson<String>(json['title']),
+      title: serializer.fromJson<Map<String, String>>(json['title']),
       startsOn: serializer.fromJson<String?>(json['startsOn']),
       endsOn: serializer.fromJson<String?>(json['endsOn']),
       publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
@@ -30262,7 +30276,7 @@ class BibleChallengeRow extends DataClass
       'syncStamp': serializer.toJson<int>(syncStamp),
       'id': serializer.toJson<String>(id),
       'planId': serializer.toJson<String?>(planId),
-      'title': serializer.toJson<String>(title),
+      'title': serializer.toJson<Map<String, String>>(title),
       'startsOn': serializer.toJson<String?>(startsOn),
       'endsOn': serializer.toJson<String?>(endsOn),
       'publishedAt': serializer.toJson<DateTime?>(publishedAt),
@@ -30273,7 +30287,7 @@ class BibleChallengeRow extends DataClass
           {int? syncStamp,
           String? id,
           Value<String?> planId = const Value.absent(),
-          String? title,
+          Map<String, String>? title,
           Value<String?> startsOn = const Value.absent(),
           Value<String?> endsOn = const Value.absent(),
           Value<DateTime?> publishedAt = const Value.absent()}) =>
@@ -30333,7 +30347,7 @@ class BibleChallengesCompanion extends UpdateCompanion<BibleChallengeRow> {
   final Value<int> syncStamp;
   final Value<String> id;
   final Value<String?> planId;
-  final Value<String> title;
+  final Value<Map<String, String>> title;
   final Value<String?> startsOn;
   final Value<String?> endsOn;
   final Value<DateTime?> publishedAt;
@@ -30352,7 +30366,7 @@ class BibleChallengesCompanion extends UpdateCompanion<BibleChallengeRow> {
     this.syncStamp = const Value.absent(),
     required String id,
     this.planId = const Value.absent(),
-    required String title,
+    required Map<String, String> title,
     this.startsOn = const Value.absent(),
     this.endsOn = const Value.absent(),
     this.publishedAt = const Value.absent(),
@@ -30385,7 +30399,7 @@ class BibleChallengesCompanion extends UpdateCompanion<BibleChallengeRow> {
       {Value<int>? syncStamp,
       Value<String>? id,
       Value<String?>? planId,
-      Value<String>? title,
+      Value<Map<String, String>>? title,
       Value<String?>? startsOn,
       Value<String?>? endsOn,
       Value<DateTime?>? publishedAt,
@@ -30415,7 +30429,8 @@ class BibleChallengesCompanion extends UpdateCompanion<BibleChallengeRow> {
       map['plan_id'] = Variable<String>(planId.value);
     }
     if (title.present) {
-      map['title'] = Variable<String>(title.value);
+      map['title'] = Variable<String>(
+          $BibleChallengesTable.$convertertitle.toSql(title.value));
     }
     if (startsOn.present) {
       map['starts_on'] = Variable<String>(startsOn.value);
@@ -30467,11 +30482,12 @@ class $BibleQuizzesTable extends BibleQuizzes
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
       'id', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
-      'title', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+  late final GeneratedColumnWithTypeConverter<Map<String, String>, String>
+      title = GeneratedColumn<String>('title', aliasedName, false,
+              type: DriftSqlType.string, requiredDuringInsert: true)
+          .withConverter<Map<String, String>>(
+              $BibleQuizzesTable.$convertertitle);
   static const VerificationMeta _ageBandMeta =
       const VerificationMeta('ageBand');
   @override
@@ -30544,12 +30560,6 @@ class $BibleQuizzesTable extends BibleQuizzes
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('title')) {
-      context.handle(
-          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
-    } else if (isInserting) {
-      context.missing(_titleMeta);
-    }
     if (data.containsKey('age_band')) {
       context.handle(_ageBandMeta,
           ageBand.isAcceptableOrUnknown(data['age_band']!, _ageBandMeta));
@@ -30599,8 +30609,9 @@ class $BibleQuizzesTable extends BibleQuizzes
           .read(DriftSqlType.int, data['${effectivePrefix}sync_stamp'])!,
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      title: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      title: $BibleQuizzesTable.$convertertitle.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!),
       ageBand: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}age_band']),
       difficulty: attachedDatabase.typeMapping
@@ -30622,6 +30633,9 @@ class $BibleQuizzesTable extends BibleQuizzes
   $BibleQuizzesTable createAlias(String alias) {
     return $BibleQuizzesTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<Map<String, String>, String> $convertertitle =
+      const I18nMapConverter();
 }
 
 class BibleQuizRow extends DataClass implements Insertable<BibleQuizRow> {
@@ -30633,7 +30647,10 @@ class BibleQuizRow extends DataClass implements Insertable<BibleQuizRow> {
   /// serait traitée comme jamais revue — la panne va dans le sens sûr.
   final int syncStamp;
   final int id;
-  final String title;
+
+  /// Carte de traduction (#263) — voir [BiblePlans.title]. Les textes des
+  /// questions sont des cartes **dans** [questions], repliés à l'analyse.
+  final Map<String, String> title;
 
   /// `kids | teens | adults`.
   final String? ageBand;
@@ -30661,7 +30678,10 @@ class BibleQuizRow extends DataClass implements Insertable<BibleQuizRow> {
     final map = <String, Expression>{};
     map['sync_stamp'] = Variable<int>(syncStamp);
     map['id'] = Variable<int>(id);
-    map['title'] = Variable<String>(title);
+    {
+      map['title'] =
+          Variable<String>($BibleQuizzesTable.$convertertitle.toSql(title));
+    }
     if (!nullToAbsent || ageBand != null) {
       map['age_band'] = Variable<String>(ageBand);
     }
@@ -30721,7 +30741,7 @@ class BibleQuizRow extends DataClass implements Insertable<BibleQuizRow> {
     return BibleQuizRow(
       syncStamp: serializer.fromJson<int>(json['syncStamp']),
       id: serializer.fromJson<int>(json['id']),
-      title: serializer.fromJson<String>(json['title']),
+      title: serializer.fromJson<Map<String, String>>(json['title']),
       ageBand: serializer.fromJson<String?>(json['ageBand']),
       difficulty: serializer.fromJson<int?>(json['difficulty']),
       featuredFrom: serializer.fromJson<String?>(json['featuredFrom']),
@@ -30737,7 +30757,7 @@ class BibleQuizRow extends DataClass implements Insertable<BibleQuizRow> {
     return <String, dynamic>{
       'syncStamp': serializer.toJson<int>(syncStamp),
       'id': serializer.toJson<int>(id),
-      'title': serializer.toJson<String>(title),
+      'title': serializer.toJson<Map<String, String>>(title),
       'ageBand': serializer.toJson<String?>(ageBand),
       'difficulty': serializer.toJson<int?>(difficulty),
       'featuredFrom': serializer.toJson<String?>(featuredFrom),
@@ -30751,7 +30771,7 @@ class BibleQuizRow extends DataClass implements Insertable<BibleQuizRow> {
   BibleQuizRow copyWith(
           {int? syncStamp,
           int? id,
-          String? title,
+          Map<String, String>? title,
           Value<String?> ageBand = const Value.absent(),
           Value<int?> difficulty = const Value.absent(),
           Value<String?> featuredFrom = const Value.absent(),
@@ -30833,7 +30853,7 @@ class BibleQuizRow extends DataClass implements Insertable<BibleQuizRow> {
 class BibleQuizzesCompanion extends UpdateCompanion<BibleQuizRow> {
   final Value<int> syncStamp;
   final Value<int> id;
-  final Value<String> title;
+  final Value<Map<String, String>> title;
   final Value<String?> ageBand;
   final Value<int?> difficulty;
   final Value<String?> featuredFrom;
@@ -30856,7 +30876,7 @@ class BibleQuizzesCompanion extends UpdateCompanion<BibleQuizRow> {
   BibleQuizzesCompanion.insert({
     this.syncStamp = const Value.absent(),
     this.id = const Value.absent(),
-    required String title,
+    required Map<String, String> title,
     this.ageBand = const Value.absent(),
     this.difficulty = const Value.absent(),
     this.featuredFrom = const Value.absent(),
@@ -30894,7 +30914,7 @@ class BibleQuizzesCompanion extends UpdateCompanion<BibleQuizRow> {
   BibleQuizzesCompanion copyWith(
       {Value<int>? syncStamp,
       Value<int>? id,
-      Value<String>? title,
+      Value<Map<String, String>>? title,
       Value<String?>? ageBand,
       Value<int?>? difficulty,
       Value<String?>? featuredFrom,
@@ -30926,7 +30946,8 @@ class BibleQuizzesCompanion extends UpdateCompanion<BibleQuizRow> {
       map['id'] = Variable<int>(id.value);
     }
     if (title.present) {
-      map['title'] = Variable<String>(title.value);
+      map['title'] = Variable<String>(
+          $BibleQuizzesTable.$convertertitle.toSql(title.value));
     }
     if (ageBand.present) {
       map['age_band'] = Variable<String>(ageBand.value);
@@ -48475,8 +48496,8 @@ typedef $$BibleSundayPassagesTableProcessedTableManager = ProcessedTableManager<
 typedef $$BiblePlansTableCreateCompanionBuilder = BiblePlansCompanion Function({
   Value<int> syncStamp,
   required String id,
-  required String title,
-  Value<String?> description,
+  required Map<String, String> title,
+  Value<Map<String, String>?> description,
   Value<int?> coverBackgroundId,
   Value<String?> days,
   Value<DateTime?> publishedAt,
@@ -48485,8 +48506,8 @@ typedef $$BiblePlansTableCreateCompanionBuilder = BiblePlansCompanion Function({
 typedef $$BiblePlansTableUpdateCompanionBuilder = BiblePlansCompanion Function({
   Value<int> syncStamp,
   Value<String> id,
-  Value<String> title,
-  Value<String?> description,
+  Value<Map<String, String>> title,
+  Value<Map<String, String>?> description,
   Value<int?> coverBackgroundId,
   Value<String?> days,
   Value<DateTime?> publishedAt,
@@ -48508,11 +48529,17 @@ class $$BiblePlansTableFilterComposer
   ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get title => $composableBuilder(
-      column: $table.title, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<Map<String, String>, Map<String, String>,
+          String>
+      get title => $composableBuilder(
+          column: $table.title,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
-  ColumnFilters<String> get description => $composableBuilder(
-      column: $table.description, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<Map<String, String>?, Map<String, String>,
+          String>
+      get description => $composableBuilder(
+          column: $table.description,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<int> get coverBackgroundId => $composableBuilder(
       column: $table.coverBackgroundId,
@@ -48572,11 +48599,12 @@ class $$BiblePlansTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get title =>
+  GeneratedColumnWithTypeConverter<Map<String, String>, String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
-  GeneratedColumn<String> get description => $composableBuilder(
-      column: $table.description, builder: (column) => column);
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+      get description => $composableBuilder(
+          column: $table.description, builder: (column) => column);
 
   GeneratedColumn<int> get coverBackgroundId => $composableBuilder(
       column: $table.coverBackgroundId, builder: (column) => column);
@@ -48616,8 +48644,8 @@ class $$BiblePlansTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> syncStamp = const Value.absent(),
             Value<String> id = const Value.absent(),
-            Value<String> title = const Value.absent(),
-            Value<String?> description = const Value.absent(),
+            Value<Map<String, String>> title = const Value.absent(),
+            Value<Map<String, String>?> description = const Value.absent(),
             Value<int?> coverBackgroundId = const Value.absent(),
             Value<String?> days = const Value.absent(),
             Value<DateTime?> publishedAt = const Value.absent(),
@@ -48636,8 +48664,8 @@ class $$BiblePlansTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> syncStamp = const Value.absent(),
             required String id,
-            required String title,
-            Value<String?> description = const Value.absent(),
+            required Map<String, String> title,
+            Value<Map<String, String>?> description = const Value.absent(),
             Value<int?> coverBackgroundId = const Value.absent(),
             Value<String?> days = const Value.absent(),
             Value<DateTime?> publishedAt = const Value.absent(),
@@ -48680,7 +48708,7 @@ typedef $$BibleChallengesTableCreateCompanionBuilder = BibleChallengesCompanion
   Value<int> syncStamp,
   required String id,
   Value<String?> planId,
-  required String title,
+  required Map<String, String> title,
   Value<String?> startsOn,
   Value<String?> endsOn,
   Value<DateTime?> publishedAt,
@@ -48691,7 +48719,7 @@ typedef $$BibleChallengesTableUpdateCompanionBuilder = BibleChallengesCompanion
   Value<int> syncStamp,
   Value<String> id,
   Value<String?> planId,
-  Value<String> title,
+  Value<Map<String, String>> title,
   Value<String?> startsOn,
   Value<String?> endsOn,
   Value<DateTime?> publishedAt,
@@ -48716,8 +48744,11 @@ class $$BibleChallengesTableFilterComposer
   ColumnFilters<String> get planId => $composableBuilder(
       column: $table.planId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get title => $composableBuilder(
-      column: $table.title, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<Map<String, String>, Map<String, String>,
+          String>
+      get title => $composableBuilder(
+          column: $table.title,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<String> get startsOn => $composableBuilder(
       column: $table.startsOn, builder: (column) => ColumnFilters(column));
@@ -48778,7 +48809,7 @@ class $$BibleChallengesTableAnnotationComposer
   GeneratedColumn<String> get planId =>
       $composableBuilder(column: $table.planId, builder: (column) => column);
 
-  GeneratedColumn<String> get title =>
+  GeneratedColumnWithTypeConverter<Map<String, String>, String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
   GeneratedColumn<String> get startsOn =>
@@ -48821,7 +48852,7 @@ class $$BibleChallengesTableTableManager extends RootTableManager<
             Value<int> syncStamp = const Value.absent(),
             Value<String> id = const Value.absent(),
             Value<String?> planId = const Value.absent(),
-            Value<String> title = const Value.absent(),
+            Value<Map<String, String>> title = const Value.absent(),
             Value<String?> startsOn = const Value.absent(),
             Value<String?> endsOn = const Value.absent(),
             Value<DateTime?> publishedAt = const Value.absent(),
@@ -48841,7 +48872,7 @@ class $$BibleChallengesTableTableManager extends RootTableManager<
             Value<int> syncStamp = const Value.absent(),
             required String id,
             Value<String?> planId = const Value.absent(),
-            required String title,
+            required Map<String, String> title,
             Value<String?> startsOn = const Value.absent(),
             Value<String?> endsOn = const Value.absent(),
             Value<DateTime?> publishedAt = const Value.absent(),
@@ -48883,7 +48914,7 @@ typedef $$BibleQuizzesTableCreateCompanionBuilder = BibleQuizzesCompanion
     Function({
   Value<int> syncStamp,
   Value<int> id,
-  required String title,
+  required Map<String, String> title,
   Value<String?> ageBand,
   Value<int?> difficulty,
   Value<String?> featuredFrom,
@@ -48896,7 +48927,7 @@ typedef $$BibleQuizzesTableUpdateCompanionBuilder = BibleQuizzesCompanion
     Function({
   Value<int> syncStamp,
   Value<int> id,
-  Value<String> title,
+  Value<Map<String, String>> title,
   Value<String?> ageBand,
   Value<int?> difficulty,
   Value<String?> featuredFrom,
@@ -48921,8 +48952,11 @@ class $$BibleQuizzesTableFilterComposer
   ColumnFilters<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get title => $composableBuilder(
-      column: $table.title, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<Map<String, String>, Map<String, String>,
+          String>
+      get title => $composableBuilder(
+          column: $table.title,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<String> get ageBand => $composableBuilder(
       column: $table.ageBand, builder: (column) => ColumnFilters(column));
@@ -49003,7 +49037,7 @@ class $$BibleQuizzesTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get title =>
+  GeneratedColumnWithTypeConverter<Map<String, String>, String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
   GeneratedColumn<String> get ageBand =>
@@ -49056,7 +49090,7 @@ class $$BibleQuizzesTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> syncStamp = const Value.absent(),
             Value<int> id = const Value.absent(),
-            Value<String> title = const Value.absent(),
+            Value<Map<String, String>> title = const Value.absent(),
             Value<String?> ageBand = const Value.absent(),
             Value<int?> difficulty = const Value.absent(),
             Value<String?> featuredFrom = const Value.absent(),
@@ -49080,7 +49114,7 @@ class $$BibleQuizzesTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> syncStamp = const Value.absent(),
             Value<int> id = const Value.absent(),
-            required String title,
+            required Map<String, String> title,
             Value<String?> ageBand = const Value.absent(),
             Value<int?> difficulty = const Value.absent(),
             Value<String?> featuredFrom = const Value.absent(),
