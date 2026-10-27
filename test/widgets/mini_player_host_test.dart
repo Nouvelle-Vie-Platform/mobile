@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -554,6 +555,78 @@ void main() {
       );
       // La barre ne grandit pas de la place de la carte.
       expect(bar.height, lessThan(AppBottomNav.barHeight + 1));
+    });
+  });
+
+  group('Hors trame', () {
+    testWidgets(
+        'une route qui change pendant une construction hors trame ne lève '
+        'pas — le garde ne peut pas se fier à la phase', (tester) async {
+      await pumpApp(tester);
+      await load(tester);
+
+      // **La fenêtre que `pumpWidget` ne sait pas ouvrir.**
+      //
+      // `runApp` monte l'arbre **hors trame** : `RootWidget.attach` ouvre un
+      // `buildScope` synchrone, et `schedulerPhase` y vaut `idle`. Le `Router`
+      // s'y monte **sous** l'hôte, y appelle `setInitialRoutePath`, donc le
+      // délégué prévient ses auditeurs en pleine construction — avec une phase
+      // qui n'est pas `persistentCallbacks`.
+      //
+      // `tester.pumpWidget` ne reproduit pas cette fenêtre : le `rootElement`
+      // du binding de test existe déjà, l'attache se réduit à un
+      // `markNeedsBuild`, et toute la construction retombe dans la trame
+      // (mesuré : `persistentCallbacks`). On rejoue donc la condition
+      // elle-même, avec une navigation ordinaire pour la déclencher.
+      //
+      // La cible de cette construction est le `MediaQuery` que l'hôte pose
+      // **autour du `Router`** : la place exacte d'où le `Router` se monte au
+      // démarrage. L'hôte y est un *ancêtre* — c'est ce que `setState`
+      // interdit —, et le `Router` un *descendant*, donc exempté comme il
+      // l'est pendant son propre montage.
+      final target = tester.element(
+        find
+            .ancestor(
+              of: find.byType(Router<Object>),
+              matching: find.byType(MediaQuery),
+            )
+            .first,
+      );
+      tester.binding.buildOwner!.buildScope(target, () {
+        expect(SchedulerBinding.instance.schedulerPhase, SchedulerPhase.idle);
+        router.goNamed(AppRoute.media);
+      });
+      await settle(tester);
+
+      // Et la carte suit bien la nouvelle route.
+      expect(find.byType(MediaLibraryScreen), findsOneWidget);
+      expect(mini, findsOneWidget);
+    });
+
+    testWidgets('différer sans demander l\'image figerait la carte',
+        (tester) async {
+      await pumpApp(tester);
+      await load(tester);
+      // `/radio` **à la place** de l'accueil, pas par-dessus : la coquille
+      // démontée, plus rien n'anime l'écran, et le binding se tait. C'est la
+      // seule façon de voir qui demande l'image.
+      router.goNamed(AppRoute.radio);
+      await settle(tester);
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.binding.hasScheduledFrame, isFalse);
+
+      // Une fenêtre surgissante annoncée à l'observateur : le seul réveil de
+      // l'hôte qui ne passe **pas** par un `setState` du `Router` ou du
+      // `Navigator`. Reporter la reconstruction après l'image sans réclamer
+      // cette image, et elle n'arrive jamais.
+      MiniPlayerPopupObserver.of(router)!.didPush(
+        RawDialogRoute<void>(
+          pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+        ),
+        null,
+      );
+
+      expect(tester.binding.hasScheduledFrame, isTrue);
     });
   });
 }
