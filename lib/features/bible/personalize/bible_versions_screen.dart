@@ -99,17 +99,23 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
     final progress = _progress[v.code];
     final size = e.sizeBytes;
 
-    /// La langue, la taille et « incluse » — les trois choses qui aident à
-    /// choisir quoi télécharger. **Pas la licence** : décision du 26/10/2026,
-    /// elle ne paraît que dans le portail. Plusieurs licences bibliques exigent
-    /// pourtant la mention là où le texte est lu (la S21 : « Reproduit avec
-    /// aimable autorisation »), et le portail n'est pas lu par le fidèle — la
-    /// dette est consignée dans `context/docs/DETTE.md`, pas oubliée.
-    final subtitle = [
+    /// La langue, la taille et « incluse » — ce qui aide à choisir quoi
+    /// télécharger —, puis **la licence sur sa propre ligne** (#258).
+    ///
+    /// Elle en était partie le 26/10/2026 pour ne vivre qu'au portail. Mais
+    /// plusieurs ayants droit exigent la mention **là où le texte est lu** (la
+    /// S21 : « Reproduit avec aimable autorisation » ; l'éwé : Bible Society of
+    /// Ghana et of Togo), et le portail n'est pas lu par le fidèle. Cet écran
+    /// est l'endroit le plus proche du lecteur qui ne s'immisce pas dans le
+    /// texte : un geste depuis la lecture, et c'est là que le fidèle choisit
+    /// sa traduction.
+    final facts = [
       v.language.toUpperCase(),
       if (size != null) l.bibleM4SizeMb((size / 1e6).toStringAsFixed(1)),
       if (e.builtIn) l.bibleM4VersionBuiltIn,
     ].join(' · ');
+    final license = e.license;
+    final subtitle = license == null ? facts : '$facts\n$license';
     final Widget trailing;
     if (progress != null) {
       trailing = SizedBox(
@@ -153,6 +159,8 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
         onPressed: v.installed ? () => _select(v.code) : null,
       ),
       title: Text(v.name),
+      // La licence prend une ligne de plus : sans cela, `ListTile` la rogne.
+      isThreeLine: license != null,
       subtitle: Text(subtitle),
       trailing: trailing,
     );
