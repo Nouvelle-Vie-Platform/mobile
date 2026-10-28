@@ -4786,10 +4786,16 @@ abstract class AppLocalizations {
   /// **'Mes badges'**
   String get bibleMyBadges;
 
-  /// Module Bible : invitation tant qu'aucune vraie version n'est téléchargée, au-dessus du catalogue
+  /// Module Bible : titre de l'invitation, sous l'illustration
   ///
   /// In fr, this message translates to:
-  /// **'Aucune Bible sur ce téléphone pour l\'instant. Téléchargez-en une pour la lire, même sans réseau.'**
+  /// **'Aucune Bible sur ce téléphone pour l\'instant.'**
+  String get bibleInviteTitle;
+
+  /// Module Bible : invitation, sous-titre sous le titre — la raison de télécharger
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargez-en une pour la lire, même sans réseau.'**
   String get bibleInviteDownload;
 
   /// Module Bible : invitation, catalogue encore vide (premier lancement hors ligne)
@@ -4797,6 +4803,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Connectez-vous à Internet pour voir les Bibles à télécharger.'**
   String get bibleInviteOffline;
+
+  /// Module Bible : invitation, intitulé de la liste des versions (affiché en capitales)
+  ///
+  /// In fr, this message translates to:
+  /// **'Traductions disponibles'**
+  String get bibleInviteAvailable;
 
   /// Module Bible : info-bulle de la flèche de retour vers l'accueil de l'église
   ///

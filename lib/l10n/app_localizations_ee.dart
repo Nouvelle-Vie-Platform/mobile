@@ -2632,12 +2632,19 @@ class AppLocalizationsEe extends AppLocalizations {
   String get bibleMyBadges => 'Mes badges';
 
   @override
+  String get bibleInviteTitle =>
+      'Aucune Bible sur ce téléphone pour l\'instant.';
+
+  @override
   String get bibleInviteDownload =>
-      'Aucune Bible sur ce téléphone pour l\'instant. Téléchargez-en une pour la lire, même sans réseau.';
+      'Téléchargez-en une pour la lire, même sans réseau.';
 
   @override
   String get bibleInviteOffline =>
       'Connectez-vous à Internet pour voir les Bibles à télécharger.';
+
+  @override
+  String get bibleInviteAvailable => 'Traductions disponibles';
 
   @override
   String get bibleBackToHome => 'Trɔ yi afe-te';

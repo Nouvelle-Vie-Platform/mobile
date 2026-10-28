@@ -2613,12 +2613,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bibleMyBadges => 'My badges';
 
   @override
-  String get bibleInviteDownload =>
-      'No Bible on this phone yet. Download one to read it, even offline.';
+  String get bibleInviteTitle => 'No Bible on this phone yet.';
+
+  @override
+  String get bibleInviteDownload => 'Download one to read it, even offline.';
 
   @override
   String get bibleInviteOffline =>
       'Connect to the Internet to see the Bibles available for download.';
+
+  @override
+  String get bibleInviteAvailable => 'Available translations';
 
   @override
   String get bibleBackToHome => 'Back to home';
