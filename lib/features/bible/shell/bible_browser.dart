@@ -3,8 +3,8 @@
 ///
 /// Un seul widget, trois usages :
 ///
-/// - [BibleBrowserMode.browse] — l'onglet Bible : un chapitre ouvre la grille
-///   de ses versets ; un verset, ou « Commencer Jean 3 », ouvre le lecteur ;
+/// - [BibleBrowserMode.browse] — l'onglet Bible : un chapitre ouvre
+///   directement le lecteur, sans grille de versets ;
 /// - [BibleBrowserMode.select] — le mode sélection des notes : on touche des
 ///   versets (plage contiguë), [BibleBrowser.onSelection] remonte la
 ///   référence, la coquille porte le bouton « Insérer » ;
@@ -56,7 +56,6 @@ class BibleBrowser extends ConsumerStatefulWidget {
   static const Key searchFieldKey = Key('bible_book_search');
   static const Key testamentTabsKey = Key('bible_testament_tabs');
   static const Key backKey = Key('bible_browser_back');
-  static const Key startKey = Key('bible_start_reading');
   static Key bookKey(String osis) => Key('bible_book_$osis');
   static Key chapterKey(int chapter) => Key('bible_chapter_$chapter');
   static Key verseKey(int verse) => Key('bible_verse_cell_$verse');
@@ -86,7 +85,10 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
       });
 
   void _openChapter(int chapter) {
-    if (widget.mode == BibleBrowserMode.pickChapter) {
+    // Hors sélection, un chapitre ouvre **le texte** : la grille des versets
+    // n'était qu'une étape de plus (28/10/2026). Elle reste pour le mode
+    // sélection, dont le but est justement de choisir des versets.
+    if (widget.mode != BibleBrowserMode.select) {
       widget.onOpen?.call(BibleLink(_book!, chapter));
       return;
     }
@@ -110,10 +112,6 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
   }
 
   void _tapVerse(int verse) {
-    if (widget.mode != BibleBrowserMode.select) {
-      widget.onOpen?.call(BibleLink(_book!, _chapter!, from: verse));
-      return;
-    }
     setState(() {
       final (from, to) = (_from, _to);
       if (from == null || to == null) {
@@ -338,16 +336,11 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
     BibleVersification versification,
   ) {
     final l = context.l10n;
-    final select = widget.mode == BibleBrowserMode.select;
     final reference = BibleLink(book.osis, chapter).labelFr;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _header(
-          context,
-          reference,
-          select ? l.bibleSelectHint : l.bibleChooseVerse,
-        ),
+        _header(context, reference, l.bibleSelectHint),
         Expanded(
           child: _Grid(
             numbers: [
@@ -363,19 +356,6 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
             onTap: _tapVerse,
           ),
         ),
-        if (!select)
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: FilledButton(
-                key: BibleBrowser.startKey,
-                onPressed: () =>
-                    widget.onOpen?.call(BibleLink(book.osis, chapter)),
-                child: Text(l.bibleStartReading(reference)),
-              ),
-            ),
-          ),
       ],
     );
   }

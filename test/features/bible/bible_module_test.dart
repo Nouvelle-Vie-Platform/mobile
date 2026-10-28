@@ -414,8 +414,7 @@ void main() {
   });
 
   group('Parcourir', () {
-    testWidgets(
-        'testament → livre → chapitre → verset, puis « Commencer Jean 3 »',
+    testWidgets('testament → livre → chapitre, et le chapitre ouvre le texte',
         (tester) async {
       await tester.runAsync(() async {
         final container = guestContainer(extra: [_radioOff]);
@@ -437,29 +436,22 @@ void main() {
         expect(find.byKey(BibleBrowser.chapterKey(21)), findsOneWidget);
         expect(find.byKey(BibleBrowser.chapterKey(22)), findsNothing);
 
+        // Pas de grille de versets (28/10/2026) : le chapitre ouvre le texte.
         await tester.tap(find.byKey(BibleBrowser.chapterKey(3)));
         await _settle(tester);
-        expect(find.text(_fr.bibleChooseVerse), findsOneWidget);
-        await tester.scrollUntilVisible(
-          find.byKey(BibleBrowser.verseKey(36)),
-          200,
-          scrollable: find.byType(Scrollable).last,
-        );
-        expect(find.byKey(BibleBrowser.verseKey(37)), findsNothing);
-
-        await tester.tap(find.byKey(BibleBrowser.startKey));
-        await _settle(tester);
         expect(router.state.matchedLocation, '/bible/read/John/3');
+        expect(find.byKey(BibleBrowser.verseKey(1)), findsNothing);
         expect(find.textContaining(kPlaceholderMark), findsOneWidget);
 
         final state = await _localState(container);
         expect((state!.book, state.chapter, state.versionCode),
             ('John', 3, 'EXA'));
 
-        // Retour à la grille : le chapitre courant se distingue, sans pastel.
+        // Retour : on retrouve les chapitres de Jean, pas une grille de versets.
         router.pop();
         await _settle(tester);
-        expect(find.byKey(BibleBrowser.verseKey(1)), findsOneWidget);
+        expect(find.byKey(BibleBrowser.chapterKey(3)), findsOneWidget);
+        expect(find.byKey(BibleBrowser.verseKey(1)), findsNothing);
       });
     });
 
@@ -484,24 +476,6 @@ void main() {
         await tester.enterText(find.byKey(BibleBrowser.searchFieldKey), 'zzz');
         await _settle(tester);
         expect(find.text(_fr.bibleNoBookFound), findsOneWidget);
-      });
-    });
-
-    testWidgets('un verset touché ouvre le lecteur sur lui', (tester) async {
-      await tester.runAsync(() async {
-        final router =
-            await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
-        router.push('/bible?tab=bible');
-        await _settle(tester);
-        await tester.tap(find.byKey(BibleBrowser.bookKey('Gen')));
-        await _settle(tester);
-        await tester.tap(find.byKey(BibleBrowser.chapterKey(1)));
-        await _settle(tester);
-        await tester.tap(find.byKey(BibleBrowser.verseKey(5)));
-        await _settle(tester);
-
-        expect(router.state.matchedLocation, '/bible/read/Gen/1');
-        expect(router.state.uri.queryParameters['v'], '5');
       });
     });
   });
