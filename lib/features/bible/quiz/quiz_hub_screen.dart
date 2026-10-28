@@ -77,54 +77,60 @@ class QuizHubScreen extends ConsumerWidget {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: colors.heroShade,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            // L'image de fond de l'accueil, assombrie pour la lecture.
-            Image.asset(colors.heroImage, fit: BoxFit.cover),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    colors.heroShade.withValues(alpha: 0.35),
-                    colors.heroShade.withValues(alpha: 0.8),
-                  ],
+        // L'arc est peint autour d'un centre **hors de l'écran**, à gauche :
+        // rien ne le coupait (le défilement ne coupe que s'il déborde), et au
+        // retour, pendant que la page glisse vers la droite, son cercle
+        // flottait sur l'écran d'arrivée. La page se coupe à ses bords.
+        body: ClipRect(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // L'image de fond de l'accueil, assombrie pour la lecture.
+              Image.asset(colors.heroImage, fit: BoxFit.cover),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      colors.heroShade.withValues(alpha: 0.35),
+                      colors.heroShade.withValues(alpha: 0.8),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            SafeArea(
-              child: LayoutBuilder(
-                builder: (context, box) {
-                  final wide = box.maxWidth >= sideBySideFrom;
-                  return Stack(
-                    children: [
-                      Positioned.fill(
-                        child: wide
-                            ? _WideLayout(title: title, bands: bands)
-                            : _PhoneLayout(title: title, bands: bands),
-                      ),
-                      Positioned(
-                        left: 4,
-                        top: 4,
-                        child: IconButton(
-                          key: backKey,
-                          tooltip: MaterialLocalizations.of(context)
-                              .backButtonTooltip,
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => Navigator.of(context).maybePop(),
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, box) {
+                    final wide = box.maxWidth >= sideBySideFrom;
+                    return Stack(
+                      children: [
+                        Positioned.fill(
+                          child: wide
+                              ? _WideLayout(title: title, bands: bands)
+                              : _PhoneLayout(title: title, bands: bands),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        Positioned(
+                          left: 4,
+                          top: 4,
+                          child: IconButton(
+                            key: backKey,
+                            tooltip: MaterialLocalizations.of(context)
+                                .backButtonTooltip,
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => Navigator.of(context).maybePop(),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
