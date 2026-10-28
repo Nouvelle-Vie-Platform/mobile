@@ -125,7 +125,8 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
     );
     if (invitation) return page;
     return Scaffold(
-      appBar: BrandAppBar(title: l.bibleM4VersionsTitle),
+      appBar: BrandAppBar(
+          color: BibleHomeColors.header, title: l.bibleM4VersionsTitle),
       body: page,
     );
   }

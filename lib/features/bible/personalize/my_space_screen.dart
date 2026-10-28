@@ -15,6 +15,7 @@ import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/brand_app_bar.dart';
+import '../home/home_view.dart';
 import '../data/bible_providers.dart';
 import '../data/canon.dart';
 import '../plans/plans_widgets.dart';
@@ -119,7 +120,8 @@ class BibleMySpaceScreen extends ConsumerWidget {
     // donc pas changer quand on change de version.
     final total = bibleChapters.length;
     return Scaffold(
-      appBar: BrandAppBar(title: l.bibleMyBadges),
+      appBar:
+          BrandAppBar(color: BibleHomeColors.header, title: l.bibleMyBadges),
       body: ListView(
         padding: AppSpacing.screenPadding.copyWith(top: AppSpacing.md),
         children: [

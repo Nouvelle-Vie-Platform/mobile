@@ -30,7 +30,6 @@ import '../../../l10n/l10n_extension.dart';
 import '../../../router/app_router.dart';
 import '../../../screens/notes/notes_tab.dart';
 import '../../../state/theme_provider.dart';
-import '../../../theme/app_colors.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
@@ -170,13 +169,10 @@ class _BibleShellState extends ConsumerState<BibleShell> {
       appBar: bare
           ? null
           : AppBar(
-              backgroundColor: AppColors.primary,
+              backgroundColor: BibleHomeColors.header,
               foregroundColor: Colors.white,
               iconTheme: const IconThemeData(color: Colors.white),
               centerTitle: true,
-              flexibleSpace: const DecoratedBox(
-                decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
-              ),
               leading: IconButton(
                 key: BibleShell.backKey,
                 icon: Icon(widget.selectMode ? Icons.close : Icons.arrow_back),
@@ -281,13 +277,6 @@ class _BibleNavBar extends StatelessWidget {
         BibleModuleTab.more => Icons.person_outline,
       };
 
-  static IconData _selectedIconOf(BibleModuleTab tab) => switch (tab) {
-        BibleModuleTab.home => Icons.home,
-        BibleModuleTab.bible => Icons.menu_book,
-        BibleModuleTab.notes => Icons.sticky_note_2,
-        BibleModuleTab.more => Icons.person,
-      };
-
   @override
   Widget build(BuildContext context) {
     final c = BibleHomeColors.of(context);
@@ -295,7 +284,7 @@ class _BibleNavBar extends StatelessWidget {
     // bleu des boutons, et la barre la teinte des cartes.
     final dark = Theme.of(context).brightness == Brightness.dark;
     final barColor = dark ? c.card : Colors.white;
-    final bubbleColor = dark ? c.button : c.navActive;
+    final bubbleColor = dark ? c.button : BibleHomeColors.header;
     const tabs = BibleModuleTab.values;
     return TweenAnimationBuilder<double>(
       tween: Tween(end: tab.index.toDouble()),
@@ -353,12 +342,19 @@ class _BibleNavBar extends StatelessWidget {
                       // Le toucher passe à l'onglet dessous.
                       child: IgnorePointer(
                         child: DecoratedBox(
+                          // L'anneau et l'icône au trait en or (maquette).
                           decoration: BoxDecoration(
                             color: bubbleColor,
                             shape: BoxShape.circle,
+                            border: Border.all(
+                              color: BibleHomeColors.gold,
+                              width: 2,
+                            ),
                           ),
-                          child:
-                              Icon(_selectedIconOf(tab), color: Colors.white),
+                          child: Icon(
+                            _iconOf(tab),
+                            color: BibleHomeColors.gold,
+                          ),
                         ),
                       ),
                     ),

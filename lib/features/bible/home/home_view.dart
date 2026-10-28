@@ -62,6 +62,8 @@ final class BibleHomeColors {
     required this.navBorder,
     required this.navIdle,
     required this.navActive,
+    required this.bookTile,
+    required this.bookTileInk,
     required this.heroImage,
     required this.heroWash,
   });
@@ -80,12 +82,22 @@ final class BibleHomeColors {
   final Color navBorder;
   final Color navIdle;
   final Color navActive;
+
+  /// La case d'abréviation d'un livre (Gn, Ex…) et son encre.
+  final Color bookTile;
+  final Color bookTileInk;
   final String heroImage;
 
   /// Le lavis violet de la maquette de jour ; l'image de nuit est déjà froide.
   final Color heroWash;
 
   static const dailyIcon = Color(0xFFE9BB6D);
+
+  /// **L'identité du module** (#265, maquette « liste ») : l'en-tête bleu
+  /// nuit de tous ses écrans — le reste de l'appli garde son bleu roi, on
+  /// sent qu'on entre dans la Bible — et l'or de la pastille de la barre.
+  static const header = Color(0xFF1F3C5A);
+  static const gold = Color(0xFFD8C198);
 
   static const light = BibleHomeColors._(
     ink: Color(0xFF14213D),
@@ -100,8 +112,10 @@ final class BibleHomeColors {
     chevron: Color(0xFFA6A6A6),
     button: Color(0xFF143256),
     navBorder: Color(0xFFDBDAD8),
-    navIdle: Color(0xFF8A8A8E),
+    navIdle: Color(0xFF475770),
     navActive: Color(0xFF143256),
+    bookTile: Color(0xFFDEE4F0),
+    bookTileInk: Color(0xFF314B70),
     heroImage: 'assets/images/bible_home_hero.webp',
     heroWash: Color(0x1A6545AA),
   );
@@ -121,6 +135,8 @@ final class BibleHomeColors {
     navBorder: Color(0xFF262A38),
     navIdle: Color(0xFF7D8090),
     navActive: Color(0xFFEDE6DA),
+    bookTile: Color(0xFF232838),
+    bookTileInk: Color(0xFFA9C0E4),
     heroImage: 'assets/images/bible_home_hero_night.webp',
     heroWash: Color(0x00000000),
   );

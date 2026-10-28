@@ -26,6 +26,7 @@ import '../../../theme/app_typography.dart';
 import '../../../widgets/segmented_tabs.dart';
 import '../data/bible_providers.dart';
 import '../data/canon.dart';
+import '../home/home_view.dart';
 
 enum BibleBrowserMode { browse, select, pickChapter }
 
@@ -180,14 +181,31 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
       children: [
         Padding(
           padding: AppSpacing.screenPadding.copyWith(top: AppSpacing.md),
-          child: TextField(
-            key: BibleBrowser.searchFieldKey,
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.search),
-              hintText: l.bibleBookSearchHint,
-              isDense: true,
+          // Une carte blanche à l'ombre douce, sans bordure (maquette).
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              boxShadow: AppShadows.elevation1,
             ),
-            onChanged: (v) => setState(() => _query = v),
+            child: TextField(
+              key: BibleBrowser.searchFieldKey,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: l.bibleBookSearchHint,
+                isDense: true,
+                filled: true,
+                fillColor: palette.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
           ),
         ),
         if (needle.isEmpty)
@@ -198,6 +216,7 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
               tabs: [l.bibleOldTestament, l.bibleNewTestament],
               selected: _testament.index,
               onSelect: (i) => setState(() => _testament = Testament.values[i]),
+              selectedColor: BibleHomeColors.header,
             ),
           ),
         const SizedBox(height: AppSpacing.sm),
@@ -209,11 +228,18 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
                     style: TextStyle(color: palette.textSecondary),
                   ),
                 )
-              : ListView.builder(
+              : ListView.separated(
                   padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
                   itemCount: books.length,
+                  // Le filet part sous le nom, pas sous la case (maquette).
+                  separatorBuilder: (context, _) => Divider(
+                    height: 1,
+                    indent: 72,
+                    color: palette.divider,
+                  ),
                   itemBuilder: (context, i) {
                     final b = books[i];
+                    final tiles = BibleHomeColors.of(context);
                     return ListTile(
                       key: BibleBrowser.bookKey(b.osis),
                       leading: Container(
@@ -221,13 +247,13 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
                         height: 40,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: palette.surfaceAlt,
+                          color: tiles.bookTile,
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Text(
                           b.abbreviations.first,
                           style: AppTypography.bodyStrong
-                              .copyWith(color: palette.primary),
+                              .copyWith(color: tiles.bookTileInk),
                         ),
                       ),
                       title: Text(b.nameIn(l.localeName)),
