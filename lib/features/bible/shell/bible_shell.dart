@@ -240,8 +240,8 @@ class _BibleShellState extends ConsumerState<BibleShell> {
   }
 }
 
-/// **La barre du module** (#265) : quatre icônes sans libellé — il reste en
-/// infobulle et pour le lecteur d'écran. L'onglet actif sort en **pastille
+/// **La barre du module** (#265) : quatre icônes, chacune avec son libellé
+/// dessous (#267 ; elles en ont été privées un temps). L'onglet actif sort en **pastille
 /// ronde** au-dessus de la barre, qui s'y bombe ; pastille et renflement
 /// glissent ensemble d'un onglet à l'autre. Peinte à la main : la
 /// `NavigationBar` de Material ne déborde pas de sa boîte, et quatre icônes ne
@@ -252,16 +252,19 @@ class _BibleNavBar extends StatelessWidget {
   final BibleModuleTab tab;
   final ValueChanged<BibleModuleTab> onSelect;
 
-  static const _barHeight = 60.0;
+  /// Les libellés sont revenus sous les icônes (#267) : la barre grandit, et
+  /// la pastille monte d'autant pour que celui de l'onglet actif passe
+  /// dessous.
+  static const _barHeight = 64.0;
 
   /// La marge au-dessus de la barre, où monte le dôme.
-  static const _lift = 20.0;
+  static const _lift = 30.0;
   static const _bubble = 52.0;
 
-  /// Mesuré sur la maquette : la pastille est **dans** la barre, elle n'en
-  /// dépasse que de 8 % de son diamètre ; le dôme l'entoure d'une marge d'un
-  /// quart de diamètre.
-  static const _bubbleTop = _lift - 4;
+  /// La pastille dépasse de la barre d'un quart de son diamètre (la maquette
+  /// disait 8 %, sans libellés) ; le dôme l'entoure d'une marge d'un quart de
+  /// diamètre.
+  static const _bubbleTop = _lift - 14;
   static const _domeRadius = _bubble / 2 + 12;
 
   static String _labelOf(BuildContext context, BibleModuleTab tab) {
@@ -289,6 +292,7 @@ class _BibleNavBar extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final barColor = dark ? c.card : Colors.white;
     final bubbleColor = c.button;
+    final activeLabel = dark ? c.ink : c.button;
     const tabs = BibleModuleTab.values;
     return TweenAnimationBuilder<double>(
       tween: Tween(end: tab.index.toDouble()),
@@ -321,18 +325,35 @@ class _BibleNavBar extends StatelessWidget {
                         child: Semantics(
                           selected: t == tab,
                           button: true,
-                          child: Tooltip(
-                            message: _labelOf(context, t),
-                            child: InkResponse(
-                              key: BibleShell.tabKey(t),
-                              onTap: () => onSelect(t),
-                              child: Center(
-                                // L'icône au trait s'efface sous la pastille
-                                // qui arrive.
-                                child: Opacity(
-                                  opacity: (at - t.index).abs().clamp(0.0, 1.0),
-                                  child: Icon(_iconOf(t), color: c.navIdle),
-                                ),
+                          child: InkResponse(
+                            key: BibleShell.tabKey(t),
+                            onTap: () => onSelect(t),
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  // L'icône au trait s'efface sous la pastille
+                                  // qui arrive.
+                                  Opacity(
+                                    opacity:
+                                        (at - t.index).abs().clamp(0.0, 1.0),
+                                    child: Icon(_iconOf(t), color: c.navIdle),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _labelOf(context, t),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.caption.copyWith(
+                                      fontSize: 11,
+                                      color: t == tab ? activeLabel : c.navIdle,
+                                      fontWeight: t == tab
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
