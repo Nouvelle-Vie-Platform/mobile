@@ -317,11 +317,14 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
           child: _Grid(
             numbers: versification.chaptersOf(book.osis),
             keyOf: BibleBrowser.chapterKey,
-            tone: (c) => state != null &&
-                    ((state.book == book.osis && state.chapter == c) ||
-                        state.hasRead(book.osis, c))
-                ? _Tone.soft
-                : _Tone.neutral,
+            caption: context.l10n.bibleChapterShort,
+            tone: (c) => state == null
+                ? _Tone.neutral
+                : state.hasRead(book.osis, c)
+                    ? _Tone.read
+                    : state.book == book.osis && state.chapter == c
+                        ? _Tone.soft
+                        : _Tone.neutral,
             onTap: _openChapter,
           ),
         ),
@@ -361,10 +364,12 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
   }
 }
 
-enum _Tone { neutral, soft, strong }
+enum _Tone { neutral, soft, read, strong }
 
-/// La grille des numéros : des pastilles rondes, neutres ; [_Tone.soft] pour
-/// le chapitre courant ou lu, [_Tone.strong] pour les versets choisis.
+/// La grille des numéros (maquette « chpt », 28/10/2026) : des **carrés
+/// arrondis** en léger relief, cinq par ligne sur un téléphone. [_Tone.soft]
+/// pour le chapitre courant, [_Tone.read] pour un chapitre lu — la même teinte
+/// chaude, plus une coche —, [_Tone.strong] pour les versets choisis.
 ///
 /// Une **liste** de numéros, et non un compte : la versification d'une version
 /// peut sauter un chapitre (C3, #240), et la grille ne doit pas le proposer.
@@ -374,6 +379,7 @@ class _Grid extends StatelessWidget {
     required this.keyOf,
     required this.tone,
     required this.onTap,
+    this.caption,
   });
 
   final List<int> numbers;
@@ -381,9 +387,20 @@ class _Grid extends StatelessWidget {
   final _Tone Function(int n) tone;
   final ValueChanged<int> onTap;
 
+  /// Le petit mot sous chaque numéro (« ch. »), sur toutes les cases.
+  final String? caption;
+
+  // Relevées sur la maquette ; la nuit garde les teintes de la palette.
+  static const _tile = Color(0xFFECEAE6);
+  static const _warm = Color(0xFFE6DFD7);
+  static const _ink = Color(0xFF2B3849);
+  static const _check = Color(0xFF8A8496);
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    const radius = BorderRadius.all(Radius.circular(14));
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -391,8 +408,10 @@ class _Grid extends StatelessWidget {
         AppSpacing.lg,
         96,
       ),
+      // 72 : cinq cases d'environ 59 pt sur un téléphone, comme la maquette
+      // (80 n'en laissait que quatre).
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 64,
+        maxCrossAxisExtent: 72,
         mainAxisSpacing: AppSpacing.md,
         crossAxisSpacing: AppSpacing.md,
       ),
@@ -400,25 +419,78 @@ class _Grid extends StatelessWidget {
       itemBuilder: (context, i) {
         final n = numbers[i];
         final t = tone(n);
+        final warm = dark ? palette.primary.withValues(alpha: 0.18) : _warm;
+        final ink = dark ? palette.textPrimary : _ink;
         final (bg, fg) = switch (t) {
-          _Tone.neutral => (palette.surfaceAlt, palette.textPrimary),
-          _Tone.soft => (
-              palette.primary.withValues(alpha: 0.14),
-              palette.primary,
-            ),
+          _Tone.neutral => (dark ? palette.surfaceAlt : _tile, ink),
+          _Tone.soft || _Tone.read => (warm, ink),
           _Tone.strong => (palette.primary, Colors.white),
         };
-        return Material(
-          color: bg,
-          shape: const CircleBorder(),
-          child: InkWell(
-            key: keyOf(n),
-            customBorder: const CircleBorder(),
-            onTap: () => onTap(n),
-            child: Center(
-              child: Text(
-                '$n',
-                style: AppTypography.bodyStrong.copyWith(color: fg),
+        final label = caption;
+        return DecoratedBox(
+          // Le relief : une ombre chaude dessous, un reflet clair dessus.
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            boxShadow: dark
+                ? null
+                : const [
+                    BoxShadow(
+                      color: Color(0x1A8C7B6B),
+                      blurRadius: 10,
+                      offset: Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: Colors.white,
+                      blurRadius: 6,
+                      offset: Offset(-2, -2),
+                    ),
+                  ],
+          ),
+          child: Material(
+            color: bg,
+            borderRadius: radius,
+            child: InkWell(
+              key: keyOf(n),
+              borderRadius: radius,
+              onTap: () => onTap(n),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$n',
+                          style: AppTypography.h3.copyWith(
+                            color: fg,
+                            fontWeight: FontWeight.w700,
+                            height: 1.1,
+                          ),
+                        ),
+                        if (label != null)
+                          Text(
+                            label,
+                            style: AppTypography.caption.copyWith(
+                              color: t == _Tone.strong
+                                  ? Colors.white70
+                                  : palette.textSecondary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (t == _Tone.read)
+                    Positioned(
+                      top: 6,
+                      right: 8,
+                      child: Icon(
+                        Icons.check,
+                        size: 14,
+                        color: dark ? palette.textSecondary : _check,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),

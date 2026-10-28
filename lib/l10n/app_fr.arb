@@ -1552,6 +1552,8 @@
   "@bibleNoBookFound": {"description": "Onglet Bible : la recherche de livre ne trouve rien"},
   "bibleChapterCount": "{count, plural, =1{1 chapitre} other{{count} chapitres}}",
   "@bibleChapterCount": {"description": "Onglet Bible : nombre de chapitres d'un livre", "placeholders": {"count": {"type": "int"}}},
+  "bibleChapterShort": "ch.",
+  "@bibleChapterShort": {"description": "Module Bible, grille des chapitres : le petit mot sous chaque numéro (abréviation de chapitre)"},
   "bibleChooseChapter": "Choisir un chapitre",
   "bibleChooseVerse": "Choisir un verset",
   "bibleStartReading": "Commencer {reference}",

@@ -4846,6 +4846,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 chapitre} other{{count} chapitres}}'**
   String bibleChapterCount(int count);
 
+  /// Module Bible, grille des chapitres : le petit mot sous chaque numéro (abréviation de chapitre)
+  ///
+  /// In fr, this message translates to:
+  /// **'ch.'**
+  String get bibleChapterShort;
+
   /// No description provided for @bibleChooseChapter.
   ///
   /// In fr, this message translates to:

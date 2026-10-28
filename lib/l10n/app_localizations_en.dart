@@ -2652,6 +2652,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get bibleChapterShort => 'ch.';
+
+  @override
   String get bibleChooseChapter => 'Choose a chapter';
 
   @override

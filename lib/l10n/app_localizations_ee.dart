@@ -2673,6 +2673,9 @@ class AppLocalizationsEe extends AppLocalizations {
   }
 
   @override
+  String get bibleChapterShort => 'ch.';
+
+  @override
   String get bibleChooseChapter => 'Choisir un chapitre';
 
   @override

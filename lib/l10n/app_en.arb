@@ -852,6 +852,7 @@
   "bibleBookSearchHint": "Quick book search",
   "bibleNoBookFound": "No matching book",
   "bibleChapterCount": "{count, plural, =1{1 chapter} other{{count} chapters}}",
+  "bibleChapterShort": "ch.",
   "bibleChooseChapter": "Choose a chapter",
   "bibleChooseVerse": "Choose a verse",
   "bibleStartReading": "Start {reference}",
