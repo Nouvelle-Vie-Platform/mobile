@@ -1,7 +1,8 @@
 /// **Les emplacements de la tranche M7 — l'accueil du module.**
 ///
 /// Le premier écran (maquette « Splash & Accueil ») est une seule section,
-/// **fixe** (#265) ; « Continuer la lecture » ouvre ce qui défile dessous, puis
+/// **fixe** (#265) ; « Lecture du jour » et « Continuer la lecture » ouvrent ce
+/// qui défile dessous, puis
 /// « Mon plan en cours » (M5, ordre 40), le passage du dimanche et le quiz de
 /// la semaine. Une tranche qui ajoute une carte prend un
 /// `order` au-delà de 0.
@@ -18,6 +19,11 @@ final BibleSlots homeSlots = BibleSlots(
       builder: (_) => const BibleHomeView(),
     ),
     // Le début de ce qui défile, sous l'en-tête fixe (#265).
+    BibleHomeSection(
+      id: 'daily_reading',
+      order: 5,
+      builder: (_) => const BibleDailySection(),
+    ),
     BibleHomeSection(
       id: 'continue_reading',
       order: 10,

@@ -466,10 +466,9 @@ class BibleSoonView extends StatelessWidget {
 class _HomeTab extends ConsumerWidget {
   const _HomeTab();
 
-  /// Sous l'en-tête fixe, au moins de quoi voir « Continuer la lecture » en
-  /// entier (64 pt et sa marge). Un iPhone 17 Pro en laisse ~90 ; un iPhone SE
-  /// non, et tout y défile.
-  static const _minScrollArea = 80.0;
+  /// Sous l'en-tête fixe, au moins de quoi voir « Lecture du jour » et le haut
+  /// de sa carte. Un iPhone 17 Pro en laisse ~250, un iPhone SE ~130.
+  static const _minScrollArea = 120.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -484,9 +483,9 @@ class _HomeTab extends ConsumerWidget {
       child: MediaQuery.removePadding(
         context: context,
         removeTop: true,
-        // **Seul ce qui suit la lecture du jour défile** (#265) : le premier
-        // écran — l'image, puis « Lecture du jour » — couvre toute la largeur et
-        // reste en place ; les sections
+        // **« Lecture du jour » et la suite défilent, seules** (#265) : le
+        // premier écran — l'image, la recherche, les raccourcis — couvre toute
+        // la largeur et reste en place ; les sections
         // suivantes défilent dans la colonne du contenu. Un écran trop court
         // (petit téléphone, paysage) n'aurait plus rien à faire défiler : là,
         // tout défile, comme avant.
@@ -501,14 +500,13 @@ class _HomeTab extends ConsumerWidget {
                 if (s.id != 'home_view')
                   BibleHomeColumn(child: s.builder(context)),
             ];
-            const gap = SizedBox(height: AppSpacing.lg);
             const padding = EdgeInsets.only(bottom: AppSpacing.xxl);
             final fixed = box.maxHeight - BibleHomeView.heightOf(context) >=
                 _minScrollArea;
             if (!fixed) {
               return ListView(
                 padding: padding,
-                children: [...head, gap, ...rest],
+                children: [...head, ...rest],
               );
             }
             return Column(
@@ -516,7 +514,7 @@ class _HomeTab extends ConsumerWidget {
               children: [
                 ...head,
                 Expanded(
-                  child: ListView(padding: padding, children: [gap, ...rest]),
+                  child: ListView(padding: padding, children: rest),
                 ),
               ],
             );

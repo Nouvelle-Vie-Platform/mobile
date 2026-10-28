@@ -79,7 +79,7 @@ void main() {
   });
 
   group('La coquille', () {
-    // #265 : seul ce qui suit la lecture du jour défile — sauf sur un écran
+    // #265 : « Lecture du jour » et la suite défilent, l'image non — sauf sur un écran
     // trop court pour l'en-tête, où tout défile comme avant. Les deux côtés,
     // pour qu'un vert dise quelque chose.
     for (final (phone, size) in [
@@ -98,7 +98,7 @@ void main() {
           router.push('/bible?tab=home');
           await _settle(tester);
 
-          // Hors écran compris : sur l'écran court, le bouton est plus bas.
+          // Hors écran compris : sur l'écran court, la suite est plus bas.
           Finder inScroll(Key key) => find.ancestor(
                 of: find.byKey(key, skipOffstage: false),
                 matching: find.byType(Scrollable, skipOffstage: false),
@@ -108,11 +108,8 @@ void main() {
             inScroll(BibleHomeKeys.header),
             phone ? findsNothing : findsWidgets,
           );
-          expect(
-            inScroll(BibleHomeKeys.dailyTitle),
-            phone ? findsNothing : findsWidgets,
-          );
-          expect(inScroll(BibleHomeKeys.continueReading), findsWidgets);
+          // « Lecture du jour » ouvre ce qui défile, des deux côtés.
+          expect(inScroll(BibleHomeKeys.dailyTitle), findsWidgets);
         });
       });
     }
