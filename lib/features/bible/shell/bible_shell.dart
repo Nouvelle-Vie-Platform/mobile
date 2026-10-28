@@ -21,6 +21,8 @@
 /// `BibleLink`** — c'est ce que la feuille « Ajouter un lien » attend.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -252,9 +254,15 @@ class _BibleNavBar extends StatelessWidget {
 
   static const _barHeight = 60.0;
 
-  /// Ce que la pastille dépasse au-dessus de la barre.
-  static const _lift = 30.0;
+  /// La marge au-dessus de la barre, où monte le dôme.
+  static const _lift = 20.0;
   static const _bubble = 52.0;
+
+  /// Mesuré sur la maquette : la pastille est **dans** la barre, elle n'en
+  /// dépasse que de 8 % de son diamètre ; le dôme l'entoure d'une marge d'un
+  /// quart de diamètre.
+  static const _bubbleTop = _lift - 4;
+  static const _domeRadius = _bubble / 2 + 12;
 
   static String _labelOf(BuildContext context, BibleModuleTab tab) {
     final l = context.l10n;
@@ -299,6 +307,8 @@ class _BibleNavBar extends StatelessWidget {
           count: tabs.length,
           color: barColor,
           top: _lift,
+          centerY: _bubbleTop + _bubble / 2,
+          domeRadius: _domeRadius,
         ),
         child: SafeArea(
           top: false,
@@ -337,7 +347,7 @@ class _BibleNavBar extends StatelessWidget {
                       ),
                     Positioned(
                       left: (at + 0.5) * w - _bubble / 2,
-                      top: 0,
+                      top: _bubbleTop,
                       width: _bubble,
                       height: _bubble,
                       // Le toucher passe à l'onglet dessous.
@@ -346,13 +356,6 @@ class _BibleNavBar extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: bubbleColor,
                             shape: BoxShape.circle,
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x33000000),
-                                blurRadius: 8,
-                                offset: Offset(0, 3),
-                              ),
-                            ],
                           ),
                           child:
                               Icon(_selectedIconOf(tab), color: Colors.white),
@@ -370,40 +373,55 @@ class _BibleNavBar extends StatelessWidget {
   }
 }
 
-/// Le fond de la barre : coins hauts arrondis, et un renflement en cloche
-/// centré sous la pastille (`at` : la position de l'onglet, fractionnaire
-/// pendant le glissement).
+/// Le fond de la barre : coins hauts arrondis, et un **dôme** — un cercle
+/// concentrique à la pastille — raccordé au bord par deux congés creux (`at` :
+/// la position de l'onglet, fractionnaire pendant le glissement).
 class _BarPainter extends CustomPainter {
   const _BarPainter({
     required this.at,
     required this.count,
     required this.color,
     required this.top,
+    required this.centerY,
+    required this.domeRadius,
   });
 
   final double at;
   final int count;
   final Color color;
 
-  /// Le haut de la barre, sous la marge où déborde la pastille.
+  /// Le haut de la barre, sous la marge où monte le dôme.
   final double top;
+
+  /// Le centre de la pastille, donc du dôme.
+  final double centerY;
+  final double domeRadius;
 
   @override
   void paint(Canvas canvas, Size size) {
     const radius = 20.0;
-    const bumpHalf = 46.0;
-    const bumpHeight = 20.0;
+    const fillet = 14.0;
     final cx = (at + 0.5) * size.width / count;
     final w = size.width;
+    final r = domeRadius;
+    // Le congé : un cercle de rayon `fillet` posé sur le bord (centre à
+    // `top - fillet`) et tangent extérieurement au dôme (distance `r + fillet`).
+    final dy = centerY - (top - fillet);
+    final dx = math.sqrt((r + fillet) * (r + fillet) - dy * dy);
+    // Le point où congé et dôme se touchent, sur la droite de leurs centres.
+    final k = r / (r + fillet);
+    final tx = dx * k;
+    final ty = centerY - dy * k;
     final path = Path()
       ..moveTo(0, size.height)
       ..lineTo(0, top + radius)
       ..quadraticBezierTo(0, top, radius, top)
-      ..lineTo(cx - bumpHalf, top)
-      ..cubicTo(cx - bumpHalf / 2, top, cx - bumpHalf / 2, top - bumpHeight, cx,
-          top - bumpHeight)
-      ..cubicTo(cx + bumpHalf / 2, top - bumpHeight, cx + bumpHalf / 2, top,
-          cx + bumpHalf, top)
+      ..lineTo(cx - dx, top)
+      ..arcToPoint(Offset(cx - tx, ty),
+          radius: const Radius.circular(fillet), clockwise: false)
+      ..arcToPoint(Offset(cx + tx, ty), radius: Radius.circular(r))
+      ..arcToPoint(Offset(cx + dx, top),
+          radius: const Radius.circular(fillet), clockwise: false)
       ..lineTo(w - radius, top)
       ..quadraticBezierTo(w, top, w, top + radius)
       ..lineTo(w, size.height)
@@ -415,7 +433,11 @@ class _BarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BarPainter old) =>
-      old.at != at || old.color != color || old.count != count;
+      old.at != at ||
+      old.color != color ||
+      old.count != count ||
+      old.centerY != centerY ||
+      old.domeRadius != domeRadius;
 }
 
 /// L'écran d'attente d'un onglet que les tranches suivantes rempliront.
