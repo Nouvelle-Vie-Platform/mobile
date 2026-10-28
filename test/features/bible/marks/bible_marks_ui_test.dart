@@ -24,7 +24,7 @@ import 'package:maison_du_miracle/features/bible/marks/bible_marks_outbox.dart';
 import 'package:maison_du_miracle/features/bible/marks/bible_marks_store.dart';
 import 'package:maison_du_miracle/features/bible/marks/bible_verse_menu.dart';
 import 'package:maison_du_miracle/features/bible/reader/bible_reader_screen.dart';
-import 'package:maison_du_miracle/features/bible/reader/marker_highlight.dart';
+import 'package:maison_du_miracle/features/bible/reader/text_highlight.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_shell.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/router/app_router.dart';
@@ -63,18 +63,19 @@ Future<List<LocalBibleMarkRow>> _marks(ProviderContainer c) {
   return db.select(db.localBibleMarks).get();
 }
 
-/// La couleur du surlignage d'un verset. Depuis #250 elle n'est plus un fond
-/// de `BoxDecoration` mais l'encre du trait de marqueur : [MarkerHighlight]
-/// disparaît de l'arbre quand il n'y a rien à peindre.
-Color? _background(WidgetTester tester, int verse) {
-  final marker = find.descendant(
-    of: find.byKey(BibleReaderScreen.verseKey(verse)),
-    matching: find.byType(MarkerHighlight),
-  );
-  return marker.evaluate().isEmpty
-      ? null
-      : tester.widget<MarkerHighlight>(marker).color;
-}
+/// Le surlignage d'un verset **entier** : le [TextHighlight] qui part du
+/// début du paragraphe, numéro compris. Il n'est dans l'arbre que s'il y a
+/// quelque chose à peindre ; un surlignage au mot part plus loin.
+Iterable<TextHighlight> _highlights(WidgetTester tester, int verse) =>
+    tester.widgetList<TextHighlight>(
+      find.descendant(
+        of: find.byKey(BibleReaderScreen.verseKey(verse)),
+        matching: find.byType(TextHighlight),
+      ),
+    );
+
+Color? _background(WidgetTester tester, int verse) =>
+    _highlights(tester, verse).where((h) => h.from == 0).firstOrNull?.color;
 
 /// **Ouvrir les actions**, c'est-à-dire appuyer sur le « + » (#252).
 ///
@@ -141,12 +142,10 @@ int _insideWord(String text, int rank) {
 }
 
 /// La bande peinte sur quelques mots d'un verset, s'il y en a une.
-MarkerWordHighlight? _wordBand(WidgetTester tester, int verse) {
-  final f = find.descendant(
-    of: find.byKey(BibleReaderScreen.verseKey(verse)),
-    matching: find.byType(MarkerWordHighlight),
-  );
-  return f.evaluate().isEmpty ? null : tester.widget<MarkerWordHighlight>(f);
+TextHighlight? _wordBand(WidgetTester tester, int verse) {
+  final bands = _highlights(tester, verse).where((h) => h.from > 0).toList();
+  // Comme avant : deux bandes à la fois, c'est une erreur du test.
+  return bands.isEmpty ? null : bands.single;
 }
 
 /// **Prendre des mots au doigt** : appui long sur le mot de rang [from],

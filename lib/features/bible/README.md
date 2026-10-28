@@ -127,7 +127,8 @@ module entier)
 embarque espeak-ng, sous GPL 3.0, incompatible avec les magasins. Seule la
 voix du système (`stts`) lit les chapitres et les questions des quiz.
 
-**Durées réglables en test** : `bibleFlashDurationProvider` (surlignage
-d'arrivée du lecteur) et `noteDraftDebounceProvider` (`state/notes_providers.dart`,
-délai du brouillon de note) — sous `runAsync` leurs minuteries sont réelles.
+**Durée réglable en test** : `noteDraftDebounceProvider`
+(`state/notes_providers.dart`, délai du brouillon de note) — sous `runAsync`
+sa minuterie est réelle. Le surlignage d'arrivée du lecteur, qui avait la
+sienne, a disparu le 28/10/2026.
 

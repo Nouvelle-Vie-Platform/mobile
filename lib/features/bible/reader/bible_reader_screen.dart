@@ -7,8 +7,8 @@
 /// L'allure vient des références de #250 : barre du haut claire, **lettrine**
 /// rouge brique ouvrant le chapitre (dont le titre quitte le corps — il
 /// doublait la barre), numéros de versets **en ligne** à la taille du texte,
-/// un paragraphe par verset, et des surlignages peints au marqueur
-/// ([MarkerHighlight]) plutôt que des rectangles arrondis.
+/// un paragraphe par verset. Le surlignage, d'abord peint au marqueur, est
+/// redevenu un fond droit derrière le texte ([TextHighlight], 28/10/2026).
 ///
 /// - L'en-tête « Jean 3 ▾ » rouvre le choix du livre et du chapitre.
 /// - Le sélecteur de version change la version active.
@@ -16,7 +16,8 @@
 ///   `local_bible_reading_state` à chaque page ; un chapitre défilé jusqu'au
 ///   bout est **marqué lu**.
 /// - Ouvert sur des versets (`?v=16-18`, un lien `nv://bible/John/3/16-18`),
-///   il défile jusqu'au premier et les **surligne un instant**.
+///   il défile jusqu'au premier — **sans** les surligner : le flash de 2,4 s
+///   à chaque entrée dans un chapitre gênait (28/10/2026).
 /// - Les emplacements : l'habillage des versets (`chapterDecorators`) et le
 ///   menu d'action (`verseActions`) — s'il y a des actions, toucher un verset
 ///   le sélectionne, toucher un autre étend la plage contiguë (le « + »
@@ -55,13 +56,7 @@ import '../personalize/personalize_routes.dart';
 import '../personalize/reader_appearance.dart';
 import '../shell/bible_browser.dart';
 import '../shell/bible_slots.dart';
-import 'marker_highlight.dart';
-
-/// La durée du surlignage d'arrivée. Surchargée en test : sous `runAsync`
-/// sa minuterie est réelle, et une machine chargée l'éteignait avant que le
-/// test ne la voie.
-final bibleFlashDurationProvider =
-    Provider<Duration>((_) => const Duration(milliseconds: 2400));
+import 'text_highlight.dart';
 
 class BibleReaderScreen extends ConsumerStatefulWidget {
   const BibleReaderScreen({
@@ -551,8 +546,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                   book: page.book,
                   chapter: page.chapter,
                 ),
-                flashFrom: arrival ? widget.from : null,
-                flashTo: arrival ? (widget.to ?? widget.from) : null,
+                targetVerse: arrival ? widget.from : null,
                 selectedFrom: i == _index ? _from : null,
                 selectedTo: i == _index ? _to : null,
                 selectedCharFrom: i == _index ? _charFrom : null,
@@ -665,8 +659,7 @@ class _ChapterPage extends ConsumerStatefulWidget {
     super.key,
     required this.chapterKey,
     required this.onReadToEnd,
-    this.flashFrom,
-    this.flashTo,
+    this.targetVerse,
     this.selectedFrom,
     this.selectedTo,
     this.selectedCharFrom,
@@ -677,8 +670,9 @@ class _ChapterPage extends ConsumerStatefulWidget {
   });
 
   final BibleChapterKey chapterKey;
-  final int? flashFrom;
-  final int? flashTo;
+
+  /// Le verset d'arrivée : la page y défile, sans le surligner.
+  final int? targetVerse;
   final int? selectedFrom;
   final int? selectedTo;
 
@@ -704,10 +698,8 @@ class _ChapterPage extends ConsumerStatefulWidget {
 class _ChapterPageState extends ConsumerState<_ChapterPage> {
   final _scroll = ScrollController();
   final _target = GlobalKey();
-  bool _flashing = false;
   bool _scrolledToTarget = false;
   bool _reported = false;
-  Timer? _flashTimer;
 
   /// **Le mot sous [global]** (#252) : le verset vient du `MetaData` que porte
   /// chaque ligne, les bornes du mot du paragraphe lui-même — c'est lui qui
@@ -768,18 +760,11 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
   @override
   void initState() {
     super.initState();
-    _flashing = widget.flashFrom != null;
-    if (_flashing) {
-      _flashTimer = Timer(ref.read(bibleFlashDurationProvider), () {
-        if (mounted) setState(() => _flashing = false);
-      });
-    }
     _scroll.addListener(_checkEnd);
   }
 
   @override
   void dispose() {
-    _flashTimer?.cancel();
     _scroll.dispose();
     super.dispose();
   }
@@ -885,12 +870,9 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
                   _wrap(
                     v.number,
                     _VerseLine(
-                      key: v.number == widget.flashFrom ? _target : null,
+                      key: v.number == widget.targetVerse ? _target : null,
                       verse: v,
                       decoration: decorations[v.number],
-                      flashed: _flashing &&
-                          v.number >= widget.flashFrom! &&
-                          v.number <= widget.flashTo!,
                       // La bande pleine du verset ne paraît pas quand la
                       // sélection ne tient que quelques mots : ce sont les
                       // mots qui se montrent choisis.
@@ -952,7 +934,6 @@ class _VerseLine extends StatelessWidget {
     super.key,
     required this.verse,
     required this.decoration,
-    required this.flashed,
     required this.selected,
     required this.palette,
     required this.onTap,
@@ -963,7 +944,6 @@ class _VerseLine extends StatelessWidget {
 
   final BibleVerse verse;
   final BibleVerseDecoration? decoration;
-  final bool flashed;
   final bool selected;
   final AppPalette palette;
   final VoidCallback? onTap;
@@ -977,10 +957,6 @@ class _VerseLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Le surlignage enregistré et le surlignage d'arrivée sont deux choses :
-    // l'arrivée couvre **tout** le verset, même quand la marque n'en tient
-    // que quelques mots — c'est elle qui dit « vous êtes ici ».
-    final flash = flashed ? palette.primary.withValues(alpha: 0.18) : null;
     final mark = decoration?.background;
     final words = decoration?.charFrom;
     final body = BibleReaderAppearance.verseStyle(context);
@@ -996,8 +972,7 @@ class _VerseLine extends StatelessWidget {
       style: body,
       children: [
         // Le numéro est **en ligne** et à la taille du texte : lisible comme
-        // sur les références, et l'interligne reste régulier — ce dont le
-        // marqueur a besoin pour poser ses bandes.
+        // sur les références, et l'interligne reste régulier.
         TextSpan(
           text: prefix,
           style: TextStyle(fontWeight: FontWeight.w700, color: rubric),
@@ -1005,23 +980,27 @@ class _VerseLine extends StatelessWidget {
         TextSpan(text: verse.text),
       ],
     );
-    // Les bandes posées sur quelques mots : d'abord le surlignage enregistré,
-    // puis la sélection en cours par-dessus. `MarkerWordHighlight` enveloppe
-    // le `Text` **seul** — il refait sa mise en page pour trouver les
-    // rectangles, et la lettrine la fausserait.
+    // Le surlignage enregistré — le verset entier, numéro compris, ou quelques
+    // mots —, puis la sélection en cours par-dessus. `TextHighlight`
+    // enveloppe le `Text` **seul** — il refait sa mise en page pour trouver
+    // les rectangles, et la lettrine la fausserait.
     Widget text = Text.rich(span);
+    final length = prefix.length + verse.text.length;
     for (final band in <(Color, int, int)>[
-      if (words != null && mark != null) (mark, words, decoration!.charTo!),
+      if (mark != null)
+        words == null
+            ? (mark, -prefix.length, verse.text.length)
+            : (mark, words, decoration!.charTo!),
       if (selectedCharFrom case final from?)
         // La teinte de l'arrivée sur un lien : la couleur du lecteur pour
         // « regardez ici », déjà connue du fidèle.
         (palette.primary.withValues(alpha: 0.22), from, selectedCharTo!),
     ]) {
-      text = MarkerWordHighlight(
+      text = TextHighlight(
         color: band.$1,
         span: span,
         from: prefix.length + band.$2,
-        to: prefix.length + band.$3,
+        to: (prefix.length + band.$3).clamp(0, length),
         child: text,
       );
     }
@@ -1031,14 +1010,9 @@ class _VerseLine extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
         // La sélection reste une bande pleine et nette, d'un bord à l'autre
-        // (références, verset 4) ; le surlignage, lui, est **peint**.
+        // (références, verset 4) ; le surlignage, lui, suit le texte.
         decoration: BoxDecoration(color: selected ? palette.surfaceAlt : null),
-        child: MarkerHighlight(
-          // Au mot, c'est `MarkerWordHighlight` qui peint la marque : la
-          // bande pleine ligne se taira, sans quoi les deux se
-          // superposeraient. L'arrivée, elle, passe toujours par ici.
-          color: flash ?? (words == null ? mark : null),
-          lineHeight: line,
+        child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.xs,

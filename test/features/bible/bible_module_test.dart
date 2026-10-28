@@ -24,7 +24,7 @@ import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/features/bible/data/placeholder_bible.dart';
 import 'package:maison_du_miracle/features/bible/personalize/bible_versions_screen.dart';
 import 'package:maison_du_miracle/features/bible/reader/bible_reader_screen.dart';
-import 'package:maison_du_miracle/features/bible/reader/marker_highlight.dart';
+import 'package:maison_du_miracle/features/bible/reader/text_highlight.dart';
 import 'package:maison_du_miracle/features/bible/search/bible_search_screen.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_browser.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_favorites_screen.dart';
@@ -673,16 +673,9 @@ void main() {
 
     testWidgets(
         'un lien `nv://bible/John/3/16-18` ouvre le lecteur au verset 16, '
-        'surligné un instant', (tester) async {
-      // La durée du surlignage, réglée par le test : longue tant qu'on le
-      // regarde (la charge de la machine ne l'éteint plus avant), courte pour
-      // le voir s'éteindre.
-      var flash = const Duration(hours: 1);
+        'sans le surligner', (tester) async {
       await tester.runAsync(() async {
-        final container = guestContainer(extra: [
-          _radioOff,
-          bibleFlashDurationProvider.overrideWith((_) => flash),
-        ]);
+        final container = guestContainer(extra: [_radioOff]);
         final router = await pumpGuestApp(tester, container);
         router.push('/bible?tab=bible');
         await _settle(tester);
@@ -697,40 +690,23 @@ void main() {
 
         expect(router.state.matchedLocation, '/bible/read/John/3');
         expect(router.state.uri.queryParameters['v'], '16-18');
-        final v16 = find.byKey(BibleReaderScreen.verseKey(16));
-        expect(v16.hitTestable(), findsOneWidget);
-
-        // Depuis #250 le surlignage d'arrivée est peint au marqueur, et
-        // [MarkerHighlight] n'est dans l'arbre que s'il y a de l'encre.
-        Color? colorOf(int verse) {
-          final marker = find.descendant(
-            of: find.byKey(BibleReaderScreen.verseKey(verse)),
-            matching: find.byType(MarkerHighlight),
-          );
-          return marker.evaluate().isEmpty
-              ? null
-              : tester.widget<MarkerHighlight>(marker).color;
-        }
-
-        expect(colorOf(16), isNotNull);
-        expect(colorOf(18), isNotNull);
-        expect(colorOf(19), isNull);
+        expect(
+          find.byKey(BibleReaderScreen.verseKey(16)).hitTestable(),
+          findsOneWidget,
+        );
         expect((await _localState(container))!.verse, 16);
 
-        // Rouvert avec un surlignage bref : il s'éteint.
-        flash = const Duration(milliseconds: 50);
-        container.invalidate(bibleFlashDurationProvider);
-        router.pop();
-        await _settle(tester);
-        await NoteLinkOpener.open(
-          element,
-          element as WidgetRef,
-          'nv://bible/John/3/16-18',
-        );
-        await _settle(tester);
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-        await _settle(tester);
-        expect(colorOf(16), isNull);
+        // Le flash d'arrivée a disparu (28/10/2026) : aucun surlignage sur
+        // les versets du lien, dès la première image.
+        for (final verse in [16, 17, 18]) {
+          expect(
+            find.descendant(
+              of: find.byKey(BibleReaderScreen.verseKey(verse)),
+              matching: find.byType(TextHighlight),
+            ),
+            findsNothing,
+          );
+        }
       });
     });
 
