@@ -157,9 +157,11 @@ class _BibleShellState extends ConsumerState<BibleShell> {
     final bare = !widget.selectMode && !locked && _tab == BibleModuleTab.home;
     final title = widget.selectMode
         ? l.bibleSelectTitle
-        : _tab == BibleModuleTab.notes
-            ? l.notesAppBarTitle
-            : l.navBible;
+        : switch (_tab) {
+            BibleModuleTab.notes => l.notesAppBarTitle,
+            BibleModuleTab.more => l.bibleTabMore,
+            _ => l.navBible,
+          };
     final selection = _selection;
     return Scaffold(
       backgroundColor: bare ? BibleHomeColors.of(context).pageBottom : null,

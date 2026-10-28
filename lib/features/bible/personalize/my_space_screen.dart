@@ -119,7 +119,7 @@ class BibleMySpaceScreen extends ConsumerWidget {
     // donc pas changer quand on change de version.
     final total = bibleChapters.length;
     return Scaffold(
-      appBar: BrandAppBar(title: l.bibleM4MySpaceTitle),
+      appBar: BrandAppBar(title: l.bibleMyBadges),
       body: ListView(
         padding: AppSpacing.screenPadding.copyWith(top: AppSpacing.md),
         children: [

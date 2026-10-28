@@ -185,16 +185,21 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
     return ListTile(
       key: BibleVersionsScreen.rowKey(v.code),
       contentPadding: EdgeInsets.zero,
-      leading: IconButton(
-        key: BibleVersionsScreen.activeKey(v.code),
-        tooltip: l.bibleM4ActiveVersion,
-        icon: Icon(
-          v.code == active
-              ? Icons.radio_button_checked
-              : Icons.radio_button_unchecked,
-        ),
-        onPressed: v.installed ? () => _select(v.code) : null,
-      ),
+      // Pas de choix sur l'invitation : rien n'y est installé, et une case
+      // cochée d'avance y mentait. La première version descendue devient
+      // active d'office (`ActiveBibleVersion` se replie sur elle).
+      leading: widget.invitation
+          ? null
+          : IconButton(
+              key: BibleVersionsScreen.activeKey(v.code),
+              tooltip: l.bibleM4ActiveVersion,
+              icon: Icon(
+                v.code == active
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+              ),
+              onPressed: v.installed ? () => _select(v.code) : null,
+            ),
       title: Text(v.name),
       // La licence prend une ligne de plus : sans cela, `ListTile` la rogne.
       isThreeLine: license != null,
