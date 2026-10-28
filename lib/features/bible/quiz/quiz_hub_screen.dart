@@ -58,10 +58,12 @@ class QuizHubScreen extends ConsumerWidget {
           number: '0${b.index + 1}',
           title: _title(l, b),
           line: '${_ages(l, b)} · ${_hint(l, b)}',
+          // Des barres de niveau, une à trois : la difficulté se lit d'un coup
+          // d'œil, sans figurer un âge (28/10/2026).
           icon: switch (b) {
-            QuizAgeBand.kids => Icons.child_care_outlined,
-            QuizAgeBand.teens => Icons.emoji_people_outlined,
-            QuizAgeBand.adults => Icons.menu_book_outlined,
+            QuizAgeBand.kids => Icons.signal_cellular_alt_1_bar,
+            QuizAgeBand.teens => Icons.signal_cellular_alt_2_bar,
+            QuizAgeBand.adults => Icons.signal_cellular_alt,
           },
           selected: b == current,
           onTap: () => pick(b),
@@ -513,7 +515,18 @@ class _Pill extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(band.icon, size: 30, color: Colors.white),
+                        // Les trois barres en fond, le niveau par-dessus :
+                        // « 1 sur 3 » se lit, là où une barre seule flottait.
+                        Stack(
+                          children: [
+                            const Icon(
+                              Icons.signal_cellular_alt,
+                              size: 30,
+                              color: Colors.white24,
+                            ),
+                            Icon(band.icon, size: 30, color: Colors.white),
+                          ],
+                        ),
                       ],
                     ),
                   ),
