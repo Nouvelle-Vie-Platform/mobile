@@ -29,7 +29,6 @@ import '../../../theme/app_typography.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/app_empty_state.dart';
 import '../../../widgets/brand_app_bar.dart';
-import '../home/home_view.dart';
 import '../data/bible_providers.dart';
 import '../data/bible_source.dart';
 import '../data/canon.dart';
@@ -205,8 +204,7 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
       versification: ref.watch(bibleVersificationProvider),
     );
     return Scaffold(
-      appBar:
-          BrandAppBar(color: BibleHomeColors.header, title: l.bibleSearchTitle),
+      appBar: BrandAppBar(title: l.bibleSearchTitle),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

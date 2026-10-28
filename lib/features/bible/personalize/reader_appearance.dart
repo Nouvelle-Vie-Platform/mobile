@@ -15,7 +15,6 @@ import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/brand_app_bar.dart';
-import '../home/home_view.dart';
 import 'bible_prefs.dart';
 
 /// La palette du lecteur pour [theme]. Le sépia est l'habillage d'un réglage,
@@ -136,8 +135,7 @@ class BibleAppearanceScreen extends ConsumerWidget {
     final prefs = ref.watch(biblePrefsProvider);
     final notifier = ref.read(biblePrefsProvider.notifier);
     return Scaffold(
-      appBar: BrandAppBar(
-          color: BibleHomeColors.header, title: l.bibleM4AppearanceTitle),
+      appBar: BrandAppBar(title: l.bibleM4AppearanceTitle),
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [

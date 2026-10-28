@@ -30,6 +30,7 @@ import '../../../l10n/l10n_extension.dart';
 import '../../../router/app_router.dart';
 import '../../../screens/notes/notes_tab.dart';
 import '../../../state/theme_provider.dart';
+import '../../../theme/app_colors.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
@@ -169,10 +170,13 @@ class _BibleShellState extends ConsumerState<BibleShell> {
       appBar: bare
           ? null
           : AppBar(
-              backgroundColor: BibleHomeColors.header,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               iconTheme: const IconThemeData(color: Colors.white),
               centerTitle: true,
+              flexibleSpace: const DecoratedBox(
+                decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
+              ),
               leading: IconButton(
                 key: BibleShell.backKey,
                 icon: Icon(widget.selectMode ? Icons.close : Icons.arrow_back),
@@ -280,11 +284,11 @@ class _BibleNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = BibleHomeColors.of(context);
-    // Le `navActive` sombre est crème : une pastille pâle. La nuit prend le
-    // bleu des boutons, et la barre la teinte des cartes.
+    // La pastille prend le bleu des boutons (celui de l'appli le jour), et la
+    // barre, la nuit, la teinte des cartes.
     final dark = Theme.of(context).brightness == Brightness.dark;
     final barColor = dark ? c.card : Colors.white;
-    final bubbleColor = dark ? c.button : BibleHomeColors.header;
+    final bubbleColor = c.button;
     const tabs = BibleModuleTab.values;
     return TweenAnimationBuilder<double>(
       tween: Tween(end: tab.index.toDouble()),
@@ -462,6 +466,11 @@ class BibleSoonView extends StatelessWidget {
 class _HomeTab extends ConsumerWidget {
   const _HomeTab();
 
+  /// Sous l'en-tête fixe, au moins de quoi voir « Continuer la lecture » en
+  /// entier (64 pt et sa marge). Un iPhone 17 Pro en laisse ~90 ; un iPhone SE
+  /// non, et tout y défile.
+  static const _minScrollArea = 80.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sections = ref.watch(bibleSlotsProvider).homeSections;
@@ -475,16 +484,43 @@ class _HomeTab extends ConsumerWidget {
       child: MediaQuery.removePadding(
         context: context,
         removeTop: true,
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
-          children: [
-            // Le premier écran couvre toute la largeur (image d'en-tête) ;
-            // les sections suivantes vivent dans la colonne du contenu.
-            for (final s in sections)
-              s.id == 'home_view'
-                  ? s.builder(context)
-                  : BibleHomeColumn(child: s.builder(context)),
-          ],
+        // **Seul ce qui suit la lecture du jour défile** (#265) : le premier
+        // écran — l'image, puis « Lecture du jour » — couvre toute la largeur et
+        // reste en place ; les sections
+        // suivantes défilent dans la colonne du contenu. Un écran trop court
+        // (petit téléphone, paysage) n'aurait plus rien à faire défiler : là,
+        // tout défile, comme avant.
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final head = [
+              for (final s in sections)
+                if (s.id == 'home_view') s.builder(context),
+            ];
+            final rest = [
+              for (final s in sections)
+                if (s.id != 'home_view')
+                  BibleHomeColumn(child: s.builder(context)),
+            ];
+            const gap = SizedBox(height: AppSpacing.lg);
+            const padding = EdgeInsets.only(bottom: AppSpacing.xxl);
+            final fixed = box.maxHeight - BibleHomeView.heightOf(context) >=
+                _minScrollArea;
+            if (!fixed) {
+              return ListView(
+                padding: padding,
+                children: [...head, gap, ...rest],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ...head,
+                Expanded(
+                  child: ListView(padding: padding, children: [gap, ...rest]),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

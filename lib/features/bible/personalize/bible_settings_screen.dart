@@ -11,7 +11,6 @@ import '../../../l10n/l10n_extension.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/brand_app_bar.dart';
-import '../home/home_view.dart';
 import '../data/bible_providers.dart';
 import 'bible_prefs.dart';
 import 'bible_reminders.dart';
@@ -67,8 +66,7 @@ class _BibleSettingsScreenState extends ConsumerState<BibleSettingsScreen> {
     final l = context.l10n;
     final prefs = ref.watch(biblePrefsProvider);
     return Scaffold(
-      appBar: BrandAppBar(
-          color: BibleHomeColors.header, title: l.bibleM4SettingsTitle),
+      appBar: BrandAppBar(title: l.bibleM4SettingsTitle),
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [

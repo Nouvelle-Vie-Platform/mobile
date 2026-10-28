@@ -14,15 +14,11 @@ class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.title,
     this.actions,
     this.centerTitle = true,
-    this.color,
   });
 
   final String? title;
   final List<Widget>? actions;
   final bool centerTitle;
-
-  /// Un fond uni à la place du dégradé — le bleu nuit du module Bible.
-  final Color? color;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -31,15 +27,13 @@ class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       // Fond solide garanti, sublimé par le dégradé en flexibleSpace.
-      backgroundColor: color ?? AppColors.primary,
+      backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
       iconTheme: const IconThemeData(color: Colors.white),
       centerTitle: centerTitle,
-      flexibleSpace: color != null
-          ? null
-          : const DecoratedBox(
-              decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
-            ),
+      flexibleSpace: const DecoratedBox(
+        decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
+      ),
       title: title == null
           ? null
           : Text(title!, style: AppTypography.h5.copyWith(color: Colors.white)),

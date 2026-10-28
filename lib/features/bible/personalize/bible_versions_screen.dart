@@ -125,8 +125,7 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
     );
     if (invitation) return page;
     return Scaffold(
-      appBar: BrandAppBar(
-          color: BibleHomeColors.header, title: l.bibleM4VersionsTitle),
+      appBar: BrandAppBar(title: l.bibleM4VersionsTitle),
       body: page,
     );
   }
@@ -210,9 +209,7 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
               tooltip: l.bibleM4Download,
               style: IconButton.styleFrom(
                 // La couleur de la pastille de la barre, nuit comprise.
-                backgroundColor: dark
-                    ? BibleHomeColors.of(context).button
-                    : BibleHomeColors.of(context).navActive,
+                backgroundColor: BibleHomeColors.of(context).button,
                 foregroundColor: Colors.white,
                 fixedSize: const Size.square(48),
               ),

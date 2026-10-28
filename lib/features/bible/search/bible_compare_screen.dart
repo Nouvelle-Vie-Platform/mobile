@@ -15,7 +15,6 @@ import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/brand_app_bar.dart';
-import '../home/home_view.dart';
 import '../data/bible_providers.dart';
 import '../data/bible_source.dart';
 import '../data/canon.dart';
@@ -43,9 +42,7 @@ class BibleCompareScreen extends ConsumerWidget {
         if (v.installed) v,
     ];
     return Scaffold(
-      appBar: BrandAppBar(
-          color: BibleHomeColors.header,
-          title: context.l10n.bibleSearchCompareTitle),
+      appBar: BrandAppBar(title: context.l10n.bibleSearchCompareTitle),
       body: ListView(
         padding: AppSpacing.screenPadding.copyWith(
           top: AppSpacing.md,

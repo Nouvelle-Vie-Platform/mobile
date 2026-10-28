@@ -14,7 +14,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/l10n_extension.dart';
 import '../../../router/app_router.dart';
 import '../../../theme/app_colors.dart';
-import '../home/home_view.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../reader/bible_reader_screen.dart';
@@ -34,10 +33,13 @@ Future<void> _push(WidgetRef ref, Widget screen) async {
 }
 
 PreferredSizeWidget _appBar(String title, {List<Widget>? actions}) => AppBar(
-      backgroundColor: BibleHomeColors.header,
+      backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
       iconTheme: const IconThemeData(color: Colors.white),
       centerTitle: true,
+      flexibleSpace: const DecoratedBox(
+        decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
+      ),
       title: Text(
         title,
         style: AppTypography.h5.copyWith(color: Colors.white),

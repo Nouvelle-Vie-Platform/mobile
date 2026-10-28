@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_extension.dart';
+import '../../../theme/app_colors.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
@@ -216,7 +217,7 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
               tabs: [l.bibleOldTestament, l.bibleNewTestament],
               selected: _testament.index,
               onSelect: (i) => setState(() => _testament = Testament.values[i]),
-              selectedColor: BibleHomeColors.header,
+              selectedColor: AppColors.primary,
             ),
           ),
         const SizedBox(height: AppSpacing.sm),

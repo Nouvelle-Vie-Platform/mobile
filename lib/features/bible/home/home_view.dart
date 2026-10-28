@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/l10n_extension.dart';
 import '../../../models/announcement_view.dart';
 import '../../../router/app_router.dart';
+import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/status/status_background.dart';
@@ -93,10 +94,8 @@ final class BibleHomeColors {
 
   static const dailyIcon = Color(0xFFE9BB6D);
 
-  /// **L'identité du module** (#265, maquette « liste ») : l'en-tête bleu
-  /// nuit de tous ses écrans — le reste de l'appli garde son bleu roi, on
-  /// sent qu'on entre dans la Bible — et l'or de la pastille de la barre.
-  static const header = Color(0xFF1F3C5A);
+  /// L'or de l'anneau de la pastille de la barre (#265, maquette « liste ») —
+  /// le bleu, lui, reste celui de l'appli.
   static const gold = Color(0xFFD8C198);
 
   static const light = BibleHomeColors._(
@@ -110,12 +109,13 @@ final class BibleHomeColors {
     searchInk: Color(0xFF5A5A5C),
     daily: Color(0xFFEEEFEA),
     chevron: Color(0xFFA6A6A6),
-    button: Color(0xFF143256),
+    // Le bleu de l'appli, pas un bleu nuit propre au module (#265).
+    button: AppColors.primary,
     navBorder: Color(0xFFDBDAD8),
     navIdle: Color(0xFF475770),
     navActive: Color(0xFF143256),
     bookTile: Color(0xFFDEE4F0),
-    bookTileInk: Color(0xFF314B70),
+    bookTileInk: AppColors.primary,
     heroImage: 'assets/images/bible_home_hero.webp',
     heroWash: Color(0x1A6545AA),
   );
@@ -147,6 +147,7 @@ final class BibleHomeColors {
 
 abstract final class BibleHomeKeys {
   static const header = Key('bible_home_header');
+  static const dailyTitle = Key('bible_home_daily_title');
   static const back = Key('bible_home_back');
   static const verseText = Key('bible_home_verse_text');
   static const daily = Key('bible_home_daily');
@@ -175,7 +176,9 @@ const double _cardsTop = 397;
 const double _cardsHeight = 106;
 const double _cardsGap = 11.7;
 const double _sideMargin = 18;
-const double _textLeft = 24;
+const double _dailyTitleGap = 43.8;
+const double _dailyTitleHeight = 26.4;
+const double _dailyCardMaxHeight = 97;
 
 /// La colonne du contenu sur tablette ; l'image d'en-tête, elle, couvre toute
 /// la largeur.
@@ -238,6 +241,16 @@ class BibleHomeView extends ConsumerStatefulWidget {
   /// La flèche posée sur l'image : sortir du module (fournie par la coquille).
   final VoidCallback? onBack;
 
+  /// La hauteur du premier écran sur cet appareil : la coquille ne le fixe
+  /// que s'il laisse de quoi défiler dessous.
+  ///
+  /// Une borne haute : la carte du jour à sa hauteur de deux lignes.
+  static double heightOf(BuildContext context) {
+    final g = _Geo.of(context);
+    return g.y(_cardsTop + _cardsHeight) +
+        g.s(_dailyTitleGap + _dailyTitleHeight + 10 + _dailyCardMaxHeight);
+  }
+
   @override
   ConsumerState<BibleHomeView> createState() => _BibleHomeViewState();
 }
@@ -257,6 +270,8 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
       );
     }
     final g = _Geo.of(context);
+    // Fixe dans la coquille (#265) : l'image, puis « Lecture du jour » — seul
+    // ce qui suit défile.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -296,7 +311,7 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
               ),
               Positioned(
                 left: g.x(21.7),
-                right: g.x(_textLeft),
+                right: g.x(24),
                 top: g.y(98.3),
                 child: Text(
                   context.l10n.bibleHomeHeroTitle,
@@ -349,12 +364,13 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
         Padding(
           padding: EdgeInsets.fromLTRB(
             g.x(18.1),
-            g.s(43.8),
+            g.s(_dailyTitleGap),
             g.x(_sideMargin),
             0,
           ),
           child: Text(
             context.l10n.bibleHomeDailyTitle,
+            key: BibleHomeKeys.dailyTitle,
             style: _atkinson(context, 22, weight: FontWeight.w700),
           ),
         ),
@@ -364,12 +380,6 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
             padding: EdgeInsets.symmetric(horizontal: g.x(_sideMargin)),
             child: _DailyCard(vod: vod),
           ),
-        SizedBox(height: g.s(38.2)),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: g.x(_sideMargin)),
-          child: const _ContinueButton(),
-        ),
-        const SizedBox(height: AppSpacing.xl),
       ],
     );
   }
@@ -767,8 +777,9 @@ class _DailyCard extends ConsumerWidget {
 }
 
 /// « Continuer la lecture » : la dernière position, sinon le verset du jour.
-class _ContinueButton extends ConsumerWidget {
-  const _ContinueButton();
+/// La première section **sous** l'en-tête fixe : elle défile avec la suite.
+class BibleContinueSection extends ConsumerWidget {
+  const BibleContinueSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -779,22 +790,27 @@ class _ContinueButton extends ConsumerWidget {
     final BibleLink? target = book != null && chapter != null
         ? BibleLink(book.osis, chapter, from: state?.verse)
         : vod?.link;
-    return SizedBox(
-      height: _Geo.of(context).s(64),
-      child: FilledButton(
-        key: BibleHomeKeys.continueReading,
-        style: FilledButton.styleFrom(
-          backgroundColor: BibleHomeColors.of(context).button,
-          foregroundColor: Colors.white,
-          shape: const StadiumBorder(),
-          padding: EdgeInsets.zero,
-        ),
-        onPressed: target == null
-            ? null
-            : () => BibleReaderScreen.push(ref.read(routerProvider), target),
-        child: Text(
-          context.l10n.bibleHomeContinueTitle,
-          style: _atkinson(context, 22).copyWith(color: Colors.white),
+    final g = _Geo.of(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: g.s(_sideMargin)),
+      child: SizedBox(
+        width: double.infinity,
+        height: g.s(64),
+        child: FilledButton(
+          key: BibleHomeKeys.continueReading,
+          style: FilledButton.styleFrom(
+            backgroundColor: BibleHomeColors.of(context).button,
+            foregroundColor: Colors.white,
+            shape: const StadiumBorder(),
+            padding: EdgeInsets.zero,
+          ),
+          onPressed: target == null
+              ? null
+              : () => BibleReaderScreen.push(ref.read(routerProvider), target),
+          child: Text(
+            context.l10n.bibleHomeContinueTitle,
+            style: _atkinson(context, 22).copyWith(color: Colors.white),
+          ),
         ),
       ),
     );

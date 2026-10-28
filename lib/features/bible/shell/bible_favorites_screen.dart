@@ -15,7 +15,6 @@ import '../../../router/app_router.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../widgets/app_empty_state.dart';
 import '../../../widgets/brand_app_bar.dart';
-import '../home/home_view.dart';
 import 'bible_route.dart';
 import 'bible_slots.dart';
 
@@ -42,8 +41,7 @@ class _BibleFavoritesScreenState extends ConsumerState<BibleFavoritesScreen> {
   Widget build(BuildContext context) {
     final filters = ref.watch(bibleSlotsProvider).favoriteFilters;
     return Scaffold(
-      appBar: BrandAppBar(
-          color: BibleHomeColors.header, title: context.l10n.bibleTabFavorites),
+      appBar: BrandAppBar(title: context.l10n.bibleTabFavorites),
       body: filters.isEmpty
           ? ListView(
               padding: AppSpacing.screenPadding.copyWith(top: AppSpacing.xxl),

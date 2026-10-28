@@ -79,6 +79,44 @@ void main() {
   });
 
   group('La coquille', () {
+    // #265 : seul ce qui suit la lecture du jour défile — sauf sur un écran
+    // trop court pour l'en-tête, où tout défile comme avant. Les deux côtés,
+    // pour qu'un vert dise quelque chose.
+    for (final (phone, size) in [
+      (true, const Size(390, 844)),
+      (false, const Size(800, 600)),
+    ]) {
+      testWidgets(
+          'l\'accueil : en-tête ${phone ? 'fixe sur un téléphone' : 'qui défile sur un écran court'}',
+          (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.runAsync(() async {
+          final router =
+              await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
+          router.push('/bible?tab=home');
+          await _settle(tester);
+
+          // Hors écran compris : sur l'écran court, le bouton est plus bas.
+          Finder inScroll(Key key) => find.ancestor(
+                of: find.byKey(key, skipOffstage: false),
+                matching: find.byType(Scrollable, skipOffstage: false),
+              );
+          expect(find.byKey(BibleHomeKeys.header), findsOneWidget);
+          expect(
+            inScroll(BibleHomeKeys.header),
+            phone ? findsNothing : findsWidgets,
+          );
+          expect(
+            inScroll(BibleHomeKeys.dailyTitle),
+            phone ? findsNothing : findsWidgets,
+          );
+          expect(inScroll(BibleHomeKeys.continueReading), findsWidgets);
+        });
+      });
+    }
+
     testWidgets(
         'quatre onglets, chacun rempli par sa tranche, et rien sur le fil '
         'que le geste du verset du jour', (tester) async {

@@ -10,7 +10,6 @@ import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_extension.dart';
 import '../../../router/app_router.dart';
 import '../../../theme/app_colors.dart';
-import '../home/home_view.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
@@ -75,10 +74,13 @@ class BiblePlansScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: context.palette.background,
       appBar: AppBar(
-        backgroundColor: BibleHomeColors.header,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
+        flexibleSpace: const DecoratedBox(
+          decoration: BoxDecoration(gradient: AppColors.gradientPrimary),
+        ),
         title: Text(
           title,
           style: AppTypography.h5.copyWith(color: Colors.white),

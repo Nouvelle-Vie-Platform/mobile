@@ -23,7 +23,6 @@ import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/brand_app_bar.dart';
-import '../home/home_view.dart';
 import '../data/bible_providers.dart';
 import '../data/canon.dart';
 import 'bible_prefs.dart';
@@ -209,8 +208,7 @@ class _StudioState extends ConsumerState<BibleShareStudioScreen> {
       ...kBrandGradients,
     ];
     return Scaffold(
-      appBar: BrandAppBar(
-          color: BibleHomeColors.header, title: l.bibleM4StudioTitle),
+      appBar: BrandAppBar(title: l.bibleM4StudioTitle),
       body: ListView(
         padding: AppSpacing.screenPadding.copyWith(top: AppSpacing.md),
         children: [
