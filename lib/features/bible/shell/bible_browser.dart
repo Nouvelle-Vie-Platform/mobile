@@ -318,13 +318,9 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
             numbers: versification.chaptersOf(book.osis),
             keyOf: BibleBrowser.chapterKey,
             caption: context.l10n.bibleChapterShort,
-            tone: (c) => state == null
-                ? _Tone.neutral
-                : state.hasRead(book.osis, c)
-                    ? _Tone.read
-                    : state.book == book.osis && state.chapter == c
-                        ? _Tone.soft
-                        : _Tone.neutral,
+            tone: (c) => state != null && state.hasRead(book.osis, c)
+                ? _Tone.read
+                : _Tone.neutral,
             onTap: _openChapter,
           ),
         ),
@@ -364,12 +360,13 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
   }
 }
 
-enum _Tone { neutral, soft, read, strong }
+enum _Tone { neutral, read, strong }
 
 /// La grille des numéros (maquette « chpt », 28/10/2026) : des **carrés
-/// arrondis** en léger relief, cinq par ligne sur un téléphone. [_Tone.soft]
-/// pour le chapitre courant, [_Tone.read] pour un chapitre lu — la même teinte
-/// chaude, plus une coche —, [_Tone.strong] pour les versets choisis.
+/// arrondis** en léger relief, cinq par ligne sur un téléphone. Un chapitre
+/// lu ([_Tone.read]) porte une coche, sans autre teinte — le beige de la
+/// maquette jaunissait la grille (retiré le 28/10/2026) ; [_Tone.strong] pour
+/// les versets choisis.
 ///
 /// Une **liste** de numéros, et non un compte : la versification d'une version
 /// peut sauter un chapitre (C3, #240), et la grille ne doit pas le proposer.
@@ -392,7 +389,6 @@ class _Grid extends StatelessWidget {
 
   // Relevées sur la maquette ; la nuit garde les teintes de la palette.
   static const _tile = Color(0xFFECEAE6);
-  static const _warm = Color(0xFFE6DFD7);
   static const _ink = Color(0xFF2B3849);
   static const _check = Color(0xFF8A8496);
 
@@ -419,11 +415,12 @@ class _Grid extends StatelessWidget {
       itemBuilder: (context, i) {
         final n = numbers[i];
         final t = tone(n);
-        final warm = dark ? palette.primary.withValues(alpha: 0.18) : _warm;
         final ink = dark ? palette.textPrimary : _ink;
         final (bg, fg) = switch (t) {
-          _Tone.neutral => (dark ? palette.surfaceAlt : _tile, ink),
-          _Tone.soft || _Tone.read => (warm, ink),
+          _Tone.neutral || _Tone.read => (
+              dark ? palette.surfaceAlt : _tile,
+              ink
+            ),
           _Tone.strong => (palette.primary, Colors.white),
         };
         final label = caption;
@@ -435,7 +432,7 @@ class _Grid extends StatelessWidget {
                 ? null
                 : const [
                     BoxShadow(
-                      color: Color(0x1A8C7B6B),
+                      color: Color(0x14000000),
                       blurRadius: 10,
                       offset: Offset(0, 3),
                     ),
