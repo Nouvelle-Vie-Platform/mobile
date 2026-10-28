@@ -8,7 +8,10 @@
 ///
 /// L'étendue vient du texte lui-même : `getBoxesForSelection` donne un
 /// rectangle par ligne traversée, que le surlignage couvre le verset entier
-/// ou quelques mots (#252).
+/// ou quelques mots (#252). Le paragraphe est remis en page **comme `Text`
+/// le fait** — style hérité compris : sans lui, la police par défaut du
+/// système, plus étroite, donnait des bandes qui s'arrêtaient avant la fin
+/// de chaque ligne (constaté le 28/10/2026).
 library;
 
 import 'package:flutter/material.dart';
@@ -37,48 +40,59 @@ class TextHighlight extends StatelessWidget {
   final int to;
   final Widget child;
 
+  /// Le paragraphe tel que `Text.rich` le met en page sous [context] : style
+  /// hérité fusionné, gras d'accessibilité, échelle, interligne.
+  static TextPainter _painterFor(BuildContext context, InlineSpan span) {
+    final inherited = DefaultTextStyle.of(context);
+    var style = inherited.style;
+    if (MediaQuery.boldTextOf(context)) {
+      style = style.merge(const TextStyle(fontWeight: FontWeight.bold));
+    }
+    return TextPainter(
+      text: TextSpan(style: style, children: [span]),
+      textAlign: inherited.textAlign ?? TextAlign.start,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      textWidthBasis: inherited.textWidthBasis,
+      textHeightBehavior: inherited.textHeightBehavior ??
+          DefaultTextHeightBehavior.maybeOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+    );
+  }
+
+  /// Les rectangles surlignés pour un paragraphe large de [width] — ceux que
+  /// le peintre remplit.
+  @visibleForTesting
+  List<TextBox> boxesIn(BuildContext context, double width) {
+    final painter = _painterFor(context, span)..layout(maxWidth: width);
+    final boxes = painter.getBoxesForSelection(
+      TextSelection(baseOffset: from, extentOffset: to),
+    );
+    painter.dispose();
+    return boxes;
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = color;
     if (c == null || to <= from) return child;
     return CustomPaint(
-      painter: _HighlightPainter(
-        c,
-        span,
-        from,
-        to,
-        // La même échelle que le `Text`, qui la prend là aussi : sans elle
-        // un réglage d'accessibilité décalait le fond d'un mot.
-        MediaQuery.textScalerOf(context),
-      ),
+      painter: _HighlightPainter(c, (width) => boxesIn(context, width)),
       child: child,
     );
   }
 }
 
 class _HighlightPainter extends CustomPainter {
-  const _HighlightPainter(
-      this.color, this.span, this.from, this.to, this.scaler);
+  const _HighlightPainter(this.color, this.boxes);
 
   final Color color;
-  final InlineSpan span;
-  final int from;
-  final int to;
-  final TextScaler scaler;
+  final List<TextBox> Function(double width) boxes;
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Même mise en page que le `Text` au-dessus (même `InlineSpan`, même
-    // largeur, même échelle), donc les mêmes rectangles.
-    final painter = TextPainter(
-      text: span,
-      textDirection: TextDirection.ltr,
-      textScaler: scaler,
-    )..layout(maxWidth: size.width);
     final paint = Paint()..color = color;
-    for (final box in painter.getBoxesForSelection(
-      TextSelection(baseOffset: from, extentOffset: to),
-    )) {
+    for (final box in boxes(size.width)) {
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           box.toRect().inflate(1),
@@ -87,14 +101,9 @@ class _HighlightPainter extends CustomPainter {
         paint,
       );
     }
-    painter.dispose();
   }
 
+  // La fonction change à chaque construction : on repeint avec le widget.
   @override
-  bool shouldRepaint(_HighlightPainter old) =>
-      old.color != color ||
-      old.span != span ||
-      old.from != from ||
-      old.to != to ||
-      old.scaler != scaler;
+  bool shouldRepaint(_HighlightPainter old) => true;
 }
