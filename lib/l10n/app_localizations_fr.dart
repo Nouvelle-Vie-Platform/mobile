@@ -2624,13 +2624,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bibleTabBible => 'Bible';
 
   @override
-  String get bibleTabFavorites => 'Favori';
+  String get bibleTabFavorites => 'Favoris';
 
   @override
   String get bibleTabNotes => 'Notes';
 
   @override
-  String get bibleTabMore => 'Plus';
+  String get bibleTabMore => 'Mon espace';
+
+  @override
+  String get bibleMyBadges => 'Mes badges';
+
+  @override
+  String get bibleInviteDownload =>
+      'Aucune Bible sur ce téléphone pour l\'instant. Téléchargez-en une pour la lire, même sans réseau.';
+
+  @override
+  String get bibleInviteOffline =>
+      'Connectez-vous à Internet pour voir les Bibles à télécharger.';
 
   @override
   String get bibleBackToHome => 'Retour à l\'accueil';

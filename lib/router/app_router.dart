@@ -480,14 +480,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: AppRoute.bible,
         path: '/bible',
-        builder: (_, state) => AppBackground(
-          child: BibleShell(
-            // `?tab=home|bible|favorites|notes|more` ; sans lui, le dernier
-            // onglet ouvert.
-            initialTab: BibleModuleTab.values
-                .asNameMap()[state.uri.queryParameters['tab']],
-          ),
-        ),
+        builder: (_, state) {
+          // `?tab=home|bible|notes|more` ; sans lui, le dernier onglet ouvert.
+          // `favorites` (l'ancien onglet, #265) : l'onglet Bible, Favoris
+          // poussé dessus.
+          final tab = state.uri.queryParameters['tab'];
+          return AppBackground(
+            child: BibleShell(
+              initialTab: tab == 'favorites'
+                  ? BibleModuleTab.bible
+                  : BibleModuleTab.values.asNameMap()[tab],
+              openFavorites: tab == 'favorites',
+            ),
+          );
+        },
       ),
       // Deux routes à part entière, et non des sous-routes de `/bible` : le
       // lecteur et le mode sélection se poussent seuls, par-dessus l'écran qui

@@ -1,12 +1,19 @@
-/// **Le module Bible** (M1, #199, décision 2) : cinq onglets — Accueil,
-/// Bible, Favori, Notes, Plus — sous une barre du bas **propre au module**, et
-/// une flèche de retour vers l'accueil de l'église.
+/// **Le module Bible** (M1, #199, décision 2 ; barre refaite par #265) :
+/// quatre onglets — Accueil, Bible, Notes, Mon espace — sous une barre du bas
+/// **propre au module**, et une flèche de retour vers l'accueil de l'église.
 ///
-/// Route `/bible?tab=home|bible|favorites|notes|more`, **ouverte à tous** et
-/// **poussée** par-dessus la coquille de l'application (dont la barre est donc
-/// masquée). Sans `?tab=`, le module rouvre son dernier onglet, gardé dans
+/// Route `/bible?tab=home|bible|notes|more`, **ouverte à tous** et **poussée**
+/// par-dessus la coquille de l'application (dont la barre est donc masquée).
+/// Sans `?tab=`, le module rouvre son dernier onglet, gardé dans
 /// `app_settings` (`SettingsDao.bibleTab`, la clé de la page à deux onglets
-/// qu'il remplace : « bible » et « notes » s'y lisent encore).
+/// qu'il remplace : « bible » et « notes » s'y lisent encore). Mon espace
+/// garde la valeur `more` de l'ancien onglet Plus : liens et mémoire tiennent
+/// sans migration. `favorites` (l'ancien onglet) : voir
+/// [BibleShell.openFavorites].
+///
+/// **Sans Bible téléchargée** (#265), Accueil, Bible et Mon espace montrent
+/// l'invitation à en télécharger une ; Notes et le mode sélection restent
+/// ouverts — ils ne lisent que la versification, pas le texte.
 ///
 /// **Le mode sélection** (`/bible/select`, décision 7) : l'onglet Bible seul,
 /// sans barre du bas ; on choisit un livre, un chapitre, puis des versets, et
@@ -22,22 +29,33 @@ import '../../../router/app_router.dart';
 import '../../../screens/notes/notes_tab.dart';
 import '../../../state/theme_provider.dart';
 import '../../../theme/app_colors.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
+import '../../../widgets/app_card.dart';
 import '../../../widgets/app_empty_state.dart';
 import '../data/canon.dart';
 import '../home/home_view.dart';
+import '../personalize/bible_catalog.dart';
+import '../personalize/bible_versions_screen.dart';
+import '../personalize/my_space_screen.dart';
 import '../reader/bible_reader_screen.dart';
 import '../search/bible_search_screen.dart';
 import 'bible_browser.dart';
+import 'bible_favorites_screen.dart';
 import 'bible_slots.dart';
 
-/// Les cinq onglets, dans l'ordre de la barre — leur nom est la valeur de
+/// Les quatre onglets, dans l'ordre de la barre — leur nom est la valeur de
 /// `?tab=` et celle qu'on mémorise.
-enum BibleModuleTab { home, bible, favorites, notes, more }
+enum BibleModuleTab { home, bible, notes, more }
 
 class BibleShell extends ConsumerStatefulWidget {
-  const BibleShell({super.key, this.initialTab, this.selectMode = false});
+  const BibleShell({
+    super.key,
+    this.initialTab,
+    this.selectMode = false,
+    this.openFavorites = false,
+  });
 
   /// L'onglet demandé par la route, ou `null` pour « le dernier ouvert ».
   final BibleModuleTab? initialTab;
@@ -45,10 +63,16 @@ class BibleShell extends ConsumerStatefulWidget {
   /// Le mode sélection des liens de notes.
   final bool selectMode;
 
+  /// `/bible?tab=favorites`, un lien d'avant #265 : l'écran Favoris poussé
+  /// dès l'ouverture. Un dernier onglet **mémorisé** `favorites`, lui, ne
+  /// rouvre que l'onglet Bible — pas d'écran surprise au lancement.
+  final bool openFavorites;
+
   static const Key navKey = Key('bible_nav');
   static const Key backKey = Key('bible_back');
   static const Key searchKey = Key('bible_search');
   static const Key insertKey = Key('bible_insert');
+  static const Key favoritesKey = Key('bible_more_favorites');
   static Key tabKey(BibleModuleTab tab) => Key('bible_tab_${tab.name}');
 
   @override
@@ -70,6 +94,11 @@ class _BibleShellState extends ConsumerState<BibleShell> {
   void initState() {
     super.initState();
     if (widget.initialTab == null && !widget.selectMode) _restoreTab();
+    if (widget.openFavorites) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) BibleFavoritesScreen.open(ref);
+      });
+    }
   }
 
   Future<void> _restoreTab() async {
@@ -85,6 +114,9 @@ class _BibleShellState extends ConsumerState<BibleShell> {
 
   void _select(BibleModuleTab tab) {
     _touched = true;
+    // Les chiffres de l'en-tête de Mon espace sont lus une fois : l'onglet
+    // reste monté, on les relit à chaque retour (un chapitre lu entre-temps).
+    if (tab == BibleModuleTab.more) ref.invalidate(bibleMySpaceStatsProvider);
     setState(() {
       _tab = tab;
       _visited.add(tab);
@@ -103,54 +135,26 @@ class _BibleShellState extends ConsumerState<BibleShell> {
     }
   }
 
-  String _labelOf(BibleModuleTab tab) {
-    final l = context.l10n;
-    return switch (tab) {
-      BibleModuleTab.home => l.bibleTabHome,
-      BibleModuleTab.bible => l.bibleTabBible,
-      BibleModuleTab.favorites => l.bibleTabFavorites,
-      BibleModuleTab.notes => l.bibleTabNotes,
-      BibleModuleTab.more => l.bibleTabMore,
-    };
-  }
-
-  IconData _iconOf(BibleModuleTab tab) => switch (tab) {
-        BibleModuleTab.home => Icons.home_outlined,
-        BibleModuleTab.bible => Icons.menu_book_outlined,
-        BibleModuleTab.favorites => Icons.star_outline,
-        BibleModuleTab.notes => Icons.sticky_note_2_outlined,
-        BibleModuleTab.more => Icons.more_horiz,
-      };
-
-  IconData _selectedIconOf(BibleModuleTab tab) => switch (tab) {
-        BibleModuleTab.home => Icons.home,
-        BibleModuleTab.bible => Icons.menu_book,
-        BibleModuleTab.favorites => Icons.star,
-        BibleModuleTab.notes => Icons.sticky_note_2,
-        BibleModuleTab.more => Icons.more_horiz,
-      };
-
   Widget _screenFor(BibleModuleTab tab) => switch (tab) {
         BibleModuleTab.home => const _HomeTab(),
         BibleModuleTab.bible => BibleBrowser(
             onOpen: (link) =>
                 BibleReaderScreen.push(ref.read(routerProvider), link),
           ),
-        BibleModuleTab.favorites => const _FavoritesTab(),
         BibleModuleTab.notes => const NotesTab(),
-        BibleModuleTab.more => const _MoreTab(),
+        BibleModuleTab.more => const _MySpaceTab(),
       };
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(bibleTabRequestProvider, (_, next) {
-      final tab = BibleModuleTab.values.asNameMap()[next];
-      if (tab != null) _select(tab);
-    });
     final l = context.l10n;
+    final unlocked = ref.watch(bibleHasRealVersionProvider);
+    // Sans vraie Bible, tout onglet sauf Notes cède la place à l'invitation.
+    final locked =
+        !widget.selectMode && !unlocked && _tab != BibleModuleTab.notes;
     // L'accueil (maquette « Splash & Accueil ») porte sa propre flèche sur
     // l'image, sous la barre d'état : pas de barre bleue.
-    final bare = !widget.selectMode && _tab == BibleModuleTab.home;
+    final bare = !widget.selectMode && !locked && _tab == BibleModuleTab.home;
     final title = widget.selectMode
         ? l.bibleSelectTitle
         : _tab == BibleModuleTab.notes
@@ -183,7 +187,9 @@ class _BibleShellState extends ConsumerState<BibleShell> {
               ),
               actions: [
                 // La loupe (M3) sur l'onglet Bible (l'accueil a sa barre).
-                if (!widget.selectMode && _tab == BibleModuleTab.bible)
+                if (!widget.selectMode &&
+                    !locked &&
+                    _tab == BibleModuleTab.bible)
                   IconButton(
                     key: BibleShell.searchKey,
                     icon: const Icon(Icons.search),
@@ -199,12 +205,20 @@ class _BibleShellState extends ConsumerState<BibleShell> {
               onSelection: (link) => setState(() => _selection = link),
             )
           : IndexedStack(
-              index: _tab.index,
+              // L'invitation est un enfant de plus, et non un remplaçant par
+              // onglet : une seule, qui garde la progression d'un
+              // téléchargement d'un onglet à l'autre et à travers Notes.
+              index: locked ? BibleModuleTab.values.length : _tab.index,
               children: [
                 for (final tab in BibleModuleTab.values)
-                  _visited.contains(tab)
+                  _visited.contains(tab) &&
+                          (unlocked || tab == BibleModuleTab.notes)
                       ? _screenFor(tab)
                       : const SizedBox.shrink(),
+                if (unlocked)
+                  const SizedBox.shrink()
+                else
+                  const BibleVersionsScreen(invitation: true),
               ],
             ),
       floatingActionButton: widget.selectMode && selection != null
@@ -217,55 +231,189 @@ class _BibleShellState extends ConsumerState<BibleShell> {
           : null,
       bottomNavigationBar: widget.selectMode
           ? null
-          // La barre de la maquette : fond crème, filet en haut, pas de
-          // pastille ; l'onglet actif en bleu nuit, icône pleine.
-          : DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: BibleHomeColors.of(context).navBorder),
-                ),
-              ),
-              child: NavigationBarTheme(
-                data: NavigationBarThemeData(
-                  labelTextStyle: WidgetStateProperty.resolveWith(
-                    (states) => AppTypography.caption.copyWith(
-                      fontSize: 13,
-                      color: states.contains(WidgetState.selected)
-                          ? BibleHomeColors.of(context).navActive
-                          : BibleHomeColors.of(context).navIdle,
-                    ),
-                  ),
-                ),
-                child: NavigationBar(
-                  key: BibleShell.navKey,
-                  selectedIndex: _tab.index,
-                  height: 50,
-                  backgroundColor: BibleHomeColors.of(context).pageBottom,
-                  surfaceTintColor: Colors.transparent,
-                  indicatorColor: Colors.transparent,
-                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                  onDestinationSelected: (i) =>
-                      _select(BibleModuleTab.values[i]),
-                  destinations: [
-                    for (final tab in BibleModuleTab.values)
-                      NavigationDestination(
-                        key: BibleShell.tabKey(tab),
-                        icon: Icon(
-                          _iconOf(tab),
-                          color: BibleHomeColors.of(context).navIdle,
-                        ),
-                        selectedIcon: Icon(
-                          _selectedIconOf(tab),
-                          color: BibleHomeColors.of(context).navActive,
-                        ),
-                        label: _labelOf(tab),
-                      ),
-                  ],
-                ),
-              ),
-            ),
+          : _BibleNavBar(key: BibleShell.navKey, tab: _tab, onSelect: _select),
     );
   }
+}
+
+/// **La barre du module** (#265) : quatre icônes sans libellé — il reste en
+/// infobulle et pour le lecteur d'écran. L'onglet actif sort en **pastille
+/// ronde** au-dessus de la barre, qui s'y bombe ; pastille et renflement
+/// glissent ensemble d'un onglet à l'autre. Peinte à la main : la
+/// `NavigationBar` de Material ne déborde pas de sa boîte, et quatre icônes ne
+/// valent pas une dépendance.
+class _BibleNavBar extends StatelessWidget {
+  const _BibleNavBar({super.key, required this.tab, required this.onSelect});
+
+  final BibleModuleTab tab;
+  final ValueChanged<BibleModuleTab> onSelect;
+
+  static const _barHeight = 60.0;
+
+  /// Ce que la pastille dépasse au-dessus de la barre.
+  static const _lift = 30.0;
+  static const _bubble = 52.0;
+
+  static String _labelOf(BuildContext context, BibleModuleTab tab) {
+    final l = context.l10n;
+    return switch (tab) {
+      BibleModuleTab.home => l.bibleTabHome,
+      BibleModuleTab.bible => l.bibleTabBible,
+      BibleModuleTab.notes => l.bibleTabNotes,
+      BibleModuleTab.more => l.bibleTabMore,
+    };
+  }
+
+  static IconData _iconOf(BibleModuleTab tab) => switch (tab) {
+        BibleModuleTab.home => Icons.home_outlined,
+        BibleModuleTab.bible => Icons.menu_book_outlined,
+        BibleModuleTab.notes => Icons.sticky_note_2_outlined,
+        BibleModuleTab.more => Icons.person_outline,
+      };
+
+  static IconData _selectedIconOf(BibleModuleTab tab) => switch (tab) {
+        BibleModuleTab.home => Icons.home,
+        BibleModuleTab.bible => Icons.menu_book,
+        BibleModuleTab.notes => Icons.sticky_note_2,
+        BibleModuleTab.more => Icons.person,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final c = BibleHomeColors.of(context);
+    // Le `navActive` sombre est crème : une pastille pâle. La nuit prend le
+    // bleu des boutons, et la barre la teinte des cartes.
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final barColor = dark ? c.card : Colors.white;
+    final bubbleColor = dark ? c.button : c.navActive;
+    const tabs = BibleModuleTab.values;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: tab.index.toDouble()),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOutCubic,
+      builder: (context, at, _) => CustomPaint(
+        painter: _BarPainter(
+          at: at,
+          count: tabs.length,
+          color: barColor,
+          top: _lift,
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: _lift + _barHeight,
+            child: LayoutBuilder(
+              builder: (context, box) {
+                final w = box.maxWidth / tabs.length;
+                return Stack(
+                  children: [
+                    for (final t in tabs)
+                      Positioned(
+                        left: t.index * w,
+                        width: w,
+                        top: _lift,
+                        bottom: 0,
+                        child: Semantics(
+                          selected: t == tab,
+                          button: true,
+                          child: Tooltip(
+                            message: _labelOf(context, t),
+                            child: InkResponse(
+                              key: BibleShell.tabKey(t),
+                              onTap: () => onSelect(t),
+                              child: Center(
+                                // L'icône au trait s'efface sous la pastille
+                                // qui arrive.
+                                child: Opacity(
+                                  opacity: (at - t.index).abs().clamp(0.0, 1.0),
+                                  child: Icon(_iconOf(t), color: c.navIdle),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Positioned(
+                      left: (at + 0.5) * w - _bubble / 2,
+                      top: 0,
+                      width: _bubble,
+                      height: _bubble,
+                      // Le toucher passe à l'onglet dessous.
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: bubbleColor,
+                            shape: BoxShape.circle,
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x33000000),
+                                blurRadius: 8,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child:
+                              Icon(_selectedIconOf(tab), color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Le fond de la barre : coins hauts arrondis, et un renflement en cloche
+/// centré sous la pastille (`at` : la position de l'onglet, fractionnaire
+/// pendant le glissement).
+class _BarPainter extends CustomPainter {
+  const _BarPainter({
+    required this.at,
+    required this.count,
+    required this.color,
+    required this.top,
+  });
+
+  final double at;
+  final int count;
+  final Color color;
+
+  /// Le haut de la barre, sous la marge où déborde la pastille.
+  final double top;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const radius = 20.0;
+    const bumpHalf = 46.0;
+    const bumpHeight = 20.0;
+    final cx = (at + 0.5) * size.width / count;
+    final w = size.width;
+    final path = Path()
+      ..moveTo(0, size.height)
+      ..lineTo(0, top + radius)
+      ..quadraticBezierTo(0, top, radius, top)
+      ..lineTo(cx - bumpHalf, top)
+      ..cubicTo(cx - bumpHalf / 2, top, cx - bumpHalf / 2, top - bumpHeight, cx,
+          top - bumpHeight)
+      ..cubicTo(cx + bumpHalf / 2, top - bumpHeight, cx + bumpHalf / 2, top,
+          cx + bumpHalf, top)
+      ..lineTo(w - radius, top)
+      ..quadraticBezierTo(w, top, w, top + radius)
+      ..lineTo(w, size.height)
+      ..close();
+    canvas
+      ..drawShadow(path, Colors.black, 6, false)
+      ..drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_BarPainter old) =>
+      old.at != at || old.color != color || old.count != count;
 }
 
 /// L'écran d'attente d'un onglet que les tranches suivantes rempliront.
@@ -323,75 +471,64 @@ class _HomeTab extends ConsumerWidget {
   }
 }
 
-/// **Favori** : une puce par filtre enregistré (M2), la liste du filtre
-/// choisi dessous.
-class _FavoritesTab extends ConsumerStatefulWidget {
-  const _FavoritesTab();
-
-  @override
-  ConsumerState<_FavoritesTab> createState() => _FavoritesTabState();
-}
-
-class _FavoritesTabState extends ConsumerState<_FavoritesTab> {
-  String? _filterId;
-
-  @override
-  Widget build(BuildContext context) {
-    final filters = ref.watch(bibleSlotsProvider).favoriteFilters;
-    if (filters.isEmpty) {
-      return BibleSoonView(
-        message: context.l10n.bibleFavoritesSoon,
-        icon: Icons.star_outline,
-      );
-    }
-    final current = filters.firstWhere(
-      (f) => f.id == _filterId,
-      orElse: () => filters.first,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: AppSpacing.screenPadding.copyWith(
-            top: AppSpacing.md,
-            bottom: AppSpacing.sm,
-          ),
-          child: Row(
-            children: [
-              for (final f in filters)
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: ChoiceChip(
-                    label: Text(f.label(context)),
-                    selected: f.id == current.id,
-                    onSelected: (_) => setState(() => _filterId = f.id),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        Expanded(child: current.builder(context)),
-      ],
-    );
-  }
-}
-
-/// **Plus** : une ligne par entrée enregistrée.
-class _MoreTab extends ConsumerWidget {
-  const _MoreTab();
+/// **Mon espace** (#265, l'ancien onglet Plus) : la série et les chapitres
+/// lus en tête, puis Favoris et une ligne par entrée enregistrée. Rechercher,
+/// les plans, les défis et les quiz n'y sont plus : l'accueil les porte déjà.
+class _MySpaceTab extends ConsumerWidget {
+  const _MySpaceTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
     final entries = ref.watch(bibleSlotsProvider).moreEntries;
-    if (entries.isEmpty) {
-      return BibleSoonView(
-        message: context.l10n.bibleMoreSoon,
-        icon: Icons.more_horiz,
-      );
-    }
+    final stats =
+        ref.watch(bibleMySpaceStatsProvider).value ?? const BibleMySpaceStats();
+    // Le canon figé, comme l'écran des badges (C3, #240).
+    final total = bibleChapters.length;
     return ListView(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
       children: [
+        Padding(
+          padding: AppSpacing.screenPadding,
+          child: AppCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.local_fire_department,
+                      color: context.palette.primary,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        l.bibleM4Streak(stats.streakDays),
+                        style: AppTypography.h5,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(l.bibleM4ChaptersRead(stats.chaptersRead, total)),
+                const SizedBox(height: AppSpacing.xs),
+                LinearProgressIndicator(
+                  value: (stats.chaptersRead / total).clamp(0.0, 1.0),
+                  backgroundColor: context.palette.divider,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ListTile(
+          key: BibleShell.favoritesKey,
+          leading: const Icon(Icons.star_outline),
+          title: Text(l.bibleTabFavorites),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => BibleFavoritesScreen.open(ref),
+        ),
         for (final e in entries)
           ListTile(
             key: Key('bible_more_${e.id}'),

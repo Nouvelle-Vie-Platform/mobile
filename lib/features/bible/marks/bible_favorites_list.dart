@@ -1,4 +1,4 @@
-/// **L'onglet Favori** (M2, #200, décision 4) : une liste filtrable — versets
+/// **L'écran Favoris** (M2, #200, décision 4) : une liste filtrable — versets
 /// favoris, chapitres marqués, passages surlignés. Carte : référence, extrait
 /// dans la version active, couleur, date. Toucher ouvre le lecteur, glisser
 /// retire.

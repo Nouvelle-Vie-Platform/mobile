@@ -29,6 +29,7 @@ import 'package:maison_du_miracle/data/repositories/calendar_repository.dart';
 import 'package:maison_du_miracle/data/repositories/gathering_repository.dart';
 import 'package:maison_du_miracle/data/repositories/legal_repository.dart';
 import 'package:maison_du_miracle/data/repositories/mediatheque_repository.dart';
+import 'package:maison_du_miracle/features/bible/personalize/bible_catalog.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/models/auth_channels.dart';
 import 'package:maison_du_miracle/models/models.dart';
@@ -75,6 +76,7 @@ ProviderContainer guestContainer({
   AnnouncementRepository? announcements,
   LegalNoticeStore? legalNotice,
   AuthChannelOffer? authChannels,
+  bool? bibleDownloaded = true,
   List<Override> extra = const [],
 }) {
   final AppDatabase db = openTestDatabase();
@@ -130,6 +132,13 @@ ProviderContainer guestContainer({
       ),
       themePreferencesProvider
           .overrideWith((ref) => Stream.value(const ThemePreferences())),
+      // **Une Bible téléchargée, par défaut** (#265) : sans elle, le module
+      // ne montre que l'invitation, et un test d'onglet ou de lecture n'a pas
+      // à poser une archive sur le disque. `null` : le vrai provider, lu dans
+      // le magasin — les tests de l'invitation (paramètre nommé, même raison
+      // que [authChannels]).
+      if (bibleDownloaded != null)
+        bibleHasRealVersionProvider.overrideWithValue(bibleDownloaded),
       downloadForContentProvider
           .overrideWith((ref, contentId) => Stream.value(null)),
       downloadNotificationsProvider.overrideWith(

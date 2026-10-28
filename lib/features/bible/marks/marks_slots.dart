@@ -20,7 +20,7 @@ import 'bible_verse_actions.dart';
 final BibleSlots marksSlots = BibleSlots(
   // L'ordre est celui des références de #250 : note, signet, partage, copie.
   // Le favori les suit — il n'y figure pas, mais personne n'a demandé de le
-  // retirer, et il est la seule porte d'entrée de l'onglet Favoris.
+  // retirer, et il est la seule porte d'entrée de l'écran Favoris.
   verseActions: [
     BibleVerseAction(
       id: 'note',

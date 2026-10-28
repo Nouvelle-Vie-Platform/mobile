@@ -16,8 +16,9 @@ final BibleSlots personalizeSlots = BibleSlots(
     BibleMoreEntry(
       id: 'my_space',
       order: 40,
-      icon: Icons.person_outline,
-      label: (context) => context.l10n.bibleM4MySpaceTitle,
+      // « Mes badges » (#265) : l'onglet s'appelle désormais Mon espace.
+      icon: Icons.military_tech_outlined,
+      label: (context) => context.l10n.bibleMyBadges,
       onTap: (_, ref) =>
           openBiblePersonalize(ref, BiblePersonalizePage.mySpace),
     ),

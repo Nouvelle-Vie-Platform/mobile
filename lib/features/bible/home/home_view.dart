@@ -32,6 +32,7 @@ import '../plans/plans_providers.dart';
 import '../quiz/quiz_providers.dart';
 import '../quiz/quiz_screens.dart';
 import '../reader/bible_reader_screen.dart';
+import '../shell/bible_favorites_screen.dart';
 import '../shell/bible_slots.dart';
 import 'data/home_data.dart';
 
@@ -532,7 +533,7 @@ class _SearchBar extends ConsumerWidget {
 }
 
 /// Les quatre cartes de la maquette : un compteur et un libellé, qui ouvrent
-/// Plans, Défis, Quiz et l'onglet Favori.
+/// Plans, Défis, Quiz et l'écran Favoris.
 class _Shortcuts extends ConsumerWidget {
   const _Shortcuts();
 
@@ -578,8 +579,7 @@ class _Shortcuts extends ConsumerWidget {
         Icons.favorite_border,
         favorites,
         l.bibleHomeCardFavorites,
-        (BuildContext _, WidgetRef ref) =>
-            ref.read(bibleTabRequestProvider.notifier).open('favorites'),
+        (BuildContext _, WidgetRef ref) => BibleFavoritesScreen.open(ref),
       ),
     ];
 

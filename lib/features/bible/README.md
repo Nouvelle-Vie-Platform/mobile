@@ -10,7 +10,7 @@ branchements entre tranches (voir « Branchements » en fin de page).
 | Dossier | Tranche | Contenu |
 |---|---|---|
 | `data/` | M1, C3, C4 | `canon.dart` (66 livres, versets par chapitre), `bible_source.dart` (`BibleSource`, `BibleCatalog`), `versification.dart` (la versification **d'une version**, C3), `placeholder_bible.dart` (Bible factice, versions EXA / EXB — le repli), `bible_archive.dart` (l'archive téléchargée : empreinte, dézippage, `InstalledBibleSource`, C4), `bible_providers.dart` |
-| `shell/` | M1 | `bible_shell.dart` (cinq onglets, mode sélection), `bible_browser.dart` (livres → chapitres → versets), `bible_slots.dart` (les emplacements) |
+| `shell/` | M1, #265 | `bible_shell.dart` (quatre onglets sous la barre à pastille, Mon espace, invitation sans Bible, mode sélection), `bible_favorites_screen.dart` (l'écran Favoris, poussé), `bible_browser.dart` (livres → chapitres → versets), `bible_slots.dart` (les emplacements) |
 | `reader/` | M1 | `bible_reader_screen.dart` (le lecteur) |
 | `marks/` | M2 | sélection, menu d'action, Favori, marges, file d'envoi, fusion à la connexion |
 | `search/` | M3 | recherche simple, croisée, comparative ; index `bible_fts` |
@@ -23,10 +23,16 @@ branchements entre tranches (voir « Branchements » en fin de page).
 
 | Route | Écran |
 |---|---|
-| `/bible?tab=home\|bible\|favorites\|notes\|more` | `BibleShell` ; sans `tab`, le dernier onglet (`SettingsDao.bibleTab`) |
+| `/bible?tab=home\|bible\|notes\|more` | `BibleShell` ; sans `tab`, le dernier onglet (`SettingsDao.bibleTab`). `more` = Mon espace (l'ancien Plus, valeur gardée). `favorites` (ancien onglet) : l'onglet Bible avec l'écran Favoris poussé ; mémorisé, l'onglet Bible seul |
 | `/bible/read/:book/:chapter?v=16-18` | `BibleReaderScreen` — `BibleReaderScreen.push(router, BibleLink(...))` |
 | `/bible/select` | `BibleShell(selectMode: true)` — dépile avec un `BibleLink` |
 | `/bible/personalize/:page` | M4 : `appearance`, `offline`, `my-space`, `settings`, `studio?ref=John/3/16&v=EXA` — `openBiblePersonalize(ref, …)` |
+
+**Sans Bible téléchargée** (#265) : tant qu'aucune version n'a de `localPath`
+(`bibleHasRealVersionProvider` — les exemples EXA/EXB ne comptent jamais),
+Accueil, Bible et Mon espace montrent l'invitation
+(`BibleVersionsScreen(invitation: true)`) ; Notes et `/bible/select` restent
+ouverts. Tests : `guestContainer(bibleDownloaded: …)`, `true` par défaut.
 
 Un lien de note `nv://bible/John/3/16-18` ouvre le lecteur au verset 16, 16–18
 surlignés un instant (`NoteLinkOpener`). Toujours naviguer par
@@ -68,14 +74,13 @@ déclaration de `const` à `final` dès qu'une fermeture s'y glisse.
 ```dart
 // lib/features/bible/plans/plans_slots.dart
 final BibleSlots plansSlots = BibleSlots(
-  moreEntries: [
-    BibleMoreEntry(
+  homeShortcuts: [
+    BibleHomeShortcut(
       id: 'plans', order: 10, icon: Icons.event_note,
       label: (context) => context.l10n.biblePlansTitle,
       onTap: (context, ref) => ref.read(routerProvider).pushNamed(...),
     ),
   ],
-  homeShortcuts: [BibleHomeShortcut(id: 'plans', order: 10, ...)],
 );
 ```
 
@@ -83,9 +88,9 @@ final BibleSlots plansSlots = BibleSlots(
 |---|---|---|---|
 | `homeSections` | `BibleHomeSection(id, order, builder)` | onglet **Accueil**, pleine largeur, dans l'ordre ; vide ⇒ écran d'attente | M7 (et M5/M6 s'ils veulent une carte) |
 | `homeShortcuts` | `BibleHomeShortcut(id, order, icon, label, onTap)` | **données** pour la rangée de raccourcis que **M7 dispose** (Plans, Défis, Quiz, Hors ligne) | M4, M5, M6 |
-| `moreEntries` | `BibleMoreEntry(id, order, icon, label, onTap)` | onglet **Plus**, une ligne chacune (clé `bible_more_<id>`) ; vide ⇒ attente | M4, M5, M6 |
+| `moreEntries` | `BibleMoreEntry(id, order, icon, label, onTap)` | onglet **Mon espace**, une ligne chacune (clé `bible_more_<id>`), sous l'en-tête (série, chapitres lus) et la ligne Favoris que pose la coquille. Rien de ce que l'accueil porte déjà (recherche, plans, défis, quiz) | M4 |
 | `verseActions` | `BibleVerseAction(id, order, icon, label, run(context, ref, BibleLink selection, String versionCode, {int? charFrom, int? charTo}))` | **lecteur** : dès qu'il y en a une, toucher un verset le sélectionne (plage contiguë) et une barre d'actions paraît (clé `bible_action_<id>`) ; `charFrom`/`charTo` sont **les mots choisis** dans `selection.from` (#257), `charTo` exclue — les actions qui emportent du texte les mettent en exergue, les autres les déclarent et les ignorent | M2 (copier, favori, surligner, note, partager), M4 (écouter) |
-| `favoriteFilters` | `BibleFavoriteFilter(id, order, label, builder)` | onglet **Favori** : une puce par filtre, la liste du filtre choisi dessous ; vide ⇒ attente | M2 |
+| `favoriteFilters` | `BibleFavoriteFilter(id, order, label, builder)` | écran **Favoris** (poussé : carte de l'accueil, ligne de Mon espace) : une puce par filtre, la liste du filtre choisi dessous ; vide ⇒ attente | M2 |
 | `chapterDecorators` | `Map<int, BibleVerseDecoration> Function(WidgetRef ref, String book, int chapter)` | **lecteur** : fond (`background`) et icônes de marge (`marginIcons`) par verset ; appelé dans le `build`, peut `ref.watch` | M2 |
 
 Libellés : `BibleLabel = String Function(BuildContext)` ; gestes :

@@ -4762,10 +4762,10 @@ abstract class AppLocalizations {
   /// **'Bible'**
   String get bibleTabBible;
 
-  /// Module Bible, onglet du bas : versets favoris, chapitres marqués, surlignages
+  /// Module Bible, écran Favoris (titre et ligne de Mon espace) : versets favoris, chapitres marqués, surlignages
   ///
   /// In fr, this message translates to:
-  /// **'Favori'**
+  /// **'Favoris'**
   String get bibleTabFavorites;
 
   /// Module Bible, onglet du bas : la liste des notes
@@ -4774,11 +4774,29 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get bibleTabNotes;
 
-  /// Module Bible, onglet du bas : plans, quiz, versions, paramètres
+  /// Module Bible, onglet du bas (infobulle) : série, favoris, badges, versions, paramètres
   ///
   /// In fr, this message translates to:
-  /// **'Plus'**
+  /// **'Mon espace'**
   String get bibleTabMore;
+
+  /// Module Bible, Mon espace : la ligne qui ouvre badges et compteurs
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes badges'**
+  String get bibleMyBadges;
+
+  /// Module Bible : invitation tant qu'aucune vraie version n'est téléchargée, au-dessus du catalogue
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune Bible sur ce téléphone pour l\'instant. Téléchargez-en une pour la lire, même sans réseau.'**
+  String get bibleInviteDownload;
+
+  /// Module Bible : invitation, catalogue encore vide (premier lancement hors ligne)
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous à Internet pour voir les Bibles à télécharger.'**
+  String get bibleInviteOffline;
 
   /// Module Bible : info-bulle de la flèche de retour vers l'accueil de l'église
   ///

@@ -1,6 +1,11 @@
 /// **Versions et hors ligne** (M4, mobile#202, décision 9) : le catalogue
 /// fusionné, « Télécharger » (l'archive réelle depuis C4), « Supprimer », et
 /// le choix de la version active.
+///
+/// **L'invitation** (#265) en est une variante, sans en-tête : la coquille du
+/// module la montre tant qu'aucune vraie Bible n'est téléchargée — un court
+/// message, puis les seules vraies versions, avec la même ligne, le même
+/// « Télécharger » et la même progression.
 library;
 
 import 'dart:async';
@@ -10,13 +15,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_extension.dart';
 import '../../../state/sync_providers.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
+import '../../../theme/app_typography.dart';
 import '../../../widgets/brand_app_bar.dart';
 import '../data/bible_providers.dart';
 import 'bible_catalog.dart';
 
 class BibleVersionsScreen extends ConsumerStatefulWidget {
-  const BibleVersionsScreen({super.key});
+  const BibleVersionsScreen({super.key, this.invitation = false});
+
+  /// La page d'invitation de la coquille (#265), et non l'écran poussé.
+  final bool invitation;
+
+  static const Key invitationKey = Key('bible_invitation');
 
   static Key rowKey(String code) => Key('bible_version_row_$code');
   static Key downloadKey(String code) => Key('bible_version_download_$code');
@@ -78,18 +90,43 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final entries = ref.watch(mergedBibleCatalogProvider).entries;
+    final invitation = widget.invitation;
+    // Les exemples ne comptent jamais pour l'invitation : ce sont eux qu'elle
+    // remplace. Sans autre ligne (premier lancement hors ligne, catalogue
+    // pas encore synchronisé), elle invite à se connecter.
+    final entries = [
+      for (final e in ref.watch(mergedBibleCatalogProvider).entries)
+        if (!invitation || !e.builtIn) e,
+    ];
     final active = ref.watch(activeBibleVersionProvider);
+    final list = ListView(
+      key: invitation ? BibleVersionsScreen.invitationKey : null,
+      padding: invitation
+          ? AppSpacing.screenPadding.copyWith(top: AppSpacing.xl)
+          : AppSpacing.screenPadding,
+      children: [
+        if (invitation) ...[
+          Icon(
+            Icons.menu_book_outlined,
+            size: 48,
+            color: context.palette.primary,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            entries.isEmpty ? l.bibleInviteOffline : l.bibleInviteDownload,
+            textAlign: TextAlign.center,
+            style: AppTypography.h5,
+          ),
+        ] else
+          Text(l.bibleM4VersionsHint),
+        const SizedBox(height: AppSpacing.md),
+        for (final e in entries) _row(context, e, active),
+      ],
+    );
+    if (invitation) return list;
     return Scaffold(
       appBar: BrandAppBar(title: l.bibleM4VersionsTitle),
-      body: ListView(
-        padding: AppSpacing.screenPadding,
-        children: [
-          Text(l.bibleM4VersionsHint),
-          const SizedBox(height: AppSpacing.md),
-          for (final e in entries) _row(context, e, active),
-        ],
-      ),
+      body: list,
     );
   }
 

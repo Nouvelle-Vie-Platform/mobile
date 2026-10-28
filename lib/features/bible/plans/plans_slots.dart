@@ -1,7 +1,8 @@
 /// **Les emplacements de la tranche M5 — plans, défis.**
 ///
 /// Cette tranche n'édite **que** ce fichier pour se brancher sur la coquille ;
-/// voir `../README.md`. Ordres : « Plus » et raccourcis — Plans 10, Défis 20 ;
+/// voir `../README.md`. Ordres : raccourcis — Plans 10, Défis 20 (plus
+/// d'entrée dans Mon espace depuis #265 : les cartes de l'accueil y mènent) ;
 /// section d'accueil « Mon plan en cours » — 40 (après le verset du jour,
 /// « Continuer la lecture » et le passage du dimanche de M7).
 library;
@@ -22,22 +23,6 @@ void _openChallenges(BuildContext _, WidgetRef ref) =>
     pushBiblePlansPage<void>(ref, const BibleChallengesScreen());
 
 final BibleSlots plansSlots = BibleSlots(
-  moreEntries: [
-    BibleMoreEntry(
-      id: 'plans',
-      order: 10,
-      icon: Icons.event_note_outlined,
-      label: (context) => context.l10n.biblePlansTitle,
-      onTap: _openPlans,
-    ),
-    BibleMoreEntry(
-      id: 'challenges',
-      order: 20,
-      icon: Icons.emoji_events_outlined,
-      label: (context) => context.l10n.biblePlansChallengesTitle,
-      onTap: _openChallenges,
-    ),
-  ],
   homeShortcuts: [
     BibleHomeShortcut(
       id: 'plans',

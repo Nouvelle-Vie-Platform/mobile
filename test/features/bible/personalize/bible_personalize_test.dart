@@ -654,7 +654,7 @@ void main() {
   });
 
   group('Emplacements', () {
-    test('Plus, raccourci Hors ligne, actions de verset, surlignage', () {
+    test('Mon espace, raccourci Hors ligne, actions de verset, surlignage', () {
       expect(
         personalizeSlots.moreEntries.map((e) => e.id),
         ['my_space', 'offline', 'appearance', 'settings'],

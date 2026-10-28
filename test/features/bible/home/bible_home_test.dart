@@ -21,6 +21,7 @@ import 'package:maison_du_miracle/features/bible/home/data/home_data.dart';
 import 'package:maison_du_miracle/features/bible/home/home_slots.dart';
 import 'package:maison_du_miracle/features/bible/home/home_view.dart';
 import 'package:maison_du_miracle/features/bible/quiz/quiz_screens.dart';
+import 'package:maison_du_miracle/features/bible/shell/bible_favorites_screen.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_slots.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
@@ -395,12 +396,10 @@ void main() {
       await tester.tap(find.byKey(BibleHomeKeys.shortcut('quiz')));
       expect(_tapped, ['search', 'plans', 'quiz']);
 
-      // La carte Favoris demande l'onglet Favori à la coquille.
-      final container = ProviderScope.containerOf(
-        tester.element(find.byKey(BibleHomeKeys.search)),
-      );
+      // La carte Favoris pousse l'écran Favoris (#265).
       await tester.tap(find.byKey(BibleHomeKeys.shortcut('favorites')));
-      expect(container.read(bibleTabRequestProvider), 'favorites');
+      await _settle(tester);
+      expect(find.byType(BibleFavoritesScreen), findsOneWidget);
     });
   });
 

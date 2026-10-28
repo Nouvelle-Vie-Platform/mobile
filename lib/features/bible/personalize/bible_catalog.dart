@@ -244,6 +244,24 @@ final mergedBibleCatalogProvider = Provider<MergedBibleCatalog>(
   ),
 );
 
+/// **Une vraie Bible est-elle sur le téléphone ?** (#265) — une version au
+/// `localPath` posé, donc descendue de son archive. Les exemples
+/// (`kPlaceholderVersions`, installés d'office) ne comptent **jamais** : sans
+/// vraie version, la coquille montre l'invitation à en télécharger une.
+///
+/// Tant que le magasin n'a rien répondu, `true` : l'invitation ne clignote pas
+/// à chaque ouverture chez qui a déjà sa Bible.
+final bibleHasRealVersionProvider = Provider<bool>((ref) {
+  if (!ref.watch(bibleServedVersionsProvider).hasValue ||
+      !ref.watch(bibleInstalledVersionsProvider).hasValue) {
+    return true;
+  }
+  return ref
+      .watch(mergedBibleCatalogProvider)
+      .entries
+      .any((e) => e.localPath != null);
+});
+
 /// **L'indexation d'une version installée** (M3 : `BibleSearchIndex
 /// .ensureIndexed`). Le catalogue est relu dans le magasin au moment de
 /// l'appel : celui du provider ne sait pas encore que la version vient
