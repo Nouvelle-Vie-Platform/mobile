@@ -346,19 +346,13 @@ class _BibleNavBar extends StatelessWidget {
                       // Le toucher passe à l'onglet dessous.
                       child: IgnorePointer(
                         child: DecoratedBox(
-                          // L'anneau et l'icône au trait en or (maquette).
+                          // Icône blanche, sans anneau : l'or de la maquette
+                          // a été retiré le 28/10/2026.
                           decoration: BoxDecoration(
                             color: bubbleColor,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: BibleHomeColors.gold,
-                              width: 2,
-                            ),
                           ),
-                          child: Icon(
-                            _iconOf(tab),
-                            color: BibleHomeColors.gold,
-                          ),
+                          child: Icon(_iconOf(tab), color: Colors.white),
                         ),
                       ),
                     ),

@@ -94,10 +94,6 @@ final class BibleHomeColors {
 
   static const dailyIcon = Color(0xFFE9BB6D);
 
-  /// L'or de l'anneau de la pastille de la barre (#265, maquette « liste ») —
-  /// le bleu, lui, reste celui de l'appli.
-  static const gold = Color(0xFFD8C198);
-
   static const light = BibleHomeColors._(
     ink: Color(0xFF14213D),
     inkSoft: Color(0xFF5A5A5C),
