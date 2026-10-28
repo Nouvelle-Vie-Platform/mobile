@@ -23,6 +23,7 @@ import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/features/bible/data/placeholder_bible.dart';
 import 'package:maison_du_miracle/features/bible/personalize/bible_versions_screen.dart';
+import 'package:maison_du_miracle/features/bible/personalize/bible_prefs.dart';
 import 'package:maison_du_miracle/features/bible/reader/bible_reader_screen.dart';
 import 'package:maison_du_miracle/features/bible/reader/text_highlight.dart';
 import 'package:maison_du_miracle/features/bible/search/bible_search_screen.dart';
@@ -481,6 +482,35 @@ void main() {
   });
 
   group('Le lecteur', () {
+    testWidgets(
+        'la lettrine : le premier verset passe sous le chiffre dès qu\'il '
+        's\'arrête, sans colonne vide', (tester) async {
+      await tester.runAsync(() async {
+        final container = guestContainer(extra: [_radioOff]);
+        final router = await pumpGuestApp(tester, container);
+        // Une grande police de lecture : le verset 1 d'exemple dépasse alors
+        // le chiffre (l'appli entière agrandie ferait déborder l'accueil).
+        await container
+            .read(biblePrefsProvider.notifier)
+            .update((p) => p.copyWith(fontSize: 28));
+        router.push('/bible/read/Exod/8');
+        await _settle(tester);
+
+        final verse = find.byKey(BibleReaderScreen.verseKey(1));
+        final texts =
+            find.descendant(of: verse, matching: find.byType(RichText));
+        // Le chiffre, les lignes à côté de lui, puis la suite.
+        expect(texts, findsNWidgets(3));
+        final cap = tester.getRect(texts.at(0));
+        final beside = tester.getRect(texts.at(1));
+        final below = tester.getRect(texts.at(2));
+        expect(beside.left, greaterThan(cap.right));
+        // La suite repart du bord du chiffre, sous lui.
+        expect(below.left, closeTo(cap.left, 1));
+        expect(below.top, greaterThanOrEqualTo(beside.bottom - 1));
+      });
+    });
+
     testWidgets(
         'on glisse d\'un chapitre à l\'autre, et d\'un livre à l\'autre',
         (tester) async {

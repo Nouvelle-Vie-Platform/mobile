@@ -41,8 +41,9 @@ class TextHighlight extends StatelessWidget {
   final Widget child;
 
   /// Le paragraphe tel que `Text.rich` le met en page sous [context] : style
-  /// hérité fusionné, gras d'accessibilité, échelle, interligne.
-  static TextPainter _painterFor(BuildContext context, InlineSpan span) {
+  /// hérité fusionné, gras d'accessibilité, échelle, interligne. La lettrine
+  /// du lecteur s'en sert aussi, pour savoir où couper le premier verset.
+  static TextPainter painterFor(BuildContext context, InlineSpan span) {
     final inherited = DefaultTextStyle.of(context);
     var style = inherited.style;
     if (MediaQuery.boldTextOf(context)) {
@@ -64,7 +65,7 @@ class TextHighlight extends StatelessWidget {
   /// le peintre remplit.
   @visibleForTesting
   List<TextBox> boxesIn(BuildContext context, double width) {
-    final painter = _painterFor(context, span)..layout(maxWidth: width);
+    final painter = painterFor(context, span)..layout(maxWidth: width);
     final boxes = painter.getBoxesForSelection(
       TextSelection(baseOffset: from, extentOffset: to),
     );

@@ -718,6 +718,7 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
     RenderParagraph? paragraph;
     Offset? local;
     int? verse;
+    int? start;
     for (final entry in result.path) {
       final target = entry.target;
       if (paragraph == null &&
@@ -729,8 +730,25 @@ class _ChapterPageState extends ConsumerState<_ChapterPage> {
       if (verse == null && target is RenderMetaData && target.metaData is int) {
         verse = target.metaData as int;
       }
+      if (start == null &&
+          target is RenderMetaData &&
+          target.metaData is _TextStart) {
+        start = (target.metaData as _TextStart).at;
+      }
     }
     if (paragraph == null || local == null || verse == null) return null;
+    // La suite d'un verset coupé par la lettrine : pas de numéro devant, et
+    // ses bornes se décalent de son début dans le verset.
+    if (start != null) {
+      final plain = paragraph.text.toPlainText();
+      final word =
+          paragraph.getWordBoundary(paragraph.getPositionForOffset(local));
+      if (word.end <= word.start ||
+          plain.substring(word.start, word.end).trim().isEmpty) {
+        return null;
+      }
+      return (verse: verse, from: start + word.start, to: start + word.end);
+    }
     // La lettrine est un `Text` elle aussi : seul le paragraphe qui commence
     // par le numéro du verset est le bon.
     final plain = paragraph.text.toPlainText();
@@ -968,25 +986,11 @@ class _VerseLine extends StatelessWidget {
     // comptent dans le texte du verset, se décalent donc de sa longueur — à
     // la peinture comme au test de toucher.
     final prefix = '${verse.number} ';
-    final span = TextSpan(
-      style: body,
-      children: [
-        // Le numéro est **en ligne** et à la taille du texte : lisible comme
-        // sur les références, et l'interligne reste régulier.
-        TextSpan(
-          text: prefix,
-          style: TextStyle(fontWeight: FontWeight.w700, color: rubric),
-        ),
-        TextSpan(text: verse.text),
-      ],
-    );
+    final numberStyle = TextStyle(fontWeight: FontWeight.w700, color: rubric);
     // Le surlignage enregistré — le verset entier, numéro compris, ou quelques
-    // mots —, puis la sélection en cours par-dessus. `TextHighlight`
-    // enveloppe le `Text` **seul** — il refait sa mise en page pour trouver
-    // les rectangles, et la lettrine la fausserait.
-    Widget text = Text.rich(span);
-    final length = prefix.length + verse.text.length;
-    for (final band in <(Color, int, int)>[
+    // mots —, puis la sélection en cours par-dessus ; bornes dans le texte du
+    // verset (le numéro est en négatif).
+    final bands = <(Color, int, int)>[
       if (mark != null)
         words == null
             ? (mark, -prefix.length, verse.text.length)
@@ -995,13 +999,126 @@ class _VerseLine extends StatelessWidget {
         // La teinte de l'arrivée sur un lien : la couleur du lecteur pour
         // « regardez ici », déjà connue du fidèle.
         (palette.primary.withValues(alpha: 0.22), from, selectedCharTo!),
-    ]) {
-      text = TextHighlight(
-        color: band.$1,
-        span: span,
-        from: prefix.length + band.$2,
-        to: (prefix.length + band.$3).clamp(0, length),
-        child: text,
+    ];
+
+    /// Le texte du verset de [start] à [end], surligné. Le premier morceau
+    /// porte le numéro ; une suite (sous la lettrine) dit au test de toucher
+    /// où elle commence, par un [_TextStart].
+    Widget paragraph(int start, int end) {
+      final first = start == 0;
+      final lead = first ? prefix.length : 0;
+      final span = TextSpan(
+        style: body,
+        children: [
+          // Le numéro est **en ligne** et à la taille du texte : lisible comme
+          // sur les références, et l'interligne reste régulier.
+          if (first) TextSpan(text: prefix, style: numberStyle),
+          TextSpan(text: verse.text.substring(start, end)),
+        ],
+      );
+      // `TextHighlight` enveloppe le `Text` **seul** — il refait sa mise en
+      // page pour trouver les rectangles, et la lettrine la fausserait.
+      Widget text = Text.rich(span);
+      for (final (color, from, to) in bands) {
+        final lo = first ? from : (from < start ? start : from);
+        final hi = to > end ? end : to;
+        if (hi <= lo) continue;
+        text = TextHighlight(
+          color: color,
+          span: span,
+          from: lead + lo - start,
+          to: lead + hi - start,
+          child: text,
+        );
+      }
+      return first ? text : MetaData(metaData: _TextStart(start), child: text);
+    }
+
+    final iconColumn = [
+      for (final icon in icons)
+        Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.xs, top: 6),
+          child: Icon(icon, size: 16, color: palette.textSecondary),
+        ),
+    ];
+    final Widget content;
+    if (cap == null) {
+      content = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: paragraph(0, verse.text.length)),
+          ...iconColumn,
+        ],
+      );
+    } else {
+      final capStyle = TextStyle(
+        fontFamily: 'Playfair Display',
+        fontWeight: FontWeight.w500,
+        fontSize: line * 2.9,
+        height: 0.78,
+        color: rubric,
+      );
+      // Le chiffre descend sous sa ligne de base : on le remonte pour que sa
+      // panse s'aligne sur la première ligne du texte.
+      final capTop = line * 0.10;
+      content = LayoutBuilder(
+        builder: (context, box) {
+          // **Une vraie lettrine** (28/10/2026) : le premier verset longe le
+          // chiffre, puis repasse sur toute la largeur dès qu'il s'arrête —
+          // sans quoi une colonne vide restait sous le chiffre. On met le
+          // verset en page à côté de lui, on compte les lignes qu'il couvre,
+          // et on coupe là.
+          final capPainter = TextPainter(
+            text: TextSpan(text: cap, style: capStyle),
+            textDirection: TextDirection.ltr,
+            textScaler: MediaQuery.textScalerOf(context),
+          )..layout();
+          final beside = box.maxWidth -
+              capPainter.width -
+              AppSpacing.sm -
+              icons.length * (16 + AppSpacing.xs);
+          final whole = TextHighlight.painterFor(
+            context,
+            TextSpan(
+              style: body,
+              children: [
+                TextSpan(text: prefix, style: numberStyle),
+                TextSpan(text: verse.text),
+              ],
+            ),
+          )..layout(maxWidth: beside);
+          final lines = whole.computeLineMetrics();
+          final covered = lines.isEmpty
+              ? 0
+              : ((capTop + capPainter.height) / lines.first.height).ceil();
+          var cut = verse.text.length;
+          if (lines.length > covered && covered > 0) {
+            final y =
+                lines.take(covered).fold<double>(0, (h, l) => h + l.height);
+            cut = whole.getPositionForOffset(Offset(0, y + 1)).offset -
+                prefix.length;
+          }
+          whole.dispose();
+          capPainter.dispose();
+          if (cut <= 0 || cut > verse.text.length) cut = verse.text.length;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: AppSpacing.sm, top: capTop),
+                    child: Text(cap, style: capStyle),
+                  ),
+                  Expanded(child: paragraph(0, cut)),
+                  ...iconColumn,
+                ],
+              ),
+              if (cut < verse.text.length) paragraph(cut, verse.text.length),
+            ],
+          );
+        },
       );
     }
     return InkWell(
@@ -1017,40 +1134,20 @@ class _VerseLine extends StatelessWidget {
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.xs,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (cap != null)
-                Padding(
-                  // Le chiffre descend sous sa ligne de base : on le remonte
-                  // pour que sa panse s'aligne sur la première ligne du texte.
-                  padding: EdgeInsets.only(
-                    right: AppSpacing.sm,
-                    top: line * 0.10,
-                  ),
-                  child: Text(
-                    cap,
-                    style: TextStyle(
-                      fontFamily: 'Playfair Display',
-                      fontWeight: FontWeight.w500,
-                      fontSize: line * 2.9,
-                      height: 0.78,
-                      color: rubric,
-                    ),
-                  ),
-                ),
-              Expanded(child: text),
-              for (final icon in icons)
-                Padding(
-                  padding: const EdgeInsets.only(left: AppSpacing.xs, top: 6),
-                  child: Icon(icon, size: 16, color: palette.textSecondary),
-                ),
-            ],
-          ),
+          child: content,
         ),
       ),
     );
   }
+}
+
+/// Posé sur la suite d'un verset coupé par la lettrine : le rang, dans le
+/// texte du verset, de son premier caractère — le test de toucher en a besoin
+/// pour rendre les bornes d'un mot dans le verset, et non dans le morceau.
+final class _TextStart {
+  const _TextStart(this.at);
+
+  final int at;
 }
 
 /// **Le « + » posé sur la sélection** : rond, translucide, au centre du
