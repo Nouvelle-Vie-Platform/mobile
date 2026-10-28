@@ -387,8 +387,9 @@ class _Grid extends StatelessWidget {
   /// Le petit mot sous chaque numéro (« ch. »), sur toutes les cases.
   final String? caption;
 
-  // Relevées sur la maquette ; la nuit garde les teintes de la palette.
-  static const _tile = Color(0xFFECEAE6);
+  // Relevées sur la maquette ; la nuit garde les teintes de la palette. Les
+  // cases, elles, sont blanches : le gris chaud de la maquette, posé sur le
+  // fond bleuté de l'appli, tirait sur le jaune (retiré le 28/10/2026).
   static const _ink = Color(0xFF2B3849);
   static const _check = Color(0xFF8A8496);
 
@@ -418,7 +419,7 @@ class _Grid extends StatelessWidget {
         final ink = dark ? palette.textPrimary : _ink;
         final (bg, fg) = switch (t) {
           _Tone.neutral || _Tone.read => (
-              dark ? palette.surfaceAlt : _tile,
+              dark ? palette.surfaceAlt : palette.surface,
               ink
             ),
           _Tone.strong => (palette.primary, Colors.white),
