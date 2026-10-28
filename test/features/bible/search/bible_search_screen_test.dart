@@ -28,6 +28,7 @@ import 'package:maison_du_miracle/features/bible/search/bible_search_history.dar
 import 'package:maison_du_miracle/features/bible/search/bible_search_screen.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
+import 'package:maison_du_miracle/features/bible/shell/bible_shell.dart';
 
 import '../../../helpers/fake_api.dart';
 import '../../../helpers/guest_app.dart';
@@ -83,13 +84,14 @@ Future<void> _settle(WidgetTester tester) async {
   }
 }
 
-/// Monte l'appli, ouvre le module puis la recherche par l'onglet Plus.
+/// Monte l'appli, ouvre le module puis la recherche par la loupe de l'onglet
+/// Bible (Mon espace n'a plus de ligne Rechercher, #265).
 Future<(ProviderContainer, GoRouter)> _openSearch(WidgetTester tester) async {
   final container = guestContainer(extra: _extra);
   final router = await pumpGuestApp(tester, container);
-  router.push('/bible?tab=more');
+  router.push('/bible?tab=bible');
   await _settle(tester);
-  await tester.tap(find.byKey(const Key('bible_more_search')));
+  await tester.tap(find.byKey(BibleShell.searchKey));
   await _settle(tester);
   expect(find.byType(BibleSearchScreen), findsOneWidget);
   return (container, router);

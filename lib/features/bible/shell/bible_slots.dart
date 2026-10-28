@@ -60,8 +60,8 @@ final class BibleHomeShortcut {
   final BibleTap onTap;
 }
 
-/// **Une entrée de l'onglet Plus** (Plans, Quiz, Versions, Mon espace,
-/// Paramètres…).
+/// **Une ligne de l'onglet Mon espace** (#265 : Mes badges, Versions,
+/// Thèmes & polices, Paramètres), sous la ligne Favoris que pose la coquille.
 final class BibleMoreEntry {
   const BibleMoreEntry({
     required this.id,
@@ -112,7 +112,7 @@ final class BibleVerseAction {
   }) run;
 }
 
-/// **Une puce de filtre de l'onglet Favori** (M2 : Tous, Versets, Chapitres,
+/// **Une puce de filtre de l'écran Favoris** (M2 : Tous, Versets, Chapitres,
 /// Surlignés). La première est sélectionnée à l'ouverture ; [builder] peint la
 /// liste filtrée sous les puces.
 final class BibleFavoriteFilter {
@@ -213,19 +213,3 @@ final bibleSlotsProvider = Provider<BibleSlots>(
     homeSlots,
   ]),
 );
-
-/// **Demander un onglet du module** (`home|bible|favorites|notes|more`) depuis
-/// un onglet — la carte « Favoris » de l'accueil ouvre l'onglet Favori. La
-/// coquille écoute et bascule.
-final bibleTabRequestProvider =
-    NotifierProvider<BibleTabRequest, String?>(BibleTabRequest.new);
-
-class BibleTabRequest extends Notifier<String?> {
-  @override
-  String? build() => null;
-
-  void open(String tab) {
-    state = null;
-    state = tab;
-  }
-}

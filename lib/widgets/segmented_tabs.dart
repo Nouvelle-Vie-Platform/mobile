@@ -11,11 +11,16 @@ class SegmentedTabs extends StatelessWidget {
     required this.tabs,
     required this.selected,
     required this.onSelect,
+    this.selectedColor,
   });
 
   final List<String> tabs;
   final int selected;
   final ValueChanged<int> onSelect;
+
+  /// Un onglet choisi **plein** de cette couleur, texte blanc, au lieu de la
+  /// pilule blanche — le bleu nuit du module Bible.
+  final Color? selectedColor;
 
   @override
   Widget build(BuildContext context) {
@@ -37,16 +42,20 @@ class SegmentedTabs extends StatelessWidget {
                   height: 38,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: i == selected ? palette.surface : Colors.transparent,
+                    color: i == selected
+                        ? selectedColor ?? palette.surface
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                     boxShadow: i == selected ? AppShadows.elevation1 : null,
                   ),
                   child: Text(
                     tabs[i],
                     style: AppTypography.bodyStrong.copyWith(
-                      color: i == selected
-                          ? palette.primary
-                          : palette.textSecondary,
+                      color: i != selected
+                          ? palette.textSecondary
+                          : selectedColor != null
+                              ? Colors.white
+                              : palette.primary,
                     ),
                   ),
                 ),

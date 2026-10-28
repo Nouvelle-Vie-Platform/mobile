@@ -340,7 +340,7 @@ final bibleMarksStoreProvider = Provider<BibleMarksStore>(
   (ref) => BibleMarksStore(ref.watch(appDatabaseProvider)),
 );
 
-/// Toutes mes marques vivantes (onglet Favori).
+/// Toutes mes marques vivantes (écran Favoris).
 final bibleMarksProvider = StreamProvider<List<BibleMark>>(
   (ref) => ref
       .watch(bibleMarksStoreProvider)

@@ -1,6 +1,11 @@
 /// **Versions et hors ligne** (M4, mobile#202, décision 9) : le catalogue
 /// fusionné, « Télécharger » (l'archive réelle depuis C4), « Supprimer », et
 /// le choix de la version active.
+///
+/// **L'invitation** (#265) en est une variante, sans en-tête : la coquille du
+/// module la montre tant qu'aucune vraie Bible n'est téléchargée — un court
+/// message, puis les seules vraies versions, avec la même ligne, le même
+/// « Télécharger » et la même progression.
 library;
 
 import 'dart:async';
@@ -10,13 +15,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_extension.dart';
 import '../../../state/sync_providers.dart';
+import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
+import '../../../theme/app_typography.dart';
 import '../../../widgets/brand_app_bar.dart';
 import '../data/bible_providers.dart';
+import '../home/home_view.dart';
 import 'bible_catalog.dart';
 
 class BibleVersionsScreen extends ConsumerStatefulWidget {
-  const BibleVersionsScreen({super.key});
+  const BibleVersionsScreen({super.key, this.invitation = false});
+
+  /// La page d'invitation de la coquille (#265), et non l'écran poussé.
+  final bool invitation;
+
+  static const Key invitationKey = Key('bible_invitation');
 
   static Key rowKey(String code) => Key('bible_version_row_$code');
   static Key downloadKey(String code) => Key('bible_version_download_$code');
@@ -78,19 +91,81 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final entries = ref.watch(mergedBibleCatalogProvider).entries;
+    final invitation = widget.invitation;
+    // Les exemples ne comptent jamais pour l'invitation : ce sont eux qu'elle
+    // remplace. Sans autre ligne (premier lancement hors ligne, catalogue
+    // pas encore synchronisé), elle invite à se connecter.
+    final entries = [
+      for (final e in ref.watch(mergedBibleCatalogProvider).entries)
+        if (!invitation || !e.builtIn) e,
+    ];
     final active = ref.watch(activeBibleVersionProvider);
+    // **Seules les versions défilent** : l'en-tête reste en place au-dessus.
+    final page = Column(
+      key: invitation ? BibleVersionsScreen.invitationKey : null,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: AppSpacing.screenPadding.copyWith(
+            top: invitation ? AppSpacing.xl : null,
+            bottom: AppSpacing.md,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: _header(context, entries.isEmpty),
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: AppSpacing.screenPadding.copyWith(top: 0),
+            children: [for (final e in entries) _row(context, e, active)],
+          ),
+        ),
+      ],
+    );
+    if (invitation) return page;
     return Scaffold(
       appBar: BrandAppBar(title: l.bibleM4VersionsTitle),
-      body: ListView(
-        padding: AppSpacing.screenPadding,
-        children: [
-          Text(l.bibleM4VersionsHint),
-          const SizedBox(height: AppSpacing.md),
-          for (final e in entries) _row(context, e, active),
-        ],
-      ),
+      body: page,
     );
+  }
+
+  List<Widget> _header(BuildContext context, bool empty) {
+    final l = context.l10n;
+    return [
+      if (widget.invitation) ...[
+        Image.asset(
+          'assets/images/bible_invite_book.webp',
+          height: 170,
+          // Purement décoratif : le titre dit déjà tout.
+          excludeFromSemantics: true,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Text(
+          l.bibleInviteTitle,
+          textAlign: TextAlign.center,
+          style: AppTypography.h2.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          empty ? l.bibleInviteOffline : l.bibleInviteDownload,
+          textAlign: TextAlign.center,
+          style: AppTypography.bodyLarge
+              .copyWith(color: context.palette.textSecondary),
+        ),
+        if (!empty) ...[
+          const SizedBox(height: AppSpacing.xl),
+          Text(
+            l.bibleInviteAvailable.toUpperCase(),
+            style: AppTypography.caption.copyWith(
+              color: context.palette.textSecondary,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ] else
+        Text(l.bibleM4VersionsHint),
+    ];
   }
 
   Widget _row(BuildContext context, BibleCatalogEntry e, String active) {
@@ -110,12 +185,16 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
     /// texte : un geste depuis la lecture, et c'est là que le fidèle choisit
     /// sa traduction.
     final facts = [
-      v.language.toUpperCase(),
       if (size != null) l.bibleM4SizeMb((size / 1e6).toStringAsFixed(1)),
       if (e.builtIn) l.bibleM4VersionBuiltIn,
-    ].join(' · ');
+    ];
     final license = e.license;
-    final subtitle = license == null ? facts : '$facts\n$license';
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final (book, ink) = _languageColors(v.language);
+    // La nuit, l'encre de la pastille s'éclaircit : le bleu « FR » sur une
+    // carte sombre ne se lisait plus.
+    final tag = dark ? Color.lerp(ink, Colors.white, 0.45)! : ink;
+    final palette = context.palette;
     final Widget trailing;
     if (progress != null) {
       trailing = SizedBox(
@@ -125,10 +204,16 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
       );
     } else if (!v.installed) {
       trailing = e.downloadable
-          ? IconButton(
+          ? IconButton.filled(
               key: BibleVersionsScreen.downloadKey(v.code),
               tooltip: l.bibleM4Download,
-              icon: const Icon(Icons.download_for_offline_outlined),
+              style: IconButton.styleFrom(
+                // La couleur de la pastille de la barre, nuit comprise.
+                backgroundColor: BibleHomeColors.of(context).button,
+                foregroundColor: Colors.white,
+                fixedSize: const Size.square(48),
+              ),
+              icon: const Icon(Icons.download_rounded),
               onPressed: () => _download(e),
             )
           : Text(l.bibleM4VersionSoon);
@@ -145,24 +230,97 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
     } else {
       trailing = const Icon(Icons.offline_pin_outlined);
     }
-    return ListTile(
+    return Container(
       key: BibleVersionsScreen.rowKey(v.code),
-      contentPadding: EdgeInsets.zero,
-      leading: IconButton(
-        key: BibleVersionsScreen.activeKey(v.code),
-        tooltip: l.bibleM4ActiveVersion,
-        icon: Icon(
-          v.code == active
-              ? Icons.radio_button_checked
-              : Icons.radio_button_unchecked,
-        ),
-        onPressed: v.installed ? () => _select(v.code) : null,
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
-      title: Text(v.name),
-      // La licence prend une ligne de plus : sans cela, `ListTile` la rogne.
-      isThreeLine: license != null,
-      subtitle: Text(subtitle),
-      trailing: trailing,
+      child: Row(
+        children: [
+          // Pas de choix sur l'invitation : rien n'y est installé, et une case
+          // cochée d'avance y mentait. La première version descendue devient
+          // active d'office (`ActiveBibleVersion` se replie sur elle).
+          if (!widget.invitation)
+            IconButton(
+              key: BibleVersionsScreen.activeKey(v.code),
+              tooltip: l.bibleM4ActiveVersion,
+              icon: Icon(
+                v.code == active
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+              ),
+              onPressed: v.installed ? () => _select(v.code) : null,
+            ),
+          Icon(Icons.book_rounded, size: 52, color: book),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(v.name, style: AppTypography.h4),
+                const SizedBox(height: AppSpacing.xs),
+                // La pastille : la langue dans sa couleur, puis la taille.
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: tag.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 2,
+                    ),
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: v.language.toUpperCase(),
+                            style: TextStyle(color: tag),
+                          ),
+                          for (final f in facts) TextSpan(text: ' · $f'),
+                        ],
+                      ),
+                      style: AppTypography.body
+                          .copyWith(color: palette.textSecondary),
+                    ),
+                  ),
+                ),
+                if (license != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    license,
+                    style: AppTypography.body
+                        .copyWith(color: palette.textSecondary),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          trailing,
+        ],
+      ),
     );
   }
+
+  /// **La couleur suit la langue** (#265) : le livre d'un côté, la pastille
+  /// de l'autre, en couple inversé — deux Bibles françaises se ressemblent,
+  /// et l'œil trie d'un coup.
+  static (Color book, Color tag) _languageColors(String language) =>
+      switch (language.toLowerCase()) {
+        'fr' => (const Color(0xFFF59A62), const Color(0xFF3341B0)),
+        'ee' => (const Color(0xFF2F47A8), const Color(0xFFD9782F)),
+        'en' => (const Color(0xFF3E9B6F), const Color(0xFF2E7D57)),
+        _ => (const Color(0xFF143256), const Color(0xFF143256)),
+      };
 }

@@ -2624,13 +2624,31 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bibleTabBible => 'Bible';
 
   @override
-  String get bibleTabFavorites => 'Favori';
+  String get bibleTabFavorites => 'Favoris';
 
   @override
   String get bibleTabNotes => 'Notes';
 
   @override
-  String get bibleTabMore => 'Plus';
+  String get bibleTabMore => 'Mon espace';
+
+  @override
+  String get bibleMyBadges => 'Mes badges';
+
+  @override
+  String get bibleInviteTitle =>
+      'Aucune Bible sur ce téléphone pour l\'instant.';
+
+  @override
+  String get bibleInviteDownload =>
+      'Téléchargez-en une pour la lire, même sans réseau.';
+
+  @override
+  String get bibleInviteOffline =>
+      'Connectez-vous à Internet pour voir les Bibles à télécharger.';
+
+  @override
+  String get bibleInviteAvailable => 'Traductions disponibles';
 
   @override
   String get bibleBackToHome => 'Retour à l\'accueil';
@@ -2657,6 +2675,9 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get bibleChapterShort => 'ch.';
 
   @override
   String get bibleChooseChapter => 'Choisir un chapitre';

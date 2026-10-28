@@ -2607,7 +2607,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bibleTabNotes => 'Notes';
 
   @override
-  String get bibleTabMore => 'More';
+  String get bibleTabMore => 'My space';
+
+  @override
+  String get bibleMyBadges => 'My badges';
+
+  @override
+  String get bibleInviteTitle => 'No Bible on this phone yet.';
+
+  @override
+  String get bibleInviteDownload => 'Download one to read it, even offline.';
+
+  @override
+  String get bibleInviteOffline =>
+      'Connect to the Internet to see the Bibles available for download.';
+
+  @override
+  String get bibleInviteAvailable => 'Available translations';
 
   @override
   String get bibleBackToHome => 'Back to home';
@@ -2634,6 +2650,9 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get bibleChapterShort => 'ch.';
 
   @override
   String get bibleChooseChapter => 'Choose a chapter';

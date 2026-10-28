@@ -24,6 +24,7 @@ import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
+import 'package:maison_du_miracle/features/bible/home/home_view.dart';
 
 import '../../../helpers/fake_api.dart';
 import '../../../helpers/guest_app.dart';
@@ -122,7 +123,7 @@ void main() {
     );
   });
 
-  testWidgets('de « Plus » au score : profil, réponses, référence, rejouer',
+  testWidgets('de l\'accueil au score : profil, réponses, référence, rejouer',
       (tester) async {
     await tester.runAsync(() async {
       final container = guestContainer(extra: [_radioOff]);
@@ -132,10 +133,14 @@ void main() {
         upserts: [bibleQuizRowOf(_served)],
       );
       final router = await pumpGuestApp(tester, container);
-      router.push('/bible?tab=more');
+      router.push('/bible?tab=home');
       await _settle(tester);
 
-      await tester.tap(find.byKey(const Key('bible_more_quiz')));
+      // La carte de l'accueil : Mon espace n'a plus de ligne Quiz (#265).
+      final card = find.byKey(BibleHomeKeys.shortcut('quiz'));
+      await tester.ensureVisible(card);
+      await _settle(tester);
+      await tester.tap(card);
       await _settle(tester);
 
       // L'écran de choix du joueur, à chaque ouverture : Adultes.

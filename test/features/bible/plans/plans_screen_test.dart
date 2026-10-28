@@ -20,6 +20,7 @@ import 'package:maison_du_miracle/features/bible/plans/plans_widgets.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_shell.dart';
 import 'package:maison_du_miracle/state/radio_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
+import 'package:maison_du_miracle/features/bible/home/home_view.dart';
 
 import '../../../helpers/fake_api.dart';
 import '../../../helpers/guest_app.dart';
@@ -46,7 +47,8 @@ void main() {
     ApiClient.instance.dio.httpClientAdapter = wire;
   });
 
-  testWidgets('Plus › Plans : commencer les Psaumes, cocher le jour, la carte',
+  testWidgets(
+      'Accueil › Plans : commencer les Psaumes, cocher le jour, la carte',
       (tester) async {
     await tester.runAsync(() async {
       final container = guestContainer(extra: [
@@ -54,10 +56,14 @@ void main() {
         bibleTodayProvider.overrideWithValue(DateTime(2026, 10, 13)),
       ]);
       final router = await pumpGuestApp(tester, container);
-      router.push('/bible?tab=more');
+      router.push('/bible?tab=home');
       await _settle(tester);
 
-      await tester.tap(find.byKey(const Key('bible_more_plans')));
+      // La carte de l'accueil : Mon espace n'a plus de ligne Plans (#265).
+      final card = find.byKey(BibleHomeKeys.shortcut('plans'));
+      await tester.ensureVisible(card);
+      await _settle(tester);
+      await tester.tap(card);
       await _settle(tester);
       expect(find.byType(BiblePlansScreen), findsOneWidget);
 

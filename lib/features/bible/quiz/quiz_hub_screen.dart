@@ -58,10 +58,12 @@ class QuizHubScreen extends ConsumerWidget {
           number: '0${b.index + 1}',
           title: _title(l, b),
           line: '${_ages(l, b)} · ${_hint(l, b)}',
+          // Des barres de niveau, une à trois : la difficulté se lit d'un coup
+          // d'œil, sans figurer un âge (28/10/2026).
           icon: switch (b) {
-            QuizAgeBand.kids => Icons.child_care_outlined,
-            QuizAgeBand.teens => Icons.emoji_people_outlined,
-            QuizAgeBand.adults => Icons.menu_book_outlined,
+            QuizAgeBand.kids => Icons.signal_cellular_alt_1_bar,
+            QuizAgeBand.teens => Icons.signal_cellular_alt_2_bar,
+            QuizAgeBand.adults => Icons.signal_cellular_alt,
           },
           selected: b == current,
           onTap: () => pick(b),
@@ -77,54 +79,60 @@ class QuizHubScreen extends ConsumerWidget {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: colors.heroShade,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            // L'image de fond de l'accueil, assombrie pour la lecture.
-            Image.asset(colors.heroImage, fit: BoxFit.cover),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    colors.heroShade.withValues(alpha: 0.35),
-                    colors.heroShade.withValues(alpha: 0.8),
-                  ],
+        // L'arc est peint autour d'un centre **hors de l'écran**, à gauche :
+        // rien ne le coupait (le défilement ne coupe que s'il déborde), et au
+        // retour, pendant que la page glisse vers la droite, son cercle
+        // flottait sur l'écran d'arrivée. La page se coupe à ses bords.
+        body: ClipRect(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // L'image de fond de l'accueil, assombrie pour la lecture.
+              Image.asset(colors.heroImage, fit: BoxFit.cover),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      colors.heroShade.withValues(alpha: 0.35),
+                      colors.heroShade.withValues(alpha: 0.8),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            SafeArea(
-              child: LayoutBuilder(
-                builder: (context, box) {
-                  final wide = box.maxWidth >= sideBySideFrom;
-                  return Stack(
-                    children: [
-                      Positioned.fill(
-                        child: wide
-                            ? _WideLayout(title: title, bands: bands)
-                            : _PhoneLayout(title: title, bands: bands),
-                      ),
-                      Positioned(
-                        left: 4,
-                        top: 4,
-                        child: IconButton(
-                          key: backKey,
-                          tooltip: MaterialLocalizations.of(context)
-                              .backButtonTooltip,
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => Navigator.of(context).maybePop(),
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, box) {
+                    final wide = box.maxWidth >= sideBySideFrom;
+                    return Stack(
+                      children: [
+                        Positioned.fill(
+                          child: wide
+                              ? _WideLayout(title: title, bands: bands)
+                              : _PhoneLayout(title: title, bands: bands),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        Positioned(
+                          left: 4,
+                          top: 4,
+                          child: IconButton(
+                            key: backKey,
+                            tooltip: MaterialLocalizations.of(context)
+                                .backButtonTooltip,
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => Navigator.of(context).maybePop(),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -507,7 +515,18 @@ class _Pill extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(band.icon, size: 30, color: Colors.white),
+                        // Les trois barres en fond, le niveau par-dessus :
+                        // « 1 sur 3 » se lit, là où une barre seule flottait.
+                        Stack(
+                          children: [
+                            const Icon(
+                              Icons.signal_cellular_alt,
+                              size: 30,
+                              color: Colors.white24,
+                            ),
+                            Icon(band.icon, size: 30, color: Colors.white),
+                          ],
+                        ),
                       ],
                     ),
                   ),

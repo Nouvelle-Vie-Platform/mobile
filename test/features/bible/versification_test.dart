@@ -287,7 +287,14 @@ void main() {
     Future<void> open(WidgetTester tester, String version, String book) =>
         pumpScreen(
           tester,
-          Scaffold(body: BibleBrowser(initialBook: book)),
+          // Le mode sélection : depuis le 28/10/2026, c'est le seul qui
+          // montre la grille des versets — l'onglet Bible ouvre le texte.
+          Scaffold(
+            body: BibleBrowser(
+              initialBook: book,
+              mode: BibleBrowserMode.select,
+            ),
+          ),
           overrides: [
             bibleCatalogProvider.overrideWithValue(_TwoVersions(version)),
             // Un flux nu : lue depuis le magasin, ma position ouvrirait un

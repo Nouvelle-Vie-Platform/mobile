@@ -1,6 +1,7 @@
 /// **Le module Bible** (M1 à M7, #199–#205), à travers le vrai routeur : la
-/// coquille à cinq onglets remplis par les tranches (mémoire, retour, loupe,
-/// invité, emplacements, écrans d'attente), le parcours livre →
+/// coquille à quatre onglets remplis par les tranches (mémoire, retour, loupe,
+/// invité, emplacements, écrans d'attente, invitation sans Bible — #265), le
+/// parcours livre →
 /// chapitre → verset, et le lecteur (glissement, version, position, chapitre
 /// lu, lien `nv://bible`).
 ///
@@ -21,10 +22,13 @@ import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/radio/radio_antenna.dart';
 import 'package:maison_du_miracle/data/radio/radio_repository.dart';
 import 'package:maison_du_miracle/features/bible/data/placeholder_bible.dart';
+import 'package:maison_du_miracle/features/bible/personalize/bible_versions_screen.dart';
+import 'package:maison_du_miracle/features/bible/personalize/bible_prefs.dart';
 import 'package:maison_du_miracle/features/bible/reader/bible_reader_screen.dart';
-import 'package:maison_du_miracle/features/bible/reader/marker_highlight.dart';
+import 'package:maison_du_miracle/features/bible/reader/text_highlight.dart';
 import 'package:maison_du_miracle/features/bible/search/bible_search_screen.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_browser.dart';
+import 'package:maison_du_miracle/features/bible/shell/bible_favorites_screen.dart';
 import 'package:maison_du_miracle/features/bible/home/home_view.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_shell.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_slots.dart';
@@ -76,8 +80,43 @@ void main() {
   });
 
   group('La coquille', () {
+    // #265 : « Lecture du jour » et la suite défilent, l'image non — sauf sur un écran
+    // trop court pour l'en-tête, où tout défile comme avant. Les deux côtés,
+    // pour qu'un vert dise quelque chose.
+    for (final (phone, size) in [
+      (true, const Size(390, 844)),
+      (false, const Size(800, 600)),
+    ]) {
+      testWidgets(
+          'l\'accueil : en-tête ${phone ? 'fixe sur un téléphone' : 'qui défile sur un écran court'}',
+          (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.runAsync(() async {
+          final router =
+              await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
+          router.push('/bible?tab=home');
+          await _settle(tester);
+
+          // Hors écran compris : sur l'écran court, la suite est plus bas.
+          Finder inScroll(Key key) => find.ancestor(
+                of: find.byKey(key, skipOffstage: false),
+                matching: find.byType(Scrollable, skipOffstage: false),
+              );
+          expect(find.byKey(BibleHomeKeys.header), findsOneWidget);
+          expect(
+            inScroll(BibleHomeKeys.header),
+            phone ? findsNothing : findsWidgets,
+          );
+          // « Lecture du jour » ouvre ce qui défile, des deux côtés.
+          expect(inScroll(BibleHomeKeys.dailyTitle), findsWidgets);
+        });
+      });
+    }
+
     testWidgets(
-        'cinq onglets, chacun rempli par sa tranche, et rien sur le fil '
+        'quatre onglets, chacun rempli par sa tranche, et rien sur le fil '
         'que le geste du verset du jour', (tester) async {
       await tester.runAsync(() async {
         final router =
@@ -104,30 +143,35 @@ void main() {
         expect(find.byKey(BibleHomeKeys.search), findsOneWidget);
         expect(find.byKey(BibleShell.searchKey), findsNothing);
 
-        // Favori (M2) : l'état vide de la liste, sans loupe.
-        await tester
-            .tap(find.byKey(BibleShell.tabKey(BibleModuleTab.favorites)));
-        await _settle(tester);
-        expect(find.text(_fr.bibleM2Empty), findsOneWidget);
-        expect(find.byKey(BibleShell.searchKey), findsNothing);
-
-        // Plus : une entrée par tranche (M3, M4, M5, M6).
+        // Mon espace (#265) : Favoris, puis M4 ; Rechercher, plans, défis et
+        // quiz n'y sont plus — l'accueil les porte.
         await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.more)));
         await _settle(tester);
         for (final id in [
-          'search',
+          'favorites',
           'my_space',
           'offline',
           'appearance',
           'settings',
-          'plans',
-          'challenges',
-          'quiz',
         ]) {
           expect(find.byKey(Key('bible_more_$id'), skipOffstage: false),
               findsOneWidget,
               reason: id);
         }
+        for (final id in ['search', 'plans', 'challenges', 'quiz']) {
+          expect(find.byKey(Key('bible_more_$id'), skipOffstage: false),
+              findsNothing,
+              reason: id);
+        }
+        expect(find.text(_fr.bibleMyBadges), findsOneWidget);
+
+        // Favoris (M2) : un écran poussé, l'état vide de la liste.
+        await tester.tap(find.byKey(BibleShell.favoritesKey));
+        await _settle(tester);
+        expect(find.byType(BibleFavoritesScreen), findsOneWidget);
+        expect(find.text(_fr.bibleM2Empty), findsOneWidget);
+        Navigator.of(tester.element(find.byType(BibleFavoritesScreen))).pop();
+        await _settle(tester);
 
         // Notes : la liste existante — pour un invité, sa porte de session.
         await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.notes)));
@@ -164,9 +208,7 @@ void main() {
         expect(find.text(_fr.bibleHomeSoon), findsOneWidget);
         await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.more)));
         await _settle(tester);
-        expect(find.text(_fr.bibleMoreSoon), findsOneWidget);
-        await tester
-            .tap(find.byKey(BibleShell.tabKey(BibleModuleTab.favorites)));
+        await tester.tap(find.byKey(BibleShell.favoritesKey));
         await _settle(tester);
         expect(find.text(_fr.bibleFavoritesSoon), findsOneWidget);
       });
@@ -195,9 +237,26 @@ void main() {
 
         router.pop();
         await _settle(tester);
+        // Un ancien lien (#265) : l'onglet Bible, Favoris poussé dessus.
         router.push('/bible?tab=favorites');
         await _settle(tester);
+        expect(find.byType(BibleFavoritesScreen), findsOneWidget);
         expect(find.text(_fr.bibleM2Empty), findsOneWidget);
+        Navigator.of(tester.element(find.byType(BibleFavoritesScreen))).pop();
+        await _settle(tester);
+        expect(find.byKey(BibleBrowser.testamentTabsKey), findsOneWidget);
+
+        // Un ancien onglet **mémorisé** `favorites` : l'onglet Bible seul.
+        router.pop();
+        await _settle(tester);
+        await container
+            .read(appDatabaseProvider)
+            .settingsDao
+            .setBibleTab('favorites');
+        router.push('/bible');
+        await _settle(tester);
+        expect(find.byKey(BibleBrowser.testamentTabsKey), findsOneWidget);
+        expect(find.byType(BibleFavoritesScreen), findsNothing);
       });
     });
 
@@ -222,7 +281,8 @@ void main() {
       });
     });
 
-    testWidgets('les emplacements : une entrée de Plus, une section d\'Accueil',
+    testWidgets(
+        'les emplacements : une ligne de Mon espace, une section d\'Accueil',
         (tester) async {
       var tapped = 0;
       await tester.runAsync(() async {
@@ -270,9 +330,92 @@ void main() {
     });
   });
 
-  group('Parcourir', () {
+  group('Sans Bible téléchargée (#265)', () {
+    final invitation = find.byKey(BibleVersionsScreen.invitationKey);
+
     testWidgets(
-        'testament → livre → chapitre → verset, puis « Commencer Jean 3 »',
+        'les exemples seuls : l\'invitation sur Accueil, Bible et Mon espace, '
+        'la barre reste, Notes reste ouvert', (tester) async {
+      await tester.runAsync(() async {
+        // `null` : le vrai provider, lu dans le magasin — vide, donc les
+        // seules Bibles d'exemple.
+        final router = await pumpGuestApp(
+          tester,
+          guestContainer(bibleDownloaded: null, extra: [_radioOff]),
+        );
+        router.push('/bible?tab=home');
+        await _settle(tester);
+        expect(invitation, findsOneWidget);
+        expect(find.text(_fr.bibleHomeHeroTitle), findsNothing);
+        // Catalogue vide (aucune synchro) : se connecter, et aucun exemple.
+        expect(find.text(_fr.bibleInviteOffline), findsOneWidget);
+        expect(find.byKey(BibleVersionsScreen.rowKey('EXA')), findsNothing);
+        expect(find.byKey(BibleShell.navKey), findsOneWidget);
+
+        for (final tab in [BibleModuleTab.bible, BibleModuleTab.more]) {
+          await tester.tap(find.byKey(BibleShell.tabKey(tab)));
+          await _settle(tester);
+          expect(invitation, findsOneWidget, reason: tab.name);
+        }
+        expect(find.byKey(BibleBrowser.testamentTabsKey), findsNothing);
+        expect(find.byKey(BibleShell.searchKey), findsNothing);
+
+        await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.notes)));
+        await _settle(tester);
+        expect(find.byType(NotesTab), findsOneWidget);
+        expect(invitation, findsNothing);
+      });
+    });
+
+    testWidgets(
+        'une vraie version débloque sans geste ; supprimée, l\'invitation '
+        'revient', (tester) async {
+      await tester.runAsync(() async {
+        final container =
+            guestContainer(bibleDownloaded: null, extra: [_radioOff]);
+        final db = container.read(appDatabaseProvider);
+        final router = await pumpGuestApp(tester, container);
+        await db.into(db.bibleVersions).insert(
+              BibleVersionsCompanion.insert(
+                id: const Value(7),
+                code: 'EWE',
+                name: 'Biblia',
+                publishedAt: Value(DateTime.utc(2026)),
+                archiveUrl: const Value('https://exemple.test/ewe.zip'),
+              ),
+            );
+        router.push('/bible?tab=bible');
+        await _settle(tester);
+        // Proposée mais pas descendue : l'invitation, avec son bouton.
+        expect(invitation, findsOneWidget);
+        expect(find.text(_fr.bibleInviteDownload), findsOneWidget);
+        expect(
+          find.byKey(BibleVersionsScreen.downloadKey('EWE')),
+          findsOneWidget,
+        );
+
+        // La fin d'un téléchargement : la ligne et son dossier.
+        await db.into(db.bibleInstalledVersions).insert(
+              BibleInstalledVersionsCompanion.insert(
+                code: 'EWE',
+                name: 'Biblia',
+                installedAt: DateTime.utc(2026),
+                localPath: const Value('/nulle-part/EWE'),
+              ),
+            );
+        await _settle(tester);
+        expect(invitation, findsNothing);
+        expect(find.byKey(BibleBrowser.testamentTabsKey), findsOneWidget);
+
+        await db.delete(db.bibleInstalledVersions).go();
+        await _settle(tester);
+        expect(invitation, findsOneWidget);
+      });
+    });
+  });
+
+  group('Parcourir', () {
+    testWidgets('testament → livre → chapitre, et le chapitre ouvre le texte',
         (tester) async {
       await tester.runAsync(() async {
         final container = guestContainer(extra: [_radioOff]);
@@ -294,29 +437,22 @@ void main() {
         expect(find.byKey(BibleBrowser.chapterKey(21)), findsOneWidget);
         expect(find.byKey(BibleBrowser.chapterKey(22)), findsNothing);
 
+        // Pas de grille de versets (28/10/2026) : le chapitre ouvre le texte.
         await tester.tap(find.byKey(BibleBrowser.chapterKey(3)));
         await _settle(tester);
-        expect(find.text(_fr.bibleChooseVerse), findsOneWidget);
-        await tester.scrollUntilVisible(
-          find.byKey(BibleBrowser.verseKey(36)),
-          200,
-          scrollable: find.byType(Scrollable).last,
-        );
-        expect(find.byKey(BibleBrowser.verseKey(37)), findsNothing);
-
-        await tester.tap(find.byKey(BibleBrowser.startKey));
-        await _settle(tester);
         expect(router.state.matchedLocation, '/bible/read/John/3');
+        expect(find.byKey(BibleBrowser.verseKey(1)), findsNothing);
         expect(find.textContaining(kPlaceholderMark), findsOneWidget);
 
         final state = await _localState(container);
         expect((state!.book, state.chapter, state.versionCode),
             ('John', 3, 'EXA'));
 
-        // Retour à la grille : le chapitre courant se distingue, sans pastel.
+        // Retour : on retrouve les chapitres de Jean, pas une grille de versets.
         router.pop();
         await _settle(tester);
-        expect(find.byKey(BibleBrowser.verseKey(1)), findsOneWidget);
+        expect(find.byKey(BibleBrowser.chapterKey(3)), findsOneWidget);
+        expect(find.byKey(BibleBrowser.verseKey(1)), findsNothing);
       });
     });
 
@@ -343,27 +479,38 @@ void main() {
         expect(find.text(_fr.bibleNoBookFound), findsOneWidget);
       });
     });
-
-    testWidgets('un verset touché ouvre le lecteur sur lui', (tester) async {
-      await tester.runAsync(() async {
-        final router =
-            await pumpGuestApp(tester, guestContainer(extra: [_radioOff]));
-        router.push('/bible?tab=bible');
-        await _settle(tester);
-        await tester.tap(find.byKey(BibleBrowser.bookKey('Gen')));
-        await _settle(tester);
-        await tester.tap(find.byKey(BibleBrowser.chapterKey(1)));
-        await _settle(tester);
-        await tester.tap(find.byKey(BibleBrowser.verseKey(5)));
-        await _settle(tester);
-
-        expect(router.state.matchedLocation, '/bible/read/Gen/1');
-        expect(router.state.uri.queryParameters['v'], '5');
-      });
-    });
   });
 
   group('Le lecteur', () {
+    testWidgets(
+        'la lettrine : le premier verset passe sous le chiffre dès qu\'il '
+        's\'arrête, sans colonne vide', (tester) async {
+      await tester.runAsync(() async {
+        final container = guestContainer(extra: [_radioOff]);
+        final router = await pumpGuestApp(tester, container);
+        // Une grande police de lecture : le verset 1 d'exemple dépasse alors
+        // le chiffre (l'appli entière agrandie ferait déborder l'accueil).
+        await container
+            .read(biblePrefsProvider.notifier)
+            .update((p) => p.copyWith(fontSize: 28));
+        router.push('/bible/read/Exod/8');
+        await _settle(tester);
+
+        final verse = find.byKey(BibleReaderScreen.verseKey(1));
+        final texts =
+            find.descendant(of: verse, matching: find.byType(RichText));
+        // Le chiffre, les lignes à côté de lui, puis la suite.
+        expect(texts, findsNWidgets(3));
+        final cap = tester.getRect(texts.at(0));
+        final beside = tester.getRect(texts.at(1));
+        final below = tester.getRect(texts.at(2));
+        expect(beside.left, greaterThan(cap.right));
+        // La suite repart du bord du chiffre, sous lui.
+        expect(below.left, closeTo(cap.left, 1));
+        expect(below.top, greaterThanOrEqualTo(beside.bottom - 1));
+      });
+    });
+
     testWidgets(
         'on glisse d\'un chapitre à l\'autre, et d\'un livre à l\'autre',
         (tester) async {
@@ -530,16 +677,9 @@ void main() {
 
     testWidgets(
         'un lien `nv://bible/John/3/16-18` ouvre le lecteur au verset 16, '
-        'surligné un instant', (tester) async {
-      // La durée du surlignage, réglée par le test : longue tant qu'on le
-      // regarde (la charge de la machine ne l'éteint plus avant), courte pour
-      // le voir s'éteindre.
-      var flash = const Duration(hours: 1);
+        'sans le surligner', (tester) async {
       await tester.runAsync(() async {
-        final container = guestContainer(extra: [
-          _radioOff,
-          bibleFlashDurationProvider.overrideWith((_) => flash),
-        ]);
+        final container = guestContainer(extra: [_radioOff]);
         final router = await pumpGuestApp(tester, container);
         router.push('/bible?tab=bible');
         await _settle(tester);
@@ -554,40 +694,23 @@ void main() {
 
         expect(router.state.matchedLocation, '/bible/read/John/3');
         expect(router.state.uri.queryParameters['v'], '16-18');
-        final v16 = find.byKey(BibleReaderScreen.verseKey(16));
-        expect(v16.hitTestable(), findsOneWidget);
-
-        // Depuis #250 le surlignage d'arrivée est peint au marqueur, et
-        // [MarkerHighlight] n'est dans l'arbre que s'il y a de l'encre.
-        Color? colorOf(int verse) {
-          final marker = find.descendant(
-            of: find.byKey(BibleReaderScreen.verseKey(verse)),
-            matching: find.byType(MarkerHighlight),
-          );
-          return marker.evaluate().isEmpty
-              ? null
-              : tester.widget<MarkerHighlight>(marker).color;
-        }
-
-        expect(colorOf(16), isNotNull);
-        expect(colorOf(18), isNotNull);
-        expect(colorOf(19), isNull);
+        expect(
+          find.byKey(BibleReaderScreen.verseKey(16)).hitTestable(),
+          findsOneWidget,
+        );
         expect((await _localState(container))!.verse, 16);
 
-        // Rouvert avec un surlignage bref : il s'éteint.
-        flash = const Duration(milliseconds: 50);
-        container.invalidate(bibleFlashDurationProvider);
-        router.pop();
-        await _settle(tester);
-        await NoteLinkOpener.open(
-          element,
-          element as WidgetRef,
-          'nv://bible/John/3/16-18',
-        );
-        await _settle(tester);
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-        await _settle(tester);
-        expect(colorOf(16), isNull);
+        // Le flash d'arrivée a disparu (28/10/2026) : aucun surlignage sur
+        // les versets du lien, dès la première image.
+        for (final verse in [16, 17, 18]) {
+          expect(
+            find.descendant(
+              of: find.byKey(BibleReaderScreen.verseKey(verse)),
+              matching: find.byType(TextHighlight),
+            ),
+            findsNothing,
+          );
+        }
       });
     });
 

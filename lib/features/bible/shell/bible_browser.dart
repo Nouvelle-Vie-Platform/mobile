@@ -3,8 +3,8 @@
 ///
 /// Un seul widget, trois usages :
 ///
-/// - [BibleBrowserMode.browse] — l'onglet Bible : un chapitre ouvre la grille
-///   de ses versets ; un verset, ou « Commencer Jean 3 », ouvre le lecteur ;
+/// - [BibleBrowserMode.browse] — l'onglet Bible : un chapitre ouvre
+///   directement le lecteur, sans grille de versets ;
 /// - [BibleBrowserMode.select] — le mode sélection des notes : on touche des
 ///   versets (plage contiguë), [BibleBrowser.onSelection] remonte la
 ///   référence, la coquille porte le bouton « Insérer » ;
@@ -20,12 +20,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_extension.dart';
+import '../../../theme/app_colors.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/segmented_tabs.dart';
 import '../data/bible_providers.dart';
 import '../data/canon.dart';
+import '../home/home_view.dart';
 
 enum BibleBrowserMode { browse, select, pickChapter }
 
@@ -54,7 +56,6 @@ class BibleBrowser extends ConsumerStatefulWidget {
   static const Key searchFieldKey = Key('bible_book_search');
   static const Key testamentTabsKey = Key('bible_testament_tabs');
   static const Key backKey = Key('bible_browser_back');
-  static const Key startKey = Key('bible_start_reading');
   static Key bookKey(String osis) => Key('bible_book_$osis');
   static Key chapterKey(int chapter) => Key('bible_chapter_$chapter');
   static Key verseKey(int verse) => Key('bible_verse_cell_$verse');
@@ -84,7 +85,10 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
       });
 
   void _openChapter(int chapter) {
-    if (widget.mode == BibleBrowserMode.pickChapter) {
+    // Hors sélection, un chapitre ouvre **le texte** : la grille des versets
+    // n'était qu'une étape de plus (28/10/2026). Elle reste pour le mode
+    // sélection, dont le but est justement de choisir des versets.
+    if (widget.mode != BibleBrowserMode.select) {
       widget.onOpen?.call(BibleLink(_book!, chapter));
       return;
     }
@@ -108,10 +112,6 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
   }
 
   void _tapVerse(int verse) {
-    if (widget.mode != BibleBrowserMode.select) {
-      widget.onOpen?.call(BibleLink(_book!, _chapter!, from: verse));
-      return;
-    }
     setState(() {
       final (from, to) = (_from, _to);
       if (from == null || to == null) {
@@ -180,14 +180,31 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
       children: [
         Padding(
           padding: AppSpacing.screenPadding.copyWith(top: AppSpacing.md),
-          child: TextField(
-            key: BibleBrowser.searchFieldKey,
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.search),
-              hintText: l.bibleBookSearchHint,
-              isDense: true,
+          // Une carte blanche à l'ombre douce, sans bordure (maquette).
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              boxShadow: AppShadows.elevation1,
             ),
-            onChanged: (v) => setState(() => _query = v),
+            child: TextField(
+              key: BibleBrowser.searchFieldKey,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: l.bibleBookSearchHint,
+                isDense: true,
+                filled: true,
+                fillColor: palette.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
           ),
         ),
         if (needle.isEmpty)
@@ -198,6 +215,7 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
               tabs: [l.bibleOldTestament, l.bibleNewTestament],
               selected: _testament.index,
               onSelect: (i) => setState(() => _testament = Testament.values[i]),
+              selectedColor: AppColors.primary,
             ),
           ),
         const SizedBox(height: AppSpacing.sm),
@@ -209,11 +227,18 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
                     style: TextStyle(color: palette.textSecondary),
                   ),
                 )
-              : ListView.builder(
+              : ListView.separated(
                   padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
                   itemCount: books.length,
+                  // Le filet part sous le nom, pas sous la case (maquette).
+                  separatorBuilder: (context, _) => Divider(
+                    height: 1,
+                    indent: 72,
+                    color: palette.divider,
+                  ),
                   itemBuilder: (context, i) {
                     final b = books[i];
+                    final tiles = BibleHomeColors.of(context);
                     return ListTile(
                       key: BibleBrowser.bookKey(b.osis),
                       leading: Container(
@@ -221,13 +246,13 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
                         height: 40,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: palette.surfaceAlt,
+                          color: tiles.bookTile,
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Text(
                           b.abbreviations.first,
                           style: AppTypography.bodyStrong
-                              .copyWith(color: palette.primary),
+                              .copyWith(color: tiles.bookTileInk),
                         ),
                       ),
                       title: Text(b.nameIn(l.localeName)),
@@ -292,10 +317,9 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
           child: _Grid(
             numbers: versification.chaptersOf(book.osis),
             keyOf: BibleBrowser.chapterKey,
-            tone: (c) => state != null &&
-                    ((state.book == book.osis && state.chapter == c) ||
-                        state.hasRead(book.osis, c))
-                ? _Tone.soft
+            caption: context.l10n.bibleChapterShort,
+            tone: (c) => state != null && state.hasRead(book.osis, c)
+                ? _Tone.read
                 : _Tone.neutral,
             onTap: _openChapter,
           ),
@@ -311,16 +335,11 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
     BibleVersification versification,
   ) {
     final l = context.l10n;
-    final select = widget.mode == BibleBrowserMode.select;
     final reference = BibleLink(book.osis, chapter).labelFr;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _header(
-          context,
-          reference,
-          select ? l.bibleSelectHint : l.bibleChooseVerse,
-        ),
+        _header(context, reference, l.bibleSelectHint),
         Expanded(
           child: _Grid(
             numbers: [
@@ -336,28 +355,18 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
             onTap: _tapVerse,
           ),
         ),
-        if (!select)
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: FilledButton(
-                key: BibleBrowser.startKey,
-                onPressed: () =>
-                    widget.onOpen?.call(BibleLink(book.osis, chapter)),
-                child: Text(l.bibleStartReading(reference)),
-              ),
-            ),
-          ),
       ],
     );
   }
 }
 
-enum _Tone { neutral, soft, strong }
+enum _Tone { neutral, read, strong }
 
-/// La grille des numéros : des pastilles rondes, neutres ; [_Tone.soft] pour
-/// le chapitre courant ou lu, [_Tone.strong] pour les versets choisis.
+/// La grille des numéros (maquette « chpt », 28/10/2026) : des **carrés
+/// arrondis** en léger relief, cinq par ligne sur un téléphone. Un chapitre
+/// lu ([_Tone.read]) porte une coche, sans autre teinte — le beige de la
+/// maquette jaunissait la grille (retiré le 28/10/2026) ; [_Tone.strong] pour
+/// les versets choisis.
 ///
 /// Une **liste** de numéros, et non un compte : la versification d'une version
 /// peut sauter un chapitre (C3, #240), et la grille ne doit pas le proposer.
@@ -367,6 +376,7 @@ class _Grid extends StatelessWidget {
     required this.keyOf,
     required this.tone,
     required this.onTap,
+    this.caption,
   });
 
   final List<int> numbers;
@@ -374,9 +384,20 @@ class _Grid extends StatelessWidget {
   final _Tone Function(int n) tone;
   final ValueChanged<int> onTap;
 
+  /// Le petit mot sous chaque numéro (« ch. »), sur toutes les cases.
+  final String? caption;
+
+  // Relevées sur la maquette ; la nuit garde les teintes de la palette. Les
+  // cases, elles, sont blanches : le gris chaud de la maquette, posé sur le
+  // fond bleuté de l'appli, tirait sur le jaune (retiré le 28/10/2026).
+  static const _ink = Color(0xFF2B3849);
+  static const _check = Color(0xFF8A8496);
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    const radius = BorderRadius.all(Radius.circular(14));
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -384,8 +405,10 @@ class _Grid extends StatelessWidget {
         AppSpacing.lg,
         96,
       ),
+      // 72 : cinq cases d'environ 59 pt sur un téléphone, comme la maquette
+      // (80 n'en laissait que quatre).
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 64,
+        maxCrossAxisExtent: 72,
         mainAxisSpacing: AppSpacing.md,
         crossAxisSpacing: AppSpacing.md,
       ),
@@ -393,25 +416,79 @@ class _Grid extends StatelessWidget {
       itemBuilder: (context, i) {
         final n = numbers[i];
         final t = tone(n);
+        final ink = dark ? palette.textPrimary : _ink;
         final (bg, fg) = switch (t) {
-          _Tone.neutral => (palette.surfaceAlt, palette.textPrimary),
-          _Tone.soft => (
-              palette.primary.withValues(alpha: 0.14),
-              palette.primary,
+          _Tone.neutral || _Tone.read => (
+              dark ? palette.surfaceAlt : palette.surface,
+              ink
             ),
           _Tone.strong => (palette.primary, Colors.white),
         };
-        return Material(
-          color: bg,
-          shape: const CircleBorder(),
-          child: InkWell(
-            key: keyOf(n),
-            customBorder: const CircleBorder(),
-            onTap: () => onTap(n),
-            child: Center(
-              child: Text(
-                '$n',
-                style: AppTypography.bodyStrong.copyWith(color: fg),
+        final label = caption;
+        return DecoratedBox(
+          // Le relief : une ombre chaude dessous, un reflet clair dessus.
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            boxShadow: dark
+                ? null
+                : const [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: Colors.white,
+                      blurRadius: 6,
+                      offset: Offset(-2, -2),
+                    ),
+                  ],
+          ),
+          child: Material(
+            color: bg,
+            borderRadius: radius,
+            child: InkWell(
+              key: keyOf(n),
+              borderRadius: radius,
+              onTap: () => onTap(n),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$n',
+                          style: AppTypography.h3.copyWith(
+                            color: fg,
+                            fontWeight: FontWeight.w700,
+                            height: 1.1,
+                          ),
+                        ),
+                        if (label != null)
+                          Text(
+                            label,
+                            style: AppTypography.caption.copyWith(
+                              color: t == _Tone.strong
+                                  ? Colors.white70
+                                  : palette.textSecondary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (t == _Tone.read)
+                    Positioned(
+                      top: 6,
+                      right: 8,
+                      child: Icon(
+                        Icons.check,
+                        size: 14,
+                        color: dark ? palette.textSecondary : _check,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),

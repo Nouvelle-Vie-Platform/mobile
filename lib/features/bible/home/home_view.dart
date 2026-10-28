@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/l10n_extension.dart';
 import '../../../models/announcement_view.dart';
 import '../../../router/app_router.dart';
+import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/status/status_background.dart';
@@ -32,6 +33,7 @@ import '../plans/plans_providers.dart';
 import '../quiz/quiz_providers.dart';
 import '../quiz/quiz_screens.dart';
 import '../reader/bible_reader_screen.dart';
+import '../shell/bible_favorites_screen.dart';
 import '../shell/bible_slots.dart';
 import 'data/home_data.dart';
 
@@ -61,6 +63,8 @@ final class BibleHomeColors {
     required this.navBorder,
     required this.navIdle,
     required this.navActive,
+    required this.bookTile,
+    required this.bookTileInk,
     required this.heroImage,
     required this.heroWash,
   });
@@ -79,6 +83,10 @@ final class BibleHomeColors {
   final Color navBorder;
   final Color navIdle;
   final Color navActive;
+
+  /// La case d'abréviation d'un livre (Gn, Ex…) et son encre.
+  final Color bookTile;
+  final Color bookTileInk;
   final String heroImage;
 
   /// Le lavis violet de la maquette de jour ; l'image de nuit est déjà froide.
@@ -97,10 +105,13 @@ final class BibleHomeColors {
     searchInk: Color(0xFF5A5A5C),
     daily: Color(0xFFEEEFEA),
     chevron: Color(0xFFA6A6A6),
-    button: Color(0xFF143256),
+    // Le bleu de l'appli, pas un bleu nuit propre au module (#265).
+    button: AppColors.primary,
     navBorder: Color(0xFFDBDAD8),
-    navIdle: Color(0xFF8A8A8E),
+    navIdle: Color(0xFF475770),
     navActive: Color(0xFF143256),
+    bookTile: Color(0xFFDEE4F0),
+    bookTileInk: AppColors.primary,
     heroImage: 'assets/images/bible_home_hero.webp',
     heroWash: Color(0x1A6545AA),
   );
@@ -120,6 +131,8 @@ final class BibleHomeColors {
     navBorder: Color(0xFF262A38),
     navIdle: Color(0xFF7D8090),
     navActive: Color(0xFFEDE6DA),
+    bookTile: Color(0xFF232838),
+    bookTileInk: Color(0xFFA9C0E4),
     heroImage: 'assets/images/bible_home_hero_night.webp',
     heroWash: Color(0x00000000),
   );
@@ -130,6 +143,7 @@ final class BibleHomeColors {
 
 abstract final class BibleHomeKeys {
   static const header = Key('bible_home_header');
+  static const dailyTitle = Key('bible_home_daily_title');
   static const back = Key('bible_home_back');
   static const verseText = Key('bible_home_verse_text');
   static const daily = Key('bible_home_daily');
@@ -158,7 +172,7 @@ const double _cardsTop = 397;
 const double _cardsHeight = 106;
 const double _cardsGap = 11.7;
 const double _sideMargin = 18;
-const double _textLeft = 24;
+const double _dailyTitleGap = 43.8;
 
 /// La colonne du contenu sur tablette ; l'image d'en-tête, elle, couvre toute
 /// la largeur.
@@ -221,6 +235,11 @@ class BibleHomeView extends ConsumerStatefulWidget {
   /// La flèche posée sur l'image : sortir du module (fournie par la coquille).
   final VoidCallback? onBack;
 
+  /// La hauteur du premier écran sur cet appareil : la coquille ne le fixe
+  /// que s'il laisse de quoi défiler dessous.
+  static double heightOf(BuildContext context) =>
+      _Geo.of(context).y(_cardsTop + _cardsHeight);
+
   @override
   ConsumerState<BibleHomeView> createState() => _BibleHomeViewState();
 }
@@ -240,120 +259,93 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
       );
     }
     final g = _Geo.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          key: BibleHomeKeys.header,
-          height: g.y(_cardsTop + _cardsHeight),
-          child: Stack(
-            children: [
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 0,
-                height: g.y(_heroBottom),
-                child: _Hero(backdrop: vod?.backdrop, day: vod?.day, geo: g),
+    // Fixe dans la coquille (#265) : l'image, la recherche et les raccourcis
+    // ; « Lecture du jour » et la suite défilent dessous.
+    return SizedBox(
+      key: BibleHomeKeys.header,
+      height: g.y(_cardsTop + _cardsHeight),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            height: g.y(_heroBottom),
+            child: _Hero(backdrop: vod?.backdrop, day: vod?.day, geo: g),
+          ),
+          Positioned(
+            left: g.x(3),
+            top: g.y(46),
+            child: IconButton(
+              key: BibleHomeKeys.back,
+              tooltip: context.l10n.bibleBackToHome,
+              onPressed: widget.onBack ??
+                  () {
+                    final router = ref.read(routerProvider);
+                    if (router.canPop()) {
+                      router.pop();
+                    } else {
+                      router.goNamed(AppRoute.home);
+                    }
+                  },
+              icon: Icon(
+                Icons.arrow_back_ios_new,
+                size: g.s(22),
+                color: Colors.white,
               ),
-              Positioned(
-                left: g.x(3),
-                top: g.y(46),
-                child: IconButton(
-                  key: BibleHomeKeys.back,
-                  tooltip: context.l10n.bibleBackToHome,
-                  onPressed: widget.onBack ??
-                      () {
-                        final router = ref.read(routerProvider);
-                        if (router.canPop()) {
-                          router.pop();
-                        } else {
-                          router.goNamed(AppRoute.home);
-                        }
-                      },
-                  icon: Icon(
-                    Icons.arrow_back_ios_new,
-                    size: g.s(22),
-                    color: Colors.white,
-                  ),
-                ),
+            ),
+          ),
+          Positioned(
+            left: g.x(21.7),
+            right: g.x(24),
+            top: g.y(98.3),
+            child: Text(
+              context.l10n.bibleHomeHeroTitle,
+              style: TextStyle(
+                fontFamily: 'Playfair Display',
+                fontWeight: FontWeight.w500,
+                fontSize: g.s(32),
+                height: 1.14,
+                color: Colors.white,
               ),
-              Positioned(
-                left: g.x(21.7),
-                right: g.x(_textLeft),
-                top: g.y(98.3),
+            ),
+          ),
+          Positioned(
+            left: g.x(22),
+            right: g.x(48),
+            top: g.y(192.8),
+            // La largeur de la maquette (332 pt), à l'échelle : la phrase
+            // se coupe au même endroit sur téléphone et sur tablette.
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: g.s(332)),
                 child: Text(
-                  context.l10n.bibleHomeHeroTitle,
-                  style: TextStyle(
-                    fontFamily: 'Playfair Display',
-                    fontWeight: FontWeight.w500,
-                    fontSize: g.s(32),
-                    height: 1.14,
+                  context.l10n.bibleHomeHeroTagline,
+                  style: _atkinson(context, 21).copyWith(
                     color: Colors.white,
+                    height: 1.39,
                   ),
                 ),
               ),
-              Positioned(
-                left: g.x(22),
-                right: g.x(48),
-                top: g.y(192.8),
-                // La largeur de la maquette (332 pt), à l'échelle : la phrase
-                // se coupe au même endroit sur téléphone et sur tablette.
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: g.s(332)),
-                    child: Text(
-                      context.l10n.bibleHomeHeroTagline,
-                      style: _atkinson(context, 21).copyWith(
-                        color: Colors.white,
-                        height: 1.39,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: g.x(_sideMargin),
-                right: g.x(_sideMargin),
-                top: g.y(_searchTop),
-                height: g.s(_searchHeight),
-                child: const _SearchBar(),
-              ),
-              Positioned(
-                left: g.x(14.6),
-                right: g.x(16.1),
-                top: g.y(_cardsTop),
-                height: g.s(_cardsHeight),
-                child: const _Shortcuts(),
-              ),
-            ],
+            ),
           ),
-        ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            g.x(18.1),
-            g.s(43.8),
-            g.x(_sideMargin),
-            0,
+          Positioned(
+            left: g.x(_sideMargin),
+            right: g.x(_sideMargin),
+            top: g.y(_searchTop),
+            height: g.s(_searchHeight),
+            child: const _SearchBar(),
           ),
-          child: Text(
-            context.l10n.bibleHomeDailyTitle,
-            style: _atkinson(context, 22, weight: FontWeight.w700),
+          Positioned(
+            left: g.x(14.6),
+            right: g.x(16.1),
+            top: g.y(_cardsTop),
+            height: g.s(_cardsHeight),
+            child: const _Shortcuts(),
           ),
-        ),
-        SizedBox(height: g.s(10)),
-        if (vod != null)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: g.x(_sideMargin)),
-            child: _DailyCard(vod: vod),
-          ),
-        SizedBox(height: g.s(38.2)),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: g.x(_sideMargin)),
-          child: const _ContinueButton(),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -532,7 +524,7 @@ class _SearchBar extends ConsumerWidget {
 }
 
 /// Les quatre cartes de la maquette : un compteur et un libellé, qui ouvrent
-/// Plans, Défis, Quiz et l'onglet Favori.
+/// Plans, Défis, Quiz et l'écran Favoris.
 class _Shortcuts extends ConsumerWidget {
   const _Shortcuts();
 
@@ -578,8 +570,7 @@ class _Shortcuts extends ConsumerWidget {
         Icons.favorite_border,
         favorites,
         l.bibleHomeCardFavorites,
-        (BuildContext _, WidgetRef ref) =>
-            ref.read(bibleTabRequestProvider.notifier).open('favorites'),
+        (BuildContext _, WidgetRef ref) => BibleFavoritesScreen.open(ref),
       ),
     ];
 
@@ -750,9 +741,46 @@ class _DailyCard extends ConsumerWidget {
   }
 }
 
+/// **« Lecture du jour »** (#265) : la première section **sous** l'en-tête fixe
+/// — elle défile avec la suite.
+class BibleDailySection extends ConsumerWidget {
+  const BibleDailySection({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vod = ref.watch(verseOfDayProvider).value;
+    final g = _Geo.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            g.s(18.1),
+            g.s(_dailyTitleGap),
+            g.s(_sideMargin),
+            0,
+          ),
+          child: Text(
+            context.l10n.bibleHomeDailyTitle,
+            key: BibleHomeKeys.dailyTitle,
+            style: _atkinson(context, 22, weight: FontWeight.w700),
+          ),
+        ),
+        SizedBox(height: g.s(10)),
+        if (vod != null)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: g.s(_sideMargin)),
+            child: _DailyCard(vod: vod),
+          ),
+        SizedBox(height: g.s(38.2)),
+      ],
+    );
+  }
+}
+
 /// « Continuer la lecture » : la dernière position, sinon le verset du jour.
-class _ContinueButton extends ConsumerWidget {
-  const _ContinueButton();
+class BibleContinueSection extends ConsumerWidget {
+  const BibleContinueSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -763,22 +791,27 @@ class _ContinueButton extends ConsumerWidget {
     final BibleLink? target = book != null && chapter != null
         ? BibleLink(book.osis, chapter, from: state?.verse)
         : vod?.link;
-    return SizedBox(
-      height: _Geo.of(context).s(64),
-      child: FilledButton(
-        key: BibleHomeKeys.continueReading,
-        style: FilledButton.styleFrom(
-          backgroundColor: BibleHomeColors.of(context).button,
-          foregroundColor: Colors.white,
-          shape: const StadiumBorder(),
-          padding: EdgeInsets.zero,
-        ),
-        onPressed: target == null
-            ? null
-            : () => BibleReaderScreen.push(ref.read(routerProvider), target),
-        child: Text(
-          context.l10n.bibleHomeContinueTitle,
-          style: _atkinson(context, 22).copyWith(color: Colors.white),
+    final g = _Geo.of(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: g.s(_sideMargin)),
+      child: SizedBox(
+        width: double.infinity,
+        height: g.s(64),
+        child: FilledButton(
+          key: BibleHomeKeys.continueReading,
+          style: FilledButton.styleFrom(
+            backgroundColor: BibleHomeColors.of(context).button,
+            foregroundColor: Colors.white,
+            shape: const StadiumBorder(),
+            padding: EdgeInsets.zero,
+          ),
+          onPressed: target == null
+              ? null
+              : () => BibleReaderScreen.push(ref.read(routerProvider), target),
+          child: Text(
+            context.l10n.bibleHomeContinueTitle,
+            style: _atkinson(context, 22).copyWith(color: Colors.white),
+          ),
         ),
       ),
     );

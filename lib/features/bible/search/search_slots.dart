@@ -1,7 +1,8 @@
 /// **Les emplacements de la tranche M3 — recherche simple, croisée, comparative.**
 ///
-/// Un raccourci « Rechercher » pour l'accueil du module (disposé par M7) et une
-/// entrée de l'onglet Plus. La loupe de l'en-tête de la coquille n'est pas un
+/// Un raccourci « Rechercher » pour l'accueil du module (disposé par M7) ;
+/// plus d'entrée dans Mon espace (#265) : la barre de l'accueil et la loupe
+/// de l'onglet Bible y mènent déjà. La loupe de l'en-tête de la coquille n'est pas un
 /// emplacement : elle s'ajoute à l'assemblage et appelle
 /// `BibleSearchScreen.open(ref.read(routerProvider))`.
 library;
@@ -20,15 +21,6 @@ void _open(BuildContext context, WidgetRef ref) =>
 final BibleSlots searchSlots = BibleSlots(
   homeShortcuts: [
     BibleHomeShortcut(
-      id: 'search',
-      order: 0,
-      icon: Icons.search,
-      label: (context) => context.l10n.bibleSearchTitle,
-      onTap: _open,
-    ),
-  ],
-  moreEntries: [
-    BibleMoreEntry(
       id: 'search',
       order: 0,
       icon: Icons.search,
