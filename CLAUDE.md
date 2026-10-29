@@ -507,9 +507,12 @@ Cinq points qui se ratent en silence, eux aussi :
    pas supposé. L'ordre est celui que `hls.js` documente : `Hls.isSupported()`
    d'abord (il teste `MediaSource`), le natif seulement en repli, pour Safari
    iOS. **Aucun reniflage d'agent utilisateur.**
-2. **`main()` n'appelle pas `AudioService.init()` sur le web** : notification et
-   écran verrouillé n'y existent pas. Un échec de démarrage du lecteur web ne
-   doit jamais empêcher l'application de s'ouvrir — même `try` que sur mobile.
+2. **`main()` n'appelle pas `AudioService.init()` sur le web** : son
+   écran verrouillé est la **Media Session API** (#272), posée par le lecteur
+   lui-même — `title`, `author`, `artUrl`, la ligne d'état de #179, et **pas de
+   saut sur un direct** (la règle de #104, 40 s de rattrapage). Un échec de
+   démarrage du lecteur web ne doit jamais empêcher l'application de s'ouvrir —
+   même `try` que sur mobile.
 3. **Deux fichiers, une porte.** Les décisions vivent dans
    `media_element_playback.dart`, qui ne connaît **ni le DOM ni
    `dart:js_interop`** et se teste donc sous `flutter test` ;
@@ -3717,7 +3720,7 @@ pression, Chrome évince **tout le stockage d'une origine d'un coup** — enseig
 magasin Drift ensemble. D'où `InstallBanner`, dans la même pile que les deux autres bandeaux : Chrome
 a rangé sa propre invite dans un menu ⋮ que personne n'ouvre.
 
-Six points qui se ratent en silence :
+Sept points qui se ratent en silence :
 
 1. **`beforeinstallprompt` est capté dans `web/index.html`, pas en Dart.** Chrome l'émet pendant le
    chargement de la page, souvent avant `main()`, et **il ne se rejoue jamais** : un écouteur posé
@@ -3730,18 +3733,25 @@ Six points qui se ratent en silence :
    du code à l'exécution et la CSP de l'origine empêche l'application de démarrer), `--base-href /`.
    Puis `./tool/precompresser-web.sh` : Caddy standard ne sait pas compresser en brotli, il sert des
    `.br` posés au build.
-4. **`assets/images/live_bg.webp` est embarqué, `live_bg.png` est la source.** Le PNG reste pour
+4. **L'antenne demande les identifiants, et sur un direct seulement** (#272, T3). `xhrSetup` pose
+   `withCredentials` sur les requêtes de `hls.js` — la seule prise, `Cookie` étant un *forbidden
+   header name* (#108) ; le bocal du navigateur fait le reste. Pas ailleurs : les routes de médias
+   répondent `Allow-Origin: *`, et le navigateur rejette un `*` dès qu'il a envoyé des identifiants.
+   ⚠️ **Rien ne traverse tant que le bloc CORS de l'antenne n'est pas posé** (`context`,
+   `infra/caddy/antenne-cors.caddy` : origine nommée + `Allow-Credentials`), et aucun test ne peut le
+   dire — cela se mesure dans un navigateur, sur la vraie origine.
+5. **`assets/images/live_bg.webp` est embarqué, `live_bg.png` est la source.** Le PNG reste pour
    `make icons`, qui fabrique le démarrage natif — lequel ne lit pas les assets de Flutter. 102 k
    contre 1 593 k, PSNR 49,1 dB. `make icons` produit **aussi** les quatre icônes du manifeste et la
    favicon : jusqu'au 29/10 c'étaient celles de Flutter, le « F » bleu.
-5. **Le bouton du bandeau de mise à jour recharge au lieu d'ouvrir un magasin** (#271) : il n'y a pas
+6. **Le bouton du bandeau de mise à jour recharge au lieu d'ouvrir un magasin** (#271) : il n'y a pas
    de fiche d'application dans un navigateur, et un bouton qui n'ouvre rien aurait rendu le seuil du
    portail sans effet sur l'app web — un correctif urgent n'y serait jamais arrivé. Le choix ne peut
    pas se faire sur `kIsWeb` dans le widget (constante de compilation : aucun test ne pourrait monter
    le cas du web) : il passe par `appReloaderProvider`, `null` partout sauf sur le web, que
    `main.dart` surcharge sous `kIsWeb` comme `installPromptProvider`. L'interop vit dans
    `lib/data/update/browser_app_reloader.dart`, derrière la porte habituelle.
-6. ⚠️ **Le `flutter_service_worker.js` de Flutter 3.47.4 ne met plus rien en cache.** C'est un
+7. ⚠️ **Le `flutter_service_worker.js` de Flutter 3.47.4 ne met plus rien en cache.** C'est un
    interrupteur de secours de 31 lignes : `skipWaiting()` à l'installation,
    `registration.unregister()` à l'activation, puis il renavigue ses clients. Il n'y a donc **ni
    coquille hors ligne ni actifs versionnés** servis par lui — `--pwa-strategy` ne choisit plus que

@@ -407,4 +407,93 @@ void main() {
       expect(() => playback.dispose(), returnsNormally);
     });
   });
+
+  // Ce que le lecteur **remet au navigateur** (#272) : les décisions, prises
+  // ici, qu'`HlsContentPlayer` ne fait que câbler. Ce qu'aucun test ne peut
+  // dire reste écrit en toutes lettres — qu'un cookie traverse jusqu'à
+  // MediaMTX ne se prouve que dans un navigateur, sur la vraie origine.
+  group('MediaElementPlayback — les identifiants du flux', () {
+    test('un direct les demande, un enseignement jamais', () {
+      // Sans eux, l'antenne rend `401 session not found` ; avec eux partout,
+      // la médiathèque casserait — ses routes répondent `Allow-Origin: *`.
+      expect(MediaElementPlayback.wantsCredentials(isLive: true), isTrue);
+      expect(MediaElementPlayback.wantsCredentials(isLive: false), isFalse);
+    });
+  });
+
+  group('MediaElementPlayback — la session média', () {
+    test('un direct n\'offre pas de saut, un enseignement si', () {
+      // La règle de la notification native (#104) : 40 s de rattrapage.
+      expect(
+        MediaElementPlayback.mediaSessionAllowsSkip(isLive: true),
+        isFalse,
+      );
+      expect(
+        MediaElementPlayback.mediaSessionAllowsSkip(isLive: false),
+        isTrue,
+      );
+    });
+
+    test('la ligne d\'état passe par-dessus l\'auteur', () {
+      const request = ContentRequest(
+        contentId: 'radio',
+        url: 'https://x/master.m3u8',
+        title: 'New Life Radio',
+        author: 'Pasteur',
+        isLive: true,
+      );
+      expect(
+        MediaElementPlayback.mediaSessionArtist(request, 'Reconnexion…'),
+        'Reconnexion…',
+      );
+      // `null` rend l'auteur — le contrat de `setStatusLine`.
+      expect(
+        MediaElementPlayback.mediaSessionArtist(request, null),
+        'Pasteur',
+      );
+    });
+
+    test('sans auteur ni ligne d\'état, aucune seconde ligne', () {
+      const request = ContentRequest(
+        contentId: 'c1',
+        url: 'https://x/master.m3u8',
+        title: 'Prêche',
+      );
+      // Jamais « Auteur inconnu » : `MediaMetadata` n'accepte pas de `null`,
+      // et la chaîne vide est ce qui n'affiche rien.
+      expect(MediaElementPlayback.mediaSessionArtist(request, null), '');
+    });
+
+    test('sans contenu tenu, le système reprend sa fiche', () {
+      expect(
+        MediaElementPlayback.mediaSessionPlaybackState(const ContentPlayback()),
+        'none',
+      );
+    });
+
+    test('l\'état suit la lecture et la pause', () {
+      final playback = MediaElementPlayback()..startLoading('c1');
+      expect(
+        MediaElementPlayback.mediaSessionPlaybackState(playback.value),
+        'paused',
+      );
+      playback.markPlayRequested();
+      expect(
+        MediaElementPlayback.mediaSessionPlaybackState(playback.value),
+        'playing',
+      );
+      playback.markPaused();
+      expect(
+        MediaElementPlayback.mediaSessionPlaybackState(playback.value),
+        'paused',
+      );
+      // Un arrêt rend la fiche, même après avoir joué.
+      playback.clear();
+      expect(
+        MediaElementPlayback.mediaSessionPlaybackState(playback.value),
+        'none',
+      );
+      playback.dispose();
+    });
+  });
 }

@@ -275,6 +275,54 @@ class MediaElementPlayback extends ValueNotifier<ContentPlayback> {
     );
   }
 
+  /// **Les requêtes du flux partent-elles avec les identifiants ?** (#272)
+  ///
+  /// Sur un **direct** seulement, et ce n'est pas de la prudence. MediaMTX pose
+  /// deux cookies (`cookieCheck` puis `hlsSession`) sans lesquels tout rend
+  /// `401 {"error":"session not found"}` ; dans un navigateur, `Cookie` est un
+  /// *forbidden header name* de la spécification Fetch et aucun pré-vol Dart
+  /// ne peut les porter (#108). C'est le bocal du navigateur qui travaille, **à
+  /// condition** que les requêtes de `hls.js` partent en `withCredentials`.
+  ///
+  /// Pourquoi pas partout, alors : une requête avec identifiants exige de la
+  /// réponse une origine **nommée** et `Access-Control-Allow-Credentials:
+  /// true`. Les routes de médias, elles, répondent
+  /// `Access-Control-Allow-Origin: *` — mesuré le 29/10,
+  /// `docs/app-web-installable-plan.md` §4 — et le navigateur rejette une
+  /// réponse en `*` dès qu'il a envoyé des identifiants. Les demander partout
+  /// casserait donc la médiathèque pour réparer l'antenne.
+  static bool wantsCredentials({required bool isLive}) => isLive;
+
+  /// **Un direct n'offre pas de saut** sur l'écran verrouillé (#272).
+  ///
+  /// La même règle que la notification native (#104), et pour la même mesure :
+  /// la fenêtre HLS de l'antenne ne porte que **40 s** de rattrapage (vingt
+  /// segments de deux secondes, `docs/RADIO.md`). Un bouton qui ramènerait
+  /// au-delà ne retrouverait plus ses segments : mieux vaut ne pas l'offrir que
+  /// de le voir couper le son.
+  static bool mediaSessionAllowsSkip({required bool isLive}) => !isLive;
+
+  /// **La seconde ligne de l'écran verrouillé** : la ligne d'état par-dessus
+  /// l'auteur (#179), c'est-à-dire le contrat de `ContentPlayer.setStatusLine`
+  /// tenu avec le seul champ que la session média offre.
+  ///
+  /// Chaîne vide quand il n'y a ni l'un ni l'autre : `MediaMetadata` n'accepte
+  /// pas de `null`, et la chaîne vide est ce qui n'affiche aucune ligne.
+  static String mediaSessionArtist(ContentRequest request, String? statusLine) {
+    return statusLine ?? request.author ?? '';
+  }
+
+  /// **Ce que la session média doit dire de la lecture** — `'none'`,
+  /// `'playing'` ou `'paused'`.
+  ///
+  /// `'none'` dès qu'aucun contenu n'est tenu : le système retire alors sa
+  /// fiche au lieu de la laisser figée sur un bouton lecture qui n'a plus rien
+  /// à jouer — ce que fait `mediaItem.add(null)` sur mobile.
+  static String mediaSessionPlaybackState(ContentPlayback playback) {
+    if (playback.contentId == null) return 'none';
+    return playback.isPlaying ? 'playing' : 'paused';
+  }
+
   /// **Une position de média HTML en [Duration], ou `null` si elle est
   /// illisible.**
   ///
