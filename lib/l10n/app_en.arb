@@ -567,6 +567,7 @@
 
   "appUpdateBody": "A new version of the app is available.",
   "appUpdateAction": "Update",
+  "appUpdateReload": "Reload",
   "appUpdateDismiss": "Later",
   "installBannerBody": "Install the app to find it with your other apps, and to download teachings.",
   "installBannerAction": "Install",

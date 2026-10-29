@@ -1742,6 +1742,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get appUpdateAction => 'Mettre à jour';
 
   @override
+  String get appUpdateReload => 'Recharger';
+
+  @override
   String get appUpdateDismiss => 'Plus tard';
 
   @override

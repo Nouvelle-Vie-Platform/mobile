@@ -28,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/app_version.dart';
 import 'package:maison_du_miracle/data/store_launcher.dart';
+import 'package:maison_du_miracle/data/update/app_reloader.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/state/app_update_providers.dart';
 import 'package:maison_du_miracle/state/app_version_providers.dart';
@@ -42,10 +43,14 @@ final _fr = AppLocalizationsFr();
 /// `appVersionReaderProvider` et `appUpdateThresholdProvider` passent par
 /// `overrides` : aucun des deux n'est posé par `pumpScreen`, il n'y a donc pas
 /// de double surcharge — ce que Riverpod 3 refuserait.
+/// [reloader] monte le cas du **web** : `appReloaderProvider` rend `null`
+/// partout ailleurs, et `kIsWeb` étant une constante de compilation, c'est le
+/// seul moyen d'éprouver ce chemin sous `flutter test`.
 Future<RecordingStoreLauncher> pumpBanner(
   WidgetTester tester, {
   String? installed = '1.0.0',
   String? threshold,
+  AppReloader? reloader,
 }) async {
   final launcher = RecordingStoreLauncher();
   await pumpScreen(
@@ -61,6 +66,7 @@ Future<RecordingStoreLauncher> pumpBanner(
       ),
       appUpdateThresholdProvider.overrideWithValue(threshold),
       storeLauncherProvider.overrideWithValue(launcher),
+      appReloaderProvider.overrideWithValue(reloader),
     ],
   );
   return launcher;
@@ -143,12 +149,44 @@ void main() {
     final launcher =
         await pumpBanner(tester, installed: '1.0.0', threshold: '1.4.0');
 
+    // Et c'est bien « Mettre à jour » qu'on lit : le libellé du magasin.
+    expect(find.text(_fr.appUpdateAction), findsOneWidget);
+    expect(find.text(_fr.appUpdateReload), findsNothing);
+
     await tester.tap(find.byKey(AppUpdateBanner.actionKey));
     await tester.pump();
 
     expect(launcher.opened, 1);
     // On part vers une autre application et on revient : retrouver
     // l'invitation est juste tant que la mise à jour n'est pas faite.
+    expect(find.byKey(AppUpdateBanner.bannerKey), findsOneWidget);
+  });
+
+  testWidgets('sur le web, le bouton recharge — et n\'ouvre aucun magasin',
+      (tester) async {
+    // **Le cœur de la tranche.** Il n'y a pas de magasin dans un navigateur :
+    // un bouton qui en ouvrirait un rendrait le seuil réglé au portail sans
+    // aucun effet sur l'app web, et un correctif urgent n'y arriverait jamais.
+    final reloader = RecordingAppReloader();
+    final launcher = await pumpBanner(
+      tester,
+      installed: '1.0.0',
+      threshold: '1.4.0',
+      reloader: reloader,
+    );
+
+    expect(find.text(_fr.appUpdateReload), findsOneWidget);
+    // « Mettre à jour » a disparu : on ne quitte rien, et le dire évite de
+    // faire attendre un détour par une autre application.
+    expect(find.text(_fr.appUpdateAction), findsNothing);
+
+    await tester.tap(find.byKey(AppUpdateBanner.actionKey));
+    await tester.pump();
+
+    expect(reloader.reloaded, 1);
+    expect(launcher.opened, 0);
+    // Comme ailleurs : le bandeau ne se ferme pas de lui-même. Ici c'est le
+    // rechargement qui l'emporte, la version ayant monté.
     expect(find.byKey(AppUpdateBanner.bannerKey), findsOneWidget);
   });
 
