@@ -328,7 +328,11 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  drift_dev: ^2.34.0
+  # Épinglé **avec** `drift`, exactement : le vérificateur de schéma de 2.34.0
+  # appelle `allSchemaEntities`, qui n'existe plus sur le `GeneratedDatabase`
+  # de 2.34.4. Un `^` laisserait les deux dériver l'un sans l'autre, et
+  # `make migrations` tomberait au chargement.
+  drift_dev: 2.34.4
   build_runner: ^2.15.1
 
 # **Copie modifiée de just_audio 0.10.6** : elle ajoute `programTimeMs()`,
