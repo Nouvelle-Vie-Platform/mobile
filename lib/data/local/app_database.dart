@@ -73,6 +73,27 @@ part 'app_database.g.dart';
 /// sur les plateformes natives, une base OPFS/IndexedDB sur le web).
 const String kLocalDatabaseName = 'maison_du_miracle';
 
+/// **La version du worker, dans son adresse** — et c'est ce qui permet à une
+/// version neuve de prendre la place de l'ancienne.
+///
+/// Un *shared worker* est identifié par **l'URL de son script**, et il
+/// **survit au rechargement** : tant qu'un onglet du site lui reste connecté,
+/// le navigateur réutilise l'instance **déjà démarrée**, avec le script qu'elle
+/// a chargé — même si le serveur en sert un autre depuis. Une pose peut donc
+/// ne produire aucun effet jusqu'à ce que le fidèle ferme tous ses onglets, ou
+/// quitte son navigateur.
+///
+/// Mesuré le 29/10/2026, deux fois : le correctif du worker était en ligne,
+/// vérifié octet par octet, et la page continuait de lever
+/// `LinkError … xFileControl` — le navigateur rejouait l'ancien worker. Un
+/// profil neuf, lui, n'a jamais montré l'erreur.
+///
+/// Le paramètre change donc l'URL à chaque montée de `drift`, ce qui force le
+/// navigateur à **démarrer un worker neuf** au lieu d'en rejoindre un périmé.
+/// Il doit suivre la version déclarée dans `web/WEB_ASSETS.md` : un test le
+/// vérifie.
+const String kDriftWorkerVersion = '2.34.4';
+
 /// **Le magasin local — c'est lui qui peint les écrans** (ADR-0026, décision 2).
 ///
 /// Tout écran adossé à une collection répliquée lit ce magasin, jamais une
@@ -226,7 +247,7 @@ class AppDatabase extends _$AppDatabase {
           name: kLocalDatabaseName,
           web: DriftWebOptions(
             sqlite3Wasm: Uri.parse('sqlite3.wasm'),
-            driftWorker: Uri.parse('drift_worker.js'),
+            driftWorker: Uri.parse('drift_worker.js?v=$kDriftWorkerVersion'),
           ),
         ));
 

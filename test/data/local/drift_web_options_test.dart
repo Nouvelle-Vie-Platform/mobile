@@ -50,13 +50,38 @@ void main() {
     expect(call, contains('drift_worker.js'));
   });
 
+  test('l\'adresse du worker porte la version déclarée dans WEB_ASSETS.md', () {
+    // Un *shared worker* est identifié par l'URL de son script et survit au
+    // rechargement : sans ce paramètre, une pose neuve laisse le navigateur
+    // rejouer l'ancien worker tant qu'un onglet lui reste connecté. Deux
+    // enquêtes le 29/10/2026 avant de le comprendre.
+    //
+    // La version doit suivre celle des actifs, sinon le paramètre fige et ne
+    // force plus rien.
+    final declaree = RegExp(r'^drift: (\S+)$', multiLine: true)
+        .firstMatch(File('web/WEB_ASSETS.md').readAsStringSync())
+        ?.group(1);
+
+    expect(declaree, isNotNull,
+        reason: 'WEB_ASSETS.md doit déclarer la version de drift');
+    expect(
+      source,
+      contains("const String kDriftWorkerVersion = '$declaree'"),
+      reason: 'La version dans l\'adresse du worker a dérivé de celle des '
+          'actifs : le paramètre ne force plus un worker neuf. Remède : '
+          'recopier la version de `web/WEB_ASSETS.md`.',
+    );
+    expect(source, contains("drift_worker.js?v="));
+  });
+
   test('les deux adresses restent relatives, donc suivent le base href', () {
     // Une adresse absolue (`/sqlite3.wasm`) marcherait à la racine d'un
     // sous-domaine et casserait sous un préfixe ; une adresse d'origine
     // complète ferait du bundle le prisonnier d'un domaine.
     expect(source, contains("Uri.parse('sqlite3.wasm')"));
-    expect(source, contains("Uri.parse('drift_worker.js')"));
+    expect(source, contains("Uri.parse('drift_worker.js?v="));
     expect(source, isNot(contains("Uri.parse('/sqlite3.wasm')")));
+    expect(source, isNot(contains("Uri.parse('/drift_worker.js")));
     expect(source, isNot(contains('https://')));
   });
 }
