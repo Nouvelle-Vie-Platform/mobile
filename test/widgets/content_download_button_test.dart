@@ -13,16 +13,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/downloads/disk_space.dart';
+import 'package:maison_du_miracle/data/downloads/download_capabilities.dart';
 import 'package:maison_du_miracle/data/downloads/download_manager.dart';
 import 'package:maison_du_miracle/data/local/app_database.dart';
 import 'package:maison_du_miracle/data/local/tables/download_tables.dart';
 import 'package:maison_du_miracle/data/network/network_transport.dart';
+import 'package:maison_du_miracle/data/install/install_prompt.dart';
 import 'package:maison_du_miracle/data/players/content_player.dart';
+import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/l10n/l10n_setup.dart';
 import 'package:maison_du_miracle/models/media_preferences.dart';
 import 'package:maison_du_miracle/models/mediatheque_view.dart';
 import 'package:maison_du_miracle/models/teaching_download.dart';
 import 'package:maison_du_miracle/state/downloads_providers.dart';
+import 'package:maison_du_miracle/state/install_providers.dart';
 import 'package:maison_du_miracle/state/playback_progress_providers.dart';
 import 'package:maison_du_miracle/state/player_providers.dart';
 import 'package:maison_du_miracle/state/sync_providers.dart';
@@ -31,6 +35,8 @@ import 'package:maison_du_miracle/widgets/content_player_view.dart';
 
 import '../helpers/fake_download_backend.dart';
 import '../helpers/playback_doubles.dart';
+
+final _fr = AppLocalizationsFr();
 
 const _url = 'https://exemple.test/enseignement/master.m3u8';
 const _id = '019f7000-0000-7000-8000-000000000001';
@@ -55,6 +61,50 @@ TeachingDownload _metadata() => const TeachingDownload(
         'high': DownloadRendition(url: 'https://x/high.aac', bytes: 300),
       },
     );
+
+/// **Ce que la plateforme permet**, piloté — c'est ce qui rend les règles du
+/// navigateur vérifiables sur la VM, sans navigateur (#273).
+class FakeDownloadCapabilities implements DownloadCapabilities {
+  FakeDownloadCapabilities({
+    this.available = true,
+    this.canPause = true,
+    this.durable = true,
+  });
+
+  @override
+  final bool available;
+
+  @override
+  final bool canPause;
+
+  /// Ce que rend `ensureDurable()` : faux = `navigator.storage.persist()` a
+  /// répondu non, c'est-à-dire un onglet non installé.
+  final bool durable;
+
+  int asked = 0;
+
+  @override
+  Future<bool> ensureDurable() async {
+    asked++;
+    return durable;
+  }
+}
+
+/// Une offre d'installation, et la preuve que le bouton atteint le navigateur.
+class FakeInstallPrompt implements InstallPrompt {
+  FakeInstallPrompt(this.offer);
+
+  @override
+  final InstallOffer offer;
+
+  int shown = 0;
+
+  @override
+  Stream<InstallOffer> get changes => const Stream<InstallOffer>.empty();
+
+  @override
+  Future<void> show() async => shown++;
+}
 
 void main() {
   late AppDatabase db;
@@ -96,6 +146,8 @@ void main() {
     MediaQuality quality = MediaQuality.mid,
     bool cellular = false,
     bool mobileDataAllowed = false,
+    DownloadCapabilities? capabilities,
+    InstallPrompt? install,
   }) async {
     final player = InertContentPlayer();
     addTearDown(player.dispose);
@@ -123,6 +175,9 @@ void main() {
             .overrideWithValue(const FixedNetworkStatus(offline: true)),
         downloadManagerProvider.overrideWithValue(manager),
         downloadQualityProvider.overrideWithValue(quality),
+        if (capabilities != null)
+          downloadCapabilitiesProvider.overrideWithValue(capabilities),
+        if (install != null) installPromptProvider.overrideWithValue(install),
       ],
     );
 
@@ -314,6 +369,109 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.byKey(ContentPlayerView.downloadButtonKey), findsNothing);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Le navigateur (#273) — les mêmes règles, jugées contre un faux backend
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('ce que le navigateur permet, l\'écran le dit', () {
+    testWidgets('pas de moteur de transfert ⇒ pas de bouton du tout',
+        (tester) async {
+      // Safari : Background Fetch n'y existe pas, quel que soit le code. Un
+      // bouton grisé resterait un bouton offert.
+      await pump(
+        tester,
+        capabilities: FakeDownloadCapabilities(available: false),
+      );
+
+      expect(find.byKey(ContentPlayerView.downloadButtonKey), findsNothing);
+      expect(find.byIcon(Icons.download_outlined), findsNothing);
+    });
+
+    testWidgets('sans pause : le pictogramme de l\'anneau est une croix',
+        (tester) async {
+      // Total inconnu ⇒ pas de pourcentage, donc c'est le pictogramme qui
+      // porte le geste — et il doit dire la vérité.
+      await seed(state: DownloadState.running, bytesTotal: 0);
+      await pump(
+        tester,
+        capabilities: FakeDownloadCapabilities(canPause: false),
+      );
+
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.pause), findsNothing);
+      // ⚠️ Ce test ne touche pas au geste, et c'est voulu : un total inconnu
+      // donne un anneau **indéterminé**, qui tourne sans fin, et le combiner à
+      // `runAsync` laissait le test pendu (mesuré). Le geste se juge sur le cas
+      // déterminé, juste en dessous.
+    });
+
+    testWidgets('sans pause : l\'anneau annule au lieu de mettre en pause',
+        (tester) async {
+      await seed(state: DownloadState.running, bytesReceived: 10);
+      await pump(
+        tester,
+        capabilities: FakeDownloadCapabilities(canPause: false),
+      );
+
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(ContentPlayerView.downloadButtonKey));
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+
+      // ⚠️ On s'arrête à ce que l'écran a **demandé au moteur**, exactement
+      // comme les suppressions de la page Téléchargements : relire la ligne
+      // dans la même foulée laissait le test pendu dix minutes (mesuré). Que
+      // l'annulation efface la ligne est jugé sur le manager
+      // (`download_manager_test.dart`), où il n'y a pas d'arbre de widgets.
+      expect(backend.canceled, contains('task-1'));
+      expect(backend.paused, isEmpty,
+          reason: 'Background Fetch ne sait pas mettre en pause : ne pas '
+              'fabriquer une fausse pause');
+    });
+
+    testWidgets('stockage non durable : invite à installer, ne télécharge pas',
+        (tester) async {
+      final capabilities = FakeDownloadCapabilities(durable: false);
+      final install = FakeInstallPrompt(InstallOffer.prompt);
+      await pump(tester, capabilities: capabilities, install: install);
+
+      // ⚠️ Jamais `pumpAndSettle` ici : cet écran porte une animation
+      // continue, et l'attente ne finirait pas (mesuré — le test restait
+      // pendu). Deux pompes suffisent : le geste, puis l'ouverture.
+      await tester.tap(find.byKey(ContentPlayerView.downloadButtonKey));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(capabilities.asked, 1);
+      expect(find.text(_fr.downloadNeedsInstallTitle), findsOneWidget);
+      expect(backend.enqueued, isEmpty,
+          reason: 'pas un octet tant que le navigateur peut tout évincer');
+
+      await tester.tap(find.byKey(ContentPlayerView.downloadInstallKey));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(install.shown, 1, reason: 'le bouton ouvre la vraie boîte');
+    });
+
+    testWidgets('stockage durable : le téléchargement part normalement',
+        (tester) async {
+      final capabilities = FakeDownloadCapabilities();
+      await pump(tester, capabilities: capabilities);
+
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(ContentPlayerView.downloadButtonKey));
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+
+      expect(capabilities.asked, 1);
+      expect(backend.enqueued, hasLength(1));
+      expect(find.text(_fr.downloadNeedsInstallTitle), findsNothing);
     });
   });
 }

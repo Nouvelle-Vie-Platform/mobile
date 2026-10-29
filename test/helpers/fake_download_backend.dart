@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/downloads/download_backend.dart';
@@ -19,6 +20,10 @@ class FakeDownloadBackend implements DownloadBackend {
   final List<String> paused = [];
   final List<String> resumed = [];
   final List<String> canceled = [];
+
+  /// Les chemins passés à [deleteFile] — c'est par là que le manager jette les
+  /// octets descendus (annulation, purge, départ de zéro), et non par `dart:io`.
+  final List<String> deleted = [];
 
   /// Ce que rend le prochain [enqueue]. `false` simule un refus du moteur.
   bool enqueueResult = true;
@@ -49,6 +54,21 @@ class FakeDownloadBackend implements DownloadBackend {
   Future<void> cancel(String taskId) async {
     canceled.add(taskId);
     active.remove(taskId);
+  }
+
+  /// ⚠️ **Il efface vraiment, et ce n'est pas du zèle.** Le vrai transport jette
+  /// les octets (`BackgroundDownloaderBackend.deleteFile`) ; un double qui se
+  /// contenterait de noter le chemin laisserait passer un manager qui demande
+  /// la purge sans que rien ne disparaisse — c'est exactement ce qui a fait
+  /// tomber `download_lifecycle_test` quand l'effacement est passé du manager
+  /// au transport (#273). Les tests du cycle de vie créent de vrais fichiers
+  /// temporaires et jugent leur disparition : le double doit tenir ce contrat,
+  /// pas seulement l'enregistrer.
+  @override
+  Future<void> deleteFile(String path) async {
+    deleted.add(path);
+    final file = File(path);
+    if (await file.exists()) await file.delete();
   }
 
   @override

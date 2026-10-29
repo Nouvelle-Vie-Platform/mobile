@@ -662,6 +662,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadActionRetry => 'Retry download';
 
   @override
+  String get downloadActionCancel => 'Cancel download';
+
+  @override
+  String get downloadNeedsInstallTitle => 'Install the app to download';
+
+  @override
+  String get downloadNeedsInstallMessage =>
+      'Without installing, the browser may delete downloaded teachings without warning. Install the app and they will stay on this device.';
+
+  @override
   String get downloadActionDelete => 'Delete download';
 
   @override

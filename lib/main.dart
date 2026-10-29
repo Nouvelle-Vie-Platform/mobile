@@ -12,6 +12,7 @@ import 'app.dart';
 import 'core/config/app_env.dart';
 import 'core/network/api_client.dart';
 import 'data/devices/http_device_repository.dart';
+import 'data/downloads/web_downloads.dart';
 import 'data/players/bitrate_cap_controller.dart';
 import 'data/players/content_player.dart';
 import 'models/media_preferences.dart';
@@ -26,6 +27,7 @@ import 'data/push/wake_notifier.dart';
 import 'data/update/web_app_reloader.dart';
 import 'firebase_options.dart';
 import 'state/app_update_providers.dart';
+import 'state/downloads_providers.dart';
 import 'state/install_providers.dart';
 import 'state/media_settings_providers.dart';
 import 'state/player_providers.dart';
@@ -132,6 +134,17 @@ Future<void> main() async {
       // le lecteur web, même raison.
       if (kIsWeb)
         installPromptProvider.overrideWithValue(createInstallPrompt()),
+      // **Le téléchargement hors ligne du navigateur** (#273) : Background
+      // Fetch derrière l'interface existante, `navigator.storage` à la place du
+      // canal natif, et les capacités qui disent la vérité à l'écran (ni pause,
+      // ni rien du tout sur Safari). Même porte que le lecteur web, et pour la
+      // même raison : ces fichiers importent `dart:js_interop`.
+      if (kIsWeb) ...[
+        downloadBackendProvider.overrideWithValue(createWebDownloadBackend()),
+        downloadCapabilitiesProvider
+            .overrideWithValue(createWebDownloadCapabilities()),
+        diskSpaceProvider.overrideWithValue(createWebDiskSpace()),
+      ],
       // **Le rechargement**, sur le web seulement : c'est là que le bouton du
       // bandeau de mise à jour n'a aucun magasin à ouvrir. Même porte, même
       // raison.

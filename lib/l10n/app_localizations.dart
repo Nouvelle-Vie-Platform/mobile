@@ -1240,6 +1240,24 @@ abstract class AppLocalizations {
   /// **'Réessayer le téléchargement'**
   String get downloadActionRetry;
 
+  /// Remplace « Mettre en pause » là où le moteur ne sait pas mettre en pause — un navigateur (Background Fetch n'a ni pause ni reprise à l'octet, #273). Le transfert s'arrête et les octets partent : c'est la vérité, et un bouton Pause qui ne ferait rien serait une promesse que personne ne tient
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler le téléchargement'**
+  String get downloadActionCancel;
+
+  /// Boîte ouverte par le bouton Télécharger dans un onglet non installé (#273). navigator.storage.persist() y répond non — mesuré le 29/10/2026 sur Android 6 / Chrome 106 — et sans persistance le navigateur peut tout évincer d'un coup
+  ///
+  /// In fr, this message translates to:
+  /// **'Installez l\'application pour télécharger'**
+  String get downloadNeedsInstallTitle;
+
+  /// Dit POURQUOI, comme le bandeau d'installation : on refuse de faire descendre 80 Mo que Chrome jettera peut-être le lendemain, sur des téléphones dont le stockage saturé est précisément le problème
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans installation, le navigateur peut effacer les enseignements téléchargés sans prévenir. Installez l\'application : ils resteront sur cet appareil.'**
+  String get downloadNeedsInstallMessage;
+
   /// No description provided for @downloadActionDelete.
   ///
   /// In fr, this message translates to:

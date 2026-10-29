@@ -24,6 +24,7 @@ import 'dart:js_interop_unsafe';
 
 import 'package:web/web.dart' as web;
 
+import '../downloads/offline_cache.dart';
 import 'content_player.dart';
 import 'media_element_playback.dart';
 
@@ -137,13 +138,15 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     required String title,
     String? author,
     String? artUrl,
-    // Le téléchargement hors ligne (#191) est **mobile seul** : le web n'a pas
-    // de fichier local, [localFilePath] y est donc toujours nul et ignoré. Le
-    // paramètre n'existe que pour satisfaire le contrat [ContentPlayer].
+    // **La copie locale, par URL de blob** (#273). Dans un navigateur il n'y a
+    // pas de chemin de fichier : ce que porte [localFilePath] est la **clé du
+    // `Cache`** où le service worker a rangé le `.aac`
+    // (`lib/data/downloads/offline_cache.dart`), et c'est le résolveur qui l'a
+    // lue dans `downloads.localPath`, exactement comme sur un appareil.
     String? localFilePath,
-    // **Toujours nulle ici** (#229), et pour la même raison que [localFilePath] :
-    // la durée du contrat ne naît que d'une résolution **locale**, et le web n'a
-    // pas de fichier local. Retenue dans la requête malgré tout, comme le reste
+    // **Désormais renseignée sur une copie locale** (#229, #273) : la durée du
+    // contrat ne naît que d'une résolution locale, et le web en a une depuis
+    // que le téléchargement y existe. Retenue dans la requête, comme le reste
     // — une réouverture doit rejouer la même source avec les mêmes promesses.
     Duration? contractDuration,
     // [isLive] (#104) décide des **deux** choses que le navigateur regarde
@@ -167,6 +170,7 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
   }) async {
     if (isDisposed) return;
     _releaseSource();
+    _revokeLocalUrl();
     _request = ContentRequest(
       contentId: contentId,
       url: url,
@@ -181,6 +185,13 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     // et c'est à l'appelant de la reposer s'il rouvre.
     _statusLine = null;
     startLoading(contentId);
+
+    // La copie locale d'abord : `null` (copie évincée, jamais arrivée) retombe
+    // sur le HLS, ce qui est le bon repli — le magasin croyait avoir un fichier,
+    // le navigateur ne l'a plus, et l'écoute continue.
+    if (localFilePath != null) {
+      _localUrl = await offlineBlobUrl(localFilePath);
+    }
 
     // [title], [author] et [artUrl] vont à la **session média** (#272) : c'est
     // tout ce que le web a d'écran verrouillé, et personne ne les lisait.
@@ -221,8 +232,22 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     play();
   }
 
-  /// Attache une source à l'élément, par `hls.js` ou en natif.
+  /// L'URL de blob de la copie locale en cours de lecture, `null` en HLS.
+  /// Révoquée au chargement suivant, à l'arrêt et à la libération — **pas** à
+  /// chaque détachement de source : le chien de garde rouvre la même copie.
+  String? _localUrl;
+
+  /// Attache une source à l'élément : la copie locale, `hls.js`, ou le natif.
   void _attach(String rawUrl) {
+    final local = _localUrl;
+    if (local != null) {
+      // Un `.aac` n'est pas du HLS : l'élément le lit seul, et `hls.js` n'a
+      // rien à y faire. Un partiel ne se présente jamais ici — Background Fetch
+      // ne range dans le `Cache` que ce qui est arrivé entier.
+      _audio.src = local;
+      _audio.load();
+      return;
+    }
     final url = variantPlaylistUrl(rawUrl, _variant);
     if (_useHlsJs) {
       final engine = _HlsEngine(_hlsConfig());
@@ -453,6 +478,7 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     _resumeAt = null;
     _statusLine = null;
     _releaseSource();
+    _revokeLocalUrl();
     _publishSession();
     clear();
   }
@@ -467,6 +493,7 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     }
     _listeners.clear();
     _releaseSource();
+    _revokeLocalUrl();
     super.dispose();
   }
 
@@ -480,6 +507,15 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     _audio.pause();
     _audio.removeAttribute('src');
     _audio.load();
+  }
+
+  /// Rend la mémoire que tient l'URL de blob. Sans cet appel, le corps du
+  /// `.aac` reste chargé jusqu'au rechargement de la page.
+  void _revokeLocalUrl() {
+    final url = _localUrl;
+    if (url == null) return;
+    _localUrl = null;
+    web.URL.revokeObjectURL(url);
   }
 
   /// Traduit le `MediaError` de l'élément en panne lisible au journal.

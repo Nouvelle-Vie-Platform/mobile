@@ -29,8 +29,18 @@ abstract interface class DownloadBackend {
   Future<bool> resume(String taskId);
 
   /// Annule une tâche. Le fichier partiel n'est pas garanti effacé par le
-  /// moteur ; le manager s'en charge s'il le faut.
+  /// moteur ; le manager s'en charge s'il le faut, par [deleteFile].
   Future<void> cancel(String taskId);
+
+  /// **Efface les octets descendus**, désignés par le chemin que la complétion
+  /// a rendu ([DownloadStatusEvent.filePath]). Sans effet s'il n'y a rien.
+  ///
+  /// Ici, et non dans le manager, parce qu'« un chemin » n'est un fichier que
+  /// sur un appareil : dans un navigateur c'est une clé du `Cache`, et
+  /// `dart:io` y lève dès le constructeur (#273). Le manager décide **quand**
+  /// jeter les octets — annulation, purge après retrait, départ de zéro —, le
+  /// transport qui les a écrits sait **comment**.
+  Future<void> deleteFile(String path);
 
   /// Le flux **brut** des rappels du moteur : progression et changements
   /// d'état, tels qu'ils arrivent. Le manager les traduit et écrit dans Drift ;

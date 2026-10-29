@@ -8,6 +8,7 @@ import '../router/app_router.dart';
 import '../features/bible/shell/bible_shell.dart';
 import '../state/auth_providers.dart';
 import '../state/branch_scope_providers.dart';
+import '../state/downloads_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -175,7 +176,9 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _ProfileHeader extends StatelessWidget {
+/// L'entête du Profil. `ConsumerWidget` pour une seule raison : le raccourci
+/// « Téléchargements » n'existe que là où le téléchargement existe (#273).
+class _ProfileHeader extends ConsumerWidget {
   const _ProfileHeader({
     required this.name,
     required this.role,
@@ -189,8 +192,12 @@ class _ProfileHeader extends StatelessWidget {
   final bool showBack;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+    // **Pas de moteur de transfert, pas de raccourci** : sur Safari (pas de
+    // Background Fetch) la page Téléchargements ne pourrait rien montrer qu'un
+    // vide définitif. Un écran masqué vaut mieux qu'un bouton qui ment.
+    final downloads = ref.watch(downloadCapabilitiesProvider).available;
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(gradient: AppColors.gradientPrimary),
@@ -292,14 +299,15 @@ class _ProfileHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
               children: [
-                Expanded(
-                  child: _BadgeShortcut(
-                    icon: Icons.download_rounded,
-                    label: l.profileDownloads,
-                    color: AppColors.primary,
-                    onTap: () => context.pushNamed(AppRoute.downloads),
+                if (downloads)
+                  Expanded(
+                    child: _BadgeShortcut(
+                      icon: Icons.download_rounded,
+                      label: l.profileDownloads,
+                      color: AppColors.primary,
+                      onTap: () => context.pushNamed(AppRoute.downloads),
+                    ),
                   ),
-                ),
                 Expanded(
                   child: _BadgeShortcut(
                     icon: Icons.menu_book,
