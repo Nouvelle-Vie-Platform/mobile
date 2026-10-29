@@ -1745,6 +1745,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get appUpdateDismiss => 'Plus tard';
 
   @override
+  String get installBannerBody =>
+      'Installez l\'application pour la retrouver dans vos applis, et pour télécharger les enseignements.';
+
+  @override
+  String get installBannerAction => 'Installer';
+
+  @override
+  String get installBannerIosBody =>
+      'Pour l\'installer : touchez Partager, puis « Sur l\'écran d\'accueil ».';
+
+  @override
+  String get installBannerDismiss => 'Plus tard';
+
+  @override
   String get miniPlayerLiveBadge => 'EN DIRECT';
 
   @override

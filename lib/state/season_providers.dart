@@ -94,7 +94,14 @@ final seasonBackgroundProvider = FutureProvider<ImageProvider?>((ref) async {
 /// **une seule**, du premier pixel jusqu'à l'accueil. Avant, il voyait un blanc
 /// uni puis une image — un clignotement qui fait paraître l'application lente à
 /// ouvrir.
-const String kAppBackgroundAsset = 'assets/images/live_bg.png';
+///
+/// ⚠️ **Le `.webp` est ce qui est embarqué ; le `.png` reste à côté, et il n'est
+/// PAS un doublon oublié.** Le webp pèse 102 k contre 1 593 k (PSNR 49,1 dB :
+/// l'écart ne se voit pas), ce qui compte d'abord pour l'app web, où cette
+/// image est le plus gros actif après le moteur. Mais le démarrage **natif** ne
+/// lit pas les assets de Flutter : `make icons` fabrique les ressources
+/// Android et iOS depuis le PNG, qui est donc la **source**, hors du bundle.
+const String kAppBackgroundAsset = 'assets/images/live_bg.webp';
 
 /// **Le fond déjà sur le disque au lancement**, posé par `main()`.
 ///

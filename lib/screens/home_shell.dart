@@ -14,6 +14,7 @@ import '../widgets/app_background.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_drawer_menu.dart';
 import '../widgets/app_update_banner.dart';
+import '../widgets/install_banner.dart';
 import '../widgets/home_tab.dart';
 import '../widgets/legal_notice_banner.dart';
 import '../widgets/mini_player_host.dart';
@@ -283,6 +284,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             child: const Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // L'installation d'abord : elle conditionne le téléchargement
+                // hors ligne et la durabilité du stockage, là où la mise à jour
+                // n'est qu'une invitation. Les deux peuvent paraître ensemble —
+                // ce sont deux faits différents, et aucun ne bloque l'autre.
+                InstallBanner(),
                 AppUpdateBanner(),
               ],
             ),

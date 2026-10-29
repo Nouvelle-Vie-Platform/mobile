@@ -80,7 +80,7 @@ void main() {
     expect(images.whereType<MemoryImage>(), isEmpty);
     expect(
       images.whereType<AssetImage>().map((a) => a.assetName),
-      contains('assets/images/live_bg.png'),
+      contains('assets/images/live_bg.webp'),
     );
 
     // Et c'est le **voile**, pas le dégradé de marque : il y a une photo à

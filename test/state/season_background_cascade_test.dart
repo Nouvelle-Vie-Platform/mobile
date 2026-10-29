@@ -148,11 +148,11 @@ void main() {
       return container.read(startupBackgroundProvider);
     }
 
-    test('rien de réglé, rien sur le disque ⇒ live_bg.png', () {
+    test('rien de réglé, rien sur le disque ⇒ live_bg.webp', () {
       // Le même fichier que le splash natif vient de peindre : le fidèle voit
       // une seule image, du premier pixel jusqu'à l'accueil.
       expect(startup(), isA<AssetImage>());
-      expect((startup() as AssetImage).assetName, 'assets/images/live_bg.png');
+      expect((startup() as AssetImage).assetName, 'assets/images/live_bg.webp');
     });
 
     test('un décor réglé au portail passe DEVANT l\'image du dépôt', () {
