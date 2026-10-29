@@ -3154,6 +3154,30 @@ abstract class AppLocalizations {
   /// **'Plus tard'**
   String get appUpdateDismiss;
 
+  /// Bandeau d'installation de l'app web, affiché seulement dans un navigateur capable d'installer et quand ce n'est pas déjà fait. Il dit POURQUOI installer plutôt que « Installer l'application » : sans installation, Chrome n'accorde pas le stockage durable (navigator.storage.persist() rend non), donc pas de téléchargement hors ligne — mesuré le 29/10/2026
+  ///
+  /// In fr, this message translates to:
+  /// **'Installez l\'application pour la retrouver dans vos applis, et pour télécharger les enseignements.'**
+  String get installBannerBody;
+
+  /// Ouvre la vraie boîte d'installation du navigateur (beforeinstallprompt différé). Un seul mot : le bandeau a déjà dit pourquoi
+  ///
+  /// In fr, this message translates to:
+  /// **'Installer'**
+  String get installBannerAction;
+
+  /// Même bandeau sur iPhone et iPad, où aucun événement n'existe : Safari n'offre aucune boîte à déclencher, on ne peut qu'expliquer le geste. Pas de bouton d'action pour la même raison — un bouton qui n'ouvrirait rien serait une promesse que personne ne tient
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour l\'installer : touchez Partager, puis « Sur l\'écran d\'accueil ».'**
+  String get installBannerIosBody;
+
+  /// Ferme le bandeau pour la session, comme appUpdateDismiss et non comme legalNoticeDismiss : l'invitation reste valable, elle reviendra au prochain lancement tant que l'application n'est pas installée
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get installBannerDismiss;
+
   /// Mini-lecteur : badge d'un direct de la régie (#149), à la place de la ligne d'orateur. Affiché seulement quand l'antenne connue signale un direct (RadioAntenna.live) — jamais pour dire que la radio tourne, c'est miniPlayerOnAirBadge. Capitales voulues, comme un voyant d'antenne ; court, il tient dans une pastille rouge
   ///
   /// In fr, this message translates to:

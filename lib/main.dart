@@ -18,11 +18,13 @@ import 'models/media_preferences.dart';
 import 'data/players/just_audio_content_player.dart';
 import 'data/players/media_status_player.dart';
 import 'data/players/playback_notifications.dart';
+import 'data/install/web_install_prompt.dart';
 import 'data/players/web_content_player.dart';
 import 'data/push/fcm_push_transport.dart';
 import 'data/push/push_transport.dart';
 import 'data/push/wake_notifier.dart';
 import 'firebase_options.dart';
+import 'state/install_providers.dart';
 import 'state/media_settings_providers.dart';
 import 'state/player_providers.dart';
 import 'state/push_providers.dart';
@@ -122,6 +124,12 @@ Future<void> main() async {
           ref.onDispose(statusPlayer.dispose);
           return statusPlayer;
         }),
+      // **L'invite d'installation**, sur le web seulement : ailleurs
+      // l'application est déjà installée, et `browser_install_prompt.dart`
+      // importe `dart:js_interop`, qui n'existe pas sur la VM. Même porte que
+      // le lecteur web, même raison.
+      if (kIsWeb)
+        installPromptProvider.overrideWithValue(createInstallPrompt()),
       // Les deux seules choses que `main()` sait et que l'arbre de widgets ne
       // pourrait pas apprendre à temps : ce que portait le coffre, et le porteur
       // d'appareil de cette exécution.

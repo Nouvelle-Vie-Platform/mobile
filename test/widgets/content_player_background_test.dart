@@ -110,18 +110,18 @@ void main() {
 
   testWidgets('sans saison, l\'image du dépôt ferme la cascade',
       (tester) async {
-    await _pump(tester, fallbackAsset: 'assets/images/live_bg.png');
+    await _pump(tester, fallbackAsset: 'assets/images/live_bg.webp');
 
     final assets = _backgrounds(tester).whereType<AssetImage>();
     expect(
-        assets.map((a) => a.assetName), contains('assets/images/live_bg.png'));
+        assets.map((a) => a.assetName), contains('assets/images/live_bg.webp'));
   });
 
   testWidgets('la saison gagne sur l\'image du dépôt', (tester) async {
     await _pump(
       tester,
       season: _saison,
-      fallbackAsset: 'assets/images/live_bg.png',
+      fallbackAsset: 'assets/images/live_bg.webp',
     );
 
     final posed = _backgrounds(tester);

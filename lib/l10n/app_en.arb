@@ -568,6 +568,11 @@
   "appUpdateBody": "A new version of the app is available.",
   "appUpdateAction": "Update",
   "appUpdateDismiss": "Later",
+  "installBannerBody": "Install the app to find it with your other apps, and to download teachings.",
+  "installBannerAction": "Install",
+  "installBannerIosBody": "To install: tap Share, then “Add to Home Screen”.",
+  "installBannerDismiss": "Later",
+
   "miniPlayerLiveBadge": "LIVE",
   "miniPlayerOnAirBadge": "On air",
   "miniPlayerOpen": "Open player: {title}",

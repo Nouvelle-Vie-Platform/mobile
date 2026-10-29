@@ -341,7 +341,9 @@ flutter:
     - assets/images/brand_logo.webp
     - assets/images/brand_logo_inverse.webp
     - assets/images/rameau_or.webp
-    - assets/images/live_bg.png
+    # Le webp est embarqué, le PNG à côté reste la SOURCE du démarrage natif
+    # (`make icons`) : 102 k contre 1 593 k pour la même image à l'œil.
+    - assets/images/live_bg.webp
     - assets/images/home_header_church.webp
     - assets/images/bible_home_hero.webp
     - assets/images/bible_home_hero_night.webp

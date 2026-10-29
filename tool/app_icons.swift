@@ -1,6 +1,7 @@
 // Génère **l'icône de l'application et son écran de démarrage natif**, pour les
 // deux plateformes, depuis les deux seuls fichiers source du dépôt :
-// `assets/images/brand_logo.webp` et `assets/images/live_bg.png`.
+// `assets/images/brand_logo.webp` et `assets/images/live_bg.png` — Android, iOS
+// **et le web** (les quatre icônes du manifeste PWA, plus la favicon).
 //
 // `swift tool/app_icons.swift` (ou `make icons`), depuis la racine du dépôt.
 // Les fichiers produits sont **versionnés** : ce script ne tourne ni au build
@@ -34,10 +35,16 @@ import UniformTypeIdentifiers
 
 let root = FileManager.default.currentDirectoryPath
 let brandLogo = "\(root)/assets/images/brand_logo.webp"
+/// ⚠️ **Le PNG, et non le `.webp` embarqué.** Le bundle Flutter porte
+/// `live_bg.webp` (102 k) ; ce script lit la source non compressée pour
+/// fabriquer les ressources natives, qui ne passent pas par les assets de
+/// Flutter. Les deux fichiers sont la même image, et le PNG ne part pas dans
+/// l'application.
 let liveBackground = "\(root)/assets/images/live_bg.png"
 let androidRes = "\(root)/android/app/src/main/res"
 let iosIcons = "\(root)/ios/Runner/Assets.xcassets/AppIcon.appiconset"
 let iosLaunch = "\(root)/ios/Runner/Assets.xcassets/LaunchImage.imageset"
+let webIcons = "\(root)/web/icons"
 
 func fail(_ message: String) -> Never {
   FileHandle.standardError.write("✗ \(message)\n".data(using: .utf8)!)
@@ -240,5 +247,37 @@ for (name, scale) in launchScales {
       height: Int((Double(background.height) * scale).rounded())),
     to: "\(iosLaunch)/\(name).png")
 }
+
+// MARK: - Web
+
+/// Les quatre icônes du manifeste PWA, plus la favicon.
+///
+/// **Fond blanc opaque, comme l'icône iOS et comme le lanceur Android**
+/// (`ic_launcher_background` vaut `#FFFFFF`) : une application installée depuis
+/// le navigateur doit porter la même icône que celle du magasin — c'est la même
+/// église, et un fidèle qui a les deux ne doit pas se demander laquelle ouvrir.
+///
+/// ⚠️ **`maskable` prend la couverture du premier plan adaptatif (0,62), jamais
+/// celle de l'icône classique.** Le système y découpe la forme qu'il veut et ne
+/// garantit que le disque central de 80 % : à 0,92, un lanceur rond rognerait
+/// l'emblème. C'est la même règle qu'Android, pour la même raison.
+///
+/// Jusqu'au 29/10/2026, ces quatre fichiers étaient **ceux de Flutter** — le
+/// « F » bleu du gabarit —, parce que ce script ne connaissait pas `web/`.
+print("\nWeb — icônes du manifeste :")
+for size in [192, 512] {
+  write(
+    square(logo, size: size, coverage: 0.92, background: (r: 1, g: 1, b: 1)),
+    to: "\(webIcons)/Icon-\(size).png")
+  write(
+    square(logo, size: size, coverage: 0.62, background: (r: 1, g: 1, b: 1)),
+    to: "\(webIcons)/Icon-maskable-\(size).png")
+}
+
+/// La favicon : l'onglet du navigateur, et l'icône d'un raccourci iOS d'avant
+/// iOS 15. 32 px plutôt que 16 : les écrans sont à 2×, et le fichier est minuscule.
+write(
+  square(logo, size: 32, coverage: 0.92, background: (r: 1, g: 1, b: 1)),
+  to: "\(root)/web/favicon.png")
 
 print("\n✓ terminé")

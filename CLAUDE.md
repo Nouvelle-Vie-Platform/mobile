@@ -3687,6 +3687,38 @@ ni le point 3, et le script maison ne met rien dans le binaire (il ne produit
 que des fichiers). Le `description:` du `pubspec.yaml` n'a pas été touché — il
 n'est lu par personne sur un téléphone, et le corriger est un autre sujet.
 
+## L'app web installable (#269) — ce que le navigateur change
+
+Plan : [`docs/app-web-installable-plan.md`](docs/app-web-installable-plan.md). L'app web est servie
+depuis le 29/10/2026 sur une origine à elle, et **elle se dessine jusque sur un Android 6 /
+Chrome 106** — mesuré sur un téléphone emprunté, journal du serveur à l'appui. « Flutter ne supporte
+que les 2 dernières versions de Chrome » est une politique de support, **pas une barrière
+technique** : ne pas en déduire une impossibilité.
+
+**L'installation n'est pas cosmétique.** Elle porte le téléchargement hors ligne et la durabilité du
+stockage : `navigator.storage.persist()` répond *non* avant, *oui* après (mesuré le 29/10). Sous
+pression, Chrome évince **tout le stockage d'une origine d'un coup** — enseignements téléchargés et
+magasin Drift ensemble. D'où `InstallBanner`, dans la même pile que les deux autres bandeaux : Chrome
+a rangé sa propre invite dans un menu ⋮ que personne n'ouvre.
+
+Quatre points qui se ratent en silence :
+
+1. **`beforeinstallprompt` est capté dans `web/index.html`, pas en Dart.** Chrome l'émet pendant le
+   chargement de la page, souvent avant `main()`, et **il ne se rejoue jamais** : un écouteur posé
+   depuis Dart le raterait sur un téléphone lent, c'est-à-dire sur le parc visé.
+2. **iOS se reconnaît par `navigator.standalone`**, propriété qui n'existe que sur Safari iOS —
+   jamais par l'agent utilisateur (règle du lecteur web). Là-bas il n'y a aucune boîte à ouvrir : le
+   bandeau explique le geste et **ne porte pas de bouton**. Absence, jamais grisage.
+3. **Trois drapeaux de build, tous indispensables** : `--no-web-resources-cdn` (sans lui CanvasKit
+   vient de `gstatic.com`, ce que `web/WEB_ASSETS.md` interdit), `--csp` (sans lui dart2js fabrique
+   du code à l'exécution et la CSP de l'origine empêche l'application de démarrer), `--base-href /`.
+   Puis `./tool/precompresser-web.sh` : Caddy standard ne sait pas compresser en brotli, il sert des
+   `.br` posés au build.
+4. **`assets/images/live_bg.webp` est embarqué, `live_bg.png` est la source.** Le PNG reste pour
+   `make icons`, qui fabrique le démarrage natif — lequel ne lit pas les assets de Flutter. 102 k
+   contre 1 593 k, PSNR 49,1 dB. `make icons` produit **aussi** les quatre icônes du manifeste et la
+   favicon : jusqu'au 29/10 c'étaient celles de Flutter, le « F » bleu.
+
 ## Git
 - **Commits canoniques** : un commit par fonctionnalité, atomique, préfixes
   conventionnels (`feat/fix/chore/refactor(scope)`), corps en français.
