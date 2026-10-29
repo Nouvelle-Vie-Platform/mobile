@@ -35,7 +35,7 @@ ContentPlayer createWebContentPlayer() => HlsContentPlayer();
 ///
 /// Hérite de [MediaElementPlayback] : la valeur observée par l'UI et toute sa
 /// logique viennent de là, cette classe n'ajoute que l'élément `<audio>`, le
-/// moteur `hls.js` et le transport.
+/// moteur `hls.js`, le transport et la session média du navigateur.
 class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
   /// [element] n'est là que pour les tests de navigateur, qui ont besoin de
   /// tenir l'élément qu'ils pilotent. En production, le lecteur crée le sien.
@@ -81,6 +81,11 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     _on('pause', (_) => markPaused());
     _on('ended', (_) => markEnded());
     _on('error', (_) => fail(_elementError()));
+
+    // **L'état de la session média suit la valeur**, et non les quatre
+    // événements qui la font changer : une seule source, et la fiche du
+    // système ne peut pas se désaccorder de ce que l'écran montre.
+    addListener(_publishPlaybackState);
   }
 
   final web.HTMLAudioElement _audio;
@@ -144,11 +149,10 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     // que le téléchargement y existe. Retenue dans la requête, comme le reste
     // — une réouverture doit rejouer la même source avec les mêmes promesses.
     Duration? contractDuration,
-    // [isLive] (#104) ne sert qu'aux boutons de la notification et de l'écran
-    // verrouillé — **qui n'existent ni l'un ni l'autre sur le web** : il n'y a
-    // pas de session média ici, pour la même raison que [title] et [author] ne
-    // servent à rien. Retenu dans la requête malgré tout, pour qu'une
-    // réouverture rejoue le même régime si un jour le web en a un.
+    // [isLive] (#104) décide des **deux** choses que le navigateur regarde
+    // (#272) : les sauts de l'écran verrouillé — qu'un direct n'offre pas,
+    // comme sur la notification native — et les identifiants remis à `hls.js`.
+    // Voir `MediaElementPlayback.mediaSessionAllowsSkip` et `wantsCredentials`.
     bool isLive = false,
     // **Ignorés, et c'est le navigateur qui l'impose** (#108). Le bocal à
     // cookies est à lui, il le tient d'ailleurs très bien tout seul ; mais
@@ -157,11 +161,11 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     // Le pré-vol n'a donc pas lieu sur le web (`DirectRadioHandshake`), et ce
     // paramètre n'existe ici que pour satisfaire le contrat [ContentPlayer].
     //
-    // ⚠️ Conséquence à connaître si l'antenne doit un jour jouer dans un
-    // navigateur : ce qu'il faudrait, c'est que les requêtes de `hls.js` partent
-    // avec les identifiants (`xhrSetup` + `withCredentials`) et que MediaMTX
-    // réponde les en-têtes CORS qui vont avec. Ce n'est pas un en-tête à poser,
-    // c'est un autre sujet — et il n'est pas celui de cette tranche.
+    // Ce qui porte la session de l'antenne depuis #272 : sur un direct, les
+    // requêtes de `hls.js` partent en `withCredentials` (`_hlsConfig`) et le
+    // navigateur y joint son bocal lui-même. Il y faut en regard les en-têtes
+    // CORS de l'antenne — origine **nommée** et `Allow-Credentials: true` —,
+    // posés dans Caddy (dépôt `context`), sans quoi rien ne traverse.
     Map<String, String> headers = const {},
   }) async {
     if (isDisposed) return;
@@ -177,6 +181,9 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
       isLive: isLive,
     );
     _resumeAt = null;
+    // Un `load` efface la ligne d'état — contrat de [ContentPlayer.setStatusLine],
+    // et c'est à l'appelant de la reposer s'il rouvre.
+    _statusLine = null;
     startLoading(contentId);
 
     // La copie locale d'abord : `null` (copie évincée, jamais arrivée) retombe
@@ -186,10 +193,9 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
       _localUrl = await offlineBlobUrl(localFilePath);
     }
 
-    // [title], [author] et [artUrl] ne servent pas ici : ce sont les lignes de
-    // la notification et de l'écran verrouillé, qui n'existent pas sur le web.
-    // Les afficher demanderait l'API Media Session — un autre sujet, et pas
-    // celui du son qui ne sort pas.
+    // [title], [author] et [artUrl] vont à la **session média** (#272) : c'est
+    // tout ce que le web a d'écran verrouillé, et personne ne les lisait.
+    _publishSession();
 
     _attach(url);
 
@@ -244,7 +250,7 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     }
     final url = variantPlaylistUrl(rawUrl, _variant);
     if (_useHlsJs) {
-      final engine = _HlsEngine();
+      final engine = _HlsEngine(_hlsConfig());
       // Seules les pannes **fatales** remontent : `hls.js` se remet seul des
       // autres (un segment manqué, une bascule de qualité), et les faire
       // paraître à l'écran ferait clignoter un message d'erreur pendant une
@@ -262,9 +268,30 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
       // Le plafond survit à la réouverture — voir `_cap`.
       _applyCap();
     } else {
+      // Le chemin natif (Safari iOS) ne passe par aucune requête de `hls.js` :
+      // ce que le `<audio>` envoie avec sa source appartient au navigateur, et
+      // **rien n'en a été mesuré** pour l'antenne.
       _audio.src = url;
       _audio.load();
     }
+  }
+
+  /// **La configuration remise à `hls.js` : les identifiants, et rien
+  /// d'autre** (#272).
+  ///
+  /// `xhrSetup` est appelé avant chaque `send()` — playlist maîtresse,
+  /// sous-playlists et segments compris. C'est la seule prise : le bocal du
+  /// navigateur ne part qu'avec `withCredentials`, et `Cookie` ne se pose pas
+  /// à la main (#108). Le *quand* est une décision, elle est là-bas
+  /// ([MediaElementPlayback.wantsCredentials]).
+  JSObject _hlsConfig() {
+    final config = JSObject();
+    final isLive = _request?.isLive ?? false;
+    if (!MediaElementPlayback.wantsCredentials(isLive: isLive)) return config;
+    config['xhrSetup'] = ((web.XMLHttpRequest xhr, String _) {
+      xhr.withCredentials = true;
+    }).toJS;
+    return config;
   }
 
   @override
@@ -349,10 +376,95 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     engine.autoLevelCapping = best;
   }
 
-  /// Le web n'a ni notification ni écran verrouillé à tenir : la ligne d'état
-  /// de l'antenne s'y lit seulement dans l'application.
+  /// Dernière ligne d'état posée (#179), republiée dans les métadonnées.
+  String? _statusLine;
+
+  /// Le web a bien une seconde ligne depuis #272 — celle de la session média.
   @override
-  void setStatusLine(String? line) {}
+  void setStatusLine(String? line) {
+    if (isDisposed) return;
+    if (line == _statusLine) return;
+    _statusLine = line;
+    _publishSession();
+  }
+
+  /// **La fiche remise au système** : les lignes, puis les commandes.
+  ///
+  /// Republiée au chargement et à chaque ligne d'état — jamais à chaque
+  /// `timeupdate` : un `MediaMetadata` neuf par battement ferait redemander
+  /// l'affiche. L'état de la lecture, lui, part par [_publishPlaybackState].
+  ///
+  /// Sans requête tenue, la fiche est **rendue** : plus de lignes, plus de
+  /// commandes, plus d'état.
+  void _publishSession() {
+    final session = _session;
+    if (session == null) return;
+    final request = _request;
+    if (request == null) {
+      session.metadata = null;
+      session.playbackState = 'none';
+      _publishActions(session, held: false, skip: false);
+      return;
+    }
+    final art = request.artUrl;
+    session.metadata = web.MediaMetadata(
+      web.MediaMetadataInit(
+        title: request.title,
+        artist: MediaElementPlayback.mediaSessionArtist(request, _statusLine),
+        artwork: <web.MediaImage>[
+          if (art != null) web.MediaImage(src: art),
+        ].toJS,
+      ),
+    );
+    _publishActions(
+      session,
+      held: true,
+      skip: MediaElementPlayback.mediaSessionAllowsSkip(isLive: request.isLive),
+    );
+  }
+
+  /// **Les commandes offertes au système, et celles qu'il faut lui retirer.**
+  ///
+  /// Les quatre sont reposées à chaque fois, gestionnaires nuls compris : sans
+  /// le retrait, les sauts d'un enseignement survivraient au passage à
+  /// l'antenne, où ils sortiraient de la fenêtre de rattrapage.
+  void _publishActions(
+    web.MediaSession session, {
+    required bool held,
+    required bool skip,
+  }) {
+    session.setActionHandler('play', held ? _action(play) : null);
+    session.setActionHandler('pause', held ? _action(pause) : null);
+    final back = skip ? _action(() => _skip(-kContentSkipInterval)) : null;
+    final forward = skip ? _action(() => _skip(kContentSkipInterval)) : null;
+    session.setActionHandler('seekbackward', back);
+    session.setActionHandler('seekforward', forward);
+  }
+
+  /// Un gestionnaire de la session média. Le détail de l'action n'est pas lu :
+  /// le pas des sauts est celui de l'application ([kContentSkipInterval]), pas
+  /// celui que le système propose.
+  JSFunction _action(void Function() run) => ((JSObject _) => run()).toJS;
+
+  /// Un saut relatif, borné par le média chargé (`seekTo`).
+  void _skip(Duration by) => seek(value.position + by);
+
+  void _publishPlaybackState() {
+    _session?.playbackState = MediaElementPlayback.mediaSessionPlaybackState(
+      value,
+    );
+  }
+
+  /// La session média du navigateur, `null` là où elle n'existe pas.
+  ///
+  /// Mesurée présente jusque sur le Chrome 106 d'un Android 6
+  /// (`docs/app-web-installable-plan.md` §3) ; la garde est là pour plus ancien
+  /// encore, où son absence doit rester silencieuse.
+  web.MediaSession? get _session {
+    final navigator = web.window.navigator as JSObject;
+    if (!navigator.has('mediaSession')) return null;
+    return web.window.navigator.mediaSession;
+  }
 
   /// `hls.js` aurait l'heure de programme, mais le direct aligné ne vise que
   /// l'appli mobile : le web reste en temps réel.
@@ -364,14 +476,18 @@ class HlsContentPlayer extends MediaElementPlayback implements ContentPlayer {
     if (isDisposed) return;
     _request = null;
     _resumeAt = null;
+    _statusLine = null;
     _releaseSource();
     _revokeLocalUrl();
+    _publishSession();
     clear();
   }
 
   @override
   void dispose() {
     if (isDisposed) return;
+    _request = null;
+    _publishSession();
     for (final entry in _listeners.entries) {
       _audio.removeEventListener(entry.key, entry.value);
     }
@@ -426,7 +542,8 @@ external String get _hlsErrorEvent;
 /// et un point de confiance de plus.
 @JS('Hls')
 extension type _HlsEngine._(JSObject _) implements JSObject {
-  external factory _HlsEngine();
+  /// La configuration ne porte que `xhrSetup` — voir `_hlsConfig`.
+  external factory _HlsEngine(JSObject config);
 
   /// Vrai quand `MediaSource` permet de démultiplexer le HLS en JavaScript.
   external static bool isSupported();
