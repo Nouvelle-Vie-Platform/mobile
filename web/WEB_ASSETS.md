@@ -39,8 +39,8 @@ Vérifiés par `test/data/local/web_assets_test.dart`, qui compare ces versions 
 `pubspec.lock` et ces empreintes aux fichiers réellement présents.
 
 <!-- drift-web-assets
-drift: 2.34.0
-drift_worker.js: sha256:b8b9f88cdfa0582eedacf3b55f6133b7d9bea7c8e74d4dc019a380da9976a7a8
+drift: 2.34.4
+drift_worker.js: sha256:104bc207d4a3a0b70fc249fcd91d72b558cf7a8677fe49b41cafffe22a5144f4
 sqlite3: 3.5.1
 sqlite3.wasm: sha256:13d3f11d05b39ba0618a7115fb41640a5d48b6300f5d3f325f554b42bd6688a4
 -->
@@ -53,6 +53,32 @@ hls.min.js: sha256:1f28c6a43deedddbd59aea4c119bd788f5e2347772c19da1f6f92f8d0032d
 `hls.min.js` n'a pas de version à confronter au `pubspec.lock` : elle est
 épinglée dans `tool/web_assets.sh`, et le test vérifie que le fichier présent
 est bien celui que ce bloc déclare.
+
+## ⚠️ Le worker et le wasm doivent s'accorder — et ce n'est pas la même question
+
+`drift_worker.js` n'est **pas** compilé par nous : c'est un artefact **publié par
+drift**, qui embarque **sa propre** version du paquet `sqlite3`. `sqlite3.wasm`,
+lui, vient de la version que notre `pubspec.lock` a résolue. Les deux peuvent
+donc être parfaitement « à jour » chacun de son côté **et ne pas s'accorder**.
+
+C'est arrivé le 29/10/2026, et ça a coûté une journée : `drift 2.34.0` publiait
+un worker bâti sur un `sqlite3` antérieur à **3.4.0**, donc sans l'import
+`xFileControl` — que notre wasm 3.5.1 réclame. Dans le navigateur :
+
+```
+LinkError: WebAssembly.instantiate(): Import #10 "dart" "xFileControl":
+function import requires a callable
+```
+
+**Et nulle part ailleurs** : sur mobile, ce wasm ne sert pas. Tous les écrans
+adossés au magasin tombaient, en annonçant au fidèle de vérifier sa connexion.
+
+Les deux blocs de contrôle ci-dessous ne pouvaient pas le voir : ils comparent
+des **versions déclarées** et des **empreintes**, jamais des symboles.
+`test/data/local/drift_worker_imports_test.dart` tient désormais l'accord — il
+lit les imports du module `dart` dans la section d'imports du wasm, et exige que
+le worker les porte tous. Remède quand il rougit : monter `drift` jusqu'à une
+version dont le worker les fournit, puis `make web-assets`.
 
 ## Ce que ces garde-fous ne couvrent pas
 
