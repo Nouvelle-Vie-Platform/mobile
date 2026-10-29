@@ -91,8 +91,12 @@ class BrowserInstallPrompt implements InstallPrompt {
   /// Déjà installée : la fenêtre n'a plus de barre d'adresse (tous les
   /// navigateurs), ou Safari iOS le dit lui-même.
   bool get _isStandalone {
-    if (web.window.matchMedia('(display-mode: standalone)').matches)
-      return true;
+    // La requête média dans une variable, et ce n'est pas du style : repliée
+    // sur une ligne, l'expression dépasse la colonne, le formateur casse le
+    // `if` juste après sa parenthèse, et `curly_braces_in_flow_control_structures`
+    // refuse une instruction qui n'est plus sur la même ligne que son `if`.
+    final standalone = web.window.matchMedia('(display-mode: standalone)');
+    if (standalone.matches) return true;
     return _navigatorStandalone == true;
   }
 
