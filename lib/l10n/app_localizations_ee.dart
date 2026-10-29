@@ -669,6 +669,17 @@ class AppLocalizationsEe extends AppLocalizations {
   String get downloadActionRetry => 'Réessayer le téléchargement';
 
   @override
+  String get downloadActionCancel => 'Annuler le téléchargement';
+
+  @override
+  String get downloadNeedsInstallTitle =>
+      'Installez l\'application pour télécharger';
+
+  @override
+  String get downloadNeedsInstallMessage =>
+      'Sans installation, le navigateur peut effacer les enseignements téléchargés sans prévenir. Installez l\'application : ils resteront sur cet appareil.';
+
+  @override
   String get downloadActionDelete => 'Supprimer le téléchargement';
 
   @override

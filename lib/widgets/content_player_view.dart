@@ -8,12 +8,14 @@ import 'package:go_router/go_router.dart';
 
 import '../data/local/app_database.dart';
 import '../data/repositories/notes_repository.dart';
+import '../data/install/install_prompt.dart';
 import '../data/local/tables/download_tables.dart';
 import '../data/players/content_player.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/content_view.dart';
 import '../router/app_router.dart';
 import '../state/downloads_providers.dart';
+import '../state/install_providers.dart';
 import '../state/playback_controller.dart';
 import '../state/player_providers.dart';
 import '../state/season_providers.dart';
@@ -140,6 +142,11 @@ class ContentPlayerView extends ConsumerStatefulWidget {
   final VoidCallback? onStop;
 
   static const Key downloadButtonKey = Key('content_player_download');
+
+  /// Le bouton « Installer » de l'invitation ouverte quand le stockage du
+  /// navigateur n'est pas durable (#273) — visé par clé parce que son libellé
+  /// est celui du bandeau d'installation, présent ailleurs dans l'arbre.
+  static const Key downloadInstallKey = Key('content_player_download_install');
 
   /// Le gros bouton lecture/pause — visé par clé : c'est son pictogramme qu'on
   /// vérifie, et chercher `Icons.play_arrow` dans tout l'écran trouverait aussi
@@ -1328,6 +1335,13 @@ class _DownloadButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final capabilities = ref.watch(downloadCapabilitiesProvider);
+    // **Là où il n'y a pas de moteur de transfert, il n'y a pas de bouton**
+    // (#273) : Safari n'a pas Background Fetch, quel que soit le code. Absence,
+    // jamais grisage — un bouton qui ne téléchargerait rien serait une promesse
+    // que personne ne tient.
+    if (!capabilities.available) return const SizedBox.shrink();
+
     final row = ref.watch(downloadForContentProvider(contentId)).value;
     final state = row?.state;
 
@@ -1335,14 +1349,14 @@ class _DownloadButton extends ConsumerWidget {
       return _glass(
         icon: Icons.download_outlined,
         semantics: l10n.actionDownload,
-        onTap: () => _start(ref),
+        onTap: () => unawaited(_start(context, ref)),
       );
     }
 
     return switch (state) {
       DownloadState.queued ||
       DownloadState.running =>
-        _progress(context, ref, row),
+        _progress(context, ref, row, canPause: capabilities.canPause),
       DownloadState.paused => _glass(
           icon: Icons.download,
           semantics: l10n.downloadActionResume,
@@ -1362,35 +1376,95 @@ class _DownloadButton extends ConsumerWidget {
       DownloadState.failed => _glass(
           icon: Icons.refresh_rounded,
           semantics: l10n.downloadActionRetry,
-          onTap: () => _start(ref),
+          onTap: () => unawaited(_start(context, ref)),
         ),
     };
   }
 
-  void _start(WidgetRef ref) {
-    unawaited(
-      ref.read(downloadManagerProvider).download(
-            contentId: contentId,
-            contentType: contentType,
-            quality: ref.read(downloadQualityProvider),
+  /// **Pas un octet avant que le stockage ne garde ce qu'on y descend** (#273).
+  ///
+  /// Sur un appareil, `ensureDurable()` rend vrai sans rien demander. Dans un
+  /// onglet non installé, `navigator.storage.persist()` répond **non** (mesuré
+  /// le 29/10/2026), et le navigateur peut alors évincer tout le stockage de
+  /// l'origine d'un coup — les enseignements **et** le magasin. On invite donc à
+  /// installer plutôt que de faire payer 80 Mo de données pour rien.
+  Future<void> _start(BuildContext context, WidgetRef ref) async {
+    final durable =
+        await ref.read(downloadCapabilitiesProvider).ensureDurable();
+    if (!context.mounted) return;
+    if (!durable) {
+      await _inviteToInstall(context, ref);
+      return;
+    }
+    await ref.read(downloadManagerProvider).download(
+          contentId: contentId,
+          contentType: contentType,
+          quality: ref.read(downloadQualityProvider),
+        );
+  }
+
+  /// L'invitation, et le bouton qui ouvre la vraie boîte du navigateur quand
+  /// elle est disponible. Sur iPhone il n'y en a aucune — mais là-bas le bouton
+  /// Télécharger ne paraît déjà pas, faute de Background Fetch.
+  Future<void> _inviteToInstall(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    // L'offre se lit **sur l'invite elle-même**, et non sur
+    // `installOfferProvider` : ce flux n'a pas encore émis au moment du geste
+    // (`ref.read` y rend `AsyncLoading`), et le bouton d'installation aurait
+    // donc manqué précisément là où il sert.
+    final offer = ref.read(installPromptProvider).offer;
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.downloadNeedsInstallTitle),
+        content: Text(l10n.downloadNeedsInstallMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.installBannerDismiss),
           ),
+          if (offer == InstallOffer.prompt)
+            TextButton(
+              key: ContentPlayerView.downloadInstallKey,
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                unawaited(ref.read(installPromptProvider).show());
+              },
+              child: Text(l10n.installBannerAction),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _progress(BuildContext context, WidgetRef ref, DownloadRow row) {
+  /// L'anneau de progression, et le geste qu'il porte vraiment.
+  ///
+  /// [canPause] faux — un navigateur — : l'appui **annule**, et l'icône le dit.
+  /// Background Fetch n'a ni pause ni reprise à l'octet (c'est la contrepartie
+  /// assumée du transfert qui survit à la fermeture de l'onglet), et un bouton
+  /// Pause qui ne ferait rien serait pire que son absence.
+  Widget _progress(
+    BuildContext context,
+    WidgetRef ref,
+    DownloadRow row, {
+    required bool canPause,
+  }) {
     final l10n = context.l10n;
     final total = row.bytesTotal;
     final fraction =
         total > 0 ? (row.bytesReceived / total).clamp(0.0, 1.0) : null;
     final percent = fraction == null ? null : (fraction * 100).round();
 
+    final manager = ref.read(downloadManagerProvider);
     return Semantics(
       button: true,
-      label: l10n.downloadStateDownloading,
+      label:
+          canPause ? l10n.downloadStateDownloading : l10n.downloadActionCancel,
       child: InkResponse(
         key: ContentPlayerView.downloadButtonKey,
-        onTap: () =>
-            unawaited(ref.read(downloadManagerProvider).pause(contentId)),
+        onTap: () => unawaited(
+          canPause ? manager.pause(contentId) : manager.cancel(contentId),
+        ),
         radius: 28,
         child: SizedBox(
           width: 44,
@@ -1414,7 +1488,11 @@ class _DownloadButton extends ConsumerWidget {
                   ),
                 )
               else
-                const Icon(Icons.pause, color: Colors.white, size: 16),
+                Icon(
+                  canPause ? Icons.pause : Icons.close,
+                  color: Colors.white,
+                  size: 16,
+                ),
             ],
           ),
         ),
@@ -1486,7 +1564,7 @@ class _DownloadButton extends ConsumerWidget {
               title: Text(l10n.downloadActionUpdate),
               onTap: () {
                 Navigator.of(sheetContext).pop();
-                _start(ref);
+                unawaited(_start(context, ref));
               },
             ),
             ListTile(
