@@ -65,7 +65,11 @@ Future<void> main() async {
 
     // Sans clé VAPID **et** sans permission, `target()` doit rendre `null` sans
     // lever et sans rien demander : c'est le comportement attendu aujourd'hui.
-    final target = await push?.transport.target();
+    // Bornée **ici aussi** : sans cela, la sonde elle-même ne rend jamais son
+    // verdict quand Google est injoignable — ce qui est son régime normal.
+    final target = await push?.transport
+        .target()
+        .timeout(const Duration(seconds: 20), onTimeout: () => null);
     observed.add('target()                 : ${target ?? 'null'}');
 
     final registrations =

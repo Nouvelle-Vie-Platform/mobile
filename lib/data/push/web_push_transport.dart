@@ -83,7 +83,23 @@ import 'push_transport.dart';
 /// hors-ligne n'en dépendent pas.
 ///
 /// Une fois posée : rien d'autre à changer. `make push-probe` la lit.
-const String kWebPushVapidKey = '';
+/// **La borne du jeton**, et elle n'est pas décorative.
+///
+/// Le SDK de Firebase réessaie son enregistrement avec un délai croissant : sur
+/// un réseau qui ne répond pas, `getToken()` peut ne **jamais** rendre la main.
+/// L'enregistrement resterait alors pendu pour toute la session — ni jeton, ni
+/// échec, donc **aucune reprise**, puisque c'est le démarrage suivant qui
+/// réessaie. Mesuré le 29/10/2026 par `make push-probe`, dont la sonde n'a
+/// jamais rendu son verdict dès que la clé VAPID a été posée : Google y est
+/// injoignable par construction.
+///
+/// Même raison que `kRadioHandshakeTimeout` pour l'antenne, et même forme : une
+/// constante nommée à un seul endroit. **Valeur à confirmer.** La dépasser ne
+/// coûte qu'un réveil, et le démarrage suivant retente.
+const Duration kWebPushTokenTimeout = Duration(seconds: 15);
+
+const String kWebPushVapidKey =
+    'BIyite0_RrrMVJnVfxXa_Zrl_1BumIwunxEP_WaM7sGn9HlAslQYGoVGaFtLZaZb1SeIV9vpHdq0_xog5S_KddY';
 
 /// **Le nom des deux modules du SDK dans `window`**, tels que
 /// `firebase_core_web` et `firebase_messaging_web` les lisent par leurs
@@ -228,7 +244,9 @@ class WebPushTransport implements PushTransport {
   /// Flutter et de celle de `sw-offline.js`. Trois workers, trois portées.
   Future<String?> _token() async {
     try {
-      return await _messaging.getToken(vapidKey: _vapidKey);
+      return await _messaging
+          .getToken(vapidKey: _vapidKey)
+          .timeout(kWebPushTokenTimeout);
     } on Object catch (error) {
       // Permission retirée entre-temps, clé VAPID refusée par FCM, réseau
       // absent : un réveil de perdu, pas une fonctionnalité.
