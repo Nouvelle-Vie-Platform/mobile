@@ -25,7 +25,12 @@ Passé public pour que GitHub Actions y soit gratuit et sans plafond : il consom
   le CPU de la machine de production.
 
 ## Stack & versions
-- **Flutter 3.44.2** / Dart `>=3.6.0 <4.0.0`. Material 3.
+- **Flutter 3.47.4** / Dart `>=3.6.0 <4.0.0`. Material 3. La CI y est montée
+  avec #271 : le bundle web servi est celui qu'elle construit, et un écart de
+  version de Flutter sur une cible web est exactement le genre de panne
+  qu'aucune compilation ne voit. Elle épinglait `3.44.2`, et l'aller-retour a
+  déjà été payé une fois (#270 : le formateur de 3.47 coupe un `if` que l'analyse
+  de 3.44.2 refuse).
 - **flutter_riverpod ^3.x** (gestion d'état), **go_router ^17.x** (navigation),
   **flutter_localizations** + `gen-l10n` (i18n). `flutter_lints ^6`.
 - **drift 2.34.0** (épinglé) + `drift_flutter` — magasin local SQLite, voir
@@ -173,7 +178,8 @@ La CI (`.github/workflows/flutter-ci.yml`) lance format + analyze + test.
 **Elle ne lance pas `build_runner`** : les `.g.dart` et `drift_schemas/` sont
 **versionnés**. Oublier `make gen` fait passer la CI sur du code périmé.
 
-**Un tag `vX.Y.Z` publie les APK** (`.github/workflows/android-release.yml`) :
+**Un tag `vX.Y.Z` publie les APK et l'app web**
+(`.github/workflows/android-release.yml`) :
 analyze et test, puis `flutter build apk --release --split-per-abi`, puis une
 Release GitHub qui porte `nouvelle-vie-X.Y.Z-arm64-v8a.apk` et
 `nouvelle-vie-X.Y.Z-armeabi-v7a.apk` (pas x86_64), déposés aussi sur le portail
@@ -182,6 +188,16 @@ le numéro de build est le numéro de run, et Flutter en tire le `versionCode` d
 chaque ABI : `1000 × rang + run` (armeabi-v7a 1, arm64-v8a 2) — le workflow
 refuse un run ≥ 1000, où les deux ABI se chevaucheraient. Le `version:` du
 pubspec n'est pas lu par ce chemin. Un tag hors de la forme `vX.Y.Z` est refusé.
+
+Un **second job** (`web`, `needs: apk`) joint `app-web-X.Y.Z.tar.gz` à la même
+Release : build avec les trois drapeaux, `./tool/precompresser-web.sh`, archive
+sans `*.symbols` ni `*.md`. Le dépôt étant public, elle se télécharge sans jeton
+— `curl | tar` suffit, et la bascule est un lien symbolique (commandes de pose
+dans `context`, `docs/RUNBOOK.md`). ⚠️ **Ce job passe `--build-name` et
+`--build-number`**, et ce n'est pas décoratif : sur le web
+`package_info_plus` lit `version.json`, que le build remplit depuis le `version:`
+du pubspec (`1.0.0+1`) quand on ne lui donne rien — l'app web se déclarerait en
+1.0.0 à vie et le bandeau de mise à jour y paraîtrait pour **tout** seuil réglé.
 
 **Les notes de version s'écrivent dans le message du tag annoté** — le « Quoi
 de neuf » destiné aux fidèles :
@@ -3704,7 +3720,7 @@ pression, Chrome évince **tout le stockage d'une origine d'un coup** — enseig
 magasin Drift ensemble. D'où `InstallBanner`, dans la même pile que les deux autres bandeaux : Chrome
 a rangé sa propre invite dans un menu ⋮ que personne n'ouvre.
 
-Cinq points qui se ratent en silence :
+Sept points qui se ratent en silence :
 
 1. **`beforeinstallprompt` est capté dans `web/index.html`, pas en Dart.** Chrome l'émet pendant le
    chargement de la page, souvent avant `main()`, et **il ne se rejoue jamais** : un écouteur posé
@@ -3728,6 +3744,22 @@ Cinq points qui se ratent en silence :
    `make icons`, qui fabrique le démarrage natif — lequel ne lit pas les assets de Flutter. 102 k
    contre 1 593 k, PSNR 49,1 dB. `make icons` produit **aussi** les quatre icônes du manifeste et la
    favicon : jusqu'au 29/10 c'étaient celles de Flutter, le « F » bleu.
+6. **Le bouton du bandeau de mise à jour recharge au lieu d'ouvrir un magasin** (#271) : il n'y a pas
+   de fiche d'application dans un navigateur, et un bouton qui n'ouvre rien aurait rendu le seuil du
+   portail sans effet sur l'app web — un correctif urgent n'y serait jamais arrivé. Le choix ne peut
+   pas se faire sur `kIsWeb` dans le widget (constante de compilation : aucun test ne pourrait monter
+   le cas du web) : il passe par `appReloaderProvider`, `null` partout sauf sur le web, que
+   `main.dart` surcharge sous `kIsWeb` comme `installPromptProvider`. L'interop vit dans
+   `lib/data/update/browser_app_reloader.dart`, derrière la porte habituelle.
+7. ⚠️ **Le `flutter_service_worker.js` de Flutter 3.47.4 ne met plus rien en cache.** C'est un
+   interrupteur de secours de 31 lignes : `skipWaiting()` à l'installation,
+   `registration.unregister()` à l'activation, puis il renavigue ses clients. Il n'y a donc **ni
+   coquille hors ligne ni actifs versionnés** servis par lui — `--pwa-strategy` ne choisit plus que
+   « le générer ou pas » —, et les lancements suivants ne sont gratuits que par le cache HTTP
+   (Caddy sert les quatre fichiers d'amorçage en `no-cache`, le reste est versionné par son nom).
+   Le `skipWaiting` que `BrowserAppReloader` envoie avant de recharger ne sert donc presque jamais
+   **aujourd'hui** ; il reste pour le `sw-offline.js` de T4 et pour un worker d'un ancien build
+   encore enregistré. **T4 ne peut pas compter sur une coquille hors ligne qu'il n'a pas écrite.**
 
 ### Le téléchargement hors ligne dans le navigateur (#273) — T4
 

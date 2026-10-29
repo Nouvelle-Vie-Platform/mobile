@@ -24,7 +24,9 @@ import 'data/players/web_content_player.dart';
 import 'data/push/fcm_push_transport.dart';
 import 'data/push/push_transport.dart';
 import 'data/push/wake_notifier.dart';
+import 'data/update/web_app_reloader.dart';
 import 'firebase_options.dart';
+import 'state/app_update_providers.dart';
 import 'state/downloads_providers.dart';
 import 'state/install_providers.dart';
 import 'state/media_settings_providers.dart';
@@ -143,6 +145,10 @@ Future<void> main() async {
             .overrideWithValue(createWebDownloadCapabilities()),
         diskSpaceProvider.overrideWithValue(createWebDiskSpace()),
       ],
+      // **Le rechargement**, sur le web seulement : c'est là que le bouton du
+      // bandeau de mise à jour n'a aucun magasin à ouvrir. Même porte, même
+      // raison.
+      if (kIsWeb) appReloaderProvider.overrideWithValue(createAppReloader()),
       // Les deux seules choses que `main()` sait et que l'arbre de widgets ne
       // pourrait pas apprendre à temps : ce que portait le coffre, et le porteur
       // d'appareil de cette exécution.

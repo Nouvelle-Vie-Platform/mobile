@@ -68,7 +68,14 @@ ipad: ## L'iPad physique branché + app (vise le backend en ligne par défaut)
 		DRY_RUN="$(DRY_RUN)" ./tool/run_on.sh ipad
 
 web: ## Lance l'app dans Chrome
-	flutter run $(DART_DEFINES) -d chrome
+	@# `--no-web-resources-cdn` : sans lui le moteur CanvasKit arrive de
+	@# `gstatic.com` et non de notre origine — ce que `web/WEB_ASSETS.md`
+	@# interdit. Le mettre ici aussi, c'est développer sur ce qu'on sert.
+	@# Les deux autres drapeaux du bundle n'ont pas cours sur `flutter run` :
+	@# `--csp` n'existe que sur `flutter build web` (le serveur de
+	@# développement ne passe pas par dart2js), et `--base-href` y vaut déjà
+	@# `/`. Voir CLAUDE.md, « L'app web installable ».
+	flutter run $(DART_DEFINES) -d chrome --no-web-resources-cdn
 
 devices: ## Liste les émulateurs et appareils
 	@flutter emulators

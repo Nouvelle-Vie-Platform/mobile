@@ -3166,6 +3166,12 @@ abstract class AppLocalizations {
   /// **'Mettre à jour'**
   String get appUpdateAction;
 
+  /// Le même bouton, dans un navigateur : il n'y a pas de magasin où aller, la nouvelle version est déjà servie et il suffit de recharger la page. Pas « Mettre à jour » : ici le geste est immédiat et sans départ vers une autre application, et le dire fait comprendre qu'on ne quitte rien
+  ///
+  /// In fr, this message translates to:
+  /// **'Recharger'**
+  String get appUpdateReload;
+
   /// Ferme le bandeau pour la session en cours — pas définitivement, contrairement à legalNoticeDismiss. Pas « J'ai compris » : il n'y a rien à comprendre ici, seulement un geste qu'on remet à plus tard, et le bandeau reviendra au prochain lancement tant que la version n'aura pas monté
   ///
   /// In fr, this message translates to:

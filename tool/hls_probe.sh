@@ -26,7 +26,12 @@ if [ ! -x "$CHROME" ]; then
 fi
 
 echo "▶ Compilation de la sonde…"
-flutter build web -t tool/hls_probe/main.dart --no-wasm-dry-run >/dev/null
+# `--no-web-resources-cdn` comme partout ailleurs : la sonde doit tourner sur
+# le moteur que nous servons, pas sur celui de `gstatic.com`. Sans ce drapeau
+# elle prouverait que `hls.js` joue dans un Chrome assisté par un CDN — ce que
+# le fidèle n'a pas.
+flutter build web -t tool/hls_probe/main.dart --no-wasm-dry-run \
+  --no-web-resources-cdn >/dev/null
 
 # Le navigateur sans tête ne vit que jusqu'à l'événement `load` de la page. La
 # sonde, elle, écoute pendant une quinzaine de secondes. Cette image que le

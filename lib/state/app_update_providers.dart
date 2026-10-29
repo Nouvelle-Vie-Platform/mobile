@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/app_version.dart';
 import '../data/store_launcher.dart';
+import '../data/update/app_reloader.dart';
 import 'app_version_providers.dart';
 import 'device_settings_providers.dart';
 
@@ -101,3 +102,16 @@ final appUpdateBannerDismissedProvider =
 final storeLauncherProvider = Provider<StoreLauncher>(
   (ref) => const UnavailableStoreLauncher(),
 );
+
+/// **Ce qui sait recharger l'application — `null` partout sauf sur le web.**
+///
+/// `null` n'est pas un repli, c'est la question : « y a-t-il autre chose qu'un
+/// magasin au bout de ce bouton ? ». La réponse est oui dans un navigateur et
+/// non ailleurs, et c'est le bandeau qui en tire son libellé *et* son action.
+///
+/// Le choix ne peut pas se faire sur `kIsWeb` dans le widget : c'est une
+/// constante de compilation, donc un test ne pourrait jamais monter le cas du
+/// web. `main.dart` surcharge ce provider sous `kIsWeb`, exactement comme
+/// `installPromptProvider` et `contentPlayerProvider` — et pour la raison de
+/// plus que `browser_app_reloader.dart` importe `dart:js_interop`.
+final appReloaderProvider = Provider<AppReloader?>((ref) => null);
