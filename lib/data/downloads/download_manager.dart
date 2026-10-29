@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
@@ -510,11 +509,11 @@ class DownloadManager {
   String _filenameFor(String contentId, MediaQuality quality) =>
       '$contentId.${quality.key}.aac';
 
+  /// Jette les octets déjà descendus, **par le transport qui les a écrits**
+  /// ([DownloadBackend.deleteFile]) : « un chemin » n'est un fichier que sur un
+  /// appareil, et `dart:io` lève dans un navigateur (#273).
   Future<void> _deleteFileIfAny(String? path) async {
     if (path == null) return;
-    final file = File(path);
-    if (await file.exists()) {
-      await file.delete();
-    }
+    await _backend.deleteFile(path);
   }
 }

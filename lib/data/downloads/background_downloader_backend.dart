@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart';
 
@@ -128,6 +129,14 @@ class BackgroundDownloaderBackend implements DownloadBackend {
   Future<void> cancel(String taskId) async {
     await _downloader.cancelTaskWithId(taskId);
     _tasks.remove(taskId);
+  }
+
+  /// Le fichier que la complétion a nommé, effacé **ici** parce que c'est ce
+  /// moteur-ci qui l'a écrit : sur un appareil, un chemin est un fichier.
+  @override
+  Future<void> deleteFile(String path) async {
+    final file = File(path);
+    if (await file.exists()) await file.delete();
   }
 
   @override

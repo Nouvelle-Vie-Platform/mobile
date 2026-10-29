@@ -20,6 +20,10 @@ class FakeDownloadBackend implements DownloadBackend {
   final List<String> resumed = [];
   final List<String> canceled = [];
 
+  /// Les chemins passés à [deleteFile] — c'est par là que le manager jette les
+  /// octets descendus (annulation, purge, départ de zéro), et non par `dart:io`.
+  final List<String> deleted = [];
+
   /// Ce que rend le prochain [enqueue]. `false` simule un refus du moteur.
   bool enqueueResult = true;
 
@@ -50,6 +54,9 @@ class FakeDownloadBackend implements DownloadBackend {
     canceled.add(taskId);
     active.remove(taskId);
   }
+
+  @override
+  Future<void> deleteFile(String path) async => deleted.add(path);
 
   @override
   Stream<DownloadBackendEvent> get events => _events.stream;

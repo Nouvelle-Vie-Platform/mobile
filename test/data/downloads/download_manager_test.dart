@@ -393,6 +393,24 @@ void main() {
       expect(backend.canceled, ['task-1']);
       expect(await db.downloadsDao.forContent('t-1'), isNull);
     });
+
+    test('annulation : les octets partent PAR LE TRANSPORT, jamais par dart:io',
+        () async {
+      final manager = await running();
+      await backend.emit(
+        const DownloadStatusEvent('task-1',
+            status: DownloadBackendStatus.complete,
+            filePath: '/data/t-1.mid.aac'),
+      );
+
+      await manager.cancel('t-1');
+
+      // C'est toute la raison de `DownloadBackend.deleteFile` (#273) : « un
+      // chemin » n'est un fichier que sur un appareil, et dans un navigateur
+      // c'est une clé du `Cache`. Le manager décide quand jeter, le transport
+      // sait comment.
+      expect(backend.deleted, ['/data/t-1.mid.aac']);
+    });
   });
 
   group('réconciliation', () {
@@ -509,6 +527,9 @@ void main() {
       expect(row.bytesTotal, 555, reason: 'la taille du nouveau corps');
       expect(row.versionId, 'v2');
       expect(row.localPath, isNull);
+      expect(backend.deleted, ['/data/t-1.mid.aac'],
+          reason: 'le partiel de l\'ancienne version est jeté par le '
+              'transport, pas oublié sur l\'appareil');
       expect(backend.enqueued.single.url, 'https://x/v2/mid.aac');
       expect(backend.enqueued.single.taskId, isNot('task-old'),
           reason: 'identifiant neuf : le moteur natif ne doit pas reprendre');
