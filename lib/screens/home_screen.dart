@@ -714,15 +714,22 @@ class _MediathequeHome extends ConsumerWidget {
     final sections = ref.watch(homeSectionsProvider);
     final gatheringSections = ref.watch(gatheringSectionsProvider);
 
-    if (latest.hasError ||
-        menu.hasError ||
-        sections.hasError ||
-        gatheringSections.hasError) {
+    final failure =
+        latest.error ?? menu.error ?? sections.error ?? gatheringSections.error;
+
+    if (failure != null) {
+      // **Ces quatre lectures viennent du magasin, jamais du réseau**, et cet
+      // écran annonçait pourtant « vérifiez votre connexion internet ». Le
+      // mensonge a coûté une enquête le 29/10/2026 : la base ne s'ouvrait pas
+      // dans le navigateur, et rien à l'écran ne le disait. La phrase dit
+      // maintenant ce qui a échoué, et la trace nomme la cause — une base
+      // illisible est un défaut qu'on diagnostique, pas un réseau à vérifier.
+      debugPrint('[accueil] lecture du magasin en échec : $failure');
       return Padding(
         padding: const EdgeInsets.only(top: AppSpacing.xl) +
             AppSpacing.screenPadding,
         child: AppErrorState(
-          message: context.l10n.stateErrorMessage,
+          message: context.l10n.stateErrorStoreMessage,
           onRetry: () {
             ref.invalidate(latestTeachingsProvider);
             ref.invalidate(homeMenuProvider);

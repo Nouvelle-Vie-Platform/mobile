@@ -3202,6 +3202,12 @@ abstract class AppLocalizations {
   /// **'Plus tard'**
   String get installBannerDismiss;
 
+  /// Échec d'une LECTURE LOCALE (magasin Drift), à ne pas confondre avec stateErrorMessage, qui parle du réseau. Les écrans adossés au magasin disaient « vérifiez votre connexion internet » devant une base illisible — un mensonge qui a coûté une enquête le 29/10/2026, l'app web n'ouvrant pas sa base faute d'options web passées à drift. Ne propose aucun geste réseau : il n'y a rien à vérifier côté connexion
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de lire les données enregistrées sur cet appareil.'**
+  String get stateErrorStoreMessage;
+
   /// Mini-lecteur : badge d'un direct de la régie (#149), à la place de la ligne d'orateur. Affiché seulement quand l'antenne connue signale un direct (RadioAntenna.live) — jamais pour dire que la radio tourne, c'est miniPlayerOnAirBadge. Capitales voulues, comme un voyant d'antenne ; court, il tient dans une pastille rouge
   ///
   /// In fr, this message translates to:
