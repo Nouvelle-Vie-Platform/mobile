@@ -46,8 +46,14 @@ un fidèle apporte un téléphone plus ancien, avec le banc de `§6`.
 - **Le serveur n'a rien à faire pour le push** : `DEVICE_PLATFORMS = ['ios', 'android', 'web']`
   (`server-portal/app/devices/support/device_platform.ts:11`), et le contrat de
   `POST /devices/tokens` dit que `fcm` sert « iOS, Android with Play Services, **web** ».
-- `flutter_service_worker.js` **est** généré par le build : critère d'installation rempli, coquille
-  hors ligne et versionnement des actifs déjà là.
+- `flutter_service_worker.js` **est** généré par le build : le critère d'installation de Chrome est
+  donc rempli. ⚠️ **Corrigé le 29/10 par la lecture du SDK (T5)** : la suite de cette ligne était
+  fausse. Le worker de Flutter 3.47.4 **ne met plus rien en cache** — 31 lignes, `skipWaiting()` à
+  l'installation puis `registration.unregister()` à l'activation, et il renavigue ses clients ;
+  `--pwa-strategy` ne choisit plus que « le générer ou pas »
+  (`packages/flutter_tools/lib/src/web/file_generators/js/flutter_service_worker.js`). Il n'y a donc
+  **ni coquille hors ligne ni versionnement des actifs** acquis. **T4 doit l'écrire lui-même**, et ne
+  peut pas s'appuyer sur ce qui n'existe pas.
 - **Le téléchargement est déjà cousu** : `DownloadBackend` est la porte unique du moteur de transfert,
   et `dart:io` n'apparaît qu'à deux endroits du chemin (`File(path)` dans le manager, le canal natif
   de `disk_space`). Un backend web s'y branche sans toucher aux états ni à la réconciliation.
@@ -80,7 +86,9 @@ délègue les codecs au navigateur. Sur Firefox et Safari, c'est bien la génér
 plus.
 
 `assets/images/live_bg.png` pèse en plus **1,5 Mo brut** sur l'écran radio (~150 k en webp).
-Les lancements suivants coûtent zéro octet : le service worker sert tout depuis le disque.
+Les lancements suivants ne coûtent presque rien, mais **par le cache HTTP et non par le service
+worker** (voir la correction du §2) : Caddy sert les quatre fichiers d'amorçage en `no-cache` et tout
+le reste est versionné par son nom, donc immuable.
 
 ### Le banc sur appareil du 2026-10-29 — HUAWEI Mate 8, Android 6.0, Chrome 106.0.5249.126
 
@@ -208,10 +216,15 @@ comme pour l'antenne (`mediamtx-service/README.md`).
   la marque, icônes déjà présentes), `live_bg` en webp, bandeau `beforeinstallprompt` qui disparaît
   en `display-mode: standalone`, et l'explication du geste iOS. Après T1, la médiathèque, les
   échanges, la Bible et les notes fonctionnent — ils ne demandent aucun des quatre rattrapages.
-- **T5 — la publication** (`mobile`). Montée de la CI à 3.47.4, **`--no-web-resources-cdn` sur les
-  trois endroits qui construisent le web** (`flutter-ci.yml`, le job de release, `make web`), job qui
-  joint le `.tar.gz` à la Release sur tag `v*`, bouton « Recharger » du bandeau de mise à jour, et les commandes de pose et
-  de retour arrière (`context`, `docs/RUNBOOK.md`).
+- **T5 — la publication** (`mobile`). **Écrite le 29/10** (mobile#271) : les deux workflows montés à
+  Flutter `3.47.4`, les trois drapeaux sur les quatre endroits qui construisent le web
+  (`flutter-ci.yml`, le job `web` de `android-release.yml`, `make web` et `tool/hls_probe.sh` —
+  `flutter run` n'accepte que `--no-web-resources-cdn`, `--csp` n'existant que sur `flutter build
+  web`), job `web` (`needs: apk`) qui joint `app-web-X.Y.Z.tar.gz` à la Release avec ses quatre
+  contrôles d'archive, et le bouton « Recharger » par `appReloaderProvider`. **Deux choses ajoutées
+  en route** : `--build-name` / `--build-number` sur le build web (sans eux `version.json` dit
+  `1.0.0`, et le bandeau paraît pour tout seuil), et la correction du §2 sur le service worker.
+  Restent les commandes de pose et de retour arrière (`context`, `docs/RUNBOOK.md`).
 - **T2 — les annonces** (`mobile`). Application web dans le projet Firebase `nouvelle-vie-25eb5`,
   clé VAPID, `firebase-messaging-sw.js`, levée de l'`UnsupportedError` de `firebase_options.dart`
   pour le web, permission demandée dans la foulée de l'installation. Aucun travail serveur.
