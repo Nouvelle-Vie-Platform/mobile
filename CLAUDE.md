@@ -3719,6 +3719,69 @@ Quatre points qui se ratent en silence :
    contre 1 593 k, PSNR 49,1 dB. `make icons` produit **aussi** les quatre icônes du manifeste et la
    favicon : jusqu'au 29/10 c'étaient celles de Flutter, le « F » bleu.
 
+### Le téléchargement hors ligne dans le navigateur (#273) — T4
+
+`BackgroundFetchDownloadBackend` est la **troisième** implémentation de
+`DownloadBackend`, derrière l'interface existante : **la logique du
+`DownloadManager` — états, pré-check, réconciliation — n'a pas bougé d'une
+ligne**, et c'est exactement ce que la couture existait pour permettre.
+`main.dart` surcharge trois providers sous `kIsWeb` (`downloadBackendProvider`,
+`downloadCapabilitiesProvider`, `diskSpaceProvider`) par la porte conditionnelle
+`web_downloads.dart`, comme pour le lecteur web et l'invite d'installation.
+
+Six points qui se ratent en silence :
+
+1. **Background Fetch ne met pas en pause, et c'est la décision du cadrage.** Le
+   navigateur ne donne pas les deux : soit le transfert survit à la fermeture de
+   l'onglet, soit il se reprend à l'octet (`fetch` + `Range`). On garde le
+   premier — un fidèle lance deux heures d'enseignement et range son téléphone.
+   `pause()` ne fait donc **rien**, et l'écran ne l'offre pas : l'anneau de
+   progression **annule** (croix, `downloadActionCancel`). Ne jamais fabriquer
+   une fausse pause : un état « en pause » ne correspondrait à aucun transfert.
+2. **Ce que la plateforme permet est une donnée, pas un `kIsWeb` dans un
+   widget** : `DownloadCapabilities` (`available`, `canPause`,
+   `ensureDurable()`), inerte-vraie sur appareil
+   (`NativeDownloadCapabilities`). C'est elle qui rend ces règles vérifiables
+   sur la VM contre un faux backend, et c'est par elle que **le bouton et le
+   raccourci du Profil disparaissent sur Safari** — pas de Background Fetch,
+   donc pas de fonction, donc pas de bouton. Absence, jamais grisage.
+3. **Le bouton Télécharger demande d'abord `navigator.storage.persist()`** et
+   **invite à installer** quand il répond non (mesuré le 29/10/2026 : non avant
+   l'installation, oui après). Sans persistance, le navigateur évince tout le
+   stockage de l'origine d'un coup — enseignements **et** magasin Drift : faire
+   descendre 80 Mo qu'il peut jeter, sur des téléphones dont le stockage saturé
+   est précisément le problème, serait faire payer des données pour rien.
+4. **`web/sw-offline.js` est à nous, sur sa propre portée** (`offline/`), et il
+   fait une seule chose : ranger la réponse dans le `Cache` à
+   `backgroundfetchsuccess` — la seule fenêtre où elle existe, et le seul code
+   qui tourne encore quand l'onglet est fermé. ⚠️ **Ne jamais écrire cela dans
+   `flutter_service_worker.js`, qui est généré par le build.** Il n'a aucun
+   gestionnaire `fetch` : la coquille appartient au worker de Flutter.
+5. **Le worker ne parle pas à Dart ; Dart relève le `Cache`.** La clé est
+   `/offline/<taskId>/<nom de fichier>` (`offline_cache.dart`, mêmes valeurs
+   recopiées dans le worker) : le `taskId` recolle une copie arrivée **onglet
+   fermé** à sa ligne Drift (`initialize()` l'annonce au démarrage), le nom de
+   fichier permet de jeter la précédente avant d'en descendre une neuve. Et
+   `activeTaskIds()` compte les copies du `Cache` — sans quoi la réconciliation
+   verrait une tâche « oubliée du moteur » et retéléchargerait 80 Mo déjà là.
+   À la fin d'un transfert, on attend de **voir** la clé avant d'annoncer la
+   complétion ; rien vu ⇒ on ne dit rien (la ligne reste en cours, le démarrage
+   suivant rattrape) plutôt que d'annoncer un échec faux.
+6. **`DownloadBackend.deleteFile(path)` remplace le `File(path)` du manager** :
+   « un chemin » n'est un fichier que sur un appareil, et `dart:io` lève dans un
+   navigateur dès le constructeur. Le manager décide **quand** jeter les octets,
+   le transport qui les a écrits sait **comment** — `dart:io` a donc quitté
+   `download_manager.dart`. La lecture locale, elle, passe par une **URL de
+   blob** (`offlineBlobUrl`) posée en `<audio src>`, jamais par `hls.js` : un
+   `.aac` n'est pas du HLS. Une copie évincée rend `null` et l'écoute retombe
+   sur le HLS.
+
+**Deux limites, écrites parce qu'aucun test ne les couvre** : la contrainte
+**wifi** ne traverse pas (l'API n'a aucune option de réseau, un transfert part
+donc sur les données mobiles alors que le manager calcule toujours son état
+d'attente), et le corps du `.aac` passe **entier en mémoire** le temps de la
+lecture (`ponytail:` dans `offline_cache.dart`).
+
 ## Git
 - **Commits canoniques** : un commit par fonctionnalité, atomique, préfixes
   conventionnels (`feat/fix/chore/refactor(scope)`), corps en français.
