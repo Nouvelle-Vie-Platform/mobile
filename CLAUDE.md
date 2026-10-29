@@ -3722,7 +3722,8 @@ a rangé sa propre invite dans un menu ⋮ que personne n'ouvre.
 
 Sept points qui se ratent en silence :
 
-1. **`beforeinstallprompt` est capté dans `web/index.html`, pas en Dart.** Chrome l'émet pendant le
+1. **`beforeinstallprompt` est capté par `web/install_hook.js`, pas en Dart — et dans un fichier, jamais en ligne.** La CSP de l'origine (`script-src 'self'`) **bloque tout script en ligne**, et le refus ne se voit que dans la console d'un fidèle : le bandeau d'installation ne paraît simplement jamais. `test/web_index_csp_test.dart` le garde.
+   La raison de capter hors de Dart est inchangée : Chrome l'émet pendant le
    chargement de la page, souvent avant `main()`, et **il ne se rejoue jamais** : un écouteur posé
    depuis Dart le raterait sur un téléphone lent, c'est-à-dire sur le parc visé.
 2. **iOS se reconnaît par `navigator.standalone`**, propriété qui n'existe que sur Safari iOS —
