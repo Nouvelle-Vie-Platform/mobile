@@ -26,7 +26,7 @@ DART_DEFINES         := --dart-define=API_BASE_URL=$(API_BASE_URL)
 ANDROID_DART_DEFINES := --dart-define=API_BASE_URL=$(ANDROID_API_BASE_URL)
 
 .DEFAULT_GOAL := help
-.PHONY: help ios android ipad web web-assets hls-probe push-probe devices test analyze format \
+.PHONY: help ios android ipad web web-assets db-probe hls-probe push-probe devices test analyze format \
         l10n gen migrations icons clean
 
 help: ## Affiche cette aide
@@ -44,6 +44,7 @@ help: ## Affiche cette aide
 	@echo "  make migrations  Exporte le schéma local d'une nouvelle version"
 	@echo "  make web-assets  Re-télécharge sqlite3.wasm + drift_worker.js + hls.min.js"
 	@echo "  make icons     Régénère l'icône et le splash natif depuis le logo"
+	@echo "  make db-probe    Prouve dans Chrome que le magasin local s'ouvre"
 	@echo "  make hls-probe   Prouve dans Chrome que le lecteur web joue (réseau requis)"
 	@echo "  make push-probe  Prouve que le SDK Firebase vient de NOTRE origine (Chrome)"
 	@echo "  make clean     flutter clean"
@@ -120,6 +121,10 @@ web-assets: ## Re-télécharge les actifs web (drift/sqlite3 depuis pubspec.lock
 icons: ## Régénère icônes et splash natif depuis brand_logo.webp + live_bg.png (macOS)
 	@echo "▶ Les fichiers produits sont VERSIONNÉS : ni le build ni la CI ne lancent ceci."
 	swift tool/app_icons.swift
+
+db-probe: ## Ouvre le magasin local dans un Chrome sans tête, et dit s'il répond
+	@echo "▶ Ni un test ni la CI : exige Chrome. Tout est servi en local."
+	./tool/db_probe.sh
 
 hls-probe: ## Pilote HlsContentPlayer contre un vrai flux HLS dans un Chrome sans tête
 	@echo "▶ Ni un test ni la CI : exige Chrome et le réseau."
