@@ -48,32 +48,15 @@
   <script src="hls.min.js" defer></script>
 
   <!--
-    L'installation, captée AVANT Flutter — et c'est tout l'objet de ce script.
+    L'installation, captée AVANT Flutter — dans un fichier, et c'est la CSP qui
+    l'exige : `script-src 'self'` refuse tout script en ligne, et le refus ne se
+    voit qu'en production, sous la forme d'un bandeau d'installation qui ne
+    paraît jamais. Le détail est en tête de `install_hook.js`.
 
-    Chrome émet `beforeinstallprompt` pendant le chargement de la page, souvent
-    avant que `main()` ne s'exécute, et **l'événement ne se rejoue jamais**. Un
-    écouteur posé depuis Dart le raterait sur un téléphone lent, c'est-à-dire
-    précisément sur le parc que l'app web existe pour servir.
-
-    `preventDefault()` empêche l'invite spontanée du navigateur : on la garde
-    pour notre propre bandeau, qui dit POURQUOI installer — sans installation,
-    pas de téléchargement hors ligne et pas de stockage durable.
-
-    Rien de plus ici : la décision d'afficher appartient à Dart
-    (`lib/data/install/browser_install_prompt.dart`), qui lit `nvInstall.event`.
+    Sans `defer`, exprès : l'écouteur doit exister avant que Chrome n'émette
+    `beforeinstallprompt`, qui ne se rejoue jamais.
   -->
-  <script>
-    window.nvInstall = { event: null };
-    window.addEventListener('beforeinstallprompt', function (e) {
-      e.preventDefault();
-      window.nvInstall.event = e;
-      window.dispatchEvent(new Event('nv-install-available'));
-    });
-    window.addEventListener('appinstalled', function () {
-      window.nvInstall.event = null;
-      window.dispatchEvent(new Event('nv-install-available'));
-    });
-  </script>
+  <script src="install_hook.js"></script>
 </head>
 <body>
   <!--
