@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/downloads/background_downloader_backend.dart';
 import '../data/downloads/disk_space.dart';
 import '../data/downloads/download_backend.dart';
+import '../data/downloads/download_capabilities.dart';
 import '../data/downloads/download_lifecycle.dart';
 import '../data/downloads/download_manager.dart';
 import '../data/downloads/download_resolver.dart';
@@ -57,6 +58,17 @@ final downloadBackendProvider = Provider<DownloadBackend>((ref) {
 /// surcharger par un `FixedDiskSpace` dans les tests.
 final diskSpaceProvider = Provider<DiskSpace>(
   (ref) => const BestEffortDiskSpace(),
+);
+
+/// **Ce que la plateforme permet au téléchargement** (#273) — le moteur
+/// existe-t-il, sait-il mettre en pause, le stockage gardera-t-il la copie.
+///
+/// Défaut : l'appareil, qui sait tout faire. `main.dart` le surcharge sous
+/// `kIsWeb`, exactement comme `installPromptProvider` — un navigateur n'a ni
+/// pause ni stockage garanti, et Safari n'a pas de moteur du tout. Les écrans
+/// le lisent pour **ne pas mentir** : absence, jamais grisage.
+final downloadCapabilitiesProvider = Provider<DownloadCapabilities>(
+  (ref) => const NativeDownloadCapabilities(),
 );
 
 /// **Le moteur de téléchargement** — mappe la table `downloads` ⇄ les tâches
