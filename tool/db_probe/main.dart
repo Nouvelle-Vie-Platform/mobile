@@ -45,7 +45,7 @@ Future<void> _sonder() async {
   } catch (erreur, pile) {
     dire('VERDICT : ÉCHEC');
     dire(erreur.toString());
-    dire('${pile.toString().split('\n').take(6).join('\n')}');
+    dire(pile.toString().split('\n').take(6).join('\n'));
   }
 
   final requete = web.XMLHttpRequest()
