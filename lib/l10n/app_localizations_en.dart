@@ -1726,6 +1726,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appUpdateAction => 'Update';
 
   @override
+  String get appUpdateReload => 'Reload';
+
+  @override
   String get appUpdateDismiss => 'Later';
 
   @override

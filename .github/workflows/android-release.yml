@@ -1,6 +1,13 @@
-name: APK sur tag
+name: Release sur tag
 
-# Un tag `vX.Y.Z` poussé construit les APK et les publie dans une Release GitHub.
+# Un tag `vX.Y.Z` poussé construit les APK **et le bundle de l'app web**, et les
+# publie dans une Release GitHub.
+#
+# **Les deux partent ensemble, sous le même numéro** (#271) : le bandeau de mise
+# à jour compare la version installée à **un seul** seuil
+# (`update_banner_min_version`), et une numérotation web séparée rendrait ce
+# seuil ininterprétable. Le job `web` attend donc le job `apk`, qui crée la
+# Release et valide la forme du tag ; il n'y attache qu'un fichier de plus.
 #
 # **Le tag fixe la version** : `v1.2.0` donne `versionName` 1.2.0, sans toucher
 # au pubspec. Le numéro de build est le numéro de run de ce workflow.
@@ -40,6 +47,10 @@ jobs:
   apk:
     name: Construire et publier l'APK
     runs-on: ubuntu-24.04
+    # La version lue dans le tag, pour le job `web` : elle a déjà été validée
+    # ici, et la relire ailleurs serait une seconde règle libre de diverger.
+    outputs:
+      version: ${{ steps.version.outputs.name }}
     steps:
       - name: Lire la version dans le tag
         id: version
@@ -134,7 +145,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.2'
+          flutter-version: '3.47.4'
           channel: stable
           cache: true
 
@@ -407,3 +418,118 @@ jobs:
             404) echo "::warning title=Notes::${url} : 404 — version inconnue, ou portail d'avant les notes de version." ;;
             *) echo "::warning title=Notes::envoi des notes sur ${url} en échec (HTTP ${code}) : $(head -c 300 response.json 2>/dev/null)" ;;
           esac
+
+  # ---------------------------------------------------------------------------
+  # Le bundle de l'app web (#271), joint à la même Release.
+  #
+  # **Pourquoi une Release et pas une route de dépôt** : le dépôt `mobile` est
+  # public, donc ses Releases se téléchargent sans jeton — poser une version sur
+  # le VPS tient en deux commandes (`curl | tar`), sans secret, sans chemin
+  # entrant nouveau, et le retour arrière est le lien symbolique qu'on repointe.
+  # Une route authentifiée aurait voulu dire **extraire une archive** derrière
+  # elle, soit une frontière de confiance à soigner pour économiser deux
+  # commandes. Les commandes de pose sont dans `context`, `docs/RUNBOOK.md`.
+  #
+  # `needs: apk` : c'est ce job-là qui crée la Release et qui refuse un tag mal
+  # formé. Ici on n'ajoute qu'un fichier.
+  web:
+    name: Construire et joindre l'app web
+    needs: apk
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # **Les trois drapeaux, et les deux numéros.**
+      #
+      # `--no-web-resources-cdn` : sans lui CanvasKit vient de `gstatic.com` et
+      # non de notre origine (`web/WEB_ASSETS.md` l'interdit) — un fidèle dont le
+      # réseau ne l'atteint pas n'obtient alors *rien*, pas même un écran
+      # dégradé. `--csp` : sans lui dart2js fabrique du code à l'exécution, et la
+      # CSP stricte servie par Caddy empêche l'application de démarrer.
+      # `--base-href /` : le bundle est servi à la racine de son sous-domaine.
+      #
+      # ⚠️ `--build-name` / `--build-number` ne sont pas décoratifs : sur le web,
+      # `package_info_plus` lit `version.json`, que le build remplit depuis le
+      # `version:` du pubspec (`1.0.0+1`) quand on ne lui donne rien. L'app web
+      # se déclarerait alors en 1.0.0 à vie, et le bandeau de mise à jour y
+      # paraîtrait pour **tout** seuil réglé au portail — l'inverse exact du but
+      # de la tranche.
+      - name: Build web
+        run: >
+          flutter build web --release
+          --no-web-resources-cdn --csp --base-href /
+          --build-name=${{ needs.apk.outputs.version }}
+          --build-number=${{ github.run_number }}
+          --dart-define=API_BASE_URL=https://eenv.brainsial.com
+
+      # `brotli` est présent sur l'image ubuntu-24.04 ; la garde est là pour le
+      # jour où il n'y serait plus — un `.br` manquant ne casse pas Caddy (il
+      # sert le fichier nu), il double seulement le poids du premier écran, et ça
+      # ne se voit sur aucun test.
+      - name: Installer brotli au besoin
+        run: |
+          if ! command -v brotli >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends brotli
+          fi
+          brotli --version
+
+      - name: Précompresser en brotli
+        run: ./tool/precompresser-web.sh
+
+      # `--exclude='*.symbols'` : ~7 Mo de symboles CanvasKit que rien ne sert.
+      # `--exclude='*.md'` : Flutter recopie tout `web/` dans sa sortie,
+      # `WEB_ASSETS.md` compris.
+      #
+      # Les quatre contrôles qui suivent sont la vérification de l'issue, et ils
+      # sont ici parce que c'est le seul endroit qui voit l'archive. En `if`
+      # plutôt qu'en `grep … && exit 1` : l'étape tourne sous `bash -e`, où un
+      # `&&` dont la gauche échoue ferait échouer l'étape entière.
+      - name: Empaqueter et vérifier l'archive
+        id: bundle
+        run: |
+          archive="app-web-${{ needs.apk.outputs.version }}.tar.gz"
+          tar -czf "$archive" \
+            --exclude='*.symbols' --exclude='*.md' \
+            -C build/web .
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+
+          contenu=$(tar -tzf "$archive")
+          if ! printf '%s\n' "$contenu" | grep -qx './index.html'; then
+            echo "::error title=Bundle web::index.html absent de la racine de l'archive."
+            exit 1
+          fi
+          if printf '%s\n' "$contenu" | grep -q '\.symbols$'; then
+            echo "::error title=Bundle web::des .symbols ont survécu à l'exclusion."
+            exit 1
+          fi
+          if printf '%s\n' "$contenu" | grep -q '\.md$'; then
+            echo "::error title=Bundle web::des .md ont survécu à l'exclusion."
+            exit 1
+          fi
+          if ! printf '%s\n' "$contenu" | grep -qx './main.dart.js.br'; then
+            echo "::error title=Bundle web::main.dart.js.br absent : la précompression brotli n'a pas eu lieu."
+            exit 1
+          fi
+          echo "${archive} : $(du -h "$archive" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+
+      # `--clobber` : relancer ce job sur un tag déjà publié remplace le fichier
+      # au lieu d'échouer. C'est le geste qui répare un bundle raté sans
+      # retoucher au tag.
+      - name: Joindre à la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release upload "$GITHUB_REF_NAME"
+          "${{ steps.bundle.outputs.archive }}" --clobber

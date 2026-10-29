@@ -10,6 +10,10 @@ import '../theme/app_typography.dart';
 /// **Le bandeau de mise à jour** — il informe, il renvoie au magasin, il se
 /// ferme, et l'application continue.
 ///
+/// **Sur le web, il recharge au lieu de renvoyer au magasin** : il n'y a pas de
+/// magasin dans un navigateur, et un bouton qui n'ouvre rien aurait rendu le
+/// seuil réglé au portail sans effet là-bas (voir `appReloaderProvider`).
+///
 /// ## Ce qu'il n'est pas, et ne deviendra pas
 ///
 /// Ni « mise à jour forcée », ni « version minimale », ni « kill switch ». Aucun
@@ -50,6 +54,10 @@ class AppUpdateBanner extends ConsumerWidget {
 
     final l10n = context.l10n;
     final palette = context.palette;
+    // Dans un navigateur, l'action est de recharger ; ailleurs, d'aller au
+    // magasin. Voir `appReloaderProvider` : `null` est la réponse de tout ce
+    // qui n'est pas le web.
+    final reloader = ref.watch(appReloaderProvider);
 
     return Padding(
       key: AppUpdateBanner.bannerKey,
@@ -92,10 +100,16 @@ class AppUpdateBanner extends ConsumerWidget {
                     // **Le bandeau ne se ferme pas en ouvrant le magasin.** On
                     // part vers une autre application et on revient ; retrouver
                     // l'invitation est juste tant que la mise à jour n'est pas
-                    // faite, et la refermer soi-même reste à un geste.
-                    onPressed: () => ref.read(storeLauncherProvider).open(),
+                    // faite, et la refermer soi-même reste à un geste. Sur le
+                    // web il n'y a nulle part où partir : la page se recharge et
+                    // le bandeau disparaît de lui-même, la version ayant monté.
+                    onPressed: () => reloader != null
+                        ? reloader.reload()
+                        : ref.read(storeLauncherProvider).open(),
                     child: Text(
-                      l10n.appUpdateAction,
+                      reloader != null
+                          ? l10n.appUpdateReload
+                          : l10n.appUpdateAction,
                       style: AppTypography.caption.copyWith(
                         color: palette.primary,
                         fontWeight: FontWeight.w700,
