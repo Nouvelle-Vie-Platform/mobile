@@ -44,5 +44,15 @@ jobs:
       # Le second risque, lui, est couvert par `flutter test` :
       # `test/data/local/web_assets_test.dart` apparie sqlite3.wasm et
       # drift_worker.js à pubspec.lock.
+      #
+      # **Les trois drapeaux sont ceux du bundle servi** (#271) : construire ici
+      # avec d'autres options ne garderait qu'à moitié le garde-fou, puisque
+      # `--csp` change la sortie de dart2js (plus aucun code fabriqué à
+      # l'exécution) et que `--no-web-resources-cdn` décide d'où vient
+      # CanvasKit. Un échec propre à la configuration de production se verrait
+      # alors au déploiement, pas sur la PR.
       - name: Build web
-        run: flutter build web --dart-define=API_BASE_URL=https://eenv.brainsial.com
+        run: >
+          flutter build web
+          --no-web-resources-cdn --csp --base-href /
+          --dart-define=API_BASE_URL=https://eenv.brainsial.com
