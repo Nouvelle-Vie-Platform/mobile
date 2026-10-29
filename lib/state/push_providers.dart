@@ -33,6 +33,19 @@ final pushTransportProvider = Provider<PushTransport>(
   (ref) => const InertPushTransport(),
 );
 
+/// **La permission d'affichage, à demander maintenant** — `null` partout sauf
+/// sur le web, où `main.dart` la surcharge (#283).
+///
+/// `null` et non une fonction inerte, comme `appReloaderProvider` : sur mobile
+/// il n'y a rien à demander à ce moment-là (la permission système est demandée
+/// au démarrage, une fois pour trois besoins), et un appelant doit pouvoir
+/// **ne rien offrir** plutôt qu'appeler quelque chose qui ne fait rien.
+///
+/// Son unique appelant est `InstallBanner` : sur le web, un refus de
+/// notification est quasi définitif, et le seul moment où il vaut la peine de
+/// le risquer est celui de l'installation.
+final pushPermissionProvider = Provider<PushPermissionRequest?>((ref) => null);
+
 /// `POST /devices/tokens`, sur le `Dio` d'`ApiClient`. Inerte sans backend : il n'y
 /// a personne à qui déclarer une cible de réveil, et une requête partirait pour
 /// prendre un refus.

@@ -24,6 +24,7 @@ import 'data/players/web_content_player.dart';
 import 'data/push/fcm_push_transport.dart';
 import 'data/push/push_transport.dart';
 import 'data/push/wake_notifier.dart';
+import 'data/push/web_push.dart';
 import 'data/update/web_app_reloader.dart';
 import 'firebase_options.dart';
 import 'state/app_update_providers.dart';
@@ -164,13 +165,26 @@ Future<void> main() async {
       // (`push_background.dart`). Application ouverte, les écrans se repeignent du
       // magasin — voir `push_providers.dart`.
       if (push != null) ...[
-        pushTransportProvider.overrideWithValue(push),
-        wakeTapsProvider.overrideWithValue(LocalWakeTaps()),
-        // **Effacer**, oui (M5) : la notification d'une conversation qu'on
-        // vient de lire part, application ouverte. Afficher, toujours non —
-        // c'est `wakeNotifierProvider`, inerte au premier plan.
-        wakeDismisserProvider.overrideWithValue(LocalWakeNotifier()),
+        pushTransportProvider.overrideWithValue(push.transport),
+        // ⚠️ **Pas de notification locale sur le web** (#283) : ce que le
+        // fidèle y voit est dessiné par `web/firebase-messaging-sw.js`, un
+        // worker que `flutter_local_notifications` ne connaît pas. Un
+        // `LocalWakeNotifier` posé ici ne pourrait ni effacer sa notification
+        // ni recevoir son tap — il n'échouerait pas, il ne ferait rien, ce qui
+        // est la pire des deux.
+        if (!kIsWeb) ...[
+          wakeTapsProvider.overrideWithValue(LocalWakeTaps()),
+          // **Effacer**, oui (M5) : la notification d'une conversation qu'on
+          // vient de lire part, application ouverte. Afficher, toujours non —
+          // c'est `wakeNotifierProvider`, inerte au premier plan.
+          wakeDismisserProvider.overrideWithValue(LocalWakeNotifier()),
+        ],
       ],
+      // **La permission d'afficher, demandée dans la foulée de l'installation**
+      // (#283) : `null` partout sauf sur le web, comme `appReloaderProvider`.
+      // C'est `InstallBanner` qui l'appelle, et lui seul.
+      if (push?.askPermission != null)
+        pushPermissionProvider.overrideWithValue(push!.askPermission),
     ],
   );
 
@@ -243,18 +257,30 @@ Future<void> main() async {
 /// posé avant que l'application ne commence à tourner, et il se pose une fois pour
 /// toute la vie du processus. Le poser plus tard — à la première connexion, par
 /// exemple — laisserait tomber les réveils reçus entre-temps.
-Future<PushTransport?> _startPush() async {
+///
+/// ⚠️ **Le web n'est plus une des sorties par `null`** (#283) : le projet
+/// Firebase déclare désormais une application web, et `createWebPush()` charge
+/// le SDK JS **depuis notre origine** avant d'initialiser. Il revient avec un
+/// second membre, `askPermission` — le web est la seule plateforme où la
+/// permission se demande ailleurs qu'au démarrage.
+Future<({PushTransport transport, PushPermissionRequest? askPermission})?>
+    _startPush() async {
   if (!AppEnv.useBackend) return null;
 
   final platform = devicePlatform();
-  if (platform == null || platform == 'web') return null;
+  if (platform == null) return null;
+
+  // Le navigateur a son propre transport, sa propre façon de charger Firebase et
+  // son propre moment pour la permission. Sa porte conditionnelle isole
+  // `dart:js_interop`, comme pour le lecteur web.
+  if (kIsWeb) return createWebPush();
 
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     FirebaseMessaging.onBackgroundMessage(fcmBackgroundWake);
-    return FcmPushTransport();
+    return (transport: FcmPushTransport(), askPermission: null);
   } catch (error, stackTrace) {
     // Même `try` que le lecteur : un transport qui ne démarre pas ne doit jamais
     // empêcher l'application de s'ouvrir. Une médiathèque muette vaut mieux qu'une
