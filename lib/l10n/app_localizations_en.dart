@@ -1756,6 +1756,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get installBannerDismiss => 'Later';
 
   @override
+  String get stateErrorStoreMessage =>
+      'Could not read the data stored on this device.';
+
+  @override
   String get miniPlayerLiveBadge => 'LIVE';
 
   @override

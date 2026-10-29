@@ -577,6 +577,8 @@
   "installBannerIosBody": "To install: tap Share, then “Add to Home Screen”.",
   "installBannerDismiss": "Later",
 
+  "stateErrorStoreMessage": "Could not read the data stored on this device.",
+
   "miniPlayerLiveBadge": "LIVE",
   "miniPlayerOnAirBadge": "On air",
   "miniPlayerOpen": "Open player: {title}",

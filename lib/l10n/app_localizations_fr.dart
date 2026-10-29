@@ -1773,6 +1773,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get installBannerDismiss => 'Plus tard';
 
   @override
+  String get stateErrorStoreMessage =>
+      'Impossible de lire les données enregistrées sur cet appareil.';
+
+  @override
   String get miniPlayerLiveBadge => 'EN DIRECT';
 
   @override
