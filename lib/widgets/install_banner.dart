@@ -26,6 +26,20 @@ import '../theme/app_typography.dart';
 /// porte alors **pas de bouton d'action** — un bouton qui n'ouvrirait rien
 /// serait une promesse que personne ne tient, et c'est la règle du dépôt
 /// (absence, jamais grisage).
+///
+/// ## La permission de notification part dans la foulée (#283)
+///
+/// Et **seulement** quand l'installation a été acceptée. C'est la décision du
+/// cadrage : sur le web un refus de notification est quasi définitif, et il
+/// emporte tout (sans permission, pas de jeton, donc pas même la
+/// synchronisation réveillée). L'installation est l'instant de plus forte
+/// intention ; un refus d'installation ne l'est pas, et on n'y brûle pas
+/// l'unique chance d'un fidèle.
+///
+/// Sur iPhone il n'y a pas de bouton, donc pas de ce moment-là : l'ajout à
+/// l'écran d'accueil se fait hors de l'application, et Safari ne nous dit pas
+/// qu'il a eu lieu. Les annonces poussées n'arriveront donc pas sur un iPhone
+/// par ce chemin — c'est une limite connue, pas un oubli.
 class InstallBanner extends ConsumerWidget {
   const InstallBanner({super.key});
 
@@ -91,7 +105,7 @@ class InstallBanner extends ConsumerWidget {
                       // retombera à `none` quand l'installation sera faite, et
                       // c'est elle qui le retire. Un refus le laisse en place,
                       // ce qui est juste — rien n'a changé.
-                      onPressed: () => ref.read(installPromptProvider).show(),
+                      onPressed: () => installThenAskForNotifications(ref),
                       child: Text(
                         l10n.installBannerAction,
                         style: AppTypography.caption.copyWith(
