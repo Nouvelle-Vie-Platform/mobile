@@ -18,7 +18,13 @@ dependencies:
   intl: any
   dio: ^5.8.0
   flutter_secure_storage: ^10.3.1
-  drift: 2.34.0
+  # ⚠️ Épinglé, et la version compte au-delà du code généré : `drift_worker.js`
+  # est un artefact PUBLIÉ par drift, qui embarque sa propre version du paquet
+  # `sqlite3`. Avant 2.34.2, ce worker ne fournissait pas l'import
+  # `xFileControl` que `sqlite3.wasm` ≥ 3.4.0 réclame : le magasin levait un
+  # `LinkError` dans le navigateur, et nulle part ailleurs. Voir
+  # `web/WEB_ASSETS.md`.
+  drift: 2.34.4
   drift_flutter: ^0.3.1
   # Dépôt d'image du composeur d'annonces (#36). Un plugin natif de plus, après
   # `flutter_secure_storage` et `drift` : le web reste une cible et
@@ -322,7 +328,11 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  drift_dev: ^2.34.0
+  # Épinglé **avec** `drift`, exactement : le vérificateur de schéma de 2.34.0
+  # appelle `allSchemaEntities`, qui n'existe plus sur le `GeneratedDatabase`
+  # de 2.34.4. Un `^` laisserait les deux dériver l'un sans l'autre, et
+  # `make migrations` tomberait au chargement.
+  drift_dev: 2.34.4
   build_runner: ^2.15.1
 
 # **Copie modifiée de just_audio 0.10.6** : elle ajoute `programTimeMs()`,

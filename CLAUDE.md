@@ -33,7 +33,7 @@ Passé public pour que GitHub Actions y soit gratuit et sans plafond : il consom
   de 3.44.2 refuse).
 - **flutter_riverpod ^3.x** (gestion d'état), **go_router ^17.x** (navigation),
   **flutter_localizations** + `gen-l10n` (i18n). `flutter_lints ^6`.
-- **drift 2.34.0** (épinglé) + `drift_flutter` — magasin local SQLite, voir
+- **drift 2.34.4** (épinglé) + `drift_flutter` — magasin local SQLite, voir
   « Magasin local » plus bas. Premier générateur de code du dépôt
   (`build_runner`, `drift_dev`).
 - **Le web reste une cible**, mais ce n'est plus gratuit. La règle précédente
@@ -44,7 +44,12 @@ Passé public pour que GitHub Actions y soit gratuit et sans plafond : il consom
   `pubspec.lock`. Le lecteur de la médiathèque y ajoute `web/hls.min.js` (#46),
   versionné de la même façon mais épinglé dans `tool/web_assets.sh` — `hls.js`
   n'est pas un paquet Dart. Après toute montée de `drift`, `sqlite3` ou
-  `hls.js` : `make web-assets`. Voir `web/WEB_ASSETS.md`. **Aucun CDN.**
+  `hls.js` : `make web-assets`. ⚠️ **Et la version de `drift` compte au-delà du
+  code généré** : `drift_worker.js` est un artefact publié, qui embarque sa
+  propre version de `sqlite3`. Avant 2.34.2 il ne fournissait pas l'import
+  `xFileControl` que `sqlite3.wasm` ≥ 3.4.0 réclame — le magasin levait un
+  `LinkError` dans le navigateur, et nulle part ailleurs (29/10/2026). Un test
+  tient désormais l'accord des symboles. Voir `web/WEB_ASSETS.md`. **Aucun CDN.**
 - **`flutter_secure_storage ^10.3.1`** — le coffre du **token d'accès**
   (`ApiClient`), et rien d'autre qui compte : sous ADR-0020 il n'y a pas de mot
   de passe, le token *est* la session, et le seul moyen d'en obtenir un est un
