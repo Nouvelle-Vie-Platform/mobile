@@ -58,15 +58,26 @@ un fidèle apporte un téléphone plus ancien, avec le banc de `§6`.
 
 ## 3. Les mesures du 2026-10-28
 
-### Le poids du premier lancement (`flutter build web --release`, Flutter 3.47.4)
+### Le poids du premier lancement — remesuré le 29/10 sur le bundle de T0
 
-| Ce qu'il faut avant le premier écran | brut | gzip | brotli |
-| --- | --- | --- | --- |
-| `main.dart.js` | 7,7 Mo | 2 179 k | **1 593 k** |
-| `canvaskit.wasm` | 6,9 Mo | 2 843 k | **2 204 k** |
-| `hls.min.js` | 604 k | 183 k | **150 k** |
-| `sqlite3.wasm` + `drift_worker.js` | 1,0 Mo | 455 k | **393 k** |
-| **total** | — | ~5,7 Mo | **~4,35 Mo** |
+`flutter build web --release --no-web-resources-cdn --csp --base-href /`, Flutter 3.47.4, brotli
+`-q 11` posé à côté de chaque fichier :
+
+| Ce qu'il faut avant le premier écran | brut | **servi (brotli)** |
+| --- | --- | --- |
+| `main.dart.js` | 7 907 k | **1 593 k** |
+| `canvaskit/chromium/canvaskit.wasm` | 5 301 k | **1 504 k** |
+| `canvaskit/canvaskit.js` | 84 k | **23 k** |
+| `hls.min.js` | 602 k | **149 k** |
+| `flutter_bootstrap.js` | 12 k | **4 k** |
+| **premier écran** | — | **≈ 3,2 Mo** |
+| `sqlite3.wasm` + `drift_worker.js` (ouverture du magasin) | 1 073 k | **393 k** |
+| **total** | — | **≈ 3,6 Mo** |
+
+**Et non 4,35 Mo comme écrit le 28/10** : la première mesure comptait la variante **générique** de
+CanvasKit (2 204 k en brotli), alors que Chrome télécharge la variante `chromium/` (1 504 k), qui
+délègue les codecs au navigateur. Sur Firefox et Safari, c'est bien la générique, donc ~700 k de
+plus.
 
 `assets/images/live_bg.png` pèse en plus **1,5 Mo brut** sur l'écran radio (~150 k en webp).
 Les lancements suivants coûtent zéro octet : le service worker sert tout depuis le disque.
@@ -162,15 +173,15 @@ Trois conséquences, et ce sont elles qui dessinent T0 :
 | --- | --- |
 | Un **sous-domaine dédié**, `app.eenv.brainsial.com`. | Une adresse qui se dit à l'oral et s'écrit sur une affiche, et un service worker qui a tout le domaine pour portée. Le prix est connu : une entrée DNS, un bloc Caddy, et l'origine à déclarer dans l'allowlist CORS du portail. |
 | **Parité totale**, téléchargement hors ligne compris. | Demandé explicitement. Le coût a été nommé avant d'être accepté : le hors-ligne web est la tranche la plus lourde et n'existera jamais sur iPhone. |
-| **Brotli dans Caddy + `live_bg` en webp**, et on s'arrête là. | **1,35 Mo gagnés sur le premier lancement** (5,7 Mo en gzip → 4,35 Mo en brotli) et 1,35 Mo de plus sur l'écran radio, sans une ligne de Dart. Le build `--wasm` a été écarté : il exige **WasmGC**, arrivé précisément à Chrome 119 — on gagnerait des octets en perdant le public visé. |
+| **Brotli précompressé au build + `live_bg` en webp**, et on s'arrête là. | **Le binaire Caddy standard ne sait pas compresser en brotli** (greffon requis) — mais `file_server { precompressed br }` sert un `.br` posé à côté du fichier, sans greffon. `tool/precompresser-web.sh` le fait à `-q 11` une fois au build, ce qui est de toute façon meilleur qu'à chaque requête. Pas de `.gz` dans l'archive : tout navigateur qui fait tourner Flutter web parle brotli, et `encode gzip` reste en repli dynamique. Plus 1,35 Mo gagnés sur l'écran radio par le webp. Le build `--wasm` a été écarté : il exige **WasmGC**, arrivé précisément à Chrome 119 — on gagnerait des octets en perdant le public visé. |
 | Hors ligne par **Background Fetch**, pas par `fetch` + `Range` dans OPFS. | Le navigateur ne donne pas les deux : soit le transfert survit à la fermeture de l'onglet, soit il se met en pause à l'octet. Un fidèle lance un enseignement de deux heures et range son téléphone — c'est ce cas-là qui compte. **Le bouton Pause n'existe donc pas sur le web** (annuler, oui ; reprendre où l'on était, non). |
 | **Le téléchargement demande l'installation ; tout le reste marche dans un onglet.** *(confirmé par la mesure du 29/10 : `persist()` a répondu non avant l'installation, oui après.)* | `navigator.storage.persist()` ne rend `true` qu'à un site installé. Lancer un transfert de 80 Mo que Chrome peut évincer sans prévenir serait faire payer des données pour rien — sur des appareils dont le stockage saturé est précisément le problème. |
 | Installation par un **bandeau `beforeinstallprompt`** dans l'appli ; sur iPhone, le geste Partager → Sur l'écran d'accueil **expliqué**. | Chrome a rangé « Installer l'application » dans son menu ⋮, que personne n'ouvre — et l'installation porte désormais le hors-ligne et la durabilité du stockage. La laisser au hasard du menu serait la laisser mourir. iOS n'a aucun événement à écouter : il ne reste que l'explication. |
 | **iPhone traité à égalité de soin**, en assumant qu'il n'y a **pas** de hors-ligne sur Safari. | Safari n'a pas Background Fetch, quel que soit le code. L'écran se masque là où la fonction n'existe pas, exactement comme pour un onglet non installé : un écran masqué vaut mieux qu'un bouton qui ment. |
 | **90 jours comme au natif**, plus une **CSP stricte** servie par Caddy. | C'est le seul endroit où le web est strictement moins sûr que le natif, et ça ne se rattrape pas en Dart : le token dort dans le stockage du site, lisible par tout script injecté sur l'origine. La défense est donc l'en-tête, et elle est cohérente avec la règle du dépôt (aucun CDN, `web/WEB_ASSETS.md`). |
-| L'antenne : **tout dans Caddy**, `mediamtx.yml` intact. | `mediamtx.yml` ne se recharge pas à chaud : y toucher ferait **taire l'antenne** le temps du redémarrage. Et comme `Allow-Credentials` doit venir de Caddy de toute façon, y mettre aussi l'`Allow-Origin` de la nouvelle origine ne crée aucun doublon — MediaMTX n'en émet aucun pour elle (mesuré). |
+| L'antenne : **tout dans Caddy**, `mediamtx.yml` intact. | ⚠️ *Correction du 29/10 : j'avais justifié ce choix par un silence de l'antenne au redémarrage de MediaMTX. C'est faux — `mediamtx-service/deploy/caddy/mediamtx.caddy` dit que resserrer `hlsAllowOrigins` « est un `mtx.sh recharger`, donc sans coupure ». Le choix tient pour la raison suivante, qui est la vraie.* Comme `Allow-Credentials` doit venir de Caddy de toute façon, y mettre aussi l'`Allow-Origin` de la nouvelle origine ne crée aucun doublon — MediaMTX n'en émet aucun pour elle (mesuré). |
 | Push : permission demandée **dans la foulée de l'installation**. | C'est l'instant de plus forte intention, un refus web est quasi définitif, et la permission accordée renforce en prime la durabilité du stockage. Au natif elle est demandée au démarrage ; sur le web ce serait le pic de refus, et le refus y emporte tout. |
-| **`Access-Control-Allow-Origin: *` sur les routes de médias**, et elles seules. | Ces fichiers sont déjà publics, immuables (`max-age=31536000, immutable`) et ne portent aucun cookie : les lire depuis une autre origine ne donne accès à rien de plus que les ouvrir dans un onglet. L'origine exacte aurait été à maintenir à trois endroits, et un oubli se manifeste par des affiches vides sans message lisible. |
+| **`Access-Control-Allow-Origin: *` sur les routes de médias**, et elles seules. — **déjà en place, vérifié le 29/10 : rien à faire.** `stream.…` porte `ACAO *`, `Allow-Headers Range` et `Expose-Headers Content-Range, Accept-Ranges` sur `/hls/*`, `/dl/*` et `/radio/*` ; `eenv.…/media/visuals/*` et `/media/uploads/*` portent `ACAO *`. L'application ne tire ses médias que de là. | Ces fichiers sont déjà publics, immuables (`max-age=31536000, immutable`) et ne portent aucun cookie : les lire depuis une autre origine ne donne accès à rien de plus que les ouvrir dans un onglet. L'origine exacte aurait été à maintenir à trois endroits, et un oubli se manifeste par des affiches vides sans message lisible. |
 | **Trois service workers à portées distinctes** ; le fichier généré par Flutter n'est jamais modifié. | Tout ce qu'on écrirait dans `flutter_service_worker.js` disparaît au prochain build. Celui de Flutter garde la coquille, celui de Firebase le push (il s'enregistre seul sur sa propre portée), et un `sw-offline.js` à nous reçoit `backgroundfetchsuccess`. Le Cache est partagé par origine : l'appli y lit sans rien de plus. |
 | Mises à jour : **le bandeau existant**, bouton « Recharger » sur le web. | `update_banner_min_version` est déjà réglable depuis l'écran *Appareils* du portail et déjà répliqué par la synchronisation (`server-portal#475`). Seule l'action change (`skipWaiting` + rechargement au lieu d'ouvrir le magasin). Un rechargement d'office a été écarté : il tomberait en pleine écoute. |
 | Publication : **`.tar.gz` joint à la Release sur tag `v*`**, posé sur le VPS à la main, bascule par lien symbolique. | Le dépôt `mobile` est public : ses Releases se téléchargent sans jeton, donc `curl | tar` suffit — aucun secret, aucun chemin entrant nouveau, et un retour arrière instantané vers la version précédente. Une route de dépôt automatique aurait signifié **extraire une archive** derrière une route authentifiée, soit une frontière de confiance à soigner pour économiser deux commandes. |
@@ -184,11 +195,15 @@ Trois conséquences, et ce sont elles qui dessinent T0 :
 **T0 bloque tout le reste** : sans l'adresse, rien n'est joignable — et c'est un état sûr, exactement
 comme pour l'antenne (`mediamtx-service/README.md`).
 
-- **T0 — l'adresse** (`context`). Entrée DNS, bloc Caddy de `app.eenv.brainsial.com` : racine
-  statique sur `app-web/current`, `encode zstd br gzip`, `Content-Security-Policy`. Puis
-  `Access-Control-Allow-Origin: *` sur les routes de médias, `Access-Control-Allow-Credentials` et
-  l'`Allow-Origin` de la nouvelle origine sur le bloc de l'antenne, et l'origine ajoutée à
-  l'allowlist CORS du portail (`server-portal`, une ligne, par variable d'environnement).
+- **T0 — l'adresse** (`context` + `server-portal`). **Écrite le 29/10** :
+  `infra/caddy/app-web.caddy` (le bloc du domaine, `root` sur `/opt/eenv-app-web/current`,
+  `encode zstd gzip`, `file_server { precompressed br }`, CSP stricte, `no-cache` sur les quatre
+  fichiers d'amorçage), `infra/caddy/antenne-cors.caddy` (le `handle /antenne/*` remplacé, avec
+  `Allow-Credentials` et l'`Allow-Origin` posés **sous matcher d'origine** pour ne pas doubler
+  celui que MediaMTX émet déjà au portail), la branche `feat/cors-app-web` du portail
+  (`CORS_ALLOWED_ORIGINS`, typecheck vert), et la section de pose dans `docs/RUNBOOK.md` du dépôt
+  `context` — DNS, bundle, dossier, version, portail, Caddy, vérifications, retour arrière.
+  **Les en-têtes CORS des médias n'en font pas partie : ils existaient déjà.**
 - **T1 — l'installation** (`mobile`). `web/manifest.json` réel (nom, description, thème et fond de
   la marque, icônes déjà présentes), `live_bg` en webp, bandeau `beforeinstallprompt` qui disparaît
   en `display-mode: standalone`, et l'explication du geste iOS. Après T1, la médiathèque, les
