@@ -1,4 +1,6 @@
-/// **Le transport FCM** — et le seul fichier du dépôt qui connaisse Firebase.
+/// **Le transport FCM du mobile** — et l'un des deux seuls fichiers du dépôt
+/// qui connaissent Firebase. L'autre est `web_push_transport.dart` (#283), qui
+/// sert le navigateur ; `main.dart` choisit entre les deux.
 ///
 /// Même couture que `JustAudioContentPlayer` derrière `ContentPlayer` : tout le
 /// reste de l'application ne connaît que [PushTransport], et un test de source le

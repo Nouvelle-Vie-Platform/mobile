@@ -46,6 +46,20 @@ const String kFcmTransport = 'fcm';
 /// ce qui empêche deux orthographes de coexister.
 const String kUnifiedPushTransport = 'unifiedpush';
 
+/// **Demander la permission d'affichage, maintenant.**
+///
+/// Une fonction et non une méthode de [PushTransport], parce que ce n'est pas
+/// une propriété du transport : c'est un **moment**, et un seul transport en a
+/// un. Sur mobile la permission est demandée au démarrage
+/// (`requestPlaybackNotificationPermission()`, une permission système pour
+/// trois besoins) ; **sur le web elle est demandée dans la foulée de
+/// l'installation** (#283) — un refus y est quasi définitif, et il emporte
+/// tout : sans permission, pas de jeton, donc pas même le réveil silencieux.
+///
+/// Elle **ne lève jamais** : c'est un bandeau qui l'appelle.
+/// `pushPermissionProvider` la rend, `null` partout sauf sur le web.
+typedef PushPermissionRequest = Future<void> Function();
+
 /// **Un transport de réveil.** Ne lève jamais : l'absence de push est un mode de
 /// fonctionnement normal, pas une panne (PRD D4, « dégradé propre »).
 abstract interface class PushTransport {
@@ -120,11 +134,11 @@ class InertPushTransport implements PushTransport {
 /// `AppPlatformInfo.name`, qui dit la vérité de la machine (`macos`, `linux`) et
 /// non celle du contrat.
 ///
-/// ⚠️ `web` est dans le jeu du serveur et **pas** dans celui de cette
-/// application : le projet Firebase ne déclare aucune application web
-/// (`firebase_options.dart`). La valeur est rendue quand même — c'est la
-/// plateforme, pas une décision — et c'est au choix de transport d'écarter le web,
-/// à un seul endroit.
+/// ⚠️ `web` **est désormais du jeu des deux côtés** (#283) : le projet Firebase
+/// déclare une application web, et `WebPushTransport` s'y branche. La valeur
+/// était déjà rendue quand ce n'était pas le cas — c'est la plateforme, pas une
+/// décision —, et c'est toujours au choix de transport de `main.dart` de dire
+/// quel transport elle reçoit.
 String? devicePlatform() {
   if (kIsWeb) return 'web';
   return switch (defaultTargetPlatform) {

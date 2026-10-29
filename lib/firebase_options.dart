@@ -16,6 +16,7 @@
 // | `messagingSenderId` | `project_number` / `GCM_SENDER_ID`    |
 // | `projectId`         | `project_id` / `PROJECT_ID`           |
 // | `storageBucket`     | `storage_bucket` / `STORAGE_BUCKET`   |
+// | **web**             | console Firebase, fiche de l'application web (#283) |
 //
 // La forme est **celle que `flutterfire` produit** (classe `DefaultFirebaseOptions`,
 // sélection par `defaultTargetPlatform`, `UnsupportedError` pour les plateformes
@@ -40,9 +41,9 @@ import 'package:flutter/foundation.dart'
 
 /// Les options Firebase du projet `nouvelle-vie-25eb5`.
 ///
-/// **Deux plateformes déclarées, et deux seulement.** Le web, macOS, Windows et
-/// Linux n'ont aucune application dans le projet Firebase : y demander des
-/// options lève, exactement comme le fichier généré le ferait. Personne ne doit
+/// **Trois plateformes déclarées, et trois seulement.** macOS, Windows et Linux
+/// n'ont aucune application dans le projet Firebase : y demander des options
+/// lève, exactement comme le fichier généré le ferait. Personne ne doit
 /// rattraper cette exception pour « dégrader » — c'est à l'appelant de ne pas
 /// appeler (voir `_startPush()` dans `main.dart`, qui écarte ces plateformes
 /// avant d'arriver ici).
@@ -50,14 +51,7 @@ class DefaultFirebaseOptions {
   const DefaultFirebaseOptions._();
 
   static FirebaseOptions get currentPlatform {
-    if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions n\'a pas d\'options pour le web : aucune '
-        'application web n\'est déclarée dans le projet Firebase. '
-        'Le réveil push n\'y existe donc pas, et l\'application y tourne sans '
-        'transport (double inerte).',
-      );
-    }
+    if (kIsWeb) return web;
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
@@ -97,5 +91,27 @@ class DefaultFirebaseOptions {
     projectId: 'nouvelle-vie-25eb5',
     storageBucket: 'nouvelle-vie-25eb5.firebasestorage.app',
     iosBundleId: 'com.maisondumiracle.maisonDuMiracle',
+  );
+
+  /// **L'application web** (#283), relevée de sa fiche dans la console Firebase.
+  ///
+  /// `authDomain` et `measurementId` n'existent que de ce côté — la première
+  /// n'est lue que par l'authentification Firebase (que nous n'employons pas),
+  /// la seconde par Analytics (idem). Elles sont recopiées quand même : le
+  /// jour où `flutterfire configure` sera lancé, le diff doit porter sur des
+  /// valeurs et pas sur des clés absentes.
+  ///
+  /// ⚠️ **Ces options ne suffisent pas à obtenir un jeton** : il faut en plus
+  /// la **clé VAPID**, qui vit dans `lib/data/push/web_push_transport.dart`.
+  /// Tant qu'elle est vide, `Firebase.initializeApp()` réussit, aucun jeton
+  /// n'est demandé, et l'app web tourne sans push — exactement comme avant.
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyAP7fZYmqF5zlG_p4WmXXOemnwiqNYChYg',
+    appId: '1:994804124857:web:5155903d7431300b3a1f68',
+    messagingSenderId: '994804124857',
+    projectId: 'nouvelle-vie-25eb5',
+    authDomain: 'nouvelle-vie-25eb5.firebaseapp.com',
+    storageBucket: 'nouvelle-vie-25eb5.firebasestorage.app',
+    measurementId: 'G-1ZHZYRNBZH',
   );
 }

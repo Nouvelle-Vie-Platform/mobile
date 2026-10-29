@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
@@ -107,6 +108,125 @@ void main() {
       );
     });
   });
+
+  group('le SDK JS de Firebase — les annonces du navigateur (#283)', () {
+    const files = [
+      'firebase/firebase-app.js',
+      'firebase/firebase-messaging.js',
+    ];
+
+    test('les deux modules sont présents et non tronqués', () {
+      for (final fileName in files) {
+        final file = File('web/$fileName');
+        expect(file.existsSync(), isTrue, reason: 'web/$fileName manque');
+        expect(
+          file.lengthSync(),
+          greaterThan(20 * 1024),
+          reason: 'web/$fileName est trop petit pour être le vrai bundle',
+        );
+      }
+    });
+
+    test('les fichiers présents sont ceux que le dépôt déclare', () {
+      for (final fileName in files) {
+        final digest = sha256.convert(File('web/$fileName').readAsBytesSync());
+        expect(
+          _manifestEntry(manifest, fileName, marker: 'firebase-web-asset'),
+          'sha256:$digest',
+          reason: 'web/$fileName ne correspond pas à son empreinte déclarée — '
+              'relancer `make web-assets`.',
+        );
+      }
+    });
+
+    test('la version servie est celle que `firebase_core_web` attend', () {
+      // ⚠️ **Cette version ne se choisit pas, elle se subit** : le paquet est
+      // testé contre une version précise du SDK JS et imprime un avertissement
+      // devant toute autre. Monter `firebase_core` déplace donc la cible, et
+      // c'est ce test qui le dira — rien d'autre ne le ferait, puisque nos deux
+      // fichiers resteraient parfaitement « à jour » de leur côté.
+      // Remède : changer `FIREBASE_SDK_VERSION` dans `tool/web_assets.sh`,
+      // puis `make web-assets`.
+      final source = File(
+        '${_packageRoot('firebase_core_web')}src/firebase_sdk_version.dart',
+      ).readAsStringSync();
+      final expected = RegExp("supportedFirebaseJsSdkVersion = '([^']+)'")
+          .firstMatch(source)
+          ?.group(1);
+      expect(expected, isNotNull,
+          reason: 'constante introuvable dans le paquet');
+      expect(
+        _manifestEntry(manifest, 'firebase-js-sdk',
+            marker: 'firebase-web-asset'),
+        expected,
+      );
+    });
+
+    test('aucun des deux n\'importe quoi que ce soit hors de notre origine',
+        () {
+      // **C'est la mesure de la tranche, tenue sur les octets.**
+      // `firebase-messaging.js` arrive de chez Google avec un
+      // `from"https://www.gstatic.com/.../firebase-app.js"` **écrit dans ses
+      // octets** : servi tel quel, il déplacerait 37 ko et laisserait le
+      // navigateur chercher les 106 ko du cœur chez Google — et la CSP de
+      // l'origine le refuserait. `tool/web_assets.sh` remplace cette chaîne par
+      // `./firebase-app.js` ; si la retouche sautait (nouveau bundle, script
+      // modifié), rien d'autre ne le dirait avant la console d'un fidèle.
+      final imports = RegExp(r'''(?:from|import)\s*\(?\s*["']https?:''');
+      for (final fileName in files) {
+        final code = File('web/$fileName').readAsStringSync();
+        expect(
+          imports.hasMatch(code),
+          isFalse,
+          reason: 'web/$fileName importe un module hors de notre origine',
+        );
+      }
+      expect(
+        File('web/firebase/firebase-messaging.js').readAsStringSync(),
+        contains('from"./firebase-app.js"'),
+        reason: 'la retouche de `tool/web_assets.sh` doit être en place',
+      );
+    });
+
+    test('le worker de messagerie est à son nom exact, et sans SDK', () {
+      // Le SDK enregistre lui-même `/firebase-messaging-sw.js` : renommer le
+      // fichier, c'est un worker qui ne s'enregistre jamais.
+      final worker = File('web/firebase-messaging-sw.js');
+      expect(worker.existsSync(), isTrue);
+      // Commentaires retirés : l'en-tête **parle** de `importScripts` pour dire
+      // pourquoi il n'y en a pas.
+      final code = worker
+          .readAsLinesSync()
+          .where((line) => !line.trimLeft().startsWith('//'))
+          .join('\n');
+      expect(
+        code,
+        isNot(contains('importScripts')),
+        reason: 'ce worker lit l\'événement `push` du navigateur ; il n\'a '
+            'aucun bundle tiers à charger, et donc aucun à versionner.',
+      );
+      expect(code, isNot(contains('gstatic.com')));
+    });
+  });
+}
+
+/// Racine du paquet résolu, lue dans `.dart_tool/package_config.json`.
+String _packageRoot(String package) {
+  final config = jsonDecode(
+    File('.dart_tool/package_config.json').readAsStringSync(),
+  ) as Map<String, Object?>;
+  final packages = config['packages'] as List<Object?>;
+  final entry = packages.cast<Map<String, Object?>>().firstWhere(
+        (p) => p['name'] == package,
+        orElse: () => throw StateError('$package absent du package_config'),
+      );
+  final root = Uri.parse(entry['rootUri'] as String);
+  final packageUri = entry['packageUri'] as String;
+  // `rootUri` est relative au dossier `.dart_tool/` quand elle n'est pas
+  // absolue — c'est le cas des paquets du cache sur certaines machines.
+  final resolved =
+      root.hasScheme ? root : Uri.directory('.dart_tool').resolveUri(root);
+  return '${resolved.toFilePath()}/$packageUri'.replaceAll('//', '/');
 }
 
 /// Valeur d'une clé d'un bloc de contrôle de `web/WEB_ASSETS.md`.

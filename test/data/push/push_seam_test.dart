@@ -44,18 +44,54 @@ void main() {
     // une propriété du transport. Aucun test ne l'importe.
     expect(
       importers('firebase_messaging'),
-      ['lib/data/push/fcm_push_transport.dart', 'lib/main.dart'],
+      [
+        'lib/data/push/fcm_push_transport.dart',
+        // Le transport du navigateur (#283) : même couture, deuxième
+        // implémentation. Il n'est importé par aucun test non plus — il tire
+        // `dart:js_interop`, et c'est `web_push.dart` qui l'isole.
+        'lib/data/push/web_push_transport.dart',
+        'lib/main.dart',
+      ],
       reason:
-          'seuls le transport réel et le choix de démarrage connaissent FCM',
+          'seuls les transports réels et le choix de démarrage connaissent FCM',
     );
     expect(
       importers('firebase_core'),
       [
         'lib/data/push/fcm_push_transport.dart',
+        'lib/data/push/web_push_transport.dart',
         'lib/firebase_options.dart',
         'lib/main.dart',
       ],
       reason: 'les options ne sont lues que par là où Firebase démarre',
+    );
+  });
+
+  test('le SDK JS de Firebase ne se charge que depuis notre origine', () {
+    // ⚠️ **La règle « aucun CDN » de `web/WEB_ASSETS.md`, tenue sur la source.**
+    // `firebase_core_web` injecte le SDK depuis `gstatic.com` dès
+    // `Firebase.initializeApp()` ; la porte de sortie est de remplir
+    // `window.firebase_core` **avant**, avec les modules de `web/firebase/`.
+    // Un fichier qui initialiserait Firebase sur le web sans passer par là
+    // rouvrirait l'origine à Google en silence — et seule la console d'un
+    // fidèle le dirait, sous la forme d'une CSP qui refuse.
+    final code = sources()['lib/data/push/web_push_transport.dart'];
+    expect(code, isNotNull);
+    expect(
+      code,
+      contains('globalContext[_coreGlobal]'),
+      reason: 'le cœur du SDK doit être posé sur `window` avant l\'init',
+    );
+    expect(
+      code,
+      contains('globalContext[_messagingGlobal]'),
+      reason: 'la messagerie aussi : le test de `_initializeCore` ne porte que '
+          'sur `firebase_core`, et il saute alors TOUTE l\'injection',
+    );
+    expect(
+      code,
+      isNot(contains('gstatic.com')),
+      reason: 'aucune URL de CDN dans le code du transport web',
     );
   });
 

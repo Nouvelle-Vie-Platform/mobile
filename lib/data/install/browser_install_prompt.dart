@@ -39,7 +39,13 @@ extension type _InstallSlot._(JSObject _) implements JSObject {
 }
 
 extension type _BeforeInstallPromptEvent._(JSObject _) implements JSObject {
-  external JSPromise<JSAny?> prompt();
+  external JSPromise<_PromptResult?> prompt();
+}
+
+/// Ce que `prompt()` résout : `{ outcome, platform }`. Seul `outcome` nous
+/// intéresse, et `'accepted'` est la seule valeur qui autorise la suite.
+extension type _PromptResult._(JSObject _) implements JSObject {
+  external JSString? get outcome;
 }
 
 /// L'implémentation réelle. Construite par `main.dart` sous `kIsWeb`.
@@ -71,21 +77,29 @@ class BrowserInstallPrompt implements InstallPrompt {
   Stream<InstallOffer> get changes => _changes.stream;
 
   @override
-  Future<void> show() async {
+  Future<bool> show() async {
     final stored = _slot?.event;
-    if (stored == null) return;
+    if (stored == null) return false;
     // L'événement ne sert **qu'une fois** : Chrome refuse un second `prompt()`
     // sur le même objet. On l'oublie avant même de savoir si le fidèle a
     // accepté — un refus ne se re-propose pas dans la foulée, et l'événement
     // reviendra de lui-même à la visite suivante.
     _slot?.event = null;
+    var accepted = false;
     try {
-      await (stored as _BeforeInstallPromptEvent).prompt().toDart;
+      final result =
+          await (stored as _BeforeInstallPromptEvent).prompt().toDart;
+      // `outcome` vaut `'accepted'` ou `'dismissed'`. Tout le reste — y compris
+      // un navigateur qui ne résout rien — compte comme un refus : c'est lui
+      // qui décide si l'on enchaîne sur la permission de notification, et on
+      // n'enchaîne pas sur une incertitude.
+      accepted = result?.outcome?.toDart == 'accepted';
     } on Object {
       // Une invite refusée par le navigateur n'est pas une panne de
       // l'application : le bandeau se taira, et c'est tout.
     }
     _changes.add(offer);
+    return accepted;
   }
 
   /// Déjà installée : la fenêtre n'a plus de barre d'adresse (tous les

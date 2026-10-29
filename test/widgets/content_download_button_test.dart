@@ -92,10 +92,13 @@ class FakeDownloadCapabilities implements DownloadCapabilities {
 
 /// Une offre d'installation, et la preuve que le bouton atteint le navigateur.
 class FakeInstallPrompt implements InstallPrompt {
-  FakeInstallPrompt(this.offer);
+  FakeInstallPrompt(this.offer, {this.accepts = false});
 
   @override
   final InstallOffer offer;
+
+  /// Ce que le navigateur répondra à la boîte d'installation (#283).
+  final bool accepts;
 
   int shown = 0;
 
@@ -103,7 +106,10 @@ class FakeInstallPrompt implements InstallPrompt {
   Stream<InstallOffer> get changes => const Stream<InstallOffer>.empty();
 
   @override
-  Future<void> show() async => shown++;
+  Future<bool> show() async {
+    shown++;
+    return accepts;
+  }
 }
 
 void main() {

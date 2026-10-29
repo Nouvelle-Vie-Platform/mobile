@@ -259,6 +259,37 @@ void main() {
       await enrolment.dispose();
     });
 
+    test(
+        'le web : rien au démarrage, puis la cible part sous '
+        '`platform: \'web\'` quand la permission est accordée', () async {
+      // **Le scénario exact de l'app web** (#283) : au démarrage il n'y a pas
+      // de permission, donc pas de jeton (`target()` rend `null`) ; la
+      // permission est accordée dans la foulée de l'installation, et le jeton
+      // obtenu rejoint `targetChanges` — le flux auquel `start()` s'est abonné.
+      // C'est ce chemin-là qui fait qu'aucune pièce n'a eu à être rebranchée.
+      final transport = _ScriptedTransport(first: null);
+      final enrolment = PushEnrolment(
+        transport: transport,
+        registrar: HttpPushRegistrar(dio: api.dio),
+        platform: 'web',
+      );
+
+      await enrolment.start();
+      expect(registrations(), isEmpty,
+          reason: 'pas de permission, pas de jeton');
+
+      transport.rotate('fcm-web-token');
+      await waitUntil(() => enrolment.target == 'fcm-web-token');
+
+      expect(registrations(), hasLength(1));
+      expect(adapter.lastBody, {
+        'token': 'fcm-web-token',
+        'platform': 'web',
+        'transport': 'fcm',
+      });
+      await enrolment.dispose();
+    });
+
     test('le registraire inerte n\'ouvre aucune socket', () async {
       final enrolment = PushEnrolment(
         transport: _ScriptedTransport(first: 'cible-1'),

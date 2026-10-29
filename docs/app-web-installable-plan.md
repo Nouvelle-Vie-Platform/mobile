@@ -1,7 +1,8 @@
 # Une app web installable, pour les téléphones où l'application ne va pas
 
 **Statut** : cadrage validé le 2026-10-28, **§1 corrigé le 2026-10-29 par le banc sur appareil**
-(§3). Six tranches (T0 à T5), dépôts `mobile` et `context`. Aucune encore commencée.
+(§3). Six tranches (T0 à T5), dépôts `mobile` et `context`. **Les six sont écrites, T2 la
+dernière le 29/10** ; il ne reste d'elle que la **clé VAPID** à poser dans la console Firebase.
 **Origine** : une demande de l'utilisateur — « pour les devices qui ne pourront pas avoir accès à
 l'installation de l'application, que l'app web fonctionne chez eux, qu'ils l'installent facilement
 et la retrouvent dans leurs apps, avec si possible la même expérience ».
@@ -225,9 +226,27 @@ comme pour l'antenne (`mediamtx-service/README.md`).
   en route** : `--build-name` / `--build-number` sur le build web (sans eux `version.json` dit
   `1.0.0`, et le bandeau paraît pour tout seuil), et la correction du §2 sur le service worker.
   Restent les commandes de pose et de retour arrière (`context`, `docs/RUNBOOK.md`).
-- **T2 — les annonces** (`mobile`). Application web dans le projet Firebase `nouvelle-vie-25eb5`,
-  clé VAPID, `firebase-messaging-sw.js`, levée de l'`UnsupportedError` de `firebase_options.dart`
-  pour le web, permission demandée dans la foulée de l'installation. Aucun travail serveur.
+- **T2 — les annonces** (`mobile`). **Écrite le 29/10** (mobile#283) :
+  `web_push_transport.dart` derrière la porte `web_push.dart` (seconde implémentation de
+  `PushTransport`, **une addition** — registraire, enrôlement, lecture de charge utile et handler
+  n'ont pas bougé), l'entrée `web` de `firebase_options.dart`, `web/firebase-messaging-sw.js` sur la
+  portée que le SDK enregistre lui-même, et la permission demandée par
+  `installThenAskForNotifications` **seulement si l'installation a été acceptée** (d'où
+  `InstallPrompt.show()` qui rend un booléen). Aucun travail serveur.
+  **La décision de la tranche est tranchée, et dans le bon sens** : le SDK JS de Firebase est
+  **servi depuis notre origine** (`web/firebase/`, versionné et empreinté par
+  `tool/web_assets.sh`), la CSP de `context` n'a donc **pas** eu à gagner `gstatic.com`. La porte
+  de sortie est dans `firebase_core_web` lui-même : si `window.firebase_core` est déjà posé, il
+  n'injecte rien. Mesuré par `make push-probe` — CSP de production **et réseau extérieur coupé**
+  (`--host-resolver-rules`) : SDK 12.19.0 chargé depuis `/firebase/*`, `[DEFAULT]` initialisé sur
+  `nouvelle-vie-25eb5`. **Deux choses ajoutées en route** : `firebase-messaging.js` est retouché
+  d'une chaîne (il importe le cœur par une URL `gstatic.com` écrite dans ses octets, le paquet npm
+  aussi), et la version du SDK est désormais **contrainte** par
+  `supportedFirebaseJsSdkVersion`, qu'un test lit dans le paquet résolu.
+  **Reste la clé VAPID** (console Firebase → Cloud Messaging → Certificats push web), seule
+  constante vide du chantier : sans elle aucun jeton n'est demandé et **aucune permission non
+  plus**, par choix. Et **qu'une notification arrive ne se prouve que dans un navigateur**, après
+  la pose de cette clé.
 - **T3 — l'antenne** (`mobile`). `xhrSetup` + `withCredentials` dans `HlsContentPlayer`, et la
   **Media Session API** pour les contrôles sur l'écran verrouillé — `title`, `author` et `artUrl`
   sont déjà portés par `ContentRequest`, personne ne les lit sur le web.
@@ -253,7 +272,10 @@ comme pour l'antenne (`mediamtx-service/README.md`).
   téléphone, une seconde fois, après T0.
 - **Un téléphone plus ancien, si un fidèle en apporte un.** Le plancher annoncé est celui qui a été
   mesuré ; plus bas est plausible et non prouvé.
-- La création de l'application web dans le projet Firebase et la sortie de la clé VAPID (console).
+- La création de l'application web dans le projet Firebase (**faite**) et la sortie de la **clé
+  VAPID** (console → *Cloud Messaging* → *Certificats push web*) : elle est la dernière chose qui
+  manque à T2, et `kWebPushVapidKey` l'attend, vide et documentée. Puis, sur la vraie origine et
+  avec un vrai appareil : **qu'une notification arrive**.
 - L'entrée DNS, les gestes Caddy, la pose du bundle et le retour arrière sur le VPS.
 - Ce que Chrome fait réellement quand il réclame de la place sur un téléphone saturé, et la survie
   d'un transfert Background Fetch à une mise en veille prolongée.

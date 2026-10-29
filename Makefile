@@ -26,7 +26,7 @@ DART_DEFINES         := --dart-define=API_BASE_URL=$(API_BASE_URL)
 ANDROID_DART_DEFINES := --dart-define=API_BASE_URL=$(ANDROID_API_BASE_URL)
 
 .DEFAULT_GOAL := help
-.PHONY: help ios android ipad web web-assets db-probe hls-probe devices test analyze format \
+.PHONY: help ios android ipad web web-assets db-probe hls-probe push-probe devices test analyze format \
         l10n gen migrations icons clean
 
 help: ## Affiche cette aide
@@ -46,6 +46,7 @@ help: ## Affiche cette aide
 	@echo "  make icons     Régénère l'icône et le splash natif depuis le logo"
 	@echo "  make db-probe    Prouve dans Chrome que le magasin local s'ouvre"
 	@echo "  make hls-probe   Prouve dans Chrome que le lecteur web joue (réseau requis)"
+	@echo "  make push-probe  Prouve que le SDK Firebase vient de NOTRE origine (Chrome)"
 	@echo "  make clean     flutter clean"
 	@echo ""
 	@echo "URL du backend (--dart-define=API_BASE_URL) :"
@@ -128,6 +129,10 @@ db-probe: ## Ouvre le magasin local dans un Chrome sans tête, et dit s'il répo
 hls-probe: ## Pilote HlsContentPlayer contre un vrai flux HLS dans un Chrome sans tête
 	@echo "▶ Ni un test ni la CI : exige Chrome et le réseau."
 	./tool/hls_probe.sh
+
+push-probe: ## Prouve que le SDK JS de Firebase se charge depuis notre origine (#283)
+	@echo "▶ Ni un test ni la CI : exige Chrome. Le réseau extérieur est COUPÉ exprès."
+	./tool/push_probe.sh
 
 clean: ## flutter clean
 	flutter clean

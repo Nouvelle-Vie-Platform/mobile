@@ -14,6 +14,9 @@
 /// n'ouvre rien est une promesse que personne ne tient) ; et une offre qui
 /// arrive **après** le démarrage fait paraître le bandeau — c'est le cas réel,
 /// `beforeinstallprompt` étant émis quand Chrome le décide.
+///
+/// S'y ajoute depuis #283 **le moment de la permission d'annonces** : dans la
+/// foulée d'une installation acceptée, et à ce moment-là seulement.
 library;
 
 import 'dart:async';
@@ -23,6 +26,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/data/install/install_prompt.dart';
 import 'package:maison_du_miracle/l10n/app_localizations_fr.dart';
 import 'package:maison_du_miracle/state/install_providers.dart';
+import 'package:maison_du_miracle/state/push_providers.dart';
 import 'package:maison_du_miracle/widgets/install_banner.dart';
 
 import '../helpers/pump_screen.dart';
@@ -31,11 +35,14 @@ final _fr = AppLocalizationsFr();
 
 /// Un double pilotable : l'offre de départ, puis celles qu'on pousse.
 class FakeInstallPrompt implements InstallPrompt {
-  FakeInstallPrompt(this._offer);
+  FakeInstallPrompt(this._offer, {this.accepts = false});
 
   InstallOffer _offer;
   final StreamController<InstallOffer> _changes =
       StreamController<InstallOffer>.broadcast();
+
+  /// Ce que le navigateur répond à la boîte d'installation.
+  final bool accepts;
 
   /// Ce que `show()` a reçu, pour prouver que le bouton atteint bien le
   /// navigateur et ne se contente pas de fermer le bandeau.
@@ -48,7 +55,10 @@ class FakeInstallPrompt implements InstallPrompt {
   Stream<InstallOffer> get changes => _changes.stream;
 
   @override
-  Future<void> show() async => shown++;
+  Future<bool> show() async {
+    shown++;
+    return accepts;
+  }
 
   /// L'arrivée tardive de `beforeinstallprompt`.
   void emit(InstallOffer offer) {
@@ -57,15 +67,29 @@ class FakeInstallPrompt implements InstallPrompt {
   }
 }
 
+/// Le compteur de demandes de permission — le double de ce que `main.dart`
+/// surcharge sur le web.
+class AskCounter {
+  int asked = 0;
+
+  Future<void> call() async => asked++;
+}
+
 Future<FakeInstallPrompt> pumpBanner(
   WidgetTester tester, {
   InstallOffer offer = InstallOffer.none,
+  bool accepts = false,
+  AskCounter? permission,
 }) async {
-  final prompt = FakeInstallPrompt(offer);
+  final prompt = FakeInstallPrompt(offer, accepts: accepts);
   await pumpScreen(
     tester,
     const Scaffold(body: InstallBanner()),
-    overrides: [installPromptProvider.overrideWithValue(prompt)],
+    overrides: [
+      installPromptProvider.overrideWithValue(prompt),
+      if (permission != null)
+        pushPermissionProvider.overrideWithValue(permission.call),
+    ],
   );
   return prompt;
 }
@@ -135,5 +159,68 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.byKey(InstallBanner.bannerKey), findsNothing);
+  });
+
+  group('la permission d\'annonces, dans la foulée de l\'installation (#283)',
+      () {
+    testWidgets('installation acceptée : la permission est demandée',
+        (tester) async {
+      final permission = AskCounter();
+      final prompt = await pumpBanner(
+        tester,
+        offer: InstallOffer.prompt,
+        accepts: true,
+        permission: permission,
+      );
+
+      await tester.tap(find.byKey(InstallBanner.actionKey));
+      await tester.pump();
+
+      expect(prompt.shown, 1);
+      expect(
+        permission.asked,
+        1,
+        reason:
+            'c\'est l\'instant de plus forte intention, et le seul : sur le '
+            'web un refus de notification est quasi définitif',
+      );
+    });
+
+    testWidgets('installation refusée : on ne demande RIEN', (tester) async {
+      final permission = AskCounter();
+      final prompt = await pumpBanner(
+        tester,
+        offer: InstallOffer.prompt,
+        permission: permission,
+      );
+
+      await tester.tap(find.byKey(InstallBanner.actionKey));
+      await tester.pump();
+
+      expect(prompt.shown, 1);
+      expect(
+        permission.asked,
+        0,
+        reason: 'enchaîner une seconde boîte sur un refus brûlerait l\'unique '
+            'chance d\'obtenir la permission',
+      );
+    });
+
+    testWidgets(
+        'sans push sur cette plateforme : le bouton installe quand même',
+        (tester) async {
+      // Le cas du mobile natif et de tout test : `pushPermissionProvider` rend
+      // `null`, et l'installation ne doit pas en dépendre.
+      final prompt = await pumpBanner(
+        tester,
+        offer: InstallOffer.prompt,
+        accepts: true,
+      );
+
+      await tester.tap(find.byKey(InstallBanner.actionKey));
+      await tester.pump();
+
+      expect(prompt.shown, 1);
+    });
   });
 }

@@ -1428,7 +1428,9 @@ class _DownloadButton extends ConsumerWidget {
               key: ContentPlayerView.downloadInstallKey,
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                unawaited(ref.read(installPromptProvider).show());
+                // Installer **puis** demander la permission d'annonces (#283) :
+                // la règle est écrite une fois, à côté de l'offre.
+                unawaited(installThenAskForNotifications(ref));
               },
               child: Text(l10n.installBannerAction),
             ),

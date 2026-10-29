@@ -145,14 +145,20 @@ Passé public pour que GitHub Actions y soit gratuit et sans plafond : il consom
   `ContentPlayer` — et `test/data/push/push_seam_test.dart` le vérifie sur la
   source.
 
-  ⚠️ **La règle « aucun CDN » tient, et c'est `_startPush()` qui la tient.**
-  `firebase_core_web` descend le SDK JS de Firebase depuis `gstatic.com` — mais
-  **seulement** à l'appel de `Firebase.initializeApp()`, et le web est écarté
-  **avant** cet appel (aucune application web n'est déclarée dans le projet
-  Firebase, `firebase_options.dart` y lève exprès). Rien n'est donc chargé, et
-  `web/` n'a aucun actif de plus à versionner. Le jour où le web aurait du push,
-  c'est cette règle-là qu'il faudrait rouvrir d'abord. Aucune des trois
-  dépendances n'a bougé `drift`, `sqlite3` ni `hls.js` : pas de `make web-assets`.
+  ⚠️ **La règle « aucun CDN » tient, et depuis #283 elle tient par deux
+  fichiers versionnés** — non plus par l'absence de push sur le web.
+  `firebase_core_web` **injecte** le SDK JS depuis `gstatic.com` à l'appel de
+  `Firebase.initializeApp()`, et il a une porte de sortie écrite dans son code :
+  si `window.firebase_core` existe déjà, il n'injecte rien.
+  `web_push_transport.dart` importe donc `web/firebase/firebase-app.js` et
+  `web/firebase/firebase-messaging.js` **depuis notre origine** et les pose sur
+  `window` avant d'initialiser. Deux actifs de plus à `make web-assets`, dont la
+  version est **contrainte** par le paquet (`supportedFirebaseJsSdkVersion`) et
+  dont l'un est **retouché d'une chaîne** (son import du cœur est une URL
+  `gstatic.com` écrite dans ses octets). Mesuré par `make push-probe` : sous la
+  CSP de production et **réseau extérieur coupé**, le SDK 12.19.0 se charge et
+  `[DEFAULT]` s'initialise. Voir `web/WEB_ASSETS.md`. Aucune des trois
+  dépendances n'a bougé `drift`, `sqlite3` ni `hls.js`.
 - **Médias de la messagerie** (M4, #143) — `record ^7.1` (vocal AAC mono
   32 kbit/s), `image ^4.10` (pur Dart : JPEG q80, ≤ 1600 px, **EXIF retiré**),
   `v_video_compressor ^2.2` (vidéo H.264 compressée sur l'appareil),
@@ -178,6 +184,7 @@ make migrations              # + après un changement de schemaVersion
 make web-assets              # après une montée de drift / sqlite3 / hls.js
 make icons                   # après tout changement de brand_logo.webp / live_bg.png
 make hls-probe               # prouve dans Chrome que le lecteur web joue (réseau requis)
+make push-probe              # prouve que le SDK Firebase vient de NOTRE origine (#283)
 ```
 La CI (`.github/workflows/flutter-ci.yml`) lance format + analyze + test.
 **Elle ne lance pas `build_runner`** : les `.g.dart` et `drift_schemas/` sont
@@ -2528,7 +2535,8 @@ obtenir une cible, par où les réveils arrivent application ouverte. Tout le re
 | synchroniser puis notifier depuis le magasin | `push_wake_handler.dart` |
 | afficher / recevoir le tap | `wake_notifier.dart` |
 | le réveil d'une application fermée | `push_background.dart` |
-| **FCM** | `fcm_push_transport.dart` — le seul qui connaisse Firebase |
+| **FCM, mobile** | `fcm_push_transport.dart` |
+| **FCM, navigateur** (#283) | `web_push_transport.dart` — derrière la porte `web_push.dart` |
 
 **Le double inerte est le défaut de production**, exactement comme
 `InertContentPlayer` : `pushTransportProvider` le rend, et `main.dart` — seul endroit
@@ -2684,6 +2692,64 @@ La sourdine se règle **en ligne** (`GroupMuteSetter`, `PUT`/`DELETE
 /groups/:id/mute`) — c'est le serveur qui choisit le réveil muet ; un refus se dit
 tout de suite. Le menu « ⋮ » du fil (`ChatMuteMenu`) et l'icône de la tuile
 (`MutedIndicator`) lisent `group_mutes`, collection privée.
+
+#### Les annonces dans le navigateur (#283, T2) — `web_push_transport.dart`
+
+La **seconde** implémentation de `PushTransport`, et **une addition** : ni
+`push_registrar`, ni `push_enrolment`, ni `push_wake`, ni `push_wake_handler`
+n'ont bougé d'une ligne. C'est exactement ce que la couture existait pour
+permettre. Le serveur n'a rien à faire non plus (`DEVICE_PLATFORMS` porte déjà
+`'web'`). Six points qui se ratent en silence :
+
+1. ⚠️ **La permission se demande dans la foulée de l'installation, jamais au
+   démarrage** — décision du cadrage. Sur le web un refus est quasi définitif et
+   il emporte **tout** : sans permission, pas de jeton, donc pas même la
+   synchronisation réveillée (l'inverse du natif, où le réveil silencieux passe
+   quand l'affichage est refusé). `target()` **lit** donc l'état courant et ne
+   demande jamais rien ; `installThenAskForNotifications`
+   (`state/install_providers.dart`) enchaîne sur `pushPermissionProvider`
+   **seulement si l'installation a été acceptée** — d'où `InstallPrompt.show()`
+   qui rend désormais un booléen, lu sur l'`outcome` de `prompt()`. Écrit là et
+   pas dans un widget parce qu'il y a **deux** gestes qui installent (le bandeau
+   et l'invitation du bouton Télécharger).
+2. **`onTokenRefresh` est un flux mort sur le web** (`firebase_messaging_web`
+   rend un contrôleur que personne n'alimente). `targetChanges` est donc **le
+   nôtre**, et c'est par lui que le jeton obtenu après la permission rejoint
+   `PushEnrolment`, qui s'y est abonné au démarrage. Rien à rappeler, rien à
+   rebrancher.
+3. ⚠️ **La clé VAPID est vide tant que personne ne l'a posée**
+   (`kWebPushVapidKey`, une constante nommée, documentée, dans le transport).
+   Tant qu'elle l'est : **aucune permission n'est demandée** — brûler l'unique
+   autorisation d'un fidèle pour un jeton impossible serait le pire usage de ce
+   moment-là —, aucun jeton, aucune exception, et une trace `[push]` à chaque
+   fois. L'app web tourne exactement comme avant la tranche.
+4. **Le SDK JS vient de notre origine**, et c'est la mesure de la tranche : voir
+   « Stack & versions » et `web/WEB_ASSETS.md`. La CSP du dépôt `context` n'a
+   **pas** eu à s'ouvrir.
+5. **Trois workers, trois portées** : `firebase-messaging-sw.js` est enregistré
+   **par le SDK lui-même**, à ce nom exact, sur
+   `/firebase-cloud-messaging-push-scope`. Il **n'embarque pas le SDK** (pas
+   d'`importScripts`) : il lit l'événement `push` du navigateur et n'affiche que
+   le bloc `notification` que le serveur a déjà rédigé — un worker n'a pas le
+   magasin, donc la règle « la notification se dresse depuis le magasin » y
+   devient « on n'affiche que ce qui est déjà écrit ». Les réveils **silencieux**
+   n'affichent donc **rien** ; onglet ouvert ils arrivent en Dart et déclenchent
+   un cycle, et c'est là qu'ils servent. ⚠️ Conséquence connue : FCM s'abonne en
+   `userVisibleOnly`, et Chrome finit par afficher lui-même « Ce site a été mis à
+   jour en arrière-plan » si trop de pushs n'affichent rien. Rien côté client ne
+   peut l'éviter.
+6. **Pas de `flutter_local_notifications` sur le web** : `main.dart` ne surcharge
+   ni `wakeTapsProvider` ni `wakeDismisserProvider` sous `kIsWeb`. Le paquet y a
+   bien une implémentation, mais elle ne connaît pas le worker de Firebase : elle
+   ne pourrait ni effacer sa notification ni recevoir son tap — elle ne
+   lèverait pas, elle ne ferait rien, ce qui est pire.
+
+⚠️ **Ce qu'aucun test ne prouve, et qu'il ne faut pas prétendre** : qu'une
+notification **arrive**. Cela ne se voit que dans un navigateur, sur la vraie
+origine, et **pas avant que la clé VAPID soit posée**. Les tests s'arrêtent au
+moment de la demande, au jeton qui part sous `platform: 'web'`, et aux octets du
+SDK ; `make push-probe` va jusqu'à l'initialisation de Firebase sans réseau
+extérieur. Au-delà, c'est un téléphone et une console.
 
 ### Brancher un vrai backend : **un repository dédié asynchrone par domaine**
 Surcharger `churchRepositoryProvider` **ne suffit pas** et n'est pas le motif :
@@ -3725,7 +3791,7 @@ pression, Chrome évince **tout le stockage d'une origine d'un coup** — enseig
 magasin Drift ensemble. D'où `InstallBanner`, dans la même pile que les deux autres bandeaux : Chrome
 a rangé sa propre invite dans un menu ⋮ que personne n'ouvre.
 
-Sept points qui se ratent en silence :
+Huit points qui se ratent en silence :
 
 1. **`beforeinstallprompt` est capté par `web/install_hook.js`, pas en Dart — et dans un fichier, jamais en ligne.** La CSP de l'origine (`script-src 'self'`) **bloque tout script en ligne**, et le refus ne se voit que dans la console d'un fidèle : le bandeau d'installation ne paraît simplement jamais. `test/web_index_csp_test.dart` le garde.
    La raison de capter hors de Dart est inchangée : Chrome l'émet pendant le
@@ -3766,6 +3832,13 @@ Sept points qui se ratent en silence :
    Le `skipWaiting` que `BrowserAppReloader` envoie avant de recharger ne sert donc presque jamais
    **aujourd'hui** ; il reste pour le `sw-offline.js` de T4 et pour un worker d'un ancien build
    encore enregistré. **T4 ne peut pas compter sur une coquille hors ligne qu'il n'a pas écrite.**
+8. **Les annonces poussées existent depuis #283 (T2)**, et elles ont apporté le **troisième**
+   worker (`firebase-messaging-sw.js`, enregistré par le SDK sur sa propre portée) ainsi que les
+   deux premiers actifs web **retouchés** du dépôt. Deux choses à savoir d'ici : la permission se
+   demande **dans la foulée de l'installation** et nulle part ailleurs (un refus web est quasi
+   définitif, et il emporte jusqu'à la synchronisation réveillée), et **la CSP n'a pas eu à
+   s'ouvrir** — le SDK JS de Firebase est servi depuis notre origine. Le détail est sous « Le
+   réveil push ».
 
 ### Le téléchargement hors ligne dans le navigateur (#273) — T4
 

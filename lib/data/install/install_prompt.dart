@@ -39,12 +39,23 @@ abstract interface class InstallPrompt {
   /// retombe à [InstallOffer.none] dès l'installation faite.
   Stream<InstallOffer> get changes;
 
-  /// Ouvre la boîte d'installation du navigateur.
+  /// Ouvre la boîte d'installation du navigateur, et rend **ce que le
+  /// navigateur a répondu** : `true` quand l'installation a été acceptée.
+  ///
+  /// Le résultat n'est pas décoratif : c'est lui qui décide si l'on enchaîne
+  /// sur la demande de permission de notification (#283). Un refus
+  /// d'installation ne doit **pas** être suivi d'une seconde boîte — sur le web
+  /// un refus de notification est quasi définitif, et on ne brûle pas cette
+  /// unique chance sur quelqu'un qui vient de dire non.
+  ///
+  /// Prudent par défaut : tout ce qui n'est pas une acceptation explicite rend
+  /// `false` (invite refusée par le navigateur, résultat illisible, absence
+  /// d'événement à rejouer).
   ///
   /// ⚠️ **À n'appeler que depuis un geste** : Chrome refuse une invite qui ne
   /// descend pas d'un appui. Sans objet quand l'offre n'est pas
   /// [InstallOffer.prompt].
-  Future<void> show();
+  Future<bool> show();
 }
 
 /// **Le défaut de production**, et celui de tous les tests : il n'offre rien.
@@ -61,5 +72,5 @@ class InertInstallPrompt implements InstallPrompt {
   Stream<InstallOffer> get changes => const Stream<InstallOffer>.empty();
 
   @override
-  Future<void> show() async {}
+  Future<bool> show() async => false;
 }
