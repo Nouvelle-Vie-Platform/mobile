@@ -44,7 +44,7 @@ Future<void> _sonder() async {
     dire('VERDICT : le magasin s\'ouvre et répond');
   } catch (erreur, pile) {
     dire('VERDICT : ÉCHEC');
-    dire('$erreur');
+    dire(erreur.toString());
     dire('${pile.toString().split('\n').take(6).join('\n')}');
   }
 
