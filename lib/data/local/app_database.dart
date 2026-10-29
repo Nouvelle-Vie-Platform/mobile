@@ -201,7 +201,34 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   /// Base de l'application, à l'emplacement standard de la plateforme.
-  AppDatabase.defaults() : super(driftDatabase(name: kLocalDatabaseName));
+  ///
+  /// ⚠️ **`web:` n'est pas facultatif, et l'omettre ne se voit nulle part
+  /// ailleurs qu'en production.** `drift_flutter` lève un `ArgumentError`
+  /// **synchrone** quand ce paramètre manque et qu'on est compilé pour le web
+  /// (`drift_flutter/lib/src/web.dart`) : « When compiling to the web, the
+  /// `web` parameter needs to be set. » Comme `appDatabaseProvider` construit
+  /// cette base dans un `Provider` **synchrone**, l'exception devient l'état du
+  /// provider, et **chaque `ref.read` la relance** — tous les écrans adossés au
+  /// magasin tombent d'un coup, en affichant « vérifiez votre connexion
+  /// internet » puisqu'ils ne savent pas distinguer une base illisible d'un
+  /// réseau absent.
+  ///
+  /// Constaté en production le 29/10/2026, et la mesure du banc sur appareil le
+  /// disait déjà sans qu'on l'entende : **`sqlite3.wasm` n'était jamais
+  /// demandé**. Il ne pouvait pas l'être — la base levait avant d'aller
+  /// chercher quoi que ce soit.
+  ///
+  /// Les deux adresses sont **relatives**, donc résolues contre le `<base
+  /// href>` de la page : elles suivent le bundle, qu'il soit servi à la racine
+  /// d'un sous-domaine ou sous un préfixe.
+  AppDatabase.defaults()
+      : super(driftDatabase(
+          name: kLocalDatabaseName,
+          web: DriftWebOptions(
+            sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+            driftWorker: Uri.parse('drift_worker.js'),
+          ),
+        ));
 
   /// **v5** — `legal_documents`, issue #55 : la collection répliquée des
   /// documents légaux (CGU, confidentialité, à propos), **référentiel**.

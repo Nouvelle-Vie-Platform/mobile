@@ -56,6 +56,18 @@ est bien celui que ce bloc déclare.
 
 ## Ce que ces garde-fous ne couvrent pas
 
+> **Et ce n'est pas une précaution de style — ça s'est payé.** Du 14/09 au
+> 29/10/2026, `sqlite3.wasm` et `drift_worker.js` étaient présents, à la bonne
+> version, avec la bonne empreinte… et **le magasin local n'a jamais ouvert dans
+> un navigateur** : `AppDatabase.defaults()` appelait `driftDatabase()` sans son
+> paramètre `web:`, que `drift_flutter` exige sur cette cible. La base levait
+> **avant** d'aller chercher ces fichiers — mesuré : `sqlite3.wasm` n'a jamais
+> été demandé une seule fois. Les tests ci-dessous étaient verts tout du long,
+> et ils avaient raison : ils vérifient des octets, pas une ouverture.
+> `test/data/local/drift_web_options_test.dart` garde désormais l'appel.
+
+
+
 Ils vérifient que les fichiers présents sont ceux que le dépôt déclare, et que
 les versions Drift sont celles du `pubspec.lock`. Ils **n'ouvrent aucune base et
 ne lisent aucun flux dans un navigateur** : que `hls.js` joue réellement un
