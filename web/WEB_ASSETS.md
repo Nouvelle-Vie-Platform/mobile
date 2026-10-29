@@ -79,6 +79,19 @@ des **versions déclarées** et des **empreintes**, jamais des symboles.
 lit les imports du module `dart` dans la section d'imports du wasm, et exige que
 le worker les porte tous. Remède quand il rougit : monter `drift` jusqu'à une
 version dont le worker les fournit, puis `make web-assets`.
+## L'outil qui manquait : `make db-probe`
+
+Entre `flutter test` — qui tourne sur la **VM**, où c'est l'implémentation
+**native** qui répond — et `flutter build web` — qui compile sans rien exécuter
+—, **rien n'ouvrait jamais cette base dans un navigateur**. Ce document le
+disait depuis le début (« ils n'ouvrent aucune base »), et personne n'en avait
+tiré l'outil ; il a fallu la console d'un fidèle pour voir le défaut.
+
+`make db-probe` ouvre `AppDatabase.defaults()` dans un Chrome sans tête, lui
+demande `select sqlite_version()`, lit les curseurs et imprime son verdict. Tout
+est servi en local, le réseau n'est pas requis. Ce n'est **pas un test** et la
+CI ne le lance pas — mais c'est ce qu'on lance après toute montée de `drift`,
+`sqlite3` ou `drift_flutter`, avant de croire une suite verte.
 
 ## Ce que ces garde-fous ne couvrent pas
 
