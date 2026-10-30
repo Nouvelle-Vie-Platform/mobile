@@ -312,15 +312,21 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
           // boîte en bas de page. Les deux emplacements n'ont pas bougé d'un
           // point — seul leur contenu a changé de place, et chacun garde le
           // style de l'endroit où il arrive.
-          // Le surtitre se pose **au-dessus** de la référence sans la pousser :
-          // sa propre place, pour que les deux emplacements de la maquette
-          // restent aux cotes relevées. Absent quand il n'y a pas de verset —
-          // il annoncerait alors le grand titre, ce qu'il ne fait pas.
+          // **Les cotes de la maquette étaient celles d'un titre de deux
+          // lignes.** Une référence n'en fait qu'une, et le creux de 94 pt
+          // prévu entre les deux lignes du titre laissait le verset flotter
+          // loin de son livre, tout le bloc collé en haut sous la flèche.
+          //
+          // Avec un verset, le bloc se recentre donc dans l'espace libre —
+          // entre le bas de la flèche (68 pt) et la barre de recherche
+          // (324 pt) — et le texte se rapproche de sa référence. **Sans
+          // verset, les cotes relevées reprennent** : le grand titre y tient
+          // ses deux lignes, et rien ne doit bouger pour lui.
           if (vod != null)
             Positioned(
               left: g.x(22),
               right: g.x(24),
-              top: g.y(78),
+              top: g.y(132),
               child: Text(
                 context.l10n.bibleHomeDailyTitle.toUpperCase(),
                 key: BibleHomeKeys.dailyOverline,
@@ -336,13 +342,13 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
           Positioned(
             left: g.x(21.7),
             right: g.x(24),
-            top: g.y(98.3),
+            top: g.y(vod != null ? 152 : 98.3),
             child: _HeroReference(vod: vod, geo: g),
           ),
           Positioned(
             left: g.x(22),
             right: g.x(48),
-            top: g.y(192.8),
+            top: g.y(vod != null ? 203 : 192.8),
             // La largeur de la maquette (332 pt), à l'échelle : la phrase
             // se coupe au même endroit sur téléphone et sur tablette.
             child: Align(
