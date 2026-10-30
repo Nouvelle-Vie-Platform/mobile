@@ -58,10 +58,17 @@ class _BibleVersionsScreenState extends ConsumerState<BibleVersionsScreen> {
           in installer.install(db, entry, ensureIndexed: ensureIndexed)) {
         if (mounted) setState(() => _progress[code] = p);
       }
-    } on Object {
+    } on Object catch (error) {
       // Une archive refusée (empreinte, réseau) **n'installe rien** : le
       // fidèle doit savoir que le bouton n'a rien produit, sinon il le
       // regarde redevenir « Télécharger » sans explication.
+      //
+      // Et la cause part dans la console : le message est le même pour une
+      // empreinte fausse, une CSP qui ferme l'origine de l'archive et un
+      // réseau coupé. Sans cette trace, le web a mis des semaines à dire
+      // qu'il échouait sur autre chose qu'un réseau — exactement ce que
+      // « Connexion perdue » avait déjà coûté à l'accueil.
+      debugPrint('[bible] installation de $code en échec : $error');
       if (mounted) messenger.showSnackBar(SnackBar(content: Text(failed)));
     } finally {
       if (mounted) setState(() => _progress.remove(code));

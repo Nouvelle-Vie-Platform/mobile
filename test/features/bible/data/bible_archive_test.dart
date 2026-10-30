@@ -14,7 +14,7 @@ import 'bible_archive_fixture.dart';
 
 void main() {
   late Directory root;
-  Future<Directory> support() async => root;
+  Future<String> support() async => root.path;
 
   setUp(() {
     // **Pas `getTemporaryDirectory()`** sur l'appareil (le système le vide

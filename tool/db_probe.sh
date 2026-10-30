@@ -13,13 +13,20 @@
 #
 # Exige **Chrome** (le réseau, non : tout est servi en local). Ne tourne pas en CI, et n'est pas un test.
 #
+# **Le harnais sert aussi d'autres sondes** : il compile le point d'entrée qu'on
+# lui donne, le sert en local, et imprime ce que la page lui a posté. La sonde
+# du magasin de la Bible (`tool/bible_probe/main.dart`) s'en sert telle quelle.
+#
 # Usage : make db-probe
+#         make bible-probe
+#         PROBE_TARGET=tool/<x>/main.dart ./tool/db_probe.sh
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 PORT="${DB_PROBE_PORT:-8733}"
+TARGET="${PROBE_TARGET:-tool/db_probe/main.dart}"
 CHROME="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 
 if [ ! -x "$CHROME" ]; then
@@ -27,12 +34,12 @@ if [ ! -x "$CHROME" ]; then
   exit 1
 fi
 
-echo "▶ Compilation de la sonde…"
+echo "▶ Compilation de la sonde ($TARGET)…"
 # `--no-web-resources-cdn` comme partout ailleurs : la sonde doit tourner sur
 # le moteur que nous servons, pas sur celui de `gstatic.com`. Sans ce drapeau
 # elle prouverait que `hls.js` joue dans un Chrome assisté par un CDN — ce que
 # le fidèle n'a pas.
-flutter build web -t tool/db_probe/main.dart --no-wasm-dry-run \
+flutter build web -t "$TARGET" --no-wasm-dry-run \
   --no-web-resources-cdn >/dev/null
 
 # Le navigateur sans tête ne vit que jusqu'à l'événement `load` de la page. La

@@ -15,7 +15,6 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +23,7 @@ import '../../../data/local/app_database.dart';
 import '../../../state/sync_providers.dart';
 import '../data/bible_archive.dart';
 import '../data/bible_source.dart';
+import '../data/bible_store.dart';
 import '../data/canon.dart';
 import '../data/placeholder_bible.dart';
 import '../search/bible_search_index.dart';
@@ -299,7 +299,8 @@ final class BibleVersionInstaller {
   final BibleArchiveFetch fetch;
 
   /// La racine du magasin, `getApplicationSupportDirectory` par défaut.
-  final Future<Directory> Function()? root;
+  /// Ignorée dans un navigateur, qui n'a pas de dossier (`bible_store.dart`).
+  final Future<String> Function()? root;
 
   /// **Installe [entry]** : téléchargement, vérification de l'empreinte,
   /// dézippage, ligne `bible_installed_versions`, puis indexation (M3). Le
@@ -368,10 +369,7 @@ final class BibleVersionInstaller {
           ..where((t) => t.code.equals(code)))
         .getSingleOrNull();
     final path = row?.localPath;
-    if (path != null) {
-      final dir = Directory(path);
-      if (dir.existsSync()) await dir.delete(recursive: true);
-    }
+    if (path != null) await bibleStore().remove(path);
     await db.transaction(() async {
       await (db.delete(db.bibleInstalledVersions)
             ..where((t) => t.code.equals(code)))
