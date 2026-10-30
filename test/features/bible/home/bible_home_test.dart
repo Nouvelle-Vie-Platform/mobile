@@ -190,17 +190,29 @@ void main() {
             await _seedVerse(db, backgroundId: 4);
           },
         );
-        expect(find.text(_fr.bibleHomeHeroTitle), findsOneWidget);
+        // Depuis le 30/10/2026 les deux contenus ont échangé de place : le
+        // verset occupe l'image, « La Parole au quotidien » descend en
+        // section — sur une seule ligne, le saut de ligne appartenant au
+        // grand titre de la maquette. « Lecture du jour » a disparu avec la
+        // boîte qu'il annonçait.
+        expect(
+          find.text(_fr.bibleHomeHeroTitle.replaceAll('\n', ' ')),
+          findsOneWidget,
+        );
         expect(find.text(_fr.bibleHomeHeroTagline), findsOneWidget);
-        expect(find.text(_fr.bibleHomeDailyTitle), findsOneWidget);
         expect(find.text('Romains 8:28'), findsOneWidget);
+        expect(find.byKey(BibleHomeKeys.dailyRead), findsOneWidget,
+            reason: 'le badge « Lire » se pose à côté de la référence');
+        expect(find.byKey(BibleHomeKeys.dailyOverline), findsOneWidget,
+            reason: '« Lecture du jour » annonce le verset là où il est');
         final text = tester.widget<Text>(find.byKey(BibleHomeKeys.verseText));
         expect(text.data, isNotEmpty);
         expect(find.byType(Image), findsNothing, reason: 'fond servi');
 
-        // La carte « Lecture du jour » ouvre le lecteur au verset.
-        await tester.ensureVisible(find.byKey(BibleHomeKeys.daily));
-        await tester.tap(find.byKey(BibleHomeKeys.daily));
+        // C'est le badge « Lire » qui ouvre le lecteur au verset, là où la
+        // carte le faisait avant : une référence seule n'est plus un bouton.
+        await tester.ensureVisible(find.byKey(BibleHomeKeys.dailyRead));
+        await tester.tap(find.byKey(BibleHomeKeys.dailyRead));
         await _settle(tester);
         expect(find.text('lecteur Rom 8 28'), findsOneWidget);
       });
@@ -483,8 +495,11 @@ void main() {
       expect(search.width, lessThanOrEqualTo(bibleHomeMaxColumn));
       expect(search.width, greaterThan(560));
       expect(search.center.dx, closeTo(512, 1));
-      final daily = tester.getRect(find.byKey(BibleHomeKeys.daily));
-      expect(daily.center.dx, closeTo(512, 1));
+      // `daily` est désormais la référence **dans l'image**, calée à gauche
+      // comme le grand titre qu'elle remplace : c'est l'invitation descendue
+      // en section qui doit tenir la colonne centrée.
+      final invitation = tester.getRect(find.byKey(BibleHomeKeys.invitation));
+      expect(invitation.center.dx, closeTo(512, 1));
       expect(tester.takeException(), isNull);
     });
   });

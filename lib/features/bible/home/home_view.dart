@@ -28,6 +28,7 @@ import '../data/bible_providers.dart';
 import '../data/canon.dart';
 import '../marks/bible_marks_store.dart';
 import '../personalize/personalize_routes.dart';
+import '../personalize/reader_appearance.dart';
 import '../plans/plan_logic.dart';
 import '../plans/plans_providers.dart';
 import '../quiz/quiz_providers.dart';
@@ -147,6 +148,9 @@ abstract final class BibleHomeKeys {
   static const back = Key('bible_home_back');
   static const verseText = Key('bible_home_verse_text');
   static const daily = Key('bible_home_daily');
+  static const dailyRead = Key('bible_home_daily_read');
+  static const invitation = Key('bible_home_invitation');
+  static const dailyOverline = Key('bible_home_daily_overline');
   static const search = Key('bible_home_search');
   static Key shortcut(String id) => Key('bible_home_shortcut_$id');
   static const continueReading = Key('bible_home_continue');
@@ -303,20 +307,37 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
               ),
             ),
           ),
+          // **Le verset du jour tient la place du titre** (30/10/2026) : c'est
+          // lui qu'on vient lire, et il méritait la grande image plutôt qu'une
+          // boîte en bas de page. Les deux emplacements n'ont pas bougé d'un
+          // point — seul leur contenu a changé de place, et chacun garde le
+          // style de l'endroit où il arrive.
+          // Le surtitre se pose **au-dessus** de la référence sans la pousser :
+          // sa propre place, pour que les deux emplacements de la maquette
+          // restent aux cotes relevées. Absent quand il n'y a pas de verset —
+          // il annoncerait alors le grand titre, ce qu'il ne fait pas.
+          if (vod != null)
+            Positioned(
+              left: g.x(22),
+              right: g.x(24),
+              top: g.y(78),
+              child: Text(
+                context.l10n.bibleHomeDailyTitle.toUpperCase(),
+                key: BibleHomeKeys.dailyOverline,
+                style: TextStyle(
+                  fontFamily: AppTypography.fontFamily,
+                  fontSize: g.s(12),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: g.s(1.6),
+                  color: Colors.white.withValues(alpha: 0.82),
+                ),
+              ),
+            ),
           Positioned(
             left: g.x(21.7),
             right: g.x(24),
             top: g.y(98.3),
-            child: Text(
-              context.l10n.bibleHomeHeroTitle,
-              style: TextStyle(
-                fontFamily: 'Playfair Display',
-                fontWeight: FontWeight.w500,
-                fontSize: g.s(32),
-                height: 1.14,
-                color: Colors.white,
-              ),
-            ),
+            child: _HeroReference(vod: vod, geo: g),
           ),
           Positioned(
             left: g.x(22),
@@ -328,13 +349,7 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
               alignment: Alignment.topLeft,
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: g.s(332)),
-                child: Text(
-                  context.l10n.bibleHomeHeroTagline,
-                  style: _atkinson(context, 21).copyWith(
-                    color: Colors.white,
-                    height: 1.39,
-                  ),
-                ),
+                child: _HeroVerse(vod: vod),
               ),
             ),
           ),
@@ -354,6 +369,127 @@ class _BibleHomeViewState extends ConsumerState<BibleHomeView> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// **La référence du verset du jour, dans l'emplacement du grand titre.**
+///
+/// Elle garde la serif de la maquette — sauf quand la version ouverte s'écrit
+/// avec des lettres que Playfair Display ne porte pas : « 1 Mɔse » y
+/// deviendrait un carré vide, et un titre illisible vaut moins qu'un titre
+/// dans une autre police.
+///
+/// Sans verset du jour, l'ancien titre reprend sa place : l'en-tête ne reste
+/// jamais vide.
+class _HeroReference extends ConsumerWidget {
+  const _HeroReference({required this.vod, required this.geo});
+
+  final VerseOfDay? vod;
+  final _Geo geo;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vod = this.vod;
+    final serif = TextStyle(
+      fontFamily: 'Playfair Display',
+      fontWeight: FontWeight.w500,
+      fontSize: geo.s(32),
+      height: 1.14,
+      color: Colors.white,
+    );
+    if (vod == null) {
+      return Text(context.l10n.bibleHomeHeroTitle, style: serif);
+    }
+    final langue = ref.watch(bibleBookLanguageProvider);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Text(
+            vod.link.labelIn(langue),
+            key: BibleHomeKeys.daily,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: needsScriptFont(langue)
+                ? serif.copyWith(fontFamily: kScriptFontFamily)
+                : serif,
+          ),
+        ),
+        SizedBox(width: geo.s(12)),
+        _ReadBadge(link: vod.link, geo: geo),
+      ],
+    );
+  }
+}
+
+/// Le badge « Lire », à côté de la référence : le geste qu'on venait faire.
+class _ReadBadge extends ConsumerWidget {
+  const _ReadBadge({required this.link, required this.geo});
+
+  final BibleLink link;
+  final _Geo geo;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final radius = BorderRadius.all(Radius.circular(geo.s(20)));
+    // **Blanc plein, encre sombre** : l'image du jour vient du portail et peut
+    // être claire — un lever de soleil l'a prouvé sur l'émulateur, où un badge
+    // translucide devenait illisible. C'est aussi la pastille de « New Life
+    // Radio » sur l'accueil de l'église : un bouton posé sur une photo s'y
+    // dessine déjà ainsi.
+    return Material(
+      color: Colors.white,
+      borderRadius: radius,
+      child: InkWell(
+        key: BibleHomeKeys.dailyRead,
+        borderRadius: radius,
+        onTap: () => BibleReaderScreen.push(ref.read(routerProvider), link),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: geo.s(14),
+            vertical: geo.s(6),
+          ),
+          child: Text(
+            context.l10n.biblePlansRead,
+            style: TextStyle(
+              fontFamily: AppTypography.fontFamily,
+              fontSize: geo.s(14),
+              fontWeight: FontWeight.w700,
+              // `button` et non `ink` : en thème sombre l'encre de page est
+              // claire, et elle disparaîtrait sur la pastille blanche.
+              color: BibleHomeColors.of(context).button,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// **Le verset lui-même, dans l'emplacement de la phrase d'accroche.**
+class _HeroVerse extends ConsumerWidget {
+  const _HeroVerse({required this.vod});
+
+  final VerseOfDay? vod;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vod = this.vod;
+    final style = _atkinson(
+      context,
+      21,
+      family: vod == null ? null : ref.watch(bibleTextFontFamilyProvider),
+    ).copyWith(color: Colors.white, height: 1.39);
+    if (vod == null) {
+      return Text(context.l10n.bibleHomeHeroTagline, style: style);
+    }
+    return Text(
+      ref.watch(bibleLinkTextProvider(vod.link)).value ?? '',
+      key: BibleHomeKeys.verseText,
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+      style: style,
     );
   }
 }
@@ -664,102 +800,18 @@ class _ShortcutCard extends StatelessWidget {
   }
 }
 
-/// « Lecture du jour » : le verset du jour (portail, sinon la liste
-/// intégrée) ; le toucher ouvre le lecteur au verset.
-class _DailyCard extends ConsumerWidget {
-  const _DailyCard({required this.vod});
-
-  final VerseOfDay vod;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final text = ref.watch(bibleLinkTextProvider(vod.link)).value ?? '';
-    final ecriture = ref.watch(bibleTextFontFamilyProvider);
-    final g = _Geo.of(context);
-    const radius = BorderRadius.all(Radius.circular(12));
-    return Material(
-      color: BibleHomeColors.of(context).daily,
-      borderRadius: radius,
-      child: InkWell(
-        key: BibleHomeKeys.daily,
-        borderRadius: radius,
-        onTap: () => BibleReaderScreen.push(ref.read(routerProvider), vod.link),
-        child: ConstrainedBox(
-          // La hauteur suit le verset : 97 pt sur la maquette (deux lignes),
-          // moins sur tablette où il tient sur une seule.
-          constraints: BoxConstraints(minHeight: g.s(76)),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(g.s(16), g.s(16.2), g.s(14), g.s(14)),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: g.s(36),
-                  height: g.s(44),
-                  decoration: const BoxDecoration(
-                    color: BibleHomeColors.dailyIcon,
-                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                  ),
-                  child: Icon(
-                    Icons.bookmark_border,
-                    size: g.s(20),
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(width: g.s(15)),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Transform.translate(
-                        offset: Offset(0, g.s(-5.0)),
-                        child: Text(
-                          vod.link
-                              .labelIn(ref.watch(bibleBookLanguageProvider)),
-                          maxLines: 1,
-                          style: _atkinson(context, 19, family: ecriture),
-                        ),
-                      ),
-                      Transform.translate(
-                        offset: Offset(0, g.s(-3.0)),
-                        child: Text(
-                          text,
-                          key: BibleHomeKeys.verseText,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: _atkinson(context, 16, family: ecriture)
-                              .copyWith(height: 1.4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: g.s(8)),
-                Padding(
-                  padding: EdgeInsets.only(top: g.s(2)),
-                  child: Icon(
-                    Icons.arrow_forward_ios,
-                    size: g.s(14),
-                    color: BibleHomeColors.of(context).chevron,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// **« Lecture du jour »** (#265) : la première section **sous** l'en-tête fixe
-/// — elle défile avec la suite.
+/// **La première section sous l'en-tête fixe** (#265) — elle défile avec la
+/// suite.
+///
+/// Depuis le 30/10/2026 elle porte « La Parole au quotidien » et sa phrase,
+/// qui ont cédé la grande image au verset du jour. **Et elle n'a plus de
+/// boîte** : une invitation n'est pas un contenu qu'on ouvre, l'encadrer la
+/// faisait passer pour une carte à toucher.
 class BibleDailySection extends ConsumerWidget {
   const BibleDailySection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vod = ref.watch(verseOfDayProvider).value;
     final g = _Geo.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -772,17 +824,22 @@ class BibleDailySection extends ConsumerWidget {
             0,
           ),
           child: Text(
-            context.l10n.bibleHomeDailyTitle,
+            // Le saut de ligne de la maquette appartient au grand titre, pas
+            // à un intitulé de section : il se lit sur une ligne ici.
+            context.l10n.bibleHomeHeroTitle.replaceAll('\n', ' '),
             key: BibleHomeKeys.dailyTitle,
             style: _atkinson(context, 22, weight: FontWeight.w700),
           ),
         ),
         SizedBox(height: g.s(10)),
-        if (vod != null)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: g.s(_sideMargin)),
-            child: _DailyCard(vod: vod),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: g.s(_sideMargin)),
+          child: Text(
+            context.l10n.bibleHomeHeroTagline,
+            key: BibleHomeKeys.invitation,
+            style: _atkinson(context, 16).copyWith(height: 1.4),
           ),
+        ),
         SizedBox(height: g.s(38.2)),
       ],
     );
