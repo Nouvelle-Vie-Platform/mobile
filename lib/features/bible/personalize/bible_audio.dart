@@ -317,7 +317,8 @@ class _BibleAudioBarState extends ConsumerState<BibleAudioBar> {
     final controller = ref.read(bibleAudioProvider.notifier);
     final rate = ref.watch(biblePrefsProvider.select((p) => p.speechRate));
     final top = MediaQuery.paddingOf(context).top + kToolbarHeight;
-    final reference = BibleLink(s.book, s.chapter, from: s.verse).labelFr;
+    final reference = BibleLink(s.book, s.chapter, from: s.verse)
+        .labelIn(ref.watch(bibleBookLanguageProvider));
     return Positioned(
       top: top + AppSpacing.sm,
       left: AppSpacing.md,

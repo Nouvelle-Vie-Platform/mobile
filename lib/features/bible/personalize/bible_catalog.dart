@@ -217,6 +217,16 @@ final class MergedBibleCatalog implements BibleCatalog {
     }
     return kCanonVersification;
   }
+
+  /// La langue déclarée par la version — celle du catalogue servi, ou celle
+  /// que son archive a laissée dans `bible_installed_versions`.
+  @override
+  String languageFor(String versionCode) {
+    for (final e in entries) {
+      if (e.version.code == versionCode) return e.version.language;
+    }
+    return 'fr';
+  }
 }
 
 /// Les versions servies par S5 (publiées, non retirées).

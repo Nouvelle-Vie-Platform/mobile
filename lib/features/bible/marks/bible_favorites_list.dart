@@ -125,7 +125,10 @@ class _MarkCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(mark.link.labelFr, style: AppTypography.bodyStrong),
+                      Text(
+                          mark.link
+                              .labelIn(ref.watch(bibleBookLanguageProvider)),
+                          style: AppTypography.bodyStrong),
                       if (excerpt.isNotEmpty)
                         Text(
                           excerpt,

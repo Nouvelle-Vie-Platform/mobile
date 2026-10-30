@@ -49,7 +49,8 @@ class BibleCompareScreen extends ConsumerWidget {
           bottom: AppSpacing.xxl,
         ),
         children: [
-          Text(link.labelFr, style: AppTypography.h4),
+          Text(link.labelIn(ref.watch(bibleBookLanguageProvider)),
+              style: AppTypography.h4),
           const SizedBox(height: AppSpacing.md),
           for (final v in versions) _VersionCard(link: link, version: v),
         ],

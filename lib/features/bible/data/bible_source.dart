@@ -60,4 +60,12 @@ abstract interface class BibleCatalog {
   /// C'est elle que suivent la grille, la validation des références et
   /// l'index plein texte.
   BibleVersification versificationFor(String versionCode);
+
+  /// **La langue de [versionCode]** (`fr`, `ee`, `en`…), le français à défaut.
+  ///
+  /// Elle ne décide pas de la langue de l'application : elle décide des **noms
+  /// de livres affichés**. Un fidèle qui n'a téléchargé que l'éwé lit un texte
+  /// en éwé ; lui titrer « Jean 8:36 » au-dessus serait un mélange que rien ne
+  /// justifie.
+  String languageFor(String versionCode);
 }

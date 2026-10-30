@@ -116,8 +116,21 @@ final class BibleLink extends NoteLink {
   }
 
   /// « Jean 3:16-18 », « Jean 3:16 », « Psaumes 23 ».
-  String get labelFr {
-    final name = osisBooksFr[book]!;
+  ///
+  /// **Le français n'est plus le défaut de l'affichage** : [labelIn] l'est, et
+  /// la langue qu'on lui donne est celle de la **version ouverte**
+  /// (`bibleBookLanguageProvider`). Lire l'éwé et voir « Jean 8:36 » au-dessus
+  /// d'un verset en éwé était un mélange que rien ne justifiait.
+  ///
+  /// `labelFr` survit pour ce qui doit rester en français quelle que soit la
+  /// version lue.
+  String get labelFr => labelIn('fr');
+
+  /// « Yohanes 3:16-18 » en éwé, « John 3:16 » en anglais. Repli sur le
+  /// français pour une langue sans table — un titre dans la mauvaise langue
+  /// reste lisible, un titre absent ne l'est pas.
+  String labelIn(String languageCode) {
+    final name = osisBooksFor(languageCode)[book] ?? osisBooksFr[book]!;
     if (from == null) return '$name $chapter';
     final range = (to == null || to == from) ? '$from' : '$from-$to';
     return '$name $chapter:$range';

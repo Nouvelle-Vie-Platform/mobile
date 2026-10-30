@@ -136,6 +136,11 @@ Future<void> syncBibleReminders({
   required DateTime now,
   bool hasPlan = true,
   bool planDoneToday = false,
+
+  /// La langue des noms de livres, celle de la version ouverte. Le rappel est
+  /// écrit à l'avance : il porte la langue qu'on lisait au moment où il a été
+  /// programmé, et une reprogrammation le remet à jour.
+  String language = 'fr',
 }) async {
   for (var d = 0; d < kReminderDays; d++) {
     await scheduler.cancel(kVerseReminderBaseId + d);
@@ -153,7 +158,9 @@ Future<void> syncBibleReminders({
           kVerseReminderBaseId + d,
           at,
           l10n.bibleM4VerseOfDayTitle,
-          text.isEmpty ? link.labelFr : '$text — ${link.labelFr}',
+          text.isEmpty
+              ? link.labelIn(language)
+              : '$text — ${link.labelIn(language)}',
         );
       }
     }
@@ -206,6 +213,7 @@ final bibleRemindersRefreshProvider = Provider<Future<void> Function()>(
         now: DateTime.now(),
         hasPlan: ref.read(bibleCurrentPlanProvider) != null,
         planDoneToday: ref.read(biblePlanReadingDoneTodayProvider) ?? false,
+        language: ref.read(bibleBookLanguageProvider),
       );
     } on Object {
       // Greffon absent (web, test), refus : pas de rappel, rien d'autre.

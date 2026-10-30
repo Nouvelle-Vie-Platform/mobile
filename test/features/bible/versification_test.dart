@@ -106,6 +106,9 @@ final class _OneVersion implements BibleCatalog {
 
   @override
   BibleVersification versificationFor(String versionCode) => declared;
+
+  @override
+  String languageFor(String versionCode) => 'fr';
 }
 
 /// Deux versions installées, de versifications différentes : ce que le lecteur
@@ -129,6 +132,9 @@ final class _TwoVersions implements BibleCatalog {
   @override
   BibleVersification versificationFor(String versionCode) =>
       versionCode == 'EWE' ? _divergente : kCanonVersification;
+
+  @override
+  String languageFor(String versionCode) => versionCode == 'EWE' ? 'ee' : 'fr';
 }
 
 Future<int> _rows(AppDatabase db, String where) async => (await db
@@ -315,6 +321,24 @@ void main() {
       await open(tester, 'KJV', 'Mal');
       expect(find.byKey(BibleBrowser.chapterKey(3)), findsOneWidget);
       expect(find.byKey(BibleBrowser.chapterKey(4)), findsOneWidget);
+    });
+
+    /*
+     * **Le titre suit la version ouverte**, demandé le 30/10/2026. Ce test
+     * garde le *branchement* : `labelIn` et `languageFor` sont couverts à
+     * part, mais rien ne disait que l'écran les lisait — et un écran branché
+     * sur la langue de l'application aurait passé tous les autres verts.
+     */
+    testWidgets('en éwé le livre s\'intitule « Malaki », pas « Malachie »',
+        (tester) async {
+      await open(tester, 'EWE', 'Mal');
+      expect(find.text('Malaki'), findsOneWidget);
+      expect(find.text('Malachie'), findsNothing);
+    });
+
+    testWidgets('et la version française garde « Malachie »', (tester) async {
+      await open(tester, 'KJV', 'Mal');
+      expect(find.text('Malachie'), findsOneWidget);
     });
 
     testWidgets('la version qui n\'a pas Malachie 4 ne le propose pas',

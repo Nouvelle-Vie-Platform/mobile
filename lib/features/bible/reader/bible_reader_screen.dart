@@ -451,7 +451,8 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    BibleLink(c.book, c.chapter).labelFr,
+                    BibleLink(c.book, c.chapter)
+                        .labelIn(ref.watch(bibleBookLanguageProvider)),
                     style: AppTypography.h5.copyWith(
                       color: palette.textSecondary,
                     ),

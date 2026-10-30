@@ -52,6 +52,14 @@ final class PlaceholderBibleCatalog implements BibleCatalog {
   @override
   BibleVersification versificationFor(String versionCode) =>
       kCanonVersification;
+
+  @override
+  String languageFor(String versionCode) {
+    for (final v in kPlaceholderVersions) {
+      if (v.code == versionCode) return v.language;
+    }
+    return 'fr';
+  }
 }
 
 /// Le texte d'exemple d'une version factice.
