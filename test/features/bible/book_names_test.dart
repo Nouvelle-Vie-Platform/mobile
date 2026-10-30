@@ -12,6 +12,9 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maison_du_miracle/features/bible/data/canon.dart';
+import 'package:maison_du_miracle/data/local/app_database.dart';
+import 'package:maison_du_miracle/features/bible/data/placeholder_bible.dart';
+import 'package:maison_du_miracle/features/bible/personalize/bible_catalog.dart';
 import 'package:maison_du_miracle/features/bible/search/bible_reference_parser.dart';
 
 void main() {
@@ -57,5 +60,66 @@ void main() {
       expect(lien?.book, 'John', reason: '« $saisie » non reconnu');
       expect(lien?.chapter, 3);
     }
+  });
+
+  /*
+   * **La version ouverte décide des titres** (demandé le 30/10/2026). Un fidèle
+   * qui n'a téléchargé que l'éwé lisait un verset en éwé sous un titre
+   * « Jean 8:36 » — constaté sur capture le même jour.
+   */
+  group('Le libellé d\'une référence suit la langue', () {
+    const lien = BibleLink('John', 8, from: 36);
+
+    test('chaque langue rend le sien, et le français reste le repli', () {
+      expect(lien.labelIn('fr'), 'Jean 8:36');
+      expect(lien.labelIn('en'), 'John 8:36');
+      expect(lien.labelIn('ee'), startsWith('Yohanes'));
+      // Une langue sans table : lisible plutôt qu'absent.
+      expect(lien.labelIn('de'), 'Jean 8:36');
+    });
+
+    test('labelFr reste le français quoi qu’il arrive', () {
+      expect(lien.labelFr, 'Jean 8:36');
+    });
+
+    test('un intervalle et un chapitre entier se libellent pareil', () {
+      expect(const BibleLink('John', 3, from: 16, to: 18).labelIn('en'),
+          'John 3:16-18');
+      expect(const BibleLink('Ps', 23).labelIn('en'), 'Psalms 23');
+    });
+  });
+
+  group('La langue des titres vient de la version ouverte', () {
+    test('le catalogue rend la langue déclarée par la version', () {
+      final catalogue = MergedBibleCatalog(
+        remote: [
+          BibleVersionRow(
+            syncStamp: 0,
+            id: 1,
+            code: 'ewe2020',
+            name: 'Éwé',
+            language: 'ee',
+            sortOrder: 0,
+            archiveUrl: 'https://x/ewe2020-0123456789ab.zip',
+          ),
+        ],
+        installed: [
+          BibleInstalledVersionRow(
+            code: 'ewe2020',
+            name: 'Éwé',
+            language: 'ee',
+            installedAt: DateTime.utc(2026, 10, 30),
+            indexed: true,
+          ),
+        ],
+      );
+      expect(catalogue.languageFor('ewe2020'), 'ee');
+      // Une version inconnue ne doit pas rendre un titre absent.
+      expect(catalogue.languageFor('inexistante'), 'fr');
+    });
+
+    test('les versions d\'exemple restent en français', () {
+      expect(const PlaceholderBibleCatalog().languageFor('EXA'), 'fr');
+    });
   });
 }

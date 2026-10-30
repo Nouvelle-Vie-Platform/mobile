@@ -255,7 +255,8 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
                               .copyWith(color: tiles.bookTileInk),
                         ),
                       ),
-                      title: Text(b.nameIn(l.localeName)),
+                      title:
+                          Text(b.nameIn(ref.watch(bibleBookLanguageProvider))),
                       subtitle: Text(
                         l.bibleChapterCount(versification.chapterCount(b.osis)),
                       ),
@@ -311,7 +312,7 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _header(context, book.nameIn(context.l10n.localeName),
+        _header(context, book.nameIn(ref.watch(bibleBookLanguageProvider)),
             context.l10n.bibleChooseChapter),
         Expanded(
           child: _Grid(
@@ -335,7 +336,8 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
     BibleVersification versification,
   ) {
     final l = context.l10n;
-    final reference = BibleLink(book.osis, chapter).labelFr;
+    final reference = BibleLink(book.osis, chapter)
+        .labelIn(ref.watch(bibleBookLanguageProvider));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

@@ -76,11 +76,14 @@ Future<String> bibleQuotation(
   int? charFrom,
   int? charTo,
 }) async {
-  final text =
-      await bibleVerseText(ref.read(bibleCatalogProvider), link, version);
+  // Les deux lectures de `ref` se font **avant** le premier `await` : après
+  // lui, l'écran qui porte ce `ref` peut avoir disparu.
+  final catalog = ref.read(bibleCatalogProvider);
+  final langue = ref.read(bibleBookLanguageProvider);
+  final text = await bibleVerseText(catalog, link, version);
   final (before, chosen, after) = bibleEmphasis(text, charFrom, charTo);
   final quoted = chosen.isEmpty ? before : '$before*$chosen*$after';
-  return '« $quoted »\n— ${link.labelFr} ($version)';
+  return '« $quoted »\n— ${link.labelIn(langue)} ($version)';
 }
 
 Future<void> copyVerses(
@@ -185,12 +188,17 @@ String bibleNoteContent(
   String text, {
   int? charFrom,
   int? charTo,
+  // La note garde la référence **telle qu'elle était affichée** au moment où
+  // le fidèle l'a insérée. C'est du texte qu'il écrit, pas un libellé que
+  // l'application recalcule : il ne doit pas changer de langue tout seul le
+  // jour où une autre version devient active.
+  String language = 'fr',
 }) {
   final (before, chosen, after) = bibleEmphasis(text, charFrom, charTo);
   return jsonEncode({
     'ops': [
       {
-        'insert': link.labelFr,
+        'insert': link.labelIn(language),
         'attributes': {'link': link.toUrl()},
       },
       {'insert': '\n'},
@@ -229,6 +237,10 @@ void noteOnVerses(
   final dao = ref.read(notesDaoProvider);
   final repository = ref.read(notesRepositoryProvider);
   final catalog = ref.read(bibleCatalogProvider);
+  // **Lue ici aussi, et c'est la raison de tout le bloc** : après la connexion,
+  // ce `ref` appartient à une feuille déjà démontée, et le lire là rendait la
+  // note impossible à créer — le lecteur restait à l'écran, sans rien dire.
+  final langue = ref.read(bibleBookLanguageProvider);
   ref.requireSession(
     action: () {
       unawaited(() async {
@@ -241,6 +253,7 @@ void noteOnVerses(
                 await bibleVerseText(catalog, link, version),
                 charFrom: charFrom,
                 charTo: charTo,
+                language: langue,
               ),
             );
         await router.pushNamed(AppRoute.noteEditor, pathParameters: {'id': id});

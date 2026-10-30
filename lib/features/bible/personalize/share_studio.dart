@@ -221,7 +221,15 @@ class _StudioState extends ConsumerState<BibleShareStudioScreen> {
                 gradient: _gradient,
                 photo: _photo,
                 verse: _verse,
-                reference: _showReference ? widget.link.labelFr : null,
+                // La langue vient de **la version partagée**, que cet écran
+                // tient déjà — pas de la version active. Demander celle-ci
+                // réveillerait la position de lecture, donc un flux Drift,
+                // pour une réponse que `versionCode` donne déjà.
+                reference: _showReference
+                    ? widget.link.labelIn(ref
+                        .watch(bibleCatalogProvider)
+                        .languageFor(widget.versionCode))
+                    : null,
                 style: TextStyle(
                   fontFamily: bibleFontFamily(_font),
                   fontSize: _size,

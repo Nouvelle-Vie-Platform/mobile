@@ -244,6 +244,10 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
 
   Widget _filters(BuildContext context) {
     final l = context.l10n;
+    // Les noms de livres suivent la **version ouverte**, pas la langue de
+    // l'écran : chercher dans une Bible en éwé et choisir « Jean » dans la
+    // liste déroulante n'aurait eu aucun sens.
+    final langue = ref.watch(bibleBookLanguageProvider);
     final book = _scope.book;
     Widget chip(String id, String label, BibleSearchScope scope) => Padding(
           padding: const EdgeInsets.only(right: AppSpacing.sm),
@@ -270,14 +274,13 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
             onSelected: (osis) => _setScope(BibleSearchScope.book(osis)),
             itemBuilder: (_) => [
               for (final b in bibleCanon)
-                PopupMenuItem(
-                    value: b.osis, child: Text(b.nameIn(l.localeName))),
+                PopupMenuItem(value: b.osis, child: Text(b.nameIn(langue))),
             ],
             child: Chip(
               avatar: const Icon(Icons.arrow_drop_down, size: 18),
               label: Text(book == null
                   ? l.bibleSearchScopeBook
-                  : osisBooksFor(l.localeName)[book]!),
+                  : osisBooksFor(langue)[book] ?? book),
               backgroundColor: book == null
                   ? null
                   : context.palette.primary.withValues(alpha: 0.14),
@@ -322,7 +325,8 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
-                      l.bibleSearchGoTo(reference.labelFr),
+                      l.bibleSearchGoTo(reference
+                          .labelIn(ref.watch(bibleBookLanguageProvider))),
                       style: AppTypography.bodyStrong,
                     ),
                   ),
@@ -446,8 +450,9 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
             Row(
               children: [
                 Expanded(
-                  child:
-                      Text(hit.link.labelFr, style: AppTypography.bodyStrong),
+                  child: Text(
+                      hit.link.labelIn(ref.watch(bibleBookLanguageProvider)),
+                      style: AppTypography.bodyStrong),
                 ),
                 IconButton(
                   key: BibleSearchScreen.compareKey(hit.link),

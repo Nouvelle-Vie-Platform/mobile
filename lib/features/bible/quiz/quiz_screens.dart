@@ -16,6 +16,7 @@ import '../../../router/app_router.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
+import '../data/bible_providers.dart';
 import '../reader/bible_reader_screen.dart';
 import '../shell/bible_route.dart';
 import 'quiz.dart';
@@ -424,7 +425,7 @@ class _Feedback extends ConsumerWidget {
           ActionChip(
             key: QuizPlayScreen.referenceKey,
             avatar: const Icon(Icons.menu_book_rounded, size: 18),
-            label: Text(ref0.labelFr),
+            label: Text(ref0.labelIn(ref.watch(bibleBookLanguageProvider))),
             onPressed: () =>
                 BibleReaderScreen.push(ref.read(routerProvider), ref0),
           ),

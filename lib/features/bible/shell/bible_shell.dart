@@ -36,6 +36,7 @@ import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/app_empty_state.dart';
+import '../data/bible_providers.dart';
 import '../data/canon.dart';
 import '../home/home_view.dart';
 import '../personalize/bible_catalog.dart';
@@ -229,7 +230,8 @@ class _BibleShellState extends ConsumerState<BibleShell> {
           ? FloatingActionButton.extended(
               key: BibleShell.insertKey,
               icon: const Icon(Icons.add_link),
-              label: Text(l.bibleInsertReference(selection.labelFr)),
+              label: Text(l.bibleInsertReference(
+                  selection.labelIn(ref.watch(bibleBookLanguageProvider)))),
               onPressed: () => ref.read(routerProvider).pop(selection),
             )
           : null,

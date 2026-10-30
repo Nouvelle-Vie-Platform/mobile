@@ -61,6 +61,9 @@ final class _SmallCatalog implements BibleCatalog {
 
   @override
   BibleVersification versificationFor(String code) => _versification;
+
+  @override
+  String languageFor(String code) => _full.languageFor(code);
 }
 
 /// Les quatre livres, à la versification du canon : l'index ne parcourt

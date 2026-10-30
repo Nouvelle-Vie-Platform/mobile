@@ -705,7 +705,8 @@ class _DailyCard extends ConsumerWidget {
                       Transform.translate(
                         offset: Offset(0, g.s(-5.0)),
                         child: Text(
-                          vod.link.labelFr,
+                          vod.link
+                              .labelIn(ref.watch(bibleBookLanguageProvider)),
                           maxLines: 1,
                           style: _atkinson(context, 19),
                         ),
@@ -916,7 +917,8 @@ class BibleSundayPassageSection extends ConsumerWidget {
                 ActionChip(
                   key: BibleHomeKeys.sundayRef(i),
                   avatar: const Icon(Icons.menu_book_outlined, size: 18),
-                  label: Text(link.labelFr),
+                  label:
+                      Text(link.labelIn(ref.watch(bibleBookLanguageProvider))),
                   onPressed: () => BibleReaderScreen.push(router, link),
                 ),
             ],

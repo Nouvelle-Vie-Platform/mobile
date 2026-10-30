@@ -71,6 +71,22 @@ final bibleVersificationProvider = Provider<BibleVersification>((ref) {
   return ref.watch(bibleCatalogProvider).versificationFor(code);
 });
 
+/// **La langue des noms de livres affichés** : celle de la version ouverte.
+///
+/// Demandé le 30/10/2026, et c'est la bonne règle : un fidèle qui n'a
+/// téléchargé que l'éwé lit un texte en éwé, et « Jean 8:36 » au-dessus était un
+/// mélange. **La dernière version choisie décide** — changer de version change
+/// les titres, le lecteur comme l'accueil, la recherche comme les favoris.
+///
+/// Elle ne touche pas la langue de l'application, et **aucune clé ne la suit** :
+/// les codes OSIS, l'index plein texte et l'analyse des références restent sur
+/// le français, qui reste reconnu quelle que soit la langue de l'écran
+/// (`canon.dart`).
+final bibleBookLanguageProvider = Provider<String>((ref) {
+  final code = ref.watch(activeBibleVersionProvider);
+  return ref.watch(bibleCatalogProvider).languageFor(code);
+});
+
 /// La clé d'un chapitre dans une version.
 typedef BibleChapterKey = ({String version, String book, int chapter});
 
