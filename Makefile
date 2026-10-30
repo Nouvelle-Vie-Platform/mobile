@@ -26,7 +26,7 @@ DART_DEFINES         := --dart-define=API_BASE_URL=$(API_BASE_URL)
 ANDROID_DART_DEFINES := --dart-define=API_BASE_URL=$(ANDROID_API_BASE_URL)
 
 .DEFAULT_GOAL := help
-.PHONY: help ios android ipad web web-assets db-probe hls-probe push-probe devices test analyze format \
+.PHONY: help ios android ipad web web-assets db-probe bible-probe hls-probe push-probe devices test analyze format \
         l10n gen migrations icons clean
 
 help: ## Affiche cette aide
@@ -45,6 +45,7 @@ help: ## Affiche cette aide
 	@echo "  make web-assets  Re-télécharge sqlite3.wasm + drift_worker.js + hls.min.js"
 	@echo "  make icons     Régénère l'icône et le splash natif depuis le logo"
 	@echo "  make db-probe    Prouve dans Chrome que le magasin local s'ouvre"
+	@echo "  make bible-probe Prouve dans Chrome que le magasin de la Bible range et relit"
 	@echo "  make hls-probe   Prouve dans Chrome que le lecteur web joue (réseau requis)"
 	@echo "  make push-probe  Prouve que le SDK Firebase vient de NOTRE origine (Chrome)"
 	@echo "  make clean     flutter clean"
@@ -125,6 +126,10 @@ icons: ## Régénère icônes et splash natif depuis brand_logo.webp + live_bg.p
 db-probe: ## Ouvre le magasin local dans un Chrome sans tête, et dit s'il répond
 	@echo "▶ Ni un test ni la CI : exige Chrome. Tout est servi en local."
 	./tool/db_probe.sh
+
+bible-probe: ## Prouve dans Chrome que le magasin web de la Bible range, relit et efface
+	@echo "▶ Sonde du magasin de la Bible"
+	PROBE_TARGET=tool/bible_probe/main.dart DB_PROBE_PORT=8734 ./tool/db_probe.sh
 
 hls-probe: ## Pilote HlsContentPlayer contre un vrai flux HLS dans un Chrome sans tête
 	@echo "▶ Ni un test ni la CI : exige Chrome et le réseau."

@@ -9,7 +9,7 @@ branchements entre tranches (voir « Branchements » en fin de page).
 
 | Dossier | Tranche | Contenu |
 |---|---|---|
-| `data/` | M1, C3, C4 | `canon.dart` (66 livres, versets par chapitre), `bible_source.dart` (`BibleSource`, `BibleCatalog`), `versification.dart` (la versification **d'une version**, C3), `placeholder_bible.dart` (Bible factice, versions EXA / EXB — le repli), `bible_archive.dart` (l'archive téléchargée : empreinte, dézippage, `InstalledBibleSource`, C4), `bible_providers.dart` |
+| `data/` | M1, C3, C4 | `canon.dart` (66 livres, versets par chapitre), `bible_source.dart` (`BibleSource`, `BibleCatalog`), `versification.dart` (la versification **d'une version**, C3), `placeholder_bible.dart` (Bible factice, versions EXA / EXB — le repli), `bible_archive.dart` (l'archive téléchargée : empreinte, dézippage, `InstalledBibleSource`, C4), `bible_store.dart` (**où les livres vivent** : un dossier sur l'appareil, un `Cache` dans le navigateur — sans lui le téléchargement échouait sur le web), `bible_providers.dart` |
 | `shell/` | M1, #265 | `bible_shell.dart` (quatre onglets sous la barre à pastille, Mon espace, invitation sans Bible, mode sélection), `bible_favorites_screen.dart` (l'écran Favoris, poussé), `bible_browser.dart` (livres → chapitres → versets), `bible_slots.dart` (les emplacements) |
 | `reader/` | M1 | `bible_reader_screen.dart` (le lecteur) |
 | `marks/` | M2 | sélection, menu d'action, Favori, marges, file d'envoi, fusion à la connexion |

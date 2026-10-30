@@ -200,7 +200,7 @@ void main() {
                 onProgress(1, 2);
                 return archive.bytes;
               },
-              root: () async => root,
+              root: () async => root.path,
             ),
           ),
           bibleEnsureIndexedProvider
@@ -266,7 +266,7 @@ void main() {
             BibleVersionInstaller(
               // Les octets servis ne sont pas ceux que l'URL annonce.
               fetch: (url, onProgress) async => [...archive.bytes, 0],
-              root: () async => root,
+              root: () async => root.path,
             ),
           ),
           bibleReadingStateProvider.overrideWith((ref) => Stream.value(null)),

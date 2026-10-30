@@ -33,24 +33,30 @@
 /// seul accident qu'une origine HTTPS laisse passer. Une archive qui ne
 /// correspond pas **ne s'installe pas** : [BibleArchiveException].
 ///
-/// ## Où les octets se rangent, et pourquoi pas dans le cache
+/// ## Où les octets se rangent
 ///
-/// Sous `getApplicationSupportDirectory()`, comme `MessageMediaStore` (T1,
-/// #223) et pour la même raison mesurée : `getTemporaryDirectory()` est vidé
-/// par le système quand il veut, donc « téléchargé pour lire hors réseau » n'y
-/// est **jamais** durable. Le chemin retenu est enregistré dans
-/// `bible_installed_versions.localPath` ; désinstaller l'emporte.
+/// Ce fichier ne le sait plus : il rend les entrées du zip à `bible_store.dart`
+/// et garde l'identifiant que celui-ci lui donne, dans
+/// `bible_installed_versions.localPath`. Sur un téléphone c'est un dossier sous
+/// `getApplicationSupportDirectory()` — comme `MessageMediaStore` (T1, #223) et
+/// pour la même raison mesurée : `getTemporaryDirectory()` est vidé par le
+/// système quand il veut, donc « téléchargé pour lire hors réseau » n'y est
+/// **jamais** durable. Dans un navigateur, c'est une clé de `Cache`.
+///
+/// **C'est une correction, pas une élégance** : tant que ce fichier a connu
+/// `File` et `Directory`, le bouton « Télécharger » du web descendait l'archive
+/// entière avant d'échouer à l'écrire, et le fidèle lisait « Réessayez plus
+/// tard » devant une panne qu'aucun réessai ne réparait.
 library;
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'bible_source.dart';
+import 'bible_store.dart';
 import 'canon.dart';
 
 /// Descendre une archive, en annonçant sa progression. C'est la **seule**
@@ -107,20 +113,6 @@ String? bibleArchiveFingerprint(String url) =>
 /// `../` y écrirait hors du dossier de la version (« zip slip »).
 final RegExp _expectedEntry = RegExp(r'^(manifest\.json|books/\d{2}\.json)$');
 
-/// Un code de version ne nomme un dossier qu'une fois réduit à ce qui ne peut
-/// pas sortir du magasin — il vient du serveur, on ne le suppose pas sain
-/// (même garde que `MessageMediaStore._safe`).
-String _safeCode(String code) => code.replaceAll(RegExp('[^A-Za-z0-9_-]'), '_');
-
-/// Le dossier de la version [code], **qu'il existe ou non**.
-Future<Directory> bibleVersionDirectory(
-  String code, {
-  Future<Directory> Function()? root,
-}) async {
-  final base = await (root ?? getApplicationSupportDirectory)();
-  return Directory('${base.path}/bible/${_safeCode(code)}');
-}
-
 /// Ce qu'une archive installée laisse derrière elle : son dossier, et la
 /// versification que son manifeste relève (`null` s'il n'en relève pas — le
 /// canon figé sert alors de repli, C3 #240).
@@ -137,7 +129,7 @@ Future<BibleArchiveInstalled> unpackBibleArchive({
   required String code,
   required String url,
   required List<int> bytes,
-  Future<Directory> Function()? root,
+  Future<String> Function()? root,
 }) async {
   final expected = bibleArchiveFingerprint(url);
   if (expected == null) {
@@ -150,22 +142,28 @@ Future<BibleArchiveInstalled> unpackBibleArchive({
     throw BibleArchiveException('empreinte $actual, attendue $expected');
   }
 
-  final dir = await bibleVersionDirectory(code, root: root);
-  if (dir.existsSync()) await dir.delete(recursive: true);
-  await Directory('${dir.path}/books').create(recursive: true);
+  // Le zip est ouvert **en entier avant d'écrire quoi que ce soit** : une
+  // archive sans manifeste ne doit pas laisser derrière elle un demi-magasin
+  // qu'il faudrait ensuite effacer.
+  final entries = <String, List<int>>{};
   for (final entry in ZipDecoder().decodeBytes(bytes)) {
     if (!entry.isFile || !_expectedEntry.hasMatch(entry.name)) continue;
     final content = entry.readBytes();
     if (content == null) continue;
-    await File('${dir.path}/${entry.name}').writeAsBytes(content);
+    entries[entry.name] = content;
   }
-
-  final manifest = File('${dir.path}/manifest.json');
-  if (!manifest.existsSync()) {
-    await dir.delete(recursive: true);
+  final manifest = entries['manifest.json'];
+  if (manifest == null) {
     throw const BibleArchiveException('manifest.json absent');
   }
-  return (localPath: dir.path, versification: _versificationOf(manifest));
+
+  final store = bibleStore(root: root);
+  final localPath = await store.install(code, entries);
+  return (
+    localPath: localPath,
+    versification:
+        _versificationOf(utf8.decode(manifest, allowMalformed: true)),
+  );
 }
 
 /// La versification du manifeste, **ré-encodée telle quelle** pour la colonne
@@ -173,9 +171,9 @@ Future<BibleArchiveInstalled> unpackBibleArchive({
 /// [BibleVersification.tryParse] relit. `null` si le manifeste n'en porte pas
 /// ou si elle est illisible : le canon figé reprend alors la main, ce qui est
 /// exactement l'état d'une version installée avant C3.
-String? _versificationOf(File manifest) {
+String? _versificationOf(String manifest) {
   try {
-    final decoded = jsonDecode(manifest.readAsStringSync());
+    final decoded = jsonDecode(manifest);
     if (decoded is! Map) return null;
     final counts = decoded['versification'];
     if (counts is! Map) return null;
@@ -195,7 +193,13 @@ String? _versificationOf(File manifest) {
 /// texte (M3) parcourt les chapitres livre par livre : avec ce cache,
 /// construire l'index lit 66 fichiers au lieu de 1 189.
 final class InstalledBibleSource implements BibleSource {
-  InstalledBibleSource(this.versionCode, this.directory);
+  InstalledBibleSource(
+    this.versionCode,
+    this.directory, {
+    Future<String> Function()? root,
+  }) : _store = bibleStore(root: root);
+
+  final BibleStore _store;
 
   @override
   final String versionCode;
@@ -232,12 +236,11 @@ final class InstalledBibleSource implements BibleSource {
   Future<List<List<String>>> _read(String book) async {
     final index = bibleBook(book)?.index;
     if (index == null) return const [];
-    final file = File(
-      '$directory/books/${(index + 1).toString().padLeft(2, '0')}.json',
-    );
-    if (!file.existsSync()) return const [];
+    final name = 'books/${(index + 1).toString().padLeft(2, '0')}.json';
+    final content = await _store.read(directory, name);
+    if (content == null) return const [];
     try {
-      final decoded = jsonDecode(await file.readAsString());
+      final decoded = jsonDecode(content);
       if (decoded is! Map) return const [];
       final chapters = decoded['chapters'];
       if (chapters is! List) return const [];

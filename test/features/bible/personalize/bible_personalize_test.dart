@@ -342,7 +342,7 @@ void main() {
       final indexed = <String>[];
       final progress = await BibleVersionInstaller(
         fetch: _fetch(archive.bytes),
-        root: () async => root,
+        root: () async => root.path,
       )
           .install(
             db,
@@ -389,7 +389,7 @@ void main() {
       await expectLater(
         BibleVersionInstaller(
           fetch: _fetch([...archive.bytes, 0]),
-          root: () async => root,
+          root: () async => root.path,
         ).install(
           db,
           MergedBibleCatalog(
@@ -437,7 +437,7 @@ void main() {
           );
       final installer = BibleVersionInstaller(
         fetch: _fetch(archive.bytes),
-        root: () async => root,
+        root: () async => root.path,
       );
       await installer
           .install(
