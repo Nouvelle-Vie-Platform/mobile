@@ -40,6 +40,16 @@ abstract interface class BibleStore {
 
   /// Rend la place. Sans effet s'il n'y a rien.
   Future<void> remove(String localPath);
+
+  /// **Les octets de cette version sont-ils encore là ?**
+  ///
+  /// Une ligne de `bible_installed_versions` peut survivre à ses fichiers : un
+  /// iPad réinstallé, un téléphone qui a rendu de la place, une sauvegarde
+  /// restaurée. La version se disait alors installée et le lecteur répondait
+  /// « ce chapitre n'est pas disponible dans cette version » — un mensonge, et
+  /// une impasse : le fidèle ne pouvait même plus la retélécharger. Constaté
+  /// sur iPad le 30/10/2026.
+  Future<bool> has(String localPath);
 }
 
 /// Un code de version ne nomme une entrée qu'une fois réduit à ce qui ne peut

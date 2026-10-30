@@ -69,6 +69,10 @@ final class _CacheBibleStore implements BibleStore {
   }
 
   @override
+  Future<bool> has(String localPath) async =>
+      await read(localPath, 'manifest.json') != null;
+
+  @override
   Future<void> remove(String localPath) async {
     try {
       final cache = await _open();

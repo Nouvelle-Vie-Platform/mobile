@@ -7,6 +7,7 @@ import 'core/config/app_env.dart';
 import 'core/network/api_client.dart';
 import 'data/notes_media/note_media_providers.dart';
 import 'features/bible/marks/bible_marks_outbox.dart';
+import 'features/bible/personalize/bible_catalog.dart';
 import 'features/bible/personalize/bible_reminders.dart';
 import 'features/bible/plans/plans_providers.dart';
 import 'features/bible/quiz/quiz_providers.dart';
@@ -175,6 +176,15 @@ class _MaisonDuMiracleAppState extends ConsumerState<MaisonDuMiracleApp> {
         // Le rapport ne remonte à aucun écran : une synchronisation qui échoue
         // laisse simplement le magasin en l'état, et l'écran affiche ce qu'il a.
         unawaited(scheduler.start());
+
+        // **Les Bibles dont les octets ont disparu** (30/10/2026) : une ligne
+        // de `bible_installed_versions` survit à ses fichiers — appareil
+        // réinstallé, place rendue, sauvegarde restaurée. La version se disait
+        // installée, le lecteur répondait « ce chapitre n'est pas disponible
+        // dans cette version », et l'écran des versions proposait une corbeille
+        // au lieu d'une flèche : plus aucun moyen de la retélécharger. Une fois
+        // au démarrage, avant que le premier écran ne mente.
+        unawaited(ref.read(bibleForgetMissingProvider)());
 
         // Le rappel « Lecture du plan » (M4) suit la lecture du jour (M5) :
         // faite, celui d'aujourd'hui s'annule.

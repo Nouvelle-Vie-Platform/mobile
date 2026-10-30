@@ -272,6 +272,41 @@ final bibleHasRealVersionProvider = Provider<bool>((ref) {
       .any((e) => e.localPath != null);
 });
 
+/// **Oublie les versions dont les octets ont disparu.**
+///
+/// Une ligne de `bible_installed_versions` survit à ses fichiers : un appareil
+/// réinstallé, une place disque rendue, une sauvegarde restaurée. La version se
+/// disait alors installée, le lecteur répondait « ce chapitre n'est pas
+/// disponible dans cette version », et le fidèle n'avait **aucun moyen de la
+/// retélécharger** — l'écran des versions lui proposait une corbeille, pas une
+/// flèche. Constaté sur iPad le 30/10/2026.
+///
+/// Oublier la ligne remet tout d'aplomb d'un coup : l'écran des versions
+/// repropose le téléchargement, et l'index plein texte de cette version part
+/// avec elle ([BibleVersionInstaller.remove] s'en charge). Appelé une fois au
+/// démarrage, dans `app.dart`.
+///
+/// Ne lève jamais : sans magasin lisible, on préfère laisser l'état en place
+/// plutôt que d'effacer ce qu'on n'a pas su lire.
+final bibleForgetMissingProvider = Provider<Future<void> Function()>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  final installer = ref.watch(bibleInstallerProvider);
+  return () async {
+    try {
+      final store = bibleStore();
+      for (final row in await db.select(db.bibleInstalledVersions).get()) {
+        final path = row.localPath;
+        // `localPath` nul : la ligne n'a jamais porté d'archive. Elle rend un
+        // texte d'exemple sous le nom d'une vraie version — le même mensonge.
+        if (path != null && await store.has(path)) continue;
+        await installer.remove(db, row.code);
+      }
+    } on Object {
+      // Magasin indisponible : l'état reste tel quel.
+    }
+  };
+});
+
 /// **L'indexation d'une version installée** (M3 : `BibleSearchIndex
 /// .ensureIndexed`). Le catalogue est relu dans le magasin au moment de
 /// l'appel : celui du provider ne sait pas encore que la version vient

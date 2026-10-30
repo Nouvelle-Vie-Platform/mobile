@@ -43,6 +43,12 @@ final class _DirectoryBibleStore implements BibleStore {
     return file.readAsString();
   }
 
+  /// Le **manifeste** et rien d'autre : `unpackBibleArchive` refuse une archive
+  /// qui n'en a pas, donc sa présence vaut installation complète.
+  @override
+  Future<bool> has(String localPath) async =>
+      File('$localPath/manifest.json').existsSync();
+
   @override
   Future<void> remove(String localPath) async {
     final dir = Directory(localPath);
