@@ -533,3 +533,54 @@ jobs:
         run: >
           gh release upload "$GITHUB_REF_NAME"
           "${{ steps.bundle.outputs.archive }}" --clobber
+
+  # **La pose, sans personne pour la regarder.** Arbitré le 30/10 : le plan avait
+  # d'abord écarté une pose automatique (« une frontière de confiance à soigner
+  # pour économiser deux commandes »), et c'est l'usage qui a tranché l'inverse —
+  # recopier six lignes à chaque version est la vraie source d'erreur, pas le
+  # chemin entrant.
+  #
+  # Le chemin entrant est donc rendu étroit plutôt qu'évité :
+  #
+  # - une clé **dédiée**, enfermée dans une `command=` forcée côté serveur : elle
+  #   n'ouvre pas de shell, ne transporte rien, et ne peut exécuter que
+  #   `poser-app-web.sh` — tout ce qu'on lui envoie n'est qu'un argument, filtré
+  #   par une expression qui n'accepte que `vX.Y.Z` ;
+  # - l'utilisateur `appweb` **sans `sudo`**, propriétaire de `/opt/eenv-app-web`
+  #   et de rien d'autre ;
+  # - l'empreinte du serveur vérifiée (`known_hosts`), sans quoi la clé irait se
+  #   présenter au premier qui répond à l'adresse ;
+  # - et le script **revient en arrière tout seul** si l'adresse ne sert pas la
+  #   version qu'il vient de poser.
+  #
+  # Le serveur va chercher l'archive lui-même sur la Release — le dépôt est
+  # public depuis le 14/10, aucun jeton ne circule dans cette session.
+  #
+  # Le script, sa pose et la fabrication de la clé : `infra/app-web/` et
+  # `docs/RUNBOOK.md` du dépôt `context`.
+  poser:
+    name: Poser sur le VPS
+    needs: [apk, web]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Poser et vérifier
+        env:
+          CLE: ${{ secrets.APP_WEB_DEPLOY_KEY }}
+          HOTE: ${{ secrets.APP_WEB_DEPLOY_HOST }}
+          EMPREINTE: ${{ secrets.APP_WEB_KNOWN_HOSTS }}
+        run: |
+          for nom in CLE HOTE EMPREINTE; do
+            if [ -z "${!nom}" ]; then
+              echo "::error title=Pose app web::Le secret de $nom manque ; la Release est publiée mais rien n'a été posé."
+              exit 1
+            fi
+          done
+
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$CLE" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$EMPREINTE" > ~/.ssh/known_hosts
+
+          # `BatchMode` : jamais de question interactive — un job bloqué sur une
+          # invite de mot de passe tiendrait le runner jusqu'au délai maximum.
+          ssh -o BatchMode=yes -i ~/.ssh/id_ed25519 "$HOTE" "$GITHUB_REF_NAME"
