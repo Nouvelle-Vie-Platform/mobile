@@ -198,6 +198,7 @@ Trois conséquences, et ce sont elles qui dessinent T0 :
 | **`--no-web-resources-cdn` sur tout build web** — CI, release et `make web`. | Sans ce drapeau, CanvasKit arrive de `gstatic.com` et non de notre origine (§3) : une dépendance réseau tierce au démarrage, que `web/WEB_ASSETS.md` interdit déjà pour les trois actifs versionnés, et une panne totale — pas dégradée — pour un fidèle dont le réseau ne l'atteint pas. |
 | **Monter la CI à Flutter 3.47.4** dans T5, APK compris. | Le bundle servi est celui de la CI. Un écart de version de Flutter sur une cible web est exactement le genre de panne qu'aucune compilation ne voit — et c'est le dépôt lui-même qui l'a déjà écrit à propos des actifs web. |
 | Le plan ici, les issues T1-T5 dans `mobile`, **T0 dans `context`**. | `mobile` est public depuis le 14/10 : une issue qui détaille le bloc Caddy, la CSP et les origines serait une carte offerte. Le démontage de la CI est suivi de la même façon (`context#7`). |
+| **La demande de notification reste enchaînée à l'installation** — aucun rattrapage pour les appareils installés avant T2. | Arbitré le 30/10 : un fidèle qui a installé avant la mise en ligne de T2 ne se verra jamais proposer les notifications, et il faudra les autoriser à la main dans les réglages du navigateur. Le parc web se comptait alors sur une main — un bandeau de rattrapage, ou un interrupteur dans Profil, coûtait plus que le trou qu'il bouchait. **À rouvrir si le parc web grandit** : le trou ne se referme pas tout seul. |
 
 ## 5. Les tranches
 
