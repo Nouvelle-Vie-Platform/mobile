@@ -7,9 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/local/bible_dao.dart';
 import '../../../state/auth_providers.dart';
 import '../../../state/sync_providers.dart';
+import '../personalize/bible_catalog.dart';
+import '../personalize/reader_appearance.dart';
 import 'bible_source.dart';
 import 'versification.dart';
-import '../personalize/bible_catalog.dart';
 
 export '../../../data/local/bible_dao.dart' show BibleReadingSnapshot;
 
@@ -86,6 +87,15 @@ final bibleBookLanguageProvider = Provider<String>((ref) {
   final code = ref.watch(activeBibleVersionProvider);
   return ref.watch(bibleCatalogProvider).languageFor(code);
 });
+
+/// **La famille de police des textes bibliques affichés.**
+///
+/// `Andika` quand la version ouverte s'écrit avec des lettres qu'aucune autre
+/// police embarquée ne porte, la police de l'application sinon. Tout ce qui
+/// montre du texte venu d'une Bible passe par là — le verset, mais aussi son
+/// titre : « 1 Mɔse » en porte autant que le verset lui-même.
+final bibleTextFontFamilyProvider = Provider<String>(
+    (ref) => bibleTextFontFamily(ref.watch(bibleBookLanguageProvider)));
 
 /// La clé d'un chapitre dans une version.
 typedef BibleChapterKey = ({String version, String book, int chapter});

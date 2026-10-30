@@ -138,7 +138,10 @@ void main() {
         // sa barre de recherche, pas la loupe de la coquille.
         await tester.tap(find.byKey(BibleShell.tabKey(BibleModuleTab.home)));
         await _settle(tester);
-        expect(find.text(_fr.bibleHomeHeroTitle), findsOneWidget);
+        // Depuis le 30/10/2026 le grand titre a cédé l'image au verset du
+        // jour. Ce que ce test garde, c'est que l'onglet est **rempli par sa
+        // tranche** : la section du jour y est, quel que soit son libellé.
+        expect(find.byKey(BibleHomeKeys.header), findsOneWidget);
         expect(find.byKey(BibleHomeKeys.back), findsOneWidget);
         expect(find.byKey(BibleHomeKeys.search), findsOneWidget);
         expect(find.byKey(BibleShell.searchKey), findsNothing);

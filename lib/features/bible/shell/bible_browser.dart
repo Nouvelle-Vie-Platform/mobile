@@ -255,8 +255,11 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
                               .copyWith(color: tiles.bookTileInk),
                         ),
                       ),
-                      title:
-                          Text(b.nameIn(ref.watch(bibleBookLanguageProvider))),
+                      title: Text(
+                        b.nameIn(ref.watch(bibleBookLanguageProvider)),
+                        style: TextStyle(
+                            fontFamily: ref.watch(bibleTextFontFamilyProvider)),
+                      ),
                       subtitle: Text(
                         l.bibleChapterCount(versification.chapterCount(b.osis)),
                       ),
@@ -290,7 +293,13 @@ class _BibleBrowserState extends ConsumerState<BibleBrowser> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTypography.h5),
+                // Le titre de cet en-tête est **toujours** un nom de livre ou
+                // une référence : il porte donc l'écriture de la version lue.
+                Text(
+                  title,
+                  style: AppTypography.h5.copyWith(
+                      fontFamily: ref.watch(bibleTextFontFamilyProvider)),
+                ),
                 Text(
                   subtitle,
                   style: TextStyle(color: context.palette.textSecondary),

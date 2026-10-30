@@ -34,13 +34,45 @@ AppPalette bibleReaderPalette(BibleReaderTheme theme) => switch (theme) {
         ),
     };
 
+/// **La police des écritures que les autres ne savent pas écrire.**
+///
+/// Aucune des trois polices de l'application ne porte `ɔ ɖ ɛ ƒ ɣ ŋ ʋ` — mesuré
+/// le 30/10/2026. Sur un téléphone le système comble ; **dans un navigateur
+/// non**, et le fidèle lisait des carrés vides au milieu de l'Écriture.
+/// `assets/fonts/Andika/COMMENT-ELLE-EST-FAITE.md` dit pourquoi celle-ci.
+const String kScriptFontFamily = 'Andika';
+
+/// Les langues dont aucune autre police embarquée ne porte les lettres.
+///
+/// Une liste, pas un `== 'ee'` : le jour où une version ga, kabiyè ou fon
+/// paraîtra, c'est **ici** qu'on l'ajoutera, et nulle part ailleurs.
+const Set<String> kScriptFontLanguages = {'ee'};
+
+bool needsScriptFont(String language) =>
+    kScriptFontLanguages.contains(language);
+
+/// La famille d'un texte **venu d'une Bible** écrite en [language].
+///
+/// À préférer au fournisseur quand l'écran tient déjà la version dont il
+/// montre le texte — la comparaison de versions en montre plusieurs à la fois,
+/// et la version active ne dit rien de celles-là.
+String bibleTextFontFamily(String language) =>
+    needsScriptFont(language) ? kScriptFontFamily : AppTypography.fontFamily;
+
 /// Le nom de famille de [font]. « Système » nomme une famille absente des
 /// actifs : Flutter retombe alors sur la police du système (Roboto, SF).
-String bibleFontFamily(BibleReaderFont font) => switch (font) {
-      BibleReaderFont.atkinson => AppTypography.fontFamily,
-      BibleReaderFont.literata => 'Literata',
-      BibleReaderFont.system => 'sans-serif',
-    };
+///
+/// [language] l'emporte quand ses lettres manquent partout ailleurs : le
+/// réglage de police du fidèle ne peut pas rendre lisible ce qu'aucune de ces
+/// polices ne sait dessiner.
+String bibleFontFamily(BibleReaderFont font, {String language = 'fr'}) =>
+    needsScriptFont(language)
+        ? kScriptFontFamily
+        : switch (font) {
+            BibleReaderFont.atkinson => AppTypography.fontFamily,
+            BibleReaderFont.literata => 'Literata',
+            BibleReaderFont.system => 'sans-serif',
+          };
 
 /// **Le rouge brique du lecteur** (#250) : numéros de versets et lettrine. Il
 /// suit le sort du sépia — c'est l'encre d'un réglage de lecture, pas une
@@ -53,9 +85,13 @@ Color bibleRubricColor(BibleReaderTheme theme) => switch (theme) {
     };
 
 /// Le style d'un verset pour [prefs] sur [palette].
-TextStyle bibleVerseTextStyle(BiblePrefs prefs, AppPalette palette) =>
+TextStyle bibleVerseTextStyle(
+  BiblePrefs prefs,
+  AppPalette palette, {
+  String language = 'fr',
+}) =>
     TextStyle(
-      fontFamily: bibleFontFamily(prefs.font),
+      fontFamily: bibleFontFamily(prefs.font, language: language),
       fontSize: prefs.fontSize,
       height: prefs.lineHeight,
       fontWeight: FontWeight.w400,
@@ -65,12 +101,26 @@ TextStyle bibleVerseTextStyle(BiblePrefs prefs, AppPalette palette) =>
 /// **Habille le lecteur** : fond, palette (`context.palette` en dessous rend
 /// celle du thème choisi) et réglages du texte des versets.
 class BibleReaderAppearance extends ConsumerWidget {
-  const BibleReaderAppearance({super.key, required this.child, this.prefs});
+  const BibleReaderAppearance({
+    super.key,
+    required this.child,
+    this.prefs,
+    this.language = 'fr',
+  });
 
   final Widget child;
 
   /// Pour l'aperçu : des réglages qui ne sont pas (encore) enregistrés.
   final BiblePrefs? prefs;
+
+  /// La langue de la version lue, **donnée par l'appelant**.
+  ///
+  /// Et pas lue ici d'un fournisseur : l'aperçu de « Thèmes & polices » et le
+  /// studio de partage posent des bouts de lecteur **hors du lecteur**, où
+  /// aucune version n'est ouverte. Demander la version active y réveillait la
+  /// position de lecture, donc un flux Drift, et deux tests mouraient sur un
+  /// minuteur resté en vie.
+  final String language;
 
   /// Les réglages sous ce widget (le défaut s'il n'y en a pas : l'aperçu des
   /// réglages et les tests posent des bouts de lecteur hors du lecteur).
@@ -78,9 +128,21 @@ class BibleReaderAppearance extends ConsumerWidget {
       context.dependOnInheritedWidgetOfExactType<_Scope>()?.prefs ??
       const BiblePrefs();
 
+  /// La langue de la version lue sous ce widget. Le français hors du lecteur :
+  /// l'aperçu des réglages ne lit aucune version.
+  static String languageOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_Scope>()?.language ?? 'fr';
+
   /// Le style d'un verset sous ce widget (le défaut s'il n'y en a pas).
-  static TextStyle verseStyle(BuildContext context) =>
-      bibleVerseTextStyle(prefsOf(context), context.palette);
+  ///
+  /// **La langue passe par ici et non par les appelants** : le lecteur la
+  /// connaît déjà, et un verset dont la police dépendrait du soin de chaque
+  /// widget finirait en carrés vides sur celui qu'on aurait oublié.
+  static TextStyle verseStyle(BuildContext context) => bibleVerseTextStyle(
+        prefsOf(context),
+        context.palette,
+        language: languageOf(context),
+      );
 
   /// Le rouge brique sous ce widget : numéros de versets, lettrine.
   static Color rubric(BuildContext context) =>
@@ -94,6 +156,7 @@ class BibleReaderAppearance extends ConsumerWidget {
     final theme = Theme.of(context);
     return _Scope(
       prefs: p,
+      language: language,
       child: Theme(
         data: theme.copyWith(
           extensions: [...theme.extensions.values, palette],
@@ -111,12 +174,18 @@ class BibleReaderAppearance extends ConsumerWidget {
 }
 
 class _Scope extends InheritedWidget {
-  const _Scope({required this.prefs, required super.child});
+  const _Scope({
+    required this.prefs,
+    required this.language,
+    required super.child,
+  });
 
   final BiblePrefs prefs;
+  final String language;
 
   @override
-  bool updateShouldNotify(_Scope old) => old.prefs != prefs;
+  bool updateShouldNotify(_Scope old) =>
+      old.prefs != prefs || old.language != language;
 }
 
 /// **« Thèmes & polices »** : les réglages et un aperçu en direct.

@@ -416,9 +416,13 @@ class BiblePlanDetailScreen extends ConsumerWidget {
               l.biblePlansDayOf(d + 1, p.totalDays),
               style: d == p.todayIndex ? AppTypography.bodyStrong : null,
             ),
-            subtitle: Text(t.days[d]
-                .map((r) => r.labelIn(ref.watch(bibleBookLanguageProvider)))
-                .join(', ')),
+            subtitle: Text(
+              t.days[d]
+                  .map((r) => r.labelIn(ref.watch(bibleBookLanguageProvider)))
+                  .join(', '),
+              style:
+                  TextStyle(fontFamily: ref.watch(bibleTextFontFamilyProvider)),
+            ),
             onTap: () => openPlanDay(ref, t.days[d]),
           );
         },
@@ -508,7 +512,9 @@ class _DayCard extends ConsumerWidget {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(r.labelIn(ref.watch(bibleBookLanguageProvider)),
-                        style: AppTypography.body),
+                        style: AppTypography.body.copyWith(
+                            fontFamily:
+                                ref.watch(bibleTextFontFamilyProvider))),
                   ],
                 ),
               ),

@@ -16,6 +16,7 @@ import '../../../theme/app_typography.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/brand_app_bar.dart';
 import '../data/bible_providers.dart';
+import '../personalize/reader_appearance.dart';
 import '../data/bible_source.dart';
 import '../data/canon.dart';
 import '../reader/bible_reader_screen.dart';
@@ -101,7 +102,15 @@ class _VersionCard extends ConsumerWidget {
             const SizedBox(height: AppSpacing.xs),
             Text.rich(
               TextSpan(
-                style: AppTypography.body.copyWith(color: palette.textPrimary),
+                // La police suit **cette** version, pas la version active :
+                // cet écran en montre plusieurs côte à côte, et l'éwé doit
+                // rester lisible à côté du français.
+                style: AppTypography.body.copyWith(
+                  color: palette.textPrimary,
+                  fontFamily: bibleTextFontFamily(ref
+                      .watch(bibleCatalogProvider)
+                      .languageFor(version.code)),
+                ),
                 children: [
                   for (final v in shown) ...[
                     if (shown.length > 1)

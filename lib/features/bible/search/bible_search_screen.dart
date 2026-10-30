@@ -30,6 +30,7 @@ import '../../../widgets/app_card.dart';
 import '../../../widgets/app_empty_state.dart';
 import '../../../widgets/brand_app_bar.dart';
 import '../data/bible_providers.dart';
+import '../personalize/reader_appearance.dart';
 import '../data/bible_source.dart';
 import '../data/canon.dart';
 import '../reader/bible_reader_screen.dart';
@@ -452,7 +453,8 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
                 Expanded(
                   child: Text(
                       hit.link.labelIn(ref.watch(bibleBookLanguageProvider)),
-                      style: AppTypography.bodyStrong),
+                      style: AppTypography.bodyStrong.copyWith(
+                          fontFamily: ref.watch(bibleTextFontFamilyProvider))),
                 ),
                 IconButton(
                   key: BibleSearchScreen.compareKey(hit.link),
@@ -469,8 +471,12 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
                 padding: const EdgeInsets.only(top: AppSpacing.xs),
                 child: Text.rich(
                   TextSpan(
-                    style:
-                        AppTypography.body.copyWith(color: palette.textPrimary),
+                    style: AppTypography.body.copyWith(
+                      color: palette.textPrimary,
+                      fontFamily: bibleTextFontFamily(ref
+                          .watch(bibleCatalogProvider)
+                          .languageFor(t.version)),
+                    ),
                     children: [
                       if (cross)
                         TextSpan(

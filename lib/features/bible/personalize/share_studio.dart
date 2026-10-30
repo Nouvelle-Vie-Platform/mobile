@@ -197,6 +197,11 @@ class _StudioState extends ConsumerState<BibleShareStudioScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    // La langue vient de **la version partagée**, que cet écran tient déjà —
+    // pas de la version active. Demander celle-ci réveillerait la position de
+    // lecture, donc un flux Drift, pour une réponse que `versionCode` donne.
+    final langue =
+        ref.watch(bibleCatalogProvider).languageFor(widget.versionCode);
     final backdrops = ref.watch(bibleStudioBackdropsProvider).value ?? const [];
     final gradients = <Gradient>[
       for (final b in backdrops)
@@ -225,13 +230,9 @@ class _StudioState extends ConsumerState<BibleShareStudioScreen> {
                 // tient déjà — pas de la version active. Demander celle-ci
                 // réveillerait la position de lecture, donc un flux Drift,
                 // pour une réponse que `versionCode` donne déjà.
-                reference: _showReference
-                    ? widget.link.labelIn(ref
-                        .watch(bibleCatalogProvider)
-                        .languageFor(widget.versionCode))
-                    : null,
+                reference: _showReference ? widget.link.labelIn(langue) : null,
                 style: TextStyle(
-                  fontFamily: bibleFontFamily(_font),
+                  fontFamily: bibleFontFamily(_font, language: langue),
                   fontSize: _size,
                   height: 1.35,
                   color: _ink,
