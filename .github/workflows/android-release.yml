@@ -534,13 +534,15 @@ jobs:
           gh release upload "$GITHUB_REF_NAME"
           "${{ steps.bundle.outputs.archive }}" --clobber
 
-  # **La pose n'est pas ici, et c'est délibéré.** Elle a d'abord été écrite en
-  # job SSH, le 30/10 ; elle a échoué sur `Connection timed out`. `ufw` n'ouvre
-  # le port 22 qu'aux adresses connues, et les runners GitHub en changent à
-  # chaque job : il aurait fallu apprendre au pare-feu les milliers de plages
-  # d'Azure, et les rafraîchir. Le sens a donc été retourné — **c'est le serveur
-  # qui va chercher** (`infra/app-web/suivre-app-web.timer` du dépôt `context`),
-  # toutes les deux minutes, en lisant la redirection de `/releases/latest`.
+  # **La pose n'est pas ici, et c'est un choix.** Elle a d'abord été écrite en
+  # job SSH, le 30/10 ; elle a échoué sur `Connection timed out`, parce que le
+  # `sshd` du serveur écoute sur le **port 6446** et non sur le 22 — ce que seul
+  # le `~/.ssh/config` du Mac savait. Elle aurait donc pu fonctionner.
+  #
+  # Elle n'a pas été rétablie : **c'est le serveur qui va chercher**
+  # (`infra/app-web/suivre-app-web.timer` du dépôt `context`), toutes les deux
+  # minutes, en lisant la redirection de `/releases/latest`. Aucune clé confiée
+  # à GitHub, aucun secret à faire tourner, aucun chemin entrant à surveiller.
   #
   # Ce que cette Release doit garantir pour que la pose ait lieu : le tag, et
   # l'archive `app-web-X.Y.Z.tar.gz` attachée par le job ci-dessus.
