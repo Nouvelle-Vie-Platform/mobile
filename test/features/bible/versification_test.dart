@@ -22,7 +22,9 @@ import 'package:maison_du_miracle/features/bible/data/placeholder_bible.dart';
 import 'package:maison_du_miracle/features/bible/personalize/bible_catalog.dart';
 import 'package:maison_du_miracle/features/bible/search/bible_reference_parser.dart';
 import 'package:maison_du_miracle/features/bible/search/bible_search_index.dart';
+import 'package:maison_du_miracle/features/bible/personalize/reader_appearance.dart';
 import 'package:maison_du_miracle/features/bible/shell/bible_browser.dart';
+import 'package:maison_du_miracle/theme/app_typography.dart';
 
 import '../../data/local/local_database_fixtures.dart';
 import '../../helpers/pump_screen.dart';
@@ -339,6 +341,26 @@ void main() {
     testWidgets('et la version française garde « Malachie »', (tester) async {
       await open(tester, 'KJV', 'Mal');
       expect(find.text('Malachie'), findsOneWidget);
+    });
+
+    /*
+     * **Et le titre est écrit dans une police qui sait l'écrire.** « Malaki »
+     * n'a aucune lettre particulière, mais « 1 Mɔse » si : un écran qui rend le
+     * bon nom dans la mauvaise police affiche un carré vide, et le test du nom
+     * ci-dessus passerait au vert sans rien voir.
+     */
+    testWidgets('en éwé le titre passe dans la police de l\'écriture',
+        (tester) async {
+      await open(tester, 'EWE', 'Mal');
+      final titre = tester.widget<Text>(find.text('Malaki'));
+      expect(titre.style?.fontFamily, kScriptFontFamily);
+    });
+
+    testWidgets('en français il garde la police de l\'application',
+        (tester) async {
+      await open(tester, 'KJV', 'Mal');
+      final titre = tester.widget<Text>(find.text('Malachie'));
+      expect(titre.style?.fontFamily, AppTypography.fontFamily);
     });
 
     testWidgets('la version qui n\'a pas Malachie 4 ne le propose pas',

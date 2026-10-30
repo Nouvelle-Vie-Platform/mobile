@@ -404,6 +404,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     // elle doit suivre le thème choisi (sépia, sombre) comme le texte. Le
     // `Builder` n'est là que pour lire la palette du thème ainsi posé.
     return BibleReaderAppearance(
+      language: ref.watch(bibleBookLanguageProvider),
       child: Builder(
         builder: (context) => _scaffold(context, context.palette, l, c,
             version: version,

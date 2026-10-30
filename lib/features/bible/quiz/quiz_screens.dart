@@ -425,7 +425,11 @@ class _Feedback extends ConsumerWidget {
           ActionChip(
             key: QuizPlayScreen.referenceKey,
             avatar: const Icon(Icons.menu_book_rounded, size: 18),
-            label: Text(ref0.labelIn(ref.watch(bibleBookLanguageProvider))),
+            label: Text(
+              ref0.labelIn(ref.watch(bibleBookLanguageProvider)),
+              style:
+                  TextStyle(fontFamily: ref.watch(bibleTextFontFamilyProvider)),
+            ),
             onPressed: () =>
                 BibleReaderScreen.push(ref.read(routerProvider), ref0),
           ),

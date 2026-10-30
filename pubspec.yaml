@@ -379,6 +379,18 @@ flutter:
       fonts:
         - asset: assets/fonts/Playfair_Display/PlayfairDisplay-Medium.ttf
           weight: 500
+    # **Les textes en éwé** : aucune des autres polices ne porte `ɔ ɖ ɛ ƒ ɣ ŋ ʋ`,
+    # et un navigateur n'a pas de secours système — le fidèle lisait des carrés
+    # vides au milieu de l'Écriture. Détourée de 912 à 265 Ko, parce que Flutter
+    # web télécharge toutes les polices déclarées au démarrage, même inutilisées.
+    # SIL OFL 1.1 ; le détourage et son piège sont dans
+    # `assets/fonts/Andika/COMMENT-ELLE-EST-FAITE.md`.
+    - family: Andika
+      fonts:
+        - asset: assets/fonts/Andika/Andika-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Andika/Andika-Bold.ttf
+          weight: 700
     # La serif de lecture du lecteur de la Bible (M4, mobile#202), SIL OFL 1.1
     # (`assets/fonts/Literata/OFL.txt`). Régulier seul : le texte des versets
     # n'a pas de gras.

@@ -212,12 +212,20 @@ final class _Geo {
   double s(double mock) => mock * k;
 }
 
+/// Le style courant de l'accueil de la Bible.
+///
+/// [family] n'est à donner que pour un texte **venu d'une Bible** — le verset
+/// du jour, sa référence : il y passe alors la police de l'écriture de la
+/// version ouverte (`bibleTextFontFamilyProvider`). Les libellés de
+/// l'application, eux, gardent la police de l'application.
 TextStyle _atkinson(
   BuildContext context,
   double size, {
   FontWeight weight = FontWeight.w400,
+  String? family,
 }) =>
     AppTypography.body.copyWith(
+      fontFamily: family,
       fontSize: _Geo.of(context).s(size),
       fontWeight: weight,
       color: BibleHomeColors.of(context).ink,
@@ -666,6 +674,7 @@ class _DailyCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final text = ref.watch(bibleLinkTextProvider(vod.link)).value ?? '';
+    final ecriture = ref.watch(bibleTextFontFamilyProvider);
     final g = _Geo.of(context);
     const radius = BorderRadius.all(Radius.circular(12));
     return Material(
@@ -708,7 +717,7 @@ class _DailyCard extends ConsumerWidget {
                           vod.link
                               .labelIn(ref.watch(bibleBookLanguageProvider)),
                           maxLines: 1,
-                          style: _atkinson(context, 19),
+                          style: _atkinson(context, 19, family: ecriture),
                         ),
                       ),
                       Transform.translate(
@@ -718,7 +727,8 @@ class _DailyCard extends ConsumerWidget {
                           key: BibleHomeKeys.verseText,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: _atkinson(context, 16).copyWith(height: 1.4),
+                          style: _atkinson(context, 16, family: ecriture)
+                              .copyWith(height: 1.4),
                         ),
                       ),
                     ],
