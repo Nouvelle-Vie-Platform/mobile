@@ -140,14 +140,22 @@ Future<(AppDatabase, GoRouter)> _pump(
   return (db, router);
 }
 
-Future<void> _seedVerse(AppDatabase db, {int? backgroundId}) async {
+Future<void> _seedVerse(
+  AppDatabase db, {
+  int? backgroundId,
+  String book = 'Rom',
+  int chapter = 8,
+  int verseFrom = 28,
+  int? verseTo,
+}) async {
   await db.into(db.bibleVerseOfDays).insert(
         BibleVerseOfDaysCompanion.insert(
           id: const Value(1),
           day: _day,
-          book: 'Rom',
-          chapter: 8,
-          verseFrom: const Value(28),
+          book: book,
+          chapter: chapter,
+          verseFrom: Value(verseFrom),
+          verseTo: Value(verseTo),
           comment: const Value('Tout concourt au bien.'),
           backgroundId: Value(backgroundId),
         ),
@@ -215,6 +223,39 @@ void main() {
         await tester.tap(find.byKey(BibleHomeKeys.dailyRead));
         await _settle(tester);
         expect(find.text('lecteur Rom 8 28'), findsOneWidget);
+      });
+    });
+
+    /*
+     * **Une longue référence ne doit pas écrire sur le verset** (31/10/2026).
+     * « Hakpukpuiwo 100:4 » passait à la ligne et retombait par-dessus le
+     * texte : la référence et le verset sont posés à des hauteurs fixes, et
+     * aucun des deux ne pousse l'autre. Constaté sur iPad, en éwé.
+     */
+    testWidgets('une longue référence tient sur une ligne, au-dessus du verset',
+        (tester) async {
+      _phone(tester);
+      await _run(tester, () async {
+        await _pump(
+          tester,
+          seed: (db) async => _seedVerse(
+            db,
+            book: '1Thess',
+            chapter: 5,
+            verseFrom: 16,
+            verseTo: 18,
+          ),
+        );
+        final reference = tester.getRect(find.byKey(BibleHomeKeys.daily));
+        final verset = tester.getRect(find.byKey(BibleHomeKeys.verseText));
+        expect(
+          reference.bottom,
+          lessThan(verset.top),
+          reason: 'la référence déborde sur le verset',
+        );
+        // Une seule ligne : deux lignes de 32 pt feraient plus de 60 pt.
+        expect(reference.height, lessThan(50));
+        expect(tester.takeException(), isNull);
       });
     });
 

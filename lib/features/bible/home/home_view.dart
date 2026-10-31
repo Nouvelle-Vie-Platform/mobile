@@ -411,15 +411,24 @@ class _HeroReference extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // **Une seule ligne, quelle que soit la référence.** « Hakpukpuiwo
+        // 100:4 » passait à la ligne et venait écrire par-dessus le verset :
+        // les deux blocs sont posés à des hauteurs fixes, et rien ne pousse
+        // l'autre. Plutôt que de couper le nom du livre — « Hakpukpuiw… 100:4 »
+        // ne désigne plus rien — la référence **rétrécit** juste ce qu'il faut.
         Flexible(
-          child: Text(
-            vod.link.labelIn(langue),
-            key: BibleHomeKeys.daily,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: needsScriptFont(langue)
-                ? serif.copyWith(fontFamily: kScriptFontFamily)
-                : serif,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              vod.link.labelIn(langue),
+              key: BibleHomeKeys.daily,
+              maxLines: 1,
+              softWrap: false,
+              style: needsScriptFont(langue)
+                  ? serif.copyWith(fontFamily: kScriptFontFamily)
+                  : serif,
+            ),
           ),
         ),
         SizedBox(width: geo.s(12)),
