@@ -38,7 +38,9 @@ void main() {
     expect(gen.osis, 'Gen');
     expect(gen.nameIn('fr'), 'Genèse');
     expect(gen.nameIn('en'), 'Genesis');
-    expect(gen.nameIn('ee'), startsWith('1 Mɔse'));
+    // Le nom de l'éditeur, recopié de son `BookNames.xml` : le Pentateuque
+    // porte le nom de Moïse, numéroté **après** et en chiffres romains.
+    expect(gen.nameIn('ee'), 'Mose I');
     // Une langue sans table : le titre reste lisible plutôt qu'absent.
     expect(gen.nameIn('de'), 'Genèse');
   });
@@ -52,6 +54,34 @@ void main() {
     expect(bibleCanon.map((b) => b.osis).take(3), ['Gen', 'Exod', 'Lev']);
     expect(bibleCanon.last.osis, 'Rev');
     expect(bibleCanon, hasLength(66));
+  });
+
+  /*
+   * **La table éwé est celle de l'éditeur** (31/10/2026) : `BookNames.xml` de
+   * Biblica pour `Agbenya La™`, la traduction même que l'application sert. Le
+   * relevé précédent, sans source, se trompait sur 31 noms sur 66 — et rien ne
+   * l'aurait jamais dit : un nom faux s'affiche aussi bien qu'un nom juste.
+   * Ces six-là sont ceux qui divergeaient le plus.
+   */
+  test('les noms éwé sont ceux de l\'éditeur de la traduction', () {
+    const attendus = {
+      'Ps': 'Psalmowo',
+      'Judg': 'Ʋɔnudrɔ̃lawo',
+      'Lam': 'Konyifahawo',
+      'Ezek': 'Hezekiel',
+      'Acts': 'Dɔwɔwɔwo',
+      'Rev': 'Nyaɖeɖefia',
+    };
+    for (final MapEntry(key: osis, value: nom) in attendus.entries) {
+      expect(bibleBook(osis)?.nameIn('ee'), nom, reason: osis);
+    }
+  });
+
+  test('les livres numérotés le sont en chiffres romains, après le nom', () {
+    expect(bibleBook('1Sam')?.nameIn('ee'), 'Samuel I');
+    expect(bibleBook('2Cor')?.nameIn('ee'), 'Korintotɔwo II');
+    expect(bibleBook('3John')?.nameIn('ee'), 'Yohanes III');
+    expect(bibleBook('Deut')?.nameIn('ee'), 'Mose V');
   });
 
   test('une référence se tape dans n’importe laquelle des trois langues', () {

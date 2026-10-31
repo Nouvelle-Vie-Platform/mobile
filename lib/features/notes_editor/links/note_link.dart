@@ -300,52 +300,63 @@ const Map<String, String> osisBooksEn = {
 
 /// **Les 66 livres en éwé**, code OSIS → nom.
 ///
-/// Fournis par un locuteur et vérifiés un à un contre [osisBooksFr] : même ordre, mêmes
-/// livres. Le Pentateuque y porte le nom de Moïse (« 1 Mɔse »), usage des Bibles éwé, et
-/// non un calque du français.
+/// **Recopiés du `BookNames.xml` de l'éditeur**, celui que Biblica publie avec la
+/// traduction que l'application sert — `Biblica® Se aɖeke mebla Biblia zazã o
+/// Agbenya La™`, 2020, distribuée par eBible.org. C'est la seule autorité qui
+/// existe ici : le XML du texte lui-même ne porte que des **numéros** de livre,
+/// jamais leurs noms (mesuré sur `Ewe2020Bible.xml`).
+///
+/// La table précédente venait d'un relevé sans source et se trompait sur **31 noms
+/// sur 66** — « Hakpukpuiwo » pour les Psaumes là où l'éditeur écrit « Psalmowo »,
+/// « Vonɔlawo » pour les Juges là où il écrit « Ʋɔnudrɔ̃lawo », et un Pentateuque
+/// numéroté à la française. Relevé par un lecteur éwé le 31/10/2026.
+///
+/// **Seule retouche à la sortie de l'éditeur** : ses chiffres arabes (« Mose 1 »)
+/// passent en chiffres romains (« Mose I »), forme attendue par l'église. Le reste
+/// est recopié au caractère près.
 ///
 /// Sans cette table, une Bible en éwé afficherait du vrai texte éwé sous des titres
 /// français : le texte juste, l'habillage dans la mauvaise langue.
 
 const Map<String, String> osisBooksEe = {
-  'Gen': '1 Mɔse (Gɔmedzedze)',
-  'Exod': '2 Mɔse (Do-Do-Ɖa)',
-  'Lev': '3 Mɔse (Lewiwo)',
-  'Num': '4 Mɔse (Xexlẽwo)',
-  'Deut': '5 Mɔse (Se-Mɔ-Ɖoɖowo)',
+  'Gen': 'Mose I',
+  'Exod': 'Mose II',
+  'Lev': 'Mose III',
+  'Num': 'Mose IV',
+  'Deut': 'Mose V',
   'Josh': 'Yosua',
-  'Judg': 'Vonɔlawo',
+  'Judg': 'Ʋɔnudrɔ̃lawo',
   'Ruth': 'Rut',
-  '1Sam': '1 Samuel',
-  '2Sam': '2 Samuel',
-  '1Kgs': '1 Fiawo',
-  '2Kgs': '2 Fiawo',
-  '1Chr': '1 Kronika',
-  '2Chr': '2 Kronika',
+  '1Sam': 'Samuel I',
+  '2Sam': 'Samuel II',
+  '1Kgs': 'Fiawo I',
+  '2Kgs': 'Fiawo II',
+  '1Chr': 'Kronika I',
+  '2Chr': 'Kronika II',
   'Ezra': 'Ezra',
   'Neh': 'Nehemia',
   'Esth': 'Ester',
   'Job': 'Hiob',
-  'Ps': 'Hakpukpuiwo',
+  'Ps': 'Psalmowo',
   'Prov': 'Lododowo',
   'Eccl': 'Nyagblɔla',
-  'Song': 'Hawo fe Ha',
+  'Song': 'Hawo',
   'Isa': 'Yesaya',
   'Jer': 'Yeremia',
-  'Lam': 'Yeremia fe Aviwo',
-  'Ezek': 'Esekiel',
+  'Lam': 'Konyifahawo',
+  'Ezek': 'Hezekiel',
   'Dan': 'Daniel',
   'Hos': 'Hosea',
   'Joel': 'Yoel',
   'Amos': 'Amos',
-  'Obad': 'Obadya',
+  'Obad': 'Obadia',
   'Jonah': 'Yona',
   'Mic': 'Mika',
   'Nah': 'Nahum',
   'Hab': 'Habakuk',
-  'Zeph': 'Zefanya',
+  'Zeph': 'Zefania',
   'Hag': 'Hagai',
-  'Zech': 'Sakarya',
+  'Zech': 'Zekaria',
   'Mal': 'Malaki',
   'Matt': 'Mateo',
   'Mark': 'Marko',
@@ -353,25 +364,25 @@ const Map<String, String> osisBooksEe = {
   'John': 'Yohanes',
   'Acts': 'Dɔwɔwɔwo',
   'Rom': 'Romatɔwo',
-  '1Cor': '1 Korintotɔwo',
-  '2Cor': '2 Korintotɔwo',
+  '1Cor': 'Korintotɔwo I',
+  '2Cor': 'Korintotɔwo II',
   'Gal': 'Galatiatɔwo',
   'Eph': 'Efesotɔwo',
   'Phil': 'Filipitɔwo',
-  'Col': 'Kolositɔwo',
-  '1Thess': '1 Tesalonikatɔwo',
-  '2Thess': '2 Tesalonikatɔwo',
-  '1Tim': '1 Timoteo',
-  '2Tim': '2 Timoteo',
+  'Col': 'Kolosetɔwo',
+  '1Thess': 'Tesalonikatɔwo I',
+  '2Thess': 'Tesalonikatɔwo II',
+  '1Tim': 'Timoteo I',
+  '2Tim': 'Timoteo II',
   'Titus': 'Tito',
   'Phlm': 'Filemon',
-  'Heb': 'Hebrewtɔwo',
+  'Heb': 'Hebritɔwo',
   'Jas': 'Yakobo',
-  '1Pet': '1 Petro',
-  '2Pet': '2 Petro',
-  '1John': '1 Yohanes',
-  '2John': '2 Yohanes',
-  '3John': '3 Yohanes',
+  '1Pet': 'Petro I',
+  '2Pet': 'Petro II',
+  '1John': 'Yohanes I',
+  '2John': 'Yohanes II',
+  '3John': 'Yohanes III',
   'Jude': 'Yuda',
   'Rev': 'Nyaɖeɖefia',
 };
